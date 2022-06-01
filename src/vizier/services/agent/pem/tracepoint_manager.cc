@@ -174,7 +174,7 @@ void TracepointManager::Monitor() {
     // 5. Failed -> Running: Probe started up because binary came back to life.
     //
     // In all cases we basically inform the MDS.
-    // In the cases where we transtion to running, we need to update the schemas.
+    // In the cases where we transition to running, we need to update the schemas.
 
     Status probe_status = Status::OK();
     LOG(INFO) << absl::Substitute("Tracepoint[$0]::$1 has transitioned $2 -> $3", id.str(),
