@@ -1,0 +1,4 @@
+---
+short: Stirling Error Records
+long: >
+  Shows errors in different Stirling components and deployment statuses of eBPF probes.

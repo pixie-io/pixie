@@ -1,0 +1,98 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now.",
+      "defaultValue": "-7d"
+    },
+    {
+      "name": "source_connector_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'source_connector' column.",
+      "defaultValue": ""
+    },
+    {
+      "name": "tracepoint_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'tracepoint' column.",
+      "defaultValue": ""
+    },
+    {
+      "name": "max_num_records",
+      "type": "PX_INT64",
+      "description": "Max number of records to show.",
+      "defaultValue": "1000"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "stirling_error",
+      "func": {
+        "name": "stirling_error",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "source_connector_filter",
+            "variable": "source_connector_filter"
+          },
+          {
+            "name": "num_head",
+            "variable": "max_num_records"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "probe_status",
+      "func": {
+        "name": "probe_status",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "tracepoint_filter",
+            "variable": "tracepoint_filter"
+          },
+          {
+            "name": "num_head",
+            "variable": "max_num_records"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Stirling Component Statuses",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "globalFuncOutputName": "stirling_error",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "BPF Probe Statuses",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "probe_status",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}
