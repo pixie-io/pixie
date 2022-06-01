@@ -48,17 +48,20 @@ export const DEFAULT_THEME_MODE: PixieThemeMode = 'dark';
 const THEME_LOCAL_STORAGE_KEY = 'preferredTheme';
 
 export interface ThemeSelectionContextProps {
+  preferenceLoaded: boolean;
   mode: PixieThemeMode;
   theme: Theme;
   setMode: (mode: PixieThemeMode) => void;
 }
 export const ThemeSelectionContext = React.createContext<ThemeSelectionContextProps>({
+  preferenceLoaded: false,
   mode: 'dark',
   theme: DARK_THEME,
   setMode: () => {},
 });
 
 export const ThemeSelectionContextProvider: React.FC<WithChildren> = React.memo(({ children }) => {
+  const [preferenceLoaded, setPreferenceLoaded] = React.useState(false);
   const [stored, setStored] = React.useState<PixieThemeMode>(DEFAULT_THEME_MODE);
 
   // Try once to read localStorage
@@ -70,6 +73,7 @@ export const ThemeSelectionContextProvider: React.FC<WithChildren> = React.memo(
       } else {
         setStored(DEFAULT_THEME_MODE);
       }
+      setPreferenceLoaded(true);
     } catch (_) {/* If we don't have access to localStorage, we've likely been embedded with the theme overridden. */}
   }, []);
 
@@ -105,10 +109,11 @@ export const ThemeSelectionContextProvider: React.FC<WithChildren> = React.memo(
   }, []);
 
   const ctx = React.useMemo(() => ({
+    preferenceLoaded,
     mode: stored,
     theme: chosen,
     setMode,
-  }), [stored, chosen, setMode]);
+  }), [stored, chosen, setMode, preferenceLoaded]);
 
   return <ThemeSelectionContext.Provider value={ctx}>{children}</ThemeSelectionContext.Provider>;
 });
