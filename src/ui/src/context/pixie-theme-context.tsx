@@ -21,6 +21,7 @@ import * as React from 'react';
 import { CssBaseline } from '@mui/material';
 import { Theme, ThemeProvider } from '@mui/material/styles';
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import {
   createPixieTheme,
   DARK_THEME,
@@ -77,18 +78,19 @@ export const PixieThemeContextProvider = React.memo<WithChildren>(({ children })
       setTheme(newTheme);
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.error('Failed to parse MUI theme');
+      console.error('Failed to parse MUI theme', raw);
     }
   }, [prevRaw]);
 
   // Watch for changes to user preference - if they've told Pixie to match their system preference, we want to
-  // honor that preference right away if it changes.
-  const { theme: userSelectedTheme } = React.useContext(ThemeSelectionContext);
+  // honor that preference right away if it changes. We don't do this if the theme was overridden in an embed, though.
+  const { preferenceLoaded, theme: userSelectedTheme } = React.useContext(ThemeSelectionContext);
   React.useEffect(() => {
-    if (!parsedCustomTheme) {
+    const isEmbedded = isPixieEmbedded();
+    if (!isEmbedded && preferenceLoaded && !parsedCustomTheme) {
       setThemeFromName(userSelectedTheme.palette.mode);
     }
-  }, [userSelectedTheme, setThemeFromName, parsedCustomTheme]);
+  }, [preferenceLoaded, userSelectedTheme, setThemeFromName, parsedCustomTheme]);
 
   const ctx = React.useMemo(() => ({
     theme,
