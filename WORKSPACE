@@ -86,9 +86,21 @@ load("//bazel:gogo.bzl", "gogo_grpc_proto")
 gogo_grpc_proto(name = "gogo_grpc_proto")
 
 # Setup tensorflow.
-load("@org_tensorflow//tensorflow:workspace.bzl", "tf_repositories")
+load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
 
-tf_repositories()
+tf_workspace3()
+
+load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
+
+tf_workspace2()
+
+load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
+
+tf_workspace1()
+
+load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
+
+tf_workspace0()
 
 pl_model_files()
 

@@ -88,7 +88,8 @@ TEST(KMeans, trimodal_normal_dist) {
   for (int i = 0; i < 3; i++) {
     std::vector<size_t> cluster_inds;
     for (int j = 0; j < 20; j++) {
-      cluster_inds.push_back(kmeans.Transform(points(20 * i + j, Eigen::all).transpose()));
+      cluster_inds.push_back(
+          kmeans.Transform(points(20 * i + j, Eigen::indexing::all).transpose()));
     }
     EXPECT_EQ(taken_inds.find(cluster_inds[0]), taken_inds.end());
     EXPECT_THAT(cluster_inds, ::testing::Each(cluster_inds[0]));

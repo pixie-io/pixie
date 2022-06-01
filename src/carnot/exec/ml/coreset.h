@@ -63,7 +63,7 @@ class WeightedPointSet {
     auto index = 0;
     for (auto set : point_sets) {
       auto end_of_set = index + set->size() - 1;
-      (*union_set).points_(Eigen::seq(index, end_of_set), Eigen::all) = set->points();
+      (*union_set).points_(Eigen::seq(index, end_of_set), Eigen::indexing::all) = set->points();
       (*union_set).weights_(Eigen::seq(index, end_of_set)) = set->weights();
       index = end_of_set + 1;
     }
@@ -287,7 +287,7 @@ class CoresetDriver {
       : m_(m), d_(d), coreset_data_(args...), points_(m_, d_), weights_(m_), size_(0) {}
 
   void Update(const Eigen::VectorXf& p) {
-    points_(size_, Eigen::all) = p.transpose();
+    points_(size_, Eigen::indexing::all) = p.transpose();
     weights_(size_) = 1.0f;
     size_++;
     if (size_ == m_) {
@@ -347,16 +347,17 @@ class CoresetDriver {
     if (size_ == 0) {
       return std::make_shared<WeightedPointSet>(0, points_.cols());
     }
-    return std::make_shared<WeightedPointSet>(points_(Eigen::seq(0, size_ - 1), Eigen::all),
-                                              weights_(Eigen::seq(0, size_ - 1)));
+    return std::make_shared<WeightedPointSet>(
+        points_(Eigen::seq(0, size_ - 1), Eigen::indexing::all),
+        weights_(Eigen::seq(0, size_ - 1)));
   }
   void GatherPointsFromSet(std::shared_ptr<WeightedPointSet> set) {
     size_ = set->size();
     if (set->size() == 1) {
-      points_(0, Eigen::all) = set->points()(0, Eigen::all);
+      points_(0, Eigen::indexing::all) = set->points()(0, Eigen::indexing::all);
       weights_(0) = set->weights()(0);
     } else if (set->size() > 1) {
-      points_(Eigen::seq(0, set->size() - 1), Eigen::all) = set->points();
+      points_(Eigen::seq(0, set->size() - 1), Eigen::indexing::all) = set->points();
       weights_(Eigen::seq(0, set->size() - 1)) = set->weights();
     }
   }
