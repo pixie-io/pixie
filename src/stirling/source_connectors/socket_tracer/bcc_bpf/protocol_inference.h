@@ -212,7 +212,7 @@ static __inline enum message_type_t infer_pgsql_startup_message(const char* buf,
   }
 
   const char kPgsqlVer30[] = "\x00\x03\x00\x00";
-  if (bpf_strncmp((const char*)buf + 4, kPgsqlVer30, 4) != 0) {
+  if (px_bpf_strncmp((const char*)buf + 4, 4, kPgsqlVer30) != 0) {
     return kUnknown;
   }
 
