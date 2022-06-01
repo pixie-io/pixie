@@ -68,9 +68,11 @@ static __inline int32_t read_big_endian_int16(const char* buf) {
 // NOTE #1: Cannot use C standard library's strncmp() because that cannot be compiled by BCC.
 // NOTE #2: Different from the C standard library's strncmp(), this does not distinguish order.
 // NOTE #3: n must be a literal so that the BCC runtime can unroll the inner loop.
-// NOTE #4: Loop unrolling increases instruction code, be aware when BPF verifier complains about
-// breaching instruction count limit.
-static __inline int bpf_strncmp(const char* lhs, const char* rhs, size_t n) {
+// NOTE #4: Loop unrolling increases instruction code, be aware when BPF verifier complains about.
+//          breaching instruction count limit.
+// NOTE #5: This function is prefixed with px_ since kernels > 5.17 have a builtin version of this
+// function.
+static __inline int px_bpf_strncmp(const char* lhs, size_t n, const char* rhs) {
   for (size_t i = 0; i < n; ++i) {
     if (lhs[i] != rhs[i]) {
       return 1;
