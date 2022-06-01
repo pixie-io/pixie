@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <llvm/Config/llvm-config.h>
+
 #include "src/stirling/obj_tools/dwarf_reader.h"
 
 #include <absl/container/flat_hash_set.h>
@@ -164,7 +166,15 @@ Status DwarfReader::DetectSourceLanguage() {
 
     const DWARFFormValue& producer_attr =
         GetAttribute(unit_die, llvm::dwarf::DW_AT_producer).ValueOr({});
-    compiler_ = producer_attr.getAsCString().getValueOr("");
+
+    auto s = producer_attr.getAsCString();
+#if LLVM_VERSION_MAJOR >= 14
+    if (!s.takeError()) {
+      compiler_ = s.get();
+    }
+#else
+    compiler_ = s.getValueOr("");
+#endif
 
     return Status::OK();
   }
