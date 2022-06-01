@@ -329,8 +329,8 @@ GIT_REPOSITORY_LOCATIONS = dict(
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
-        commit = "ef681ad3b546e4636584ce9c65a2e194f2359d93",
-        shallow_since = "1637018996 -0800",
+        commit = "fde4969a64a048e3551a596e199cedab6d7a8243",
+        shallow_since = "1654107281 -0700",
     ),
     com_github_apangin_jattach = dict(
         remote = "https://github.com/pixie-io/jattach.git",

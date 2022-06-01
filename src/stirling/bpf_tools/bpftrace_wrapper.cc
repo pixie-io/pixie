@@ -285,14 +285,14 @@ Status BPFTraceWrapper::CheckPrintfs() const {
     return error::Internal("The BPFTrace program must contain at least one printf statement.");
   }
 
-  const std::string& fmt = std::get<0>(bpftrace_.resources.printf_args[0]);
+  const auto& fmt = std::get<0>(bpftrace_.resources.printf_args[0]);
   for (size_t i = 1; i < bpftrace_.resources.printf_args.size(); ++i) {
-    const std::string& fmt_i = std::get<0>(bpftrace_.resources.printf_args[i]);
-    if (fmt_i != fmt) {
+    const auto& fmt_i = std::get<0>(bpftrace_.resources.printf_args[i]);
+    if (fmt_i.str() != fmt.str()) {
       return error::Internal(
           "All printf statements must have exactly the same format string. [$0] does not match "
           "[$1]",
-          fmt_i, fmt);
+          fmt_i.str(), fmt.str());
     }
   }
 
@@ -310,7 +310,8 @@ std::string_view BPFTraceWrapper::OutputFmtStr() const {
   DCHECK(compiled_) << "Must compile first.";
   DCHECK(printf_to_table_) << "OutputFmtStr() on supported if compiling with printf_to_table";
 
-  return std::string_view(std::get<0>(bpftrace_.resources.printf_args.front()));
+  const auto& fmt_str = std::get<0>(bpftrace_.resources.printf_args.front());
+  return std::string_view(fmt_str.c_str(), fmt_str.length());
 }
 
 bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {
