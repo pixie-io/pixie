@@ -23,6 +23,7 @@
 #include <sys/time.h>
 
 #include <chrono>
+#include <optional>
 #include <string>
 
 #include "src/common/base/logging.h"
