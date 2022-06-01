@@ -16,13 +16,15 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 
-def _docker_io_image(name, digest, repo):
-    container_pull(
-        name = name,
-        digest = digest,
-        registry = "index.docker.io",
-        repository = repo,
-    )
+# IMPORTANT: NEVER use docker hub images directly.
+# Docker now has a rate limit on image pulls that can prevent builds from running.
+# Instead pull the image you need from docker hub and push it to
+# gcr.io/pixie-oss/pixie-dev-public/docker-deps/<your-image-name-here>
+
+# Although, ghcr doesn't currently have rate limits to avoid potential future issues
+# and to standardize, we also do the same for ghcr images.
+# Pull any image you need from ghcr and push it to
+# gcr.io/pixie-oss/pixie-dev-public/ghcr-deps/<your-image-name-here>
 
 def _gcr_io_image(name, digest, repo):
     container_pull(
@@ -32,25 +34,17 @@ def _gcr_io_image(name, digest, repo):
         repository = repo,
     )
 
-def _ghcr_io_image(name, digest, repo):
-    container_pull(
-        name = name,
-        digest = digest,
-        registry = "ghcr.io",
-        repository = repo,
-    )
-
 def base_images():
-    _docker_io_image(
+    _gcr_io_image(
         "nginx_base",
         "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        "library/nginx",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         "openresty",
         "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
-        "openresty/openresty",
+        "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
     )
 
     _gcr_io_image(
@@ -65,183 +59,176 @@ def base_images():
         "distroless/base",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         "openjdk-base-glibc",
         "sha256:d7048f5a32ca7598f583c492c960496848cc9017fdb55942370f02603c83561d",
-        "library/openjdk",
+        "pixie-oss/pixie-dev-public/docker-deps/library/openjdk",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         "openjdk-base-musl",
         "sha256:25b910311bfe15547ecab6895d5eb3f4ec718d6d53cced7eec78e4b889962e1f",
-        "library/openjdk",
+        "pixie-oss/pixie-dev-public/docker-deps/library/openjdk",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/zulu-openjdk/azul/zulu-openjdk/18/images/sha256-01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e?context=explore
         # azul/zulu-openjdk:18
         "azul-zulu",
         "sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
-        "azul/zulu-openjdk",
+        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/zulu-openjdk-debian/azul/zulu-openjdk-debian/15.0.6/images/sha256-d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a?context=explore
         # azul/zulu-openjdk-debian:15.0.6
         "azul-zulu-debian",
         "sha256:d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a",
-        "azul/zulu-openjdk-debian",
+        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk-debian",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/zulu-openjdk-alpine/azul/zulu-openjdk-alpine/17-jre/images/sha256-eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878?context=explore
         # azul/zulu-openjdk-alpine:17-jre
         "azul-zulu-alpine",
         "sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
-        "azul/zulu-openjdk-alpine",
+        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk-alpine",
     )
 
-    # TODO(jps): Could not pull on Jenkins, but, this may be deprecated in any case. Investigate.
-    _docker_io_image(
-        "oracle",
-        "sha256:68aacc9b930ad24ab7db27badf25bc619b4c2cb87c27b3a83da26aac05a138eb",
-        "store/oracle/jdk",
-    )
-
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/amazoncorretto/library/amazoncorretto/18-alpine-jdk/images/sha256-52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50?context=explore
         # amazoncorretto:18-alpine-jdk
         "amazon-corretto",
         "sha256:52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50",
-        "library/amazoncorretto",
+        "pixie-oss/pixie-dev-public/docker-deps/library/amazoncorretto",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/adoptopenjdk/library/adoptopenjdk/openj9/images/sha256-2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e?context=explore
         # adoptopenjdk:openj9
         "adopt-j9",
         "sha256:2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e",
-        "amd64/adoptopenjdk",
+        "pixie-oss/pixie-dev-public/docker-deps/amd64/adoptopenjdk",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/ibmjava/library/ibmjava/8-jre/images/sha256-78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc?context=explore
         # ibmjava:8-jre
         "ibm",
         "sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
-        "library/ibmjava",
+        "pixie-oss/pixie-dev-public/docker-deps/library/ibmjava",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # https://hub.docker.com/layers/sapmachine/library/sapmachine/18.0.1/images/sha256-53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6?context=explore
         # sapmachine:18.0.1
         "sap",
         "sha256:53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6",
-        "library/sapmachine",
+        "pixie-oss/pixie-dev-public/docker-deps/library/sapmachine",
     )
 
-    _ghcr_io_image(
+    _gcr_io_image(
         "graal-vm",
-        "sha256:ffb117a5fd76d8c47120e1b4186053c306ae850483b59f24a5979d7154d35685",
-        "graalvm/jdk",
+        "sha256:2a1aa528041342d76074a82ea72ad962d661eba68a6eceb100dc2e66e7377d55",
+        "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/jdk",
     )
 
-    _ghcr_io_image(
+    _gcr_io_image(
         "graal-vm-ce",
-        "sha256:fae27be89c37a78fe05a1cb36f0f4348931c515ee3e7d1629e859fb4685d94a0",
-        "graalvm/graalvm-ce",
+        "sha256:f7b8643f448dd9e108cda69cd42f8c86681710a18fbc64392d8c62126a3e1651",
+        "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/graalvm-ce",
     )
 
 def stirling_test_build_images():
-    _docker_io_image(
+    _gcr_io_image(
         # Using golang:1.16-alpine as it is smaller than the ubuntu based image.
         "golang_1_16_image",
         "sha256:c3d78e9d45bc6da38b15485456380d0b669e60d075f0ed69f87ebc14231eed19",
-        "library/golang",
+        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # Using golang:1.17-alpine as it is smaller than the ubuntu based image.
         "golang_1_17_image",
         "sha256:1dc6a836407ef26c761af27bd39eb86ec385bab0f89a6c969bb1a04b342f7074",
-        "library/golang",
+        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
     )
 
-    _docker_io_image(
+    _gcr_io_image(
         # Using golang:1.18-alpine as it is smaller than the ubuntu based image.
         "golang_1_18_image",
         "sha256:e444a82360d0e4cecc2e352829e400c240b4566a5855daa6e9bd18ef6e7c50da",
-        "library/golang",
+        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
     )
 
 def stirling_test_images():
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
-    _docker_io_image(
+    _gcr_io_image(
         "nginx_openssl_1_1_0_base_image",
         "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        "library/nginx",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
     # NGINX with OpenSSL 1.1.1, for OpenSSL tracing tests.
-    _docker_io_image(
+    _gcr_io_image(
         "nginx_openssl_1_1_1_base_image",
         "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
-        "library/nginx",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
     # DNS server image for DNS tests.
-    _docker_io_image(
+    _gcr_io_image(
         "alpine_dns_base_image",
         "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
-        "resystit/bind9",
+        "pixie-oss/pixie-dev-public/docker-deps/resystit/bind9",
     )
 
     # Curl container, for OpenSSL tracing tests.
     # curlimages/curl:7.74.0
-    _docker_io_image(
+    _gcr_io_image(
         "curl_base_image",
-        "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
-        "curlimages/curl",
+        "sha256:c50aa334d3dc674cb87bbd6ab3dd42c92ff1cfac47df9d65bb78efc8f990d716",
+        "pixie-oss/pixie-dev-public/docker-deps/curlimages/curl",
     )
 
     # Ruby container, for OpenSSL tracing tests.
     # ruby:3.0.0-buster
-    _docker_io_image(
+    _gcr_io_image(
         "ruby_base_image",
         "sha256:beeed8e63b1ae4a1492f4be9cd40edc6bdb1009b94228438f162d0d05e10c8fd",
-        "library/ruby",
+        "pixie-oss/pixie-dev-public/docker-deps/library/ruby",
     )
 
     # Datastax DSE server, for CQL tracing tests.
     # datastax/dse-server:6.7.7
-    _docker_io_image(
+    _gcr_io_image(
         "datastax_base_image",
         "sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
-        "datastax/dse-server",
+        "pixie-oss/pixie-dev-public/docker-deps/datastax/dse-server",
     )
 
     # Postgres server, for PGSQL tracing tests.
     # postgres:13.2
-    _docker_io_image(
+    _gcr_io_image(
         "postgres_base_image",
         "sha256:661dc59f4a71e689c51d4823963baa56b8fcc8daa5b16cf740cad236fa5ffe74",
-        "library/postgres",
+        "pixie-oss/pixie-dev-public/docker-deps/library/postgres",
     )
 
     # Redis server, for Redis tracing tests.
     # redis:6.2.1
-    _docker_io_image(
+    _gcr_io_image(
         "redis_base_image",
         "sha256:fd68bec9c2cdb05d74882a7eb44f39e1c6a59b479617e49df245239bba4649f9",
-        "library/redis",
+        "pixie-oss/pixie-dev-public/docker-deps/library/redis",
     )
 
     # MySQL server, for MySQL tracing tests.
     # mysql/mysql-server:8.0.13
-    _docker_io_image(
+    _gcr_io_image(
         "mysql_base_image",
         "sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
-        "mysql/mysql-server",
+        "pixie-oss/pixie-dev-public/docker-deps/mysql/mysql-server",
     )
 
     # Custom-built container with python MySQL client, for MySQL tests.
@@ -260,41 +247,41 @@ def stirling_test_images():
     )
 
     # Kafka broker image, for testing.
-    _docker_io_image(
+    _gcr_io_image(
         "kafka_base_image",
         "sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
-        "confluentinc/cp-kafka",
+        "pixie-oss/pixie-dev-public/docker-deps/confluentinc/cp-kafka",
     )
 
     # Zookeeper image for Kafka.
-    _docker_io_image(
+    _gcr_io_image(
         "zookeeper_base_image",
         "sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
-        "confluentinc/cp-zookeeper",
+        "pixie-oss/pixie-dev-public/docker-deps/confluentinc/cp-zookeeper",
     )
 
     # Tag: node:12.3.1
     # Arch: linux/amd64
     # This is the oldest tag on docker hub that can be pulled. Older tags cannot be pulled because
     # of server error on docker hub, which presumably is because of they are too old.
-    _docker_io_image(
+    _gcr_io_image(
         "node_12_3_1_linux_amd64_image",
         "sha256:ade8d367d98b5074a8c3a4e2d74bd657b578d4a500090d66c2da33801ec4b58d",
-        "node",
+        "pixie-oss/pixie-dev-public/docker-deps/node",
     )
 
     # Tag: node:14.18.1-alpine
     # Arch: linux/amd64
-    _docker_io_image(
+    _gcr_io_image(
         "node_14_18_1_alpine_amd64_image",
         "sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
-        "node",
+        "pixie-oss/pixie-dev-public/docker-deps/node",
     )
 
     # Tag: node:16.9
     # Arch: linux/amd64
-    _docker_io_image(
+    _gcr_io_image(
         "node_16_9_linux_amd64_image",
         "sha256:b0616a801a0f3c17c437c67c49e20c76c8735e205cdc165e56ae4fa867f32af1",
-        "node",
+        "pixie-oss/pixie-dev-public/docker-deps/node",
     )
