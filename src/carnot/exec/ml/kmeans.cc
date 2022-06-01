@@ -54,17 +54,18 @@ bool KMeans::LloydsIteration(const Eigen::MatrixXf& points, const Eigen::VectorX
 
   for (int i = 0; i < points.rows(); i++) {
     Eigen::VectorXf::Index closest_centroid;
-    (centroids_.rowwise() - points(i, Eigen::all))
+    (centroids_.rowwise() - points(i, Eigen::indexing::all))
         .rowwise()
         .squaredNorm()
         .minCoeff(&closest_centroid);
-    new_centroids(closest_centroid, Eigen::all) += weights(i) * points(i, Eigen::all);
+    new_centroids(closest_centroid, Eigen::indexing::all) +=
+        weights(i) * points(i, Eigen::indexing::all);
     centroid_weights(closest_centroid) += weights(i);
   }
 
   for (int i = 0; i < k_; i++) {
     if (centroid_weights[i] == 0.0f) {
-      new_centroids(i, Eigen::all) = centroids_(i, Eigen::all);
+      new_centroids(i, Eigen::indexing::all) = centroids_(i, Eigen::indexing::all);
       centroid_weights(i) = 1.0f;
     }
   }
@@ -80,14 +81,14 @@ bool KMeans::LloydsIteration(const Eigen::MatrixXf& points, const Eigen::VectorX
 void KMeans::KMeansPlusPlusInit(const Eigen::MatrixXf& points, const Eigen::VectorXf& weights) {
   std::uniform_int_distribution<> dist(0, points.rows() - 1);
   auto firstCentroid = dist(random_gen_);
-  centroids_(0, Eigen::all) = points(firstCentroid, Eigen::all);
+  centroids_(0, Eigen::indexing::all) = points(firstCentroid, Eigen::indexing::all);
 
   Eigen::VectorXf probDist(points.rows());
   for (auto i = 1; i < k_; i++) {
     for (auto j = 0; j < probDist.rows(); j++) {
-      auto point = points(j, Eigen::all);
+      auto point = points(j, Eigen::indexing::all);
       Eigen::VectorXf::Index closestCentroid;
-      auto dist = (centroids_(Eigen::seq(0, i - 1), Eigen::all).rowwise() - point)
+      auto dist = (centroids_(Eigen::seq(0, i - 1), Eigen::indexing::all).rowwise() - point)
                       .rowwise()
                       .squaredNorm()
                       .minCoeff(&closestCentroid);
@@ -95,7 +96,7 @@ void KMeans::KMeansPlusPlusInit(const Eigen::MatrixXf& points, const Eigen::Vect
     }
     std::discrete_distribution<> pointDist(probDist.begin(), probDist.end());
     auto ind = pointDist(random_gen_);
-    centroids_(i, Eigen::all) = points(ind, Eigen::all);
+    centroids_(i, Eigen::indexing::all) = points(ind, Eigen::indexing::all);
   }
 }
 

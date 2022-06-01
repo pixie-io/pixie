@@ -216,14 +216,14 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
     ),
     org_tensorflow = dict(
-        sha256 = "f681331f8fc0800883761c7709d13cda11942d4ad5ff9f44ad855e9dc78387e0",
-        strip_prefix = "tensorflow-2.4.1",
-        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.4.1.tar.gz"],
+        sha256 = "6eaf86ead73e23988fe192da1db68f4d3828bcdd0f3a9dc195935e339c95dbdc",
+        strip_prefix = "tensorflow-2.9.1",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.9.1.tar.gz"],
     ),
     io_bazel_rules_closure = dict(
-        sha256 = "9498e57368efb82b985db1ed426a767cbf1ba0398fd7aed632fc3908654e1b1e",
-        strip_prefix = "rules_closure-0.12.0",
-        urls = ["https://github.com/bazelbuild/rules_closure/archive/refs/tags/0.12.0.tar.gz"],
+        sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
+        strip_prefix = "rules_closure-308b05b2419edb5c8ee0471b67a40403df940149",
+        urls = ["https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -304,6 +304,12 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/uriparser/uriparser/releases/download/uriparser-0.9.6/uriparser-0.9.6.tar.gz"],
         sha256 = "10e6f90d359c1087c45f907f95e527a8aca84422251081d1533231e031a084ff",
         strip_prefix = "uriparser-0.9.6",
+    ),
+    # To workaround issues in TF 2.9.1 bazel workspace setup, we directly load this library that tensorflow should have loaded itself.
+    com_google_googleapis = dict(
+        urls = ["https://github.com/googleapis/googleapis/archive/541b1ded4abadcc38e8178680b0677f65594ea6f.zip"],
+        sha256 = "7ebab01b06c555f4b6514453dc3e1667f810ef91d1d4d2d3aa29bb9fcb40a900",
+        strip_prefix = "googleapis-541b1ded4abadcc38e8178680b0677f65594ea6f",
     ),
 )
 

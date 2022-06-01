@@ -32,11 +32,11 @@ MATCHER_P2(IsApproxMatrix, matrix, tol, "") {
 MATCHER_P2(UnorderedRowsAre, matrix, tol, "") {
   std::vector<::testing::Matcher<Eigen::MatrixXf>> rows;
   for (int i = 0; i < matrix.rows(); i++) {
-    rows.push_back(IsApproxMatrix(matrix(i, Eigen::all), tol));
+    rows.push_back(IsApproxMatrix(matrix(i, Eigen::indexing::all), tol));
   }
   std::vector<Eigen::MatrixXf> arg_rows;
   for (int i = 0; i < arg.rows(); i++) {
-    arg_rows.push_back(arg(i, Eigen::all));
+    arg_rows.push_back(arg(i, Eigen::indexing::all));
   }
   return ::testing::Matches(::testing::UnorderedElementsAreArray(rows))(arg_rows);
 }

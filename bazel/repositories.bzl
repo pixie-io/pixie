@@ -125,7 +125,7 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("com_google_flatbuffers")
-    _bazel_repo("org_tensorflow")
+    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_github_google_re2")
@@ -215,6 +215,7 @@ def _pl_deps():
     _bazel_repo("io_bazel_rules_docker")
     _bazel_repo("rules_python")
     _bazel_repo("com_github_bazelbuild_buildtools")
+    _bazel_repo("com_google_googleapis")
 
     _com_llvm_lib()
     _cc_deps()

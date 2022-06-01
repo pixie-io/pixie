@@ -220,3 +220,6 @@ common --experimental_repo_remote_exec
 
 # Try Stirling flakes more than the default 3 times.
 test --flaky_test_attempts=//src/stirling/source_connectors/socket_tracer/.*bpf_test@5
+
+# Disable XNNPACK for tensorflow lite. There's currently an ASAN issue with XNNPACK, so disable for now.
+build --define=tflite_with_xnnpack=false
