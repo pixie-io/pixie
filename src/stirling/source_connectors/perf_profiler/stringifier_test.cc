@@ -87,7 +87,7 @@ stack_trace_key_t MakeUserKernStackTraceKey(const uint32_t pid, const int u_stac
 }
 
 // These are the expected leaf symbols in our user space folded stack trace strings.
-const std::set<std::string> kPossibleUSyms = {"test::Bar()", "test::Foo()", "__getpid"};
+const std::set<std::string> kPossibleUSyms = {"test::Bar()", "test::Foo()", "__getpid", "getpid"};
 const std::set<std::string> kPossibleKSyms = {"[k] __x64_sys_getpid", "[k] __ia32_sys_getpid",
                                               "[k] sys_getpid", "[k] __do_sys_getpid"};
 
