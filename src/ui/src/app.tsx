@@ -171,10 +171,15 @@ const ThemedApp: React.FC = () => {
   // params can also be set by the parent view, in an embedded context.
   React.useEffect(() => {
     const {
+      theme: themeParam,
       customTheme,
     } = QueryString.parse(window.location.search);
+
     if (customTheme) {
-      parseAndSetTheme(Array.isArray(customTheme) ? customTheme[0] : customTheme);
+      parseAndSetTheme([customTheme].flat()[0]);
+    } else if (themeParam) {
+      const themeName = String([themeParam].flat()[0]).toLowerCase();
+      setThemeFromName(themeName);
     }
   }, [parseAndSetTheme, setThemeFromName]);
 
