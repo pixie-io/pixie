@@ -51,7 +51,10 @@ void PreProcessMessage(Message* message) {
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message->headers.find(http::kContentType);
   if (content_type_iter == message->headers.end()) {
-    message->body = "<removed: unknown content-type>";
+    if (message->body_size > 0) {
+      // Don't rewrite if the body is empty.
+      message->body = "<removed: unknown content-type>";
+    }
     return;
   }
 
