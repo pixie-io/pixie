@@ -24,7 +24,7 @@ import {
 import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
-import * as ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { useLocation } from 'react-router';
 import {
   Redirect, RedirectProps, Route, Router, Switch,
@@ -297,7 +297,8 @@ const ThemedApp: React.FC = () => {
 };
 ThemedApp.displayName = 'ThemedApp';
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
   <ErrorBoundary name='Root'>
     <StyledEngineProvider injectFirst>
       <AuthContextProvider>
@@ -310,4 +311,5 @@ ReactDOM.render(
         </EmbedContextProvider>
       </AuthContextProvider>
     </StyledEngineProvider>
-  </ErrorBoundary>, document.getElementById('root'));
+  </ErrorBoundary>,
+);

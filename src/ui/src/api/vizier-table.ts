@@ -64,6 +64,10 @@ export class VizierTable {
       throw new Error(`Batch update for table id "${batch.getTableId()}" does not match target table "${this.id}"`);
     }
 
+    if (this.batches.includes(batch)) {
+      throw new Error(`Batch update with ${batch.getNumRows()} rows was appended twice (same object in memory)!`);
+    }
+
     this.batches.push(batch);
     const newRows = parseRows(this.semanticTypeMap, dataFromProto(this.relation, [batch]));
 
