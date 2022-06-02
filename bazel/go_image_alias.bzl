@@ -14,23 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_docker//go:image.bzl", _go_image = "go_image")
 
-go_library(
-    name = "go_http_server_lib",
-    srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server",
-    visibility = ["//visibility:private"],
-)
-
-go_binary(
-    name = "go_http_server",
-    embed = [":go_http_server_lib"],
-    visibility = ["//src/stirling:__subpackages__"],
-)
-
-go_image(
-    name = "image",
-    binary = ":go_http_server",
-)
+def go_image(**kwargs):
+    _go_image(
+        base = "//:pl_go_base_image",
+        **kwargs
+    )

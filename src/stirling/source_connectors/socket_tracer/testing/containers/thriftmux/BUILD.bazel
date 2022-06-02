@@ -21,7 +21,7 @@ load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
-load("@package_bundle//file:packages.bzl", "packages")
+load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 

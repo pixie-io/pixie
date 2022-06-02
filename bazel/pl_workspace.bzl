@@ -15,8 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
-load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
-load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
 load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
@@ -27,36 +25,11 @@ load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 load("//bazel:container_images.bzl", "base_images", "stirling_test_build_images", "stirling_test_images")
 load("//bazel:gcs.bzl", "gcs_file")
 load("//bazel:linux_headers.bzl", "linux_headers")
+load("//bazel/external/ubuntu_packages:packages.bzl", "download_ubuntu_packages")
 
 # Sets up package manager which we use build deploy images.
 def _package_manager_setup():
-    package_manager_repositories()
-
-    dpkg_src(
-        name = "debian_sid",
-        arch = "amd64",
-        distro = "sid",
-        sha256 = "a093727908ebb7e46cc83643b21d5e81eadee49efaa3ecae7aa7ff1a62858396",
-        snapshot = "20200701T101354Z",
-        url = "http://snapshot.debian.org/archive",
-    )
-
-    dpkg_list(
-        name = "package_bundle",
-        packages = [
-            "libc6",
-            "libelf1",
-            "liblzma5",
-            "libtinfo6",
-            "zlib1g",
-            "libcrypt1",
-            # TODO(ddelnano): byteman is required until dealing with
-            # netty's libnetty_tcnative.so's random file name is solved for.
-            # See #407 for more details.
-            "libbyteman-java",
-        ],
-        sources = ["@debian_sid//file:Packages.json"],
-    )
+    download_ubuntu_packages()
 
 def _container_images_setup():
     _go_image_repos()

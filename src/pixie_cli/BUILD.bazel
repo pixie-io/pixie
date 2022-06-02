@@ -16,8 +16,8 @@
 
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel:go_image_alias.bzl", "go_image")
 
 go_library(
     name = "pixie_cli_lib",

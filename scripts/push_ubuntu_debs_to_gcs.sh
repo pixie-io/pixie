@@ -1,3 +1,5 @@
+#!/bin/bash -e
+
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,23 +16,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+repo_path=$(bazel info workspace)
 
-go_library(
-    name = "go_http_server_lib",
-    srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server",
-    visibility = ["//visibility:private"],
-)
-
-go_binary(
-    name = "go_http_server",
-    embed = [":go_http_server_lib"],
-    visibility = ["//src/stirling:__subpackages__"],
-)
-
-go_image(
-    name = "image",
-    binary = ":go_http_server",
-)
+bazel run //bazel/external/ubuntu_packages:push_ubuntu_debs_to_gcs -- \
+  --gcs-prefix "gs://pixie-dev-public/ubuntu-debs" \
+  --debs-json "$repo_path/bazel/external/ubuntu_packages/debs.json"

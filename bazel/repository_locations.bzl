@@ -174,12 +174,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "picohttpparser-1d2b8a184e7ebe6651c30dcede37ba1d89691351",
         urls = ["https://github.com/h2o/picohttpparser/archive/1d2b8a184e7ebe6651c30dcede37ba1d89691351.tar.gz"],
     ),
-    distroless = dict(
-        sha256 = "54273175a54eedc558b8188ca810b184b0784815d3af17cc5fd9c296be4c150e",
-        strip_prefix = "distroless-18b2d2c5ebfa58fe3e0e4ee3ffe0e2651ec0f7f6",
-        urls = ["https://github.com/GoogleContainerTools/distroless/" +
-                "archive/18b2d2c5ebfa58fe3e0e4ee3ffe0e2651ec0f7f6.tar.gz"],
-    ),
     com_github_nats_io_natsc = dict(
         sha256 = "c2b5a5e62dfbdcb110f00960c413ab6e8ef09dd71863c15c9f81aa598dcd339d",
         strip_prefix = "nats.c-2.6.0",
