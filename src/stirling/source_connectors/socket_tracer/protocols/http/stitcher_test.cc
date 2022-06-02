@@ -28,6 +28,7 @@ namespace http {
 
 using ::testing::Contains;
 using ::testing::Pair;
+using ::testing::StrEq;
 
 TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
   Message message;
@@ -52,6 +53,16 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   PreProcessMessage(&message);
   EXPECT_EQ("<removed: non-text content-type>", message.body);
   EXPECT_THAT(message.headers, Contains(Pair(kContentType, "text")));
+}
+
+// Tests that when body-size is 0, the message body won't be rewritten.
+TEST(PreProcessRecordTest, ZeroSizedBodyNotRewritten) {
+  Message message;
+  message.type = message_type_t::kResponse;
+  message.body_size = 0;
+  EXPECT_THAT(message.body, StrEq("-"));
+  PreProcessMessage(&message);
+  EXPECT_THAT(message.body, StrEq("-"));
 }
 
 }  // namespace http
