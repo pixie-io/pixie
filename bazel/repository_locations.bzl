@@ -84,9 +84,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/release-1.11.0.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "27dd2fc5c9809ddcde8eb6fa1fa278a3486566dfc28335fca13eb8df8bd3b958",
-        strip_prefix = "grpc-1.35.0",
-        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.35.0.tar.gz"],
+        sha256 = "d6cbf22cb5007af71b61c6be316a79397469c58c82a942552a62e708bce60964",
+        strip_prefix = "grpc-1.46.3",
+        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.46.3.tar.gz"],
     ),
     com_google_boringssl = dict(
         sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",
@@ -127,9 +127,12 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/double-conversion/archive/refs/tags/v3.2.0.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "bc3dbf1f09dba1b2eb3f2f70352ee97b9049066c9040ce0c9b67fb3294e91e4b",
-        strip_prefix = "protobuf-3.15.5",
-        urls = ["https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.15.5.tar.gz"],
+        sha256 = "bab1685f92cc4ea5b6420026eef6c7973ae96fc21f4f1a3ee626dc6ca6d77c12",
+        strip_prefix = "protobuf-22d0e265de7d2b3d2e9a00d071313502e7d4cccf",
+        urls = [
+            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/22d0e265de7d2b3d2e9a00d071313502e7d4cccf.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/22d0e265de7d2b3d2e9a00d071313502e7d4cccf.tar.gz",
+        ],
     ),
     com_intel_tbb = dict(
         sha256 = "ebc4f6aa47972daed1f7bf71d100ae5bf6931c2e3144cf299c8cc7d041dca2f3",
@@ -303,9 +306,12 @@ REPOSITORY_LOCATIONS = dict(
     ),
     # To workaround issues in TF 2.9.1 bazel workspace setup, we directly load this library that tensorflow should have loaded itself.
     com_google_googleapis = dict(
-        urls = ["https://github.com/googleapis/googleapis/archive/541b1ded4abadcc38e8178680b0677f65594ea6f.zip"],
-        sha256 = "7ebab01b06c555f4b6514453dc3e1667f810ef91d1d4d2d3aa29bb9fcb40a900",
-        strip_prefix = "googleapis-541b1ded4abadcc38e8178680b0677f65594ea6f",
+        sha256 = "5bb6b0253ccf64b53d6c7249625a7e3f6c3bc6402abd52d3778bfa48258703a0",
+        strip_prefix = "googleapis-2f9af297c84c55c8b871ba4495e01ade42476c92",
+        urls = [
+            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/googleapis/googleapis/archive/2f9af297c84c55c8b871ba4495e01ade42476c92.tar.gz",
+            "https://github.com/googleapis/googleapis/archive/2f9af297c84c55c8b871ba4495e01ade42476c92.tar.gz",
+        ],
     ),
 )
 

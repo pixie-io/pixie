@@ -15,17 +15,20 @@ pl_deps()
 # - grpc_deps (must come after protobuf_deps)
 # - apple_rules_dependencies (must come after grpc_deps)
 # ...
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("//:go_deps.bzl", "pl_go_overrides")
+load("@io_bazel_rules_go//go:deps.bzl", "go_download_sdk", "go_register_toolchains", "go_rules_dependencies")
+load("//:go_deps.bzl", "pl_go_dependencies", "pl_go_overrides")
 
 # We need to override some of the go dependencies used by go_rules.
 pl_go_overrides()
 
+go_download_sdk(
+    name = "go_sdk",
+    version = "1.18.3",
+)
+
 go_rules_dependencies()
 
-go_register_toolchains(go_version = "1.18.3")
-
-load("//:go_deps.bzl", "pl_go_dependencies")
+go_register_toolchains()
 
 # Pixie go dependencies need to be loaded before other go dependencies
 # to make sure we get the correct version.
