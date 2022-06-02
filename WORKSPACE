@@ -77,6 +77,17 @@ load("@io_bazel_rules_docker//repositories:py_repositories.bzl", "py_deps")
 
 py_deps()
 
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+    name = "ubuntu_package_deps",
+    requirements_lock = "//bazel/external/ubuntu_packages:requirements.txt",
+)
+
+load("@ubuntu_package_deps//:requirements.bzl", ubuntu_packages_install_deps = "install_deps")
+
+ubuntu_packages_install_deps()
+
 # The docker images can't be loaded until all pip_deps are satisfied.
 pl_container_images()
 
@@ -112,8 +123,6 @@ tf_workspace0()
 pl_model_files()
 
 # Setup the environment for the open-source python API.
-load("@rules_python//python:pip.bzl", "pip_parse")
-
 pip_parse(
     name = "vizier_api_python_deps",
     requirements_lock = "//src/api/python:requirements.txt",

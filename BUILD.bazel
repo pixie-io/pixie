@@ -17,8 +17,8 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@package_bundle//file:packages.bzl", "packages")
 load("//bazel:repositories.bzl", "list_pl_deps")
+load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 licenses(["restricted"])
 
@@ -124,6 +124,13 @@ filegroup(
 filegroup(
     name = "embedding.proto",
     srcs = ["@embedding_model//file:embedding.proto"],
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "pl_go_base_image",
+    base = "@base_image//image",
+    debs = pl_cc_base_packages,
     visibility = ["//visibility:public"],
 )
 
