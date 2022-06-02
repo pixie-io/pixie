@@ -115,7 +115,7 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
     //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
     //       Thus, it is deemed to be better here.
     PL_ASSIGN_OR_RETURN(const std::filesystem::path sys_headers_dir,
-                        utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+                        utils::FindOrInstallLinuxHeaders());
 
     LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
                                   sys_headers_dir.string());
