@@ -21,7 +21,7 @@ import * as React from 'react';
 import { Observable } from 'rxjs';
 
 import {
-  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, VizierTable,
+  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode,
 } from 'app/api';
 import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 import { useSnackbar } from 'app/components';
@@ -236,16 +236,8 @@ export const ScriptContextProvider: React.FC<WithChildren> = React.memo(({ child
           });
           break;
         case 'data': {
-          const updateData = update.event.data;
-          resultsContext.setResults((prev) => {
-            for (const updateBatch of updateData) {
-              const table: VizierTable = prev.tables.get(updateBatch.name)
-                ?? new VizierTable(updateBatch.id, updateBatch.name, updateBatch.relation);
-              table.appendBatch(updateBatch.batch);
-              prev.tables.set(updateBatch.name, table);
-            }
-            return { ...prev };
-          });
+          // Force an update that React will pick up on. New batches have already been appended to the tables here.
+          resultsContext.setResults((prev) => ({ ...prev }));
           if (resultsContext.streaming) {
             resultsContext.setLoading(false);
           }
