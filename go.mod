@@ -11,7 +11,7 @@ require (
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
-	github.com/bazelbuild/rules_go v0.22.4
+	github.com/bazelbuild/rules_go v0.32.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e
