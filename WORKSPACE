@@ -23,7 +23,7 @@ pl_go_overrides()
 
 go_rules_dependencies()
 
-go_register_toolchains(go_version = "1.17.7")
+go_register_toolchains(go_version = "1.18.3")
 
 load("//:go_deps.bzl", "pl_go_dependencies")
 

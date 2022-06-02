@@ -67,14 +67,13 @@ end
 
 execute 'install go binaries' do
   ENV['GOPATH'] = "/opt/pixielabs/gopath"
-  command %(go get \
-            golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 \
-            golang.org/x/tools/cmd/goimports@v0.1.2 \
-            github.com/golang/mock/mockgen@v1.5.0 \
-            github.com/cheekybits/genny@v1.0.0 \
-            sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
-            k8s.io/code-generator/cmd/client-gen@v0.20.6 \
-            github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible)
+  command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
+            go install golang.org/x/tools/cmd/goimports@v0.1.2 && \
+            go install github.com/golang/mock/mockgen@v1.5.0 && \
+            go install github.com/cheekybits/genny@v1.0.0 && \
+            go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
+            go install k8s.io/code-generator/cmd/client-gen@v0.20.6 && \
+            go install github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible)
 end
 
 template '/opt/pixielabs/plenv.inc' do
