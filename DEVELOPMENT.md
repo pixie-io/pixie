@@ -122,8 +122,15 @@ Deploying a development version of Vizier is a 2-step process. An official relea
 3. Deploy a local development version of Pixie Vizier using  [Skaffold](https://skaffold.dev/). Note each time you make a code change you will need to run this command to build and deploy the new version.
 
    ```
-   skaffold run -f skaffold/skaffold_vizier.yaml
+   skaffold run -f skaffold/skaffold_vizier.yaml --default-repo=<your own image registry>
    ```
+
+   You'll need to patch `imagePullSecrets` of the service accounts of the `pl` namespace to use the
+   keys provided by your own image registry service. Usually it involves 2 steps: first create the
+   secret, then patch `imagePullSecrets` to use the secret created in the previous step.
+   See [instructions](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account)
+   for more details.
+
 
 ## CLI
 
