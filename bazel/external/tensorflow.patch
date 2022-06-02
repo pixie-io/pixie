@@ -27,7 +27,7 @@ index 82d0f71ccbd..94104822e98 100644
          ],
          build_file = "//third_party/llvm:llvm.BUILD",
 diff --git a/third_party/repo.bzl b/third_party/repo.bzl
-index 795f0b00b98..98e71909a2d 100644
+index 795f0b00b98..eb594737728 100644
 --- a/third_party/repo.bzl
 +++ b/third_party/repo.bzl
 @@ -20,12 +20,8 @@ def tf_mirror_urls(url):
@@ -45,7 +45,7 @@ index 795f0b00b98..98e71909a2d 100644
  
  def _get_env_var(ctx, name):
      if name in ctx.os.environ:
-@@ -106,19 +102,8 @@ def tf_http_archive(name, sha256, urls, **kwargs):
+@@ -106,23 +102,10 @@ def tf_http_archive(name, sha256, urls, **kwargs):
      labels (e.g. '@foo//:bar') or from a label created in their repository (e.g.
      'str(Label("//:bar"))').
      """
@@ -66,4 +66,8 @@ index 795f0b00b98..98e71909a2d 100644
 +    # Don't check for mirrors, because for whatever reason some of the mirrors are broken.
  
      if native.existing_rule(name):
-         print("\n\033[1;33mWarning:\033[0m skipping import of repository '" +
+-        print("\n\033[1;33mWarning:\033[0m skipping import of repository '" +
+-              name + "' because it already exists.\n")
+         return
+ 
+     _tf_http_archive(
