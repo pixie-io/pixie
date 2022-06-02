@@ -16,6 +16,15 @@
 
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
+def pl_go_overrides():
+    go_repository(
+        name = "com_github_golang_mock",
+        importpath = "github.com/golang/mock",
+        replace = "github.com/golang/mock",
+        sum = "h1:jlYHihg//f7RRwuPfptm04yp4s7O6Kw8EZiVYIGcH0g=",
+        version = "v1.5.0",
+    )
+
 def pl_go_dependencies():
     go_repository(
         name = "co_honnef_go_tools",
@@ -270,8 +279,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_bazelbuild_rules_go",
         importpath = "github.com/bazelbuild/rules_go",
-        sum = "h1:U1fJbrwVyl0A5wAqWzSQoRutZHolAgKnURcoKRala+8=",
-        version = "v0.22.4",
+        sum = "h1:2DmbGvRnmGUTIn9upKuly/8Wg3/HNKesliVPWKnrtZU=",
+        version = "v0.32.0",
     )
     go_repository(
         name = "com_github_benbjohnson_clock",
@@ -1510,6 +1519,7 @@ def pl_go_dependencies():
         sum = "h1:jlYHihg//f7RRwuPfptm04yp4s7O6Kw8EZiVYIGcH0g=",
         version = "v1.5.0",
     )
+
     go_repository(
         name = "com_github_golang_protobuf",
         importpath = "github.com/golang/protobuf",

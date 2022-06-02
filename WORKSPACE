@@ -16,6 +16,10 @@ pl_deps()
 # - apple_rules_dependencies (must come after grpc_deps)
 # ...
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load("//:go_deps.bzl", "pl_go_overrides")
+
+# We need to override some of the go dependencies used by go_rules.
+pl_go_overrides()
 
 go_rules_dependencies()
 
