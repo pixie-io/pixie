@@ -163,8 +163,7 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   std::string err_msg;
 
   // This ensures system headers be installed correctly inside a container.
-  PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir,
-                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir, utils::FindOrInstallLinuxHeaders());
   LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
                                 sys_headers_dir.string());
 

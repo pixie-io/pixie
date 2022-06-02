@@ -590,8 +590,27 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   return Status::OK();
 }
 
-StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
-    const std::vector<LinuxHeaderStrategy>& attempt_order) {
+namespace {
+
+enum class LinuxHeaderStrategy {
+  // Search for linux Linux headers are already accessible (must be running directly on host).
+  kSearchLocalHeaders,
+
+  // Search for Linux headers under /host (must be running in our own container).
+  kLinkHostHeaders,
+
+  // Try to install packaged headers (only works if in a container image with packaged headers).
+  // Useful in case no Linux headers are found.
+  kInstallPackagedHeaders
+};
+
+const std::vector<LinuxHeaderStrategy> kDefaultHeaderSearchOrder = {
+    LinuxHeaderStrategy::kSearchLocalHeaders, LinuxHeaderStrategy::kLinkHostHeaders,
+    LinuxHeaderStrategy::kInstallPackagedHeaders};
+
+}  // namespace
+
+StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
 
@@ -602,21 +621,26 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
   // This does nothing if the directory already exists.
   PL_RETURN_IF_ERROR(fs::CreateDirectories(lib_modules_dir));
 
-  for (const auto& attempt : attempt_order) {
+  for (const auto& attempt : kDefaultHeaderSearchOrder) {
     // Some attempts require linking or installing headers. Do this first.
     switch (attempt) {
       case LinuxHeaderStrategy::kSearchLocalHeaders:
         // Nothing to link or install.
         break;
       case LinuxHeaderStrategy::kLinkHostHeaders: {
-        if (!LinkHostLinuxHeaders(lib_modules_dir).ok()) {
-          // This attempt has failed, but we can try the next strategy.
+        auto status = LinkHostLinuxHeaders(lib_modules_dir);
+        if (!status.ok()) {
+          LOG(WARNING) << absl::Substitute("Failed to link host's Linux headers to $0, error: $1",
+                                           lib_modules_dir.string(), status.ToString());
           continue;
         }
       } break;
       case LinuxHeaderStrategy::kInstallPackagedHeaders: {
-        if (!InstallPackagedLinuxHeaders(lib_modules_dir).ok()) {
-          // This attempt has failed, but we can try the next strategy.
+        auto status = InstallPackagedLinuxHeaders(lib_modules_dir);
+        if (!status.ok()) {
+          LOG(WARNING) << absl::Substitute(
+              "Failed to install packaged Linux headers to $0, error: $1", lib_modules_dir.string(),
+              status.ToString());
           continue;
         }
         break;
