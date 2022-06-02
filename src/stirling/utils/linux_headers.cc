@@ -290,8 +290,13 @@ StatusOr<std::filesystem::path> FindKernelConfig() {
   // Search for /lib/modules/<uname>/config
   std::string lib_modules_config = absl::StrCat("/lib/modules/", uname, "/config");
 
-  std::vector<std::string> search_paths = {"/proc/config", "/proc/config.gz", boot_kconfig,
-                                           lib_modules_config};
+  std::vector<std::string> search_paths = {
+      // The path used by `alpine-lima` in "Live CD" boot mechanism.
+      "/media/sr0/boot/config-virt",
+      // Used when CONFIG_IKCONFIG=y is set.
+      "/proc/config",
+      // Used when CONFIG_IKCONFIG_PROC=y is set.
+      "/proc/config.gz", boot_kconfig, lib_modules_config};
   for (const auto& path : search_paths) {
     std::filesystem::path config_path = path;
     std::filesystem::path host_path = sysconfig.ToHostPath(config_path);
