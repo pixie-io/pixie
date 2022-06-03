@@ -718,9 +718,9 @@ def generateTestTargets = {
     builders['Build & Test (clang:opt + UI)'] = buildAndTestOptWithUI
   }
 
-  enableForTargets('clang_tidy') {
-    builders['Clang-Tidy'] = buildClangTidy
-  }
+//  enableForTargets('clang_tidy') {
+//    builders['Clang-Tidy'] = buildClangTidy
+//  }
 
   enableForTargets('clang_dbg') {
     builders['Build & Test (dbg)'] = buildDbg
