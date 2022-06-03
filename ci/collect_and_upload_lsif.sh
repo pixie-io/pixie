@@ -84,19 +84,20 @@ LSIF_TS_OUT="ts.dump.lsif"
 lsif-tsc --out "${LSIF_TS_OUT}" -p src/ui
 upload_to_sourcegraph "${LSIF_TS_OUT}"
 
-LSIF_CPP_OUT="cpp.dump.lsif"
-mapfile -t < <(bazel query \
-  --noshow_progress \
-  --noshow_loading_progress \
-  'kind("cc_(library|binary|test|proto_library) rule",//... -//third_party/... -//experimental/...) except attr("tags", "manual", //...)')
-./scripts/gen_compilation_database.py \
-  --run_bazel_build \
-  --include_genfiles \
-  "${MAPFILE[@]}"
-lsif-clang \
-  --extra-arg="-resource-dir=$(clang -print-resource-dir)" \
-  --out="${LSIF_CPP_OUT}" \
-  compile_commands.json
-upload_to_sourcegraph "${LSIF_CPP_OUT}"
+# TODO(zasgar/vmehta): Fix this when generation of database and LSIF clang is fixed.
+# LSIF_CPP_OUT="cpp.dump.lsif"
+# mapfile -t < <(bazel query \
+#   --noshow_progress \
+#   --noshow_loading_progress \
+#   'kind("cc_(library|binary|test|proto_library) rule",//... -//third_party/... -//experimental/...) except attr("tags", "manual", //...)')
+# ./scripts/gen_compilation_database.py \
+#   --run_bazel_build \
+#   --include_genfiles \
+#   "${MAPFILE[@]}"
+# lsif-clang \
+#   --extra-arg="-resource-dir=$(clang -print-resource-dir)" \
+#   --out="${LSIF_CPP_OUT}" \
+#   compile_commands.json
+# upload_to_sourcegraph "${LSIF_CPP_OUT}"
 
 popd
