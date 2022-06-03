@@ -20,7 +20,7 @@ object Server {
       new File("/etc/ssl/server.key"),
     )
     val sslConfig = SslServerConfiguration(
-      keyCredentials,
+      keyCredentials=keyCredentials,
     )
     val addr = new InetSocketAddress(InetAddress.getLoopbackAddress, 8080)
     val testSvc = new TestService.MethodPerEndpoint {

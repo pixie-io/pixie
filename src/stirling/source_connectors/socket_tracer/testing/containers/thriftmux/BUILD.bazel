@@ -90,6 +90,7 @@ scala_library(
         "@maven//:com_twitter_finagle_thrift_2_13",
         "@maven//:com_twitter_finagle_thriftmux_2_13",
         "@maven//:com_twitter_scrooge_core_2_13",
+        "@maven//:com_twitter_scrooge_generator_2_13",
     ],
 )
 

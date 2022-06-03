@@ -138,11 +138,17 @@ load("//bazel:thrift.bzl", "thrift_deps")
 thrift_deps(scala_version = scala_version)
 
 # twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
-# These bind statements ensure that the correct versions of finagle libthrift are used
-# so that compilation is successful. See https://github.com/bazelbuild/rules_scala/issues/592
-# and https://github.com/bazelbuild/rules_scala/pull/847 for more details.
+# These bind statements ensure that the correct versions of finagle libthrift, scrooge core
+# and scrooge geneator  are used to ensure successful compilation.
+# See https://github.com/bazelbuild/rules_scala/issues/592 and
+# https://github.com/bazelbuild/rules_scala/pull/847 for more details.
 bind(
     name = "io_bazel_rules_scala/dependency/thrift/scrooge_core",
+    actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
+)
+
+bind(
+    name = "io_bazel_rules_scala/dependency/thrift/scrooge_generator",
     actual = "//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux:scrooge_jars",
 )
 
