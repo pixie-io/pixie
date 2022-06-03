@@ -47,7 +47,7 @@ using ::testing::UnorderedElementsAre;
 
 // Test is templated so it can use Go 1.16 or 1.17 versions of client/server.
 template <typename TClientServerContainers>
-class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   HTTP2TraceTest() {
     // Run the server.
@@ -137,7 +137,7 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
 //-----------------------------------------------------------------------------
 
 class ProductCatalogServiceTraceTest
-    : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   ProductCatalogServiceTraceTest() {
     // Run the server.

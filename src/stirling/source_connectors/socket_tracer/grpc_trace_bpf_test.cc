@@ -107,7 +107,7 @@ struct TestParams {
   bool use_https;
 };
 
-class GRPCTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
+class GRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>,
                       public ::testing::WithParamInterface<TestParams> {
  protected:
   GRPCTraceTest() {}

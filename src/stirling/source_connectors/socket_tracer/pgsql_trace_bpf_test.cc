@@ -46,7 +46,8 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
+class PostgreSQLTraceTest
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceTest() {
     PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=POSTGRES_PASSWORD=docker"}));

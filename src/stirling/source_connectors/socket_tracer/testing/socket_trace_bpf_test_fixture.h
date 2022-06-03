@@ -35,7 +35,7 @@ namespace stirling {
 namespace testing {
 
 template <bool TEnableClientSideTracing = false>
-class SocketTraceBPFTest : public ::testing::Test {
+class SocketTraceBPFTestFixture : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_disable_self_tracing = false;

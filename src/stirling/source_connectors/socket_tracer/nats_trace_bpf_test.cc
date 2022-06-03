@@ -34,7 +34,7 @@ using ::testing::UnorderedElementsAre;
 // Automatically converts ToString() to stream operator for gtest.
 using ::px::operator<<;
 
-class NATSTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
+class NATSTraceBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>,
                          public ::testing::WithParamInterface<bool> {
  protected:
   NATSTraceBPFTest() {

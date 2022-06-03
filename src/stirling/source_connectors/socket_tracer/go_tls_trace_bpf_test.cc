@@ -45,7 +45,7 @@ using ::testing::UnorderedElementsAre;
 //-----------------------------------------------------------------------------
 
 template <typename TClientServerContainers>
-class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   GoTLSTraceTest() {
     // Run the server.

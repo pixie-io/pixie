@@ -29,7 +29,7 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 
 using ::testing::ContainsRegex;
 using ::testing::HasSubstr;
@@ -37,17 +37,17 @@ using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
+class GoHTTPTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  GoHTTPTraceTest() : SocketTraceBPFTest() {}
+  GoHTTPTraceTest() : SocketTraceBPFTestFixture() {}
 
   void SetUp() override {
-    SocketTraceBPFTest::SetUp();
+    SocketTraceBPFTestFixture::SetUp();
     go_http_fixture_.LaunchServer();
   }
 
   void TearDown() override {
-    SocketTraceBPFTest::TearDown();
+    SocketTraceBPFTestFixture::TearDown();
     go_http_fixture_.ShutDown();
   }
 

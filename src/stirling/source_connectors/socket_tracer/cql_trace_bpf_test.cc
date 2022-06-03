@@ -38,7 +38,7 @@ namespace stirling {
 namespace cass = protocols::cass;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::types::ColumnWrapper;
 using ::px::types::ColumnWrapperRecordBatch;
 
@@ -51,7 +51,7 @@ using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
 // CQLTraceTest runs with both server and client-side tracing enabled.
-class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
+class CQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   CQLTraceTest() {
     // Run the cassandra server.

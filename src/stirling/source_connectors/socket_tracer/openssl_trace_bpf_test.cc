@@ -41,7 +41,7 @@ namespace http = protocols::http;
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::StrEq;
@@ -78,7 +78,7 @@ struct TraceRecords {
 };
 
 template <typename TServerContainer, bool TForceFptrs>
-class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
+class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   BaseOpenSSLTraceTest() {
     // Run the nginx HTTPS server.
@@ -94,7 +94,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ 
   void SetUp() override {
     FLAGS_openssl_force_raw_fptrs = force_fptr_;
 
-    SocketTraceBPFTest::SetUp();
+    SocketTraceBPFTestFixture::SetUp();
   }
 
   // Returns the trace records of the process specified by the input pid.
