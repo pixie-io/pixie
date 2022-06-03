@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
 
 #include "src/stirling/utils/index_sorted_vector.h"
