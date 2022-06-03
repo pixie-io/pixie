@@ -17,8 +17,7 @@ object Client {
       new File("/etc/ssl/client.key"),
     )
     val sslConfig = SslClientConfiguration(
-      None,
-      keyCredentials,
+      keyCredentials=keyCredentials,
     )
     var stackClient = if (useTls) {
       ThriftMux.client
