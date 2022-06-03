@@ -130,6 +130,7 @@ def _cc_deps():
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_github_google_re2")
     _bazel_repo("com_google_boringssl")
+    _bazel_repo("com_intel_tbb")
 
     # Remove the pull and push directory since they depends on civet and we don't
     # want to pull in the dependency for now.
@@ -156,7 +157,6 @@ def _cc_deps():
     _bazel_repo("com_github_pgcodekeeper_pgcodekeeper", build_file = "//bazel/external:pgsql_grammar.BUILD", patches = ["//bazel/external:pgsql_grammar.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_simdutf_simdutf", build_file = "//bazel/external:simdutf.BUILD")
     _bazel_repo("com_github_USCiLab_cereal", build_file = "//bazel/external:cereal.BUILD")
-    _bazel_repo("com_intel_tbb", build_file = "//bazel/external:tbb.BUILD")
     _bazel_repo("com_google_farmhash", build_file = "//bazel/external:farmhash.BUILD")
     _bazel_repo("com_github_h2o_picohttpparser", build_file = "//bazel/external:picohttpparser.BUILD")
     _bazel_repo("com_github_opentelemetry_proto", build_file = "//bazel/external:opentelemetry.BUILD")
