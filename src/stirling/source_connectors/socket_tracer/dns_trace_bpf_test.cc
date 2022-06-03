@@ -33,12 +33,12 @@ namespace stirling {
 
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::RecordBatchSizeIs;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 
 using ::testing::Each;
 using ::testing::MatchesRegex;
 
-class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
+class DNSTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   DNSTraceTest() {
     // Run the bind DNS server.

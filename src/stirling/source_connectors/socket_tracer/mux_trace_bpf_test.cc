@@ -43,7 +43,7 @@ namespace mux = protocols::mux;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::testing::AllOf;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
@@ -67,7 +67,7 @@ bool Init() {
 
 bool kInit = Init();
 
-class MuxTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
+class MuxTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   MuxTraceTest() {
     // The container runner will make sure it is in the ready state before unblocking.

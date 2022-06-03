@@ -47,7 +47,7 @@ constexpr int kSSLIdx = conn_stats_idx::kSSL;
 
 // Turn off client-side tracing. Unlike data tracing, conn-stats should still trace client-side even
 // with the client-side tracing turned off.
-class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class ConnStatsBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  public:
   ConnStatsBPFTest() { FLAGS_stirling_conn_stats_sampling_ratio = 1; }
 };
@@ -204,7 +204,8 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
 }
 
 // Test fixture that starts SocketTraceConnector after the connection was already established.
-class ConnStatsMidConnBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class ConnStatsMidConnBPFTest
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   ConnStatsMidConnBPFTest() { FLAGS_stirling_conn_stats_sampling_ratio = 1; }
 
@@ -218,7 +219,7 @@ class ConnStatsMidConnBPFTest : public testing::SocketTraceBPFTest</* TClientSid
     server_ = server_listener_.Accept();
 
     // Now SocketTraceConnector is created after the connection was already established.
-    SocketTraceBPFTest::SetUp();
+    SocketTraceBPFTestFixture::SetUp();
   }
 
   void TearDown() override {
@@ -227,7 +228,7 @@ class ConnStatsMidConnBPFTest : public testing::SocketTraceBPFTest</* TClientSid
     if (server_ != nullptr) {
       server_->Close();
     }
-    SocketTraceBPFTest::TearDown();
+    SocketTraceBPFTestFixture::TearDown();
   }
 
   TCPSocket server_listener_;

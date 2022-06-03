@@ -96,7 +96,8 @@ struct SocketTraceBPFTestParams {
   uint64_t trace_role;
 };
 
-class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
+class SocketTraceBPFTest
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   StatusOr<const ConnTracker*> GetConnTracker(int pid, int fd) {
     PL_ASSIGN_OR_RETURN(const ConnTracker* tracker, source_->GetConnTracker(pid, fd));
@@ -599,7 +600,7 @@ TEST_F(SocketTraceBPFTest, SendFile) {
   EXPECT_EQ(client_body, kHTTPRespMsgContent);
 }
 
-using NullRemoteAddrTest = testing::SocketTraceBPFTest</* TClientSideTracing */ false>;
+using NullRemoteAddrTest = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>;
 
 // Tests that accept4() with a NULL sock_addr result argument.
 TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
@@ -882,7 +883,7 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 }
 
 class SocketTraceServerSideBPFTest
-    : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
+    : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {};
 
 // Tests stats for a disabled ConnTracker.
 // Now that ConnStats is tracked independently, these stats are expected to stop

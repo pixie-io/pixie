@@ -32,7 +32,7 @@
 namespace px {
 namespace stirling {
 
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::TestFilePath;
 
@@ -40,7 +40,7 @@ using ::testing::Contains;
 using ::testing::Key;
 using ::testing::Not;
 
-class BPFMapLeakTest : public SocketTraceBPFTest<>,
+class BPFMapLeakTest : public testing::SocketTraceBPFTestFixture<>,
                        public ::testing::WithParamInterface<std::string_view> {};
 
 TEST_P(BPFMapLeakTest, UnclosedConnection) {

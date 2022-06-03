@@ -43,7 +43,7 @@ namespace stirling {
 namespace mysql = protocols::mysql;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::testing::TestFilePath;
 using ::px::types::ColumnWrapper;
 using ::px::types::ColumnWrapperRecordBatch;
@@ -60,7 +60,7 @@ using ::testing::UnorderedElementsAreArray;
 
 DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. For tracing.");
 
-class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
+class MySQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   MySQLTraceTest() {
     std::string script_path = TestFilePath(

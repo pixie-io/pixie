@@ -46,7 +46,7 @@ struct RedisTraceTestCase {
   std::string exp_resp;
 };
 
-class RedisTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
+class RedisTraceBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>,
                           public ::testing::WithParamInterface<RedisTraceTestCase> {
  protected:
   RedisTraceBPFTest() { PL_CHECK_OK(container_.Run(std::chrono::seconds{150})); }

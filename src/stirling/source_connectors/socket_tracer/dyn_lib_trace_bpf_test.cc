@@ -43,12 +43,12 @@ using ::px::operator<<;
 
 using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::GetTargetRecords;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::UnorderedElementsAre;
 
-using DynLibTraceTest = SocketTraceBPFTest</* TClientSideTracing */ true>;
+using DynLibTraceTest = SocketTraceBPFTestFixture</* TClientSideTracing */ true>;
 
 //-----------------------------------------------------------------------------
 // Test Scenarios

@@ -38,7 +38,7 @@ namespace stirling {
 namespace kafka = protocols::kafka;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::testing::BazelBinTestFilePath;
 using ::px::testing::TestFilePath;
 using ::testing::AllOf;
@@ -49,7 +49,7 @@ using ::testing::HasSubstr;
 using ::testing::StrEq;
 using ::px::operator<<;
 
-class KafkaTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
+class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   KafkaTraceTest() {
     // Run Zookeeper.
