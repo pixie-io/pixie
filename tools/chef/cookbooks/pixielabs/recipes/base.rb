@@ -250,3 +250,9 @@ end
 file '/tmp/lego.tar.gz' do
   action :delete
 end
+
+remote_file '/opt/pixielabs/bin/codecov' do
+  source node['codecov']['download_path']
+  mode 0755
+  checksum node['codecov']['sha256']
+end

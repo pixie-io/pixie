@@ -20,10 +20,7 @@
 export CC=gcc
 export CXX=g++
 
-# We can consider adding this file to our repo if needed.
-CODECOV_VERSION="20210312-2b87ace"
-CODECOV_SCRIPT="https://raw.githubusercontent.com/codecov/codecov-bash/${CODECOV_VERSION}/codecov"
-
+GIT_REPO=""
 GIT_COMMIT=""
 GIT_BRANCH=""
 CODECOV_TOKEN=""
@@ -37,8 +34,8 @@ UI_OUTPUT=bazel-testlogs/src/ui/ui-tests/coverage.dat
 
 # Print out the usage information and exit.
 usage() {
-  echo "Usage $0 [-u] [-g] [-t <codecov_token>] [-c <git_commit>] [-b <git_branch>] [-o <output_dir>]" 1>&2;
-  echo "   -u    Upload to CodeCov. Requires -t, -c, -b"
+  echo "Usage $0 [-u] [-g] [-t <codecov_token>] [-c <git_commit>] [-b <git_branch>] [-o <output_dir>] [-r <git_repo>]" 1>&2;
+  echo "   -u    Upload to CodeCov. Requires -t, -c, -b, -r"
   echo "   -g    Generate LCOV html. Requires -o"
   exit 1;
 }
@@ -47,6 +44,7 @@ usage() {
 print_config() {
   echo "Config: "
   echo "  Upload to CodeCov: ${UPLOAD_TO_CODECOV}"
+  echo "  GIT_REPO         : ${GIT_REPO}"
   echo "  GIT_COMMIT       : ${GIT_COMMIT}"
   echo "  GIT_BRANCH       : ${GIT_BRANCH}"
   echo "  CODECOV_TOKEN    : ${CODECOV_TOKEN}"
@@ -56,6 +54,10 @@ print_config() {
 
 check_config() {
   if [ "${UPLOAD_TO_CODECOV}" = true ]; then
+    if [ "${GIT_REPO}" = "" ]; then
+      echo "Option -r to specify git commit is required wih -u"
+      exit 1
+    fi
     if [ "${GIT_COMMIT}" = "" ]; then
       echo "Option -c to specify git commit is required wih -u"
       exit 1
@@ -81,7 +83,7 @@ check_config() {
 parse_args() {
   local OPTIND
   # Process the command line arguments.
-  while getopts "guc:b:t:o:h" opt; do
+  while getopts "guc:b:t:o:r:h" opt; do
     case ${opt} in
       g)
         GENERATE_HTML=true
@@ -100,6 +102,9 @@ parse_args() {
         ;;
       o)
         HTML_OUTPUT_DIR=$OPTARG
+        ;;
+      r)
+        GIT_REPO=$OPTARG
         ;;
       :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
@@ -125,7 +130,7 @@ generate_html() {
 }
 
 upload_to_codecov() {
-  bash <(curl -s ${CODECOV_SCRIPT}) -t "${CODECOV_TOKEN}" -B "${GIT_BRANCH}" -C "${GIT_COMMIT}" -f '!./third_party/*' -f '!./src/ui/offline_package_cache/*'
+  codecov -t "${CODECOV_TOKEN}" -B "${GIT_BRANCH}" -C "${GIT_COMMIT}" -r "${GIT_REPO}" -f "${CC_COVERAGE_FILE}"  -f "${GO_COVERAGE_FILE}"  -f "${UI_OUTPUT}"
 }
 
 # We use globs, make sure they are supported.
