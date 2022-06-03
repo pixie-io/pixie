@@ -61,6 +61,7 @@ default['golangci-lint']             = {}
 default['helm']                      = {}
 default['opm']                       = {}
 default['lego']                      = {}
+default['codecov']                   = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -160,6 +161,11 @@ if node[:platform] == 'ubuntu'
     'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_linux_amd64.tar.gz'
   default['lego']['sha256']        =
     'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
+
+  default['codecov']['download_path'] =
+    'https://uploader.codecov.io/v0.2.3/linux/codecov'
+  default['codecov']['sha256'] =
+    '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
@@ -256,4 +262,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_darwin_amd64.tar.gz'
   default['lego']['sha256']        =
     'eaf2792d9731c911da671a6145eebd5ba136c20446adb542e7b1463ffe868388'
+
+  default['codecov']['download_path'] =
+    'https://uploader.codecov.io/v0.2.3/macos/codecov'
+  default['codecov']['sha256'] =
+    '8d3709d957c7115610e764621569728be102d213fee15bc1d1aa9d465eb2c258'
 end

@@ -783,8 +783,10 @@ preBuild['Process Dependencies'] = {
 
 if (isMainRun || isOSSMainRun) {
   def codecovToken = 'pixie-codecov-token'
+  def slug = 'pixie-labs/pixielabs'
   if (isOSSMainRun) {
     codecovToken = 'pixie-oss-codecov-token'
+    slug = 'pixie-io/pixie'
   }
   // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
@@ -797,7 +799,7 @@ if (isMainRun || isOSSMainRun) {
               variable: 'CODECOV_TOKEN'
             )
           ]) {
-            sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+            sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT` -r " + slug
           }
         }
         createBazelStash('build-gcc-coverage-testlogs')
