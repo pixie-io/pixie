@@ -37,7 +37,19 @@ if (isDevServer) {
 
 const plugins = [
   new CaseSensitivePathsPlugin(),
-  new FaviconsWebpackPlugin('../assets/favicon-base.png'),
+  new FaviconsWebpackPlugin({
+    logo: '../assets/favicon-base.png',
+    favicons: {
+      icons: {
+        android: false,
+        appleIcon: false,
+        appleStartup: false,
+        favicons: true,
+        windows: false,
+        yandex: false
+      }
+    }
+  }),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
     chunks: ['config', 'manifest', 'commons', 'vendor', 'main'],
