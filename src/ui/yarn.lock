@@ -17121,9 +17121,9 @@ resolve@^2.0.0-next.3:
   linkType: hard
 
 "semver-regex@npm:^4.0.0":
-  version: 4.0.2
-  resolution: "semver-regex@npm:4.0.2"
-  checksum: 882432640f0b1bbfe5e20bf3e7a8fb4540b5a2f7f451b0b44d71834a4bb7982616344e5f8cbc08240c4870ff2ac9bb658312e2649dd53b908d047400f462aeef
+  version: 4.0.3
+  resolution: "semver-regex@npm:4.0.3"
+  checksum: 9c4f2557b0fd8c6bf7f8a199537826d07c68d388449675c11ba8889b9f03ff7b5a837c03af40bd631ccab714411f4bb0b04eaa4824d9bce9797836763e1b77e3
   languageName: node
   linkType: hard
 
