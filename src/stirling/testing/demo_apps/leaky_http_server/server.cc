@@ -59,6 +59,9 @@ void* RunServer(void*) {
 
   while (1) {
     conn = socket.Accept();
+
+    LOG(INFO) << "Accepted connection on fd=" << conn->sockfd();
+
     conn->Write(response);
 
     // NOTE: This missing close is intentional. It's what makes potentially causes a leak in BPF
