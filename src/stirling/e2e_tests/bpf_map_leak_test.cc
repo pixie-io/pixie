@@ -57,28 +57,38 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   ASSERT_TRUE(fs::Exists(server_path));
 
   SubProcess server;
-  ASSERT_OK(server.Start({server_path}));
-
-  uint64_t pid = server.child_pid();
-  int32_t fd = 4;
-  uint64_t server_bpf_map_key = (pid << 32) | fd;
-  LOG(INFO) << absl::StrFormat("Server: pid=%d fd=%d key=%x", pid, fd, server_bpf_map_key);
+  ASSERT_OK(server.Start({server_path}, /* stderr_to_stdout */ true));
 
   // Sleep a bit, just to make sure server is ready.
-  sleep(1);
+  usleep(100000);
 
   // Now connect to the server.
   SubProcess client;
   ASSERT_OK(client.Start({"curl", "-s", "localhost:8080"}));
 
   // Sleep a little, to make sure connection is made.
-  sleep(1);
+  usleep(100000);
+
+  // Get the FD of the connection from the server's logs.
+  std::string server_stdout;
+  ASSERT_OK(server.Stdout(&server_stdout));
+  std::regex regex(".*Accepted connection on fd=(\\d+).*");
+  std::smatch match;
+  ASSERT_TRUE(std::regex_search(server_stdout, match, regex));
+  std::string fd_str = match[1];
+  int32_t fd;
+  ASSERT_TRUE(absl::SimpleAtoi(fd_str, &fd));
+
+  // Now we know the bpf map key that should leak.
+  uint64_t pid = server.child_pid();
+  uint64_t server_bpf_map_key = (pid << 32) | fd;
+  LOG(INFO) << absl::StrFormat("Server: pid=%d fd=%d key=%x", pid, fd, server_bpf_map_key);
 
   // Now kill the server, which should cause a BPF map entry to leak.
   LOG(INFO) << "Killing server";
   server.Signal(SIGINT);
 
-  sleep(1);
+  usleep(100000);
 
   // At this point, server should have been traced.
   // And because it was killed, it should have leaked a BPF map entry.
