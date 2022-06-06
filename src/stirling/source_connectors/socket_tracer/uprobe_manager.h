@@ -292,6 +292,8 @@ class UProbeManager {
           },
       });
 
+  // In nodejs 15.0.0, openssl-related code is moved from ::node namespace to ::node::crypto
+  // namespace. So the symbol for attaching has been changed from the above version.
   inline static const std::array<UProbeTmpl, 6> kNodeOpenSSLUProbeTmplsV15_0_0 =
       MakeArray<UProbeTmpl>({
           UProbeTmpl{
