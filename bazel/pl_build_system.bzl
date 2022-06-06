@@ -27,6 +27,7 @@ def pl_copts():
         "-Wextra",
         "-Wimplicit-fallthrough",
         "-Wfloat-conversion",
+        "-Wno-deprecated-declarations",
     ]
 
     # Since abseil's BUILD.bazel doesn't provide any system 'includes', add them in manually here.
@@ -67,6 +68,14 @@ def pl_test_linkopts():
 
 def pl_common_linkopts():
     return select({
+        "//bazel:gcc_build": [
+            "-pthread",
+            "-llzma",
+            "-lrt",
+            "-ldl",
+            "-Wl,--hash-style=gnu",
+            "-lunwind",
+        ],
         # The OSX system library transitively links common libraries (e.g., pthread).
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [

@@ -32,8 +32,8 @@ apt_pkg_list = [
   'php-curl',
   'php-xml',
   'python3-pip',
-  'python3.8',
-  'python3.8-dev',
+  'python3.10',
+  'python3.10-dev',
   'systemd',
   'unzip',
   'virtualenvwrapper',
@@ -68,16 +68,17 @@ execute 'enable docker' do
   action :run
 end
 
-apt_repository 'ubuntu-toolchain-ppa' do
-  uri         'ppa:ubuntu-toolchain-r/ppa'
-  distribution 'focal'
-end
+# Enable this if you want to access newer ubuntu toolchains.
+# apt_repository 'ubuntu-toolchain-ppa' do
+#   uri         'ppa:ubuntu-toolchain-r/ppa'
+#   distribution 'focal'
+# end
 
 apt_update 'update packages' do
   action :update
 end
 
-apt_package ['gcc-10','g++-10'] do
+apt_package ['gcc-11','g++-11'] do
   action :upgrade
 end
 

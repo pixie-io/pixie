@@ -31,12 +31,14 @@ cmake(
         "-l`nproc`",
     ],
     cache_entries = {
+        "BUILD_FUZZ": "OFF",
         "BUILD_TESTING": "OFF",
 
         # Disable the use of certain libraries, even if found on the system.
         # This effectively disables certain features, but we don't currently rely on those features,
         # so we want to keep things slimmer.
         "ENABLE_BFD_DISASM": "OFF",
+        "ENABLE_BPFTRACE_EXE": "OFF",
         "ENABLE_LIBDW": "OFF",
         "ENABLE_MAN": "OFF",
 

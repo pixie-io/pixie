@@ -33,7 +33,9 @@ std::string DedentBlock(const std::string& in) {
     s.erase(0, 1);
   }
   // Strip any trailing spaces.
-  s.erase(std::find_if(s.rbegin(), s.rend(), std::bind1st(std::not_equal_to<char>(), ' ')).base(),
+  s.erase(std::find_if(s.rbegin(), s.rend(),
+                       std::bind(std::not_equal_to<char>(), std::placeholders::_1, ' '))
+              .base(),
           s.end());
 
   return s;

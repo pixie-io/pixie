@@ -30,6 +30,11 @@ cmake(
         "-j`nproc`",
         "-l`nproc`",
     ],
+    cache_entries = {
+        "ENABLE_EXAMPLES": "OFF",
+        "ENABLE_MAN": "OFF",
+        "ENABLE_TESTS": "OFF",
+    },
     includes = [
         "bcc/compat",
     ],

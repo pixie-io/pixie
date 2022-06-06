@@ -225,8 +225,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/sentencepiece/archive/refs/tags/v0.1.95.tar.gz"],
     ),
     rules_python = dict(
-        urls = ["https://github.com/bazelbuild/rules_python/releases/download/0.2.0/rules_python-0.2.0.tar.gz"],
-        sha256 = "778197e26c5fbeb07ac2a2c5ae405b30f6cb7ad1f5510ea6fdac03bded96cc6f",
+        sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd",
+        strip_prefix = "rules_python-0.8.1",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.1.tar.gz"],
     ),
     com_github_cmcqueen_aes_min = dict(
         sha256 = "dd82d23976695d857924780c262952cdb12ddbb56e6bdaf5a2270dccc851d279",
@@ -320,12 +321,12 @@ REPOSITORY_LOCATIONS = dict(
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
-        commit = "dcd034a8c0a7335dbebe7f78be07eba1e3f605cd",
+        commit = "e8c1d8fa8d91c7ec834cecb9b6594a27c8c9ffc7",
         shallow_since = "1654019969 -0700",
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
-        commit = "fde4969a64a048e3551a596e199cedab6d7a8243",
+        commit = "d0543e61a1cd3bef770da3a2d71ef206964e4b49",
         shallow_since = "1654107281 -0700",
     ),
     com_github_apangin_jattach = dict(
