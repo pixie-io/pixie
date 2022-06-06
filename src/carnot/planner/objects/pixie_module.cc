@@ -599,6 +599,7 @@ Status PixieModule::Init() {
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
 
+  PL_RETURN_IF_ERROR(export_fn->SetDocString(kExportOpDocstring));
   AddMethod(kExportOpID, export_fn);
 
   PL_ASSIGN_OR_RETURN(
