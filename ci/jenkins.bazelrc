@@ -1,5 +1,4 @@
 common --color=yes
-common --announce_rc
 
 # Keep the build going even with failures.
 # This makes it easier to find multiple issues in
