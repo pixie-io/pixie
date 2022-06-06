@@ -18,7 +18,8 @@
 DOCKER := docker
 
 ## Clang deb parameters
-CLANG_DEB_IMAGE_VERSION := 13.0-pl2
+CLANG_DEB_IMAGE_VERSION := 14.0-pl1
+
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
 clang_deb_gs_path :=  gs://pixie-dev-public/$(clang_deb_fname)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"

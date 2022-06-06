@@ -122,9 +122,21 @@ tf_workspace0()
 
 pl_model_files()
 
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+
+python_register_toolchains(
+    name = "python3_10",
+    # Available versions are listed in @rules_python//python:versions.bzl.
+    # We recommend using the same version your team is already standardized on.
+    python_version = "3.10",
+)
+
+load("@python3_10//:defs.bzl", "interpreter")
+
 # Setup the environment for the open-source python API.
 pip_parse(
     name = "vizier_api_python_deps",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/api/python:requirements.txt",
 )
 

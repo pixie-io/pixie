@@ -253,9 +253,9 @@ const absl::flat_hash_map<std::string_view, ir::shared::ScalarType> kCPPTypesMap
         {"unsigned short",         ir::shared::ScalarType::USHORT},
         {"int",                    ir::shared::ScalarType::INT},
         {"unsigned int",           ir::shared::ScalarType::UINT},
-        {"long int",               ir::shared::ScalarType::LONG},
+        {"long",               ir::shared::ScalarType::LONG},
         {"long unsigned int",      ir::shared::ScalarType::ULONG},
-        {"long long int",          ir::shared::ScalarType::LONGLONG},
+        {"long long",          ir::shared::ScalarType::LONGLONG},
         {"long long unsigned int", ir::shared::ScalarType::ULONGLONG},
 
         {"char",                   ir::shared::ScalarType::CHAR},

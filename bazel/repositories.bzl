@@ -106,19 +106,21 @@ def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
         build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-13.0",
+        path = "/opt/clang-14.0",
     )
 
     native.new_local_repository(
         name = "com_llvm_lib_libcpp",
         build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-13.0-libc++",
+        path = "/opt/clang-14.0-libc++",
     )
 
 def _cc_deps():
     # Dependencies with native bazel build files.
-    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf.patch", "//bazel/external:protobuf_gogo_hack.patch", "//bazel/external:protobuf_text_format.patch"], patch_args = ["-p1"])
-    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_mirror.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch"], patch_args = ["-p1"])
+
+    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf.patch", "//bazel/external:protobuf_gogo_hack.patch", "//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch", "//bazel/external:grpc_warnings.patch"], patch_args = ["-p1"])
+
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
     _bazel_repo("com_github_gflags_gflags")

@@ -46,4 +46,6 @@ go_library(
 go_binary(
     name = "plandebugger",
     embed = [":plandebugger_lib"],
+    # This test has issues with GCC and libunwind.
+    tags = ["no_gcc"],
 )

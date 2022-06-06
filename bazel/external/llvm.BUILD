@@ -44,10 +44,7 @@ cc_library(
         "lib/libLLVMCoroutines.a",
         "lib/libLLVMCoverage.a",
         "lib/libLLVMLTO.a",
-        "lib/libLLVMX86CodeGen.a",
         "lib/libLLVMCFGuard.a",
-        "lib/libLLVMX86Desc.a",
-        "lib/libLLVMX86Info.a",
         "lib/libLLVMMCDisassembler.a",
         "lib/libLLVMBitstreamReader.a",
         "lib/libclangASTMatchers.a",
@@ -75,7 +72,6 @@ cc_library(
         "lib/libLLVMBPFDesc.a",
         "lib/libLLVMBPFInfo.a",
         "lib/libLLVMAsmPrinter.a",
-        "lib/libLLVMX86AsmParser.a",
         "lib/libLLVMDebugInfoCodeView.a",
         "lib/libLLVMDebugInfoMSF.a",
         "lib/libLLVMCodeGen.a",
@@ -96,10 +92,25 @@ cc_library(
         "lib/libLLVMFrontendOpenMP.a",
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
-        "lib/libLLVMX86Disassembler.a",
         "lib/libLLVMJITLink.a",
         "lib/libLLVMOrcTargetProcess.a",
         "lib/libLLVMOrcShared.a",
+
+        # AArch64 libs.
+        "lib/libLLVMAArch64AsmParser.a",
+        "lib/libLLVMAArch64CodeGen.a",
+        "lib/libLLVMAArch64Desc.a",
+        "lib/libLLVMAArch64Disassembler.a",
+        "lib/libLLVMAArch64Info.a",
+        "lib/libLLVMAArch64Utils.a",
+
+        # x86_64 libs.
+        "lib/libLLVMX86AsmParser.a",
+        "lib/libLLVMX86CodeGen.a",
+        "lib/libLLVMX86Desc.a",
+        "lib/libLLVMX86Disassembler.a",
+        "lib/libLLVMX86Info.a",
+
         # WARNING HACK: This adds a stub so that we don't have to include all of
         # clang-tidy with the LLVM build. We don't need to use clang-tidy since we don't
         # do any auto cleanup/formatting during our compile process. If this ever changes,
