@@ -75,9 +75,6 @@ constexpr std::string_view kHTTPRespMsg2 =
     "Content-Length: 0\r\n"
     "\r\n";
 
-// This test requires docker container with --pid=host so that the container's PID and the
-// host machine are identical.
-
 // TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
 // use scatter buffer. One approach would be to concatenate inner vector to a single string, and
 // then feed to the syscall. Another caution is that value-parameterized tests actually discourage
