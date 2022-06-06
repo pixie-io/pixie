@@ -51,17 +51,18 @@ class OTelModule : public QLObject {
   (ie `px.otel.metric.Gauge`) and a resource config where `service.name` is
   one of the attributes.
 
-  Optionally, users can specify an endpoint using `px.otel.Endpoint`
+  Optionally, users can specify an endpoint using `px.otel.Endpoint`.
 
   :topic: otel
 
   Args:
-    data (px.otel.Data): The configuration for the data, describing how the
+    data (List[px.otel.Data]): The list of OTel configurations for the data, describing how the
       data is created in the DataFrame and what kind of metric to populate in OTel.
     resource (Dict[string, Column]): A description of the resource that creates
       this data. Must include 'service.name' but can also include other data as well.
-    endpoint (px.otel.Endpoint, optional): The endpoint configuration value. If left out,
-      must be set in the OTel plugin settings.
+    endpoint (px.otel.Endpoint, optional): The endpoint configuration value. The endpoint
+      can be omitted if this script is run in the OTel plugin context where an endpoint
+      is configured.
   Returns:
     Exporter: the description of how to map a DataFrame to OpenTelemetry Data. Can be passed
       into `px.export`.
@@ -72,8 +73,7 @@ class OTelModule : public QLObject {
   The Collector destination for exported OpenTelemetry data.
 
   Describes the endpoint and any connection arguments necessary to talk to
-  an OpenTelemetry collector. Passed as an argument to the different OTel data
-  type configurations in PxL.
+  an OpenTelemetry collector. Passed as an argument to `px.otel.Data`.
 
   :topic: otel
 
@@ -104,10 +104,8 @@ class OTelMetrics : public QLObject {
   Defines the DataFrame mapping to an OpenTelemetry Metric Gauge
 
   [Gauges](https://opentelemetry.io/docs/reference/specification/metrics/datamodel/#gauge)
-  specify the "current value" of a metric at a given time. PxL writers must specify the name
-  foll
-  Gauge describes how to transform a pixie DataFrame into the OpenTelemetry
-  Metric Gauge type.
+  specify the "current value" of a metric at a given time. The source DataFrame must
+  have a `time_` column of type `TIME64NS` or the compiler will throw an error.
 
   :topic: otel
 
@@ -128,7 +126,10 @@ class OTelMetrics : public QLObject {
   inline static constexpr char kSummaryOpDocstring[] = R"doc(
   Defines the DataFrame mapping to an OpenTelemetry Metric Summary
 
-  Summaries describe quantile summaries of distributions, such as p90 and p99.
+  Summaries describe distributions by recording quantile values (aka percentile values) such as p50, p90 and p99.
+  User specify as many of these point values as they like, labeling them with the float equivalent position in the
+  distribution. Ie p50 would be labeled `0.5`, p99 as `0.99`. The source DataFrame must have
+  a `time_` column of type `TIME64NS` or the compiler will throw an error.
   The unit of this metric will be inferred from the [SemanticType](https://github.com/pixie-io/pixie/blob/main/src/api/proto/vizierpb/vizierapi.proto#L51)
   of the column `value`.
 
