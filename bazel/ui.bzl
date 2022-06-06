@@ -75,7 +75,7 @@ def _pl_webpack_library_impl(ctx):
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
         "[ ! -d src/configurables/private ] || mv ${BASE_PATH}/" + ctx.file.licenses.path + " src/configurables/private/licenses.json",
-        "yarn build_prod",
+        "output=`yarn build_prod 2>&1` || echo ${output}",
         "cp dist/bundle.tar.gz ${BASE_PATH}/${OUTPUT_PATH}",
     ] + ui_shared_cmds_finish
 
