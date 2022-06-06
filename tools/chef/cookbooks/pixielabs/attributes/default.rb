@@ -135,9 +135,9 @@ if node[:platform] == 'ubuntu'
     '82eb998370b05d2d9c05664f7270599ddcef676c1d211274a5e04ffddf6ac024'
 
   default['golangci-lint']['download_path'] =
-    'https://github.com/golangci/golangci-lint/releases/download/v1.39.0/golangci-lint-1.39.0-linux-amd64.tar.gz'
+    'https://github.com/golangci/golangci-lint/releases/download/v1.46.2/golangci-lint-1.46.2-linux-amd64.tar.gz'
   default['golangci-lint']['sha256']        =
-    '3a73aa7468087caa62673c8adea99b4e4dff846dc72707222db85f8679b40cbf'
+    '242cd4f2d6ac0556e315192e8555784d13da5d1874e51304711570769c4f2b9b'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
   default['helm']['sha256']        = '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
@@ -236,9 +236,9 @@ elsif node[:platform] == 'mac_os_x'
     'a8ad2b7169763978a63605ac854473998729ba7c497dd39bed01b57a294bd32a'
 
   default['golangci-lint']['download_path'] =
-    'https://github.com/golangci/golangci-lint/releases/download/v1.39.0/golangci-lint-1.39.0-darwin-amd64.tar.gz'
+    'https://github.com/golangci/golangci-lint/releases/download/v1.46.2/golangci-lint-1.46.2-darwin-amd64.tar.gz'
   default['golangci-lint']['sha256']        =
-    '7e9a47ab540aa3e8472fbf8120d28bed3b9d9cf625b955818e8bc69628d7187c'
+    '658078aaaf7608693f37c4cf1380b2af418ab8b2d23fdb33e7e2d4339328590e'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
   default['helm']['sha256']        = '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'
