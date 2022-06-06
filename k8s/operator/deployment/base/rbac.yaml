@@ -52,7 +52,6 @@ rules:
   - jobs
   - natsclusters
   - poddisruptionbudgets
-  - podsecuritypolicies
   - viziers
   - viziers/status
   verbs: ["*"]

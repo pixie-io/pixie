@@ -183,7 +183,7 @@ type PodPolicy struct {
 }
 
 // PodSecurityContext describes the desired security context for non-privileged pods. This may be required for some
-// cases with more restrictive PodSecurityPolicies.
+// cases with more restrictive PodSecurityAdmissions.
 type PodSecurityContext struct {
 	// Whether a securityContext should be set on the pod. In cases where no PSPs are applied to the cluster, this is
 	// not necessary.

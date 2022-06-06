@@ -41,7 +41,7 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-var nonNamespacedTypes = []string{"podsecuritypolicies", "namespaces", "clusterrolebindings", "clusterroles"}
+var nonNamespacedTypes = []string{"namespaces", "clusterrolebindings", "clusterroles"}
 var templateTypes = []string{"daemonsets", "deployments", "statefulsets"}
 
 // YAMLTmplArguments is a wrapper around YAMLTmplValues.

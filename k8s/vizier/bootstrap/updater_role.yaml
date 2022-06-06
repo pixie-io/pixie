@@ -56,5 +56,4 @@ rules:
   - cronjobs
   - jobs
   - natsclusters
-  - podsecuritypolicies
   verbs: ["*"]
