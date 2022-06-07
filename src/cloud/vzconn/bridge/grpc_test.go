@@ -35,6 +35,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
@@ -82,7 +83,7 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("Failed to dial bufnet: %v", err)
 	}
@@ -144,11 +145,11 @@ func grpcReader(stream vzconnpb.VZConnService_NATSBridgeClient) chan readMsgWrap
 }
 
 func convertToAny(msg proto.Message) *types.Any {
-	any, err := types.MarshalAny(msg)
+	anyMsg, err := types.MarshalAny(msg)
 	if err != nil {
 		panic(err)
 	}
-	return any
+	return anyMsg
 }
 
 func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {

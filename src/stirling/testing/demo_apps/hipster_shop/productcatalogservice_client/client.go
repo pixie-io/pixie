@@ -23,6 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	pb "px.dev/pixie/src/stirling/testing/demo_apps/hipster_shop/proto"
 )
@@ -30,7 +31,7 @@ import (
 func main() {
 	ctx := context.Background()
 	addr := "localhost:3550"
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return
 	}

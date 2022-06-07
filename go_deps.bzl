@@ -1481,10 +1481,10 @@ def pl_go_dependencies():
     )
     go_repository(
         name = "com_github_gogo_protobuf",
+        build_file_proto_mode = "disable",
         importpath = "github.com/gogo/protobuf",
         sum = "h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=",
         version = "v1.3.2",
-        build_file_proto_mode = "disable",
     )
 
     go_repository(
