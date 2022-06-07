@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+import { makeCancellable } from 'app/utils/cancellable-promise';
 
 /**
  * useEffect, except it runs the effect one render cycle after it's actually triggered.
@@ -28,7 +28,7 @@ import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellabl
 export const useDelayedEffect: typeof React.useEffect = (effect, deps) => {
   React.useEffect(() => {
     const delayedUpdater = makeCancellable(new Promise((resolve) => setTimeout(resolve)));
-    delayedUpdater.then(effect).catch(silentlyCatchCancellation);
+    delayedUpdater.then(effect);
     return () => delayedUpdater.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
