@@ -34,6 +34,10 @@ final class ArcanistProtoGenCheckerTestEngine extends ArcanistBaseGenCheckerTest
     $targets = phutil_split_lines($stdout, false);
 
     foreach ($targets as $target) {
+      if (!$target) {
+        continue;
+      }
+
       list($err, $stdout) = exec_manual('bazel query "kind(\'source file\', deps(%s)) intersect %s"', $target, $bazel_source);
       if ($err) {
         return false;
