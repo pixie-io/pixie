@@ -351,14 +351,15 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 }
 
 // MouseHandler returns the mouse handler for this primitive.
-func (i *InputField) MouseHandler() func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
-	return i.WrapMouseHandler(func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (consumed bool, capture tview.Primitive) {
+func (i *InputField) MouseHandler() func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (bool, tview.Primitive) {
+	return i.WrapMouseHandler(func(action tview.MouseAction, event *tcell.EventMouse, setFocus func(p tview.Primitive)) (bool, tview.Primitive) {
 		x, y := event.Position()
 		_, rectY, _, _ := i.GetInnerRect()
 		if !i.InRect(x, y) {
 			return false, nil
 		}
 
+		consumed := false
 		// Process mouse event.
 		if action == tview.MouseLeftClick && y == rectY {
 			// Determine where to place the cursor.
@@ -377,7 +378,7 @@ func (i *InputField) MouseHandler() func(action tview.MouseAction, event *tcell.
 			consumed = true
 		}
 
-		return
+		return consumed, nil
 	})
 }
 

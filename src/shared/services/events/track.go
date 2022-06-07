@@ -39,9 +39,9 @@ var once sync.Once
 
 type dummyClient struct{}
 
-func (d *dummyClient) Enqueue(msg analytics.Message) (err error) {
-	if err = msg.Validate(); err != nil {
-		return
+func (d *dummyClient) Enqueue(msg analytics.Message) error {
+	if err := msg.Validate(); err != nil {
+		return err
 	}
 
 	log.WithField("msg", msg).Debug("Dummy analytics client, dropping message...")

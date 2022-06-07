@@ -25,6 +25,7 @@ linters:
   - misspell
   - nakedret
   - nolintlint
+  - nonamedreturns
   - predeclared
   - staticcheck
   - structcheck

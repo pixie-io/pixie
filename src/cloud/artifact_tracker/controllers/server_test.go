@@ -310,7 +310,7 @@ func TestServer_GetDownloadLink(t *testing.T) {
 		},
 	}
 
-	controllers.URLSigner = func(bucket, name string, opts *storage.SignedURLOptions) (s string, err error) {
+	controllers.URLSigner = func(bucket, name string, opts *storage.SignedURLOptions) (string, error) {
 		return "the-url", nil
 	}
 	// Only testing error cases for now because the storage API is hard to mock.

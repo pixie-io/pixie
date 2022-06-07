@@ -63,7 +63,8 @@ func SetupEtcd() (*clientv3.Client, func()) {
 	clientPort := resource.GetPort("2379/tcp")
 
 	var client *clientv3.Client
-	if err = pool.Retry(func() (err error) {
+	if err = pool.Retry(func() error {
+		var err error
 		hostname := resource.Container.NetworkSettings.Gateway
 		client, err = clientv3.New(clientv3.Config{
 			Endpoints:   []string{fmt.Sprintf("http://%s:%s", hostname, clientPort)},

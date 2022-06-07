@@ -31,7 +31,8 @@ import (
 	"github.com/phayes/freeport"
 )
 
-func startStan(clusterID, clientID string) (srv *server.StanServer, sc stan.Conn, err error) {
+func startStan(clusterID, clientID string) (*server.StanServer, stan.Conn, error) {
+	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("Could not run STAN server")
@@ -52,13 +53,13 @@ func startStan(clusterID, clientID string) (srv *server.StanServer, sc stan.Conn
 	var serverOptions = server.GetDefaultOptions()
 	serverOptions.ID = clusterID
 
-	srv, err = server.RunServerWithOpts(serverOptions, &natsOptions)
+	srv, err := server.RunServerWithOpts(serverOptions, &natsOptions)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	natsURL := fmt.Sprintf("nats://%s:%d", natsOptions.Host, port)
-	sc, err = stan.Connect(clusterID, clientID, stan.NatsURL(natsURL))
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(natsURL))
 	if err != nil {
 		return nil, nil, err
 	}

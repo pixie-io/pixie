@@ -107,7 +107,7 @@ func createGRPCAuthFunc(env env.Env, opts *GRPCServerOptions) func(context.Conte
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
 func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
 	logrusOpts := []grpc_logrus.Option{
-		grpc_logrus.WithDurationField(func(duration time.Duration) (key string, value interface{}) {
+		grpc_logrus.WithDurationField(func(duration time.Duration) (string, interface{}) {
 			return "time", duration
 		}),
 		grpc_logrus.WithLevels(grpc_logrus.DefaultClientCodeToLevel),

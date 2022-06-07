@@ -115,7 +115,7 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 }
 
 func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (net.Conn, error) {
-	return func(ctx context.Context, url string) (conn net.Conn, e error) {
+	return func(ctx context.Context, url string) (net.Conn, error) {
 		return lis.Dial()
 	}
 }

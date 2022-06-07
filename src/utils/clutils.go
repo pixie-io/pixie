@@ -57,7 +57,7 @@ func ScanStream(stream io.ReadCloser, write func(...interface{})) {
 
 // addSignalInterruptCatch adds a catch for keyboard interrupt. Useful if you want to interrupt another process before exiting a script.
 func addSignalInterruptCatch(action func()) {
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		for range ch {
