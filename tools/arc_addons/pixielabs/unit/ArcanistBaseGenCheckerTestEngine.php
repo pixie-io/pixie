@@ -25,6 +25,7 @@ abstract class ArcanistBaseGenCheckerTestEngine extends ArcanistUnitTestEngine {
 
     $res = new ArcanistUnitTestResult();
     $res->setName(get_class($this).':'.$source_file);
+    $res->setNamespace('');
     if (!file_exists($check_path)) {
       // Generating files is optional. Lack of a generated file means there isn't anything to check in.
       $res->setResult(ArcanistUnitTestResult::RESULT_SKIP);
