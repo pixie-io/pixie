@@ -114,7 +114,7 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
   auto u_symbolizer_fn = u_symbolizer_->GetSymbolizerFn(u_upid);
   auto k_symbolizer_fn = k_symbolizer_->GetSymbolizerFn(k_upid);
 
-  // Using bind because it helps the reduce redundant information in the if/else chain below.
+  // Using bind because it helps reduce redundant information in the if/else chain below.
   // Also, it is easier to read, e.g.:
   // stack_trace_str = u_stack_str_fn() + ";" + k_stack_str_fn();
   auto fn_addr = &Stringifier::FindOrBuildStackTraceString;

@@ -21,11 +21,14 @@
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/tracepoint_translation/translation.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/core/types.h"
+#include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
+#include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/source_connectors/stirling_error/probe_status_table.h"
 #include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
@@ -33,16 +36,27 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/testing/common.h"
 
+DECLARE_bool(stirling_profiler_java_symbols);
+DECLARE_string(stirling_profiler_java_agent_libs);
+DECLARE_string(stirling_profiler_px_jattach_path);
+DECLARE_uint32(stirling_profiler_table_update_period_seconds);
+DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
+
 namespace px {
 namespace stirling {
 
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
+using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
+using ::px::testing::BazelBinTestFilePath;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::Int64Value;
 using ::px::types::StringValue;
@@ -430,6 +444,75 @@ TEST_F(StirlingErrorTest, DISABLED_UProbeDeploymentError) {
 
   EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
   EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
+}
+
+namespace {
+std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
+  const std::filesystem::path kToyAppsPath =
+      "src/stirling/source_connectors/perf_profiler/testing/java";
+  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  return bazel_app_path;
+}
+}  // namespace
+
+TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_table_update_period_seconds, 5);
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_stack_trace_sample_period_ms, 7);
+
+  // Register StirlingErrorConnector.
+  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
+  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+
+  // Run Stirling.
+  InitStirling(std::move(registry));
+  ASSERT_OK(stirling_->RunAsThread());
+  ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
+
+  // Run a Java container without frame pointers.
+  const std::string image_name = "java_image_base-java-profiler-test-image-omit-frame-pointer";
+  const std::filesystem::path image_tar_path = BazelJavaTestAppPath(image_name + ".tar");
+  ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
+  ContainerRunner java_container{image_tar_path, "java", ""};
+  StatusOr<std::string> result = java_container.Run(std::chrono::seconds{90});
+  PL_CHECK_OK(result);
+
+  // Wait for the java profiler to attempt symbolization.
+  sleep(10);
+
+  auto source_records = ToSourceRecordVector(source_status_batches_);
+  auto probe_records = ToProbeRecordVector(probe_status_batches_);
+
+  // Stirling Error Source Connector Initialization.
+  SourceStatusRecord r1{.source_connector = "stirling_error",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .context = "Init"};
+  SourceStatusRecord r2{.source_connector = "perf_profiler",
+                        .status = px::statuspb::Code::OK,
+                        .error = "",
+                        .context = "Init"};
+  // Missing frame pointer from perf profiler.
+  SourceStatusRecord r3{
+      .source_connector = "perf_profiler",
+      .status = px::statuspb::Code::INTERNAL,
+      .error = absl::Substitute(
+          "Frame pointer not available in pid: $0, cmd: \"/usr/bin/java -cp "
+          "/app/px/src/stirling/source_connectors/perf_profiler/testing/java/"
+          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary.jar:/app/px/src/"
+          "stirling/source_connectors/perf_profiler/testing/java/"
+          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary JavaFib\". Preserve "
+          "frame pointers with the JDK option: -XX:+PreserveFramePointer.",
+          java_container.process_pid()),
+      .context = "Java Symbolization"};
+  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r1)));
+  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r2)));
+  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r3)));
+  EXPECT_THAT(probe_records, IsEmpty());
 }
 
 }  // namespace stirling

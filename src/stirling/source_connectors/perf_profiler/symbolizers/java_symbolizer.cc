@@ -370,6 +370,22 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return native_symbolizer_fn;
   }
 
+  // Check java PreserveFramePointer flag in cmd for first time upids.
+  if (symbolizer_functions_.find(upid) == symbolizer_functions_.end()) {
+    std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
+    if (!cmdline.empty()) {
+      size_t pos = cmdline.find(symbolization::kJavaPreserveFramePointerOption);
+      if (pos == std::string::npos) {
+        monitor_.AppendSourceStatusRecord(
+            "perf_profiler",
+            error::Internal("Frame pointer not available in pid: $0, cmd: \"$1\". Preserve frame "
+                            "pointers with the JDK option: $2.",
+                            upid.pid, cmdline, symbolization::kJavaPreserveFramePointerOption),
+            "Java Symbolization");
+      }
+    }
+  }
+
   // This process is a java process, increment the counter.
   g_java_proc_counter.Increment();
 

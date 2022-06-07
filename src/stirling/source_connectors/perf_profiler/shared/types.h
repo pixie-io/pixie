@@ -42,7 +42,7 @@ using SymbolizerFn = std::function<std::string_view(const uintptr_t addr)>;
 // The stack traces (in kernel & in BPF) are ordered lists of instruction pointers (addresses).
 // Stirling uses BPF to recover the symbols associated with each address, and then
 // uses the "symbolic stack trace" as the histogram key. Some of the stack traces that are
-// distinct in the kernel and in BPF will collapse into the same symoblic stack trace in Stirling.
+// distinct in the kernel and in BPF will collapse into the same symbolic stack trace in Stirling.
 // For example, consider the following two stack traces from BPF:
 // p0, p1, p2 => main;qux;baz   # both p2 & p3 point into baz.
 // p0, p1, p3 => main;qux;baz

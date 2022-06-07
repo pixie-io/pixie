@@ -45,7 +45,7 @@ namespace stirling {
 // or in the case where a given user space stack sometimes (but not always) enters the kernel.
 //
 // When the stringifier reads the shared BPF map of stack trace addresses, it does so using
-// a destructive read (it read one stack trace, and clears it, from the table).
+// a destructive read (it reads one stack trace, and clears it, from the table).
 // Because of stack-trace-id reuse and the destructive read, the stringifier memoizes
 // its stringified results. A new stringifier is created (and destroyed) on each iteration
 // of the continuous perf. profiler.
