@@ -171,12 +171,12 @@ var GetClusterCmd = &cobra.Command{
 		cloudAddr := vizier.GetCloudAddrFromKubeConfig(config)
 
 		if id {
-			cliUtils.Infof("%s", clusterID)
+			fmt.Fprintf(os.Stdout, "%s\n", clusterID)
 			return
 		}
 
 		if addr {
-			cliUtils.Infof("%s", cloudAddr)
+			fmt.Fprintf(os.Stdout, "%s\n", cloudAddr)
 			return
 		}
 

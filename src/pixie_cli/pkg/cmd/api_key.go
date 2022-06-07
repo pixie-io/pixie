@@ -84,7 +84,7 @@ var CreateAPIKeyCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to generate API key")
 		}
 		if short {
-			utils.Infof(key)
+			fmt.Fprintf(os.Stdout, "%s\n", key)
 		} else {
 			utils.Infof("Generated API key: \nID: %s \nKey: %s", keyID, key)
 		}
