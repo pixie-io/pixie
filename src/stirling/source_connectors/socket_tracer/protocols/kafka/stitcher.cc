@@ -88,6 +88,13 @@ Status ProcessSyncGroupResp(PacketDecoder* decoder, Response* resp) {
   return Status::OK();
 }
 
+Status ProcessMetadataReq(PacketDecoder* decoder, Request* req) {
+  PL_ASSIGN_OR_RETURN(MetadataReq r, decoder->ExtractMetadataReq());
+
+  req->msg = ToString(r);
+  return Status::OK();
+}
+
 Status ProcessReq(Packet* req_packet, Request* req) {
   req->timestamp_ns = req_packet->timestamp_ns;
   PacketDecoder decoder(*req_packet);
@@ -104,6 +111,8 @@ Status ProcessReq(Packet* req_packet, Request* req) {
       return ProcessJoinGroupReq(&decoder, req);
     case APIKey::kSyncGroup:
       return ProcessSyncGroupReq(&decoder, req);
+    case APIKey::kMetadata:
+      return ProcessMetadataReq(&decoder, req);
     default:
       VLOG(1) << absl::Substitute("Unparsed cmd $0", magic_enum::enum_name(req->api_key));
   }

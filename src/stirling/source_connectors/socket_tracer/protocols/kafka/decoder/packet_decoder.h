@@ -70,6 +70,8 @@ class PacketDecoder {
   explicit PacketDecoder(std::string_view buf) : marked_bufs_(), binary_decoder_(buf) {}
   explicit PacketDecoder(const Packet& packet) : PacketDecoder(packet.msg) {}
 
+  StatusOr<bool> ExtractBool();
+
   StatusOr<int8_t> ExtractInt8();
 
   StatusOr<int16_t> ExtractInt16();
@@ -209,6 +211,9 @@ class PacketDecoder {
   // Topic Data in Fetch Response.
   StatusOr<FetchRespTopic> ExtractFetchRespTopic();
 
+  // Topic Data in Metadata Request.
+  StatusOr<MetadataReqTopic> ExtractMetadataReqTopic();
+
   // Protocol in Join Group Request.
   StatusOr<JoinGroupProtocol> ExtractJoinGroupProtocol();
 
@@ -229,6 +234,7 @@ class PacketDecoder {
   StatusOr<JoinGroupResp> ExtractJoinGroupResp();
   StatusOr<SyncGroupReq> ExtractSyncGroupReq();
   StatusOr<SyncGroupResp> ExtractSyncGroupResp();
+  StatusOr<MetadataReq> ExtractMetadataReq();
 
   bool eof() { return binary_decoder_.eof(); }
 

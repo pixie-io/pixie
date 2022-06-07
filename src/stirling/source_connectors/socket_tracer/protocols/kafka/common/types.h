@@ -232,7 +232,7 @@ inline const absl::flat_hash_map<APIKey, APIVersionData> APIVersionMap = {
     {APIKey::kProduce, {1, 9, 9}},
     {APIKey::kFetch, {0, 12, 12}},
     {APIKey::kListOffsets, {0, 7, 6}},
-    {APIKey::kMetadata, {0, 11, 9}},
+    {APIKey::kMetadata, {0, 12, 9}},
     {APIKey::kLeaderAndIsr, {0, 5, 4}},
     {APIKey::kStopReplica, {0, 3, 2}},
     {APIKey::kUpdateMetadata, {0, 7, 6}},
