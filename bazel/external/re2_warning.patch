@@ -1,0 +1,11 @@
+diff --color -Naur re2-2021-08-01/re2/prog.cc re2-2021-08-01_new/re2/prog.cc
+--- re2-2021-08-01/re2/prog.cc	2021-07-24 04:39:54.000000000 -0700
++++ re2-2021-08-01_new/re2/prog.cc	2022-06-07 08:51:59.248795652 -0700
+@@ -613,6 +613,7 @@
+   int total = 0;
+   for (int i = 0; i < kNumInst; i++)
+     total += inst_count_[i];
++  (void)total; // Suppress possubly unused variable.
+   DCHECK_EQ(total, static_cast<int>(flat.size()));
+ 
+   // Remap start_unanchored and start.
