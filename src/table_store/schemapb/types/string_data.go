@@ -53,7 +53,7 @@ func (data StringData) MarshalTo(mData []byte) (n int, err error) {
 // Unmarshal unmarshals the string data to bytes.
 func (data *StringData) Unmarshal(mData []byte) error {
 	if len(mData) == 0 {
-		//nolint:ineffassign,wastedassign // This follows the gogoproto generated code conventions.
+		//nolint:ineffassign // This follows the gogoproto generated code conventions.
 		data = nil
 		return nil
 	}
