@@ -41,7 +41,7 @@ import Live from 'app/containers/App/live';
 import { LD_CLIENT_ID } from 'app/containers/constants';
 import { AuthRouter } from 'app/pages/auth/auth';
 import CreditsView from 'app/pages/credits/credits';
-import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
+import { makeCancellable } from 'app/utils/cancellable-promise';
 import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { ErrorBoundary, PixienautCrashFallback } from 'app/utils/error-boundary';
 import { parseJWT } from 'app/utils/jwt';
@@ -92,7 +92,6 @@ function useIsAuthenticated() {
       .then((isAuthenticated) => {
         setState({ loading: false, authenticated: isAuthenticated, error: undefined });
       })
-      .catch(silentlyCatchCancellation)
       .catch((e) => {
         setState({ loading: false, authenticated: false, error: e });
       });

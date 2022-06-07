@@ -29,25 +29,25 @@ export interface CancellablePromise<R = void> extends Promise<R> {
 
 /**
  * Wraps the source Promise in a `cancel()`-able Promise.
- * Cancelling it causes it to reject immediately.
- * If you do not wish to do anything with a cancel-induced rejection, use the helper method `silentlyCatchCancellation`.
+ * Cancelling it causes it to reject immediately if rejectOnCancel is true; otherwise the promise simply never settles.
+ * Cancelling a promise that already settled still sets `cancelled`
  * @param source Promise to make cancellable
- * @param cancelSilently If set, a cancelled promise gets cut off - if it didn't settle yet, it never will.
+ * @param rejectOnCancel If set, calling `cancel()` immediately rejects the wrapped promise instead of cutting it off.
  */
-export function makeCancellable<R = void>(source: Promise<R>, cancelSilently = false): CancellablePromise<R> {
+export function makeCancellable<R = void>(source: Promise<R>, rejectOnCancel = false): CancellablePromise<R> {
   let cancelled = false;
   let cancel: () => void;
 
   const wrapped = new Promise((resolve, reject) => {
     cancel = () => {
       cancelled = true;
-      if (!cancelSilently) reject(new Error('cancelled'));
+      if (rejectOnCancel) reject(new Error('cancelled'));
     };
 
     // When the source Promise does try to resolve or reject, don't even attempt to resolve/reject with normal results.
     source.then(
-      (result: R) => (cancelled ? (!cancelSilently && reject(new Error('cancelled'))) : resolve(result)),
-      (error: any) => (cancelled ? (!cancelSilently && reject(new Error('cancelled'))) : reject(error)),
+      (result: R) => (cancelled ? (rejectOnCancel && reject(new Error('cancelled'))) : resolve(result)),
+      (error: any) => (cancelled ? (rejectOnCancel && reject(new Error('cancelled'))) : reject(error)),
     );
   });
 
@@ -63,19 +63,4 @@ export function makeCancellable<R = void>(source: Promise<R>, cancelSilently = f
   }).then();
 
   return wrapped as CancellablePromise<R>;
-}
-
-/**
- * Convenience: if you don't care about rejections caused by cancelling a cancellable Promise, do this:
- * ```
- * const promise = makeCancellable(other);
- * promise.then(actOnNotCancelledResolution).catch(silentlyCatchCancellation).catch(handleRealRejection);
- * ```
- * And the error will be silenced ONLY if it came from `promise.cancel()`.
- */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function silentlyCatchCancellation(e: any): void {
-  if (typeof e !== 'object' || !e || e.message !== 'cancelled') {
-    throw e;
-  }
 }
