@@ -76,9 +76,9 @@ def generate_vizier_yamls(name, srcs, out, image_map, replace):
         cp -aL k8s/vizier $$T
 
         # Update the bundle versions.
-        pushd $$T/vizier/etcd_metadata
+        pushd $$T/vizier/etcd_metadata &>/dev/null
         {0}
-        popd
+        popd &>/dev/null
 
         kustomize build $$T/vizier/etcd_metadata -o $@
         """.format(merged_edits),
@@ -102,9 +102,9 @@ def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
         cp -aL k8s/vizier $$T
 
         # Update the bundle versions.
-        pushd $$T/vizier/persistent_metadata
+        pushd $$T/vizier/persistent_metadata &>/dev/null
         {0}
-        popd
+        popd &>/dev/null
 
         kustomize build $$T/vizier/persistent_metadata -o $@
         """.format(merged_edits),
