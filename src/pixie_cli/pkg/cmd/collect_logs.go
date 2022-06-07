@@ -38,7 +38,7 @@ func init() {
 // CollectLogsCmd is the "deploy" command.
 var CollectLogsCmd = &cobra.Command{
 	Use:   "collect-logs",
-	Short: "Collect pixie logs on the cluster",
+	Short: "Collect Pixie logs on the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		c := k8s.NewLogCollector()
 		fName := fmt.Sprintf("pixie_logs_%s.zip", time.Now().Format("20060102150405"))

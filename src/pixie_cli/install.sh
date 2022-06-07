@@ -212,7 +212,7 @@ if [[ ! -e "${INSTALL_PATH}" ]]; then
     fi
 fi
 
-# TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually pixie.
+# TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually Pixie.
 # TODO(zasgar): Check the sha256.
 # Note: we need this download, mv step to make sure macos does not mark this binary as bad.
 execute curl -fsSL "$(artifact_url)" -o "${INSTALL_PATH}"/px_new
