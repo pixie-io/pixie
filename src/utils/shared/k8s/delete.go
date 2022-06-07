@@ -32,43 +32,14 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/discovery"
-	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	cmdwait "k8s.io/kubectl/pkg/cmd/wait"
 )
 
-type restClientAdapter struct {
-	clientset  *kubernetes.Clientset
-	restConfig *rest.Config
-}
-
-func (r *restClientAdapter) ToRESTConfig() (*rest.Config, error) {
-	return r.restConfig, nil
-}
-
-func (r *restClientAdapter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
-	return memory.NewMemCacheClient(r.clientset.Discovery()), nil
-}
-
-func (r *restClientAdapter) ToRESTMapper() (meta.RESTMapper, error) {
-	discoveryClient := r.clientset.Discovery()
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return nil, err
-	}
-	return restmapper.NewDiscoveryRESTMapper(apiGroupResources), nil
-}
-
-func (r *restClientAdapter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
-	log.Fatal("raw kubeconfig loader is not implemented.")
-	return nil
-}
+var defaultConfigFlags = genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag().WithDiscoveryBurst(300).WithDiscoveryQPS(50.0)
 
 // ObjectDeleter has methods to delete K8s objects and wait for them. This code is adopted from `kubectl delete`.
 type ObjectDeleter struct {
@@ -81,12 +52,9 @@ type ObjectDeleter struct {
 
 // DeleteCustomObject is used to delete a custom object (instantiation of CRD).
 func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) error {
-	rca := &restClientAdapter{
-		clientset:  o.Clientset,
-		restConfig: o.RestConfig,
-	}
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
-	f := cmdutil.NewFactory(rca)
 	r := f.NewBuilder().
 		Unstructured().
 		ContinueOnError().
@@ -111,12 +79,9 @@ func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) e
 
 // DeleteNamespace removes the namespace and all objects within it. Waits for deletion to complete.
 func (o *ObjectDeleter) DeleteNamespace() error {
-	rca := &restClientAdapter{
-		clientset:  o.Clientset,
-		restConfig: o.RestConfig,
-	}
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
-	f := cmdutil.NewFactory(rca)
 	r := f.NewBuilder().
 		Unstructured().
 		ContinueOnError().
@@ -141,16 +106,13 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 
 // DeleteByLabel delete objects that match the labels and specified by resourceKinds. Waits for deletion.
 func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) (int, error) {
-	rca := &restClientAdapter{
-		clientset:  o.Clientset,
-		restConfig: o.RestConfig,
-	}
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	if len(resourceKinds) == 0 {
 		resourceKinds = []string{"all"}
 	}
 
-	f := cmdutil.NewFactory(rca)
 	r := f.NewBuilder().
 		Unstructured().
 		ContinueOnError().
@@ -185,10 +147,9 @@ func (o *ObjectDeleter) runDelete(r *resource.Result) (int, error) {
 		deletedInfos = append(deletedInfos, info)
 		found++
 
-		options := &metav1.DeleteOptions{}
+		options := metav1.NewDeleteOptions(0)
 		policy := metav1.DeletePropagationBackground
 		options.PropagationPolicy = &policy
-
 		response, err := o.deleteResource(info, options)
 		if err != nil {
 			return err
