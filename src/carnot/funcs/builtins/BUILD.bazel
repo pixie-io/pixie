@@ -36,9 +36,9 @@ pl_cc_library(
         "//src/carnot/funcs/builtins/sql_parsing:cc_library",
         "//src/carnot/udf:cc_library",
         "@com_github_derrickburns_tdigest//:tdigest",
-        "@com_github_google_re2//:re2",
         "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_uriparser_uriparser//:uriparser",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 
