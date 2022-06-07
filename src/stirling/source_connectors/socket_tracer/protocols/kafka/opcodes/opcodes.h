@@ -21,5 +21,6 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/fetch.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/join_group.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/message_set.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/metadata.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/produce.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/opcodes/sync_group.h"

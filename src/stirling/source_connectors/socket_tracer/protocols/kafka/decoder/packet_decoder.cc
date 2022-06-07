@@ -63,6 +63,7 @@ StatusOr<int64_t> PacketDecoder::ExtractVarintCore() {
 /*
  * Primitive Type Parsers
  */
+StatusOr<bool> PacketDecoder::ExtractBool() { return binary_decoder_.ExtractInt<bool>(); }
 
 StatusOr<int8_t> PacketDecoder::ExtractInt8() { return binary_decoder_.ExtractInt<int8_t>(); }
 

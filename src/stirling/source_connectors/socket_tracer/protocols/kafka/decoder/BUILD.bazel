@@ -59,6 +59,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "metadata_test",
+    srcs = ["metadata_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "join_group_test",
     srcs = ["join_group_test.cc"],
     deps = [":cc_library"],
