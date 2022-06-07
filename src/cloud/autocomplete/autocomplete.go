@@ -403,7 +403,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 }
 
 // ToFormatString converts a command to a formatted string with tab indexes, such as: ${1:run} ${2: px/svc_info}
-func (cmd *Command) ToFormatString(action cloudpb.AutocompleteActionType, s Suggester, orgID uuid.UUID, clusterUID string) (formattedInput string, suggestions []*cloudpb.TabSuggestion) {
+func (cmd *Command) ToFormatString(action cloudpb.AutocompleteActionType, s Suggester, orgID uuid.UUID, clusterUID string) (string, []*cloudpb.TabSuggestion) {
 	curTabStop, nextInvalidTabStop, invalidTabs := cmd.processTabStops()
 
 	// Move the cursor according to the action that was taken.
@@ -452,7 +452,7 @@ func (cmd *Command) ToFormatString(action cloudpb.AutocompleteActionType, s Sugg
 
 	// Construct the formatted string and tab suggestions.
 	fStr := ""
-	suggestions = make([]*cloudpb.TabSuggestion, len(cmd.TabStops))
+	suggestions := make([]*cloudpb.TabSuggestion, len(cmd.TabStops))
 	for i, t := range cmd.TabStops {
 		// The tab index of this tabstop is ((idx - (curTabStop + 1)) % numTabStops) + 1.
 		idx := (((i - (curTabStop + 1)) + len(cmd.TabStops)) % len(cmd.TabStops)) + 1

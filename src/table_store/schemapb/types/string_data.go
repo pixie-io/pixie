@@ -42,7 +42,7 @@ func (data StringData) Marshal() ([]byte, error) {
 }
 
 // MarshalTo marshals the string data to bytes.
-func (data StringData) MarshalTo(mData []byte) (n int, err error) {
+func (data StringData) MarshalTo(mData []byte) (int, error) {
 	if len(data) == 0 {
 		return 0, nil
 	}

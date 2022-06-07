@@ -103,7 +103,8 @@ func SetupElastic() (*elastic.Client, func(), error) {
 
 	clientPort := resource.GetPort("9200/tcp")
 	var client *elastic.Client
-	err = pool.Retry(func() (err error) {
+	err = pool.Retry(func() error {
+		var err error
 		client, err = connectElastic(fmt.Sprintf("http://%s:%s",
 			resource.Container.NetworkSettings.Gateway, clientPort), "elastic", esPass)
 		if err != nil {

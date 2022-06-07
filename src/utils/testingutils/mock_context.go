@@ -26,8 +26,8 @@ import (
 type MockContext struct{}
 
 // Deadline returns the deadline for the mock context.
-func (ctx MockContext) Deadline() (deadline time.Time, ok bool) {
-	return deadline, ok
+func (ctx MockContext) Deadline() (time.Time, bool) {
+	return time.Time{}, false
 }
 
 // Done returns the done channel for the mock context.

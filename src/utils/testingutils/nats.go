@@ -31,7 +31,8 @@ import (
 	"github.com/phayes/freeport"
 )
 
-func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
+func startNATS() (*server.Server, *nats.Conn, error) {
+	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("Could not run NATS server")
@@ -45,13 +46,13 @@ func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
 
 	opts := test.DefaultTestOptions
 	opts.Port = port
-	gnatsd = test.RunServer(&opts)
+	gnatsd := test.RunServer(&opts)
 	if gnatsd == nil {
 		return nil, nil, errors.New("Could not run NATS server")
 	}
 
 	url := fmt.Sprintf("nats://%s:%d", opts.Host, opts.Port)
-	conn, err = nats.Connect(url)
+	conn, err := nats.Connect(url)
 	if err != nil {
 		gnatsd.Shutdown()
 		return nil, nil, err
