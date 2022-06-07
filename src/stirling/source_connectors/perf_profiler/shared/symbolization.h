@@ -38,6 +38,9 @@ constexpr std::string_view kJavaInterpreter = "[j] Interpreter";
 // The drop message indicates that the kernel had a hash table collision
 // and dropped tracking of one stack trace.
 constexpr std::string_view kDropMessage = "<stack trace lost>";
+
+// The option added to java commands to preserve frame pointer.
+constexpr std::string_view kJavaPreserveFramePointerOption = "-XX:+PreserveFramePointer";
 }  // namespace symbolization
 }  // namespace stirling
 }  // namespace px

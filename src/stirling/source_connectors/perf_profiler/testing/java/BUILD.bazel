@@ -124,3 +124,10 @@ filegroup(
     name = "graal-vm-aot-fib",
     srcs = ["graal-vm-aot/app/JavaFib"],
 )
+
+java_image(
+    name = "java_image_base-java-profiler-test-image-omit-frame-pointer",
+    srcs = ["Fib.java"],
+    base = "java_image_base",
+    main_class = "JavaFib",
+)

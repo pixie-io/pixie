@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "px_jattach")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -38,15 +39,20 @@ pl_cc_test(
     name = "stirling_error_test",
     timeout = "moderate",
     srcs = ["stirling_error_test.cc"],
-    data = [
+    data = agent_libs + [
+        px_jattach,
         "//src/stirling/testing:pidsample_bpftrace_script",
         "//src/stirling/testing:tcpdrop_bpftrace_script",
+        "//src/stirling/source_connectors/perf_profiler/testing/java:java_image_base-java-profiler-test-image-omit-frame-pointer.tar",
     ],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         "//src/carnot/planner/probes:tracepoint_generator_lib",
+        "//src/common/testing/test_utils:cc_library",
         "//src/shared/tracepoint_translation:cc_library",
         "//src/stirling:cc_library",
+        "//src/stirling/source_connectors/perf_profiler/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
