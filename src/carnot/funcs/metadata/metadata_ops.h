@@ -1628,7 +1628,7 @@ class CreateUPIDUDF : public udf::ScalarUDF {
 
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Convert a pid, start_time pair to a UPID.")
-        .Details("This function creates a UPID from it's underlying components..")
+        .Details("This function creates a UPID from it's underlying components.")
         .Example("df.val = px.upid(df.pid, df.pid_start_time)")
         .Arg("arg1", "The pid of the process.")
         .Arg("arg2", "The start_time of the process.")
