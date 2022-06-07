@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 	batchv1 "k8s.io/api/batch/v1"
 
@@ -266,7 +267,7 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("Got an error during GRPC setup: %+v", err)
 	}

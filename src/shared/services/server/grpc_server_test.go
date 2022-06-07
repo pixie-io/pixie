@@ -30,6 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
@@ -110,7 +111,7 @@ func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (
 
 func makeTestRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
 	grpc.WithContextDialer(createDialer(lis))
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -120,7 +121,7 @@ func makeTestRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (
 }
 
 func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -141,7 +142,7 @@ func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn
 }
 
 func makeTestServerStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
