@@ -53,9 +53,7 @@ func newCompilerMultiError(errs ...error) error {
 	e := CompilerMultiError{
 		errors: make([]error, len(errs)),
 	}
-	for i, err := range errs {
-		e.errors[i] = err
-	}
+	copy(e.errors, errs)
 	return e
 }
 

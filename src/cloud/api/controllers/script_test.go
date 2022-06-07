@@ -39,9 +39,9 @@ import (
 )
 
 func toAny(t *testing.T, msg proto.Message) *types.Any {
-	any, err := types.MarshalAny(msg)
+	anyMsg, err := types.MarshalAny(msg)
 	require.NoError(t, err)
-	return any
+	return anyMsg
 }
 
 func TestScriptMgr(t *testing.T) {

@@ -80,17 +80,11 @@ func (e errorGroup) Errors() []error {
 	return e.errs
 }
 
-func (e errorGroup) Append(c error) {
-	e.errs = append(e.errs, c)
-}
-
 func newErrorGroup(errs ...error) error {
 	e := errorGroup{
 		errs: make([]error, len(errs)),
 	}
-	for i, err := range errs {
-		e.errs[i] = err
-	}
+	copy(e.errs, errs)
 	return e
 }
 
