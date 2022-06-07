@@ -1,4 +1,4 @@
-// +build cgo
+//go:build cgo
 
 /*
  * Copyright 2018- The Pixie Authors.
