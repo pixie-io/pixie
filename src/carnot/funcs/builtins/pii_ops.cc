@@ -19,6 +19,7 @@
 #include <map>
 #include <vector>
 
+#include <absl/strings/numbers.h>
 #include "src/carnot/funcs/builtins/pii_ops.h"
 
 namespace px {
@@ -227,12 +228,46 @@ struct TagTypeTraits<Tag::Type::IMEISV> {
   static bool Filter(std::string_view) { return true; }
 };
 
+template <>
+struct TagTypeTraits<Tag::Type::SSN> {
+  static constexpr std::string_view BuildRegexPattern() {
+    // US Social Security Numbers are nine-digit numbers in the format AAA-GG-SSSS:
+    // AA: Area Code can't be 000, 666, 900-999. GG: Group number can be between 01-99,
+    // SSSS: Serial number can be 0001-9999
+    // This regex identifies SSNs with spaces or dashes as delimiters e.g. 303-57-7256 or 303 57
+    // 7256
+    return R"((\d{3}( |-)+\d{2}( |-)+\d{4}))";
+  }
+  static constexpr std::string_view SubstitutionStr() { return "<REDACTED_SSN>"; }
+  static bool Filter(std::string_view match) {
+    std::string match_no_delims(match);
+    match_no_delims.erase(std::remove_if(match_no_delims.begin(), match_no_delims.end(),
+                                         [](char c) { return c == '-' || c == ' '; }),
+                          match_no_delims.end());
+    std::string_view area = std::string_view(match_no_delims).substr(0, 3);
+    std::string_view group = std::string_view(match_no_delims).substr(3, 2);
+    std::string_view serial = std::string_view(match_no_delims).substr(5, 4);
+    int32_t area_int;
+    bool parsed_area_correctly = absl::SimpleAtoi(area, &area_int);
+    if (!parsed_area_correctly) return false;
+
+    // AA: Area Code can't be 000, 666, [900-999]
+    if (!area.compare("000") || !area.compare("666") || (area_int >= 900 && area_int <= 999))
+      return false;
+    // GG: Group number can be [01-99]
+    if (!group.compare("00")) return false;
+    // SSSS: Serial number can be [0001-9999]
+    if (!serial.compare("0000")) return false;
+    return true;
+  }
+};
+
 #define SUB_STR(tag_type) \
   { tag_type, TagTypeTraits<tag_type>::SubstitutionStr() }
 static std::map<Tag::Type, std::string_view> type_to_sub_str_ = {
     SUB_STR(Tag::Type::IPv6),     SUB_STR(Tag::Type::IPv4),      SUB_STR(Tag::Type::EMAIL_ADDR),
     SUB_STR(Tag::Type::MAC_ADDR), SUB_STR(Tag::Type::CC_NUMBER), SUB_STR(Tag::Type::IMEI),
-    SUB_STR(Tag::Type::IMEISV),
+    SUB_STR(Tag::Type::IMEISV),   SUB_STR(Tag::Type::SSN),
 };
 
 Status RedactPIIUDF::Init(FunctionContext*) {
@@ -246,6 +281,7 @@ Status RedactPIIUDF::Init(FunctionContext*) {
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::IMEI>>());
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::IMEISV>>());
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::CC_NUMBER>>());
+  taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::SSN>>());
   return Status::OK();
 }
 
