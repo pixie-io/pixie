@@ -32,7 +32,7 @@ end
 
 git '/opt/phab/arcanist' do
   repository 'https://github.com/phacility/arcanist.git'
-  checkout_branch 'stable'
+  revision 'stable'
   action :sync
 end
 ENV['PATH'] = "/opt/phab/arcanist/bin:#{ENV['PATH']}"
