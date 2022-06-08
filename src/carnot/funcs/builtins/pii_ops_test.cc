@@ -101,6 +101,14 @@ PIITypeGen IMEIGen() {
   return std::make_pair("<REDACTED_IMEI>", vals);
 }
 
+PIITypeGen SSNGen() {
+  std::vector<std::string> vals{
+      "001-01-0001", "011-11-0011", "111-11-1111", "201-21-0021", "211-11-2011",
+      "211-21-2222", "303-58-8256", "255-77-3200", "593-78-6329",
+  };
+  return std::make_pair("<REDACTED_SSN>", vals);
+}
+
 // These values will be injected into templates, but shouldn't be redacted by the pipeline.
 PIITypeGen NegativeExampleGen() {
   std::vector<std::string> vals{
@@ -112,6 +120,14 @@ PIITypeGen NegativeExampleGen() {
       "1:2:3:4:5:6",
       // Number that looks like a CC but doesn't pass luhn's algo shouldn't be replaced.
       "5555 0000 0000 0000",
+      // Invalid SSNs should not be replaced.
+      "000-12-1234",  // area number can't be 000
+      "666-12-1234",  // area number can't be 666
+      "900-12-1234",  // area number can't be [900-999]
+      "955-12-1234",  // area number can't be [900-999]
+      "999-12-1234",  // area number can't be [900-999]
+      "999-00-9999",  // group number can't be 00
+      "999-12-0000",  // serial number can't be 0000
   };
   return std::make_pair("UNREDACTED", vals);
 }
@@ -219,7 +235,8 @@ TEST_P(RedactionTest, basic) {
 
 INSTANTIATE_TEST_SUITE_P(TemplatedRedactionTest, RedactionTest,
                          ::testing::ValuesIn(TestCaseGen({IPv4Gen(), IPv6Gen(), EmailGen(), CCGen(),
-                                                          IMEIGen(), NegativeExampleGen()})));
+                                                          IMEIGen(), SSNGen(),
+                                                          NegativeExampleGen()})));
 
 }  // namespace builtins
 }  // namespace carnot

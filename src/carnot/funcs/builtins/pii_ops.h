@@ -42,6 +42,7 @@ struct Tag {
     CC_NUMBER,
     IMEI,
     IMEISV,
+    SSN,
   };
   Type tag_type;
   int start_idx;
