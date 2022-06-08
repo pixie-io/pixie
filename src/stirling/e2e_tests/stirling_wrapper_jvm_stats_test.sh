@@ -20,18 +20,17 @@
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
 script_dir="$(dirname "$0")"
-pixie_root="$script_dir"/../../..
 
 # shellcheck source=./src/stirling/scripts/utils.sh
-source "$pixie_root"/src/stirling/scripts/utils.sh
+source src/stirling/scripts/utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     echo "Building stirling_wrapper_image ..."
-    stirling_image=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
+    stirling_image=$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
     echo "Building java_image ..."
-    java_image=$pixie_root/$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar)
+    java_image=$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar)
     echo "Building java_app ..."
-    java_app=$pixie_root/$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:HelloWorld)
+    java_app=$(bazel_build //src/stirling/source_connectors/jvm_stats/testing:HelloWorld)
     java_app=${java_app%.jar}
 else
     # If the script was run through bazel, the locations are passed as arguments.

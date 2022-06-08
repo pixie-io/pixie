@@ -20,19 +20,18 @@
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
 script_dir="$(dirname "$0")"
-pixie_root="$script_dir"/../../..
 
 # shellcheck source=./src/stirling/scripts/utils.sh
-source "$pixie_root"/src/stirling/scripts/utils.sh
+source src/stirling/scripts/utils.sh
 
 # shellcheck source=./src/stirling/scripts/test_utils.sh
-source "$pixie_root"/src/stirling/scripts/test_utils.sh
+source src/stirling/scripts/test_utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
-    stirling_image=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
-    go_grpc_server=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_1_16_grpc_server)
-    go_grpc_client=$pixie_root/$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_1_16_grpc_client)
+    stirling_image=$(bazel_build //src/stirling/binaries:stirling_wrapper_image.tar)
+    go_grpc_server=$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:go_1_16_grpc_server)
+    go_grpc_client=$(bazel_build //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:go_1_16_grpc_client)
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_image=$1

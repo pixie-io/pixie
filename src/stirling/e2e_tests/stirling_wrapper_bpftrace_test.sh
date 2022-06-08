@@ -20,18 +20,17 @@
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
 script_dir="$(dirname "$0")"
-pixie_root="$script_dir"/../../..
 
 # shellcheck source=./src/stirling/scripts/utils.sh
-source "$pixie_root"/src/stirling/scripts/utils.sh
+source src/stirling/scripts/utils.sh
 
 # shellcheck source=./src/stirling/scripts/test_utils.sh
-source "$pixie_root"/src/stirling/scripts/test_utils.sh
+source src/stirling/scripts/test_utils.sh
 
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
-    stirling_wrapper=$pixie_root/$(bazel_build //src/stirling/binaries:stirling_wrapper)
-    trace_script=$pixie_root/src/stirling/testing/tcpdrop.bpftrace.pxl
+    stirling_wrapper=$(bazel_build //src/stirling/binaries:stirling_wrapper)
+    trace_script=src/stirling/testing/tcpdrop.bpftrace.pxl
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_wrapper=$1
