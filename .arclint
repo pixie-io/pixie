@@ -45,7 +45,7 @@
         "(\\.sky$)"
       ],
       "script-and-regex.script": "./tools/linters/buildifier.sh",
-      "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<error>.*): (?P<message>.*)$/m"
+      "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<severity>)(?P<error>.*): (?P<message>.*)$/m"
     },
     "clang-format": {
       "type": "clang-format",
@@ -81,7 +81,7 @@
         "(^experimental/.*BUILD\\.bazel$)"
       ],
       "script-and-regex.script": "./tools/linters/experimental-manual.sh",
-      "script-and-regex.regex": "/^(?P<file>.*): (?P<message>.*)$/m"
+      "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
     },
     "filename": {
       "type": "filename"
@@ -158,7 +158,7 @@
     "license": {
       "type": "script-and-regex",
       "script-and-regex.script": "./tools/licenses/checker.py -f",
-      "script-and-regex.regex": "/^(?P<file>[^\n]+)(?P<error>:)((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s",
+      "script-and-regex.regex": "/^(?P<file>[^\n]+)(?P<severity>)(?P<error>:)((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s",
       "exclude": [
         "(__phutil_library_init__\\.php$)",
         "(__phutil_library_map__\\.php$)"
