@@ -275,9 +275,13 @@ class QLObject {
    * and implement their own.
    *
    */
-  virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& /*ast*/,
+  virtual StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                                std::string_view attr_name) const {
     DCHECK(HasNonMethodAttribute(attr_name));
+    if (!attributes_.contains(attr_name)) {
+      return CreateAstError(ast, "$0 does not contain attribute '$1'", type_descriptor_.name(),
+                            attr_name);
+    }
     return attributes_.at(attr_name);
   }
 
