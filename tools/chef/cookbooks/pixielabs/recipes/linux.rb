@@ -57,6 +57,8 @@ apt_pkg_list = [
   # Needed by ANTLR4.
   'pkg-config',
   'uuid-dev',
+
+  "sudo",
 ]
 
 apt_package apt_pkg_list do
