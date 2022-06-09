@@ -92,6 +92,8 @@ struct RedactionOptions {
 struct PluginConfig {
   // The start time in UNIX Nanoseconds.
   int64_t start_time_ns;
+  // The end time in UNIX Nanoseconds.
+  int64_t end_time_ns;
 };
 
 using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;

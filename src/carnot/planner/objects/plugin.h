@@ -45,6 +45,10 @@ class PluginModule : public QLObject {
   inline static constexpr char kStartTimeDocstring[] = R"doc(
   Holds the start_time value according to the plugin_config. Will throw an error if no config is specified.
   )doc";
+  inline static constexpr char kEndTimeOpID[] = "end_time";
+  inline static constexpr char kEndTimeDocstring[] = R"doc(
+  Holds the end_time value according to the plugin_config. Will throw an error if no config is specified.
+  )doc";
 
  protected:
   PluginModule(PluginConfig* plugin_config, IR* graph, ASTVisitor* ast_visitor)
