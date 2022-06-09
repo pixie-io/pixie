@@ -208,7 +208,10 @@ export function usePluginConfigMutation(plugin: GQLPlugin): (
       onError(err) {
         console.error(`Could not update plugin ${plugin.id}:`, err?.message);
       },
-    }).then(() => null, (e) => e);
+    }).then(
+      ({ data: { UpdateRetentionPluginConfig: success } }) => success,
+      (err) => err,
+    );
   }, [schema?.configs, schema?.allowCustomExportURL, schema?.allowInsecureTLS, oldConfigs, plugin, loading, mutate]);
 }
 
