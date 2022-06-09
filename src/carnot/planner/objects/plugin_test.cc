@@ -56,6 +56,17 @@ TEST_F(PluginTest, get_end_time) {
   EXPECT_EQ(static_cast<TimeIR*>(end_time_expr->expr())->val(), 5678);
 }
 
+TEST_F(PluginTest, get_random) {
+  PluginConfig plugin_config{1234, 5678};
+
+  ASSERT_OK_AND_ASSIGN(auto plugin,
+                       PluginModule::Create(&plugin_config, ast_visitor.get(), graph.get()));
+  var_table->Add("plugin", plugin);
+
+  EXPECT_THAT(ParseExpression("plugin.random").status(),
+              HasCompilerError("plugin does not contain attribute 'random'"));
+}
+
 TEST_F(PluginTest, null_plugin_config_throws_compiler_error) {
   ASSERT_OK_AND_ASSIGN(auto plugin, PluginModule::Create(nullptr, ast_visitor.get(), graph.get()));
   var_table->Add("plugin", plugin);
