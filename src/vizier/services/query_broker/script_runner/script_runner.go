@@ -514,6 +514,7 @@ func (r *runner) start() {
 						OTelEndpointConfig: otelEndpoint,
 						PluginConfig: &vizierpb.Configs_PluginConfig{
 							StartTimeNs: startTime.UnixNano(),
+							EndTimeNs:   r.lastRun.UnixNano(),
 						},
 					},
 					QueryName: "cron_" + r.scriptID.String(),

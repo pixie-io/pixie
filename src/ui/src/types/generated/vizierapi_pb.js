@@ -13,7 +13,13 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = Function('return this')();
+var global = (function() {
+  if (this) { return this; }
+  if (typeof window !== 'undefined') { return window; }
+  if (typeof global !== 'undefined') { return global; }
+  if (typeof self !== 'undefined') { return self; }
+  return Function('return this')();
+}.call(null));
 
 goog.exportSymbol('proto.px.api.vizierpb.BooleanColumn', null, global);
 goog.exportSymbol('proto.px.api.vizierpb.Column', null, global);
@@ -5444,7 +5450,8 @@ proto.px.api.vizierpb.Configs.PluginConfig.prototype.toObject = function(opt_inc
  */
 proto.px.api.vizierpb.Configs.PluginConfig.toObject = function(includeInstance, msg) {
   var f, obj = {
-    startTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0)
+    startTimeNs: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    endTimeNs: jspb.Message.getFieldWithDefault(msg, 2, 0)
   };
 
   if (includeInstance) {
@@ -5485,6 +5492,10 @@ proto.px.api.vizierpb.Configs.PluginConfig.deserializeBinaryFromReader = functio
       var value = /** @type {number} */ (reader.readInt64());
       msg.setStartTimeNs(value);
       break;
+    case 2:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setEndTimeNs(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5521,6 +5532,13 @@ proto.px.api.vizierpb.Configs.PluginConfig.serializeBinaryToWriter = function(me
       f
     );
   }
+  f = message.getEndTimeNs();
+  if (f !== 0) {
+    writer.writeInt64(
+      2,
+      f
+    );
+  }
 };
 
 
@@ -5539,6 +5557,24 @@ proto.px.api.vizierpb.Configs.PluginConfig.prototype.getStartTimeNs = function()
  */
 proto.px.api.vizierpb.Configs.PluginConfig.prototype.setStartTimeNs = function(value) {
   return jspb.Message.setProto3IntField(this, 1, value);
+};
+
+
+/**
+ * optional int64 end_time_ns = 2;
+ * @return {number}
+ */
+proto.px.api.vizierpb.Configs.PluginConfig.prototype.getEndTimeNs = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.px.api.vizierpb.Configs.PluginConfig} returns this
+ */
+proto.px.api.vizierpb.Configs.PluginConfig.prototype.setEndTimeNs = function(value) {
+  return jspb.Message.setProto3IntField(this, 2, value);
 };
 
 

@@ -150,6 +150,7 @@ func convertConfigs(config *vizierpb.Configs) *plannerpb.Configs {
 	if config.PluginConfig != nil {
 		c.PluginConfig = &plannerpb.Configs_PluginConfig{
 			StartTimeNs: config.PluginConfig.StartTimeNs,
+			EndTimeNs:   config.PluginConfig.EndTimeNs,
 		}
 	}
 

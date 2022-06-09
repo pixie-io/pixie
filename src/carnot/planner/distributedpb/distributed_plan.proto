@@ -141,6 +141,8 @@ message OTelEndpointConfig {
 message PluginConfig {
   // The start_time of the script in nanoseconds.
   int64 start_time_ns = 1;
+  // The end_time of the script in nanoseconds.
+  int64 end_time_ns = 2;
 }
 
 // LogicalPlannerState contains the information necessary to create the Logical

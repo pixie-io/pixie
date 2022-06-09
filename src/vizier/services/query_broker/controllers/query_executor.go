@@ -326,6 +326,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 	if req.Configs != nil && req.Configs.PluginConfig != nil {
 		pluginConfig = &distributedpb.PluginConfig{
 			StartTimeNs: req.Configs.PluginConfig.StartTimeNs,
+			EndTimeNs:   req.Configs.PluginConfig.EndTimeNs,
 		}
 	}
 

@@ -85,7 +85,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
   std::unique_ptr<planner::PluginConfig> plugin_config = nullptr;
   if (logical_state.has_plugin_config()) {
     plugin_config = std::unique_ptr<planner::PluginConfig>(
-        new planner::PluginConfig{logical_state.plugin_config().start_time_ns()});
+        new planner::PluginConfig{logical_state.plugin_config().start_time_ns(),
+                                  logical_state.plugin_config().end_time_ns()});
   }
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(

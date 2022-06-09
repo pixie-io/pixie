@@ -622,6 +622,9 @@ export namespace Configs {
     getStartTimeNs(): number;
     setStartTimeNs(value: number): PluginConfig;
 
+    getEndTimeNs(): number;
+    setEndTimeNs(value: number): PluginConfig;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): PluginConfig.AsObject;
     static toObject(includeInstance: boolean, msg: PluginConfig): PluginConfig.AsObject;
@@ -633,6 +636,7 @@ export namespace Configs {
   export namespace PluginConfig {
     export type AsObject = {
       startTimeNs: number,
+      endTimeNs: number,
     }
   }
 
