@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <prometheus/counter.h>
+
 #include <absl/container/flat_hash_map.h>
 #include <string>
 #include <utility>
@@ -71,6 +73,7 @@ class StirlingMonitor : NotCopyMoveable {
   static constexpr auto kCrashWindow = std::chrono::seconds{5};
 
  private:
+  StirlingMonitor();
   using timestamp_t = std::chrono::time_point<std::chrono::steady_clock>;
   absl::flat_hash_map<struct upid_t, timestamp_t> java_proc_attach_times_;
 
@@ -82,6 +85,8 @@ class StirlingMonitor : NotCopyMoveable {
   // Lock to protect probe and source records.
   absl::base_internal::SpinLock probe_status_lock_;
   absl::base_internal::SpinLock source_status_lock_;
+
+  prometheus::Counter& java_proc_crashed_during_attach_;
 };
 
 }  // namespace stirling

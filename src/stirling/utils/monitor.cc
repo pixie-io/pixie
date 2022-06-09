@@ -18,12 +18,22 @@
 
 #include "src/stirling/utils/monitor.h"
 #include "src/common/base/base.h"
+#include "src/common/metrics/metrics.h"
 
 DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
             "Whether to symbolize Java binaries.");
 
 namespace px {
 namespace stirling {
+
+namespace {
+constexpr char kJavaProcCrashedDuringAttach[] = "java_proc_crashed_during_attach";
+}
+
+StirlingMonitor::StirlingMonitor()
+    : java_proc_crashed_during_attach_(
+          BuildCounter(kJavaProcCrashedDuringAttach,
+                       "Count of Java process crashes during symbolization agent attach.")) {}
 
 void StirlingMonitor::ResetJavaProcessAttachTrackers() { java_proc_attach_times_.clear(); }
 
@@ -39,6 +49,7 @@ void StirlingMonitor::NotifyJavaProcessCrashed(const struct upid_t& upid) {
     const auto t_now = std::chrono::steady_clock::now();
     const auto delta = std::chrono::duration_cast<std::chrono::seconds>(t_now - t_attach);
     if (delta < kCrashWindow) {
+      java_proc_crashed_during_attach_.Increment();
       FLAGS_stirling_profiler_java_symbols = false;
       LOG(WARNING) << absl::Substitute(
           "Detected Java process crash, pid: $0, within $1 seconds of symbolization agent attach. "
