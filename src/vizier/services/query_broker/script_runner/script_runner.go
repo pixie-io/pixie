@@ -480,7 +480,8 @@ func (r *runner) start() {
 	if r.cronScript.FrequencyS <= 0 {
 		return
 	}
-	ticker := time.NewTicker(time.Duration(r.cronScript.FrequencyS) * time.Second)
+	scriptPeriod := time.Duration(r.cronScript.FrequencyS) * time.Second
+	ticker := time.NewTicker(scriptPeriod)
 	r.lastRun = time.Now()
 
 	go func() {
@@ -506,7 +507,10 @@ func (r *runner) start() {
 					}
 				}
 
-				startTime := r.lastRun
+				// We set the time 1 second in the past to cover colletor latency and request latencies
+				// which can cause data overlaps or cause data to be missed.
+				startTime := r.lastRun.Add(-time.Second)
+				endTime := startTime.Add(scriptPeriod)
 				r.lastRun = time.Now()
 				execScriptClient, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
 					QueryStr: r.cronScript.Script,
@@ -514,7 +518,7 @@ func (r *runner) start() {
 						OTelEndpointConfig: otelEndpoint,
 						PluginConfig: &vizierpb.Configs_PluginConfig{
 							StartTimeNs: startTime.UnixNano(),
-							EndTimeNs:   r.lastRun.UnixNano(),
+							EndTimeNs:   endTime.UnixNano(),
 						},
 					},
 					QueryName: "cron_" + r.scriptID.String(),
