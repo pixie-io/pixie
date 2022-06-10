@@ -33,16 +33,12 @@ import {
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 import { EmbedContext, EmbedContextProvider, isPixieEmbedded } from 'app/common/embed-context';
-import {
-  SnackbarProvider,
-  VersionInfo,
-} from 'app/components';
+import { SnackbarProvider } from 'app/components';
 import Live from 'app/containers/App/live';
 import { LD_CLIENT_ID } from 'app/containers/constants';
 import { AuthRouter } from 'app/pages/auth/auth';
 import CreditsView from 'app/pages/credits/credits';
 import { makeCancellable } from 'app/utils/cancellable-promise';
-import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { ErrorBoundary, PixienautCrashFallback } from 'app/utils/error-boundary';
 import { parseJWT } from 'app/utils/jwt';
 import history from 'app/utils/pl-history';
@@ -147,7 +143,6 @@ export const App: React.FC = () => {
             }
           </Switch>
         </Router>
-        <VersionInfo cloudVersion={PIXIE_CLOUD_VERSION} />
       </SnackbarProvider>
       <PixieCookieBanner />
     </ErrorBoundary>

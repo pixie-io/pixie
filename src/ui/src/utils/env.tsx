@@ -44,7 +44,11 @@ if (STABLE_BUILD_NUMBER) {
   parts.push(STABLE_BUILD_NUMBER);
 }
 
-export const PIXIE_CLOUD_VERSION = `${dateStr}+${parts.join('.')}`;
+export const PIXIE_CLOUD_VERSION = {
+  date: dateStr,
+  build: parts.join('.'),
+  full: `${dateStr}+${parts.join('.')}`,
+};
 
 function isValidSegmentKey(k) {
   // The TS compiler is really smart and is optmizing away the checks,

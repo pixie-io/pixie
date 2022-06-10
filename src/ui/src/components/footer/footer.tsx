@@ -22,6 +22,8 @@ import { Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
+import { VersionInfo } from 'app/components/version-info/version-info';
+
 const useDefaultStyles = makeStyles(({ spacing, typography, breakpoints, palette }: Theme) => createStyles({
   root: {
     display: 'flex',
@@ -79,6 +81,7 @@ export const Footer = React.memo<FooterProps>(({
         <a href='https://pixielabs.ai/privacy' className={classes.text}>
           Privacy Policy
         </a>
+        <div className={classes.text}><VersionInfo /></div>
       </div>
       <div className={classes.right}>
         <Typography variant='subtitle2' className={classes.text}>

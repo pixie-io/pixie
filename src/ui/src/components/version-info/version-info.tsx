@@ -18,22 +18,11 @@
 
 import * as React from 'react';
 
-import { styled } from '@mui/material/styles';
+import { Tooltip } from '@mui/material';
 
-// eslint-disable-next-line react-memo/require-memo
-const Container = styled('div', { name: 'VersionInfo' })(({ theme }) => ({
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  color: theme.palette.grey['800'],
-  fontSize: '0.75rem',
-}));
+import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 
-interface VersionInfoProps {
-  cloudVersion: string;
-}
-
-export const VersionInfo: React.FC<VersionInfoProps> = React.memo(({ cloudVersion }) => (
-  <Container>{cloudVersion}</Container>
+export const VersionInfo = React.memo(() => (
+  <Tooltip title={PIXIE_CLOUD_VERSION.full}><span>Built {PIXIE_CLOUD_VERSION.date}</span></Tooltip>
 ));
 VersionInfo.displayName = 'VersionInfo';

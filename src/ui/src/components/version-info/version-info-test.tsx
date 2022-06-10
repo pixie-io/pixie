@@ -19,19 +19,19 @@
 import * as React from 'react';
 
 import { ThemeProvider } from '@mui/material/styles';
-import { render } from '@testing-library/react';
+import { screen, render } from '@testing-library/react';
 
 import { DARK_THEME } from 'app/components';
 
 import { VersionInfo } from './version-info';
 
 describe('<VersionInfo/>', () => {
-  it('renders correctly', () => {
-    const { container } = render(
+  it('renders correctly', async () => {
+    render(
       <ThemeProvider theme={DARK_THEME}>
-        <VersionInfo cloudVersion='testing 123' />
+        <VersionInfo />
       </ThemeProvider>,
     );
-    expect(container).toMatchSnapshot();
+    await screen.findByText('Built ', { exact: false });
   });
 });
