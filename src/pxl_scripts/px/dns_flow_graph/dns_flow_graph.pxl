@@ -40,7 +40,6 @@ def dns_flow_graph(start_time: str, from_entity_filter: str, to_entity_filter: s
     df.pod = df.ctx['pod']
     df.service = df.ctx['service']
     df.namespace = df.ctx['namespace']
-    df = df.drop(['upid'])
 
     # Create table in drawer.
     px.debug(df, "dns_events")
@@ -52,7 +51,16 @@ def dns_flow_graph(start_time: str, from_entity_filter: str, to_entity_filter: s
 
     # Specify from and to entities.
     df.from_entity = df.pod
-    df.to_entity = px.Service(px.nslookup(df.remote_addr))
+
+    localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
+    df_localhost = df[px.regex_match(localhost_ip_regexp, df.remote_addr)]
+    df_localhost.to_entity = 'localhost:' + px.upid_to_pod_name(df_localhost.upid)
+
+    df_non_localhost = df[not px.regex_match(localhost_ip_regexp, df.remote_addr)]
+    df_non_localhost.to_entity = px.Service(px.nslookup(df.remote_addr))
+
+    df = df_localhost.append(df_non_localhost)
+    df = df.drop(['upid'])
 
     # Reformat to_entity and from_entity for consistency between pods and services.
     df = format_nslookup_name(df)
