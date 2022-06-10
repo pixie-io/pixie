@@ -206,6 +206,4 @@ def stacktraces(start_time: str, node: str):
         suffixes=['', '_x']
     )
     df.percent = 100.0 * df.count * df.num_cpus / df.count_x
-    df.drop('node_x')
-
-    return df
+    return df.drop('node_x')

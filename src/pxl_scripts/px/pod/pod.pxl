@@ -352,6 +352,4 @@ def stacktraces(start_time: str, pod: str):
         suffixes=['', '_x']
     )
     df.percent = 100.0 * df.count / df.count_x
-    df.drop('pod_x')
-
-    return df
+    return df.drop('pod_x')
