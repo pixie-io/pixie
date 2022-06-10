@@ -79,6 +79,4 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_
         suffixes=['', '_x']
     )
     df.percent = 100.0 * df.count * df.scaling_factor / df.count_x
-    df.drop(pct_basis_entity + '_x')
-
-    return df
+    return df.drop(pct_basis_entity + '_x')

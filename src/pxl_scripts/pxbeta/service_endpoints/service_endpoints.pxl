@@ -131,5 +131,4 @@ def request_path_endpoint_clustering(let_df):
     merged_df.endpoint = px._predict_request_path_cluster(
         merged_df.req_path, merged_df.clustering
     )
-    merged_df.drop(["clustering"])
-    return merged_df
+    return merged_df.drop(["clustering"])
