@@ -36,4 +36,14 @@ const (
 	VizierStatusChange = "Vizier Status Change"
 	// APIRequest is an event for when a request is made to the Pixie API using an API token.
 	APIRequest = "API Request"
+	// PluginEnabled is an event for when a user enables a plugin.
+	PluginEnabled = "Plugin Enabled"
+	// PluginDisabled is an event for when a user disables a plugin.
+	PluginDisabled = "Plugin Disabled"
+	// PluginRetentionScriptCreated is an event for when a retention script is created.
+	PluginRetentionScriptCreated = "Plugin Retention Script Created"
+	// PluginRetentionScriptUpdated is an event for when a retention script is updated.
+	PluginRetentionScriptUpdated = "Plugin Retention Script Updated"
+	// PluginRetentionScriptDeleted is an event for when a retention script is deleted.
+	PluginRetentionScriptDeleted = "Plugin Retention Script Deleted"
 )

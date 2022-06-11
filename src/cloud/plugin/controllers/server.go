@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"gopkg.in/yaml.v2"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
@@ -39,6 +40,7 @@ import (
 	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/shared/scripts"
 	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/events"
 	"px.dev/pixie/src/utils"
 )
 
@@ -539,12 +541,30 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 		if err != nil {
 			return nil, err
 		}
+
+		// Track enable event.
+		events.Client().Enqueue(&analytics.Track{
+			UserId: orgID.String(),
+			Event:  events.PluginEnabled,
+			Properties: analytics.NewProperties().
+				Set("plugin_id", req.PluginID).
+				Set("version", req.Version),
+		})
+
 		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
 	} else if enabled && req.Enabled != nil && !req.Enabled.Value { // Plugin was disabled, we should delete it.
 		err = s.disableOrgRetention(ctx, txn, orgID, req.PluginID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Track disable event.
+		events.Client().Enqueue(&analytics.Track{
+			UserId: orgID.String(),
+			Event:  events.PluginDisabled,
+			Properties: analytics.NewProperties().
+				Set("plugin_id", req.PluginID),
+		})
 		return &pluginpb.UpdateOrgRetentionPluginConfigResponse{}, txn.Commit()
 	} else if !enabled && req.Enabled != nil && !req.Enabled.Value {
 		// This is already disabled.
@@ -768,6 +788,16 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 		return nil, err
 	}
 
+	events.Client().Enqueue(&analytics.Track{
+		UserId: orgID.String(),
+		Event:  events.PluginRetentionScriptCreated,
+		Properties: analytics.NewProperties().
+			Set("plugin_id", req.Script.Script.PluginId).
+			Set("script_name", req.Script.Script.ScriptName).
+			Set("script_id", utils.UUIDFromProtoOrNil(id).String()).
+			Set("frequency_s", req.Script.Script.FrequencyS),
+	})
+
 	return &pluginpb.CreateRetentionScriptResponse{
 		ID: id,
 	}, nil
@@ -919,6 +949,43 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 		return nil, status.Errorf(codes.Internal, "Failed to update cron script")
 	}
 
+	// Send event to track script updates.
+	changedScriptName := req.ScriptName != nil
+	changedDescription := req.Description != nil
+	changedEnabled := req.Enabled != nil
+	enabled := false
+	if changedEnabled {
+		enabled = req.Enabled.Value
+	}
+	changedFrequency := req.FrequencyS != nil
+	freq := int64(0)
+	if changedFrequency {
+		freq = req.FrequencyS.Value
+	}
+	changedScript := req.Contents != nil
+	changedExportURL := req.ExportUrl != nil
+
+	clusterIDStrs := make([]string, len(req.ClusterIDs))
+	for i, c := range req.ClusterIDs {
+		clusterIDStrs[i] = utils.UUIDFromProtoOrNil(c).String()
+	}
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: claimsOrgIDstr,
+		Event:  events.PluginRetentionScriptUpdated,
+		Properties: analytics.NewProperties().
+			Set("script_id", scriptID).
+			Set("plugin_id", script.PluginID).
+			Set("cluster_ids", clusterIDStrs).
+			Set("changed_script_name", changedScriptName).
+			Set("changed_description", changedDescription).
+			Set("changed_enabled", changedEnabled).
+			Set("changed_script", changedScript).
+			Set("changed_export_url", changedExportURL).
+			Set("enabled", enabled).
+			Set("frequency_s", freq),
+	})
+
 	return &pluginpb.UpdateRetentionScriptResponse{}, nil
 }
 
@@ -933,7 +1000,25 @@ func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.Delete
 	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
 	scriptID := utils.UUIDFromProtoOrNil(req.ID)
 
-	query := `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND NOT is_preset`
+	query := `SELECT plugin_id from plugin_retention_scripts WHERE script_id=$1`
+	selectRows, err := s.db.Queryx(query, scriptID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch script")
+	}
+
+	defer selectRows.Close()
+
+	if !selectRows.Next() {
+		return nil, status.Error(codes.NotFound, "script not found")
+	}
+
+	var pluginID string
+	err = selectRows.Scan(&pluginID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to read script")
+	}
+
+	query = `DELETE FROM plugin_retention_scripts WHERE org_id=$1 AND script_id=$2 AND NOT is_preset`
 	resp, err := txn.Exec(query, orgID, scriptID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete scripts")
@@ -963,6 +1048,14 @@ func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.Delete
 	if err != nil {
 		return nil, err
 	}
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: orgID.String(),
+		Event:  events.PluginRetentionScriptDeleted,
+		Properties: analytics.NewProperties().
+			Set("script_id", scriptID.String()).
+			Set("plugin_id", pluginID),
+	})
 
 	return &pluginpb.DeleteRetentionScriptResponse{}, nil
 }
