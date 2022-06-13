@@ -144,9 +144,12 @@ const ExtraNavContext = React.memo<WithChildren>(({ children }) => {
 });
 ExtraNavContext.displayName = 'ExtraNavContext';
 
-const ConfigureDataExportPage = React.memo<WithChildren>(({ children }) => {
+const ConfigureDataExportPage = React.memo<WithChildren<{
+  scrollRef: React.MutableRefObject<HTMLDivElement>,
+}>>(({ children, scrollRef }) => {
   const classes = useStyles();
   const isEmbedded = isPixieEmbedded();
+
   return (
     <div className={classes.root}>
       {!isEmbedded && (
@@ -160,7 +163,7 @@ const ConfigureDataExportPage = React.memo<WithChildren>(({ children }) => {
           </SidebarContext.Provider>
         </ExtraNavContext>
       )}
-      <div className={buildClass(classes.main, isEmbedded && classes.mainEmbedded)}>
+      <div className={buildClass(classes.main, isEmbedded && classes.mainEmbedded)} ref={scrollRef}>
         <div className={classes.mainBlock}>
           {children}
         </div>
@@ -206,25 +209,37 @@ NoPluginsEnabledSplash.displayName = 'NoPluginsEnabledSplash';
 
 export const ConfigureDataExportView = React.memo(() => {
   const { plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
-  const { path } = useRouteMatch();
+  const { path } = useRouteMatch(); // Outer path - not affected by the sub-routes in the <Switch> below
+
+  const scrollRef = React.useRef<HTMLDivElement>();
+  const  [innerLoc, setInnerLoc] = React.useState(null);
+  React.useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [innerLoc?.pathname]);
 
   const isSplash = React.useMemo(() => (
     !plugins.some(p => p.supportsRetention && p.retentionEnabled)
   ), [plugins]);
 
   return (
-    <ConfigureDataExportPage>
-      <Switch>
-        <Route exact path={path}>
-          {isSplash ? <NoPluginsEnabledSplash /> : <ConfigureDataExportBody /> }
-        </Route>
-        <Route exact path={`${path}/create`}>
-          <EditDataExportScript scriptId='' isCreate={true} />
-        </Route>
-        <Route exact path={`${path}/update/:scriptId`}>
-          {({ match: { params } }) => <EditDataExportScript scriptId={params.scriptId} isCreate={false} />}
-        </Route>
-      </Switch>
+    <ConfigureDataExportPage scrollRef={scrollRef}>
+      <Route render={React.useCallback(({ location }) => {
+        setInnerLoc(location);
+
+        return (
+          <Switch>
+            <Route exact path={path}>
+              {isSplash ? <NoPluginsEnabledSplash /> : <ConfigureDataExportBody /> }
+            </Route>
+            <Route exact path={`${path}/create`}>
+              <EditDataExportScript scriptId='' isCreate={true} />
+            </Route>
+            <Route exact path={`${path}/update/:scriptId`}>
+              {({ match: { params } }) => <EditDataExportScript scriptId={params.scriptId} isCreate={false} />}
+            </Route>
+          </Switch>
+        );
+      }, [isSplash, path])} />
     </ConfigureDataExportPage>
   );
 });
