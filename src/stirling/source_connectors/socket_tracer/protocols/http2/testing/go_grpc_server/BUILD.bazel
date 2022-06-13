@@ -14,24 +14,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
-load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-pl_aux_go_binary(
-    name = "golang_1_16_grpc_server",
-    base = "@golang_1_16_image//image",
-    extra_layers = {
-        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
-    },
-    files = [
-        "go.mod",
-        "go.sum",
-        "main.go",
+go_library(
+    name = "grpc_server_lib",
+    srcs = ["main.go"],
+    importpath = "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
+    deps = [
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:greet_pl_go_proto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//encoding/gzip",
+        "@org_golang_google_grpc//reflection",
     ],
+)
+
+go_binary(
+    name = "golang_1_16_grpc_server",
+    embed = [":grpc_server_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
 filegroup(
@@ -44,17 +48,12 @@ filegroup(
     visibility = ["//src/stirling:__subpackages__"],
 )
 
-pl_aux_go_binary(
+go_binary(
     name = "golang_1_17_grpc_server",
-    base = "@golang_1_17_image//image",
-    extra_layers = {
-        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
-    },
-    files = [
-        "go.mod",
-        "go.sum",
-        "main.go",
-    ],
+    embed = [":grpc_server_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
 filegroup(
@@ -67,17 +66,9 @@ filegroup(
     visibility = ["//src/stirling:__subpackages__"],
 )
 
-pl_aux_go_binary(
+go_binary(
     name = "golang_1_18_grpc_server",
-    base = "@golang_1_18_image//image",
-    extra_layers = {
-        "proto": ["//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:proto_files"],
-    },
-    files = [
-        "go.mod",
-        "go.sum",
-        "main.go",
-    ],
+    embed = [":grpc_server_lib"],
 )
 
 filegroup(

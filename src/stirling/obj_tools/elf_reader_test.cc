@@ -246,12 +246,12 @@ TEST(ElfReaderTest, FuncByteCode) {
 }
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
-  const std::string kPath =
-      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_16_binary");
+  const std::string kPath = px::testing::BazelRunfilePath(
+      "src/stirling/obj_tools/testdata/go/test_go_1_16_binary_/test_go_1_16_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
-  EXPECT_EQ(symbol.address, 0x54AF20);
+  EXPECT_EQ(symbol.address, 0x549F20);
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
   EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);
 }

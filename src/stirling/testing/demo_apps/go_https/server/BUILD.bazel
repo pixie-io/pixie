@@ -14,13 +14,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+go_library(
+    name = "server_lib",
+    srcs = ["https_server.go"],
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/server",
+    deps = [
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+    ],
+)
 
 genrule(
     name = "certs",
@@ -42,92 +49,65 @@ filegroup(
     ],
 )
 
-container_image(
-    name = "golang_1_16_https_server_source",
-    base = "@golang_1_16_image//image",
-    directory = "/go/src/https_server",
-    files = ["https_server.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_16_https_server_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/https_server"],
-    image = ":golang_1_16_https_server_source.tar",
+go_binary(
+    name = "golang_1_16_server_binary",
+    embed = [":server_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
 container_image(
     name = "golang_1_16_https_server",
-    base = ":golang_1_16_https_server_build_commit.tar",
-    directory = "/certs",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./https_server",
-        "--cert=/certs/server.crt",
-        "--key=/certs/server.key",
+        "./golang_1_16_server_binary",
+        "--cert=server.crt",
+        "--key=server.key",
     ],
-    files = [":server_certs"],
+    files = [
+        ":golang_1_16_server_binary",
+        ":server_certs",
+    ],
 )
 
-container_image(
-    name = "golang_1_17_https_server_source",
-    base = "@golang_1_17_image//image",
-    directory = "/go/src/https_server",
-    files = ["https_server.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_17_https_server_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/https_server"],
-    image = ":golang_1_17_https_server_source.tar",
+go_binary(
+    name = "golang_1_17_server_binary",
+    embed = [":server_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
 container_image(
     name = "golang_1_17_https_server",
-    base = ":golang_1_17_https_server_build_commit.tar",
-    directory = "/certs",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./https_server",
-        "--cert=/certs/server.crt",
-        "--key=/certs/server.key",
+        "./golang_1_17_server_binary",
+        "--cert=server.crt",
+        "--key=server.key",
     ],
-    files = [":server_certs"],
+    files = [
+        ":golang_1_17_server_binary",
+        ":server_certs",
+    ],
 )
 
-container_image(
-    name = "golang_1_18_https_server_source",
-    base = "@golang_1_18_image//image",
-    directory = "/go/src/https_server",
-    files = ["https_server.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_18_https_server_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/https_server"],
-    image = ":golang_1_18_https_server_source.tar",
+go_binary(
+    name = "golang_1_18_server_binary",
+    embed = [":server_lib"],
 )
 
 container_image(
     name = "golang_1_18_https_server",
-    base = ":golang_1_18_https_server_build_commit.tar",
-    directory = "/certs",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./https_server",
-        "--cert=/certs/server.crt",
-        "--key=/certs/server.key",
+        "./golang_1_18_server_binary",
+        "--cert=server.crt",
+        "--key=server.key",
     ],
-    files = [":server_certs"],
+    files = [
+        ":golang_1_18_server_binary",
+        ":server_certs",
+    ],
 )

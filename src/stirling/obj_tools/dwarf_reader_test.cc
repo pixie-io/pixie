@@ -22,14 +22,17 @@
 #include "src/common/testing/testing.h"
 
 constexpr std::string_view kTestGo1_16Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary_/"
+    "test_go_1_16_binary";
 constexpr std::string_view kTestGo1_17Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_17_binary_/"
+    "test_go_1_17_binary";
 constexpr std::string_view kTestGo1_18Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_18_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_18_binary_/"
+    "test_go_1_18_binary";
 constexpr std::string_view kGoGRPCServer =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary/go/"
-    "src/grpc_tls_server/grpc_tls_server";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary_/"
+    "golang_1_16_grpc_tls_server_binary";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe";
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/go/sockshop_payments_service";

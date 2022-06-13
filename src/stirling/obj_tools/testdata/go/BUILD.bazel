@@ -14,44 +14,57 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
-load("//src/stirling/testing/bazel:containerized_build.bzl", "pl_aux_go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-pl_aux_go_binary(
+go_library(
+    name = "lib",
+    srcs = ["test_go_binary.go"],
+    importpath = "px.dev/pixie/src/stirling/obj_tools/testdata/go",
+)
+
+go_binary(
     name = "test_go_1_16_binary",
-    base = "@golang_1_16_image//image",
-    build_flags = "-gcflags='-N -l'",
-    files = [
-        "go.mod",
-        "go.sum",
-        "test_go_binary.go",
-    ],
+    embed = [":lib"],
+    # -N -l are set by default in debug builds, and go tool compile re-enables inlining if it sees `-l -l`.
+    gc_goopts = select({
+        "//bazel:debug_build": [],
+        "//conditions:default": [
+            "-N",
+            "-l",
+        ],
+    }),
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
-pl_aux_go_binary(
+go_binary(
     name = "test_go_1_17_binary",
-    base = "@golang_1_17_image//image",
-    build_flags = "-gcflags='-N -l'",
-    files = [
-        "go.mod",
-        "go.sum",
-        "test_go_binary.go",
-    ],
+    embed = [":lib"],
+    gc_goopts = select({
+        "//bazel:debug_build": [],
+        "//conditions:default": [
+            "-N",
+            "-l",
+        ],
+    }),
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
-pl_aux_go_binary(
+go_binary(
     name = "test_go_1_18_binary",
-    base = "@golang_1_18_image//image",
-    build_flags = "-gcflags='-N -l'",
-    files = [
-        "go.mod",
-        "go.sum",
-        "test_go_binary.go",
-    ],
+    embed = [":lib"],
+    gc_goopts = select({
+        "//bazel:debug_build": [],
+        "//conditions:default": [
+            "-N",
+            "-l",
+        ],
+    }),
 )
 
 filegroup(
