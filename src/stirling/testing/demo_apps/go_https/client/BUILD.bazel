@@ -14,88 +14,44 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//bazel:go_image_alias.bzl", "go_image")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-container_image(
-    name = "golang_1_16_https_client_source",
-    base = "@golang_1_16_image//image",
-    directory = "/go/src/https_client",
-    files = ["https_client.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_16_https_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
+go_library(
+    name = "client_lib",
+    srcs = ["https_client.go"],
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/client",
+    deps = [
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_x_net//http2",
     ],
-    docker_run_flags = ["-w /go/src/https_client"],
-    image = ":golang_1_16_https_client_source.tar",
 )
 
-container_image(
+go_image(
     name = "golang_1_16_https_client",
-    base = ":golang_1_16_https_client_build_commit.tar",
-    entrypoint = [
-        "./https_client",
-    ],
+    embed = [":client_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
-container_image(
-    name = "golang_1_17_https_client_source",
-    base = "@golang_1_17_image//image",
-    directory = "/go/src/https_client",
-    files = ["https_client.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_17_https_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/https_client"],
-    image = ":golang_1_17_https_client_source.tar",
-)
-
-container_image(
+go_image(
     name = "golang_1_17_https_client",
-    base = ":golang_1_17_https_client_build_commit.tar",
-    entrypoint = [
-        "./https_client",
-    ],
+    embed = [":client_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
-container_image(
-    name = "golang_1_18_https_client_source",
-    base = "@golang_1_18_image//image",
-    directory = "/go/src/https_client",
-    files = ["https_client.go"],
+go_binary(
+    name = "client",
+    embed = [":client_lib"],
 )
 
-container_run_and_commit(
-    name = "golang_1_18_https_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/https_client"],
-    image = ":golang_1_18_https_client_source.tar",
-)
-
-container_image(
+go_image(
     name = "golang_1_18_https_client",
-    base = ":golang_1_18_https_client_build_commit.tar",
-    entrypoint = [
-        "./https_client",
-    ],
+    binary = ":client",
 )

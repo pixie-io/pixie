@@ -1,9 +1,9 @@
 # HTTP server
 
-To run, first build everything:
+To run
 ```
-bazel run //src/stirling/testing/demo_apps/go_https/server:golang_1_16_https_server
-bazel run //src/stirling/testing/demo_apps/go_https/client:golang_1_16_https_client
+bazel run //src/stirling/testing/demo_apps/go_https/server:golang_1_16_https_server -- --norun
+bazel run //src/stirling/testing/demo_apps/go_https/client:golang_1_16_https_client -- --norun
 ```
 
 Then execute the following commands in two separate terminals:

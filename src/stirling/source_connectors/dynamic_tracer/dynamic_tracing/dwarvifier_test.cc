@@ -22,7 +22,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dwarvifier.h"
 
-constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary_/test_go_1_16_binary";
 
 namespace px {
 namespace stirling {
@@ -1370,14 +1371,14 @@ probes {
     scalar_var {
       name: "main__IntStruct_sym_addr1"
       type: UINT64
-      constant: "5104424"
+      constant: "5104328"
     }
   }
   vars {
     scalar_var {
       name: "runtime__errorString_sym_addr2"
       type: UINT64
-      constant: "5104456"
+      constant: "5104360"
     }
   }
   vars {

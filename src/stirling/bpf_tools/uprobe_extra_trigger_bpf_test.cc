@@ -68,7 +68,7 @@ TEST(BCCWrapper, UnexpectedExtraTrigger) {
   };
 
   // A templated path to the server. We will replace $0 with the pid of the server instance.
-  const std::string kServerPath = "/proc/$0/root/go/src/grpc_tls_server/grpc_tls_server";
+  const std::string kServerPath = "/proc/$0/root/golang_1_16_grpc_tls_server_binary";
 
   // Run server 1 and attach uprobes to it.
   ASSERT_OK(server1.Run(std::chrono::seconds{60}));

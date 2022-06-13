@@ -22,7 +22,7 @@ load("@io_bazel_rules_docker//repositories:repositories.bzl", container_reposito
 load("@io_bazel_rules_docker//scala:image.bzl", _scala_image_repos = "repositories")
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
-load("//bazel:container_images.bzl", "base_images", "stirling_test_build_images", "stirling_test_images")
+load("//bazel:container_images.bzl", "base_images", "stirling_test_images")
 load("//bazel:gcs.bzl", "gcs_file")
 load("//bazel:linux_headers.bzl", "linux_headers")
 load("//bazel/external/ubuntu_packages:packages.bzl", "download_ubuntu_packages")
@@ -37,7 +37,6 @@ def _container_images_setup():
     _scala_image_repos()
     base_images()
     stirling_test_images()
-    stirling_test_build_images()
 
 # TODO(zasgar): remove this when downstream bugs relying on bazel version are removed.
 def _impl(repository_ctx):

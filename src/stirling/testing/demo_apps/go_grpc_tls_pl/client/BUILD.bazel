@@ -14,11 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build of test data binaries is controlled by dockerized builds, not bazel/gazelle.
-#gazelle:ignore
-
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_commit", "container_run_and_extract")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -28,121 +25,85 @@ container_layer(
     files = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/certs:client_certs"],
 )
 
-container_image(
-    name = "golang_1_16_grpc_tls_client_source",
-    base = "@golang_1_16_image//image",
-    directory = "/go/src/grpc_tls_client",
-    files = ["client.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_16_grpc_tls_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
+go_library(
+    name = "client_lib",
+    srcs = ["client.go"],
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/client",
+    deps = [
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//credentials",
     ],
-    docker_run_flags = ["-w /go/src/grpc_tls_client"],
-    image = ":golang_1_16_grpc_tls_client_source.tar",
 )
 
-container_run_and_extract(
+go_binary(
     name = "golang_1_16_grpc_tls_client_binary",
-    commands = ["echo"],
-    extract_file = "/go/src/grpc_tls_client/grpc_tls_client",
-    image = ":golang_1_16_grpc_tls_client_build_commit.tar",
-)
-
-filegroup(
-    name = "grpc_tls_client",
-    srcs = [":golang_1_16_grpc_tls_client_binary/go/src/grpc_tls_client/grpc_tls_client"],
+    embed = [":client_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
 container_image(
     name = "golang_1_16_grpc_tls_client",
-    base = ":golang_1_16_grpc_tls_client_build_commit.tar",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./grpc_tls_client",
+        "./golang_1_16_grpc_tls_client_binary",
         "--client_tls_cert=/certs/client.crt",
         "--client_tls_key=/certs/client.key",
         "--tls_ca_cert=/certs/ca.crt",
         "--count=1",
     ],
+    files = [
+        ":golang_1_16_grpc_tls_client_binary",
+    ],
     layers = [":certs_layer"],
 )
 
-container_image(
-    name = "golang_1_17_grpc_tls_client_source",
-    base = "@golang_1_17_image//image",
-    directory = "/go/src/grpc_tls_client",
-    files = ["client.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_17_grpc_tls_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/grpc_tls_client"],
-    image = ":golang_1_17_grpc_tls_client_source.tar",
-)
-
-container_run_and_extract(
+go_binary(
     name = "golang_1_17_grpc_tls_client_binary",
-    commands = ["echo"],
-    extract_file = "/go/src/grpc_tls_client/grpc_tls_client",
-    image = ":golang_1_17_grpc_tls_client_build_commit.tar",
+    embed = [":client_lib"],
+    goarch = "amd64",
+    goos = "linux",
+    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
 container_image(
     name = "golang_1_17_grpc_tls_client",
-    base = ":golang_1_17_grpc_tls_client_build_commit.tar",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./grpc_tls_client",
+        "./golang_1_17_grpc_tls_client_binary",
         "--client_tls_cert=/certs/client.crt",
         "--client_tls_key=/certs/client.key",
         "--tls_ca_cert=/certs/ca.crt",
         "--count=1",
+    ],
+    files = [
+        ":golang_1_17_grpc_tls_client_binary",
     ],
     layers = [":certs_layer"],
 )
 
-container_image(
-    name = "golang_1_18_grpc_tls_client_source",
-    base = "@golang_1_18_image//image",
-    directory = "/go/src/grpc_tls_client",
-    files = ["client.go"],
-)
-
-container_run_and_commit(
-    name = "golang_1_18_grpc_tls_client_build",
-    commands = [
-        "go mod init",
-        "go get",
-        "go build -v",
-    ],
-    docker_run_flags = ["-w /go/src/grpc_tls_client"],
-    image = ":golang_1_18_grpc_tls_client_source.tar",
-)
-
-container_run_and_extract(
+go_binary(
     name = "golang_1_18_grpc_tls_client_binary",
-    commands = ["echo"],
-    extract_file = "/go/src/grpc_tls_client/grpc_tls_client",
-    image = ":golang_1_18_grpc_tls_client_build_commit.tar",
+    embed = [":client_lib"],
 )
 
 container_image(
     name = "golang_1_18_grpc_tls_client",
-    base = ":golang_1_18_grpc_tls_client_build_commit.tar",
+    base = "//:pl_go_base_image",
     entrypoint = [
-        "./grpc_tls_client",
+        "./golang_1_18_grpc_tls_client_binary",
         "--client_tls_cert=/certs/client.crt",
         "--client_tls_key=/certs/client.key",
         "--tls_ca_cert=/certs/ca.crt",
         "--count=1",
+    ],
+    files = [
+        ":golang_1_18_grpc_tls_client_binary",
     ],
     layers = [":certs_layer"],
 )

@@ -139,28 +139,6 @@ def base_images():
         "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/graalvm-ce",
     )
 
-def stirling_test_build_images():
-    _gcr_io_image(
-        # Using golang:1.16-alpine as it is smaller than the ubuntu based image.
-        "golang_1_16_image",
-        "sha256:c3d78e9d45bc6da38b15485456380d0b669e60d075f0ed69f87ebc14231eed19",
-        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
-    )
-
-    _gcr_io_image(
-        # Using golang:1.17-alpine as it is smaller than the ubuntu based image.
-        "golang_1_17_image",
-        "sha256:1dc6a836407ef26c761af27bd39eb86ec385bab0f89a6c969bb1a04b342f7074",
-        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
-    )
-
-    _gcr_io_image(
-        # Using golang:1.18-alpine as it is smaller than the ubuntu based image.
-        "golang_1_18_image",
-        "sha256:e444a82360d0e4cecc2e352829e400c240b4566a5855daa6e9bd18ef6e7c50da",
-        "pixie-oss/pixie-dev-public/docker-deps/library/golang",
-    )
-
 def stirling_test_images():
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     _gcr_io_image(
