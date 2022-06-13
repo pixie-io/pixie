@@ -53,14 +53,12 @@ def dns_flow_graph(start_time: str, from_entity_filter: str, to_entity_filter: s
     df.from_entity = df.pod
 
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
-    df_localhost = df[px.regex_match(localhost_ip_regexp, df.remote_addr)]
-    df_localhost.to_entity = 'localhost:' + px.upid_to_pod_name(df_localhost.upid)
+    df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_addr)
+    df.to_entity = px.select(df.is_remote_addr_localhost,
+                             'localhost:' + px.upid_to_pod_name(df.upid),
+                             px.Service(px.nslookup(df.remote_addr)))
 
-    df_non_localhost = df[not px.regex_match(localhost_ip_regexp, df.remote_addr)]
-    df_non_localhost.to_entity = px.Service(px.nslookup(df.remote_addr))
-
-    df = df_localhost.append(df_non_localhost)
-    df = df.drop(['upid'])
+    df = df.drop(['upid', 'is_remote_addr_localhost'])
 
     # Reformat to_entity and from_entity for consistency between pods and services.
     df = format_nslookup_name(df)
