@@ -95,6 +95,7 @@ echo -e "\t${bold}Shell: \t\t\t ${green}${shell}${resetcolor}"
 
 
 docker run --rm -it \
+  --hostname px-dev-docker \
   "${configs[@]}" \
   "${build_buddy_args[@]}" \
   "${PX_RUN_DOCKER_EXTRA_ARGS[@]}" \
