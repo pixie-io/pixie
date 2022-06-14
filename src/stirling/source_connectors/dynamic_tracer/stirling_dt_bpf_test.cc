@@ -35,7 +35,7 @@
 namespace px {
 namespace stirling {
 
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -148,8 +148,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 
 class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/test_exe");
+  const std::string kBinaryPath = BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe");
 
   static constexpr std::string_view kTracepointDeploymentTxtPB = R"(
   deployment_spec {
@@ -275,7 +274,7 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
 class DynamicTraceGolangTest : public StirlingDynamicTraceBPFTest {
  protected:
   const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/go/test_go_1_16_binary");
+      BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_16_binary");
 };
 
 TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
@@ -624,8 +623,7 @@ INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
 
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath =
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/cc/test_exe");
+  const std::string kBinaryPath = BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe");
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {
@@ -886,7 +884,7 @@ TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
 
 class DynamicTraceSharedLibraryTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelBinTestFilePath("src/stirling/testing/dns/dns_hammer");
+  const std::string kBinaryPath = BazelRunfilePath("src/stirling/testing/dns/dns_hammer");
 };
 
 TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
@@ -936,7 +934,7 @@ TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
 class JavaDNSHammerContainer : public ContainerRunner {
  public:
   JavaDNSHammerContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
+      : ContainerRunner(BazelRunfilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
   // Image is created through bazel rules, and stored as a tar file. It is not pushed to any repo.

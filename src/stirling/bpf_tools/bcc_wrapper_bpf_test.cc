@@ -37,7 +37,7 @@ namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::px::testing::TempDir;
 
 constexpr char kBCCProgram[] = R"BCC(

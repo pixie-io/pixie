@@ -36,7 +36,7 @@ constexpr uint64_t kFileSizeLimitMB = 290;
 TEST(StirlingWrapperSizeTest, ExecutableSizeLimit) {
   LOG(INFO) << absl::Substitute("Size limit = $0 MB", kFileSizeLimitMB);
   const std::string stirling_wrapper_path =
-      testing::TestFilePath("src/stirling/binaries/stirling_wrapper_core");
+      testing::BazelRunfilePath("src/stirling/binaries/stirling_wrapper_core");
 
   EXPECT_LE(std::filesystem::file_size(std::filesystem::path(stirling_wrapper_path)),
             kFileSizeLimitMB * 1024 * 1024);

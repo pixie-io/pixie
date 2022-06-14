@@ -32,7 +32,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::HasSubstr;
 
 // This test does the following:
@@ -50,8 +50,8 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   using fs_path = std::filesystem::path;
   const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path toy_app_path = java_testing_path / kJavaAppName;
-  const fs_path bazel_test_app_path = BazelBinTestFilePath(toy_app_path);
-  const fs_path bazel_attach_app_path = BazelBinTestFilePath(GetPxJattachFlagValueForTesting());
+  const fs_path bazel_test_app_path = BazelRunfilePath(toy_app_path);
+  const fs_path bazel_attach_app_path = BazelRunfilePath(GetPxJattachFlagValueForTesting());
 
   LOG(INFO) << "bazel_attach_app_path: " << bazel_attach_app_path;
   LOG(INFO) << "bazel_test_app_path: " << bazel_test_app_path;
@@ -69,8 +69,8 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   const fs_path glibc_lib = "build-glibc/lib-px-java-agent-glibc.so";
 
   const std::vector<std::string> libs = {
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / musl_lib)).string(),
-      std::filesystem::absolute(BazelBinTestFilePath(lib_path_pfx / glibc_lib)).string(),
+      std::filesystem::absolute(BazelRunfilePath(lib_path_pfx / musl_lib)).string(),
+      std::filesystem::absolute(BazelRunfilePath(lib_path_pfx / glibc_lib)).string(),
   };
   for (const auto& lib : libs) {
     ASSERT_TRUE(fs::Exists(lib)) << lib;

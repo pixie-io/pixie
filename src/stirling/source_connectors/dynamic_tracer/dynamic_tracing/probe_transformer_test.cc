@@ -256,7 +256,7 @@ struct ProbeGenTestParam {
 
 class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
  protected:
-  ProbeGenTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  ProbeGenTest() : binary_path_(px::testing::BazelRunfilePath(kBinaryPath)) {}
 
   std::string binary_path_;
 };

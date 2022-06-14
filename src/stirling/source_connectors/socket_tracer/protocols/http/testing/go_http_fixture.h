@@ -38,8 +38,8 @@ class GoHTTPFixture {
         "go_http_server_/"
         "go_http_server";
 
-    client_path_ = px::testing::BazelBinTestFilePath(kClientPath);
-    server_path_ = px::testing::BazelBinTestFilePath(kServerPath);
+    client_path_ = px::testing::BazelRunfilePath(kClientPath);
+    server_path_ = px::testing::BazelRunfilePath(kServerPath);
   }
 
   void LaunchServer() {

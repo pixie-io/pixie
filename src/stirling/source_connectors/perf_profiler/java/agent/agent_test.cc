@@ -27,7 +27,7 @@
 namespace px {
 namespace stirling {
 
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::HasSubstr;
 
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
@@ -36,7 +36,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   using fs_path = std::filesystem::path;
   const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/testing/java";
   const fs_path kToyAppPath = kPathToJavaTesting / kJavaAppName;
-  const fs_path kBazelAppPath = BazelBinTestFilePath(kToyAppPath);
+  const fs_path kBazelAppPath = BazelRunfilePath(kToyAppPath);
   ASSERT_TRUE(fs::Exists(kBazelAppPath));
 
   const fs_path artifacts_path = absl::Substitute("java-agent-test-$0", PX_JVMTI_AGENT_HASH);

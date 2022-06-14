@@ -170,7 +170,7 @@ struct ProbeGenTestParam {
 
 class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
  protected:
-  ProbeGenTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  ProbeGenTest() : binary_path_(px::testing::BazelRunfilePath(kBinaryPath)) {}
 
   void SetUp() {
     ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::CreateIndexingAll(binary_path_));

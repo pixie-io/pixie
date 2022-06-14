@@ -39,8 +39,7 @@ namespace kafka = protocols::kafka;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
-using ::px::testing::BazelBinTestFilePath;
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::Eq;

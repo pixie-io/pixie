@@ -26,7 +26,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::AllOf;
 using ::testing::Field;
 using ::testing::HasSubstr;

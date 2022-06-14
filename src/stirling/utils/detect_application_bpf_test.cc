@@ -40,8 +40,7 @@ using ::testing::StrEq;
 TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
   constexpr std::string_view kNode15_0ImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
-  ContainerRunner node_server(px::testing::BazelBinTestFilePath(kNode15_0ImageTar), "node_server",
-                              "");
+  ContainerRunner node_server(px::testing::BazelRunfilePath(kNode15_0ImageTar), "node_server", "");
   ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
   pid_t node_server_pid = node_server.process_pid();
 
@@ -56,7 +55,7 @@ TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
 
 // Tests that the mntexec cli can execute into the alpine container.
 TEST(AlpineNodeExecTest, MountNSSubprocessWorks) {
-  ContainerRunner node_server(px::testing::BazelBinTestFilePath(
+  ContainerRunner node_server(px::testing::BazelRunfilePath(
                                   "src/stirling/source_connectors/socket_tracer/testing/containers/"
                                   "node_14_18_1_alpine_image.tar"),
                               "node_server", "");

@@ -50,7 +50,7 @@ namespace stirling {
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::px::testing::PathExists;
 using ::testing::Each;
 using ::testing::Gt;
@@ -66,7 +66,7 @@ std::filesystem::path BazelCCTestAppPath(const std::string_view app_name) {
   const std::filesystem::path kToyAppsPath =
       "src/stirling/source_connectors/perf_profiler/testing/cc";
   const std::filesystem::path app_path = kToyAppsPath / app_name;
-  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
 
@@ -74,7 +74,7 @@ std::filesystem::path BazelGoTestAppPath(const std::string_view app_name) {
   char const* const go_path_pattern = "src/stirling/source_connectors/perf_profiler/testing/go/$0_";
   const std::filesystem::path sub_path = absl::Substitute(go_path_pattern, app_name);
   const std::filesystem::path app_path = sub_path / app_name;
-  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
 
@@ -82,7 +82,7 @@ std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
   const std::filesystem::path kToyAppsPath =
       "src/stirling/source_connectors/perf_profiler/testing/java";
   const std::filesystem::path app_path = kToyAppsPath / app_name;
-  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
 }  // namespace

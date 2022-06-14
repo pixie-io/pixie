@@ -29,7 +29,7 @@ namespace proc_exit_tracer {
 
 using ::px::SubProcess;
 using ::px::stirling::testing::RecordBatchSizeIs;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::SizeIs;
 
 // Tests that ProcExitConnector::TransferData() does not throw any failures.
@@ -43,7 +43,7 @@ TEST(ProcExitConnectorTest, TransferData) {
   DataTable* data_table = data_tables.tables().front();
 
   const std::filesystem::path sleep_path =
-      BazelBinTestFilePath("src/stirling/source_connectors/proc_exit/testing/sleep");
+      BazelRunfilePath("src/stirling/source_connectors/proc_exit/testing/sleep");
   SubProcess proc;
   ASSERT_OK(proc.Start({sleep_path.string()}));
   ASSERT_TRUE(proc.IsRunning());

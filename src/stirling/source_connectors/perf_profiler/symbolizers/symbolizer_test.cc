@@ -49,7 +49,7 @@ namespace stirling {
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 
 template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
@@ -98,7 +98,7 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
 
   SubProcess fake_java_proc;
   const std::filesystem::path fake_java_bin_path =
-      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
+      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
   ASSERT_TRUE(fs::Exists(fake_java_bin_path)) << fake_java_bin_path.string();
   ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
   const uint32_t child_pid = fake_java_proc.child_pid();
@@ -154,7 +154,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   const std::filesystem::path java_app_path =
-      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
+      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
   ASSERT_TRUE(fs::Exists(java_app_path)) << java_app_path.string();
   ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
       << FLAGS_stirling_profiler_px_jattach_path;
@@ -344,7 +344,7 @@ TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
 
   SubProcess fake_java_proc;
   const std::filesystem::path fake_java_bin_path =
-      BazelBinTestFilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
+      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
   ASSERT_TRUE(fs::Exists(fake_java_bin_path));
   ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
   const uint32_t child_pid = fake_java_proc.child_pid();

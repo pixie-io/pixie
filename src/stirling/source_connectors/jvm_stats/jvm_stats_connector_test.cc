@@ -39,13 +39,13 @@ using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::PIDToUPID;
 using ::px::stirling::testing::RecordBatchSizeIs;
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::Each;
 using ::testing::SizeIs;
 
 struct JavaHelloWorld : SubProcess {
   inline static const std::string kClassPath =
-      TestFilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar");
+      BazelRunfilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar");
 
   ~JavaHelloWorld() {
     Kill();

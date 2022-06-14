@@ -51,7 +51,7 @@ class GRPCServer {
 
   void LaunchServer(std::string go_version, bool use_https) {
     std::string server_path = absl::Substitute(kServerPath, go_version);
-    server_path = px::testing::BazelBinTestFilePath(server_path).string();
+    server_path = px::testing::BazelRunfilePath(server_path).string();
     CHECK(fs::Exists(server_path));
 
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
@@ -85,7 +85,7 @@ class GRPCClient {
 
   void LaunchClient(std::string_view go_version, bool use_compression, bool use_https, int port) {
     std::string client_path = absl::Substitute(kClientPath, go_version);
-    client_path = px::testing::BazelBinTestFilePath(client_path).string();
+    client_path = px::testing::BazelRunfilePath(client_path).string();
 
     CHECK(fs::Exists(client_path));
 

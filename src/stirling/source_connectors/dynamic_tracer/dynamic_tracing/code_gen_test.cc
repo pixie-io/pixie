@@ -386,7 +386,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ir::physical::Program program;
 
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
-  program.mutable_deployment_spec()->set_path(px::testing::BazelBinTestFilePath(kBinaryPath));
+  program.mutable_deployment_spec()->set_path(px::testing::BazelRunfilePath(kBinaryPath));
 
   ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenBCCProgram(program));
 

@@ -212,7 +212,7 @@ namespace {
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
 
 std::string GetPathToTestDataFile(const std::string& fname) {
-  return testing::TestFilePath(std::string(kTestDataBasePath) + "/" + fname);
+  return testing::BazelRunfilePath(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace
 

@@ -64,12 +64,12 @@ auto CreateDwarfReader(const std::filesystem::path& path, bool indexing) {
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
-      : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)),
-        kGo1_16BinaryPath(px::testing::TestFilePath(kTestGo1_16Binary)),
-        kGo1_17BinaryPath(px::testing::TestFilePath(kTestGo1_17Binary)),
-        kGo1_18BinaryPath(px::testing::TestFilePath(kTestGo1_18Binary)),
-        kGoServerBinaryPath(px::testing::BazelBinTestFilePath(kGoGRPCServer)),
-        kGoBinaryUnconventionalPath(px::testing::TestFilePath(kGoBinaryUnconventional)) {}
+      : kCppBinaryPath(px::testing::BazelRunfilePath(kCppBinary)),
+        kGo1_16BinaryPath(px::testing::BazelRunfilePath(kTestGo1_16Binary)),
+        kGo1_17BinaryPath(px::testing::BazelRunfilePath(kTestGo1_17Binary)),
+        kGo1_18BinaryPath(px::testing::BazelRunfilePath(kTestGo1_18Binary)),
+        kGoServerBinaryPath(px::testing::BazelRunfilePath(kGoGRPCServer)),
+        kGoBinaryUnconventionalPath(px::testing::BazelRunfilePath(kGoBinaryUnconventional)) {}
 
   const std::string kCppBinaryPath;
   const std::string kGo1_16BinaryPath;

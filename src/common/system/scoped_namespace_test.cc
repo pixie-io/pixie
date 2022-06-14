@@ -37,7 +37,7 @@ namespace system {
 class TestContainer : public ContainerRunner {
  public:
   TestContainer()
-      : ContainerRunner(px::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
+      : ContainerRunner(px::testing::BazelRunfilePath(kBazelImageTar), kInstanceNamePrefix,
                         kReadyMessage) {}
 
  private:

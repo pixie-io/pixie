@@ -44,7 +44,7 @@ namespace mysql = protocols::mysql;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::px::types::ColumnWrapper;
 using ::px::types::ColumnWrapperRecordBatch;
 
@@ -63,7 +63,7 @@ DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. F
 class MySQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   MySQLTraceTest() {
-    std::string script_path = TestFilePath(
+    std::string script_path = BazelRunfilePath(
         "src/stirling/source_connectors/socket_tracer/protocols/mysql/testing/script.sql");
     LOG(INFO) << script_path;
 
@@ -80,7 +80,7 @@ class MySQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
   }
 
   StatusOr<int32_t> RunSQLScript(std::string_view script_path) {
-    std::string absl_script_path = TestFilePath(script_path);
+    std::string absl_script_path = BazelRunfilePath(script_path);
     PL_ASSIGN_OR_RETURN(std::string script_content, px::ReadFileToString(absl_script_path));
 
     // Since script content will be passed through bash, escape any single quotes in the script.
@@ -110,7 +110,7 @@ class MySQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
   }
 
   StatusOr<int32_t> RunPythonScript(std::string_view script_path) {
-    std::filesystem::path script_file_path = TestFilePath(script_path);
+    std::filesystem::path script_file_path = BazelRunfilePath(script_path);
     PL_ASSIGN_OR_RETURN(script_file_path, fs::Canonical(script_file_path));
     std::filesystem::path script_dir = script_file_path.parent_path();
     std::filesystem::path script_filename = script_file_path.filename();

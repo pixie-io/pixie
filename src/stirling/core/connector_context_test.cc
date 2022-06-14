@@ -22,7 +22,7 @@
 
 #include "src/common/testing/testing.h"
 
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::UnorderedElementsAre;
 
 namespace px {
@@ -30,7 +30,7 @@ namespace stirling {
 
 // Tests that the UPIDs from the local proc path are detected.
 TEST(SystemWideStandaloneContextTest, ListUPIDs) {
-  const std::filesystem::path proc_path = TestFilePath("src/common/system/testdata/proc");
+  const std::filesystem::path proc_path = BazelRunfilePath("src/common/system/testdata/proc");
   SystemWideStandaloneContext ctx(proc_path);
   EXPECT_THAT(ctx.GetUPIDs(),
               UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 13},

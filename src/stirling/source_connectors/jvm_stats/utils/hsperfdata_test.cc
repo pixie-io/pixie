@@ -34,13 +34,13 @@ namespace stirling {
 namespace java {
 namespace hsperf {
 
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
 TEST(PerfDataHeaderTest, ReadFromBytes) {
   ASSERT_OK_AND_ASSIGN(const std::string content,
-                       ReadFileToString(TestFilePath(
+                       ReadFileToString(BazelRunfilePath(
                            "src/stirling/source_connectors/jvm_stats/utils/test_hsperfdata")));
 
   HsperfData data;
