@@ -89,13 +89,7 @@ echo "Pass through env. vars: ${pass_thru_env_vars[*]}"
 # Perform the build as user (not as root).
 bazel build "${options[@]}" "$target"
 
-# Now find the bazel-bin directory.
-bazel_bin=$(bazel info "${options[@]}" bazel-bin 2> /dev/null)
-
-# Modify the target from //dir/subdir:exe to ${bazel_bin}/dir/subdir/exe.
-target=${target//":"/"/"}
-target=${target//"//"/""}
-target=${bazel_bin}/${target}
+target_executable=$(bazel cquery "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
 
 # Run the binary with sudo.
-sudo "${pass_thru_env_args[@]}" "$target" "${run_args[@]}"
+sudo "${pass_thru_env_args[@]}" "$target_executable" "${run_args[@]}"
