@@ -39,6 +39,10 @@ DEFINE_int32(table_store_stirling_error_limit,
              "The maximum amount of data to store in the two tables for Stirling error reporting, "
              "the stirling_error table and probe_status table.");
 
+DEFINE_int32(table_store_proc_exit_events_limit_bytes,
+             gflags::Int32FromEnv("PL_TABLE_STORE_PROC_EXIT_EVENTS_LIMIT_BYTES", 10 * 1024 * 1024),
+             "The maximum amount of data to store in the proc_exit_events table.");
+
 namespace px {
 namespace vizier {
 namespace agent {
@@ -93,9 +97,10 @@ Status PEMManager::InitSchemas() {
   int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
   int64_t stirling_error_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
   int64_t probe_status_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
-  int64_t other_table_size =
-      (memory_limit - http_table_size - stirling_error_table_size - probe_status_table_size) /
-      (num_tables - 3);
+  int64_t proc_exit_events_table_size = FLAGS_table_store_proc_exit_events_limit_bytes;
+  int64_t other_table_size = (memory_limit - http_table_size - stirling_error_table_size -
+                              probe_status_table_size - proc_exit_events_table_size) /
+                             (num_tables - 4);
 
   for (const auto& relation_info : relation_info_vec) {
     std::shared_ptr<table_store::Table> table_ptr;
@@ -111,6 +116,9 @@ Status PEMManager::InitSchemas() {
     } else if (relation_info.name == "probe_status") {
       table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
                                                        probe_status_table_size);
+    } else if (relation_info.name == "proc_exit_events") {
+      table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
+                                                       proc_exit_events_table_size);
     } else {
       table_ptr = std::make_shared<table_store::Table>(relation_info.name, relation_info.relation,
                                                        other_table_size);
