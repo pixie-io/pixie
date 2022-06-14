@@ -24,8 +24,8 @@ import {
   Box,
   Button,
   FormControl,
+  FormHelperText,
   Input,
-  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -44,6 +44,7 @@ import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
 import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 
+import { PluginIcon } from './data-export-common';
 import {
   ClusterInfoForRetentionScripts,
   DEFAULT_RETENTION_PXL,
@@ -54,16 +55,18 @@ import {
   useRetentionScript,
 } from './data-export-gql';
 
-const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
+const useStyles = makeStyles(({ breakpoints, spacing, typography }: Theme) => createStyles({
   root: {
     display: 'flex',
     flexFlow: 'column nowrap',
     justifyContent: 'flex-start',
     alignItems: 'stretch',
-    margin: spacing(2),
-    paddingBottom: spacing(2),
     minHeight: '100%',
     maxHeight: '100%',
+    paddingBottom: spacing(2),
+    margin: `${spacing(2)} auto`,
+    maxWidth: `${breakpoints.values.md}px`,
+    width: '100%',
 
     '& > .MuiPaper-root': {
       padding: spacing(2),
@@ -76,6 +79,7 @@ const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
     justifyContent: 'space-between',
   },
   descriptionContainer: {
+    marginTop: spacing(4),
     flex: '0 0 auto',
     display: 'flex',
     justifyContent: 'stretch',
@@ -145,6 +149,7 @@ const RetentionScriptEditorInner = React.memo<RetentionScriptEditorProps>(({
         language='python'
         theme={EDITOR_THEME_MAP[theme.palette.mode]}
         isReadOnly={isReadOnly}
+        readOnlyReason='PxL for preset scripts cannot be edited'
       />
     </div>
   );
@@ -289,113 +294,118 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
 
   const labelProps = React.useMemo(() => ({ shrink: true }), []);
 
+  const fid = React.useId();
+
   return (
     /* eslint-disable react-memo/require-usememo */
     <form className={classes.root} onSubmit={save}>
-      <Paper className={classes.topControls}>
-        <TextField
-          required
-          error={!valid && !pendingValues.name.trim().length}
-          variant='standard'
-          disabled={script?.isPreset}
-          label='Script Name'
-          value={pendingValues.name}
-          onChange={(e) => setPendingField('name', e.target.value)}
-          InputLabelProps={labelProps}
-        />
-        <Box sx={{ flex: 1 }} />
-        <Autocomplete
-          sx={{ flex: 1 }}
-          multiple
-          filterSelectedOptions
-          options={validClusters}
-          getOptionLabel={(c) => c.prettyClusterName}
-          value={pendingValues.clusters}
-          onChange={(_, newVal) => (
-            setPendingField('clusters', newVal as ClusterInfoForRetentionScripts[])
-          )}
-          renderInput={params => (
-            <TextField
-              {...params}
-              variant='standard'
-              label='Clusters'
-              placeholder={pendingValues.clusters.length ? '' : 'All Clusters (Default)'}
-              InputLabelProps={labelProps}
-            />
-          )}
-        />
-      </Paper>
-      <Paper className={classes.descriptionContainer}>
-        <TextField
-          multiline
-          minRows={1}
-          maxRows={10}
-          variant='standard'
-          disabled={script?.isPreset}
-          label='Description'
-          value={pendingValues.description}
-          onChange={(e) => setPendingField('description', e.target.value)}
-          InputLabelProps={labelProps}
-        />
-      </Paper>
-      <Paper className={classes.scriptContainer}>
-        <span className={classes.scriptHeading}>PxL Script</span>
-        <div className={classes.editorOuter}>
-          <RetentionScriptEditor
-            initialValue={pendingValues.contents}
-            onChange={(v) => setPendingField('contents', v)}
-            isReadOnly={script?.isPreset}
-          />
-        </div>
-      </Paper>
+      <Typography variant='h1' sx={{ mb: 2 }}>
+        {isCreate ? 'Create Export Script' : (
+          script?.isPreset ? 'Edit Preset Export Script' : 'Edit Custom Export Script'
+        )}
+      </Typography>
       <Paper>
-        <Stack gap={2}>
-          <FormControl
-            // eslint-disable-next-line react-memo/require-usememo
-            sx={{ width: '25ch' }}
-            variant='standard'
+        <div className={classes.topControls}>
+          <TextField
+            sx={{ width: '40ch' }}
             required
-            error={!valid && !(pendingValues.frequencyS > 0)}
-          >
-            <InputLabel htmlFor='script-frequency-input'>Summary Window</InputLabel>
-            <Input
-              id='script-frequency-input'
-              type='number'
-              inputProps={{ min: 1, step: 1 }}
-              value={pendingValues.frequencyS}
-              onChange={(e) => setPendingField('frequencyS', +e.target.value)}
-              endAdornment={
-                // TODO(nick,PC-1440): Seconds/minutes/whatever selector here for convenience
-                <InputAdornment position='end'>Seconds</InputAdornment>
-              }
-            />
-          </FormControl>
+            error={!valid && !pendingValues.name.trim().length}
+            variant='standard'
+            disabled={script?.isPreset}
+            label='Script Name'
+            value={pendingValues.name}
+            onChange={(e) => setPendingField('name', e.target.value)}
+            InputLabelProps={labelProps}
+          />
+          <Box sx={{ flex: 1 }} />
           <FormControl
-            sx={{ width: '25ch' }}
+            sx={{ width: '30ch' }}
             variant='standard'
             disabled={!isCreate}
             required={isCreate}
             error={!isCreate && !valid && !enabledPlugins.some(p => p.id === pendingValues.pluginID)}
           >
-            <InputLabel htmlFor='script-plugin-input'>Plugin</InputLabel>
+            <InputLabel htmlFor={`${fid}-plugin-id`}>
+              {isCreate || script?.isPreset ? 'Plugin' : 'Plugin (set on creation)'}
+            </InputLabel>
             <Select
-              id='script-plugin-input'
+              id={`${fid}-plugin-id`}
               value={pendingValues.pluginID}
               label='Plugin'
               onChange={(e) => setPendingField('pluginID', e.target.value)}
             >
               {enabledPlugins.map((plugin) => (
-                <MenuItem key={plugin.id} value={plugin.id}>{plugin.name}</MenuItem>
+                <MenuItem key={plugin.id} value={plugin.id}>
+                  <Box sx={{ display: 'flex', flexFlow: 'row nowrap', alignItems: 'center' }}>
+                    <PluginIcon iconString={plugin.logo ?? ''} />
+                    <span>{plugin.name}</span>
+                  </Box>
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
+        </div>
+        <div className={classes.descriptionContainer}>
+          <TextField
+            multiline
+            minRows={1}
+            maxRows={10}
+            variant='standard'
+            disabled={script?.isPreset}
+            label='Description'
+            value={pendingValues.description}
+            onChange={(e) => setPendingField('description', e.target.value)}
+            InputLabelProps={labelProps}
+          />
+        </div>
+      </Paper>
+      <Paper>
+        <Stack gap={4}>
+          <Autocomplete
+            sx={{ maxWidth: '100ch', minWidth: '40ch', width: 'max-content' }}
+            multiple
+            filterSelectedOptions
+            options={validClusters}
+            getOptionLabel={(c) => c.prettyClusterName}
+            value={pendingValues.clusters}
+            onChange={(_, newVal) => (
+              setPendingField('clusters', newVal as ClusterInfoForRetentionScripts[])
+            )}
+            renderInput={params => (
+              <TextField
+                {...params}
+                variant='standard'
+                label='Clusters'
+                placeholder={pendingValues.clusters.length ? '' : 'All Clusters (Default)'}
+                InputLabelProps={labelProps}
+              />
+            )}
+          />
+          <FormControl
+            // eslint-disable-next-line react-memo/require-usememo
+            sx={{ width: 'max-content' }}
+            variant='standard'
+            required
+            error={!valid && !(pendingValues.frequencyS > 0)}
+          >
+            <InputLabel htmlFor={`${fid}-frequency-input`}>Summary Window (Seconds)</InputLabel>
+            <Input
+              id={`${fid}-frequency-input`}
+              type='number'
+              inputProps={{ min: 1, step: 1 }}
+              value={pendingValues.frequencyS}
+              onChange={(e) => setPendingField('frequencyS', +e.target.value)}
+            />
+            <FormHelperText>How frequently the script runs</FormHelperText>
+          </FormControl>
           <TextField
             disabled={!allowCustomExportURL}
-            sx={{ width: '25ch' }}
+            required={allowCustomExportURL && !defaultExportURL}
+            sx={{ width: '40ch' }}
             variant='standard'
             label='Export URL'
             placeholder={allowCustomExportURL
-              ? (defaultExportURL || 'Optional. Plugin-dependent.')
+              ? (defaultExportURL ? `Default: ${defaultExportURL}` : 'Required.')
               : 'Not available with this plugin.'
             }
             value={pendingValues.exportPath}
@@ -403,6 +413,18 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             InputLabelProps={labelProps}
           />
         </Stack>
+      </Paper>
+      <Paper className={classes.scriptContainer}>
+        <span className={classes.scriptHeading}>
+          {script?.isPreset ? 'PxL Script (Read-Only)' : 'PxL Script'}
+        </span>
+        <div className={classes.editorOuter}>
+          <RetentionScriptEditor
+            initialValue={pendingValues.contents}
+            onChange={(v) => setPendingField('contents', v)}
+            isReadOnly={script?.isPreset}
+          />
+        </div>
       </Paper>
       <Box width={1} textAlign='right'>
         <Button variant='outlined' type='button' color='primary' onClick={navBackToAllScripts} sx={{ mr: 1 }}>

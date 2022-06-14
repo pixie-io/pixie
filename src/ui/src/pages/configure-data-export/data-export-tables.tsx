@@ -21,7 +21,6 @@ import * as React from 'react';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  Extension as ExtensionIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
 import {
@@ -56,6 +55,7 @@ import {
   GQLRetentionScript,
 } from 'app/types/schema';
 
+import { PluginIcon } from './data-export-common';
 import {
   useClustersForRetentionScripts,
   useDeleteRetentionScript,
@@ -64,30 +64,6 @@ import {
   useRetentionScripts,
   useToggleRetentionScript,
 } from './data-export-gql';
-
-// TODO(nick,PC-1440): Dedup <PluginIcon /> with Plugins page in Admin that already has a similar component
-const PluginIcon = React.memo<{ iconString: string }>(({ iconString }) => {
-  const looksValid = iconString?.includes('<svg');
-  if (looksValid) {
-    // Strip newlines and space that isn't required just in case
-    const compacted = iconString.trim().replace(/\s+/gm, ' ').replace(/\s*([><])\s*/g, '$1');
-    // fill="#fff", for instance, isn't safe without encoding the #.
-    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(compacted)}`;
-    const backgroundImage = `url("${dataUrl}")`;
-
-    // eslint-disable-next-line react-memo/require-usememo
-    return <Box sx={({ spacing }) => ({
-      width: spacing(2.5),
-      height: spacing(2.5),
-      marginRight: spacing(1.5),
-      background: backgroundImage ? `center/contain ${backgroundImage} no-repeat` : 'none',
-    })} />;
-  }
-
-  // eslint-disable-next-line react-memo/require-usememo
-  return <ExtensionIcon sx={{ mr: 2, fontSize: 'body1.fontSize' }} />;
-});
-PluginIcon.displayName = 'PluginIcon';
 
 const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
   const { path } = useRouteMatch();
