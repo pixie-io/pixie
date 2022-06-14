@@ -66,6 +66,11 @@ execute 'install gcloud::beta' do
   action :run
 end
 
+execute 'install gcloud::gke-gcloud-auth-plugin' do
+  command 'gcloud components install gke-gcloud-auth-plugin'
+  action :run
+end
+
 execute 'install gcloud::docker-credential-gcr' do
   command 'gcloud components install docker-credential-gcr'
   action :run
