@@ -40,6 +40,7 @@ go_library(
 go_binary(
     name = "px",
     embed = [":pixie_cli_lib"],
+    pure = "on",
     visibility = ["//src:__subpackages__"],
 )
 
