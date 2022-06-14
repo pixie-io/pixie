@@ -50,10 +50,7 @@ import { Link, useRouteMatch } from 'react-router-dom';
 
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { Spinner, useSnackbar } from 'app/components';
-import {
-  GQLClusterStatus,
-  GQLRetentionScript,
-} from 'app/types/schema';
+import { GQLRetentionScript } from 'app/types/schema';
 
 import { PluginIcon } from './data-export-common';
 import {
@@ -72,12 +69,10 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
   const plugin = plugins.find(p => p.id === pluginID);
 
   const { clusters: allClusters } = useClustersForRetentionScripts();
-  const selectedClusterNames = React.useMemo(() => {
+  const selectedClusters = React.useMemo(() => {
     return allClusters
       .filter(
-        c => c.status !== GQLClusterStatus.CS_DISCONNECTED && selectedClusterIds?.includes(c.id),
-      ).map(
-        c => c.prettyClusterName,
+        c => selectedClusterIds?.includes(c.id),
       ) ?? [];
   }, [allClusters, selectedClusterIds]);
 
@@ -135,8 +130,16 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
         </Tooltip>
       </TableCell>
       <TableCell>
-        {selectedClusterNames.length > 0 ? (
-          selectedClusterNames.map(n => <Chip key={n} label={n} variant='outlined' size='small' />)
+        {selectedClusters.length > 0 ? (
+          selectedClusters.map(cluster => (
+            <Chip
+              key={cluster.id}
+              variant='outlined'
+              size='small'
+              label={cluster.prettyClusterName}
+              sx={{ mr: 1 }}
+            />
+          ))
         ) : (
           <Typography variant='caption' sx={{ color: 'text.disabled' }}>All Clusters (Default)</Typography>
         )}

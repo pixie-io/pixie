@@ -21,8 +21,10 @@ import * as React from 'react';
 import { ApolloError } from '@apollo/client';
 import {
   Autocomplete,
+  AutocompleteRenderGetTagProps,
   Box,
   Button,
+  Chip,
   FormControl,
   FormHelperText,
   Input,
@@ -39,7 +41,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { useHistory } from 'react-router';
 
 import { isPixieEmbedded } from 'app/common/embed-context';
-import { CodeEditor, EDITOR_THEME_MAP, useSnackbar } from 'app/components';
+import { CodeEditor, EDITOR_THEME_MAP, StatusCell, StatusGroup, useSnackbar } from 'app/components';
 import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
 import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
@@ -176,6 +178,38 @@ function useCreateOrUpdateScript(scriptId: string, isCreate: boolean) {
   ), [scriptId, isCreate, create, update]);
 }
 
+const ClusterOption = React.memo<{ props: any, cluster: ClusterInfoForRetentionScripts }>(({ props, cluster }) => {
+  return (
+    <li key={`option-${cluster.id}`} {...props}>
+      <StatusCell statusGroup={cluster.status.replace('CS_', '').toLowerCase() as StatusGroup}/>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <Box sx={{ display: 'inline-block', ml: 1 }}>{cluster.prettyClusterName}</Box>
+    </li>
+  );
+});
+ClusterOption.displayName = 'ClusterOption';
+
+const SelectedClusterChips = React.memo<{
+  clusters: ClusterInfoForRetentionScripts[],
+  getTagProps: AutocompleteRenderGetTagProps,
+}>(({
+  clusters, getTagProps,
+}) => (
+  /* eslint-disable react-memo/require-usememo */
+  <>{clusters.map((cluster, index) => (
+    <Chip key={`chip-${cluster.id}`} {...getTagProps({ index })} sx={{ mr: 1 }} label={(
+      <Box sx={{ display: 'flex', flexFlow: 'row nowrap', alignItems: 'center' }}>
+        <StatusCell statusGroup={cluster.status.replace('CS_', '').toLowerCase() as StatusGroup}/>
+        <Box sx={{ ml: 1 }}>{cluster.prettyClusterName}</Box>
+      </Box>
+    )}/>
+  ))}</>
+  /* eslint-enable react-memo/require-usememo */
+));
+SelectedClusterChips.displayName = 'SelectedClusterChips';
+
+
+
 export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boolean }>(({ scriptId, isCreate }) => {
   const classes = useStyles();
   const showSnackbar = useSnackbar();
@@ -196,9 +230,9 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
 
   const validClusters = React.useMemo(() => {
     return clusters.filter(
-      c => c.status !== GQLClusterStatus.CS_DISCONNECTED,
+      c => c.status !== GQLClusterStatus.CS_DISCONNECTED || script?.clusters.includes(c.id),
     ) ?? [];
-  }, [clusters]);
+  }, [clusters, script?.clusters]);
 
   const [pendingValues, setFullPendingValues] = React.useState<RetentionScriptForm>({
     name: '',
@@ -367,6 +401,10 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
             filterSelectedOptions
             options={validClusters}
             getOptionLabel={(c) => c.prettyClusterName}
+            renderOption={(props, c) => <ClusterOption key={c.id} props={props} cluster={c} />}
+            renderTags={(tagValue, getTagProps) => (
+              <SelectedClusterChips clusters={tagValue} getTagProps={getTagProps} />
+            )}
             value={pendingValues.clusters}
             onChange={(_, newVal) => (
               setPendingField('clusters', newVal as ClusterInfoForRetentionScripts[])
