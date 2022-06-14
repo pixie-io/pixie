@@ -56,7 +56,7 @@ using ::testing::UnorderedElementsAre;
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::Int64Value;
 using ::px::types::StringValue;
@@ -190,7 +190,7 @@ class StirlingErrorTest : public ::testing::Test {
     // Get BPFTrace program.
     auto trace_program = std::make_unique<DynamicTracepointDeployment>();
     PL_ASSIGN_OR_RETURN(std::string program_text,
-                        px::ReadFileToString(px::testing::TestFilePath(bpftrace_script)));
+                        px::ReadFileToString(px::testing::BazelRunfilePath(bpftrace_script)));
 
     // Compile tracepoint.
     PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
@@ -451,7 +451,7 @@ std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
   const std::filesystem::path kToyAppsPath =
       "src/stirling/source_connectors/perf_profiler/testing/java";
   const std::filesystem::path app_path = kToyAppsPath / app_name;
-  const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+  const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
 }  // namespace

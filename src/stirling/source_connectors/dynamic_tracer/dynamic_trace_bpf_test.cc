@@ -56,8 +56,8 @@ using LogicalProgram = ::px::stirling::dynamic_tracing::ir::logical::TracepointD
 class GoHTTPDynamicTraceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    client_path_ = px::testing::BazelBinTestFilePath(kClientPath).string();
-    server_path_ = px::testing::BazelBinTestFilePath(kServerPath).string();
+    client_path_ = px::testing::BazelRunfilePath(kClientPath).string();
+    server_path_ = px::testing::BazelRunfilePath(kServerPath).string();
 
     ASSERT_TRUE(fs::Exists(server_path_));
     ASSERT_TRUE(fs::Exists(client_path_));

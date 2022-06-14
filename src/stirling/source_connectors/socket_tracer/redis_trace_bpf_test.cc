@@ -166,11 +166,11 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
 // Verifies that pub/sub commands can be traced correctly.
 TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
-  using ::px::testing::BazelBinTestFilePath;
+  using ::px::testing::BazelRunfilePath;
 
   StartTransferDataThread();
 
-  ContainerRunner redis_sub_client(BazelBinTestFilePath(kRedisImagePath), "redis_sub_client", "");
+  ContainerRunner redis_sub_client(BazelRunfilePath(kRedisImagePath), "redis_sub_client", "");
   redis_sub_client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", container_.container_name())},
                        {"redis-cli", "subscribe", "foo"});

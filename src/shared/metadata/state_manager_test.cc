@@ -258,7 +258,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   FakePIDData md_reader;
   LOG(INFO) << metadata_state_.DebugString();
 
-  std::filesystem::path proc_path = testing::TestFilePath("src/shared/metadata/testdata/proc");
+  std::filesystem::path proc_path = testing::BazelRunfilePath("src/shared/metadata/testdata/proc");
   system::ProcParser proc_parser(proc_path.string());
   EXPECT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &events));
 

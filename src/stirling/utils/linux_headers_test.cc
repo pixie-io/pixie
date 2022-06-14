@@ -27,6 +27,7 @@ namespace stirling {
 namespace utils {
 
 using ::px::testing::TempDir;
+using ::testing::EndsWith;
 
 bool operator==(const KernelVersion& a, const KernelVersion& b) {
   return (a.version == b.version) && (a.major_rev == b.major_rev) && (a.minor_rev == b.minor_rev);
@@ -81,7 +82,8 @@ TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
 TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
   // Setup: Point to a custom /proc filesystem.
   std::string orig_host_path = system::Config::GetInstance().host_path();
-  system::FLAGS_host_path = testing::TestFilePath("src/stirling/utils/testdata/sample_host_ubuntu");
+  system::FLAGS_host_path =
+      testing::BazelRunfilePath("src/stirling/utils/testdata/sample_host_ubuntu");
   system::Config::ResetInstance();
 
   // Main test.
@@ -98,7 +100,8 @@ TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
 TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
   // Setup: Point to a custom /proc filesystem.
   std::string orig_host_path = system::Config::GetInstance().host_path();
-  system::FLAGS_host_path = testing::TestFilePath("src/stirling/utils/testdata/sample_host_debian");
+  system::FLAGS_host_path =
+      testing::BazelRunfilePath("src/stirling/utils/testdata/sample_host_debian");
   system::Config::ResetInstance();
 
   // Main test.
@@ -194,7 +197,7 @@ std::string PrepareAutoConf(std::filesystem::path linux_headers_dir) {
 }
 
 TEST(LinuxHeadersUtils, GenAutoConf) {
-  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config");
+  const std::string kConfigFile = testing::BazelRunfilePath("src/stirling/utils/testdata/config");
 
   TempDir linux_headers_dir;
   std::string autoconf_h_filename = PrepareAutoConf(linux_headers_dir.path());
@@ -205,7 +208,8 @@ TEST(LinuxHeadersUtils, GenAutoConf) {
 }
 
 TEST(LinuxHeadersUtils, GenAutoConfGz) {
-  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config.gz");
+  const std::string kConfigFile =
+      testing::BazelRunfilePath("src/stirling/utils/testdata/config.gz");
 
   TempDir linux_headers_dir;
   std::string autoconf_h_filename = PrepareAutoConf(linux_headers_dir.path());
@@ -217,41 +221,46 @@ TEST(LinuxHeadersUtils, GenAutoConfGz) {
 
 TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {
   const std::string kTestSrcDir =
-      testing::TestFilePath("src/stirling/utils/testdata/test_header_packages");
+      testing::BazelRunfilePath("src/stirling/utils/testdata/test_header_packages");
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 4, 18}));
-    EXPECT_EQ(match.path.string(),
-              "src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz");
+    EXPECT_THAT(
+        match.path.string(),
+        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 15, 10}));
-    EXPECT_EQ(match.path.string(),
-              "src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz");
+    EXPECT_THAT(
+        match.path.string(),
+        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 18, 1}));
-    EXPECT_EQ(match.path.string(),
-              "src/stirling/utils/testdata/test_header_packages/linux-headers-4.18.20.tar.gz");
+    EXPECT_THAT(
+        match.path.string(),
+        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.18.20.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 0, 0}));
-    EXPECT_EQ(match.path.string(),
-              "src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz");
+    EXPECT_THAT(
+        match.path.string(),
+        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 7, 20}));
-    EXPECT_EQ(match.path.string(),
-              "src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz");
+    EXPECT_THAT(
+        match.path.string(),
+        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz"));
   }
 }
 

@@ -36,6 +36,7 @@ pl_cc_library(
     hdrs = ["testing.h"],
     deps = [
         "//src/common/fs:cc_library",
+        "@bazel_tools//tools/cpp/runfiles",
         "@com_google_googletest//:gtest",
     ],
 )

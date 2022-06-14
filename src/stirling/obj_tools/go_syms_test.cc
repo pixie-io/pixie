@@ -33,20 +33,20 @@ constexpr std::string_view kTestGoBinaryPath =
     "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 
 TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
+  const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
   EXPECT_THAT(version, StrEq("go1.16.14"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
+  const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   EXPECT_TRUE(IsGoExecutable(elf_reader.get()));
 }
 
 TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
-  const std::string kPath = px::testing::BazelBinTestFilePath(kTestGoBinaryPath);
+  const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(const auto interfaces, ExtractGolangInterfaces(elf_reader.get()));

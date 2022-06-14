@@ -35,7 +35,7 @@ namespace testing {
 class RubyContainer : public ContainerRunner {
  public:
   RubyContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -66,7 +66,7 @@ int32_t GetNginxWorkerPID(int32_t pid) {
 class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
  public:
   NginxOpenSSL_1_1_0_Container()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
   int32_t NginxWorkerPID() const { return internal::GetNginxWorkerPID(process_pid()); }
@@ -84,7 +84,7 @@ class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
 class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
  public:
   NginxOpenSSL_1_1_1_Container()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
   int32_t NginxWorkerPID() const { return internal::GetNginxWorkerPID(process_pid()); }
@@ -102,7 +102,7 @@ class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
 class CurlContainer : public ContainerRunner {
  public:
   CurlContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -115,7 +115,7 @@ class CurlContainer : public ContainerRunner {
 class Node12_3_1Container : public ContainerRunner {
  public:
   Node12_3_1Container()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -128,7 +128,7 @@ class Node12_3_1Container : public ContainerRunner {
 class Node14_18_1AlpineContainer : public ContainerRunner {
  public:
   Node14_18_1AlpineContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -142,7 +142,7 @@ class Node14_18_1AlpineContainer : public ContainerRunner {
 class NodeClientContainer : public ContainerRunner {
  public:
   NodeClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -156,7 +156,7 @@ class NodeClientContainer : public ContainerRunner {
 class Go1_16_TLSServerContainer : public ContainerRunner {
  public:
   Go1_16_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -169,7 +169,7 @@ class Go1_16_TLSServerContainer : public ContainerRunner {
 class Go1_16_TLSClientContainer : public ContainerRunner {
  public:
   Go1_16_TLSClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -182,7 +182,7 @@ class Go1_16_TLSClientContainer : public ContainerRunner {
 class Go1_17_TLSServerContainer : public ContainerRunner {
  public:
   Go1_17_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -195,7 +195,7 @@ class Go1_17_TLSServerContainer : public ContainerRunner {
 class Go1_17_TLSClientContainer : public ContainerRunner {
  public:
   Go1_17_TLSClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -208,7 +208,7 @@ class Go1_17_TLSClientContainer : public ContainerRunner {
 class Go1_18_TLSServerContainer : public ContainerRunner {
  public:
   Go1_18_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -221,7 +221,7 @@ class Go1_18_TLSServerContainer : public ContainerRunner {
 class Go1_18_TLSClientContainer : public ContainerRunner {
  public:
   Go1_18_TLSClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -238,7 +238,7 @@ class Go1_18_TLSClientContainer : public ContainerRunner {
 class Go1_16_GRPCServerContainer : public ContainerRunner {
  public:
   Go1_16_GRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -251,7 +251,7 @@ class Go1_16_GRPCServerContainer : public ContainerRunner {
 class Go1_16_GRPCClientContainer : public ContainerRunner {
  public:
   Go1_16_GRPCClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -264,7 +264,7 @@ class Go1_16_GRPCClientContainer : public ContainerRunner {
 class Go1_17_GRPCServerContainer : public ContainerRunner {
  public:
   Go1_17_GRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -277,7 +277,7 @@ class Go1_17_GRPCServerContainer : public ContainerRunner {
 class Go1_17_GRPCClientContainer : public ContainerRunner {
  public:
   Go1_17_GRPCClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -290,7 +290,7 @@ class Go1_17_GRPCClientContainer : public ContainerRunner {
 class Go1_18_GRPCServerContainer : public ContainerRunner {
  public:
   Go1_18_GRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -303,7 +303,7 @@ class Go1_18_GRPCServerContainer : public ContainerRunner {
 class Go1_18_GRPCClientContainer : public ContainerRunner {
  public:
   Go1_18_GRPCClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -321,7 +321,7 @@ class Go1_18_GRPCClientContainer : public ContainerRunner {
 class DNSServerContainer : public ContainerRunner {
  public:
   DNSServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -338,7 +338,7 @@ class DNSServerContainer : public ContainerRunner {
 class ThriftMuxServerContainer : public ContainerRunner {
  public:
   ThriftMuxServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -355,7 +355,7 @@ class ThriftMuxServerContainer : public ContainerRunner {
 class MySQLContainer : public ContainerRunner {
  public:
   MySQLContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -370,7 +370,7 @@ class MySQLContainer : public ContainerRunner {
 class PythonMySQLConnectorContainer : public ContainerRunner {
  public:
   PythonMySQLConnectorContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -387,7 +387,7 @@ class PythonMySQLConnectorContainer : public ContainerRunner {
 class PostgreSQLContainer : public ContainerRunner {
  public:
   PostgreSQLContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -402,7 +402,7 @@ class PostgreSQLContainer : public ContainerRunner {
 class GolangSQLxContainer : public ContainerRunner {
  public:
   GolangSQLxContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -419,7 +419,7 @@ class GolangSQLxContainer : public ContainerRunner {
 class KafkaContainer : public ContainerRunner {
  public:
   KafkaContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -433,7 +433,7 @@ class KafkaContainer : public ContainerRunner {
 class ZooKeeperContainer : public ContainerRunner {
  public:
   ZooKeeperContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -450,7 +450,7 @@ class ZooKeeperContainer : public ContainerRunner {
 class RedisContainer : public ContainerRunner {
  public:
   RedisContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -467,7 +467,7 @@ class RedisContainer : public ContainerRunner {
 class CassandraContainer : public ContainerRunner {
  public:
   CassandraContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -485,7 +485,7 @@ class CassandraContainer : public ContainerRunner {
 class NATSServerContainer : public ContainerRunner {
  public:
   NATSServerContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -498,7 +498,7 @@ class NATSServerContainer : public ContainerRunner {
 class NATSClientContainer : public ContainerRunner {
  public:
   NATSClientContainer()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -527,7 +527,7 @@ class ProductCatalogService : public ContainerRunner {
 class ProductCatalogClient : public ContainerRunner {
  public:
   ProductCatalogClient()
-      : ContainerRunner(::px::testing::BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix,
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
  private:

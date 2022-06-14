@@ -16,37 +16,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/common/testing/test_environment.h"
+#include <memory>
 
 #include "src/common/base/base.h"
+#include "src/common/testing/test_environment.h"
+
+#include "tools/cpp/runfiles/runfiles.h"
 
 namespace px {
 namespace testing {
 
-bool IsBazelEnvironment() {
-  // Use TEST_SRCDIR environment variable to test whether we are running through bazel or not.
-  const char* test_src_dir = std::getenv("TEST_SRCDIR");
-  return (test_src_dir != nullptr);
-}
+using bazel::tools::cpp::runfiles::Runfiles;
 
-std::filesystem::path TestFilePath(const std::filesystem::path& rel_path) {
-  if (!IsBazelEnvironment()) {
-    LOG_FIRST_N(WARNING, 1)
-        << "This test uses static test files, but is not being run through bazel. "
-           "It will only run correctly from repo ToT.";
+std::filesystem::path BazelRunfilePath(const std::filesystem::path& rel_path) {
+  std::string error;
+  std::unique_ptr<Runfiles> runfiles(Runfiles::CreateForTest(&error));
+  if (!error.empty()) {
+    LOG_FIRST_N(WARNING, 1) << "Failed to initialize runfiles";
+    return rel_path;
   }
 
-  return rel_path;
-}
-
-std::filesystem::path BazelBinTestFilePath(const std::filesystem::path& rel_path) {
-  if (!IsBazelEnvironment()) {
-    LOG_FIRST_N(WARNING, 1)
-        << "This test uses bazel-generated test files, but is not being run through bazel. "
-           "It will only run correctly from repo ToT.";
-    return std::filesystem::path("bazel-bin") / rel_path;
-  }
-  return rel_path;
+  std::string path = runfiles->Rlocation(std::filesystem::path("px") / rel_path.string());
+  return path;
 }
 
 }  // namespace testing

@@ -1467,7 +1467,7 @@ struct DwarfInfoTestParam {
 
 class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
  protected:
-  DwarfInfoTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  DwarfInfoTest() : binary_path_(px::testing::BazelRunfilePath(kBinaryPath)) {}
 
   std::string binary_path_;
 };

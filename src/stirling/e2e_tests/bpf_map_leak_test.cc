@@ -33,8 +33,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
-using ::px::testing::BazelBinTestFilePath;
-using ::px::testing::TestFilePath;
+using ::px::testing::BazelRunfilePath;
 
 using ::testing::Contains;
 using ::testing::Key;
@@ -53,7 +52,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   ConnTracker::set_inactivity_duration(std::chrono::seconds(kInactivitySeconds));
 
   // Create and run the server with a leaky FD.
-  std::filesystem::path server_path = BazelBinTestFilePath(server_path_param);
+  std::filesystem::path server_path = BazelRunfilePath(server_path_param);
   ASSERT_TRUE(fs::Exists(server_path));
 
   SubProcess server;

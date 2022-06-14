@@ -25,7 +25,7 @@ namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
-using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::BazelRunfilePath;
 using ::px::testing::proto::EqualsProto;
 using ::testing::SizeIs;
 using ::testing::StrEq;

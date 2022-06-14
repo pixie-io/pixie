@@ -35,7 +35,7 @@ constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test
 
 class DwarfReaderTest : public ::testing::Test {
  protected:
-  DwarfReaderTest() : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)) {}
+  DwarfReaderTest() : kCppBinaryPath(px::testing::BazelRunfilePath(kCppBinary)) {}
 
   const std::string kCppBinaryPath;
 };

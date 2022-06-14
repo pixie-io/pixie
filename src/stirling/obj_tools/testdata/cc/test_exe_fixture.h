@@ -40,7 +40,7 @@ class TestExeFixture {
   }
 
  private:
-  const std::filesystem::path test_exe_path_ = testing::BazelBinTestFilePath(kTestExePath);
+  const std::filesystem::path test_exe_path_ = testing::BazelRunfilePath(kTestExePath);
 };
 
 }  // namespace obj_tools

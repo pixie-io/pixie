@@ -86,7 +86,7 @@ constexpr char kContainer1UpdateTxt[] = R"(
 class ResolveTargetObjPathTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    auto server_path = px::testing::BazelBinTestFilePath(kServerPath).string();
+    auto server_path = px::testing::BazelRunfilePath(kServerPath).string();
     ASSERT_OK(s_.Start({server_path, "--port=0"}));
 
     md::K8sMetadataState::PodUpdate pod0_update;
@@ -378,8 +378,8 @@ const std::vector<std::string> kExpectedBCC = {
 };
 
 TEST(DynamicTracerTest, Compile) {
-  std::string input_program_str = absl::Substitute(
-      kLogicalProgramSpec, px::testing::BazelBinTestFilePath(kBinaryPath).string());
+  std::string input_program_str =
+      absl::Substitute(kLogicalProgramSpec, px::testing::BazelRunfilePath(kBinaryPath).string());
   ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
