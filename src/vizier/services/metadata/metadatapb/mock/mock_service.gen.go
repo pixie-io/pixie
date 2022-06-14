@@ -92,6 +92,162 @@ func (mr *MockisAgentUpdate_UpdateMockRecorder) isAgentUpdate_Update() *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isAgentUpdate_Update", reflect.TypeOf((*MockisAgentUpdate_Update)(nil).isAgentUpdate_Update))
 }
 
+// MockisRecordExecutionResultRequest_Result is a mock of isRecordExecutionResultRequest_Result interface.
+type MockisRecordExecutionResultRequest_Result struct {
+	ctrl     *gomock.Controller
+	recorder *MockisRecordExecutionResultRequest_ResultMockRecorder
+}
+
+// MockisRecordExecutionResultRequest_ResultMockRecorder is the mock recorder for MockisRecordExecutionResultRequest_Result.
+type MockisRecordExecutionResultRequest_ResultMockRecorder struct {
+	mock *MockisRecordExecutionResultRequest_Result
+}
+
+// NewMockisRecordExecutionResultRequest_Result creates a new mock instance.
+func NewMockisRecordExecutionResultRequest_Result(ctrl *gomock.Controller) *MockisRecordExecutionResultRequest_Result {
+	mock := &MockisRecordExecutionResultRequest_Result{ctrl: ctrl}
+	mock.recorder = &MockisRecordExecutionResultRequest_ResultMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockisRecordExecutionResultRequest_Result) EXPECT() *MockisRecordExecutionResultRequest_ResultMockRecorder {
+	return m.recorder
+}
+
+// Equal mocks base method.
+func (m *MockisRecordExecutionResultRequest_Result) Equal(arg0 interface{}) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Equal", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Equal indicates an expected call of Equal.
+func (mr *MockisRecordExecutionResultRequest_ResultMockRecorder) Equal(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Equal", reflect.TypeOf((*MockisRecordExecutionResultRequest_Result)(nil).Equal), arg0)
+}
+
+// MarshalTo mocks base method.
+func (m *MockisRecordExecutionResultRequest_Result) MarshalTo(arg0 []byte) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarshalTo", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarshalTo indicates an expected call of MarshalTo.
+func (mr *MockisRecordExecutionResultRequest_ResultMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisRecordExecutionResultRequest_Result)(nil).MarshalTo), arg0)
+}
+
+// Size mocks base method.
+func (m *MockisRecordExecutionResultRequest_Result) Size() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Size indicates an expected call of Size.
+func (mr *MockisRecordExecutionResultRequest_ResultMockRecorder) Size() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisRecordExecutionResultRequest_Result)(nil).Size))
+}
+
+// isRecordExecutionResultRequest_Result mocks base method.
+func (m *MockisRecordExecutionResultRequest_Result) isRecordExecutionResultRequest_Result() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "isRecordExecutionResultRequest_Result")
+}
+
+// isRecordExecutionResultRequest_Result indicates an expected call of isRecordExecutionResultRequest_Result.
+func (mr *MockisRecordExecutionResultRequest_ResultMockRecorder) isRecordExecutionResultRequest_Result() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isRecordExecutionResultRequest_Result", reflect.TypeOf((*MockisRecordExecutionResultRequest_Result)(nil).isRecordExecutionResultRequest_Result))
+}
+
+// MockisGetAllExecutionResultsResponse_ExecutionResult_Result is a mock of isGetAllExecutionResultsResponse_ExecutionResult_Result interface.
+type MockisGetAllExecutionResultsResponse_ExecutionResult_Result struct {
+	ctrl     *gomock.Controller
+	recorder *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder
+}
+
+// MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder is the mock recorder for MockisGetAllExecutionResultsResponse_ExecutionResult_Result.
+type MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder struct {
+	mock *MockisGetAllExecutionResultsResponse_ExecutionResult_Result
+}
+
+// NewMockisGetAllExecutionResultsResponse_ExecutionResult_Result creates a new mock instance.
+func NewMockisGetAllExecutionResultsResponse_ExecutionResult_Result(ctrl *gomock.Controller) *MockisGetAllExecutionResultsResponse_ExecutionResult_Result {
+	mock := &MockisGetAllExecutionResultsResponse_ExecutionResult_Result{ctrl: ctrl}
+	mock.recorder = &MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockisGetAllExecutionResultsResponse_ExecutionResult_Result) EXPECT() *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder {
+	return m.recorder
+}
+
+// Equal mocks base method.
+func (m *MockisGetAllExecutionResultsResponse_ExecutionResult_Result) Equal(arg0 interface{}) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Equal", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Equal indicates an expected call of Equal.
+func (mr *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder) Equal(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Equal", reflect.TypeOf((*MockisGetAllExecutionResultsResponse_ExecutionResult_Result)(nil).Equal), arg0)
+}
+
+// MarshalTo mocks base method.
+func (m *MockisGetAllExecutionResultsResponse_ExecutionResult_Result) MarshalTo(arg0 []byte) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarshalTo", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarshalTo indicates an expected call of MarshalTo.
+func (mr *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisGetAllExecutionResultsResponse_ExecutionResult_Result)(nil).MarshalTo), arg0)
+}
+
+// Size mocks base method.
+func (m *MockisGetAllExecutionResultsResponse_ExecutionResult_Result) Size() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Size indicates an expected call of Size.
+func (mr *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder) Size() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisGetAllExecutionResultsResponse_ExecutionResult_Result)(nil).Size))
+}
+
+// isGetAllExecutionResultsResponse_ExecutionResult_Result mocks base method.
+func (m *MockisGetAllExecutionResultsResponse_ExecutionResult_Result) isGetAllExecutionResultsResponse_ExecutionResult_Result() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "isGetAllExecutionResultsResponse_ExecutionResult_Result")
+}
+
+// isGetAllExecutionResultsResponse_ExecutionResult_Result indicates an expected call of isGetAllExecutionResultsResponse_ExecutionResult_Result.
+func (mr *MockisGetAllExecutionResultsResponse_ExecutionResult_ResultMockRecorder) isGetAllExecutionResultsResponse_ExecutionResult_Result() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isGetAllExecutionResultsResponse_ExecutionResult_Result", reflect.TypeOf((*MockisGetAllExecutionResultsResponse_ExecutionResult_Result)(nil).isGetAllExecutionResultsResponse_ExecutionResult_Result))
+}
+
 // MockMetadataServiceClient is a mock of MetadataServiceClient interface.
 type MockMetadataServiceClient struct {
 	ctrl     *gomock.Controller
@@ -814,6 +970,26 @@ func (mr *MockCronScriptStoreServiceClientMockRecorder) DeleteScript(ctx, in int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteScript", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).DeleteScript), varargs...)
 }
 
+// GetAllExecutionResults mocks base method.
+func (m *MockCronScriptStoreServiceClient) GetAllExecutionResults(ctx context.Context, in *metadatapb.GetAllExecutionResultsRequest, opts ...grpc.CallOption) (*metadatapb.GetAllExecutionResultsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetAllExecutionResults", varargs...)
+	ret0, _ := ret[0].(*metadatapb.GetAllExecutionResultsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllExecutionResults indicates an expected call of GetAllExecutionResults.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) GetAllExecutionResults(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllExecutionResults", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).GetAllExecutionResults), varargs...)
+}
+
 // GetScripts mocks base method.
 func (m *MockCronScriptStoreServiceClient) GetScripts(ctx context.Context, in *metadatapb.GetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.GetScriptsResponse, error) {
 	m.ctrl.T.Helper()
@@ -832,6 +1008,26 @@ func (mr *MockCronScriptStoreServiceClientMockRecorder) GetScripts(ctx, in inter
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).GetScripts), varargs...)
+}
+
+// RecordExecutionResult mocks base method.
+func (m *MockCronScriptStoreServiceClient) RecordExecutionResult(ctx context.Context, in *metadatapb.RecordExecutionResultRequest, opts ...grpc.CallOption) (*metadatapb.RecordExecutionResultResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RecordExecutionResult", varargs...)
+	ret0, _ := ret[0].(*metadatapb.RecordExecutionResultResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecordExecutionResult indicates an expected call of RecordExecutionResult.
+func (mr *MockCronScriptStoreServiceClientMockRecorder) RecordExecutionResult(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordExecutionResult", reflect.TypeOf((*MockCronScriptStoreServiceClient)(nil).RecordExecutionResult), varargs...)
 }
 
 // SetScripts mocks base method.
@@ -907,6 +1103,21 @@ func (mr *MockCronScriptStoreServiceServerMockRecorder) DeleteScript(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteScript", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).DeleteScript), arg0, arg1)
 }
 
+// GetAllExecutionResults mocks base method.
+func (m *MockCronScriptStoreServiceServer) GetAllExecutionResults(arg0 context.Context, arg1 *metadatapb.GetAllExecutionResultsRequest) (*metadatapb.GetAllExecutionResultsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllExecutionResults", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.GetAllExecutionResultsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllExecutionResults indicates an expected call of GetAllExecutionResults.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) GetAllExecutionResults(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllExecutionResults", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).GetAllExecutionResults), arg0, arg1)
+}
+
 // GetScripts mocks base method.
 func (m *MockCronScriptStoreServiceServer) GetScripts(arg0 context.Context, arg1 *metadatapb.GetScriptsRequest) (*metadatapb.GetScriptsResponse, error) {
 	m.ctrl.T.Helper()
@@ -920,6 +1131,21 @@ func (m *MockCronScriptStoreServiceServer) GetScripts(arg0 context.Context, arg1
 func (mr *MockCronScriptStoreServiceServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).GetScripts), arg0, arg1)
+}
+
+// RecordExecutionResult mocks base method.
+func (m *MockCronScriptStoreServiceServer) RecordExecutionResult(arg0 context.Context, arg1 *metadatapb.RecordExecutionResultRequest) (*metadatapb.RecordExecutionResultResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecordExecutionResult", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.RecordExecutionResultResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RecordExecutionResult indicates an expected call of RecordExecutionResult.
+func (mr *MockCronScriptStoreServiceServerMockRecorder) RecordExecutionResult(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordExecutionResult", reflect.TypeOf((*MockCronScriptStoreServiceServer)(nil).RecordExecutionResult), arg0, arg1)
 }
 
 // SetScripts mocks base method.
