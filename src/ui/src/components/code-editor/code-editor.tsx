@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { editor as MonacoEditorTypes } from 'monaco-editor';
+import { editor as MonacoEditorTypes, KeyCode } from 'monaco-editor';
 // This must be `import type`, not `import`. The latter would defeat the lazy import of the actual component below.
 import type { MonacoEditorProps } from 'react-monaco-editor';
 
@@ -38,6 +38,7 @@ interface CodeEditorProps {
   shortcutKeys: string[];
   theme?: string;
   isReadOnly?: boolean;
+  readOnlyReason?: string;
 }
 
 interface CodeEditorState {
@@ -123,6 +124,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorS
       this.changeEditorValue(this.code);
       this.onChange(this.code);
     }
+    this.initReadOnlyTooltip(editor);
   }
 
   getEditorValue = (): string => {
@@ -169,5 +171,49 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorS
         options={this.state.options}
       />
     );
+  }
+
+  private initReadOnlyTooltip(editor: MonacoEditorTypes.ICodeEditor) {
+    // First, set up the tooltip that will appear if the user tries to edit a read-only editor
+    const messageContributor = editor.getContribution('editor.contrib.messageController');
+    (editor as any).onDidAttemptReadOnlyEdit(() => {
+      (messageContributor as any).showMessage(
+        this.props.readOnlyReason || 'Editor is read-only',
+        editor.getPosition(),
+      );
+    });
+
+    // Next, apply this workaround from https://github.com/microsoft/monaco-editor/issues/1873 so that Monaco notices
+    // the typing event in the first place (which it normally doesn't due to the <textarea> being disabled)
+    editor.onKeyDown((e) => {
+      if (!this.props.isReadOnly) return;
+      const modified = e.ctrlKey || e.altKey || e.metaKey;
+      const probablyCharacter = (
+        (e.keyCode >= KeyCode.KEY_0 && e.keyCode <= KeyCode.KEY_9) ||
+        (e.keyCode >= KeyCode.NUMPAD_0 && e.keyCode <= KeyCode.NUMPAD_9) ||
+        (e.keyCode >= KeyCode.KEY_A && e.keyCode <= KeyCode.KEY_Z) ||
+        [
+          KeyCode.Enter,
+          KeyCode.Space,
+          KeyCode.Delete,
+          KeyCode.US_SEMICOLON,
+          KeyCode.US_EQUAL,
+          KeyCode.US_COMMA,
+          KeyCode.US_MINUS,
+          KeyCode.US_DOT,
+          KeyCode.US_SLASH,
+          KeyCode.US_BACKTICK,
+          KeyCode.US_OPEN_SQUARE_BRACKET,
+          KeyCode.US_BACKSLASH,
+          KeyCode.US_CLOSE_SQUARE_BRACKET,
+          KeyCode.US_QUOTE,
+          KeyCode.OEM_8,
+          KeyCode.OEM_102,
+        ].includes(e.keyCode)
+      );
+      if (!modified && probablyCharacter) {
+        editor.trigger('', 'type', { text: 'nothing' });
+      }
+    });
   }
 }
