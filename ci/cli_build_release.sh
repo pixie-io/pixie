@@ -30,7 +30,7 @@ pkg_prefix="pixie-px-${release_tag}.${linux_arch}"
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
-linux_binary=bazel-bin/src/pixie_cli/px_/px
+linux_binary=$(bazel cquery //src/pixie_cli:px --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
 darwin_package_amd64=bazel-bin/src/pixie_cli/px_darwin_amd64_pkg.tar
 darwin_package_arm64=bazel-bin/src/pixie_cli/px_darwin_arm64_pkg.tar
 docker_repo="pixielabs/px"
