@@ -18,6 +18,8 @@
 
 #include "src/stirling/source_connectors/proc_exit/proc_exit_connector.h"
 
+#include <signal.h>
+
 #include <utility>
 
 #include "src/common/base/base.h"
@@ -137,7 +139,16 @@ void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
 void ProcExitConnector::UpdateCrashedJavaProcCounters(
     uint32_t asid, const proc_exit_event_t& event,
     const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& upid_pid_info_map) {
-  if (GetExitSignal(event.exit_code) == 0) {
+  const uint8_t exit_signal = GetExitSignal(event.exit_code);
+
+  const bool is_sig_abrt = exit_signal == SIGABRT;
+  const bool is_sig_segv = exit_signal == SIGSEGV;
+  const bool is_sig_fpe = exit_signal == SIGFPE;
+  const bool is_sig_ill = exit_signal == SIGILL;
+  const bool is_sig_bus = exit_signal == SIGBUS;
+  const bool is_crash = is_sig_abrt || is_sig_segv || is_sig_fpe || is_sig_ill || is_sig_bus;
+
+  if (!is_crash) {
     // Normal exits are ignored.
     return;
   }
