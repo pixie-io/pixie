@@ -135,11 +135,6 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 
-// Disable BPF runs on main because the flakiness makes it noisy.
-// Stirling team still gets coverage via dev runs for now.
-// TODO(oazizi): Re-enable BPF on main once it's more stable.
-runBPF = !isMainRun
-
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
 //    https://pixie-labs.atlassian.net/browse/PL-1329
@@ -265,6 +260,7 @@ def writeBazelRCFile() {
     // Don't upload to remote cache if this is not running main.
     sh '''
     echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
+    echo "build --build_metadata=ROLE=DEV" >> jenkins.bazelrc
     '''
   } else {
     // Only set ROLE=CI if this is running on main. This controls the whether this
@@ -742,10 +738,8 @@ def generateTestTargets = {
     builders['Build & Test (go race detector)'] = buildGoRace
   }
 
-  if (runBPF) {
-    enableForTargets('bpf') {
-      builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
-    }
+  enableForTargets('bpf') {
+    builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
   }
 
   if (runBPFWithASAN) {
