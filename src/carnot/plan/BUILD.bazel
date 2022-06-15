@@ -62,7 +62,9 @@ pl_cc_test(
 
 pl_cc_test(
     name = "scalar_expression_test",
+    size = "large",
     srcs = ["scalar_expression_test.cc"],
+    tags = ["cpu:4"],
     deps = [
         ":cc_library",
         "//src/carnot/planpb:plan_testutils",
