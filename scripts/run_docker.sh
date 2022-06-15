@@ -80,6 +80,12 @@ configs=(
     "--network=host"
 )
 
+if command -v px > /dev/null; then
+    # If "px" exists, mount it into the container (in a well known path).
+    px_path=$(command -v px)
+    configs+=(-v "${px_path}:/bin/px")
+fi
+
 exec_cmd=("${shell}")
 if [ $# -ne 0 ]; then
   exec_cmd=("${exec_cmd[@]}" "-c" "$*")
@@ -93,9 +99,27 @@ else
 fi
 echo -e "\t${bold}Shell: \t\t\t ${green}${shell}${resetcolor}"
 
+container_args=(
+  --rm
+  --hostname px-dev-docker
+)
 
-docker run --rm -it \
-  --hostname px-dev-docker \
+if [ -t 1 ]; then
+    # stdout (file descriptor 1) is affilated with a terminal.
+    # It is ok to use the '-it' arg. for docker run.
+    container_args+=("-it")
+else
+    # Use of 'docker run -it <...>' from a system call from inside of go causes docker to
+    # complain that a TTY does not exist. This branch, where stdout is not affilated with a terminal
+    # does *not* incorporate arg. '-it' for docker run.
+    echo -e "\t${bold}Not in a terminal session.${resetcolor}"
+fi
+
+# Echo the final docker run command before executing.
+set -x
+
+docker run \
+  "${container_args[@]}" \
   "${configs[@]}" \
   "${build_buddy_args[@]}" \
   "${PX_RUN_DOCKER_EXTRA_ARGS[@]}" \
