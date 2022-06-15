@@ -573,7 +573,7 @@ class Int64ToTimeUDF : public udf::ScalarUDF {
             "Converts an int64 value to a time value. Used when type-specific UDFs are needed for "
             "time on a int64 value.")
         .Example(R"doc(
-        | df = df[px.time_to_int64(0) != df.time_]
+        | df = df[px.int64_to_time(0) != df.time_]
         )doc")
         .Arg("value", "The int64 value to convert (in nanoseconds).")
         .Returns("A time value");
