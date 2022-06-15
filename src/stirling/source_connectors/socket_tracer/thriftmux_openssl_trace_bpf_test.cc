@@ -43,7 +43,7 @@ using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::EqMuxRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
-using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::StrEq;
@@ -56,7 +56,7 @@ class ThriftMuxServerContainerWrapper : public ::px::stirling::testing::ThriftMu
 
 // The Init() function is used to set flags for the entire test.
 // We can't do this in the MuxTraceTest constructor, because it will be too late
-// (SocketTraceBPFTest will already have been constructed).
+// (SocketTraceBPFTestFixture will already have been constructed).
 bool Init() {
   // Make sure Mux tracing is enabled.
   FLAGS_stirling_enable_mux_tracing = true;
@@ -70,12 +70,12 @@ bool Init() {
 bool kInit = Init();
 
 template <typename TServerContainer, bool TForceFptrs>
-class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
+class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   BaseOpenSSLTraceTest() {
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
-    // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
+    // Stirling will run after this unblocks, as part of SocketTraceBPFTestFixture SetUp().
     StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60}, {}, {"--use-tls", "true"});
     PL_CHECK_OK(run_result);
     PL_CHECK_OK(this->RunThriftMuxClient());
@@ -87,7 +87,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ 
   void SetUp() override {
     FLAGS_openssl_force_raw_fptrs = force_fptr_;
 
-    SocketTraceBPFTest::SetUp();
+    SocketTraceBPFTestFixture::SetUp();
   }
 
   StatusOr<int32_t> RunThriftMuxClient() {
