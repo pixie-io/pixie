@@ -896,6 +896,7 @@ ABI LanguageToABI(llvm::dwarf::SourceLanguage lang, const std::string& compiler)
       }
       return ABI::kGolangStack;
     case llvm::dwarf::DW_LANG_C:
+    case llvm::dwarf::DW_LANG_C89:
     case llvm::dwarf::DW_LANG_C99:
     case llvm::dwarf::DW_LANG_C11:
     case llvm::dwarf::DW_LANG_C_plus_plus:
