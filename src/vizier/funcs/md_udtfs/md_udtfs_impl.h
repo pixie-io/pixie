@@ -867,11 +867,12 @@ class GetCronScriptHistory final : public carnot::udf::UDTF<GetCronScriptHistory
         ColInfo("error_message", types::DataType::STRING, types::PatternType::GENERAL,
                 "The error message if one exists"),
         ColInfo("execution_time_ns", types::DataType::INT64, types::PatternType::GENERAL,
-                "The execution time of the script"),
+                "The execution time of the script", types::SemanticType::ST_DURATION_NS),
         ColInfo("compilation_time_ns", types::DataType::INT64, types::PatternType::GENERAL,
-                "The compiltation time of the script"),
+                "The compiltation time of the script", types::SemanticType::ST_DURATION_NS),
         ColInfo("bytes_processed", types::DataType::INT64, types::PatternType::GENERAL,
-                "The number of bytes processed during script execution"),
+                "The number of bytes processed during script execution",
+                types::SemanticType::ST_BYTES),
         ColInfo("records_processed", types::DataType::INT64, types::PatternType::GENERAL,
                 "The number of records processed during script execution"));
   }
