@@ -39,10 +39,12 @@ go_library(
 
 go_test(
     name = "autocomplete_test",
+    size = "large",
     srcs = [
         "autocomplete_test.go",
         "suggester_test.go",
     ],
+    tags = ["cpu:4"],
     deps = [
         ":autocomplete",
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
