@@ -162,8 +162,6 @@ class FaultyConnector : public SourceConnector {
 class StirlingErrorTest : public ::testing::Test {
  protected:
   inline static const uint32_t kNumSources = 3;
-  inline static const std::string tcpdrop_bpftrace_script_ =
-      "src/stirling/testing/tcpdrop.bpftrace.pxl";
   inline static const std::string pidsample_bpftrace_script_ =
       "src/stirling/testing/pidsample.bpftrace.pxl";
 
@@ -354,7 +352,7 @@ pxtrace.UpsertTracepoint('hello_world_tracer',
                         .error = "",
                         .context = "Init"};
 
-  // TCPDrop deployed.
+  // Tracepoint deployed.
   ProbeStatusRecord r2{
       .source_connector = "dynamic_bpftrace",
       .tracepoint = "hello_world_tracer",
@@ -362,7 +360,7 @@ pxtrace.UpsertTracepoint('hello_world_tracer',
       .error = "",
       .info = absl::Substitute(R"({"trace_id":"$0","output_table":"hello_world_table"})",
                                trace_id.str())};
-  // TCPDrop removal in progress.
+  // Tracepoint removal in progress.
   ProbeStatusRecord r3{.source_connector = "dynamic_bpftrace",
                        .tracepoint = "hello_world_tracer",
                        .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,

@@ -39,6 +39,11 @@ filegroup(
 )
 
 filegroup(
+    name = "exec_snoop_bpftrace_script",
+    srcs = ["exec_snoop.bpftrace.pxl"],
+)
+
+filegroup(
     name = "pidsample_bpftrace_script",
     srcs = ["pidsample.bpftrace.pxl"],
 )

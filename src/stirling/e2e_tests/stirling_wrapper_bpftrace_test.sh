@@ -30,7 +30,7 @@ source src/stirling/scripts/test_utils.sh
 if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
     # If the script was run in a stand-alone way, then build and set paths.
     stirling_wrapper=$(bazel_build //src/stirling/binaries:stirling_wrapper)
-    trace_script=src/stirling/testing/tcpdrop.bpftrace.pxl
+    trace_script=src/stirling/testing/exec_snoop.bpftrace.pxl
 else
     # If the script was run through bazel, the locations are passed as arguments.
     stirling_wrapper=$1
@@ -69,7 +69,7 @@ check_dynamic_trace_deployment() {
     return 1
   fi
 
-  record_count=$(echo "$out" | grep -c -e "^\[tcp_drop_table\]" || true)
+  record_count=$(echo "$out" | grep -c -e "^\[exec_snoop_table\]" || true)
   echo "Record count = $record_count"
   if [ "$record_count" -eq "0" ]; then
     echo "Test FAILED"
