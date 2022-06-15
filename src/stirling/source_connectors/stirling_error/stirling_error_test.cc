@@ -186,11 +186,9 @@ class StirlingErrorTest : public ::testing::Test {
     IndexPublication(publication, &table_info_map_);
   }
 
-  StatusOr<sole::uuid> DeployBPFTraceScript(const std::string& bpftrace_script) {
+  StatusOr<sole::uuid> DeployBPFTraceScript(const std::string& program_text) {
     // Get BPFTrace program.
     auto trace_program = std::make_unique<DynamicTracepointDeployment>();
-    PL_ASSIGN_OR_RETURN(std::string program_text,
-                        px::ReadFileToString(px::testing::BazelRunfilePath(bpftrace_script)));
 
     // Compile tracepoint.
     PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
@@ -322,7 +320,19 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
 
-  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(tcpdrop_bpftrace_script_));
+  const std::string hello_world_pxl = R"(
+import pxtrace
+program = """
+BEGIN { printf("hello world"); }
+"""
+table_name = 'hello_world_table'
+pxtrace.UpsertTracepoint('hello_world_tracer',
+                         table_name,
+                         program,
+                         pxtrace.kprobe(),
+                         "1m")
+)";
+  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(hello_world_pxl));
   sleep(3);
 
   // Remove tracepoint;
@@ -345,15 +355,16 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentOK) {
                         .context = "Init"};
 
   // TCPDrop deployed.
-  ProbeStatusRecord r2{.source_connector = "dynamic_bpftrace",
-                       .tracepoint = "tcp_drop_tracer",
-                       .status = px::statuspb::Code::OK,
-                       .error = "",
-                       .info = absl::Substitute(
-                           R"({"trace_id":"$0","output_table":"tcp_drop_table"})", trace_id.str())};
+  ProbeStatusRecord r2{
+      .source_connector = "dynamic_bpftrace",
+      .tracepoint = "hello_world_tracer",
+      .status = px::statuspb::Code::OK,
+      .error = "",
+      .info = absl::Substitute(R"({"trace_id":"$0","output_table":"hello_world_table"})",
+                               trace_id.str())};
   // TCPDrop removal in progress.
   ProbeStatusRecord r3{.source_connector = "dynamic_bpftrace",
-                       .tracepoint = "tcp_drop_tracer",
+                       .tracepoint = "hello_world_tracer",
                        .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
                        .error = "Probe removal in progress.",
                        .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
@@ -372,7 +383,22 @@ TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
 
-  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(pidsample_bpftrace_script_));
+  const std::string pidsample_bpftrace_pxl = R"(
+import pxtrace
+program = """
+interval:ms:100 {
+         printf("username:%s foo   %s inet:%s",
+                 username, strftime("%H:%M:%S", nsecs), ntop(0), 0);
+      }
+"""
+table_name = 'pid_sample_table'
+pxtrace.UpsertTracepoint('pid_sample_tracer',
+                         table_name,
+                         program,
+                         pxtrace.kprobe(),
+                         "10m")
+)";
+  ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(pidsample_bpftrace_pxl));
   sleep(3);
 
   stirling_->Stop();
