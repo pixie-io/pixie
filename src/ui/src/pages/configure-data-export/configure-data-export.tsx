@@ -38,6 +38,7 @@ import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.
 import { Copyright } from 'configurable/copyright';
 
 import { EditDataExportScript } from './data-export-detail';
+import { DataExportHistoryView } from './data-export-history';
 import { ConfigureDataExportBody } from './data-export-tables';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -224,7 +225,8 @@ export const ConfigureDataExportView = React.memo(() => {
   return (
     <ConfigureDataExportPage scrollRef={scrollRef}>
       <Route render={React.useCallback(({ location }) => {
-        setInnerLoc(location);
+        // In a timeout to prevent updating one component while rendering another
+        setTimeout(() => setInnerLoc(location));
 
         return (
           <Switch>
@@ -236,6 +238,9 @@ export const ConfigureDataExportView = React.memo(() => {
             </Route>
             <Route exact path={`${path}/update/:scriptId`}>
               {({ match: { params } }) => <EditDataExportScript scriptId={params.scriptId} isCreate={false} />}
+            </Route>
+            <Route exact path={`${path}/logs/:scriptId`}>
+              {({ match: { params } }) => <DataExportHistoryView scriptId={params.scriptId} />}
             </Route>
           </Switch>
         );

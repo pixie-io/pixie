@@ -208,8 +208,6 @@ const SelectedClusterChips = React.memo<{
 ));
 SelectedClusterChips.displayName = 'SelectedClusterChips';
 
-
-
 export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boolean }>(({ scriptId, isCreate }) => {
   const classes = useStyles();
   const showSnackbar = useSnackbar();
