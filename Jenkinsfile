@@ -997,7 +997,7 @@ regressionBuilders['Test (opt)'] = {
   WithSourceCodeAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test -c opt --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_sanitizer", 'opt', 1)
+        --target_pattern_file bazel_tests_opt", 'opt', 1)
       createBazelStash('build-opt-testlogs')
     }
   }
