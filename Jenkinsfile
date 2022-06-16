@@ -165,6 +165,21 @@ def gsutilCopy(String src, String dest) {
   }
 }
 
+def bbLinks() {
+    def linkURL = "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})"
+    if (isPhabricatorTriggeredBuild()) {
+      def phabricator_link = ''
+      if (params.REVISION) {
+        phabricator_link = "${phabConnector.URL}/D${REVISION}"
+      } else {
+        phabricator_link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
+      }
+      linkURL += ",[Phabricator](${phabricator_link})"
+    }
+    linkURL += "'"
+    return linkURL
+}
+
 def stashOnGCS(String name, String pattern, String excludes = '') {
   def extraExcludes = ''
   if (excludes.length() != 0) {
@@ -384,7 +399,7 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
 
 def runBazelCmd(String f, String targetConfig, int retries = 5) {
   def retval = sh(
-    script: "bazel ${f}",
+    script: "bazel ${f} ${bbLinks()} --build_metadata=CONFIG=${targetConfig}",
     returnStatus: true
   )
 
@@ -981,10 +996,8 @@ TEST_ITERATIONS = 5
 regressionBuilders['Test (opt)'] = {
   WithSourceCodeAndTargetsK8s {
     container('pxbuild') {
-      sh """
-      bazel test -c opt  --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_clang_opt
-      """
+      runBazelCmd("test -c opt --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_sanitizer", 'opt', 1)
       createBazelStash('build-opt-testlogs')
     }
   }
@@ -993,10 +1006,8 @@ regressionBuilders['Test (opt)'] = {
 regressionBuilders['Test (ASAN)'] = {
   WithSourceCodeAndTargetsK8s {
     container('pxbuild') {
-      sh """
-      bazel test --config asan  --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_sanitizer
-      """
+      runBazelCmd("test --config asan --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_sanitizer", 'asan', 1)
       createBazelStash('build-asan-testlogs')
     }
   }
@@ -1005,10 +1016,8 @@ regressionBuilders['Test (ASAN)'] = {
 regressionBuilders['Test (TSAN)'] = {
   WithSourceCodeAndTargetsK8s {
     container('pxbuild') {
-      sh """
-      bazel test --config tsan  --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_sanitizer
-      """
+      runBazelCmd("test --config tsan --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_sanitizer", 'tsan', 1)
       createBazelStash('build-tsan-testlogs')
     }
   }
