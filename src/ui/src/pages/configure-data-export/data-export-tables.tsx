@@ -22,6 +22,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -168,6 +169,14 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
             />
           }
         />
+        <Tooltip title='View execution logs'>
+          <IconButton
+            component={Link}
+            to={`${path}/logs/${script.id}`}
+          >
+            <HistoryIcon />
+          </IconButton>
+        </Tooltip>
         <Tooltip title='Configure this script'>
           <IconButton
             component={Link}
