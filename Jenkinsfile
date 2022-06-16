@@ -1119,8 +1119,8 @@ def  buildScriptForCLIRelease = {
         }
         stage('Upload Signed Binary') {
           node('macos') {
-            WithSourceCodeFatalError {
-              dockerStep('', devDockerImageExtrasWithTag) {
+            WithSourceCodeK8s {
+              container('pxbuild') {
                 unstash 'cli_darwin_signed'
                 sh './ci/cli_upload_signed.sh'
               }
