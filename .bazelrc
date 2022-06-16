@@ -99,6 +99,7 @@ build:macos --action_env=BAZEL_LINKOPTS
 
 # bazel build --config asan ...
 build:asan --config=clang
+build:asan --test_timeout="120,600,1800,3600"
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -DPL_CONFIG_ASAN
 build:asan --copt -D__SANITIZE_ADDRESS__
