@@ -231,7 +231,9 @@ pl_cc_test(
 
 pl_cc_test(
     name = "row_tuple_test",
+    timeout = "long",
     srcs = ["row_tuple_test.cc"],
+    tags = ["cpu:4"],
     deps = [
         ":cc_library",
     ],

@@ -62,7 +62,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "scalar_expression_test",
-    size = "large",
+    timeout = "long",
     srcs = ["scalar_expression_test.cc"],
     tags = ["cpu:4"],
     deps = [
