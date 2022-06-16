@@ -30,9 +30,9 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "bpf_map_leak_test",
+    name = "bpf_map_leak_bpf_test",
     timeout = "moderate",
-    srcs = ["bpf_map_leak_test.cc"],
+    srcs = ["bpf_map_leak_bpf_test.cc"],
     data = [
         "//src/stirling/testing/demo_apps/leaky_http_server:server",
         "//src/stirling/testing/demo_apps/leaky_http_unix_socket_server:server",
@@ -60,8 +60,8 @@ pl_cc_test(
 )
 
 sh_test(
-    name = "stirling_wrapper_kprobe_leak_test",
-    srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
+    name = "stirling_wrapper_kprobe_leak_bpf_test",
+    srcs = ["stirling_wrapper_kprobe_leak_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
     ],
@@ -79,8 +79,8 @@ sh_test(
 )
 
 sh_test(
-    name = "stirling_wrapper_test",
-    srcs = ["stirling_wrapper_test.sh"],
+    name = "stirling_wrapper_bpf_test",
+    srcs = ["stirling_wrapper_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs)",
@@ -103,8 +103,8 @@ sh_test(
 )
 
 sh_test(
-    name = "stirling_wrapper_bpftrace_test",
-    srcs = ["stirling_wrapper_bpftrace_test.sh"],
+    name = "stirling_wrapper_bpftrace_bpf_test",
+    srcs = ["stirling_wrapper_bpftrace_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
         "$(location //src/stirling/testing:exec_snoop_bpftrace_script)",
@@ -126,8 +126,8 @@ sh_test(
 )
 
 sh_test(
-    name = "stirling_wrapper_container_test",
-    srcs = ["stirling_wrapper_container_test.sh"],
+    name = "stirling_wrapper_container_bpf_test",
+    srcs = ["stirling_wrapper_container_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
         "$(location //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs)",
@@ -152,8 +152,8 @@ sh_test(
 )
 
 sh_test(
-    name = "stirling_perf_test",
-    srcs = ["stirling_perf_test.sh"],
+    name = "stirling_perf_bpf_test",
+    srcs = ["stirling_perf_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
     ],
@@ -176,8 +176,8 @@ sh_test(
 )
 
 sh_test(
-    name = "stirling_wrapper_jvm_stats_test",
-    srcs = ["stirling_wrapper_jvm_stats_test.sh"],
+    name = "stirling_wrapper_jvm_stats_bpf_test",
+    srcs = ["stirling_wrapper_jvm_stats_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper_image.tar)",
         "$(location //src/stirling/source_connectors/jvm_stats/testing:hello_world_image.tar)",
@@ -217,8 +217,8 @@ sh_test(
 )
 
 sh_test(
-    name = "probe_cleaner_test",
-    srcs = ["probe_cleaner_test.sh"],
+    name = "probe_cleaner_bpf_test",
+    srcs = ["probe_cleaner_bpf_test.sh"],
     args = [
         "$(location //src/stirling/binaries:stirling_wrapper)",
         "$(location //src/stirling/bpf_tools:probe_cleaner_standalone)",

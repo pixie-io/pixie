@@ -102,8 +102,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "elf_reader_symbolizer_test",
-    srcs = ["elf_reader_symbolizer_test.cc"],
+    name = "elf_reader_symbolizer_bpf_test",
+    srcs = ["elf_reader_symbolizer_bpf_test.cc"],
     tags = [
         "requires_bpf",
     ],

@@ -42,9 +42,9 @@ jdk_image_names = ["%s-java-profiler-test-image" % jdk_name for jdk_name in jdk_
 image_tars = ["//src/stirling/source_connectors/perf_profiler/testing/java:%s-java-profiler-test-image.tar" % jdk_name for jdk_name in jdk_names]
 
 pl_cc_test(
-    name = "perf_profiler_test",
+    name = "perf_profiler_bpf_test",
     timeout = "long",
-    srcs = ["perf_profiler_test.cc"],
+    srcs = ["perf_profiler_bpf_test.cc"],
     args = [
         "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
         "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,
@@ -71,8 +71,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "stringifier_test",
-    srcs = ["stringifier_test.cc"],
+    name = "stringifier_bpf_test",
+    srcs = ["stringifier_bpf_test.cc"],
     tags = [
         "requires_bpf",
     ],
