@@ -198,10 +198,14 @@ export const PluginConfig = React.memo<{ plugin: GQLPlugin }>(({ plugin }) => {
           </Typography>
         }
         <Box sx={{ flexGrow: 1 }}/>
-        <Link component={Button} to='/configure-data-export' onClick={(e) => e.stopPropagation()}
-          disabled={saving || !plugin.retentionEnabled}>
+        <Button
+          component={Link}
+          to='/configure-data-export'
+          onClick={(e: Event) => e.stopPropagation()}
+          disabled={saving || !plugin.retentionEnabled}
+        >
           Edit Scripts
-        </Link>
+        </Button>
         <Button
           variant='contained'
           color='primary'
