@@ -1,7 +1,8 @@
-diff --color -Naur tensorflow-2.9.1/tensorflow/lite/build_def.bzl tensorflow-2.9.1_new/tensorflow/lite/build_def.bzl
---- tensorflow-2.9.1/tensorflow/lite/build_def.bzl	2022-05-22 15:28:22.000000000 -0700
-+++ tensorflow-2.9.1_new/tensorflow/lite/build_def.bzl	2022-06-03 23:26:11.023540768 -0700
-@@ -16,6 +16,7 @@
+diff --git a/tensorflow/lite/build_def.bzl b/tensorflow/lite/build_def.bzl
+index 43015747773..aca30b42527 100644
+--- a/tensorflow/lite/build_def.bzl
++++ b/tensorflow/lite/build_def.bzl
+@@ -16,6 +16,7 @@ def tflite_copts():
      """Defines common compile time flags for TFLite libraries."""
      copts = [
          "-DFARMHASH_NO_CXX_STRING",
@@ -9,10 +10,11 @@ diff --color -Naur tensorflow-2.9.1/tensorflow/lite/build_def.bzl tensorflow-2.9
      ] + select({
          clean_dep("//tensorflow:android_arm"): [
              "-mfpu=neon",
-diff --color -Naur tensorflow-2.9.1/tensorflow/workspace1.bzl tensorflow-2.9.1_new/tensorflow/workspace1.bzl
---- tensorflow-2.9.1/tensorflow/workspace1.bzl	2022-05-22 15:28:22.000000000 -0700
-+++ tensorflow-2.9.1_new/tensorflow/workspace1.bzl	2022-06-03 23:25:11.088519990 -0700
-@@ -7,8 +7,9 @@
+diff --git a/tensorflow/workspace1.bzl b/tensorflow/workspace1.bzl
+index 809b811eb1a..c9341ee70bc 100644
+--- a/tensorflow/workspace1.bzl
++++ b/tensorflow/workspace1.bzl
+@@ -7,8 +7,9 @@ load("@io_bazel_rules_closure//closure:defs.bzl", "closure_repositories")
  load("@rules_cuda//cuda:dependencies.bzl", "rules_cuda_dependencies")
  
  def workspace():
@@ -24,10 +26,46 @@ diff --color -Naur tensorflow-2.9.1/tensorflow/workspace1.bzl tensorflow-2.9.1_n
  
      closure_repositories()
  
-diff --color -Naur tensorflow-2.9.1/third_party/llvm/workspace.bzl tensorflow-2.9.1_new/third_party/llvm/workspace.bzl
---- tensorflow-2.9.1/third_party/llvm/workspace.bzl	2022-05-22 15:28:22.000000000 -0700
-+++ tensorflow-2.9.1_new/third_party/llvm/workspace.bzl	2022-06-03 23:25:11.088519990 -0700
-@@ -12,7 +12,6 @@
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+index 77c76aa6e20..0395ce62d99 100644
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -14,7 +14,7 @@ load("//tensorflow/tools/toolchains/embedded/arm-linux:arm_linux_toolchain_confi
+ load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
+ load("//third_party/clang_toolchain:cc_configure_clang.bzl", "cc_download_clang_toolchain")
+ load("//tensorflow/tools/def_file_filter:def_file_filter_configure.bzl", "def_file_filter_configure")
+-load("//third_party/llvm:setup.bzl", "llvm_setup")
++#load("//third_party/llvm:setup.bzl", "llvm_setup")
+ 
+ # Import third party repository rules. See go/tfbr-thirdparty.
+ load("//third_party/FP16:workspace.bzl", FP16 = "repo")
+@@ -516,7 +516,7 @@ def _tf_repositories():
+         urls = tf_mirror_urls("https://github.com/antirez/linenoise/archive/c894b9e59f02203dbe4e2be657572cf88c4230c3.tar.gz"),
+     )
+ 
+-    llvm_setup(name = "llvm-project")
++    # llvm_setup(name = "llvm-project")
+ 
+     # Intel openMP that is part of LLVM sources.
+     tf_http_archive(
+diff --git a/tensorflow/workspace3.bzl b/tensorflow/workspace3.bzl
+index 61d18b566c6..ad351fbe726 100644
+--- a/tensorflow/workspace3.bzl
++++ b/tensorflow/workspace3.bzl
+@@ -39,7 +39,7 @@ def workspace():
+ 
+     # Load the raw llvm-project.  llvm does not have build rules set up by default,
+     # but provides a script for setting up build rules via overlays.
+-    llvm("llvm-raw")
++    # llvm("llvm-raw")
+ 
+ # Alias so it can be loaded without assigning to a different symbol to prevent
+ # shadowing previous loads and trigger a buildifier warning.
+diff --git a/third_party/llvm/workspace.bzl b/third_party/llvm/workspace.bzl
+index 82d0f71ccbd..94104822e98 100644
+--- a/third_party/llvm/workspace.bzl
++++ b/third_party/llvm/workspace.bzl
+@@ -12,7 +12,6 @@ def repo(name):
          sha256 = LLVM_SHA256,
          strip_prefix = "llvm-project-{commit}".format(commit = LLVM_COMMIT),
          urls = [
@@ -35,10 +73,11 @@ diff --color -Naur tensorflow-2.9.1/third_party/llvm/workspace.bzl tensorflow-2.
              "https://github.com/llvm/llvm-project/archive/{commit}.tar.gz".format(commit = LLVM_COMMIT),
          ],
          build_file = "//third_party/llvm:llvm.BUILD",
-diff --color -Naur tensorflow-2.9.1/third_party/repo.bzl tensorflow-2.9.1_new/third_party/repo.bzl
---- tensorflow-2.9.1/third_party/repo.bzl	2022-05-22 15:28:22.000000000 -0700
-+++ tensorflow-2.9.1_new/third_party/repo.bzl	2022-06-03 23:25:11.088519990 -0700
-@@ -20,12 +20,8 @@
+diff --git a/third_party/repo.bzl b/third_party/repo.bzl
+index 795f0b00b98..eb594737728 100644
+--- a/third_party/repo.bzl
++++ b/third_party/repo.bzl
+@@ -20,12 +20,8 @@ def tf_mirror_urls(url):
      Given a URL, it returns a list of the TF-mirror cache version of that URL
      and the original URL, suitable for use in `urls` field of `tf_http_archive`.
      """
@@ -53,13 +92,13 @@ diff --color -Naur tensorflow-2.9.1/third_party/repo.bzl tensorflow-2.9.1_new/th
  
  def _get_env_var(ctx, name):
      if name in ctx.os.environ:
-@@ -106,23 +102,10 @@
+@@ -106,23 +102,10 @@ def tf_http_archive(name, sha256, urls, **kwargs):
      labels (e.g. '@foo//:bar') or from a label created in their repository (e.g.
      'str(Label("//:bar"))').
      """
 -    if len(urls) < 2:
 -        fail("tf_http_archive(urls) must have redundant URLs.")
- 
+-
 -    if not any([mirror in urls[0] for mirror in (
 -        "mirror.tensorflow.org",
 -        "mirror.bazel.build",
@@ -70,6 +109,7 @@ diff --color -Naur tensorflow-2.9.1/third_party/repo.bzl tensorflow-2.9.1_new/th
 -             "permission to mirror the file, please put the correctly " +
 -             "formatted mirror URL there anyway, because someone will come " +
 -             "along shortly thereafter and mirror the file.")
++
 +    # Don't check for mirrors, because for whatever reason some of the mirrors are broken.
  
      if native.existing_rule(name):
