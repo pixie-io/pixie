@@ -148,7 +148,7 @@ func detectClusterType() ClusterType {
 		if sp[1] == "k0s" {
 			return ClusterTypeK0s
 		}
-		if sp[1] == "k3s" {
+		if strings.HasPrefix(sp[1], "k3s") {
 			return ClusterTypeK3s
 		}
 	}
