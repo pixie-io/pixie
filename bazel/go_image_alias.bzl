@@ -17,7 +17,9 @@
 load("@io_bazel_rules_docker//go:image.bzl", _go_image = "go_image")
 
 def go_image(**kwargs):
+    base = "//:pl_go_base_image"
+    if "base" not in kwargs:
+        kwargs["base"] = base
     _go_image(
-        base = "//:pl_go_base_image",
         **kwargs
     )
