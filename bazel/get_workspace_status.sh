@@ -39,6 +39,9 @@ then
     echo "STABLE_BUILD_NUMBER ${BUILD_NUMBER}"
     echo "STABLE_BUILD_SCM_STATUS Distribution"
 
+    # Build buddy tags.
+    echo "VERSION ${STABLE_BUILD_TAG}"
+    echo "BUILD_TREE_STATUS 'Clean'"
     exit 0
 fi
 
@@ -70,3 +73,7 @@ echo "STABLE_BUILD_NUMBER 0"
 
 echo "BUILD_TAG 0.0.0-dev"
 echo "BUILD_NUMBER 0"
+
+# Build buddy variables.
+echo "VERSION ${BUILD_TAG}"
+echo "BUILD_TREE_STATUS ${tree_status}"
