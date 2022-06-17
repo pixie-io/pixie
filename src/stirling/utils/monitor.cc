@@ -20,7 +20,7 @@
 #include "src/common/base/base.h"
 #include "src/common/metrics/metrics.h"
 
-DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", false),
+DEFINE_bool(stirling_profiler_java_symbols, gflags::BoolFromEnv("PL_PROFILER_JAVA_SYMBOLS", true),
             "Whether to symbolize Java binaries.");
 
 namespace px {

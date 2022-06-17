@@ -39,6 +39,7 @@ else
     stirling_wrapper=$1
     go_grpc_server=$2
     go_grpc_client=$3
+    pass_thru="${*:4}"
 fi
 
 ###############################################################################
@@ -57,7 +58,7 @@ run_uprobe_target "$go_grpc_server" "$go_grpc_client"
 echo "Running stirling_wrapper."
 
 flags="--color_output=false --timeout_secs=0"
-out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
+out=$(run_prompt_sudo "${stirling_wrapper}" "${flags}" "${pass_thru}" 2>&1)
 
 ###############################################################################
 # Check output for errors/warnings.
