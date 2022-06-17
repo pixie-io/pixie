@@ -1,10 +1,30 @@
-{
-
-   "main/g/glibc/libc6_2.35-0ubuntu3_amd64.deb": "ea9a27e0ebdd0cfc9c750d94f8074f3a35d1f97dcc77ae04c370fb498a6b6db2",
-   "main/e/elfutils/libelf1_0.186-1build1_amd64.deb": "8effc4d7a0cc341bcf6cb11af0134f3defa6292376ecfdfc697a9b228606345c",
-   "main/x/xz-utils/liblzma5_5.2.5-2ubuntu1_amd64.deb": "8f1c46e7d3f5102a5e4fdca7c949728a343ba71c2a7c124118df2c13d4c444f7",
-   "main/n/ncurses/libtinfo6_6.3-2_amd64.deb": "5f7618187c6d1924ec758c2d5422c67377af92ecb21695008edf83a2d0c85ecd",
-   "main/z/zlib/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb": "52449467942cc943d651fd16867014e9339f3657935fc09b75b3347aa5a78066",
-   "main/libx/libxcrypt/libcrypt1_4.4.27-1_amd64.deb": "3fa566e9f861a08736cbc5a97562d9d6e4f0c00450fbeafcb6d7583423b04a98",
-   "universe/b/byteman/libbyteman-java_4.0.18-1_all.deb": "f442036d59e855573bbfe1abfd108cafa62073be9926066ece42867eb7e6bf43"
-}
+[
+   {
+      "path": "main/e/elfutils/libelf1_0.186-1build1_amd64.deb",
+      "checksum": "8effc4d7a0cc341bcf6cb11af0134f3defa6292376ecfdfc697a9b228606345c"
+   },
+   {
+      "path": "main/g/glibc/libc6_2.35-0ubuntu3_amd64.deb",
+      "checksum": "ea9a27e0ebdd0cfc9c750d94f8074f3a35d1f97dcc77ae04c370fb498a6b6db2"
+   },
+   {
+      "path": "main/libx/libxcrypt/libcrypt1_4.4.27-1_amd64.deb",
+      "checksum": "3fa566e9f861a08736cbc5a97562d9d6e4f0c00450fbeafcb6d7583423b04a98"
+   },
+   {
+      "path": "main/n/ncurses/libtinfo6_6.3-2_amd64.deb",
+      "checksum": "5f7618187c6d1924ec758c2d5422c67377af92ecb21695008edf83a2d0c85ecd"
+   },
+   {
+      "path": "main/x/xz-utils/liblzma5_5.2.5-2ubuntu1_amd64.deb",
+      "checksum": "8f1c46e7d3f5102a5e4fdca7c949728a343ba71c2a7c124118df2c13d4c444f7"
+   },
+   {
+      "path": "main/z/zlib/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb",
+      "checksum": "52449467942cc943d651fd16867014e9339f3657935fc09b75b3347aa5a78066"
+   },
+   {
+      "path": "universe/b/byteman/libbyteman-java_4.0.18-1_all.deb",
+      "checksum": "f442036d59e855573bbfe1abfd108cafa62073be9926066ece42867eb7e6bf43"
+   }
+]
