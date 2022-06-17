@@ -154,7 +154,7 @@ scala_image(
     srcs = glob(["**/*.scala"]),
     base = ":thriftmux_base",
     jvm_flags = [
-        "-javaagent:/usr/share/java/byteman-4.0.11.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.11.jar",
+        "-javaagent:/usr/share/java/byteman-4.0.18.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.18.jar",
         "-Dorg.jboss.byteman.transform.all",
         "-Dio.netty.native.deleteLibAfterLoading=false",
     ],
