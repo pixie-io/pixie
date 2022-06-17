@@ -405,7 +405,8 @@ Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base) {
   return Status::OK();
 }
 
-std::filesystem::path FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
+StatusOr<std::filesystem::path> FindLinuxHeadersDirectory(
+    const std::filesystem::path& lib_modules_dir) {
   // bcc/loader.cc looks for Linux headers in the following order:
   //   /lib/modules/<uname>/source
   //   /lib/modules/<uname>/build
@@ -413,14 +414,12 @@ std::filesystem::path FindLinuxHeadersDirectory(const std::filesystem::path& lib
   std::filesystem::path lib_modules_source_dir = lib_modules_dir / "source";
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
-  std::filesystem::path lib_modules_kdir;
   if (fs::Exists(lib_modules_source_dir)) {
-    lib_modules_kdir = lib_modules_source_dir;
+    return lib_modules_source_dir;
   } else if (fs::Exists(lib_modules_build_dir)) {
-    lib_modules_kdir = lib_modules_build_dir;
+    return lib_modules_build_dir;
   }
-
-  return lib_modules_kdir;
+  return error::NotFound("Could not found 'source' or 'build' under $0", lib_modules_dir.string());
 }
 
 Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
@@ -590,26 +589,6 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   return Status::OK();
 }
 
-namespace {
-
-enum class LinuxHeaderStrategy {
-  // Search for linux Linux headers are already accessible (must be running directly on host).
-  kSearchLocalHeaders,
-
-  // Search for Linux headers under /host (must be running in our own container).
-  kLinkHostHeaders,
-
-  // Try to install packaged headers (only works if in a container image with packaged headers).
-  // Useful in case no Linux headers are found.
-  kInstallPackagedHeaders
-};
-
-const std::vector<LinuxHeaderStrategy> kDefaultHeaderSearchOrder = {
-    LinuxHeaderStrategy::kSearchLocalHeaders, LinuxHeaderStrategy::kLinkHostHeaders,
-    LinuxHeaderStrategy::kInstallPackagedHeaders};
-
-}  // namespace
-
 StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
   PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
@@ -621,36 +600,36 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
   // This does nothing if the directory already exists.
   PL_RETURN_IF_ERROR(fs::CreateDirectories(lib_modules_dir));
 
-  for (const auto& attempt : kDefaultHeaderSearchOrder) {
-    // Some attempts require linking or installing headers. Do this first.
-    switch (attempt) {
-      case LinuxHeaderStrategy::kSearchLocalHeaders:
-        // Nothing to link or install.
-        break;
-      case LinuxHeaderStrategy::kLinkHostHeaders: {
-        auto status = LinkHostLinuxHeaders(lib_modules_dir);
-        if (!status.ok()) {
-          LOG(WARNING) << absl::Substitute("Failed to link host's Linux headers to $0, error: $1",
-                                           lib_modules_dir.string(), status.ToString());
-          continue;
-        }
-      } break;
-      case LinuxHeaderStrategy::kInstallPackagedHeaders: {
-        auto status = InstallPackagedLinuxHeaders(lib_modules_dir);
-        if (!status.ok()) {
-          LOG(WARNING) << absl::Substitute(
-              "Failed to install packaged Linux headers to $0, error: $1", lib_modules_dir.string(),
-              status.ToString());
-          continue;
-        }
-        break;
-      }
-    }
+  auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
+  // TODO(yzhao): Consider add a PL_RETURN_IF_OK() macro to return the held value of StatusOr.
+  // A problem, when implementing PL_RETURN_IF_OK() in similar manner as PL_RETURN_IF_ERROR(),
+  // is that the return value of the input expression to PL_RETURN_IF_OK() cannot be bound to
+  // a non-const reference. Therefore, the following code will invoke StatusOr's copy constructor:
+  // auto status_or = ...;
+  // PL_RETURN_IF_OK(status_or);
+  if (status_or.ok()) {
+    return status_or.ConsumeValueOrDie();
+  }
 
-    // Now check for a healthy set of headers.
-    headers_dir = FindLinuxHeadersDirectory(lib_modules_dir);
-    if (!headers_dir.empty()) {
-      return headers_dir;
+  auto status = LinkHostLinuxHeaders(lib_modules_dir);
+  LOG_IF(INFO, !status.ok()) << absl::Substitute(
+      "Failed to link host's Linux headers to $0, error: $1", lib_modules_dir.string(),
+      status.ToString());
+  if (status.ok()) {
+    auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
+    if (status_or.ok()) {
+      return status_or.ConsumeValueOrDie();
+    }
+  }
+
+  status = InstallPackagedLinuxHeaders(lib_modules_dir);
+  LOG_IF(INFO, !status.ok()) << absl::Substitute(
+      "Failed to install packaged Linux headers to $0, error: $1", lib_modules_dir.string(),
+      status.ToString());
+  if (status.ok()) {
+    auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
+    if (status_or.ok()) {
+      return status_or.ConsumeValueOrDie();
     }
   }
 
