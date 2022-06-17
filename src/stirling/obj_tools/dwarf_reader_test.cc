@@ -27,9 +27,9 @@ constexpr std::string_view kTestGo1_16Binary =
 constexpr std::string_view kTestGo1_17Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_17_binary_/"
     "test_go_1_17_binary";
-constexpr std::string_view kTestGo1_18Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_18_binary_/"
-    "test_go_1_18_binary";
+constexpr std::string_view kTestGoBinary =
+    "src/stirling/obj_tools/testdata/go/test_go_binary_/"
+    "test_go_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary_/"
     "golang_1_16_grpc_tls_server_binary";
@@ -70,7 +70,7 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
       : kCppBinaryPath(px::testing::BazelRunfilePath(kCppBinary)),
         kGo1_16BinaryPath(px::testing::BazelRunfilePath(kTestGo1_16Binary)),
         kGo1_17BinaryPath(px::testing::BazelRunfilePath(kTestGo1_17Binary)),
-        kGo1_18BinaryPath(px::testing::BazelRunfilePath(kTestGo1_18Binary)),
+        kGo1_18BinaryPath(px::testing::BazelRunfilePath(kTestGoBinary)),
         kGoServerBinaryPath(px::testing::BazelRunfilePath(kGoGRPCServer)),
         kGoBinaryUnconventionalPath(px::testing::BazelRunfilePath(kGoBinaryUnconventional)) {}
 
