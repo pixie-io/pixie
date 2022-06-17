@@ -25,7 +25,7 @@
 #include <absl/strings/str_format.h>
 #include "schema/row_batch.h"
 #include "schema/row_descriptor.h"
-#include "src/common/datagen/datagen.h"
+#include "src/datagen/datagen.h"
 
 namespace px {
 namespace table_store {

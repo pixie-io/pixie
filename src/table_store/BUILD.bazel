@@ -41,6 +41,6 @@ pl_cc_test_library(
     hdrs = glob(["**/test_utils.h"]),
     deps = [
         ":cc_library",
-        "//src/common/datagen:cc_library",
+        "//src/datagen:datagen_library",
     ],
 )

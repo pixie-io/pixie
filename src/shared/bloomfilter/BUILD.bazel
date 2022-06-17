@@ -52,6 +52,6 @@ pl_cc_binary(
     deps = [
         ":cc_library",
         "//src/common/benchmark:cc_library",
-        "//src/common/datagen:cc_library",
+        "//src/datagen:datagen_library",
     ],
 )

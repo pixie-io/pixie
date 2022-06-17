@@ -21,7 +21,7 @@
 #include <random>
 #include <vector>
 #include "src/common/benchmark/benchmark.h"
-#include "src/common/datagen/datagen.h"
+#include "src/datagen/datagen.h"
 #include "src/shared/types/types.h"
 
 using px::types::Int64Value;

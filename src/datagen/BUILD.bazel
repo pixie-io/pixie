@@ -17,14 +17,8 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
 
 pl_cc_test_library(
-    name = "cc_library",
-    srcs = glob(
-        [
-            "*.h",
-            "*.cc",
-        ],
-        exclude = ["**/*_test.cc"],
-    ),
+    name = "datagen_library",
+    srcs = ["datagen.h"],
     hdrs = ["datagen.h"],
     visibility = ["//src:__subpackages__"],
     deps = [
@@ -32,4 +26,3 @@ pl_cc_test_library(
         "@com_google_absl//absl/random",
     ],
 )
-#

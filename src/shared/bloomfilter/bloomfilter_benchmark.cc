@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/common/datagen/datagen.h"
+#include "src/datagen/datagen.h"
 #include "src/shared/bloomfilter/bloomfilter.h"
 
 namespace px {
