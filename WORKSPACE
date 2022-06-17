@@ -45,7 +45,9 @@ grpc_deps()
 
 load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
 
-scala_version = "2.13.6"
+# The jars imported by the thriftmux container were built with 2.12.15.
+# This ensures it's using the same scala version to avoid compilation issues.
+scala_version = "2.12.15"
 
 scala_config(scala_version = scala_version)
 

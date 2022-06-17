@@ -738,22 +738,26 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
-                      OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
+  // TODO: Rebasing #446 onto main broke the fptr symbol detection code.
+  // This will need to be further investigated but it is not the main focus
+  // of the current change (testing finagle works with the latest netty version).
+  OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid);
 
-  switch (openssl_fix_sub_version) {
-    case 0:
-      symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
-      break;
-    case 1:
-      symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
-      break;
-    default:
-      // Supported versions are checked in function OpenSSLFixSubversionNum(),
-      // should not fall through to here, ever.
-      DCHECK(false);
-      return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
-  }
+  symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
+  symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
+  /* switch (openssl_fix_sub_version) { */
+  /*   case 0: */
+  /*     symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset; */
+  /*     break; */
+  /*   case 1: */
+  /*     symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset; */
+  /*     break; */
+  /*   default: */
+  /*     // Supported versions are checked in function OpenSSLFixSubversionNum(), */
+  /*     // should not fall through to here, ever. */
+  /*     DCHECK(false); */
+  /*     return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version); */
+  /* } */
 
   // Using GDB to confirm member offsets on OpenSSL 1.1.1:
   // (gdb) p s
