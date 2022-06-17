@@ -89,7 +89,7 @@ echo "Pass through env. vars: ${pass_thru_env_vars[*]}"
 # Perform the build as user (not as root).
 bazel build --remote_download_toplevel "${options[@]}" "$target"
 
-target_executable=$(bazel cquery "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
+target_executable=$(bazel cquery "${options[@]}" "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
 
 extra_env_args=()
 extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles/MANIFEST")
