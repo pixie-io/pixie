@@ -421,8 +421,7 @@ pxtrace.UpsertTracepoint('pid_sample_tracer',
   EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
 }
 
-// TODO(rcheng/oazizi): Fix this test to work with latest clang/gcc.
-TEST_F(StirlingErrorTest, DISABLED_UProbeDeploymentError) {
+TEST_F(StirlingErrorTest, UProbeDeploymentError) {
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<StirlingErrorConnector>("stirling_error");
@@ -435,9 +434,9 @@ TEST_F(StirlingErrorTest, DISABLED_UProbeDeploymentError) {
   bpf_tools::BCCWrapper bcc_wrapper;
   bpf_tools::UProbeSpec spec{
       .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-      .symbol = "SSL_write",
+      .symbol = "foo",
       .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-      .probe_fn = "probe_entry_SSL_write",
+      .probe_fn = "probe_entry_foo",
   };
 
   // Attempt to attach UProbe and append probe status.
@@ -460,11 +459,13 @@ TEST_F(StirlingErrorTest, DISABLED_UProbeDeploymentError) {
   // SSL_write Uprobe deployment failed.
   ProbeStatusRecord r2{
       .source_connector = "socket_tracer",
-      .tracepoint = "probe_entry_SSL_write",
+      .tracepoint = "probe_entry_foo",
       .status = px::statuspb::Code::INTERNAL,
-      .error = "Can't find start of function probe_entry_SSL_write",
+      .error =
+          "Unable to find offset for binary /usr/lib/x86_64-linux-gnu/libssl.so.1.1 symbol foo "
+          "address 0",
       .info =
-          R"({"binary":"/usr/lib/x86_64-linux-gnu/libssl.so.1.1","symbol":"SSL_write","address":0,"pid":-1,"type":"kEntry","probe_fn":"probe_entry_SSL_write"})"};
+          R"({"binary":"/usr/lib/x86_64-linux-gnu/libssl.so.1.1","symbol":"foo","address":0,"pid":-1,"type":"kEntry","probe_fn":"probe_entry_foo"})"};
 
   EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
   EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
