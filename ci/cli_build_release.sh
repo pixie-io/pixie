@@ -31,22 +31,14 @@ versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.jso
 
 echo "The release tag is: ${release_tag}"
 linux_binary=$(bazel cquery //src/pixie_cli:px -c opt --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
-darwin_package_amd64=bazel-bin/src/pixie_cli/px_darwin_amd64_pkg.tar
-darwin_package_arm64=bazel-bin/src/pixie_cli/px_darwin_arm64_pkg.tar
+darwin_amd64_binary=$(bazel cquery -c opt //src/pixie_cli:px_darwin_amd64 --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
+darwin_arm64_binary=$(bazel cquery -c opt //src/pixie_cli:px_darwin_arm64 --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
 docker_repo="pixielabs/px"
 
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-# We write the darwin binary to a tar, because normal cross-compilation of the :px_darwin*
-# binary does not write it to a bazel-bin location with a determinable path.
-bazel build -c opt --stamp //src/pixie_cli:px_darwin_amd64_pkg
-tar -xvf ${darwin_package_amd64}
-
-bazel build -c opt --stamp //src/pixie_cli:px_darwin_arm64_pkg
-tar -xvf ${darwin_package_arm64}
-
-bazel build -c opt --stamp //src/pixie_cli:px
+bazel build -c opt --stamp //src/pixie_cli:px_darwin_amd64 //src/pixie_cli:px_darwin_arm64 //src/pixie_cli:px
 
 # Create and push docker image.
 bazel run -c opt --stamp //src/pixie_cli:push_px_image
@@ -102,14 +94,14 @@ fi
 
 write_artifacts_to_gcs() {
     output_path=$1
-    copy_artifact_to_gcs "$output_path" "px_darwin_amd64" "cli_darwin_amd64_unsigned"
-    copy_artifact_to_gcs "$output_path" "px_darwin_arm64" "cli_darwin_arm64_unsigned"
-    copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
+    copy_artifact_to_gcs "${output_path}" "${darwin_amd64_binary}" "cli_darwin_amd64_unsigned"
+    copy_artifact_to_gcs "${output_path}" "${darwin_arm64_binary}" "cli_darwin_arm64_unsigned"
+    copy_artifact_to_gcs "${output_path}" "${linux_binary}" "cli_linux_amd64"
 
     if [[ ! "$release_tag" == *"-"* ]]; then
         # RPM/DEB only exists for release builds.
-        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
-        copy_artifact_to_gcs "$output_path" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
+        copy_artifact_to_gcs "${output_path}" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
+        copy_artifact_to_gcs "${output_path}" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
     fi
 }
 
@@ -120,9 +112,9 @@ if [[ $release_tag == *"-"* ]]; then
   bucket="pixie-prod-artifacts"
 fi
 output_path="gs://${bucket}/cli/${release_tag}"
-write_artifacts_to_gcs "$output_path"
+write_artifacts_to_gcs "${output_path}"
 # Check to see if it's production build. If so we should also write it to the latest directory.
 if [[ $public == "True" ]]; then
     output_path="gs://pixie-dev-public/cli/latest"
-    write_artifacts_to_gcs "$output_path"
+    write_artifacts_to_gcs "${output_path}"
 fi
