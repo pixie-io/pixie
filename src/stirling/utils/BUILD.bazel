@@ -103,7 +103,7 @@ pl_cc_test(
 # One can test the container environment by running this test after executing $PIXIE_ROOT/scripts/run_docker.sh.
 # Also works directly on the OS, but should also be run inside a container for coverage purposes.
 pl_cc_test(
-    name = "proc_path_tools_container_test",
+    name = "proc_path_tools_container_bpf_test",
     srcs = ["proc_path_tools_test.cc"],
     data = ["//src/common/testing/test_utils:sleep_container_image.tar"],
     defines = [
