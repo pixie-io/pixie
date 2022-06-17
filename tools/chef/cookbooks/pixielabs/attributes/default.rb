@@ -170,7 +170,7 @@ elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
   default['bazel']['sha256'] =
-    'r91d8958fffd3077c32466a03300b7eba3b680588688f11d378ccbf2ae9000753'
+    '91d8958fffd3077c32466a03300b7eba3b680588688f11d378ccbf2ae9000753'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.18.3.darwin-amd64.tar.gz'
