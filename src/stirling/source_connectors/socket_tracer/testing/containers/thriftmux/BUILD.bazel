@@ -21,7 +21,7 @@ load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
-load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
+load("//bazel/external/ubuntu_packages:packages.bzl", "packages", "libbyteman_version")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -154,7 +154,7 @@ scala_image(
     srcs = glob(["**/*.scala"]),
     base = ":thriftmux_base",
     jvm_flags = [
-        "-javaagent:/usr/share/java/byteman-4.0.11.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.11.jar",
+        "-javaagent:/usr/share/java/byteman-%s.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-%s.jar" % (libbyteman_version, libbyteman_version),
         "-Dorg.jboss.byteman.transform.all",
         "-Dio.netty.native.deleteLibAfterLoading=false",
     ],
