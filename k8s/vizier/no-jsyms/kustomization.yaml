@@ -11,7 +11,7 @@ patches:
       path: "/spec/template/spec/containers/0/env/-"
       value:
         name: PL_PROFILER_JAVA_SYMBOLS
-        value: "1"
+        value: "0"
 # yamllint enable rule:indentation
   target:
     kind: DaemonSet
