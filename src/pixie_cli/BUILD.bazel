@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//bazel:go_image_alias.bzl", "go_image")
@@ -70,20 +69,6 @@ go_image(
     name = "px_image",
     binary = ":px",
     importpath = "px.dev/pixie",
-)
-
-pkg_tar(
-    name = "px_darwin_amd64_pkg",
-    srcs = [
-        ":px_darwin_amd64",
-    ],
-)
-
-pkg_tar(
-    name = "px_darwin_arm64_pkg",
-    srcs = [
-        ":px_darwin_arm64",
-    ],
 )
 
 container_push(
