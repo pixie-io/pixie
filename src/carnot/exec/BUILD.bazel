@@ -83,7 +83,7 @@ pl_cc_binary(
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
         "//src/common/benchmark:cc_library",
-        "//src/common/datagen:cc_library",
+        "//src/datagen:datagen_library",
         "@com_github_apache_arrow//:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],

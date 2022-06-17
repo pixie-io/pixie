@@ -37,7 +37,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
-#include "src/common/datagen/datagen.h"
+#include "src/datagen/datagen.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table/table_store.h"
