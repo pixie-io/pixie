@@ -19,45 +19,45 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 def download_ubuntu_packages():
     http_file(
-        name = "libelf1",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/libelf1_0.186-1build1_amd64.deb"],
-        sha256 = "204175c3708a845d24c3f24b3e757f894b52f195c1300f7ab89cafd98495709d",
-        downloaded_file_path = "out.deb",
-    )
-    http_file(
-        name = "zlib1g",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb"],
-        sha256 = "0d5b1dea91e2fc1d784f2faa656f86d4643373e44658376c6f50ab4ad9475075",
+        name = "libbyteman-java",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libbyteman-java_4.0.18-1_all.deb"],
+        sha256 = "40d91e567da1d5369e7e7d022d3b9b88fca529a357cbd22eb737c5a9e6ea8ab4",
         downloaded_file_path = "out.deb",
     )
     http_file(
         name = "libc6",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/libc6_2.35-0ubuntu3_amd64.deb"],
-        sha256 = "2ce321a544e3b49b78f98bb17da65446e3eb8a133a40cb37be5b8ee36c067e5c",
-        downloaded_file_path = "out.deb",
-    )
-    http_file(
-        name = "libbyteman-java",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/libbyteman-java_4.0.18-1_all.deb"],
-        sha256 = "1f7032791780cf47dd06128b4849101364ef0c56fa65951fe1b9dda6cc0672ba",
-        downloaded_file_path = "out.deb",
-    )
-    http_file(
-        name = "liblzma5",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/liblzma5_5.2.5-2ubuntu1_amd64.deb"],
-        sha256 = "105fcd4e5475dea1530fe7d652f07ba71320016e1df816b3b085bd138016f553",
-        downloaded_file_path = "out.deb",
-    )
-    http_file(
-        name = "libtinfo6",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/libtinfo6_6.3-2_amd64.deb"],
-        sha256 = "598512a368ecc89f1462eaf2c48ee94ee63aff025d8a958987ca9700171521c0",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libc6_2.35-0ubuntu3_amd64.deb"],
+        sha256 = "16281f1199723ff302ac05fc9daa647fa1cdc420b547a3b5a83e81cb40f0aea5",
         downloaded_file_path = "out.deb",
     )
     http_file(
         name = "libcrypt1",
-        urls = ["https://storage.googleapis.com/pl-public-test/ubuntu-debs/libcrypt1_4.4.27-1_amd64.deb"],
-        sha256 = "92e6b1799211bf4346e2c5f0e500ee1d6e4eed341c2be70dc6876d4841701550",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libcrypt1_4.4.27-1_amd64.deb"],
+        sha256 = "a274c2812e9aff29fe0abb7e950ba67d08aea5c9ffce1efe363d63a08e51038c",
+        downloaded_file_path = "out.deb",
+    )
+    http_file(
+        name = "libelf1",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libelf1_0.186-1build1_amd64.deb"],
+        sha256 = "0b1d4cc19f2ce7be012616cefb5a1f26813fa35d62aafb4bf4a849acc4b2afc2",
+        downloaded_file_path = "out.deb",
+    )
+    http_file(
+        name = "liblzma5",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/liblzma5_5.2.5-2ubuntu1_amd64.deb"],
+        sha256 = "b5da99dbb2ff0e6e1ce44ba7e37be8dd452ffb09c92546dd469f49371fca1e47",
+        downloaded_file_path = "out.deb",
+    )
+    http_file(
+        name = "libtinfo6",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libtinfo6_6.3-2_amd64.deb"],
+        sha256 = "9751c8bfed7d4ecca1460f51e9a0e5ea1a5a270743855e31b328d86c8d692524",
+        downloaded_file_path = "out.deb",
+    )
+    http_file(
+        name = "zlib1g",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb"],
+        sha256 = "da0ef2adaece0ba09a40d169872136e98d1917adbb13099dfcaee72d9ec1f8d8",
         downloaded_file_path = "out.deb",
     )
 
