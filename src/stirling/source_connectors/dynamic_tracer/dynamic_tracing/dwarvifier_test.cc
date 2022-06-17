@@ -1491,7 +1491,17 @@ TEST_P(DwarfInfoTest, Transform) {
       ir::physical::Program physical_program,
       GeneratePhysicalProgram(input_program, dwarf_reader.get(), elf_reader.get()));
 
+// Check for `bazel coverage` so we can bypass the final checks.
+// Note that we still get accurate coverage metrics, because this only skips the final check.
+// Ideally, we'd get bazel to deterministically build test_go_binary,
+// but it's not easy to tell bazel to use a different config for just one target.
+#ifdef PL_COVERAGE
+  LOG(INFO) << "Whoa...`bazel coverage` is messaging with test_go_binary. Shame on you bazel. "
+               "Skipping final checks.";
+  return;
+#else
   ASSERT_THAT(physical_program, EqualsProto(expected_output_str));
+#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(
