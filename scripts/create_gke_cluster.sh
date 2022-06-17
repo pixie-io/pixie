@@ -46,7 +46,7 @@ set_stirling_dynamic_perf_eval_cluster_config() {
   PROJECT=pl-pixies
   ZONE=us-west1-a
   NETWORK=projects/pl-pixies/global/networks/dev
-  SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-1
+  SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-0
   LABELS="k8s-dev-cluster=,stirling-perf-eval-dynamic="
 }
 
