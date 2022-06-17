@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//src/stirling/testing:go_versioned_binary.bzl", "go_1_16_binary", "go_1_17_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -24,39 +25,18 @@ go_library(
     importpath = "px.dev/pixie/src/stirling/obj_tools/testdata/go",
 )
 
-go_binary(
+go_1_16_binary(
     name = "test_go_1_16_binary",
     embed = [":lib"],
-    # -N -l are set by default in debug builds, and go tool compile re-enables inlining if it sees `-l -l`.
-    gc_goopts = select({
-        "//bazel:debug_build": [],
-        "//conditions:default": [
-            "-N",
-            "-l",
-        ],
-    }),
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_16//:go_sdk",
 )
 
-go_binary(
+go_1_17_binary(
     name = "test_go_1_17_binary",
     embed = [":lib"],
-    gc_goopts = select({
-        "//bazel:debug_build": [],
-        "//conditions:default": [
-            "-N",
-            "-l",
-        ],
-    }),
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_17//:go_sdk",
 )
 
 go_binary(
-    name = "test_go_1_18_binary",
+    name = "test_go_binary",
     embed = [":lib"],
     gc_goopts = select({
         "//bazel:debug_build": [],
@@ -69,10 +49,11 @@ go_binary(
 
 filegroup(
     name = "test_binaries",
+    testonly = True,
     srcs = [
         "sockshop_payments_service",
         ":test_go_1_16_binary",
         ":test_go_1_17_binary",
-        ":test_go_1_18_binary",
+        ":test_go_binary",
     ],
 )

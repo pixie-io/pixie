@@ -187,11 +187,11 @@ gazelle_dependencies(go_sdk = "go_sdk")
 
 # Download alternative go toolchains after all other dependencies, so that they aren't used by external dependencies.
 go_download_sdk(
-    name = "go_sdk_1_17",
-    version = "1.17.11",
+    name = "go_sdk_1_16",
+    version = "1.16.14",
 )
 
 go_download_sdk(
-    name = "go_sdk_1_16",
-    version = "1.16.14",
+    name = "go_sdk_1_17",
+    version = "1.17.11",
 )
