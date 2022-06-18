@@ -92,8 +92,15 @@ bazel build --remote_download_toplevel "${options[@]}" "$target"
 target_executable=$(bazel cquery "${options[@]}" "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
 
 extra_env_args=()
-extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles/MANIFEST")
-extra_env_args+=("RUNFILES_DIR=${target_executable}.runfiles/")
+if [[ -f "${target_executable}.runfiles/MANIFEST" ]]; then
+  extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles/MANIFEST")
+elif [[ -f "${target_executable}.runfiles_manifest" ]]; then
+  extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles_manifest")
+fi
+
+if [[ -d "${target_executable}.runfiles/" ]]; then
+  extra_env_args+=("RUNFILES_DIR=${target_executable}.runfiles/")
+fi
 
 # Run the binary with sudo.
 sudo "${pass_thru_env_args[@]}" "${extra_env_args[@]}" "$target_executable" "${run_args[@]}"
