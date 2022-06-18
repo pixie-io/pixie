@@ -76,7 +76,18 @@ do
   bazel build --remote_download_toplevel "${target}";
   target_executable=$(bazel cquery "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
 
-  if RUNFILES_MANIFEST_FILE="${target_executable}.runfiles/MANIFEST" RUNFILES_DIR="${target_executable}.runfiles/" "$target_executable"; then
+  env_args=()
+  if [[ -f "${target_executable}.runfiles/MANIFEST" ]]; then
+    env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles/MANIFEST")
+  elif [[ -f "${target_executable}.runfiles_manifest" ]]; then
+    env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles_manifest")
+  fi
+
+  if [[ -d "${target_executable}.runfiles/" ]]; then
+    env_args+=("RUNFILES_DIR=${target_executable}.runfiles/")
+  fi
+
+  if "${env_args[@]}" "$target_executable"; then
     success "${target}"
   else
     failure "${target}"
