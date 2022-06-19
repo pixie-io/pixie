@@ -256,3 +256,13 @@ remote_file '/opt/pixielabs/bin/codecov' do
   mode 0755
   checksum node['codecov']['sha256']
 end
+
+remote_file '/tmp/gh.tar.gz' do
+  source node['gh']['download_path']
+  mode 0755
+  checksum node['gh']['sha256']
+end
+
+execute 'install gh' do
+  command 'tar xf /tmp/gh.tar.gz -C /opt/pixielabs --strip-components 1'
+end
