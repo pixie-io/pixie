@@ -62,6 +62,7 @@ default['helm']                      = {}
 default['opm']                       = {}
 default['lego']                      = {}
 default['codecov']                   = {}
+default['gh']                        = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -166,6 +167,11 @@ if node[:platform] == 'ubuntu'
     'https://uploader.codecov.io/v0.2.3/linux/codecov'
   default['codecov']['sha256'] =
     '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
+
+  default['gh']['download_path'] =
+    'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz'
+  default['gh']['sha256']        =
+    '359ff9d759b67e174214098144a530a8afc4b0c9d738cd07c83ac84390cdc988'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
@@ -267,4 +273,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://uploader.codecov.io/v0.2.3/macos/codecov'
   default['codecov']['sha256'] =
     '8d3709d957c7115610e764621569728be102d213fee15bc1d1aa9d465eb2c258'
+
+  default['gh']['download_path'] =
+    'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_macOS_amd64.tar.gz'
+  default['gh']['sha256']        =
+    '448d617c11b964cff135bab43f73b321386c09fc5cdd998a17cbfc422f54239e'
 end
