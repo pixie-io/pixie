@@ -7,4 +7,5 @@ your company here, please open a PR.
 | ------------------------------------------------  | :-----------------------------------------------------------------------------------------------------------------:  |
 | [New Relic](https://newrelic.com/)                | [Website](https://newrelic.com/platform/kubernetes-pixie)                                                            |
 | [Seekret](https://seekret.io)                     | [Website](https://www.seekret.io/product)                                                                            |
-| [Speedscale](https://speedscale.com/)             | [Website](https://speedscale.com/kubernetes/)                                                                        |
+| [Speedscale](https://speedscale.com/)             | [Website](https://speedscale.com/kubernetes/) 
+| [Verizon 5G Edge](https://www.verizon.com/5gedge) | [Website](https://github.com/newrelic-experimental/vz-newrelic-5g-edge) |
