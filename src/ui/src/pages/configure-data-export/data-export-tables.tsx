@@ -52,6 +52,7 @@ import { Link, useRouteMatch } from 'react-router-dom';
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { Spinner, useSnackbar } from 'app/components';
 import { GQLRetentionScript } from 'app/types/schema';
+import { hidePresetsForPlugin } from 'configurable/data-export';
 
 import { PluginIcon } from './data-export-common';
 import {
@@ -273,7 +274,9 @@ export const ConfigureDataExportBody = React.memo(() => {
   const { loading: loadingScripts, error: scriptsError, scripts } = useRetentionScripts();
   const { loading: loadingPlugins, error: pluginsError, plugins } = useRetentionPlugins();
 
-  const enabledPlugins = React.useMemo(() => (plugins?.filter(p => p.retentionEnabled) ?? []), [plugins]);
+  const enabledPlugins = React.useMemo(() => (
+    plugins?.filter(p => p.retentionEnabled && !hidePresetsForPlugin(p)) ?? []
+  ), [plugins]);
 
   React.useEffect(() => {
     const pMsg = pluginsError?.message;
