@@ -19,10 +19,9 @@
 import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
-import { Button, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { Link, useRouteMatch, Route, Switch } from 'react-router-dom';
+import { useRouteMatch, Route, Switch } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
@@ -36,6 +35,7 @@ import { GQLClusterInfo, GQLClusterStatus, GQLPluginKind } from 'app/types/schem
 import { WithChildren } from 'app/utils/react-boilerplate';
 import * as pixienautCarryingBoxes from 'assets/images/pixienaut-carrying-boxes.svg';
 import { Copyright } from 'configurable/copyright';
+import { DataExportNoPluginsEnabledSplash } from 'configurable/data-export';
 
 import { EditDataExportScript } from './data-export-detail';
 import { DataExportHistoryView } from './data-export-history';
@@ -183,26 +183,7 @@ const NoPluginsEnabledSplash = React.memo(() => {
   return (
     <div className={classes.splashBlock}>
       <img src={pixienautCarryingBoxes} alt='Long-term Data Export Setup' />
-      {isEmbedded ? (
-        <Typography variant='body2'>
-          To use this page, at least one Pixie plugin supporting long-term data export must be enabled.
-          <br />
-          If you&apos;re seeing this page embedded in another, something has likely been misconfigured.
-        </Typography>
-      ) : (
-        <>
-          <Typography variant='body2'>
-            Pixie only guarantees data retention for 24 hours.
-            <br />
-            {'Configure a '}
-            <Link to='/admin/plugins'>plugin</Link>
-            {' to export and store Pixie data for longer term retention.'}
-            <br />
-            This data will be accessible and queryable through the plugin provider.
-          </Typography>
-          <Button component={Link} to='/admin/plugins' variant='contained'>Configure Plugins</Button>
-        </>
-      )}
+      <DataExportNoPluginsEnabledSplash isEmbedded={isEmbedded} />
     </div>
   );
 });
