@@ -182,7 +182,7 @@ export const DataExportHistory = React.memo<{
         <Tooltip title='Back to scripts'>
           <IconButton
             component={Link}
-            to={'/configure-data-export'}
+            to={'../'}
           >
             <ArrowBack />
           </IconButton>
