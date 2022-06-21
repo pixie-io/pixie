@@ -281,13 +281,6 @@ const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(({ column })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ), [column.canSort]);
 
-  // When the title is cut off (text-overflow: ellipsis), offer a tooltip with the full title.
-  // useLayoutEffect is required here to wait for the span's width to be set.
-  const overflowRef = React.useRef<HTMLDivElement>(null);
-  const [showTooltip, setShowTooltip] = React.useState(false);
-  React.useLayoutEffect(() => {
-    setShowTooltip(column.id === 'controls' || (overflowRef.current?.scrollWidth > overflowRef.current?.offsetWidth));
-  }, [column.id, column.width, overflowRef.current?.scrollWidth]);
   const tooltip = column.id === 'controls' ? 'Select visible columns' : column.id;
 
   return (
@@ -298,8 +291,8 @@ const HeaderCell: React.FC<{ column: ColumnInstance }> = React.memo(({ column })
         title='' // sortProps sets this to 'Toggle SortBy' otherwise
         className={contClass}
       >
-        <Tooltip title={showTooltip ? tooltip : ''}>
-          <span className={labelClass} ref={overflowRef}>
+        <Tooltip title={tooltip} placement={`top-${column.align === 'end' ? 'end' : 'start'}`}>
+          <span className={labelClass}>
             {column.render('Header')}
           </span>
         </Tooltip>
