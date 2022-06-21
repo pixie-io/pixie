@@ -23,13 +23,11 @@ import {
 } from './live-view-params';
 
 const noEmbed = {
-  isEmbedded: false,
   disableTimePicker: false,
   widget: null,
 };
 
 const withEmbed = {
-  isEmbedded: true,
   disableTimePicker: true,
   widget: null,
 };
@@ -38,7 +36,27 @@ const startTimeArgs = {
   start_time: '-7m',
 };
 
+// Note: the functions this file tests don't actually check embed state (anymore), but a top-level redirect
+// does and expects consistency.
+function fakeEmbed() {
+  if (globalThis.top === globalThis.self) {
+    delete globalThis.top;
+    globalThis.top = {} as any;
+  }
+}
+
+// Jest doesn't restore this on its own, so clean up there
+function restoreEmbed() {
+  if (globalThis.top !== globalThis.self) {
+    delete globalThis.top;
+    globalThis.top = globalThis.self;
+  }
+}
+
 describe('deepLinkURLFromScript test', () => {
+  beforeEach(restoreEmbed);
+  afterEach(restoreEmbed);
+
   it('should generate the URL for the cluster page', () => {
     const url = deepLinkURLFromScript('px/cluster', 'gke:foobar', noEmbed, startTimeArgs);
     expect(url).toEqual('/live/clusters/gke%3Afoobar?start_time=-7m');
@@ -50,19 +68,21 @@ describe('deepLinkURLFromScript test', () => {
   });
 
   it('should generate the URL for the namespace page (with embed)', () => {
+    fakeEmbed();
     const url = deepLinkURLFromScript('px/namespace', 'gke:foobar', withEmbed, {
       namespace: 'foobar',
     });
-    expect(url).toEqual('/embed/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true');
+    expect(url).toEqual('/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true');
   });
 
   it('should generate the URL for the namespace page (with embed)', () => {
+    fakeEmbed();
     const url = deepLinkURLFromScript('px/namespace', 'gke:foobar', withEmbed, {
       ...startTimeArgs,
       namespace: 'foobar',
     });
     expect(url).toEqual(
-      '/embed/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true&start_time=-7m');
+      '/live/clusters/gke%3Afoobar/namespaces/foobar?disable_time_picker=true&start_time=-7m');
   });
 
   it('should generate the URL for the nodes page', () => {
@@ -114,6 +134,9 @@ describe('deepLinkURLFromScript test', () => {
 });
 
 describe('deepLinkURLFromSemanticType test', () => {
+  beforeEach(restoreEmbed);
+  afterEach(restoreEmbed);
+
   it('should generate the URL for an IP', () => {
     const url = deepLinkURLFromSemanticType(SemanticType.ST_IP_ADDRESS, '127.0.0.1',
       'gke:foobar', noEmbed);
@@ -139,10 +162,11 @@ describe('deepLinkURLFromSemanticType test', () => {
   });
 
   it('should generate the URL for a service', () => {
+    fakeEmbed();
     const url = deepLinkURLFromSemanticType(SemanticType.ST_SERVICE_NAME, 'px-sock-shop/orders',
       'gke:foobar', withEmbed, null);
     expect(url).toEqual(
-      '/embed/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders?disable_time_picker=true');
+      '/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders?disable_time_picker=true');
   });
 
   it('should generate the URL for a service array', () => {

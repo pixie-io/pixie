@@ -23,7 +23,6 @@ import { Arguments } from 'app/utils/args-utils';
 
 // Specification taken from the URL for how the live view should be rendered.
 export interface EmbedState {
-  isEmbedded: boolean;
   disableTimePicker: boolean;
   widget: string | null;
 }
@@ -45,10 +44,9 @@ const getFirstServiceIfArray = (service: string): string => {
 };
 
 // Returns the base URL prefix for all deep links (both vanity and non-vanity URLs).
-const getClusterURLPrefix = (clusterName: string, embedState: EmbedState): string => {
-  const pathPrefix = embedState.isEmbedded ? '/embed/live' : '/live';
+const getClusterURLPrefix = (clusterName: string): string => {
   const encodedCluster = encodeURIComponent(clusterName);
-  return `${pathPrefix}/clusters/${encodedCluster}`;
+  return `/live/clusters/${encodedCluster}`;
 };
 
 // Get the query string portion of the deep link from the input arguments.
@@ -77,7 +75,7 @@ type URLFormatter = (clusterName: string, embedState: EmbedState, args: Argument
 
 // Creates the default deep link for a given input script (non-vanity URL).
 const defaultURLFormatter: URLFormatter = (clusterName, embedState, args, script) => {
-  const pathName = getClusterURLPrefix(clusterName, embedState);
+  const pathName = getClusterURLPrefix(clusterName);
   const queryString = getQueryString(embedState, args, script);
   return `${pathName}${queryString}`;
 };
@@ -90,7 +88,7 @@ const clusterURLFormatter: URLFormatter = (clusterName, embedState, args) => def
 // Helper function to reduce repetition when formatting vanity URLs.
 const formatVanityURL = (clusterName: string, embedState: EmbedState, vanityPath: string,
   scriptArgs: Arguments): string => {
-  const pathName = getClusterURLPrefix(clusterName, embedState);
+  const pathName = getClusterURLPrefix(clusterName);
   const queryString = getQueryString(embedState, scriptArgs);
   return `${pathName}/${vanityPath}${queryString}`;
 };

@@ -26,7 +26,6 @@ export const LIVE_ROUTE_CONTEXT_DEFAULTS: LiveRouteContextProps = {
   scriptId: '',
   args: {},
   embedState: {
-    isEmbedded: false,
     widget: null,
     disableTimePicker: false,
   },

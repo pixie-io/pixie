@@ -24,7 +24,7 @@ import {
   Switch, Route, Redirect, useRouteMatch, useLocation,
 } from 'react-router-dom';
 
-import { EmbedContext } from 'app/common/embed-context';
+import { EmbedContext, isPixieEmbedded } from 'app/common/embed-context';
 import { selectClusterName } from 'app/containers/App/cluster-info';
 import { RouteNotFound } from 'app/containers/App/route-not-found';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
@@ -90,7 +90,7 @@ export function push(
   args: Arguments,
   embedState: EmbedState,
 ): void {
-  const pathname = `${embedState.isEmbedded ? '/embed' : ''}/live/clusters/${encodeURIComponent(clusterName)}`;
+  const pathname = `/live/clusters/${encodeURIComponent(clusterName)}`;
   const queryParams: Arguments = {
     ...args,
     ...{ script: scriptId },
@@ -155,7 +155,7 @@ const VanityRouter: React.FC<WithChildren<{ outerPath: string }>> = React.memo((
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
 
-  const isEmbedded = outerPath.startsWith('/embed');
+  const isEmbedded = isPixieEmbedded();
 
   const {
     script: queryScriptId,
