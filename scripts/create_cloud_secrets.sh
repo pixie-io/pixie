@@ -67,18 +67,18 @@ DNS.6   = localhost
 EOS
 
 openssl genrsa -out ca.key 4096
-openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/O=Pixie/CN=pixie.local"
+openssl req -new -x509 -sha256 -days 365 -key ca.key -out ca.crt -subj "/O=Pixie/CN=pixie.local"
 
 openssl genrsa -out server.key 4096
-openssl req -new -key server.key -out server.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
+openssl req -new -sha256 -key server.key -out server.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
 
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
+openssl x509 -req -sha256 -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
     -out server.crt -extensions req_ext -extfile ssl.conf
 
 openssl genrsa -out client.key 4096
-openssl req -new -key client.key -out client.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
+openssl req -new -sha256 -key client.key -out client.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
 
-openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
+openssl x509 -req -sha256 -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
     -out client.crt -extensions req_ext -extfile ssl.conf
 
 kubectl create secret generic -n "${namespace}" \
