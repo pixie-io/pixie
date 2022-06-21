@@ -24,6 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
+import { isPixieEmbedded } from 'app/common/embed-context';
 import {
   Breadcrumbs, BreadcrumbOptions, StatusCell,
 } from 'app/components';
@@ -105,7 +106,8 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
     args, script, setScriptAndArgs,
   } = React.useContext(ScriptContext);
 
-  const { embedState: { disableTimePicker, isEmbedded, widget } } = React.useContext(LiveRouteContext);
+  const { embedState: { disableTimePicker, widget } } = React.useContext(LiveRouteContext);
+  const isEmbedded = isPixieEmbedded();
 
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 

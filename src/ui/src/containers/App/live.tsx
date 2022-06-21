@@ -98,9 +98,6 @@ const ClusterIDShortcut = ({ match, location }) => {
 
   // eslint-disable-next-line react-memo/require-usememo
   let path = generatePath('/live/clusters/:cluster', { cluster });
-  if (match.path.startsWith('/embed')) {
-    path = `/embed${path}`;
-  }
   if (location.search) {
     path += location.search;
   }

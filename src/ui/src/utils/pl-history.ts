@@ -18,6 +18,7 @@
 
 import { createBrowserHistory } from 'history';
 
+import { isPixieEmbedded } from 'app/common/embed-context';
 import pixieAnalytics from 'app/utils/analytics';
 
 const history = createBrowserHistory();
@@ -41,7 +42,7 @@ function sendPageEvent(path: string, search: string) {
 
   // If embedded, also allow the parent to track the event by
   // sending it a message.
-  if (path.startsWith('/embed')) {
+  if (isPixieEmbedded()) {
     window.top.postMessage({ pixieURLChange: `${path}${search}` }, '*');
   }
 }

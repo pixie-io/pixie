@@ -121,7 +121,7 @@ const ExtraNavContext = React.memo<WithChildren>(({ children }) => {
   return (
     // eslint-disable-next-line react-memo/require-usememo
     <LiveRouteContext.Provider value={{
-      embedState: { isEmbedded: false, disableTimePicker: false, widget: null },
+      embedState: { disableTimePicker: false, widget: null },
       clusterName: '',
       scriptId: '',
       args: {},

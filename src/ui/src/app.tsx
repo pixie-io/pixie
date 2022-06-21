@@ -108,6 +108,35 @@ function getAuthRedirectLocation(): string {
   return authRedirectUri ? `/login?redirect_uri=${authRedirectUri}` : '/login';
 }
 
+/* eslint-disable react-memo/require-memo, react-memo/require-usememo */
+/**
+ * Forces Pixie to prefix the URL with `/embed` if (and only if) rendered in an iframe.
+ * This avoids having to consider that rule in links throughout the app, and makes troubleshooting logs easier.
+ * It also ensures that if an embedded Pixie accidentally links to another view that doesn't have an embed route,
+ * a 404 will happen instead of breaking embed logic.
+ */
+const EmbedRedirector = () => {
+  return <Route path='/*' render={
+    ({ location }) => {
+      const rel = location.pathname;
+      const isEmbedded = isPixieEmbedded();
+      const saysEmbedded = /^\/?embed\b/.test(rel);
+
+      let next = '';
+      if (isEmbedded && !saysEmbedded) next = `/embed/${rel}`.replace('//', '/');
+      else if (!isEmbedded && saysEmbedded) next = rel.substring(Number(rel.startsWith('/')) + 'embed'.length);
+
+      if (next) {
+        return <Redirect to={next} />;
+      }
+
+      return <></>;
+    }
+  } />;
+};
+EmbedRedirector.displayName = 'EmbedRedirector';
+/* eslint-enable react-memo/require-memo, react-memo/require-usememo */
+
 // eslint-disable-next-line react-memo/require-memo
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
@@ -127,6 +156,8 @@ export const App: React.FC = () => {
     <ErrorBoundary name='App' fallback={PixienautCrashFallback}>
       <SnackbarProvider>
         <Router history={history}>
+          {/* Outside of the switch so that it always has a chance to force a redirect */}
+          <EmbedRedirector />
           <Switch>
             <Route path='/credits' component={CreditsView} />
             <Route path='/auth' component={AuthRouter} />

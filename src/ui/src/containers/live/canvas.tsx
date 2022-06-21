@@ -29,6 +29,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import * as GridLayout from 'react-grid-layout';
 
 import { VizierQueryError, VizierTable } from 'app/api';
+import { isPixieEmbedded } from 'app/common/embed-context';
 import { VizierErrorDetails } from 'app/common/errors';
 import { buildClass, Spinner } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
@@ -296,7 +297,8 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
   } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
-  const { embedState: { widget, isEmbedded } } = React.useContext(LiveRouteContext);
+  const { embedState: { widget } } = React.useContext(LiveRouteContext);
+  const isEmbedded = isPixieEmbedded();
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
