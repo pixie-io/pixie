@@ -180,12 +180,12 @@ def namespaces_for_cluster(start_time: str):
                                         left_on='namespace', right_on='namespace',
                                         suffixes=['', '_x'])
     df = df.groupby(['namespace']).agg(
-        avg_vsize=('avg_vsize', px.sum),
-        avg_rss=('avg_rss', px.sum),
+        vsize=('vsize', px.sum),
+        rss=('rss', px.sum),
     )
     output = df.merge(pod_and_svc_count, how='inner', left_on='namespace',
                       right_on='namespace', suffixes=['', '_y'])
-    return output[['namespace', 'pod_count', 'service_count', 'avg_vsize', 'avg_rss']]
+    return output[['namespace', 'pod_count', 'service_count', 'vsize', 'rss']]
 
 
 def services_for_cluster(start_time: str):
