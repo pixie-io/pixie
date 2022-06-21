@@ -21,6 +21,8 @@ import * as React from 'react';
 import { Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 
+import { PartialPlugin } from 'app/pages/configure-data-export/data-export-gql';
+
 export const DataExportNoPluginsEnabledSplash = React.memo<{ isEmbedded: boolean }>(({ isEmbedded }) => {
   return (
     isEmbedded ? (
@@ -46,3 +48,9 @@ export const DataExportNoPluginsEnabledSplash = React.memo<{ isEmbedded: boolean
   );
 });
 DataExportNoPluginsEnabledSplash.displayName = 'DataExportNoPluginsEnabledSplash';
+
+/** May be useful for custom environments. By default, doesn't do anything. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function hidePresetsForPlugin(plugin: PartialPlugin): boolean {
+  return false;
+}
