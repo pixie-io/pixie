@@ -124,6 +124,7 @@ isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 
 isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
+isCopybaraTags = env.JOB_NAME.startsWith('pixie-main/copybara-tags')
 isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
@@ -1418,7 +1419,7 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudProdRelease()
 } else if (isOSSCloudBuildRun) {
   buildScriptForOSSCloudRelease()
-} else if (isCopybaraPublic) {
+} else if (isCopybaraPublic || isCopybaraTags) {
   buildScriptForCopybaraPublic()
 } else if (isCopybaraPxAPI) {
   buildScriptForCopybaraPxAPI()
