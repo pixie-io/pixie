@@ -61,6 +61,12 @@ spec:
             configMapKeyRef:
               name: pl-sentry-dsn-config
               key: PL_DEV_SENTRY
+        - name: PL_LD_SDK_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: pl-ld-config
+              key: PL_LD_SDK_KEY
+              optional: true
         volumeMounts:
         - name: certs
           mountPath: /certs
