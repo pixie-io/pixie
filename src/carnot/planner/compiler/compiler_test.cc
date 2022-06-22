@@ -29,6 +29,7 @@
 
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/planner/compiler/compiler.h"
+#include "src/carnot/planner/compiler/graph_comparison.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
@@ -41,6 +42,7 @@ namespace planner {
 namespace compiler {
 
 using planpb::testutils::CompareLogicalPlans;
+using ::px::carnot::planner::testing::EqualsPlanGraph;
 using ::px::table_store::schema::Relation;
 using ::px::testing::proto::EqualsProto;
 using ::testing::_;
@@ -1896,7 +1898,7 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
 
   auto plan = plan_status.ConsumeValueOrDie();
   // Check the select columns match the expected values.
-  EXPECT_THAT(plan, Partially(EqualsProto(expected_pb)))
+  EXPECT_THAT(plan, EqualsPlanGraph(expected_pb))
       << absl::Substitute("Actual proto for $0: $1", expected_pb_name, plan.DebugString());
 }
 
@@ -1938,9 +1940,11 @@ nodes {
   id: 1
   dag {
     nodes {
+      id: 1
       sorted_children: 30
     }
     nodes {
+      id: 2
       sorted_children: 30
     }
     nodes {
@@ -1960,6 +1964,7 @@ nodes {
     }
   }
   nodes {
+    id: 1
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1967,6 +1972,7 @@ nodes {
     }
   }
   nodes {
+    id: 2
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2090,11 +2096,9 @@ px.display(output, 'joined')
 )query";
 
 TEST_F(CompilerTest, inner_join) {
-  auto plan_status =
-      compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"), compiler_state_.get());
-  ASSERT_OK(plan_status);
-  auto plan = plan_status.ConsumeValueOrDie();
-  EXPECT_THAT(plan, Partially(EqualsProto(kJoinInnerQueryPlan))) << plan.DebugString();
+  ASSERT_OK_AND_ASSIGN(auto plan, compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"),
+                                                    compiler_state_.get()));
+  EXPECT_THAT(plan, EqualsPlanGraph(kJoinInnerQueryPlan));
 }
 
 constexpr char kJoinRightQueryPlan[] = R"proto(
@@ -2107,9 +2111,11 @@ nodes {
   id: 1
   dag {
     nodes {
+      id: 22
       sorted_children: 30
     }
     nodes {
+      id: 15
       sorted_children: 30
     }
     nodes {
@@ -2129,11 +2135,13 @@ nodes {
     }
   }
   nodes {
+    id: 22
     op {
       op_type: MEMORY_SOURCE_OPERATOR
     }
   }
   nodes {
+    id: 15
     op {
       op_type: MEMORY_SOURCE_OPERATOR
     }
@@ -2252,7 +2260,7 @@ TEST_F(CompilerTest, right_join) {
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
-  EXPECT_THAT(plan, Partially(EqualsProto(kJoinRightQueryPlan)));
+  EXPECT_THAT(plan, EqualsPlanGraph(kJoinRightQueryPlan));
 }
 
 constexpr char kSelfJoinQueryPlan[] = R"proto(
@@ -2416,7 +2424,7 @@ TEST_F(CompilerTest, self_join) {
   auto plan_status = compiler_.Compile(kSelfJoinQuery, compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
-  EXPECT_THAT(plan, EqualsProto(kSelfJoinQueryPlan)) << "ACTUAL PLAN: " << plan.DebugString();
+  EXPECT_THAT(plan, EqualsPlanGraph(kSelfJoinQueryPlan));
 }
 
 // Test to make sure syntax errors are properly parsed.
@@ -2948,8 +2956,8 @@ TEST_F(CompilerTest, time_casting) {
   EXPECT_TRUE(type_table->HasColumn("time_"));
   auto col_type_or_s = type_table->GetColumnType("time_");
   ASSERT_OK(col_type_or_s);
-  // Time cast is currently a noop since Time is treated as a data type. We should move time to be a
-  // semantic type and then update this test.
+  // Time cast is currently a noop since Time is treated as a data type. We should move time to be
+  // a semantic type and then update this test.
   EXPECT_PTR_VAL_EQ(ValueType::Create(types::TIME64NS, types::ST_NONE),
                     std::static_pointer_cast<ValueType>(col_type_or_s.ConsumeValueOrDie()));
 }
@@ -3100,7 +3108,7 @@ TEST_F(CompilerTest, metadata_types_proto) {
   auto plan_or_s = compiler_.Compile(kMetadataSTQuery, compiler_state_.get());
   ASSERT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
-  EXPECT_THAT(plan, Partially(EqualsProto(kMetadataPlanProto)));
+  EXPECT_THAT(plan, EqualsPlanGraph(kMetadataPlanProto));
 }
 
 constexpr char kEqualsAnyTest[] = R"pxl(

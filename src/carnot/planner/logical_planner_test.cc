@@ -26,8 +26,10 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/api/proto/uuidpb/uuid.pb.h"
+#include "src/carnot/planner/compiler/graph_comparison.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
+#include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/planner/ir/ir.h"
 #include "src/carnot/planner/logical_planner.h"
 #include "src/carnot/planner/rules/rules.h"
@@ -38,7 +40,8 @@
 namespace px {
 namespace carnot {
 namespace planner {
-using px::testing::proto::EqualsProto;
+using ::px::carnot::planner::testing::EqualsPlanGraph;
+using ::px::testing::proto::EqualsProto;
 
 class LogicalPlannerTest : public ::testing::Test {
  protected:
@@ -58,10 +61,13 @@ TEST_F(LogicalPlannerTest, one_pems_one_kelvin) {
       planner->Plan(testutils::CreateOnePEMOneKelvinPlannerState(),
                     MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')")));
   auto plan_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(plan_pb, Partially(EqualsProto(testutils::kExpectedPlanOnePEMOneKelvin)))
-      << plan_pb.DebugString();
+  distributedpb::DistributedPlan expected_pb;
+  google::protobuf::TextFormat::MergeFromString(testutils::kExpectedPlanOnePEMOneKelvin,
+                                                &expected_pb);
 
   auto kelvin_plan = plan_pb.qb_address_to_plan().find("kelvin");
+  EXPECT_THAT(kelvin_plan->second,
+              EqualsPlanGraph(expected_pb.qb_address_to_plan().find("kelvin")->second));
   ASSERT_NE(kelvin_plan, plan_pb.qb_address_to_plan().end());
   EXPECT_EQ(kelvin_plan->second.execution_status_destinations_size(), 1);
   EXPECT_EQ(kelvin_plan->second.execution_status_destinations()[0].grpc_address(),
@@ -70,6 +76,8 @@ TEST_F(LogicalPlannerTest, one_pems_one_kelvin) {
             "query-broker-hostname");
 
   auto pem_plan = plan_pb.qb_address_to_plan().find("pem");
+  EXPECT_THAT(pem_plan->second,
+              EqualsPlanGraph(expected_pb.qb_address_to_plan().find("pem")->second));
   ASSERT_NE(pem_plan, plan_pb.qb_address_to_plan().end());
   EXPECT_EQ(pem_plan->second.execution_status_destinations_size(), 1);
   EXPECT_EQ(pem_plan->second.execution_status_destinations()[0].grpc_address(), "1111");
@@ -439,7 +447,7 @@ TEST_F(LogicalPlannerTest, CompileTrace) {
   plannerpb::CompileMutationsResponse resp;
   ASSERT_OK(trace_ir->ToProto(&resp));
   ASSERT_EQ(resp.mutations_size(), 1);
-  EXPECT_THAT(resp.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(resp.mutations()[0].trace(), EqualsProto(kSingleProbeProgramPb));
 }
 
 constexpr char kSingleProbeInFuncPxl[] = R"pxl(
@@ -481,7 +489,7 @@ TEST_F(LogicalPlannerTest, CompileTraceWithExecFuncs) {
   plannerpb::CompileMutationsResponse resp;
   ASSERT_OK(trace_ir->ToProto(&resp));
   ASSERT_EQ(resp.mutations_size(), 1);
-  EXPECT_THAT(resp.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramPb));
+  EXPECT_THAT(resp.mutations()[0].trace(), EqualsProto(kSingleProbeProgramPb));
 }
 constexpr char kBrokenFunc1234[] = R"pxl(
 ''' HTTP Data Tracer
