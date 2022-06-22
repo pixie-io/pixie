@@ -16,6 +16,7 @@ metadata:
 data:
   # Set this key to enable launchdarkly to gate development features.
   PL_LD_CLIENT_ID: ""
+  PL_LD_SDK_KEY: ""
 ---
 apiVersion: v1
 kind: ConfigMap
