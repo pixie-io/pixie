@@ -35,6 +35,7 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
+#include "src/stirling/utils/linux_headers.h"
 
 namespace px {
 namespace stirling {
@@ -147,9 +148,16 @@ inline auto EqMuxRecord(const mux::Record& x) {
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
-TEST_F(MuxTraceTest, DISABLED_Capture) {
-  // Uncomment to enable tracing
-  // FLAGS_stirling_conn_trace_pid = server_.process_pid();
+TEST_F(MuxTraceTest, Capture) {
+  // If kernel version is older than 5.2, we turn off some protocol tracers due to instruction
+  // limits.
+  constexpr uint32_t kLinux5p2VersionCode = 328192;
+  auto kernel_version = utils::GetKernelVersion();
+  if (!kernel_version.ok() || kernel_version.ConsumeValueOrDie().code() < kLinux5p2VersionCode) {
+    VLOG(1) << "Mux Tracing is turned off for kernel version older than 5.2.";
+    return;
+  }
+
   StartTransferDataThread();
 
   ASSERT_OK(RunThriftMuxClient());

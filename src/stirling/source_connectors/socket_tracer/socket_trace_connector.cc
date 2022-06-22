@@ -45,6 +45,7 @@
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
+#include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 // 50 X less often than the normal sampling frequency. Based on the conn_stats_table.h's
@@ -90,8 +91,7 @@ DEFINE_bool(stirling_enable_nats_tracing, true,
             "If true, stirling will trace and process NATS messages.");
 DEFINE_bool(stirling_enable_kafka_tracing, true,
             "If true, stirling will trace and process Kafka messages.");
-DEFINE_bool(stirling_enable_mux_tracing,
-            gflags::BoolFromEnv("PL_STIRLING_TRACER_ENABLE_MUX", false),
+DEFINE_bool(stirling_enable_mux_tracing, gflags::BoolFromEnv("PL_STIRLING_TRACER_ENABLE_MUX", true),
             "If true, stirling will trace and process Mux messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
@@ -163,6 +163,15 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 void SocketTraceConnector::InitProtocolTransferSpecs() {
 #define TRANSFER_STREAM_PROTOCOL(protocol_name) \
   &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
+
+  // If kernel version is older than 5.2, we turn off some protocol tracers due to instruction
+  // limits.
+  constexpr uint32_t kLinux5p2VersionCode = 328192;
+  auto kernel_version = utils::GetKernelVersion();
+  if (!kernel_version.ok() || kernel_version.ConsumeValueOrDie().code() < kLinux5p2VersionCode) {
+    VLOG(1) << "Turning off mux protocol tracer due to eBPF instruction limit.";
+    FLAGS_stirling_enable_mux_tracing = false;
+  }
 
   // PROTOCOL_LIST: Requires update on new protocols.
 
