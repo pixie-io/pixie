@@ -1,0 +1,110 @@
+R"(
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+
+import px
+
+
+def pod_resource_stats(start_time, end_time):
+    ''' Resource usage statistics for each pod.
+    Provides start_time, number of containers, associated node, cpu, disk I/O and memory info.
+    Args:
+    @start_time: The timestamp of data to start at.
+    @end_time: The timestamp of data to end at.
+    '''
+    pod_metadata_df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    pod_metadata_df.pod = pod_metadata_df.ctx['pod_name']
+    pod_metadata_df.container = pod_metadata_df.ctx['container_id']
+    pod_metadata_df = pod_metadata_df.groupby(['pod', 'container']).agg()
+    pod_metadata_df = pod_metadata_df.groupby(['pod']).agg(container_count=('container', px.count))
+
+    df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    df['pod_id'] = df.ctx['pod_id']
+    df = df.groupby(['pod_id', 'upid']).agg(
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
+        time_max=('time_', px.max),
+        time_min=('time_', px.min),
+    )
+
+    df.timestamp = df.time_max
+    # Convert counters into gauges by subtracting the value at the start of the window from the end of the window.
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    df.read_bytes = df.read_bytes_max - df.read_bytes_min
+    df.write_bytes = df.write_bytes_max - df.write_bytes_min
+    df.rchar_bytes = df.rchar_bytes_max - df.rchar_bytes_min
+    df.wchar_bytes = df.wchar_bytes_max - df.wchar_bytes_min
+    df.window = df.time_max - df.time_min
+
+    # Sum up the UPID values.
+    df = df.groupby(['pod_id']).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        read_bytes=('read_bytes', px.sum),
+        write_bytes=('write_bytes', px.sum),
+        rchar_bytes=('rchar_bytes', px.sum),
+        wchar_bytes=('wchar_bytes', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
+        # We take the max across all windows for a pod as a best effort to
+        # show the rate of resource usage for the pod. That means dead pods that
+        # used a large amount of resources during their lifetimes will appear
+        # as if they are still using the large resources if the window includes
+        # their data.
+        window=('window', px.max),
+        timestamp=('timestamp', px.max),
+    )
+
+    # If the window size is 0, we set window to 1 to avoid NaNs.
+    # the rates will be calculated to 0 because a zero window size
+    # will mean that min == max above for all counters.
+    df.window = px.select(df.window > 0, df.window, 1)
+    # Divide the values by the size of the window to get the rate.
+    df.actual_disk_read_throughput = df.read_bytes / df.window
+    df.actual_disk_write_throughput = df.write_bytes / df.window
+    df.total_disk_read_throughput = df.rchar_bytes / df.window
+    df.total_disk_write_throughput = df.wchar_bytes / df.window
+
+    # Sum the cpu_usage into one value.
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / df.window)
+    df.pod = df.ctx['pod']
+    df = df.drop(['window', 'cpu_ktime_ns', 'cpu_utime_ns', 'read_bytes', 'rchar_bytes', 'write_bytes', 'wchar_bytes'])
+    df = df.merge(pod_metadata_df, how='inner', left_on='pod', right_on='pod',
+                  suffixes=['', '_x']).drop(['pod_x'])
+
+    df.service = df.ctx['service_name']
+    df.node = df.ctx['node_name']
+    df.namespace = df.ctx['namespace']
+    df.start_time = px.pod_name_to_start_time(df.pod)
+    df.status = px.pod_name_to_status(df.pod)
+    return df
+
+)"

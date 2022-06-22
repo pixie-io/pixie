@@ -36,6 +36,9 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
+constexpr char kPxlViews[] = (
+#include "src/carnot/planner/pxl_lib/pxviews.pxl"
+);
 namespace px {
 namespace carnot {
 namespace planner {
@@ -91,10 +94,14 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   }
   MutationsIR mutations_ir;
   ModuleHandler module_handler;
+
+  absl::flat_hash_map<std::string, std::string> module_map;
+  module_map["pxviews"] = kPxlViews;
   auto var_table = VarTable::Create();
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), var_table, &mutations_ir, compiler_state,
-                                             &module_handler, func_based_exec, reserved_names));
+  PL_ASSIGN_OR_RETURN(
+      auto ast_walker,
+      ASTVisitorImpl::Create(ir.get(), var_table, &mutations_ir, compiler_state, &module_handler,
+                             func_based_exec, reserved_names, module_map));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {

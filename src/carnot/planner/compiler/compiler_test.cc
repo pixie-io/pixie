@@ -3256,6 +3256,12 @@ TEST_F(CompilerTest, crash) {
               HasCompilerError(R"err(Expected 'string', received 'data_type_unknown')err"));
 }
 
+TEST_F(CompilerTest, pxviews) {
+  ASSERT_OK(compiler_.CompileToIR(
+      "import pxviews\nimport px\npx.display(pxviews.pod_resource_stats('-5m', px.now()))",
+      compiler_state_.get()));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
