@@ -174,6 +174,7 @@ export const scrollbarStyles = (theme: Theme) => {
   });
   return {
     '& ::-webkit-scrollbar': {
+      '-webkit-appearance': 'none',
       width: theme.spacing(2),
       height: theme.spacing(2),
     },
