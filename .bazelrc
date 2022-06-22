@@ -6,7 +6,7 @@ build --host_action_env=CLANG_COMPILER_VERSION=14.0_0
 
 build --remote_download_minimal
 test --remote_download_minimal
-run --remote_download_toplevel
+run --remote_download_outputs=all
 coverage --build_runfile_links
 
 build:clang --action_env=CC

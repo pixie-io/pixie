@@ -17,9 +17,6 @@ build --bes_timeout=10m
 build --experimental_inmemory_dotd_files
 build --experimental_inmemory_jdeps_files
 build --keep_backend_build_event_connections_alive=false
-# Debug what's causing this to fail in Jenkins. Some artifacts are not caching properly
-# causing the build to fail because of: https://github.com/bazelbuild/bazel/issues/6862.
-# build --remote_download_toplevel
 build --remote_max_connections=128
 build --remote_retries=2
 build --remote_timeout=1h
@@ -28,9 +25,6 @@ build --remote_timeout=1h
 test --bes_timeout=10m
 test --experimental_inmemory_dotd_files
 test --experimental_inmemory_jdeps_files
-# Debug what's causing this to fail in Jenkins. Some artifacts are not caching properly
-# causing the build to fail because of: https://github.com/bazelbuild/bazel/issues/6862.
-# test --remote_download_toplevel
 test --remote_max_connections=128
 test --remote_retries=2
 
