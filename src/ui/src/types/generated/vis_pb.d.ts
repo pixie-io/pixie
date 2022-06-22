@@ -2069,6 +2069,12 @@ export namespace px {
             /** RequestGraph responderServiceColumn */
             responderServiceColumn?: (string|null);
 
+            /** RequestGraph requestorIPColumn */
+            requestorIPColumn?: (string|null);
+
+            /** RequestGraph responderIPColumn */
+            responderIPColumn?: (string|null);
+
             /** RequestGraph p50Column */
             p50Column?: (string|null);
 
@@ -2114,6 +2120,12 @@ export namespace px {
 
             /** RequestGraph responderServiceColumn. */
             public responderServiceColumn: string;
+
+            /** RequestGraph requestorIPColumn. */
+            public requestorIPColumn: string;
+
+            /** RequestGraph responderIPColumn. */
+            public responderIPColumn: string;
 
             /** RequestGraph p50Column. */
             public p50Column: string;
