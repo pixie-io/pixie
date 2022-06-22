@@ -5123,6 +5123,8 @@ export const px = $root.px = (() => {
              * @property {string|null} [responderPodColumn] RequestGraph responderPodColumn
              * @property {string|null} [requestorServiceColumn] RequestGraph requestorServiceColumn
              * @property {string|null} [responderServiceColumn] RequestGraph responderServiceColumn
+             * @property {string|null} [requestorIPColumn] RequestGraph requestorIPColumn
+             * @property {string|null} [responderIPColumn] RequestGraph responderIPColumn
              * @property {string|null} [p50Column] RequestGraph p50Column
              * @property {string|null} [p90Column] RequestGraph p90Column
              * @property {string|null} [p99Column] RequestGraph p99Column
@@ -5179,6 +5181,22 @@ export const px = $root.px = (() => {
              * @instance
              */
             RequestGraph.prototype.responderServiceColumn = "";
+
+            /**
+             * RequestGraph requestorIPColumn.
+             * @member {string} requestorIPColumn
+             * @memberof px.vispb.RequestGraph
+             * @instance
+             */
+            RequestGraph.prototype.requestorIPColumn = "";
+
+            /**
+             * RequestGraph responderIPColumn.
+             * @member {string} responderIPColumn
+             * @memberof px.vispb.RequestGraph
+             * @instance
+             */
+            RequestGraph.prototype.responderIPColumn = "";
 
             /**
              * RequestGraph p50Column.
@@ -5292,6 +5310,10 @@ export const px = $root.px = (() => {
                     writer.uint32(/* id 11, wireType 2 =*/90).string(message.outboundBytesPerSecondColumn);
                 if (message.totalRequestCountColumn != null && Object.hasOwnProperty.call(message, "totalRequestCountColumn"))
                     writer.uint32(/* id 12, wireType 2 =*/98).string(message.totalRequestCountColumn);
+                if (message.requestorIPColumn != null && Object.hasOwnProperty.call(message, "requestorIPColumn"))
+                    writer.uint32(/* id 13, wireType 2 =*/106).string(message.requestorIPColumn);
+                if (message.responderIPColumn != null && Object.hasOwnProperty.call(message, "responderIPColumn"))
+                    writer.uint32(/* id 14, wireType 2 =*/114).string(message.responderIPColumn);
                 return writer;
             };
 
@@ -5337,6 +5359,12 @@ export const px = $root.px = (() => {
                         break;
                     case 4:
                         message.responderServiceColumn = reader.string();
+                        break;
+                    case 13:
+                        message.requestorIPColumn = reader.string();
+                        break;
+                    case 14:
+                        message.responderIPColumn = reader.string();
                         break;
                     case 5:
                         message.p50Column = reader.string();
@@ -5409,6 +5437,12 @@ export const px = $root.px = (() => {
                 if (message.responderServiceColumn != null && message.hasOwnProperty("responderServiceColumn"))
                     if (!$util.isString(message.responderServiceColumn))
                         return "responderServiceColumn: string expected";
+                if (message.requestorIPColumn != null && message.hasOwnProperty("requestorIPColumn"))
+                    if (!$util.isString(message.requestorIPColumn))
+                        return "requestorIPColumn: string expected";
+                if (message.responderIPColumn != null && message.hasOwnProperty("responderIPColumn"))
+                    if (!$util.isString(message.responderIPColumn))
+                        return "responderIPColumn: string expected";
                 if (message.p50Column != null && message.hasOwnProperty("p50Column"))
                     if (!$util.isString(message.p50Column))
                         return "p50Column: string expected";
@@ -5456,6 +5490,10 @@ export const px = $root.px = (() => {
                     message.requestorServiceColumn = String(object.requestorServiceColumn);
                 if (object.responderServiceColumn != null)
                     message.responderServiceColumn = String(object.responderServiceColumn);
+                if (object.requestorIPColumn != null)
+                    message.requestorIPColumn = String(object.requestorIPColumn);
+                if (object.responderIPColumn != null)
+                    message.responderIPColumn = String(object.responderIPColumn);
                 if (object.p50Column != null)
                     message.p50Column = String(object.p50Column);
                 if (object.p90Column != null)
@@ -5501,6 +5539,8 @@ export const px = $root.px = (() => {
                     object.inboundBytesPerSecondColumn = "";
                     object.outboundBytesPerSecondColumn = "";
                     object.totalRequestCountColumn = "";
+                    object.requestorIPColumn = "";
+                    object.responderIPColumn = "";
                 }
                 if (message.requestorPodColumn != null && message.hasOwnProperty("requestorPodColumn"))
                     object.requestorPodColumn = message.requestorPodColumn;
@@ -5526,6 +5566,10 @@ export const px = $root.px = (() => {
                     object.outboundBytesPerSecondColumn = message.outboundBytesPerSecondColumn;
                 if (message.totalRequestCountColumn != null && message.hasOwnProperty("totalRequestCountColumn"))
                     object.totalRequestCountColumn = message.totalRequestCountColumn;
+                if (message.requestorIPColumn != null && message.hasOwnProperty("requestorIPColumn"))
+                    object.requestorIPColumn = message.requestorIPColumn;
+                if (message.responderIPColumn != null && message.hasOwnProperty("responderIPColumn"))
+                    object.responderIPColumn = message.responderIPColumn;
                 return object;
             };
 
