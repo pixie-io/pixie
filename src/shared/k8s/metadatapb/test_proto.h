@@ -49,6 +49,7 @@ const char* kRunningPodUpdatePbTxt = R"(
 uid: "1_uid"
 name: "running_pod"
 namespace: "pl"
+labels: "{\"k1\":\"v1\", \"k2\":\"v2\"}"
 start_timestamp_ns: 5
 container_ids: "pod1_container_1"
 qos_class: QOS_CLASS_GUARANTEED
@@ -68,6 +69,7 @@ const char* kToBeTerminatedPodUpdatePbTxt = R"(
 uid: "2_uid"
 name: "terminating_pod"
 namespace: "pl"
+labels: "{\"k1\":\"v1\"}"
 start_timestamp_ns: 10
 container_ids: "pod2_container_1"
 qos_class: QOS_CLASS_BEST_EFFORT

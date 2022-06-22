@@ -981,6 +981,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					UID:              "ijkl",
 					Name:             "object_md",
 					Namespace:        "",
+					Labels:           `{"app":"myApp1", "project":"myProj1"}`,
 					StartTimestampNS: 4,
 					StopTimestampNS:  6,
 					QOSClass:         metadatapb.QOS_CLASS_BURSTABLE,
