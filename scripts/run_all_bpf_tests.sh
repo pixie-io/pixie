@@ -73,7 +73,7 @@ done
 for target in "${bpf_sh_tests[@]}";
 do
   message "Running ${target}";
-  bazel build --remote_download_toplevel "${target}";
+  bazel build --remote_download_outputs=all "${target}";
   target_executable=$(bazel cquery "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
 
   env_args=()

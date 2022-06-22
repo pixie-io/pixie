@@ -26,9 +26,9 @@ function label_to_path() {
 
 function build() {
   # Exits with message if the bazel build command goes wrong.
-  # Force bazel to download all targets since bazel will delete
-  # targets with minimal download mode. This is a bug in bazel:
-  #   https://github.com/bazelbuild/bazel/issues/12855
+  # Force bazel to download all targets since the output of
+  # go_proto rules is a .a file and not the .pb.go which is
+  # an intermediate output.
   if ! out=$(bazel build --remote_download_outputs=all "$@" 2>&1); then
     echo "${out}"
     exit 1
