@@ -7,6 +7,7 @@ build --host_action_env=CLANG_COMPILER_VERSION=14.0_0
 build --remote_download_minimal
 test --remote_download_minimal
 run --remote_download_toplevel
+coverage --build_runfile_links
 
 build:clang --action_env=CC
 build:clang --host_action_env=CC
@@ -202,8 +203,6 @@ coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
 coverage --copt -DPL_COVERAGE
 coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled,-no_gcc
-# Uploading to BES from the coverage build seems to fail on jenkins.
-coverage --experimental_build_event_upload_strategy=local
 
 # Use stable GIT build tag by default.
 build --define BUNDLE_VERSION={STABLE_BUILD_TAG}

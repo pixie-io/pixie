@@ -44,3 +44,6 @@ test --local_cpu_resources=14
 
 build --jobs 16
 test --jobs 16
+
+# Uploading to BES from the coverage build seems to fail on jenkins.
+coverage --experimental_build_event_upload_strategy=local
