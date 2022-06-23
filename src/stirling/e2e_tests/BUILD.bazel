@@ -100,8 +100,6 @@ sh_test(
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
-        # TODO(jps): fix this and remove manual tag, ASAP.
-        "manual",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
