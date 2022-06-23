@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import { useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { Column as ReactTableColumn } from 'react-table';
 
 import { VizierTable } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -54,8 +55,16 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
   ],
 );
 
+export type CompleteColumnDef =
+  ReactTableColumn<Record<string, any>>
+  & { Cell: ({ value: any }) => (JSX.Element | null) };
+
 /** Transforms a table coming from a script into something react-table understands. */
-function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutterColumn?: string): ReactTable {
+function useConvertedTable(
+  table: VizierTable,
+  propagatedArgs?: Arguments,
+  gutterColumns: Array<string | CompleteColumnDef> = [],
+): ReactTable {
   // Some cell renderers need a bit of extra information that isn't directly related to the table.
   const theme = useTheme();
   const { selectedClusterName: cluster } = React.useContext(ClusterContext);
@@ -66,7 +75,9 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
-  const convertColumn = React.useCallback((col: Relation.ColumnInfo) => {
+  const gutterWidth = parseInt(theme.spacing(3), 10); // 24px
+
+  const convertColumn = React.useCallback<(col: Relation.ColumnInfo) => CompleteColumnDef>((col) => {
     const display = displayMap.get(col.getColumnName()) ?? displayInfoFromColumn(col);
     const justify = SemanticAlignmentMap.get(display.semanticType) ?? DataAlignmentMap.get(display.type) ?? 'start';
 
@@ -79,8 +90,7 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
 
     const sortFunc = getSortFunc(display);
 
-    const gutterWidth = parseInt(theme.spacing(3), 10); // 24px
-    const gutterProps = gutterColumn === display.columnName ? {
+    const gutterProps = gutterColumns.includes(display.columnName) ? {
       isGutter: true,
       minWidth: gutterWidth,
       width: gutterWidth,
@@ -107,15 +117,33 @@ function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutte
         return sortFunc(a.original, b.original);
       },
     };
-  }, [table, cluster, displayMap, gutterColumn, propagatedArgs, theme]);
+  }, [table, cluster, displayMap, gutterColumns, propagatedArgs, gutterWidth]);
+
+  const customGutters: CompleteColumnDef[] = React.useMemo(
+    () => gutterColumns
+      .filter(c => c && typeof c === 'object')
+      .map((c: CompleteColumnDef) => ({
+        ...c,
+        isGutter: true,
+        minWidth: gutterWidth,
+        width: gutterWidth,
+        maxWidth: gutterWidth,
+        Header: '\xa0', // nbsp
+        disableSortBy: true,
+        disableFilters: true,
+        disableResizing: true,
+      })),
+    [gutterColumns, gutterWidth]);
 
   const columns = React.useMemo<ReactTable['columns']>(
-    () => table.relation
-      .getColumnsList()
-      .map(convertColumn)
-      .sort((a, b) => Number(b.isGutter) - Number(a.isGutter)),
+    () => (
+      [
+        table.relation.getColumnsList().map(convertColumn),
+        customGutters,
+      ].flat().sort((a, b) => Number(b.isGutter) - Number(a.isGutter))
+    ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [displayMap]);
+    [displayMap, customGutters]);
 
   const oldestRow = table.rows[0]; // Used to force updates when row limit is reached
   return React.useMemo(
@@ -183,12 +211,12 @@ MinimalLiveDataTable.displayName = 'MinimalLiveDataTable';
 export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered'> {
   table: VizierTable;
   propagatedArgs?: Arguments;
-  gutterColumn?: string;
+  gutterColumns?: Array<string | CompleteColumnDef>;
 }
 
 const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options }) => {
   const classes = useLiveDataTableStyles();
-  const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
+  const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumns);
   const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
