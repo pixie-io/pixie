@@ -23,7 +23,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
-import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
+import { CompleteColumnDef, LiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import { WidgetDisplay } from 'app/containers/live/vis';
 import { ResultsContext, useLatestRowCount } from 'app/context/results-context';
 import { Arguments } from 'app/utils/args-utils';
@@ -61,10 +61,11 @@ export interface QueryResultTableProps {
   display: QueryResultTableDisplay;
   table: VizierTable;
   propagatedArgs: Arguments;
+  customGutters?: Array<CompleteColumnDef>;
 }
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(({
-  display, table, propagatedArgs,
+  display, table, propagatedArgs, customGutters = [],
 }) => {
   const classes = useStyles();
   const { streaming } = React.useContext(ResultsContext);
@@ -96,7 +97,7 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(({
       <div className={classes.table}>
         <LiveDataTable
           table={table}
-          gutterColumn={display.gutterColumn}
+          gutterColumns={[display.gutterColumn, ...customGutters].filter(g => g)}
           propagatedArgs={propagatedArgs}
           onRowsRendered={onRowsRendered}
         />

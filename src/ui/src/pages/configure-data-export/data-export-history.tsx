@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, CheckCircle as SuccessIcon, Error as ErrorIcon } from '@mui/icons-material';
 import { Alert, Autocomplete, Box, IconButton, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
@@ -26,6 +26,7 @@ import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
 import { Spinner, StatusCell, StatusGroup } from 'app/components';
+import { CompleteColumnDef } from 'app/containers/live-data-table/live-data-table';
 import { QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import { DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE } from 'app/containers/live/vis';
 import { SetStateFunc } from 'app/context/common';
@@ -141,6 +142,23 @@ const HistoryClusterSelector = React.memo<{
 });
 HistoryClusterSelector.displayName = 'HistoryClusterSelector';
 
+// A custom column added as a gutter on the left, to make it easier to tell if a run was successful.
+// Just represents a success/fail based on whether the error message is an empty string or not.
+const exportHistoryGutterCol: CompleteColumnDef = {
+  id: 'history-error-gutter',
+  accessor: 'Error', // Grabs the same data as the actual Error column on the right, and does something else with it.
+  // eslint-disable-next-line react/display-name
+  Cell({ value }) {
+    const isError = value && String(value).trim().length > 0;
+    return (
+      <Tooltip title={isError ? 'This run was unsuccessful' : 'This run was successful'}>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        { isError ? <ErrorIcon color='error' sx={{ mt: 1 }} /> : <SuccessIcon color='success' sx={{ mt: 1 }} />}
+      </Tooltip>
+    );
+  },
+};
+
 export const DataExportHistory = React.memo<{
   script: GQLDetailedRetentionScript,
   plugin: PartialPlugin,
@@ -236,6 +254,7 @@ export const DataExportHistory = React.memo<{
                     }}
                     propagatedArgs={{}}
                     table={table}
+                    customGutters={[exportHistoryGutterCol]}
                   />
                 </div>
               </div>
