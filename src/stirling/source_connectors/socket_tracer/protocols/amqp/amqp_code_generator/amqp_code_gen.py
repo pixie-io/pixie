@@ -66,15 +66,15 @@ class FieldType(Enum):
     @staticmethod
     def get_field_extract_function(field_type):
         extract_function_c_mapping = {
-            FieldType.bit: "ExtractBool()",
-            FieldType.octet: "ExtractUInt8()",
-            FieldType.short: "ExtractUInt16()",
-            FieldType.long: "ExtractUInt32()",
-            FieldType.longlong: "ExtractUInt64()",
-            FieldType.shortstr: "ExtractString()",
-            FieldType.longstr: "ExtractString()",
-            FieldType.table: "ExtractString()",
-            FieldType.timestamp: "ExtractTimestamp()",
+            FieldType.bit: "decoder->ExtractInt<bool>()",
+            FieldType.octet: "decoder->ExtractChar<uint8_t>()",
+            FieldType.short: "decoder->ExtractInt<uint16_t>()",
+            FieldType.long: "decoder->ExtractInt<uint32_t>()",
+            FieldType.longlong: "decoder->ExtractInt<uint64_t>()",
+            FieldType.shortstr: "ExtractShortString(decoder)",
+            FieldType.longstr: "ExtractLongString(decoder)",
+            FieldType.table: "ExtractLongString(decoder)",
+            FieldType.timestamp: "decoder->ExtractInt<time_t>()",
         }
         return extract_function_c_mapping[field_type]
 
@@ -104,6 +104,42 @@ class Field:
     def __post_init__(self):
         self.c_field_name = self.field_name.replace("-", "_")
 
+    def gen_field_declr(self):
+        """
+        The fields declared will be displayed as
+        struct name {
+            field_declrations
+        }
+        """
+        c_field_type_name = FieldType.get_c_type_name(self.field_type)
+        default_value = FieldType.get_c_default_value(self.field_type)
+        return f"{c_field_type_name} {self.c_field_name} = {default_value};"
+
+    def gen_json_builder(self):
+        """
+        The json builder will be used while computing the ToJson
+        void ToJSON(utils::JSONObjectBuilder* builder) const {
+            builder_statements
+        }
+        The field name is used as json key to be close to the key used in spec
+        """
+        if self.field_type == FieldType.table:
+            return f"// TODO: support KV for {self.field_name} field table type"
+        return f'builder->WriteKV("{self.c_field_name}", {self.c_field_name});'
+
+    def gen_buffer_extract(self):
+        """
+        This will be included as list of commands in
+        StatusOr<FetchReq> BinaryDecoder::ExtractFetchReq(BinaryDecoder* decoder, Request* req) {
+            FetchReq r;
+            PL_ASSIGN_OR_RETURN(r.replica_id, decoder->ExtractInt32());
+            ...
+            return r;
+        }
+        """
+        extract_function = FieldType.get_field_extract_function(self.field_type)
+        return f"PL_ASSIGN_OR_RETURN(r.{self.c_field_name}, {extract_function});"
+
 
 @dataclass
 class AMQPMethod:
@@ -126,6 +162,42 @@ class AMQPMethod:
         class_name_cased = to_camel_case(self.class_name)
         method_name_cased = to_camel_case(self.method_name)
         self.c_struct_name = f"AMQP{class_name_cased}{method_name_cased}"
+
+    def gen_struct_declr(self):
+        field_declarations = "\n".join(
+            [field.gen_field_declr() for field in self.fields]
+        )
+        field_json_builder = "\n".join(
+            [field.gen_json_builder() for field in self.fields]
+        )
+        unused_attribute = "[[maybe_unused]]" if len(self.fields) == 0 else ""
+        json_builder_function = f"""
+            void ToJSON({unused_attribute} utils::JSONObjectBuilder* builder) const {{
+                        {field_json_builder}
+            }}
+        """
+        return f"""
+            struct {self.c_struct_name} {{
+                {field_declarations}
+                bool synchronous = {self.synchronous};
+                {json_builder_function}
+            }};
+        """
+
+    def gen_buffer_extract(self):
+        field_buffer_extractions = "\n".join(
+            [field.gen_buffer_extract() for field in self.fields]
+        )
+        unused_attribute = "[[maybe_unused]]" if len(self.fields) == 0 else ""
+        return f"""
+            Status Extract{self.c_struct_name}({unused_attribute} BinaryDecoder* decoder, Packet* packet) {{
+                {self.c_struct_name} r;
+                {field_buffer_extractions}
+                packet->msg = ToString(r);
+                packet->synchronous = {self.synchronous};
+                return Status::OK();
+            }}
+        """
 
 
 @dataclass
@@ -284,6 +356,43 @@ class CodeGenerator:
                 )
             )
         return amqp_classes
+
+    def gen_struct_declr(self):
+        struct_definitions = []
+        for amqp_class in self.amqp_classes:
+            struct_definitions = (
+                struct_definitions
+                + [
+                    method_struct.gen_struct_declr()
+                    for method_struct in amqp_class.methods
+                ]
+                + [amqp_class.content_header_method.gen_struct_declr()]
+            )
+
+        return "\n".join(struct_definitions)
+
+    def gen_contentbody_extract(self):
+        return "// TOOD handle extract content body"
+
+    def gen_contentheader_extract(self):
+        return "// TODO handle extract content body"
+
+    def gen_buffer_extract(self):
+        """
+        Extract the individual struct from the buffer
+        """
+
+        buffer_extract_methods = []
+        for amqp_class in self.amqp_classes:
+            buffer_extract_methods = (
+                buffer_extract_methods
+                + [
+                    method_struct.gen_buffer_extract()
+                    for method_struct in amqp_class.methods
+                ]
+                + [amqp_class.content_header_method.get_class_buffer_extract()]
+            )
+        return "\n".join(buffer_extract_methods)
 
 
 class CodeGeneratorWriter:

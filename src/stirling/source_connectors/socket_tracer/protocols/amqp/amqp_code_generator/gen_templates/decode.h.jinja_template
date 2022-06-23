@@ -18,14 +18,21 @@
 
 #pragma once
 
+
 #include <map>
 #include <stack>
 #include <string>
 #include <utility>
 #include <vector>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include "src/common/json/json.h"
 
 #include "src/common/base/base.h"
 #include "src/stirling/utils/binary_decoder.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
+
 
 namespace px {
 namespace stirling {
@@ -33,6 +40,10 @@ namespace protocols {
 namespace amqp {
 
 {{ struct_declr }}
+
+// TODO combine with kafka ToString function
+Status ProcessReq(Packet* req);
+
 
 }  // namespace amqp
 }  // namespace protocols
