@@ -58,7 +58,8 @@ run_uprobe_target "$go_grpc_server" "$go_grpc_client"
 echo "Running stirling_wrapper."
 
 flags="--color_output=false --timeout_secs=0"
-out=$(run_prompt_sudo "${stirling_wrapper}" "${flags}" "${pass_thru}" 2>&1)
+# shellcheck disable=SC2086
+out=$(run_prompt_sudo "${stirling_wrapper}" $flags $pass_thru 2>&1)
 
 ###############################################################################
 # Check output for errors/warnings.
