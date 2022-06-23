@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
-
 #include <map>
 #include <stack>
 #include <string>
@@ -34,9 +32,22 @@ namespace stirling {
 namespace protocols {
 namespace amqp {
 
-{{ process_content_header }}
+StatusOr<std::string> ExtractShortString(BinaryDecoder* decoder) {
+  // Short string defined as 2*OCTET(short-uint)
+  PL_ASSIGN_OR_RETURN(uint8_t len, decoder->ExtractInt<uint8_t>());
+  return decoder->ExtractString(len);
+}
+
+StatusOr<std::string> ExtractLongString(BinaryDecoder* decoder) {
+  // Long string defined as 4*OCTET(short-uint)
+  PL_ASSIGN_OR_RETURN(uint32_t len, decoder->ExtractInt<uint32_t>());
+  return decoder->ExtractString(len);
+}
+
 
 {{ process_class_methods }}
+
+{{ process_content_header }}
 
 {{ process_method_type }}
 
