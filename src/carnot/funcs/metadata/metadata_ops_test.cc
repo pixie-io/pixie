@@ -109,7 +109,7 @@ TEST_F(MetadataOpsTest, pod_id_to_pod_labels_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<PodIDToPodLabelsUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("{\"k1\":\"v1\", \"k2\":\"v2\"}");
-  udf_tester.ForInput("2_uid").Expect("{\"k1\":\"v1\"");
+  udf_tester.ForInput("2_uid").Expect("{\"k1\":\"v1\"}");
   udf_tester.ForInput("missing").Expect("");
 }
 
