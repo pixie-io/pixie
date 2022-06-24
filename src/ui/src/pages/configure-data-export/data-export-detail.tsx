@@ -225,7 +225,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const createOrUpdate = useCreateOrUpdateScript(scriptId, isCreate);
 
   const validClusters = React.useMemo(() => {
-    return clusters.filter(
+    return clusters?.filter(
       c => c.status !== GQLClusterStatus.CS_DISCONNECTED || script?.clusters.includes(c.id),
     ) ?? [];
   }, [clusters, script?.clusters]);

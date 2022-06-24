@@ -33,14 +33,20 @@ export interface CancellablePromise<R = void> extends Promise<R> {
  * Cancelling a promise that already settled still sets `cancelled`
  * @param source Promise to make cancellable
  * @param rejectOnCancel If set, calling `cancel()` immediately rejects the wrapped promise instead of cutting it off.
+ * @param onCancel If set, calling `cancel()` will cancel the promise, call onCancel, and then do rejectOnCancel logic.
  */
-export function makeCancellable<R = void>(source: Promise<R>, rejectOnCancel = false): CancellablePromise<R> {
+export function makeCancellable<R = void>(
+  source: Promise<R>,
+  rejectOnCancel = false,
+  onCancel?: (() => void),
+): CancellablePromise<R> {
   let cancelled = false;
   let cancel: () => void;
 
   const wrapped = new Promise((resolve, reject) => {
     cancel = () => {
       cancelled = true;
+      onCancel?.();
       if (rejectOnCancel) reject(new Error('cancelled'));
     };
 
