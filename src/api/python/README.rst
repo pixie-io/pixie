@@ -8,10 +8,12 @@ Kubernetes observability platform.
 
    pip install pxapi
 
+-  Pixie: https://px.dev/
 -  Python API Quick Start Documentation:
    https://docs.px.dev/using-pixie/api-quick-start/
 -  Python API Reference Docs:
    https://docs.px.dev/reference/api/py/
--  Pixie Labs: https://pixielabs.ai/
+-  GitHub: https://github.com/pixie-io/pixie
+-  Twitter: https://twitter.com/pixie_run
 
 .. _Pixie: https://px.dev/

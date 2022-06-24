@@ -19,7 +19,7 @@ load("@rules_python//python:packaging.bzl", "py_wheel")
 
 py_wheel(
     name = "pxapi",
-    author = "The Pixie Authors",
+    author = "The Pixie Maintainers",
     author_email = "help@pixielabs.ai",
     classifiers = [
         "Programming Language :: Python :: 3",
@@ -48,7 +48,7 @@ py_wheel(
         "six==1.15.0",
     ],
     strip_path_prefixes = ["src/api/python/"],
-    version = "0.5.2",
+    version = "0.5.3",
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
