@@ -184,10 +184,10 @@ func init() {
 	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accessed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
 	viper.BindPFlag("data_access", DeployCmd.Flags().Lookup("data_access"))
 
-	DeployCmd.Flags().Uint32("datastream_buffer_size", 1024*1024, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
+	DeployCmd.Flags().Uint32("datastream_buffer_size", 0, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
 	viper.BindPFlag("datastream_buffer_size", DeployCmd.Flags().Lookup("datastream_buffer_size"))
 
-	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 500*1024*1024, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
+	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 0, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
 	viper.BindPFlag("datastream_buffer_spike_size", DeployCmd.Flags().Lookup("datastream_buffer_spike_size"))
 
 	// Super secret flags for Pixies.
@@ -302,6 +302,14 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			utils.WithError(err).Fatal("--pem_flags must be specified through the following format: PL_KEY_1=value1,PL_KEY_2=value2")
 		}
 		pemFlagsMap = pf
+	}
+	dataCollectorParams := make(map[string]interface{})
+	dataCollectorParams["customPEMFlags"] = pemFlagsMap
+	if datastreamBufferSize != 0 {
+		dataCollectorParams["datastreamBufferSize"] = datastreamBufferSize
+	}
+	if datastreamBufferSpikeSize != 0 {
+		dataCollectorParams["datastreamBufferSpikeSize"] = datastreamBufferSpikeSize
 	}
 
 	castedDataAccess := vztypes.DataAccessLevel(dataAccess)
@@ -441,13 +449,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				"annotations": annotationMap,
 				"labels":      labelMap,
 			},
-			"patches":    patchesMap,
-			"dataAccess": castedDataAccess,
-			"dataCollectorParams": &map[string]interface{}{
-				"datastreamBufferSize":      datastreamBufferSize,
-				"datastreamBufferSpikeSize": datastreamBufferSpikeSize,
-				"customPEMFlags":            pemFlagsMap,
-			},
+			"patches":             patchesMap,
+			"dataAccess":          castedDataAccess,
+			"dataCollectorParams": dataCollectorParams,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": namespace,
