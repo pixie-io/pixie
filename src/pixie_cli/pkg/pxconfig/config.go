@@ -21,8 +21,6 @@ package pxconfig
 import (
 	"encoding/json"
 	"os"
-	"os/user"
-	"path/filepath"
 	"sync"
 
 	"github.com/gofrs/uuid"
@@ -36,35 +34,10 @@ type ConfigInfo struct {
 	UniqueClientID string `json:"uniqueClientID"`
 }
 
-// TODO(zasgar): Reconcile with auth.
-const (
-	pixieDotPath    = ".pixie"
-	pixieConfigFile = "config.json"
-)
-
 var (
 	config *ConfigInfo
 	once   sync.Once
 )
-
-// ensureDefaultConfigFilePath returns and creates the file path is missing.
-func ensureDefaultConfigFilePath() (string, error) {
-	u, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-
-	pixieDirPath := filepath.Join(u.HomeDir, pixieDotPath)
-	if _, err := os.Stat(pixieDirPath); os.IsNotExist(err) {
-		err = os.Mkdir(pixieDirPath, 0744)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	pixieConfigFilePath := filepath.Join(pixieDirPath, pixieConfigFile)
-	return pixieConfigFilePath, nil
-}
 
 func writeDefaultConfig(path string) (*ConfigInfo, error) {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
@@ -102,7 +75,7 @@ func readDefaultConfig(path string) (*ConfigInfo, error) {
 // Cfg returns the default config.
 func Cfg() *ConfigInfo {
 	once.Do(func() {
-		configPath, err := ensureDefaultConfigFilePath()
+		configPath, err := utils.EnsureDefaultConfigFilePath()
 		if err != nil {
 			utils.WithError(err).Fatal("Failed to load/create config file path")
 		}
