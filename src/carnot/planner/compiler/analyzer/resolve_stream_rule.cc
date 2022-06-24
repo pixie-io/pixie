@@ -45,7 +45,7 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
     nodes.pop();
 
     if (node->IsBlocking()) {
-      return error::Unimplemented("df.stream() not yet supported with blocking operator %s",
+      return error::Unimplemented("df.stream() not yet supported with the operator $0",
                                   node->DebugString());
     }
     if (Match(node, MemorySource())) {

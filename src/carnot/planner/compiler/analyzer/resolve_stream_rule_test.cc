@@ -69,8 +69,7 @@ TEST_F(RulesTest, resolve_stream_blocking_ancestor) {
   MakeMemSink(stream, "");
 
   ResolveStreamRule rule;
-  auto result = rule.Execute(graph.get());
-  ASSERT_NOT_OK(result);
+  ASSERT_NOT_OK(rule.Execute(graph.get()));
 }
 
 TEST_F(RulesTest, resolve_stream_non_mem_sink_child) {
