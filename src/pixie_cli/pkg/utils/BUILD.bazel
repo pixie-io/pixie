@@ -25,6 +25,7 @@ go_library(
         "cli_out.go",
         "cloud.go",
         "cmd.go",
+        "dot_path.go",
         "job_runner.go",
     ],
     importpath = "px.dev/pixie/src/pixie_cli/pkg/utils",

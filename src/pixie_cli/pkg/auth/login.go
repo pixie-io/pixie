@@ -28,8 +28,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/user"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -49,9 +47,6 @@ import (
 	apiutils "px.dev/pixie/src/utils"
 )
 
-const pixieAuthPath = ".pixie"
-const pixieAuthFile = "auth.json"
-
 var errUserChallengeTimeout = errors.New("timeout waiting for user")
 var errBrowserFailed = errors.New("browser failed to open")
 var errServerListenerFailed = errors.New("failed to start up local server")
@@ -60,28 +55,9 @@ var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
 var sentSegmentAlias = false
 
-// EnsureDefaultAuthFilePath returns and creates the file path is missing.
-func EnsureDefaultAuthFilePath() (string, error) {
-	u, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-
-	pixieDirPath := filepath.Join(u.HomeDir, pixieAuthPath)
-	if _, err := os.Stat(pixieDirPath); os.IsNotExist(err) {
-		err := os.Mkdir(pixieDirPath, 0744)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	pixieAuthFilePath := filepath.Join(pixieDirPath, pixieAuthFile)
-	return pixieAuthFilePath, nil
-}
-
 // SaveRefreshToken saves the refresh token in default spot.
 func SaveRefreshToken(token *RefreshToken) error {
-	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
+	pixieAuthFilePath, err := utils.EnsureDefaultAuthFilePath()
 	if err != nil {
 		return err
 	}
@@ -97,7 +73,7 @@ func SaveRefreshToken(token *RefreshToken) error {
 
 // LoadDefaultCredentials loads the default credentials for the user.
 func LoadDefaultCredentials() (*RefreshToken, error) {
-	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
+	pixieAuthFilePath, err := utils.EnsureDefaultAuthFilePath()
 	if err != nil {
 		return nil, err
 	}
