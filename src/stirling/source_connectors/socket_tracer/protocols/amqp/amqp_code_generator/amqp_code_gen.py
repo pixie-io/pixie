@@ -199,6 +199,16 @@ class AMQPMethod:
             }}
         """
 
+    def gen_method_enum_declr(self):
+        """
+        This will be included in a enum declr of the form:
+        enum AMQPTxMethods : uint8_t {
+            kAMQPTxSelect = 10,
+            ...
+        }
+        """
+        return f"k{self.c_struct_name} = {self.method_id}"
+
 
 @dataclass
 class AMQPClass:
@@ -226,6 +236,37 @@ class AMQPClass:
             synchronous=1,
             fields=self.class_fields,
         )
+
+    @property
+    def constant_enum_name(self):
+        return f"AMQP{self.class_name}Methods"
+
+    def gen_method_enum_declrs(self):
+        """
+        Generates all enum declarations for methods of the form:
+        enum AMQPBasicMethods : uint8_t {
+            kAMQPBasicQos = 10,
+            ...
+        }
+        """
+        method_declaration = ",\n".join(
+            [method.gen_method_enum_declr() for method in self.methods]
+        )
+        return f"""
+            enum {self.constant_enum_name} : uint8_t {{
+                {method_declaration}
+            }};
+            """
+
+    def gen_class_enum_declr(self):
+        """
+        This will be included as list of statements in a enum like
+        enum class AMQPClasses : uint8_t {
+            kConnection = 10,
+            ...
+        }
+        """
+        return f"k{self.class_name} = {self.class_id}"
 
 
 class CodeGenerator:
@@ -357,6 +398,57 @@ class CodeGenerator:
             )
         return amqp_classes
 
+    def gen_constants_enums(self):
+        """
+        General AMQP constants
+        """
+        constant_declarations = ",\n".join(
+            [f"k{to_camel_case(k)} = {v}" for k, v in self.constants.items()]
+        )
+        return f"""
+            enum class AMQPConstant : uint16_t {{
+                {constant_declarations}
+            }};
+        """
+
+    def generate_class_enums(self):
+        """
+        Enum struct that holds the general types such as Connection, Basic, etc.
+        enum class AMQPClasses : uint8_t {
+            kConnection = 10,
+            kChannel = 20,
+            kExchange = 40,
+            kQueue = 50,
+            kBasic = 60,
+            kTx = 90
+        };
+        """
+        constant_declarations = ",\n".join(
+            [amqp_class.gen_class_enum_declr() for amqp_class in self.amqp_classes]
+        )
+        return f"""
+            enum class AMQPClasses : uint8_t {{
+                {constant_declarations}
+            }};
+        """
+
+    def gen_method_enum_declrs(self):
+        """
+        For each class, there's a list of methods that it supports.
+        This method generates the enum declarations to find the relevant function from the method_id.
+        enum AMQPTxMethods : uint8_t {
+            kAMQPTxSelect = 10,
+            kAMQPTxSelectOk = 11,
+            kAMQPTxCommit = 20,
+            kAMQPTxCommitOk = 21,
+            kAMQPTxRollback = 30,
+            kAMQPTxRollbackOk = 31
+        };
+        """
+        return "\n".join(
+            [amqp_class.gen_method_enum_declrs() for amqp_class in self.amqp_classes]
+        )
+
     def gen_struct_declr(self):
         struct_definitions = []
         for amqp_class in self.amqp_classes:
@@ -408,7 +500,7 @@ class CodeGeneratorWriter:
 
     def __init__(
         self,
-        xml_file="amqp0-9-1.xml",
+        xml_file="amqp0-9-1.stripped.xml",
         generation_dir="generated_files",
         gen_template_dir="gen_templates",
     ):
@@ -425,9 +517,39 @@ class CodeGeneratorWriter:
 
     def write_type_gen_header(self):
         """
-        Writes the general constants and types to types_gen.h
+        Writes the general constants and types to types_gen.h using the template in types_gen.h.jinja2
+        Writes constants enums such as:
+        enum class AMQPConstant : uint16_t {
+            kFrameMethod = 1,
+            kFrameHeader = 2,
+        }
+        Writes class enums such as:
+        enum AMQPTxMethods : uint8_t {
+            kAMQPTxSelect = 10,
+            kAMQPTxSelectOk = 11,
+            ...
+        };
+        Writes method enums such as:
+        enum AMQPExchangeMethods : uint8_t {
+            kAMQPExchangeDeclare = 10,
+            kAMQPExchangeDeclareOk = 11,
+            ...
+        };
         """
-        pass
+        constant_enums = self.generator.gen_constants_enums()
+        class_enums = self.generator.generate_class_enums()
+        method_enums = self.generator.gen_method_enum_declrs()
+
+        template = self.env.get_template("types_gen.h.jinja_template")
+
+        with self.types_gen_header_path.open("w") as f:
+            f.write(
+                template.render(
+                    constant_enums=constant_enums,
+                    class_enums=class_enums,
+                    method_enums=method_enums,
+                )
+            )
 
     def write_struct_declr(self):
         """
@@ -441,11 +563,14 @@ class CodeGeneratorWriter:
         """
         pass
 
-    def write_all(self):
+    def run(self):
         """
-        Writes all files required for code generator
+        Runs code generation for AMQP.
+        This uses the parsed types from AMQP specification xml_file.
+        Then, writes the parsed logic to types_gen.h, decode.h, decode.cc
         """
-        pass
+        self.write_type_gen_header()
+        # TODO add write_struct_declr, write_buffer_decode
 
     def format_all(self):
         """
