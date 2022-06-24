@@ -168,7 +168,7 @@ build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 build:bpf --config=clang
 build:bpf --build_tag_filters=requires_bpf,requires_root
 build:bpf --test_tag_filters=requires_bpf,requires_root,-disabled
-test:bpf --jobs=4 --strategy=TestRunner=standalone
+test:bpf --strategy=TestRunner=standalone
 
 # bazel build --config bpf_asan
 # Need to repeat the negative build_tag_filters from config=asan,

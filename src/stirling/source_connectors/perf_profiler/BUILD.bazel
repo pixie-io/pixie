@@ -58,6 +58,7 @@ pl_cc_test(
     defines = ['JDK_IMAGE_NAMES=\\"%s\\"' % ",".join(jdk_image_names)],
     shard_count = 3,
     tags = [
+        "cpu:16",
         "exclusive",
         "requires_bpf",
     ],
@@ -74,6 +75,7 @@ pl_cc_test(
     name = "stringifier_bpf_test",
     srcs = ["stringifier_bpf_test.cc"],
     tags = [
+        "cpu:16",
         "requires_bpf",
     ],
     deps = [

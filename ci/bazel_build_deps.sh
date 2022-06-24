@@ -32,6 +32,8 @@ bpf_patterns=('^src\/stirling\/')
 
 # Set the default values for the flags.
 all_targets=false
+# Enable running of BPF targets.
+run_bpf_targets=false
 
 commit_range=$(git merge-base origin/main HEAD)
 
@@ -56,10 +58,13 @@ function usage() {
     echo " -a all_targets=${all_targets}" >&2
 }
 
-while getopts "ah" option; do
+while getopts "abh" option; do
   case "${option}" in
     a )
        all_targets=true
+       ;;
+    b )
+       run_bpf_targets=true
        ;;
     h ) # "help"
        usage
@@ -125,7 +130,6 @@ function compute_targets() {
   targets+=("rdeps(//..., set(${changed_files[*]}))")
 }
 
-run_bpf_targets=false
 function check_bpf_trigger() {
   for file in $(git diff --name-only "${commit_range}" ); do
     for pat in "${bpf_patterns[@]}"; do
