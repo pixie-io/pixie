@@ -24,7 +24,10 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["stirling_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         "//src/stirling:cc_library",
     ],
@@ -40,6 +43,7 @@ pl_cc_test(
     ],
     flaky = True,
     tags = [
+        "cpu:16",
         "requires_bpf",
     ],
     deps = [
@@ -73,6 +77,7 @@ sh_test(
     # stirling_wrapper process to exit and eventually times out.
     flaky = True,
     tags = [
+        "cpu:16",
         "exclusive",
         "requires_bpf",
     ],
@@ -97,6 +102,7 @@ sh_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
@@ -118,6 +124,7 @@ sh_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
@@ -143,6 +150,7 @@ sh_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
@@ -165,6 +173,7 @@ sh_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # Run exclusive to get as little noise as possible while measuring performance.
         "exclusive",
         # Only intention is to run this with opt builds.
@@ -193,6 +202,7 @@ sh_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
@@ -231,6 +241,7 @@ sh_test(
     ],
     flaky = True,
     tags = [
+        "cpu:16",
         "exclusive",
         "requires_bpf",
     ],

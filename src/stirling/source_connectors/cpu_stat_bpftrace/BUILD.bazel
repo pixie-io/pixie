@@ -39,7 +39,10 @@ pl_cc_test(
     timeout = "long",
     srcs = ["cpu_stat_bpftrace_connector_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",

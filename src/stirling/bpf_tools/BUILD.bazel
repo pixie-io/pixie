@@ -73,7 +73,10 @@ pl_cc_test(
 pl_cc_test(
     name = "bcc_wrapper_bpf_test",
     srcs = ["bcc_wrapper_bpf_test.cc"],
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/bpf_tools/testdata:get_tgid_start_time",
@@ -84,7 +87,10 @@ pl_cc_test(
 pl_cc_test(
     name = "bcc_symbolizer_bpf_test",
     srcs = ["bcc_symbolizer_bpf_test.cc"],
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
@@ -94,7 +100,10 @@ pl_cc_test(
 pl_cc_test(
     name = "bpftrace_wrapper_bpf_test",
     srcs = ["bpftrace_wrapper_bpf_test.cc"],
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
@@ -109,6 +118,7 @@ pl_cc_test(
         #               It fails on Jenkins because start_time and start_boottime are the same.
         "manual",
         "requires_bpf",
+        "cpu:16",
     ],
     deps = [
         ":cc_library",
@@ -125,6 +135,7 @@ pl_cc_test(
         # is a problem.
         "exclusive",
         "requires_bpf",
+        "cpu:16",
     ],
     deps = [
         ":cc_library",

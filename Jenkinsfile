@@ -4,17 +4,6 @@
 import java.net.URLEncoder
 import jenkins.model.Jenkins
 
-// Choose a label from configuration here:
-// https://jenkins.corp.pixielabs.ai/configureClouds/
-//
-// IMPORTANT: Make sure worker node is one with a 4.14 kernel,
-// to ensure that we don't have BPF compatibility regressions.
-//
-// Technically, only the BPF jobs need this kind of worker node,
-// but all jobs currently use this node for simplicity and
-// to maintain better node utilization (minimize GCP dollars).
-WORKER_NODE = 'jenkins-worker-with-4.14-kernel'
-
 /**
   * PhabConnector handles all communication with phabricator if the build
   * was triggered by a phabricator run.
@@ -111,6 +100,24 @@ PXL_DOCS_FILE = 'pxl-docs.json'
 PXL_DOCS_BUCKET = 'pl-docs'
 PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
 
+// BPF Setup.
+// The default kernel should be the oldest supported kernel
+// to ensure that we don't have BPF compatibility regressions.
+BPF_DEFAULT_KERNEL='4.14'
+// A list of kernels to test. A jenkins worker with template
+// named `jenkins-worker-with-${kernel}-kernel` should exist.
+def BPF_KERNELS = ['4.14', '5.18.4']
+
+// Currently disabling TSAN on BPF builds because it runs too slow.
+// In particular, the uprobe deployment takes far too long. See issue:
+//    https://pixie-labs.atlassian.net/browse/PL-1329
+// The benefit of TSAN on such runs is marginal anyways, because the tests
+// are mostly single-threaded.
+runBPFWithTSAN = false
+
+// TODO(yzhao/oazizi): PP-2276 Fix the BPF ASAN tests.
+runBPFWithASAN = false
+
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
 devDockerImageExtrasWithTag = ''
@@ -122,6 +129,7 @@ isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NA
 
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
+isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression-bpf')
 
 isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
 isCopybaraTags = env.JOB_NAME.startsWith('pixie-main/copybara-tags')
@@ -136,15 +144,6 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 
-// Currently disabling TSAN on BPF builds because it runs too slow.
-// In particular, the uprobe deployment takes far too long. See issue:
-//    https://pixie-labs.atlassian.net/browse/PL-1329
-// The benefit of TSAN on such runs is marginal anyways, because the tests
-// are mostly single-threaded.
-runBPFWithTSAN = false
-
-// TODO(yzhao/oazizi): PP-2276 Fix the BPF ASAN tests.
-runBPFWithASAN = false
 
 def WithGCloud(Closure body) {
   if (env.KUBERNETES_SERVICE_HOST) {
@@ -357,9 +356,9 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
   }
 }
 
-def WithSourceCodeAndTargetsDocker(String stashName = SRC_STASH_NAME, Closure body) {
+def WithSourceCodeAndTargetsBPFEnv(String stashName = SRC_STASH_NAME, String kernel = BPF_DEFAULT_KERNEL, Closure body) {
   warnError('Script failed') {
-    WithSourceCodeFatalError(stashName) {
+    WithSourceCodeFatalErrorBPFEnv(stashName, kernel) {
       unstashFromGCS(TARGETS_STASH_NAME)
       body()
     }
@@ -369,9 +368,9 @@ def WithSourceCodeAndTargetsDocker(String stashName = SRC_STASH_NAME, Closure bo
 /**
   * This function checks out the source code and wraps the builds steps.
   */
-def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
+def WithSourceCodeFatalErrorBPFEnv(String stashName = SRC_STASH_NAME, String kernel, Closure body) {
   timeout(time: 90, unit: 'MINUTES') {
-    node(WORKER_NODE) {
+    node("jenkins-worker-with-${kernel}-kernel") {
       sh 'hostname'
       deleteDir()
       unstashFromGCS(stashName)
@@ -702,7 +701,7 @@ def buildGCC = {
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
 def buildAndTestBPFOpt = {
-  WithSourceCodeAndTargetsDocker {
+  WithSourceCodeAndTargetsBPFEnv {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
     })
@@ -710,7 +709,7 @@ def buildAndTestBPFOpt = {
 }
 
 def buildAndTestBPFASAN = {
-  WithSourceCode {
+  WithSourceCodeAndTargetsBPFEnv {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer')
     })
@@ -718,7 +717,7 @@ def buildAndTestBPFASAN = {
 }
 
 def buildAndTestBPFTSAN = {
-  WithSourceCodeAndTargetsDocker {
+  WithSourceCodeAndTargetsBPFEnv {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer')
     })
@@ -774,9 +773,9 @@ def generateTestTargets = {
 preBuild['Process Dependencies'] = {
   WithSourceCodeK8s('process-deps') {
     container('pxbuild') {
-     if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun) {
+     if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun || isNightlyBPFTestRegressionRun) {
         sh '''
-        ./ci/bazel_build_deps.sh -a
+        ./ci/bazel_build_deps.sh -a -b
         wc -l bazel_*
         '''
       } else {
@@ -990,6 +989,23 @@ def buildScriptForCommits = {
  * REGRESSION_BUILDERS: This sections defines all the test regressions steps
  * that will happen in parallel.
  *****************************************************************************/
+def BPFRegressionBuilders = [:]
+
+BPF_KERNELS.each { kernel ->
+  BPFRegressionBuilders["Test (opt) ${kernel}"] = {
+    WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel) {
+      dockerStep(dockerArgsForBPFTest, {
+        bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
+      })
+    }
+  }
+}
+
+
+/*****************************************************************************
+ * REGRESSION_BUILDERS: This sections defines all the test regressions steps
+ * that will happen in parallel.
+ *****************************************************************************/
 def regressionBuilders = [:]
 
 TEST_ITERATIONS = 5
@@ -1028,7 +1044,7 @@ regressionBuilders['Test (TSAN)'] = {
  * END REGRESSION_BUILDERS
  *****************************************************************************/
 
-def buildScriptForNightlyTestRegression = {
+def buildScriptForNightlyTestRegression = { testjobs ->
   try {
     stage('Checkout code') {
       checkoutAndInitialize()
@@ -1037,7 +1053,7 @@ def buildScriptForNightlyTestRegression = {
       parallel(preBuild)
     }
     stage('Testing') {
-      parallel(regressionBuilders)
+      parallel(testjobs)
     }
     stage('Archive') {
       DefaultGCloudPodTemplate('archive') {
@@ -1440,7 +1456,9 @@ def buildScriptForCopybaraPxAPI() {
 }
 
 if (isNightlyTestRegressionRun) {
-  buildScriptForNightlyTestRegression()
+  buildScriptForNightlyTestRegression(regressionBuilders)
+} else if (isNightlyBPFTestRegressionRun) {
+  buildScriptForNightlyTestRegression(BPFRegressionBuilders)
 } else if (isCLIBuildRun) {
   buildScriptForCLIRelease()
 } else if (isVizierBuildRun) {

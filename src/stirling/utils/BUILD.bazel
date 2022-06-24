@@ -113,7 +113,10 @@ pl_cc_test(
     # Specifically, we require the `--pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host`
     # which only the BPF jenkins jobs provide.
     # Locally, this test can be run without sudo_run_bazel.sh, unlike other BPF tests.
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -159,7 +162,10 @@ pl_cc_test(
     name = "detect_application_bpf_test",
     timeout = "moderate",
     srcs = ["detect_application_bpf_test.cc"],
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:container_images",

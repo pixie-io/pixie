@@ -156,7 +156,10 @@ pl_cc_test(
     srcs = ["socket_trace_bpf_test.cc"],
     flaky = True,
     shard_count = 5,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
@@ -170,7 +173,10 @@ pl_cc_test(
     srcs = ["conn_stats_bpf_test.cc"],
     flaky = True,
     shard_count = 2,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
@@ -188,6 +194,7 @@ pl_cc_test(
     flaky = True,
     shard_count = 3,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -207,6 +214,7 @@ pl_cc_test(
     srcs = ["mux_trace_bpf_test.cc"],
     flaky = True,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -230,6 +238,7 @@ pl_cc_test(
     ],
     flaky = True,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -251,6 +260,7 @@ pl_cc_test(
     ],
     flaky = True,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -272,6 +282,7 @@ pl_cc_test(
     flaky = True,
     shard_count = 2,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -300,6 +311,7 @@ pl_cc_test(
     shard_count = 3,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes and slowed down significantly.
         "exclusive",
@@ -323,6 +335,7 @@ pl_cc_test(
     flaky = True,
     tags = [
         "requires_bpf",
+        "cpu:16",
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
         # uprobes, slowing them down significantly.
         "exclusive",
@@ -346,6 +359,7 @@ pl_cc_test(
     ],
     flaky = True,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -363,7 +377,10 @@ pl_cc_test(
     timeout = "long",
     srcs = ["redis_trace_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
@@ -379,7 +396,10 @@ pl_cc_test(
     timeout = "long",
     srcs = ["nats_trace_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -393,7 +413,10 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["kafka_trace_bpf_test.cc"],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
@@ -409,6 +432,7 @@ pl_cc_test(
     flaky = True,
     shard_count = 2,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -427,6 +451,7 @@ pl_cc_test(
     srcs = ["dyn_lib_trace_bpf_test.cc"],
     flaky = True,
     tags = [
+        "cpu:16",
         "no_asan",
         "requires_bpf",
     ],
@@ -445,6 +470,7 @@ pl_cc_test(
     srcs = ["go_tls_trace_bpf_test.cc"],
     flaky = True,
     tags = [
+        "cpu:16",
         "exclusive",
         "no_asan",
         "requires_bpf",

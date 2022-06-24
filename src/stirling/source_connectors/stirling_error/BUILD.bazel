@@ -44,7 +44,10 @@ pl_cc_test(
         "//src/stirling/source_connectors/perf_profiler/testing/java:java_image_base-java-profiler-test-image-omit-frame-pointer.tar",
     ],
     flaky = True,
-    tags = ["requires_bpf"],
+    tags = [
+        "cpu:16",
+        "requires_bpf",
+    ],
     deps = [
         "//src/carnot/planner/probes:tracepoint_generator_lib",
         "//src/common/testing/test_utils:cc_library",
