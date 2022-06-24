@@ -21,6 +21,7 @@ package vizieryamls
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -36,11 +37,9 @@ const (
 	// Note: if you update this value, make sure you also update defaultUncappedTableStoreSizeMB in
 	// src/cloud/config_manager/controllers/server.go, because we want to make
 	// sure that the table store size is about 60% of the total requested memory.
-	defaultMemoryLimit               = "2Gi"
-	defaultDataAccess                = "Full"
-	defaultDatastreamBufferSize      = 1024 * 1024
-	defaultDatastreamBufferSpikeSize = 1024 * 1024 * 500
-	defaultElectionPeriodMs          = 7500
+	defaultMemoryLimit      = "2Gi"
+	defaultDataAccess       = "Full"
+	defaultElectionPeriodMs = 7500
 )
 
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
@@ -298,6 +297,19 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (st
 	return secretsYAML, nil
 }
 
+func patchContainerEnvIfValueExists(containerName string, envName string, valueName string) *yamls.K8sTemplateOptions {
+	placeholder := fmt.Sprintf("__%s__", strings.Replace(envName, "PL", "PX", 1))
+	return &yamls.K8sTemplateOptions{
+		TemplateMatcher: yamls.GenerateContainerNameMatcherFn(containerName),
+		Patch:           fmt.Sprintf(`{"spec": {"template": { "spec": { "containers": [{"name": "%s", "env": [{"name": "%s"}]}] } } } }`, containerName, placeholder),
+		Placeholder:     fmt.Sprintf(`- name: %s`, placeholder),
+		TemplateValue: fmt.Sprintf(`{{- if .Values.%s }}
+        - name: %s
+          value: "{{ .Values.%s }}"
+        {{- end}}`, valueName, envName, valueName),
+	}
+}
+
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
 	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
 		{
@@ -403,18 +415,8 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Placeholder:     "__PX_DATA_ACCESS__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.dataAccess }}"{{ .Values.dataAccess }}"{{else}}"%s"{{end}}`, defaultDataAccess),
 		},
-		{
-			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
-			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SIZE", "value": "__PX_DATASTREAM_BUFFER_SIZE__"}]}] } } } }`,
-			Placeholder:     "__PX_DATASTREAM_BUFFER_SIZE__",
-			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSize }}"{{.Values.datastreamBufferSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSize),
-		},
-		{
-			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
-			Patch:           `{"spec": {"template": { "spec": { "containers": [{"name": "pem", "env": [{"name": "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "value": "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__"}]}] } } } }`,
-			Placeholder:     "__PX_DATASTREAM_BUFFER_SPIKE_SIZE__",
-			TemplateValue:   fmt.Sprintf(`{{ if .Values.datastreamBufferSpikeSize }}"{{.Values.datastreamBufferSpikeSize}}"{{else}}"%d"{{end}}`, defaultDatastreamBufferSpikeSize),
-		},
+		patchContainerEnvIfValueExists("pem", "PL_DATASTREAM_BUFFER_SIZE", "datastreamBufferSize"),
+		patchContainerEnvIfValueExists("pem", "PL_DATASTREAM_BUFFER_SPIKE_SIZE", "datastreamBufferSpikeSize"),
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-metadata"),
 			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_RENEW_PERIOD","value": "__PX_RENEW_PERIOD__"}]}] } } } }`,
