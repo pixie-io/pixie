@@ -22,9 +22,13 @@ copy_artifact_to_gcs() {
     binary_path="$2"
     name="$3"
 
+    gpg --no-tty --batch --import "${BUILDBOT_GPG_KEY_FILE}"
+    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "${binary_path}"
+
     sha256sum "${binary_path}" | awk '{print $1}' > sha
     gsutil -h 'Content-Disposition:filename=px' cp "${binary_path}" "${output_path}/${name}"
     gsutil cp sha "${output_path}/${name}.sha256"
+    gsutil cp "${binary_path}.asc" "${output_path}/${name}.asc"
     # Updating the ACL for a specific object will error if there are top-level permissions
     # applied to the bucket.
     gsutil acl ch -u allUsers:READER "${output_path}/${name}" || true

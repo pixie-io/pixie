@@ -105,6 +105,24 @@ write_artifacts_to_gcs() {
     fi
 }
 
+write_artifacts_to_gh() {
+    gpg --no-tty --batch --import "${BUILDBOT_GPG_KEY_FILE}"
+
+    gh release --repo=pixie-io/pixie create "${release_tag}" --notes "Pixie CLI Release"
+
+    tmp_dir="$(mktemp -d)"
+    pushd "${tmp_dir}"
+    cp "${linux_binary}" "cli_linux_amd64"
+    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
+    cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
+    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.deb"
+    cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
+    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.rpm"
+
+    gh release --repo=pixie-io/pixie upload "${release_tag}" "cli_linux_amd64" "cli_linux_amd64.asc" "pixie-px.${linux_arch}.deb" "pixie-px.${linux_arch}.deb.asc" "pixie-px.${linux_arch}.rpm" "pixie-px.${linux_arch}.rpm.asc"
+    popd
+}
+
 public="True"
 bucket="pixie-dev-public"
 if [[ $release_tag == *"-"* ]]; then
@@ -117,4 +135,5 @@ write_artifacts_to_gcs "${output_path}"
 if [[ $public == "True" ]]; then
     output_path="gs://pixie-dev-public/cli/latest"
     write_artifacts_to_gcs "${output_path}"
+    write_artifacts_to_gh
 fi

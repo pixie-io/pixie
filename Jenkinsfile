@@ -1090,6 +1090,14 @@ def  buildScriptForCLIRelease = {
       string(
         credentialsId: 'docker_access_token',
         variable: 'DOCKER_TOKEN'
+      ),
+      string(
+        credentialsId: 'buildbot-gpg-key-id',
+        variable: 'BUILDBOT_GPG_KEY_ID'
+      ),
+      string(
+        credentialsId: 'buildbot-github-token',
+        variable: 'GITHUB_TOKEN'
       )
     ]) {
       try {
@@ -1099,11 +1107,18 @@ def  buildScriptForCLIRelease = {
         stage('Build & Push Artifacts') {
           WithSourceCodeK8s {
             container('pxbuild') {
-              sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
-              sh './ci/cli_build_release.sh'
-              stash name: 'ci_scripts_signing', includes: 'ci/**'
-              stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-              stashList.add('versions')
+              withCredentials([
+                file(
+                  credentialsId: 'buildbot-private-key-asc',
+                  variable: 'BUILDBOT_GPG_KEY_FILE'
+                )
+              ]) {
+                sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
+                sh './ci/cli_build_release.sh'
+                stash name: 'ci_scripts_signing', includes: 'ci/**'
+                stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+                stashList.add('versions')
+              }
             }
           }
         }
@@ -1111,10 +1126,22 @@ def  buildScriptForCLIRelease = {
           node('macos') {
             deleteDir()
             unstash 'ci_scripts_signing'
-            withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
-              string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
+            withCredentials([
+              file(
+                credentialsId: 'buildbot-private-key-asc',
+                variable: 'BUILDBOT_GPG_KEY_FILE'
+              ),
+              string(
+                credentialsId: 'pl_ac_passwd',
+                variable: 'AC_PASSWD'
+              ),
+              string(
+                credentialsId: 'jenkins_keychain_pw',
+                variable: 'JENKINSKEY'
+              )
+            ]) {
               sh './ci/cli_merge_sign.sh'
-              }
+            }
             stash name: 'cli_darwin_signed', includes: 'cli_darwin*'
           }
         }
@@ -1122,8 +1149,15 @@ def  buildScriptForCLIRelease = {
           node('macos') {
             WithSourceCodeK8s {
               container('pxbuild') {
-                unstash 'cli_darwin_signed'
-                sh './ci/cli_upload_signed.sh'
+                withCredentials([
+                  file(
+                    credentialsId: 'buildbot-private-key-asc',
+                    variable: 'BUILDBOT_GPG_KEY_FILE'
+                  )
+                ]) {
+                  unstash 'cli_darwin_signed'
+                  sh './ci/cli_upload_signed.sh'
+                }
               }
             }
           }
