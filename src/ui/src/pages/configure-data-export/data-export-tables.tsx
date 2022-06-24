@@ -23,6 +23,9 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon,
   History as HistoryIcon,
+  CheckCircle as SuccessIcon,
+  Warning as WarningIcon,
+  Report as ErrorIcon,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -54,7 +57,7 @@ import { Spinner, useSnackbar } from 'app/components';
 import { GQLRetentionScript } from 'app/types/schema';
 import { hidePresetsForPlugin } from 'configurable/data-export';
 
-import { PluginIcon } from './data-export-common';
+import { ExportStatusContext, ExportStatusContextProvider, PluginIcon } from './data-export-common';
 import {
   useClustersForRetentionScripts,
   useDeleteRetentionScript,
@@ -63,6 +66,60 @@ import {
   useRetentionScripts,
   useToggleRetentionScript,
 } from './data-export-gql';
+
+const HistoryLink = React.memo<{ path: string, script: GQLRetentionScript }>(({ path, script }) => {
+  const { loading, unavailableClusters, status } = React.useContext(ExportStatusContext);
+
+  const ready = !loading && status.has(script.id);
+  const state = React.useMemo(() => (ready ? status.get(script.id) : { pass: 0, fail: 0 }), [ready, script.id, status]);
+  const pct = state.pass / (state.pass + state.fail);
+
+  const tooltip: React.ReactNode = React.useMemo(() => {
+    if (loading) {
+      return 'Loading export status...';
+    } else if (!ready) {
+      return (unavailableClusters > 0
+        ? 'Unknown status (some clusters did not reply)'
+        : 'Script has not run on any known cluster recently');
+    } else {
+      return (
+        <>
+          {Number.isNaN(pct) ? <p>No recent runs on any cluster</p> : (
+            <>
+              <p>
+                {'Script has run '}
+                <strong>{state.pass + state.fail} time{state.pass + state.fail === 1 ? '' : 's'}</strong>
+                {' recently.'}
+              </p>
+              <p><strong>{Math.round(pct * 100)}%</strong> succeeded.</p>
+            </>
+          )}
+          {unavailableClusters > 0 && (
+            <small>
+              {'Data may be incomplete. '}
+              {unavailableClusters} cluster{unavailableClusters === 1 ? '' : 's'} could not report stats.
+            </small>
+          )}
+        </>
+      );
+    }
+  }, [loading, ready, unavailableClusters, state, pct]);
+
+  return (
+    <Tooltip title={tooltip}>
+      <IconButton
+        component={Link}
+        to={`${path}/logs/${script.id}`}
+      >
+        {!ready && <HistoryIcon />}
+        {ready && pct < 0.5 && <ErrorIcon color='error' />}
+        {ready && pct >= 0.5 && pct < 1 && <WarningIcon color='warning' />}
+        {ready && pct === 1 && <SuccessIcon color='success' />}
+      </IconButton>
+    </Tooltip>
+  );
+});
+HistoryLink.displayName = 'HistoryLink';
 
 const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script }) => {
   const { path } = useRouteMatch();
@@ -157,6 +214,9 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
           <span>{plugin?.name ?? ''}</span>
         </Box>
       </TableCell>
+      <TableCell align='center'>
+        <HistoryLink path={path} script={script} />
+      </TableCell>
       <TableCell align='right' sx={({ spacing }) => ({ minWidth: spacing(33) })}>
         <FormControlLabel
           sx={{ mr: 1 }}
@@ -170,14 +230,6 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
             />
           }
         />
-        <Tooltip title='View execution logs'>
-          <IconButton
-            component={Link}
-            to={`${path}/logs/${script.id}`}
-          >
-            <HistoryIcon />
-          </IconButton>
-        </Tooltip>
         <Tooltip title='Configure this script'>
           <IconButton
             component={Link}
@@ -251,6 +303,7 @@ const RetentionScriptTable = React.memo<{
               <StyledTableHeaderCell>Clusters</StyledTableHeaderCell>
               <StyledTableHeaderCell>Summary Window</StyledTableHeaderCell>
               <StyledTableHeaderCell>Export Location</StyledTableHeaderCell>
+              <StyledTableHeaderCell align='center'>Export Status</StyledTableHeaderCell>
               <TableCell />
             </TableRow>
           </TableHead>
@@ -326,24 +379,28 @@ export const ConfigureDataExportBody = React.memo(() => {
           Something went wrong while loading retention plugins and scripts. See console for details.
         </Alert>
       )}
-      {enabledPlugins.map(({ id, name, description }, i) => (
-        <React.Fragment key={id}>
-          {i > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
-          <RetentionScriptTable
-            title={`Presets from ${name}`}
-            description={description}
-            scripts={scripts.filter(s => s.pluginID === id && s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
-          />
-        </React.Fragment>
-      ))}
-      {enabledPlugins.length > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
-      <RetentionScriptTable
-        title='Custom Scripts'
-        description={`Pixie can send results from custom scripts to long-term data stores at any desired frequency.
-          Showing custom scripts for enabled plugins only.`}
-        scripts={scripts.filter(s => !s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
-        isCustom={true}
-      />
+      <ExportStatusContextProvider scripts={scripts}>
+        {enabledPlugins.map(({ id, name, description }, i) => (
+          <React.Fragment key={id}>
+            {i > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
+            <RetentionScriptTable
+              title={`Presets from ${name}`}
+              description={description}
+              scripts={
+                scripts.filter(s => s.pluginID === id && s.isPreset).sort((a, b) => a.name.localeCompare(b.name))
+              }
+            />
+          </React.Fragment>
+        ))}
+        {enabledPlugins.length > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
+        <RetentionScriptTable
+          title='Custom Scripts'
+          description={`Pixie can send results from custom scripts to long-term data stores at any desired frequency.
+            Showing custom scripts for enabled plugins only.`}
+          scripts={scripts.filter(s => !s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
+          isCustom={true}
+        />
+      </ExportStatusContextProvider>
     </Box>
     /* eslint-enable react-memo/require-usememo */
   );
