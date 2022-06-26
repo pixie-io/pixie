@@ -413,6 +413,8 @@ message PodUpdate {
   string message = 14;
   // A brief CamelCase message indicating details about why the pod is in this state.
   string reason = 15;
+  // A json object containing pod label keys and values
+  string labels = 17;
 }
 
 enum ContainerType {

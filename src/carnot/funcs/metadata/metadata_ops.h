@@ -122,6 +122,27 @@ class PodIDToPodNameUDF : public ScalarUDF {
   }
 };
 
+class PodIDToPodLabelsUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info != nullptr) {
+      return pod_info->labels();
+    }
+    return "";
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get labels of a pod from its pod ID.")
+        .Details("Gets the kubernetes pod labels for the pod from its pod ID.")
+        .Example("df.labels = px.pod_id_to_pod_labels(df.pod_id)")
+        .Arg("pod_id", "The pod ID of the pod to get the labels for.")
+        .Returns("The k8s pod labels for the pod ID passed in.");
+  }
+};
+
 class PodNameToPodIDUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
