@@ -593,6 +593,7 @@ metadata {
     name: "test"
     uid: "abcd"
   }
+  labels: <key:"app" value:"myApp1"> labels: <key:"project" value:"myProj1">
   creation_timestamp_ns: 4
   deletion_timestamp_ns: 6
 }

@@ -19,6 +19,7 @@
 package k8smeta
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"path"
@@ -938,6 +939,11 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 		hostname = pod.Spec.Hostname
 	}
 
+	var podLabels []byte
+	if pod.Metadata.Labels != nil {
+		podLabels, _ = json.Marshal(pod.Metadata.Labels)
+	}
+
 	update := &metadatapb.ResourceUpdate{
 		UpdateVersion: uv,
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -945,6 +951,7 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 				UID:              pod.Metadata.UID,
 				Name:             pod.Metadata.Name,
 				Namespace:        pod.Metadata.Namespace,
+				Labels:           string(podLabels),
 				StartTimestampNS: pod.Metadata.CreationTimestampNS,
 				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
 				QOSClass:         pod.Status.QOSClass,
