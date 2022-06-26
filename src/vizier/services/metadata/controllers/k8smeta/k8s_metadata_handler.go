@@ -939,7 +939,10 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 		hostname = pod.Spec.Hostname
 	}
 
-	podLabels, _ := json.Marshal(pod.Metadata.Labels)
+	var podLabels []byte
+	if pod.Metadata.Labels != nil {
+		podLabels, _ = json.Marshal(pod.Metadata.Labels)
+	}
 
 	update := &metadatapb.ResourceUpdate{
 		UpdateVersion: uv,
