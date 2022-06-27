@@ -64,7 +64,7 @@ export const DEFAULT_RETENTION_PXL = `import px
 #     )],
 #   ),
 # )
-# Read more in https://docs.px.dev/tutorials/otel-export/.
+# Read more in https://docs.px.dev/tutorials/integrations/otel/.
 `;
 
 export const GQL_GET_PLUGINS_FOR_RETENTION_SCRIPTS = gql`
