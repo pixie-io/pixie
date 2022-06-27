@@ -358,29 +358,104 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 	return err
 }
 
-func (s *Server) deletePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string) error {
-	// Disabling org retention should delete any retention scripts.
-	// Fetch all scripts belonging to this plugin.
-	query := `DELETE from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 AND is_preset=true RETURNING script_id`
-	rows, err := txn.Queryx(query, orgID, pluginID)
+// updatePresetScripts updates the contents of existing preset scripts, creates any new preset scripts in the new plugin version, and removes any preset scripts
+// from the old plugin version.
+func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string, version string, configurations []byte, customExportURL *string, disablePresets bool) error {
+	// Fetch preset scripts in new version.
+	query := `SELECT preset_scripts FROM data_retention_plugin_releases WHERE plugin_id=$1 AND version=$2`
+	rows, err := txn.Queryx(query, pluginID, version)
 	if err != nil {
-		return status.Errorf(codes.Internal, "Failed to fetch scripts")
+		return status.Errorf(codes.Internal, "Failed to fetch plugin")
 	}
 
-	for rows.Next() {
-		var id uuid.UUID
-		err = rows.Scan(&id)
+	var plugin RetentionPlugin
+	if rows.Next() {
+		err := rows.StructScan(&plugin)
 		if err != nil {
-			continue
-		}
-		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
-			ID: utils.ProtoFromUUID(id),
-		})
-		if err != nil {
-			return status.Errorf(codes.Internal, "Failed to disable script")
+			return status.Errorf(codes.Internal, "Failed to read plugin release")
 		}
 	}
 	rows.Close()
+
+	// Fetch existing preset scripts from old version.
+	query = `SELECT script_id, script_name from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 AND is_preset=true`
+	rows2, err := txn.Queryx(query, orgID.String(), pluginID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to fetch existing preset scripts")
+	}
+
+	existingScripts := make(map[string]uuid.UUID)
+	var scriptID uuid.UUID
+	var scriptName string
+	for rows2.Next() {
+		err = rows2.Scan(&scriptID, &scriptName)
+		if err != nil {
+			continue
+		}
+		existingScripts[scriptName] = scriptID
+	}
+	rows2.Close()
+
+	for _, j := range plugin.PresetScripts {
+		// If this script already exists, update it. Otherwise, create a new script.
+		if i, ok := existingScripts[j.Name]; ok {
+			_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
+				ScriptId: utils.ProtoFromUUID(i),
+				Script:   &types.StringValue{Value: j.Script},
+			})
+			if err != nil {
+				return status.Errorf(codes.Internal, "Failed to update preset script")
+			}
+			// Update description.
+			query := `UPDATE plugin_retention_scripts set description=$1 WHERE script_id=$2`
+			_, err = txn.Exec(query, j.Description, i)
+			if err != nil {
+				return err
+			}
+			delete(existingScripts, j.Name)
+		} else {
+			_, err = s.createRetentionScript(ctx, txn, orgID, pluginID, &RetentionScript{
+				ScriptName:  j.Name,
+				Description: j.Description,
+				IsPreset:    true,
+				ExportURL:   "",
+			}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, disablePresets)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Remove any old preset scripts.
+	oldIDs := make([]string, 0)
+	for _, v := range existingScripts {
+		oldIDs = append(oldIDs, v.String())
+	}
+
+	if len(oldIDs) == 0 {
+		return nil
+	}
+
+	strQuery := `DELETE FROM plugin_retention_scripts WHERE script_id IN (?)`
+
+	query, args, err := sqlx.In(strQuery, oldIDs)
+	if err != nil {
+		return err
+	}
+	query = s.db.Rebind(query)
+	rows, err = s.db.Queryx(query, args...)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+	for _, v := range existingScripts {
+		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+			ID: utils.ProtoFromUUID(v),
+		})
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -605,13 +680,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	}
 
 	if origVersion != version { // The user is updating the plugin, and some of the preset scripts have likely changed.
-		// Delete the existing preset scripts and create new ones. However, this means prexisting configurations on scripts will be deleted.
-		err := s.deletePresetScripts(ctx, txn, orgID, req.PluginID)
-		if err != nil {
-			return nil, err
-		}
-
-		err = s.createPresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, false)
+		err = s.updatePresetScripts(ctx, txn, orgID, req.PluginID, version, configurations, customExportURL, false)
 		if err != nil {
 			return nil, err
 		}
