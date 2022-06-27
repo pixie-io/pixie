@@ -13,5 +13,4 @@ resources:
 - updater_role.yaml
 - cloud_connector_role.yaml
 - cert_provisioner_job.yaml
-- pod_security_policy.yaml
 - vizier_crd_role.yaml
