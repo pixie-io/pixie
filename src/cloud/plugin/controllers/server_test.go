@@ -624,10 +624,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			},
 			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
 				&cronscriptpb.DeleteScriptRequest{
-					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
-				},
-				&cronscriptpb.DeleteScriptRequest{
 					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					Enabled: &types.BoolValue{
+						Value: false,
+					},
 				},
 			},
 		},

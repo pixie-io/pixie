@@ -180,7 +180,7 @@ const ToggleWarningTooltip = React.memo<{ mode: 'enable' | 'disable', numPreset:
         )}
         {numCustom > 0 && (
           <li>
-            Delete&nbsp;
+            Disable&nbsp;
             {/* eslint-disable-next-line react-memo/require-usememo */}
             <Link to='/configure-data-export' onClick={(e) => e.stopPropagation()}>
               {numCustom} <strong>custom</strong> retention script{numCustom > 1 ? 's' : ''}

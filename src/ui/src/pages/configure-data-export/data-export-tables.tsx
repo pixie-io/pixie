@@ -339,7 +339,8 @@ export const ConfigureDataExportBody = React.memo(() => {
       {enabledPlugins.length > 0 && <Divider variant='middle' sx={{ mt: 4, mb: 4 }} />}
       <RetentionScriptTable
         title='Custom Scripts'
-        description='Pixie can send results from custom scripts to long-term data stores at any desired frequency.'
+        description={`Pixie can send results from custom scripts to long-term data stores at any desired frequency.
+          Showing custom scripts for enabled plugins only.`}
         scripts={scripts.filter(s => !s.isPreset).sort((a, b) => a.name.localeCompare(b.name))}
         isCustom={true}
       />
