@@ -306,9 +306,8 @@ func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 }
 
 func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uuid.UUID, pluginID string) error {
-	// Disabling org retention should delete any retention scripts.
-	// Fetch all scripts belonging to this plugin.
-	query := `DELETE from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 RETURNING script_id`
+	// Disabling org retention should delete any preset scripts.
+	query := `DELETE from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2 AND is_preset=true RETURNING script_id`
 	rows, err := txn.Queryx(query, orgID, pluginID)
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to fetch scripts")
@@ -325,6 +324,31 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 		})
 		if err != nil {
 			return status.Errorf(codes.Internal, "Failed to disable script")
+		}
+	}
+	rows.Close()
+
+	// Disable any custom scripts.
+	query = `SELECT script_id from plugin_retention_scripts WHERE org_id=$1 AND plugin_id=$2`
+	rows, err = txn.Queryx(query, orgID, pluginID)
+	if err != nil {
+		return status.Errorf(codes.Internal, "Failed to fetch custom export scripts")
+	}
+
+	for rows.Next() {
+		var id uuid.UUID
+		err = rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+		_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
+			ScriptId: utils.ProtoFromUUID(id),
+			Enabled: &types.BoolValue{
+				Value: false,
+			},
+		})
+		if err != nil {
+			return status.Errorf(codes.Internal, "Failed to disable custom script")
 		}
 	}
 	rows.Close()
