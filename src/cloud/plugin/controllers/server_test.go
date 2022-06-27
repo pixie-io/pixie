@@ -154,12 +154,16 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertOrgRelease := `INSERT INTO org_data_retention_plugins(org_id, plugin_id, version, configurations, custom_export_url, insecure_tls) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), PGP_SYM_ENCRYPT($6, $5), $7)`
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "0.0.3", configJSON1, "test", "https://localhost1:8080", true)
 	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440001", "test-plugin", "0.0.2", configJSON2, "test", "https://localhost:8080", false)
+	db.MustExec(insertOrgRelease, "223e4567-e89b-12d3-a456-426655440002", "test-plugin", "0.0.3", configJSON2, "test", "https://localhost:8080", false)
 
 	insertRetentionScript := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, is_preset,  export_url) VALUES ($1, $2, $3, $4, $5, $6, PGP_SYM_ENCRYPT($7, $8))`
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440000", "testScript", "This is a script", false, "https://localhost:8080", "test")
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "test-plugin", "123e4567-e89b-12d3-a456-426655440001", "testScript2", "This is another script", true, "https://url", "test")
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "another-plugin", "123e4567-e89b-12d3-a456-426655440002", "testScript3", "This is another script", true, "https://url", "test")
 	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440000", "another-plugin", "123e4567-e89b-12d3-a456-426655440003", "testScript4", "This is another script", true, "", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440002", "test-plugin", "123e4567-e89b-12d3-a456-426655440004", "testScript", "This is a script", false, "https://localhost:8080", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440002", "test-plugin", "123e4567-e89b-12d3-a456-426655440005", "dns data", "This is another script", true, "https://url", "test")
+	db.MustExec(insertRetentionScript, "223e4567-e89b-12d3-a456-426655440002", "test-plugin", "123e4567-e89b-12d3-a456-426655440006", "old dns data", "This is another script", true, "https://url", "test")
 }
 
 func TestServer_GetPlugins(t *testing.T) {
@@ -343,6 +347,16 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 		},
 	}
 	mConfig2, _ := yaml.Marshal(&config2)
+	config2TLSFalse := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL: "https://url",
+			Headers: map[string]string{
+				"abcd": "hello",
+			},
+			Insecure: false,
+		},
+	}
+	mConfig2TLSFalse, _ := yaml.Marshal(&config2TLSFalse)
 	config3 := &scripts.Config{
 		OtelEndpointConfig: &scripts.OtelEndpointConfig{
 			URL: "http://test-export-url3",
@@ -424,6 +438,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 						"abcd": "hello",
 					},
 				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
 				&cronscriptpb.CreateScriptRequest{
@@ -495,6 +518,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configurations: map[string]string{
 						"abcd": "hello",
 					},
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
 				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
@@ -572,6 +604,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					CustomExportURL: &exportURLv2,
 					InsecureTLS:     false,
 				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
 				&cronscriptpb.CreateScriptRequest{
@@ -621,6 +662,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 					CustomExportURL: &exportURLv2,
 				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
 			},
 			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
 				&cronscriptpb.DeleteScriptRequest{
@@ -660,6 +710,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
 					PluginID: "test-plugin",
 					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
@@ -712,6 +771,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 					CustomExportURL: &exportURLv2,
 				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
 			},
 		},
 		{
@@ -739,6 +807,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
 					PluginID: "test-plugin",
 					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
@@ -787,6 +864,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 					CustomExportURL: &exportURLv2,
 				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
 			},
 		},
 		{
@@ -814,6 +900,15 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
 					PluginID: "test-plugin",
 					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
 					Configurations: map[string]string{
 						"license_key3": "hello",
 					},
@@ -850,6 +945,86 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Script:     "dns script 2",
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig5),
+					FrequencyS: 20,
+				},
+			},
+		},
+		{
+			name: "updating version and presets scripts",
+			request: &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
+				PluginID: "test-plugin",
+				Version:  &types.StringValue{Value: "0.0.2"},
+				Configurations: map[string]string{
+					"abcd": "hello",
+				},
+			},
+			expectedOrgConfigs: []orgConfig{
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440000",
+					PluginID: "test-plugin",
+					Version:  "0.0.3",
+					Configurations: map[string]string{
+						"license_key2": "12345",
+					},
+					CustomExportURL: &exportURLv3,
+					InsecureTLS:     true,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440001",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"license_key3": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+				orgConfig{
+					OrgID:    "223e4567-e89b-12d3-a456-426655440002",
+					PluginID: "test-plugin",
+					Version:  "0.0.2",
+					Configurations: map[string]string{
+						"abcd": "hello",
+					},
+					CustomExportURL: &exportURLv2,
+				},
+			},
+			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440004"),
+					Configs: &types.StringValue{
+						Value: string(mConfig4),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440005"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2TLSFalse),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440006"),
+					Configs: &types.StringValue{
+						Value: string(mConfig2TLSFalse),
+					},
+				},
+				&cronscriptpb.UpdateScriptRequest{
+					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440005"),
+					Script: &types.StringValue{
+						Value: "dns script",
+					},
+				},
+			},
+			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
+				&cronscriptpb.DeleteScriptRequest{
+					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440006"),
+				},
+			},
+			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
+				&cronscriptpb.CreateScriptRequest{
+					Script:     "dns script 2",
+					ClusterIDs: make([]*uuidpb.UUID, 0),
+					Configs:    string(mConfig4),
 					FrequencyS: 20,
 				},
 			},
