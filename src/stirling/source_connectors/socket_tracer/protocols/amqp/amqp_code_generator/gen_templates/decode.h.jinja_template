@@ -42,7 +42,7 @@ namespace amqp {
 {{ struct_declr }}
 
 // TODO combine with kafka ToString function
-Status ProcessReq(Packet* req);
+Status ProcessReq(Frame* req);
 
 
 }  // namespace amqp
