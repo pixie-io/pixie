@@ -190,11 +190,11 @@ class AMQPMethod:
         )
         unused_attribute = "[[maybe_unused]]" if len(self.fields) == 0 else ""
         return f"""
-            Status Extract{self.c_struct_name}({unused_attribute} BinaryDecoder* decoder, Packet* packet) {{
+            Status Extract{self.c_struct_name}({unused_attribute} BinaryDecoder* decoder, Frame* frame) {{
                 {self.c_struct_name} r;
                 {field_buffer_extractions}
-                packet->msg = ToString(r);
-                packet->synchronous = {self.synchronous};
+                frame->msg = ToString(r);
+                frame->synchronous = {self.synchronous};
                 return Status::OK();
             }}
         """
@@ -208,6 +208,19 @@ class AMQPMethod:
         }
         """
         return f"k{self.c_struct_name} = {self.method_id}"
+
+    def gen_method_enum_select_case(self, constant_enum_name):
+        """
+        Case used to Select the correct method to extract. The generated form will be
+        switch (static_cast<AMQPChannelMethods>(method_id))
+            case AMQPChannelMethods::kAMQPChannelOpen:
+                return ExtractAMQPChannelOpen(decoder, req);
+            ...
+        """
+        return f"""
+            case {constant_enum_name}::k{self.c_struct_name}:
+                return Extract{self.c_struct_name}(decoder, req);
+        """
 
 
 @dataclass
@@ -257,6 +270,28 @@ class AMQPClass:
                 {method_declaration}
             }};
             """
+
+    def gen_method_select(self):
+        """
+        This will select the relevant method to extract from the buffer for a specific class.
+        switch (static_cast<AMQPChannelMethods>(method_id))
+            case AMQPChannelMethods::kAMQPChannelOpen:
+                return ExtractAMQPChannelOpen(decoder, req);
+            ...
+        """
+        method_cases = "\n".join(
+            [
+                method.gen_method_enum_select_case(self.constant_enum_name)
+                for method in self.methods
+            ]
+        )
+        return f"""
+            Status Process{self.class_name}(BinaryDecoder *decoder, Frame *req, uint16_t  method_id) {{
+                switch(static_cast<{self.constant_enum_name}>(method_id)) {{
+                    {method_cases}
+                }}
+            }}
+        """
 
     def gen_class_enum_declr(self):
         """
@@ -486,6 +521,63 @@ class CodeGenerator:
             )
         return "\n".join(buffer_extract_methods)
 
+    def gen_method_select(self):
+        """
+        Generates all the method selectors for the AMQPClasses
+        """
+        class_select_methods = []
+        for amqp_class in self.amqp_classes:
+            class_select_methods.append(amqp_class.gen_method_select())
+        return "\n".join(class_select_methods)
+
+    def gen_class_select(self):
+        """
+        Given a buffer, uses the class_id to find list of functions that can extract the buffer.
+        Given the class_id, a list of relevant methods to the AMQP class can be found via method_id.
+        """
+
+        amqp_extract_class_case = []
+        for amqp_class in self.amqp_classes:
+            amqp_extract_class_case.append(amqp_class.gen_class_enum_select_case())
+
+        amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
+        return f"""
+        Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {{
+            PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
+            PL_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractInt<uint16_t>());
+
+            switch(static_cast<AMQPClasses>(class_id)) {{
+                {amqp_extract_class_case_str}
+            }}
+        }}
+        """
+
+    def gen_process_frame_type(self):
+        return """
+        Status ProcessReq(Frame* req) {
+            BinaryDecoder decoder(req->msg);
+            // Extracts api_key, api_version, and correlation_id.
+            AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
+            switch (amqp_frame_type) {
+                case AMQPFrameTypes::kFrameHeader:
+                    return ProcessContentHeader(&decoder, req);
+                case AMQPFrameTypes::kFrameBody:
+                    req->msg = "";
+                    break; // Ignore bytes in content body since length already provided by header
+                case AMQPFrameTypes::kFrameHeartbeat:
+                    req->msg = "";
+                    break; // Heartbeat frames have no body or length
+                case AMQPFrameTypes::kFrameMethod:
+                    return ProcessFrameMethod(&decoder, req);
+                default:
+                    VLOG(1) << absl::Substitute("Unparsed frame $0", req->frame_type);
+            }
+            return Status::OK();
+        }"""
+
+    def gen_process_content_header_select(self):
+        pass  # TODO handle processing content header frame type
+
 
 class CodeGeneratorWriter:
     """
@@ -555,13 +647,34 @@ class CodeGeneratorWriter:
         """
         Writes the struct declarations for decoding to decode.h
         """
-        pass
+        struct_declr = self.generator.gen_struct_declr()
+        template = self.env.get_template("decode.h.jinja_template")
+        with self.struct_gen_header_path.open("w") as f:
+            f.write(template.render(struct_declr=struct_declr))
 
     def write_buffer_decode(self):
         """
         Writes the buffer decoding in decoding.cc
         """
-        pass
+        process_class_methods = self.generator.gen_buffer_extract()
+        process_content_header = self.generator.gen_process_content_header_select()
+
+        process_method_type = self.generator.gen_method_select()
+        process_class_type = self.generator.gen_class_select()
+        process_frame_type = self.generator.gen_process_frame_type()
+
+        template = self.env.get_template("decode.cc.jinja_template")
+
+        with self.decode_gen_path.open("w") as f:
+            f.write(
+                template.render(
+                    process_content_header=process_content_header,
+                    process_frame_type=process_frame_type,
+                    process_class_type=process_class_type,
+                    process_method_type=process_method_type,
+                    process_class_methods=process_class_methods,
+                )
+            )
 
     def run(self):
         """
@@ -570,7 +683,9 @@ class CodeGeneratorWriter:
         Then, writes the parsed logic to types_gen.h, decode.h, decode.cc
         """
         self.write_type_gen_header()
-        # TODO add write_struct_declr, write_buffer_decode
+        self.write_struct_declr()
+        self.write_buffer_decode()
+        # TODO add format_all
 
     def format_all(self):
         """
