@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+data:
+  # yamllint disable rule:indentation
+  pixie.yaml: |-
+    apiVersion: 1
+    datasources:
+    - name: "Pixie Grafana Datasource Plugin"
+      type: "pixie-pixie-datasource"
+      access: proxy
+      orgId: 1
+      uid: HaqB3H3nk
+      editable: false
+      version: 1
+      secureJsonData:
+        apiKey: $PIXIE_API_KEY
+  # yamllint enable rule:indentation

@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  # yamllint disable rule:indentation
+  dashboards.yaml: |-
+    apiVersion: 1
+    providers:
+    - folder: "Pixie Dashboards"
+      name: "pixie"
+      options:
+        path: "/var/lib/grafana/grafana-dashboard-definitions/pixie"
+      orgId: 1
+      type: "file"
+      allowUiUpdates: false
+  # yamllint enable rule:indentation
