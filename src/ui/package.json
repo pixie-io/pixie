@@ -61,7 +61,6 @@
     "fsevents": "^2.3.2",
     "graphql-schema-typescript": "^1.5.2",
     "html-webpack-plugin": "^5.5.0",
-    "image-webpack-loader": "^8.0.0",
     "jest": "^27.3.1",
     "jest-junit": "^13.0.0",
     "jest-raw-loader": "^1.0.1",
