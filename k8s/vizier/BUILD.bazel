@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
@@ -33,6 +34,8 @@ VIZIER_IMAGE_MAP = {
 
 public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
 
+dev_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "$(DEV_VIZIER_IMAGE_PREFIX)"}
+
 generate_vizier_yamls(
     name = "public_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
@@ -49,6 +52,14 @@ generate_vizier_yamls(
     replace = {},
 )
 
+generate_vizier_yamls(
+    name = "vizier_etcd_metadata_dev",
+    srcs = glob(["**/*.yaml"]),
+    out = "vizier_etcd_metadata_dev.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    replace = dev_image_replacement,
+)
+
 generate_vizier_metadata_persist_yamls(
     name = "public_vizier_metadata_persist_prod",
     srcs = glob(["**/*.yaml"]),
@@ -63,6 +74,14 @@ generate_vizier_metadata_persist_yamls(
     out = "private_vizier_metadata_persist_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
     replace = {},
+)
+
+generate_vizier_metadata_persist_yamls(
+    name = "vizier_metadata_persist_dev",
+    srcs = glob(["**/*.yaml"]),
+    out = "vizier_metadata_persist_dev.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    replace = dev_image_replacement,
 )
 
 container_bundle(
@@ -83,13 +102,33 @@ container_bundle(
     ),
 )
 
+container_bundle(
+    name = "dev_vizier_images_bundle",
+    images = image_map_with_bundle_version(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = dev_image_replacement,
+        tag_latest = False,
+    ),
+)
+
 container_push(
     name = "vizier_images_push",
     bundle = select({
+        ":dev": ":dev_vizier_images_bundle",
         ":public": ":public_vizier_images_bundle",
         "//conditions:default": ":private_vizier_images_bundle",
     }),
     format = "Docker",
+)
+
+bool_flag(
+    name = "use_dev_vizier_images",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "dev",
+    flag_values = {":use_dev_vizier_images": "True"},
 )
 
 config_setting(
@@ -101,6 +140,10 @@ pkg_tar(
     name = "vizier_yamls",
     srcs =
         select({
+            ":dev": [
+                "//k8s/vizier:vizier_etcd_metadata_dev.yaml",
+                "//k8s/vizier:vizier_metadata_persist_dev.yaml",
+            ],
             ":public": [
                 "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
                 "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
@@ -119,6 +162,8 @@ pkg_tar(
         "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
         "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/vizier_etcd_metadata_dev.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/vizier_metadata_persist_dev.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },
     strip_prefix = "/k8s",
 )
