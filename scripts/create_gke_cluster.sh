@@ -67,7 +67,7 @@ set_prod_cluster_config() {
   SUBNETWORK=projects/pixie-prod/regions/us-west1/subnetworks/us-west-1-0
 }
 
-set_skylab_cluster_conig() {
+set_skylab_cluster_config() {
   PROJECT=pixie-skylab
   ZONE=us-west1-a
   NETWORK=projects/pixie-skylab/global/networks/default
@@ -201,7 +201,8 @@ gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  --no-enable-autorepair \
  --labels "${LABELS}" \
  --security-group="gke-security-groups@pixielabs.ai" \
- --no-enable-stackdriver-kubernetes
+ --logging=NONE \
+ --monitoring=NONE
 
 if [ $? -ne 0 ]; then
   exit
