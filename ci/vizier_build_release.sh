@@ -31,17 +31,28 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 
 public="True"
 bucket="pixie-dev-public"
+extra_bazel_args=()
 if [[ $release_tag == *"-"* ]]; then
   public="False"
   bucket="pixie-prod-artifacts"
+fi
+if [[ -n $DEV_ARTIFACT_BUCKET ]]; then
+  public="False"
+  bucket="${DEV_ARTIFACT_BUCKET}"
+  if [[ -z $DEV_IMAGE_PREFIX ]]; then
+    echo "Must specify DEV_IMAGE_PREFIX, when specifying a dev release with DEV_ARTIFACT_BUCKET"
+    exit 1
+  fi
+  extra_bazel_args+=("--define" "DEV_VIZIER_IMAGE_PREFIX=${DEV_IMAGE_PREFIX}")
+  extra_bazel_args+=("--//k8s/vizier:use_dev_vizier_images")
 fi
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 
 bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_images_push
+    --stamp --define public="${public}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
 bazel build --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_yamls
+    --stamp --define public="${public}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
