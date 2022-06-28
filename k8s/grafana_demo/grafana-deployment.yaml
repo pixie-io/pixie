@@ -1,0 +1,155 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      name: grafana
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+        supplementalGroups:
+        - 0
+      initContainers:
+      # downloads plugin from pixie Github.
+      - name: init-grafana
+        image: busybox:1.28
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          name: grafana-storage
+          readOnly: false
+        command:
+        - /bin/sh
+        - -c
+        # yamllint disable rule:indentation
+        - |
+            GRAFANA_PATH=/var/lib/grafana
+            PLUGIN_PATH=$GRAFANA_PATH/plugins
+            PLUGIN_ZIP=pixie-pixie-datasource.tgz
+            PLUGIN_FOLDER=pixie-pixie-datasource
+            PLUGIN_URL="https://github.com/pixie-io/grafana-plugin/releases/download/v0.0.3/pixie-pixie-datasource-0.0.3.zip"
+
+            if [ ! -d $PLUGIN_PATH/$PLUGIN_FOLDER ]; then
+              echo "$PLUGIN_PATH/$PLUGIN_FOLDER doesn't exists. Downloading..."
+              cd $GRAFANA_PATH
+              mkdir -p $PLUGIN_PATH
+              cd $PLUGIN_PATH
+              wget -O $PLUGIN_PATH/$PLUGIN_ZIP $PLUGIN_URL
+              unzip $PLUGIN_PATH/$PLUGIN_ZIP
+              rm $PLUGIN_PATH/$PLUGIN_ZIP
+              echo "Unzipped plugin into $PLUGIN_PATH/$PLUGIN"
+            fi
+        # yamllint enable rule:indentation
+      - name: init-grafana-dashboards
+        image: alpine/git
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          name: grafana-storage
+          readOnly: false
+        command:
+        - /bin/sh
+        - -c
+        # yamllint disable rule:indentation
+        - |
+            GRAFANA_PATH=/var/lib/grafana
+            GRAFANA_DASHBOARDS_PATH=$GRAFANA_PATH/grafana-dashboard-definitions/pixie
+            GRAFANA_GIT_URL="https://github.com/pixie-io/grafana-plugin.git"
+            GRAFANA_GIT_PATH=/grafana-plugin
+
+            if [ ! -d $GRAFANA_DASHBOARDS_PATH ]; then
+              echo "$GRAFANA_DASHBOARDS_PATH doesn't exists. Populating dashboards..."
+              git clone $GRAFANA_GIT_URL $GRAFANA_GIT_PATH
+              mkdir -p $GRAFANA_DASHBOARDS_PATH
+              cd $GRAFANA_DASHBOARDS_PATH
+              cp $GRAFANA_GIT_PATH/dashboards/* .
+              echo "Successfully downloaded grafana dashboards from $GRAFANA_GIT_URL"
+            fi
+        # yamllint enable rule:indentation
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        # uncomment when plugin is posted on grafana plugins page
+        #   - name: GF_INSTALL_PLUGINS
+        #     value: "pixie-pixie-datasource"
+        - name: PIXIE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-demo-secret
+              key: PIXIE_API_KEY
+        - name: GRAFANA_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-demo-secret
+              key: GRAFANA_ADMIN_PASSWORD
+        ports:
+        - containerPort: 3000
+          name: grafana
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /robots.txt
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 2
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 3000
+          timeoutSeconds: 1
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+          requests:
+            cpu: 500m
+            memory: 750Mi
+        volumeMounts:
+        # mount storage and grafana container
+        - mountPath: /var/lib/grafana
+          name: grafana-storage
+          readOnly: false
+        - mountPath: /etc/grafana
+          name: grafana-config
+
+        # provision datasources and dashboards for grafana
+        - mountPath: /etc/grafana/provisioning/datasources
+          name: grafana-datasources
+          readOnly: false
+        - mountPath: /etc/grafana/provisioning/dashboards
+          name: grafana-dashboards
+          readOnly: false
+      volumes:
+      # storage and grafana
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+
+      # datasources and dashboards
+      - name: grafana-datasources
+        configMap:
+          defaultMode: 420
+          name: grafana-datasources
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+
+      # custom grafana-config
+      - name: grafana-config
+        configMap:
+          name: grafana-config

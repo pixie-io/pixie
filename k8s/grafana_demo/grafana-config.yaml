@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+data:
+  grafana.ini: |
+    app_mode = production
+    [auth.anonymous]
+    # enable anonymous access
+    enabled = true
+
+    # mask the Grafana version number for unauthenticated users
+    hide_version = true
+    [auth.basic]
+    enabled = true
+
+    [security]
+    disable_initial_admin_creation=true
+    disable_brute_force_login_protection=true
+    disable_gravatar=true
+    cookie_secure=true
+    strict_transport_security=true
+    content_security_policy=true
