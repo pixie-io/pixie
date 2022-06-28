@@ -23,7 +23,10 @@ import { WithChildren } from 'app/utils/react-boilerplate';
 /** Returns true if Pixie appears to be in an iframe or is otherwise embedded. */
 export function isPixieEmbedded(): boolean {
   try {
-    return globalThis.self !== globalThis.top;
+    const isInFrame = globalThis.self !== globalThis.top;
+    const isCypress = !!(window as any).Cypress; // Make an exception for the testing framework
+
+    return isInFrame && !isCypress;
   } catch (_) {
     return true;
   }
