@@ -277,7 +277,10 @@ export const DataExportHistoryView = React.memo<{ scriptId: string }>(({ scriptI
 
   const validClusters = React.useMemo(() => {
     return clusters.filter(
-      c => c.status !== GQLClusterStatus.CS_DISCONNECTED || script?.clusters.includes(c.id),
+      c => (
+        (!script?.clusters.length && c.status !== GQLClusterStatus.CS_DISCONNECTED)
+        || script?.clusters.includes(c.id)
+      ),
     ) ?? [];
   }, [clusters, script?.clusters]);
 
