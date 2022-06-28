@@ -23,9 +23,11 @@ extern const char* kBuildSCMRevision;
 extern const int64_t kBuildTimeStamp;
 extern const char* kBuildSemver;
 extern const char* kBuildNumber;
+extern const char* kBuiltBy;
 
 const char* kBuildSCMStatus = "Modified";
 const char* kBuildSCMRevision = "0000000";
 const int64_t kBuildTimeStamp = 0;       // UNIX TIMESTAMP seconds.
 const char* kBuildSemver = "0.0.0-dev";  // Semver string.
 const char* kBuildNumber = "0";          // Build number..
+const char* kBuiltBy = "Unknown";

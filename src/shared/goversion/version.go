@@ -33,6 +33,7 @@ var (
 	buildSemver    = "0.0.0-dev"
 	buildTimeStamp = "0"
 	buildNumber    = "0"
+	builtBy        = "Unknown"
 )
 
 var versionInstance *Version
@@ -43,6 +44,7 @@ type Version struct {
 	buildSCMStatus   string
 	buildSemver      semver.Version
 	buildTimeStamp   time.Time
+	builtBy          string
 }
 
 func init() {
@@ -66,6 +68,7 @@ func init() {
 		buildSCMRevisionShort,
 		t.Format("20060102150405"),
 		buildNumber,
+		builtBy,
 	}
 	v.Build = buildMetadata
 
@@ -74,6 +77,7 @@ func init() {
 		buildSCMStatus:   buildSCMStatus,
 		buildSemver:      v,
 		buildTimeStamp:   t,
+		builtBy:          builtBy,
 	}
 }
 
@@ -90,6 +94,11 @@ func (v *Version) RevisionStatus() string {
 // BuildTimestamp returns the build timestamp as a UTC string.
 func (v *Version) BuildTimestamp() string {
 	return v.buildTimeStamp.UTC().String()
+}
+
+// Builder returns the built by.
+func (v *Version) Builder() string {
+	return v.builtBy
 }
 
 // ToString returns the semver string.

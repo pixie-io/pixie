@@ -24,6 +24,7 @@ stamped_xdefs = {
     "buildSCMStatus": "{STABLE_BUILD_SCM_STATUS}",
     "buildSemver": "{STABLE_BUILD_TAG}",
     "buildTimeStamp": "{BUILD_TIMESTAMP}",
+    "builtBy": "{STABLE_BUILT_BY}",
 }
 
 unstamped_xdefs = {
@@ -32,6 +33,7 @@ unstamped_xdefs = {
     "buildSCMStatus": "Modified",
     "buildSemver": "0.0.0-dev",
     "buildTimeStamp": "0",
+    "builtBy": "Unknown",
 }
 
 go_library(

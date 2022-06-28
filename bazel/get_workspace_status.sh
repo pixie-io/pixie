@@ -38,6 +38,7 @@ then
     echo "STABLE_BUILD_TAG $(cat VERSION)"
     echo "STABLE_BUILD_NUMBER ${BUILD_NUMBER}"
     echo "STABLE_BUILD_SCM_STATUS Distribution"
+    echo "STABLE_BUILT_BY jenkins"
 
     # Build buddy tags.
     echo "COMMIT_SHA $(cat GIT_COMMIT)"
@@ -68,6 +69,7 @@ echo "STABLE_BUILD_SCM_REVISION ${git_rev}"
 echo "STABLE_BUILD_TAG 0.0.0-dev"
 echo "STABLE_BUILD_NUMBER 0"
 echo "STABLE_BUILD_SCM_STATUS ${tree_status}"
+echo "STABLE_BUILT_BY ${USER}"
 
 # Build buddy variables.
 echo "COMMIT_SHA ${git_rev}"
