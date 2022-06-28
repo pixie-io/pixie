@@ -26,6 +26,11 @@
 
 #ifdef __cplusplus
 
+// These functions are used by CPP test code to test BCC C code. Essentially, these functions are
+// stubbed version of BPF helper functions called by the BCC C code that are being tested.
+// See src/stirling/source_connectors/socket_tracer/bcc_bpf/protocol_inference_test.cc
+// for such an example.
+
 #include "src/common/base/base.h"
 
 inline struct task_struct* bpf_get_current_task() {
