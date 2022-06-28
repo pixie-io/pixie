@@ -21,6 +21,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/blang/semver"
@@ -218,10 +219,10 @@ var CLIUpdateCmd = &cobra.Command{
 		selectedVersion := viper.GetString("cli_version")
 
 		updater := update.NewCLIUpdater(viper.GetString("cloud_addr"))
+		currVersion := version.GetVersion()
 		if len(selectedVersion) == 0 {
 			// Not specified try to get available.
-			currentSemver := version.GetVersion().Semver()
-			versions, err := updater.GetAvailableVersions(currentSemver)
+			versions, err := updater.GetAvailableVersions(currVersion.Semver())
 			if err != nil {
 				utils.WithError(err).Fatal("Cannot determine new versions to update to.")
 			}
@@ -230,12 +231,32 @@ var CLIUpdateCmd = &cobra.Command{
 				return
 			}
 
-			if ok, err := updater.IsUpdatable(); !ok || err != nil {
-				utils.Fatal("Cannot perform update, it's likely the file is not in a writable path.")
-				// TODO(zasgar): Provide a means to update this as well.
-			}
 			selectedVersion = versions[0]
 			if len(selectedVersion) == 0 {
+				return
+			}
+		}
+
+		if ok, err := updater.IsUpdatable(); !ok || err != nil {
+			utils.Fatal("Cannot perform update, it's likely the file is not in a writable path.")
+			// TODO(zasgar): Provide a means to update this as well.
+		}
+
+		if strings.Contains(strings.ToLower(currVersion.Builder()), "homebrew") {
+			continueUpdate := components.YNPrompt(`Homebrew installation detected. Please use homebrew to update the cli.
+Update anyway?`, false)
+			if !continueUpdate {
+				utils.Error("Update cancelled.")
+				return
+			}
+		}
+
+		if !strings.Contains(strings.ToLower(currVersion.Builder()), "jenkins") {
+			continueUpdate := components.YNPrompt(`Uncommon CLI installation.
+We recommend rebuilding/updating the CLI using the same method as the initial install.
+Update anyway?`, false)
+			if !continueUpdate {
+				utils.Error("Update cancelled.")
 				return
 			}
 		}
