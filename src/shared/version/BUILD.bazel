@@ -37,6 +37,9 @@ genrule(
     STABLE_BUILD_NUMBER=$$(
           grep STABLE_BUILD_NUMBER bazel-out/stable-status.txt \\
         | sed 's/^STABLE_BUILD_NUMBER //')
+    STABLE_BUILT_BY=$$(
+          grep STABLE_BUILT_BY bazel-out/stable-status.txt \\
+        | sed 's/^STABLE_BUILT_BY //')
 
 
     BUILD_TIMESTAMP=$$(
@@ -47,6 +50,7 @@ genrule(
     echo "#define BUILD_SCM_STATUS \\"$$STABLE_BUILD_SCM_STATUS\\"" >> $@
     echo "#define BUILD_TAG \\"$$STABLE_BUILD_TAG\\"" >> $@
     echo "#define BUILD_NUMBER \\"$$STABLE_BUILD_NUMBER\\"" >> $@
+    echo "#define BUILT_BY \\"$$STABLE_BUILT_BY\\"" >> $@
 
     echo "#define BUILD_TIMESTAMP $$BUILD_TIMESTAMP" >> $@
     cat $(location :version_linkstamp.cc) >> $@

@@ -37,6 +37,12 @@ class VersionInfo {
   static std::string RevisionStatus();
 
   /**
+   * Get the built by.
+   * @return string
+   */
+  static std::string Builder();
+
+  /**
    * Returns a version string with git info, release status.
    * @return string
    */
