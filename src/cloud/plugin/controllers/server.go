@@ -282,6 +282,7 @@ func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 		return status.Errorf(codes.Internal, "Failed to fetch plugin")
 	}
 
+	defer rows.Close()
 	var plugin RetentionPlugin
 	if rows.Next() {
 		err := rows.StructScan(&plugin)
@@ -312,7 +313,7 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to fetch scripts")
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		var id uuid.UUID
 		err = rows.Scan(&id)
@@ -334,7 +335,7 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to fetch custom export scripts")
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		var id uuid.UUID
 		err = rows.Scan(&id)
@@ -367,7 +368,7 @@ func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 	if err != nil {
 		return status.Errorf(codes.Internal, "Failed to fetch plugin")
 	}
-
+	defer rows.Close()
 	var plugin RetentionPlugin
 	if rows.Next() {
 		err := rows.StructScan(&plugin)
@@ -585,6 +586,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	var customExportURL *string
 	var insecureTLS bool
 	enabled := false
+	defer rows.Close()
 	if rows.Next() {
 		enabled = true
 		err := rows.Scan(&origVersion, &origConfig, &customExportURL, &insecureTLS)
@@ -603,6 +605,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch plugin")
 	}
+	defer rows.Close()
 	var allowCustomExportURL bool
 	var allowInsecureTLS bool
 	if rows.Next() {
@@ -967,7 +970,7 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch script")
 	}
-
+	defer rows.Close()
 	if !rows.Next() {
 		return nil, status.Error(codes.NotFound, "script not found")
 	}
