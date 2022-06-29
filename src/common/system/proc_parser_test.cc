@@ -108,6 +108,25 @@ TEST_F(ProcParserTest, ParsePidStat) {
   EXPECT_EQ(2577 * bytes_per_page_, stats.rss_bytes);
 }
 
+TEST_F(ProcParserTest, ParsePidStatLargePageSize) {
+  int64_t large_page_size = 2147483648;  // 2.1 GB (INT_MAX + 1)
+  ProcParser::ProcessStats stats;
+  PL_CHECK_OK(parser_->ParseProcPIDStat(123, large_page_size, kernel_tick_time_ns_, &stats));
+
+  // The expeted values are from the test file above.
+  EXPECT_EQ("ibazel", stats.process_name);
+
+  EXPECT_EQ(800, stats.utime_ns);
+  EXPECT_EQ(2300, stats.ktime_ns);
+  EXPECT_EQ(13, stats.num_threads);
+
+  EXPECT_EQ(55, stats.major_faults);
+  EXPECT_EQ(1799, stats.minor_faults);
+
+  EXPECT_EQ(114384896, stats.vsize_bytes);
+  EXPECT_EQ(2577 * large_page_size, stats.rss_bytes);
+}
+
 TEST_F(ProcParserTest, ParsePSS) {
   const size_t pss_bytes = parser_->ParseProcPIDPss(123).ConsumeValueOrDie();
   EXPECT_EQ(pss_bytes, 5936128);
