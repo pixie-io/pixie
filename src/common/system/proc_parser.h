@@ -194,7 +194,7 @@ class ProcParser {
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  Status ParseProcPIDStat(int32_t pid, int32_t page_size_bytes, int32_t kernel_tick_time_ns,
+  Status ParseProcPIDStat(int32_t pid, int64_t page_size_bytes, int64_t kernel_tick_time_ns,
                           ProcessStats* out) const;
 
   /**

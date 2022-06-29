@@ -204,8 +204,8 @@ Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStat(int32_t pid, int32_t page_size_bytes,
-                                    int32_t kernel_tick_time_ns, ProcessStats* out) const {
+Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
+                                    int64_t kernel_tick_time_ns, ProcessStats* out) const {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
