@@ -44,6 +44,6 @@ do
     copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
 
     gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_darwin_${arch}"
-    gh release --repo=pixie-io/pixie upload "${release_tag}" "cli_darwin_${arch}" "cli_darwin_${arch}.asc"
+    gh release upload "${TAG_NAME}" --repo=pixie-io/pixie "cli_darwin_${arch}" "cli_darwin_${arch}.asc"
   fi
 done
