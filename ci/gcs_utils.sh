@@ -22,8 +22,8 @@ copy_artifact_to_gcs() {
     binary_path="$2"
     name="$3"
 
-    gpg --no-tty --batch --import "${BUILDBOT_GPG_KEY_FILE}"
-    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "${binary_path}"
+    gpg --no-tty --batch --yes --import "${BUILDBOT_GPG_KEY_FILE}"
+    gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "${binary_path}"
 
     sha256sum "${binary_path}" | awk '{print $1}' > sha
     gsutil -h 'Content-Disposition:filename=px' cp "${binary_path}" "${output_path}/${name}"
