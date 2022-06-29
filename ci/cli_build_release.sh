@@ -92,6 +92,8 @@ if [[ ! "$release_tag" == *"-"* ]]; then
     docker push "${docker_repo}:latest"
 fi
 
+gpg --no-tty --batch --yes --import "${BUILDBOT_GPG_KEY_FILE}"
+
 write_artifacts_to_gcs() {
     output_path=$1
     copy_artifact_to_gcs "${output_path}" "${darwin_amd64_binary}" "cli_darwin_amd64_unsigned"
@@ -106,18 +108,16 @@ write_artifacts_to_gcs() {
 }
 
 write_artifacts_to_gh() {
-    gpg --no-tty --batch --import "${BUILDBOT_GPG_KEY_FILE}"
-
     gh release --repo=pixie-io/pixie create "${release_tag}" --notes "Pixie CLI Release"
 
     tmp_dir="$(mktemp -d)"
     pushd "${tmp_dir}"
     cp "${linux_binary}" "cli_linux_amd64"
-    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
+    gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
     cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
-    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.deb"
+    gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.deb"
     cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
-    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.rpm"
+    gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.rpm"
 
     gh release --repo=pixie-io/pixie upload "${release_tag}" "cli_linux_amd64" "cli_linux_amd64.asc" "pixie-px.${linux_arch}.deb" "pixie-px.${linux_arch}.deb.asc" "pixie-px.${linux_arch}.rpm" "pixie-px.${linux_arch}.rpm.asc"
     popd
