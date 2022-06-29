@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-RELEASE_VERSION=0.3.5
+RELEASE_VERSION=0.5.2
 
 workspace=$(bazel info workspace 2> /dev/null)
 pushd "${workspace}" || exit
@@ -28,6 +28,6 @@ if [[ ! -d bazel-compilation-database-${RELEASE_VERSION} ]]; then
   popd || exit
 fi
 
-bazel-compilation-database-${RELEASE_VERSION}/generate.sh "$@"
+bazel-compilation-database-${RELEASE_VERSION}/generate.py -q "$1"
 
 popd || return

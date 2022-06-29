@@ -28,7 +28,7 @@ def generateCompilationDatabase(args):
 
     gen_compilation_database_sh = os.path.join(
         os.path.realpath(os.path.dirname(__file__)), "gen_compilation_database.sh")
-    subprocess.check_call([gen_compilation_database_sh] + args.bazel_targets)
+    subprocess.check_call([gen_compilation_database_sh] + [args.bazel_target])
 
 
 def isHeader(filename):
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     parser.add_argument('--include_headers', action='store_true')
     parser.add_argument('--vscode', action='store_true')
     parser.add_argument(
-        'bazel_targets', nargs='*', default=["//src/..."])
+        '--bazel_target', default="//src/...")
     args = parser.parse_args()
     generateCompilationDatabase(args)
     fixCompilationDatabase(args)
