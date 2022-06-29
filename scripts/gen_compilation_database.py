@@ -24,7 +24,7 @@ import subprocess
 
 def generateCompilationDatabase(args):
     if args.run_bazel_build:
-        subprocess.check_call(["bazel", "build"] + args.bazel_targets)
+        subprocess.check_call(["bazel", "build"] + [args.bazel_target])
 
     gen_compilation_database_sh = os.path.join(
         os.path.realpath(os.path.dirname(__file__)), "gen_compilation_database.sh")
