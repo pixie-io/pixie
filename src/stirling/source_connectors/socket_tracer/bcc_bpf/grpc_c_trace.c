@@ -743,6 +743,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     return -1;
   }
 
+#pragma unroll
   for (u32 i = 0; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA && i < metadata->count; i++) {
     if (NULL == current_linked_mdelem) {
       return -1;
