@@ -255,6 +255,8 @@ spec:
           value: zookeeper:2181
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
           value: "False"
+        - name: JAVA_TOOL_OPTIONS
+          value: "-XX:+PreserveFramePointer"
         image: wurstmeister/kafka:2.12-2.5.0
         name: kafka
         ports:
