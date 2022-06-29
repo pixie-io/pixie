@@ -113,11 +113,11 @@ write_artifacts_to_gh() {
     tmp_dir="$(mktemp -d)"
     pushd "${tmp_dir}"
     cp "${linux_binary}" "cli_linux_amd64"
-    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
+    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
     cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
-    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.deb"
+    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.deb"
     cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
-    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.rpm"
+    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "pixie-px.${linux_arch}.rpm"
 
     gh release --repo=pixie-io/pixie upload "${release_tag}" "cli_linux_amd64" "cli_linux_amd64.asc" "pixie-px.${linux_arch}.deb" "pixie-px.${linux_arch}.deb.asc" "pixie-px.${linux_arch}.rpm" "pixie-px.${linux_arch}.rpm.asc"
     popd

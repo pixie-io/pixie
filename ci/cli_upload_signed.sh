@@ -43,7 +43,7 @@ do
     output_path="gs://pixie-dev-public/cli/latest"
     copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
 
-    gpg --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_darwin_${arch}"
+    gpg --no-tty --batch --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_darwin_${arch}"
     gh release --repo=pixie-io/pixie upload "${release_tag}" "cli_darwin_${arch}" "cli_darwin_${arch}.asc"
   fi
 done
