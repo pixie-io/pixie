@@ -229,6 +229,57 @@ struct TagTypeTraits<Tag::Type::IMEISV> {
 };
 
 template <>
+struct TagTypeTraits<Tag::Type::IBAN> {
+  static constexpr std::string_view BuildRegexPattern() {
+    // IBAN as defined in ISO 13616-1:2007 verified via MOD 97 (ISO 7064).
+    // Match all sequences beginning with two characters and two digits followed by up to 28 symbols
+    // Note: currently the max length of an IBAN is 32 for LC, or 28 symbols after the country code.
+    // This may need to be updated as more countries adopt IBAN.
+    return "([A-Za-z]{2}[ -]?[0-9]{2}[ -]?([A-Za-z0-9][ -]?){11,28})";
+  }
+  static constexpr std::string_view SubstitutionStr() { return "<REDACTED_IBAN>"; }
+  static bool Filter(std::string_view match) {
+    // A International Bank Account Number (IBAN) begins with a two char country code and a two
+    // digit checksum
+    std::string m(match);
+    std::string country_code = m.substr(0, 2);
+    std::transform(country_code.begin(), country_code.end(), country_code.begin(), ::toupper);
+    // are the first two letters a valid country code?
+    if (country_codes.find(country_code) == country_codes.end()) return false;
+    m.erase(std::remove_if(m.begin(), m.end(), [](char c) { return c == '-' || c == ' '; }),
+            m.end());
+    // is the string long enough to be an IBAN for the specified country code?
+    if (m.length() < country_codes.at(country_code)) return false;
+    // validate IBAN by converting to an int and performing mod-97
+    // 1. move country code and checksum to end of string (first four characters)
+    // 2. replace each letter with two digits (interpreting char as int)
+    // 3. compute remainder of this number when divided by 97. If remainder is one, iban is valid
+    // e.g. IBAN: GB82 WEST 1234 5698 7654 32
+    // Rearrange: WEST 1234 5698 7654 32GB 82
+    // Convert to integer: 3214282912345698765432161182
+    // Compute remainder: 3214282912345698765432161182 mod 97 == 1
+    std::rotate(m.begin(), m.begin() + 4, m.end());
+    std::string nums;
+    for (const auto& c : m) {
+      if (std::isdigit(c)) nums += c;
+      if (std::isupper(c)) nums += std::to_string(static_cast<int>(c) - 55);
+    }
+    uint64_t start = 0, step = 9, number = 0;
+    std::string prepended;
+    while (start < nums.length() - step) {
+      number = std::stol(prepended + nums.substr(start, step));
+      int remainder = number % 97;
+      prepended = std::to_string(remainder);
+      if (remainder < 10) prepended = "0" + prepended;
+      start += step;
+      step = 7;
+    }
+    number = std::stol(prepended + nums.substr(start));
+    return (number % 97 == 1);
+  }
+};
+
+template <>
 struct TagTypeTraits<Tag::Type::SSN> {
   static constexpr std::string_view BuildRegexPattern() {
     // US Social Security Numbers are nine-digit numbers in the format AAA-GG-SSSS:
@@ -267,13 +318,14 @@ struct TagTypeTraits<Tag::Type::SSN> {
 static std::map<Tag::Type, std::string_view> type_to_sub_str_ = {
     SUB_STR(Tag::Type::IPv6),     SUB_STR(Tag::Type::IPv4),      SUB_STR(Tag::Type::EMAIL_ADDR),
     SUB_STR(Tag::Type::MAC_ADDR), SUB_STR(Tag::Type::CC_NUMBER), SUB_STR(Tag::Type::IMEI),
-    SUB_STR(Tag::Type::IMEISV),   SUB_STR(Tag::Type::SSN),
+    SUB_STR(Tag::Type::IMEISV),   SUB_STR(Tag::Type::IBAN),      SUB_STR(Tag::Type::SSN),
 };
 
 Status RedactPIIUDF::Init(FunctionContext*) {
   // Order is important here. For example, IPv6 has to go before IPv4 to support IPv6 addresses with
   // the lowest 32 bits written like IPv4. Also Email has to go before IP since IP addresses can be
   // part of valid emails.
+  taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::IBAN>>());
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::EMAIL_ADDR>>());
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::IPv6>>());
   taggers_.push_back(std::make_unique<RegexTagger<Tag::Type::IPv4>>());
