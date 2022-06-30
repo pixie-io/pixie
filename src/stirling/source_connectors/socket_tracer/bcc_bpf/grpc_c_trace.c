@@ -155,22 +155,9 @@ static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
  *          heap.
  *          Otherwise, a gRPC event struct on our percpu "heap".
  */
-static inline struct grpc_c_event_data_t* initiate_empty_grpc_event_data() {
-  u32 zero = 0;
-
-  struct grpc_c_event_data_t* data = grpc_c_event_buffer_heap.lookup(&zero);
-  if (NULL == data) {
-    // User mode did not initiate the percpu buffer.
-    return NULL;
-  }
-
-  volatile u8* data_bytes = (u8*)data;
-#pragma unroll
-  for (u16 i = 0; i < sizeof(*data); i++) {
-    data_bytes[i] = 0;
-  }
-
-  return data;
+static inline struct grpc_c_event_data_t* get_grpc_event_data() {
+  u32 kZero = 0;
+  return grpc_c_event_buffer_heap.lookup(&kZero);
 }
 
 /*
@@ -820,8 +807,8 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
  *          Otherwise on failure.
  */
 static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const bool is_initial) {
-  struct grpc_c_event_data_t* read_data = initiate_empty_grpc_event_data();
-  if (NULL == read_data) {
+  struct grpc_c_event_data_t* read_data = get_grpc_event_data();
+  if (read_data == NULL) {
     return -1;
   }
 
@@ -931,8 +918,8 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
  *          Otherwise on failure.
  */
 int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
-  struct grpc_c_event_data_t* read_data = initiate_empty_grpc_event_data();
-  if (NULL == read_data) {
+  struct grpc_c_event_data_t* read_data = get_grpc_event_data();
+  if (read_data == NULL) {
     return -1;
   }
 
@@ -1114,8 +1101,8 @@ int probe_entry_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
  *          Otherwise on failure.
  */
 int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
-  struct grpc_c_event_data_t* write_data = initiate_empty_grpc_event_data();
-  if (NULL == write_data) {
+  struct grpc_c_event_data_t* write_data = get_grpc_event_data();
+  if (write_data == NULL) {
     return -1;
   }
 
