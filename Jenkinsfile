@@ -108,6 +108,8 @@ BPF_DEFAULT_KERNEL='4.14'
 // named `jenkins-worker-with-${kernel}-kernel` should exist.
 def BPF_KERNELS = ['4.14', '5.18.4']
 
+def BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL]
+
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
 //    https://pixie-labs.atlassian.net/browse/PL-1329
@@ -143,6 +145,13 @@ isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
+
+// Build tags are used to modify the behavior of the build.
+// Note: Tags only work for code-review builds.
+// Enable the BPF build, even if it's not required.
+buildTagBPFBuild = false
+// Enable BPF build across all tested kernels.
+buildTagBPFBuildAllKernels = false
 
 
 def WithGCloud(Closure body) {
@@ -358,10 +367,10 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
 
 def WithSourceCodeAndTargetsBPFEnv(String stashName = SRC_STASH_NAME, String kernel = BPF_DEFAULT_KERNEL, Closure body) {
   warnError('Script failed') {
-    WithSourceCodeFatalErrorBPFEnv(stashName, kernel) {
+    WithSourceCodeFatalErrorBPFEnv(stashName, kernel, {
       unstashFromGCS(TARGETS_STASH_NAME)
       body()
-    }
+    })
   }
 }
 
@@ -610,6 +619,17 @@ def checkoutAndInitialize() {
       deleteDir()
       checkout scm
       InitializeRepoState()
+      if(isPhabricatorTriggeredBuild()) {
+        def logMessage = sh (
+          script: "git log origin/main..",
+          returnStdout: true,
+        ).trim()
+
+        def hasTag = {log, tag -> (log ==~ "(?s).*#ci:${tag}(\\s|\$).*")}
+
+        buildTagBPFBuild = hasTag(logMessage, 'bpf-build')
+        buildTagBPFBuildAllKernels = hasTag(logMessage, 'bpf-build-all-kernels')
+      }
     }
   }
 }
@@ -700,28 +720,28 @@ def buildGCC = {
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
-def buildAndTestBPFOpt = {
-  WithSourceCodeAndTargetsBPFEnv {
+def buildAndTestBPFOpt = { kernel ->
+  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
     })
-  }
+  })
 }
 
-def buildAndTestBPFASAN = {
-  WithSourceCodeAndTargetsBPFEnv {
+def buildAndTestBPFASAN = { kernel ->
+  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer')
     })
-  }
+  })
 }
 
-def buildAndTestBPFTSAN = {
-  WithSourceCodeAndTargetsBPFEnv {
+def buildAndTestBPFTSAN = { kernel ->
+  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
     dockerStep(dockerArgsForBPFTest, {
       bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer')
     })
-  }
+  })
 }
 
 def generateTestTargets = {
@@ -753,19 +773,21 @@ def generateTestTargets = {
     builders['Build & Test (go race detector)'] = buildGoRace
   }
 
-  enableForTargets('bpf') {
-    builders['Build & Test (bpf tests - opt)'] = buildAndTestBPFOpt
-  }
-
-  if (runBPFWithASAN) {
-    enableForTargets('bpf_sanitizer') {
-      builders['Build & Test (bpf tests - asan)'] = buildAndTestBPFASAN
+  BPF_KERNELS_TO_TEST.each { kernel ->
+    enableForTargets('bpf') {
+      builders["Build & Test (bpf tests - opt) - ${kernel}"] = { buildAndTestBPFOpt(kernel) }
     }
-  }
 
-  if (runBPFWithTSAN) {
-    enableForTargets('bpf_sanitizer') {
-      builders['Build & Test (bpf tests - tsan)'] = buildAndTestBPFTSAN
+    if (runBPFWithASAN) {
+      enableForTargets('bpf_sanitizer') {
+        builders["Build & Test (bpf tests - asan) - ${kernel}"] = { buildAndTestBPFASAN(kernel) }
+      }
+    }
+
+    if (runBPFWithTSAN) {
+      enableForTargets('bpf_sanitizer') {
+        builders["Build & Test (bpf tests - tsan) - ${kernel}"] = { buildAndTestBPFTSAN(kernel) }
+      }
     }
   }
 }
@@ -773,17 +795,27 @@ def generateTestTargets = {
 preBuild['Process Dependencies'] = {
   WithSourceCodeK8s('process-deps') {
     container('pxbuild') {
-     if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun || isNightlyBPFTestRegressionRun) {
-        sh '''
-        ./ci/bazel_build_deps.sh -a -b
-        wc -l bazel_*
-        '''
-      } else {
-        sh '''
-        ./ci/bazel_build_deps.sh
-        wc -l bazel_*
-        '''
+      def forceAll = ''
+      def enableBPF = ''
+
+      if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun || isNightlyBPFTestRegressionRun) {
+        forceAll = '-a'
+        enableBPF = '-b'
       }
+
+      if (buildTagBPFBuild || buildTagBPFBuildAllKernels) {
+        enableBPF = '-b'
+      }
+
+      sh """
+      ./ci/bazel_build_deps.sh ${forceAll} ${enableBPF}
+      wc -l bazel_*
+      """
+
+      if (buildTagBPFBuildAllKernels) {
+        BPF_KERNELS_TO_TEST = BPF_KERNELS
+      }
+
       stashOnGCS(TARGETS_STASH_NAME, 'bazel_*')
       generateTestTargets()
     }
@@ -993,11 +1025,11 @@ def BPFRegressionBuilders = [:]
 
 BPF_KERNELS.each { kernel ->
   BPFRegressionBuilders["Test (opt) ${kernel}"] = {
-    WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel) {
+    WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
       dockerStep(dockerArgsForBPFTest, {
         bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
       })
-    }
+    })
   }
 }
 
