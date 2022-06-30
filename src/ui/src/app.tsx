@@ -127,7 +127,7 @@ const EmbedRedirector = () => {
       else if (!isEmbedded && saysEmbedded) next = rel.substring(Number(rel.startsWith('/')) + 'embed'.length);
 
       if (next) {
-        return <Redirect to={next} />;
+        return <Redirect to={next + (location.search || '')} />;
       }
 
       return <></>;
