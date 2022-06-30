@@ -85,11 +85,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 							Conditions: []*metadatapb.NodeCondition{
 								{
 									Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
-									Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+									Status: metadatapb.CONDITION_STATUS_FALSE,
 								},
 								{
 									Type:   metadatapb.NODE_CONDITION_READY,
-									Status: metadatapb.NODE_CONDITION_STATUS_TRUE,
+									Status: metadatapb.CONDITION_STATUS_TRUE,
 								},
 							},
 						},
@@ -129,11 +129,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 							Conditions: []*metadatapb.NodeCondition{
 								{
 									Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
-									Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+									Status: metadatapb.CONDITION_STATUS_FALSE,
 								},
 								{
 									Type:   metadatapb.NODE_CONDITION_READY,
-									Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+									Status: metadatapb.CONDITION_STATUS_FALSE,
 								},
 							},
 						},

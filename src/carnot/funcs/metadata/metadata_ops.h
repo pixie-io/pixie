@@ -1151,7 +1151,7 @@ inline types::StringValue PodInfoToPodStatus(const px::md::PodInfo* pod_info) {
     auto pod_conditions = pod_info->conditions();
     auto ready_status = pod_conditions.find(md::PodConditionType::kReady);
     ready_condition = ready_status != pod_conditions.end() &&
-                      (ready_status->second == md::PodConditionStatus::kTrue);
+                      (ready_status->second == md::ConditionStatus::kTrue);
   }
 
   rapidjson::Document d;
@@ -1216,7 +1216,7 @@ class PodNameToPodReadyUDF : public ScalarUDF {
     if (ready_status == pod_conditions.end()) {
       return false;
     }
-    return ready_status->second == md::PodConditionStatus::kTrue;
+    return ready_status->second == md::ConditionStatus::kTrue;
   }
 
   static udf::ScalarUDFDocBuilder Doc() {

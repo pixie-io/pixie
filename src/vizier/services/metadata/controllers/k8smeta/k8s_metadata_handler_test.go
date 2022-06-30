@@ -337,7 +337,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 					Conditions: []*metadatapb.PodCondition{
 						{
 							Type:   metadatapb.READY,
-							Status: metadatapb.STATUS_TRUE,
+							Status: metadatapb.CONDITION_STATUS_TRUE,
 						},
 					},
 					NodeName: "test",
@@ -991,7 +991,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					Conditions: []*metadatapb.PodCondition{
 						{
 							Type:   metadatapb.READY,
-							Status: metadatapb.STATUS_TRUE,
+							Status: metadatapb.CONDITION_STATUS_TRUE,
 						},
 					},
 					NodeName: "test",
@@ -1118,11 +1118,11 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							Conditions: []*metadatapb.NodeCondition{
 								{
 									Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
-									Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+									Status: metadatapb.CONDITION_STATUS_FALSE,
 								},
 								{
 									Type:   metadatapb.NODE_CONDITION_READY,
-									Status: metadatapb.NODE_CONDITION_STATUS_TRUE,
+									Status: metadatapb.CONDITION_STATUS_TRUE,
 								},
 							},
 						},
@@ -1155,11 +1155,11 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					Conditions: []*metadatapb.NodeCondition{
 						{
 							Type:   metadatapb.NODE_CONDITION_MEMORY_PRESSURE,
-							Status: metadatapb.NODE_CONDITION_STATUS_FALSE,
+							Status: metadatapb.CONDITION_STATUS_FALSE,
 						},
 						{
 							Type:   metadatapb.NODE_CONDITION_READY,
-							Status: metadatapb.NODE_CONDITION_STATUS_TRUE,
+							Status: metadatapb.CONDITION_STATUS_TRUE,
 						},
 					},
 				},

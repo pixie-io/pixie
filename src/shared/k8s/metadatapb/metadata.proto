@@ -214,7 +214,7 @@ message PodStatus {
 
 message PodCondition {
   PodConditionType type = 1;
-  PodConditionStatus status = 2;
+  ConditionStatus status = 2;
 }
 
 enum PodConditionType {
@@ -224,12 +224,6 @@ enum PodConditionType {
   INITIALIZED = 3;
   UNSCHEDULABLE = 4;
   CONTAINERS_READY = 5;
-}
-
-enum PodConditionStatus {
-  STATUS_UNKNOWN = 0;
-  STATUS_TRUE = 1;
-  STATUS_FALSE = 2;
 }
 
 message Endpoints {
@@ -537,9 +531,9 @@ enum NodeAddressType {
 
 // ConditionStatus describes the possible status for a condition.
 enum ConditionStatus {
-  NODE_CONDITION_STATUS_UNKNOWN = 0;
-  NODE_CONDITION_STATUS_TRUE = 1;
-  NODE_CONDITION_STATUS_FALSE = 2;
+  CONDITION_STATUS_UNKNOWN = 0;
+  CONDITION_STATUS_TRUE = 1;
+  CONDITION_STATUS_FALSE = 2;
 }
 
 // NodeConditionType describes the types of conditions a node can be in.

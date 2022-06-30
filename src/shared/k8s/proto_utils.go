@@ -75,18 +75,6 @@ var podConditionTypePbToObjMap = map[metadatapb.PodConditionType]v1.PodCondition
 	metadatapb.POD_SCHEDULED:    v1.PodScheduled,
 }
 
-var podConditionStatusObjToPbMap = map[v1.ConditionStatus]metadatapb.PodConditionStatus{
-	v1.ConditionTrue:    metadatapb.STATUS_TRUE,
-	v1.ConditionFalse:   metadatapb.STATUS_FALSE,
-	v1.ConditionUnknown: metadatapb.STATUS_UNKNOWN,
-}
-
-var podConditionStatusPbToObjMap = map[metadatapb.PodConditionStatus]v1.ConditionStatus{
-	metadatapb.STATUS_TRUE:    v1.ConditionTrue,
-	metadatapb.STATUS_FALSE:   v1.ConditionFalse,
-	metadatapb.STATUS_UNKNOWN: v1.ConditionUnknown,
-}
-
 var ipProtocolObjToPbMap = map[v1.Protocol]metadatapb.IPProtocol{
 	v1.ProtocolTCP:  metadatapb.TCP,
 	v1.ProtocolUDP:  metadatapb.UDP,
@@ -149,10 +137,16 @@ var nodeAddressTypeToPbMap = map[v1.NodeAddressType]metadatapb.NodeAddressType{
 	v1.NodeInternalDNS: metadatapb.NODE_ADDR_TYPE_INTERNAL_DNS,
 }
 
-var conditionStatusToPbMap = map[v1.ConditionStatus]metadatapb.ConditionStatus{
-	v1.ConditionTrue:    metadatapb.NODE_CONDITION_STATUS_TRUE,
-	v1.ConditionFalse:   metadatapb.NODE_CONDITION_STATUS_FALSE,
-	v1.ConditionUnknown: metadatapb.NODE_CONDITION_STATUS_UNKNOWN,
+var conditionStatusObjToPbMap = map[v1.ConditionStatus]metadatapb.ConditionStatus{
+	v1.ConditionTrue:    metadatapb.CONDITION_STATUS_TRUE,
+	v1.ConditionFalse:   metadatapb.CONDITION_STATUS_FALSE,
+	v1.ConditionUnknown: metadatapb.CONDITION_STATUS_UNKNOWN,
+}
+
+var conditionStatusPbToObjMap = map[metadatapb.ConditionStatus]v1.ConditionStatus{
+	metadatapb.CONDITION_STATUS_TRUE:    v1.ConditionTrue,
+	metadatapb.CONDITION_STATUS_FALSE:   v1.ConditionFalse,
+	metadatapb.CONDITION_STATUS_UNKNOWN: v1.ConditionUnknown,
 }
 
 var conditionTypeToPbMap = map[v1.NodeConditionType]metadatapb.NodeConditionType{
@@ -273,7 +267,7 @@ func PodStatusToProto(ps *v1.PodStatus) *metadatapb.PodStatus {
 	for i, c := range ps.Conditions {
 		conditions[i] = &metadatapb.PodCondition{
 			Type:   podConditionTypeObjToPbMap[c.Type],
-			Status: podConditionStatusObjToPbMap[c.Status],
+			Status: conditionStatusObjToPbMap[c.Status],
 		}
 	}
 
@@ -308,7 +302,7 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) *v1.PodStatus {
 	for i, c := range pb.Conditions {
 		conditions[i] = v1.PodCondition{
 			Type:   podConditionTypePbToObjMap[c.Type],
-			Status: podConditionStatusPbToObjMap[c.Status],
+			Status: conditionStatusPbToObjMap[c.Status],
 		}
 	}
 
@@ -617,7 +611,7 @@ func NodeStatusToProto(n *v1.NodeStatus) *metadatapb.NodeStatus {
 	for i, c := range n.Conditions {
 		conds[i] = &metadatapb.NodeCondition{
 			Type:   conditionTypeToPbMap[c.Type],
-			Status: conditionStatusToPbMap[c.Status],
+			Status: conditionStatusObjToPbMap[c.Status],
 		}
 	}
 
@@ -651,7 +645,7 @@ func ReplicaSetStatusToProto(rss *apps.ReplicaSetStatus) *metadatapb.ReplicaSetS
 	for i, c := range rss.Conditions {
 		conditions[i] = &metadatapb.ReplicaSetCondition{
 			Type:   string(c.Type),
-			Status: conditionStatusToPbMap[c.Status],
+			Status: conditionStatusObjToPbMap[c.Status],
 		}
 	}
 
