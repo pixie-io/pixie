@@ -252,6 +252,11 @@ StatusOr<KernelVersion> GetKernelVersion(std::vector<KernelVersionSource> source
   return error::Internal("Could not determine kernel version.");
 }
 
+KernelVersion GetCachedKernelVersion() {
+  static auto kernel_version = GetKernelVersion();
+  return kernel_version.ConsumeValueOr({0, 0, 0});
+}
+
 Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
                            uint32_t linux_version_code) {
   std::filesystem::path version_file_path =
