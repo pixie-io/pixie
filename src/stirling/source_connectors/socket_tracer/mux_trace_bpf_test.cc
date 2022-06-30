@@ -60,17 +60,18 @@ bool Init() {
   // Make sure Mux tracing is enabled.
   FLAGS_stirling_enable_mux_tracing = true;
 
-  // We turn off CQL tracing to give some BPF instructions back for Mux.
+  // We turn off CQL and NATS tracing to give some BPF instructions back for Mux.
   // This is required for older kernels with only 4096 BPF instructions.
   FLAGS_stirling_enable_cass_tracing = false;
+  FLAGS_stirling_enable_nats_tracing = false;
   return true;
 }
-
-bool kInit = Init();
 
 class MuxTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   MuxTraceTest() {
+    Init();
+
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
 

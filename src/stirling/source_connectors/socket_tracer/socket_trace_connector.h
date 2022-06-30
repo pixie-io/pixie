@@ -45,21 +45,22 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"
+#include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 DECLARE_uint32(stirling_conn_stats_sampling_ratio);
 DECLARE_bool(stirling_enable_periodic_bpf_map_cleanup);
 DECLARE_string(socket_trace_data_events_output_path);
-DECLARE_bool(stirling_enable_http_tracing);
-DECLARE_bool(stirling_enable_http2_tracing);
-DECLARE_bool(stirling_enable_mysql_tracing);
-DECLARE_bool(stirling_enable_cass_tracing);
-DECLARE_bool(stirling_enable_dns_tracing);
-DECLARE_bool(stirling_enable_redis_tracing);
-DECLARE_bool(stirling_enable_nats_tracing);
-DECLARE_bool(stirling_enable_kafka_tracing);
-DECLARE_bool(stirling_enable_mux_tracing);
+DECLARE_int32(stirling_enable_http_tracing);
+DECLARE_int32(stirling_enable_http2_tracing);
+DECLARE_int32(stirling_enable_mysql_tracing);
+DECLARE_int32(stirling_enable_cass_tracing);
+DECLARE_int32(stirling_enable_dns_tracing);
+DECLARE_int32(stirling_enable_redis_tracing);
+DECLARE_int32(stirling_enable_nats_tracing);
+DECLARE_int32(stirling_enable_kafka_tracing);
+DECLARE_int32(stirling_enable_mux_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
@@ -75,6 +76,13 @@ DECLARE_uint64(max_body_bytes);
 
 namespace px {
 namespace stirling {
+
+// Whether the protocol traced is turned on, off, or on but only for newer kernels.
+enum TraceMode : int32_t {
+  Off = 0,
+  On = 1,
+  OnForNewerKernel = 2,
+};
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
@@ -221,12 +229,20 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   struct TransferSpec {
     // TODO(yzhao): Enabling protocol is essentially equivalent to subscribing to DataTable. They
     // could be unified.
-    bool enabled = false;
+    int32_t trace_mode = TraceMode::Off;
     uint32_t table_num = 0;
     std::vector<endpoint_role_t> trace_roles;
     std::function<void(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
         transfer_fn = nullptr;
+    bool enabled = false;
   };
+
+  void EnableIfNeeded(TransferSpec* spec) {
+    constexpr uint32_t kLinux5p2VersionCode = 328192;
+    spec->enabled = (spec->trace_mode == TraceMode::On) ||
+                    (spec->trace_mode == TraceMode::OnForNewerKernel &&
+                     utils::GetCachedKernelVersion().code() >= kLinux5p2VersionCode);
+  }
 
   // This map controls how each protocol is processed and transferred.
   // The table num identifies which data the collected data is transferred.

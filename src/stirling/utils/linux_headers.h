@@ -35,7 +35,7 @@ struct KernelVersion {
   uint8_t major_rev = 0;
   uint8_t minor_rev = 0;
 
-  uint32_t code() { return (version << 16) | (major_rev << 8) | (minor_rev); }
+  uint32_t code() const { return (version << 16) | (major_rev << 8) | (minor_rev); }
 };
 
 enum class KernelVersionSource {
@@ -96,6 +96,12 @@ StatusOr<std::string> GetProcVersionSignature();
  */
 StatusOr<KernelVersion> GetKernelVersion(
     std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
+
+/**
+ * Returns the cached linux kernel version.
+ * @return The pre-computed kernel version, or {0, 0, 0} if not found.
+ */
+KernelVersion GetCachedKernelVersion();
 
 /**
  * Modifies the version.h on the filesystem to the specified version.

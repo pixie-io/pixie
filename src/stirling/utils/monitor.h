@@ -27,6 +27,7 @@
 
 #include "src/common/base/mixins.h"
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/utils/linux_headers.h"
 
 namespace px {
 namespace stirling {

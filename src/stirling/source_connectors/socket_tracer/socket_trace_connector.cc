@@ -73,26 +73,27 @@ DEFINE_string(socket_trace_data_events_output_path, "",
               "binary format; otherwise, text format.");
 
 // PROTOCOL_LIST: Requires update on new protocols.
-DEFINE_bool(stirling_enable_http_tracing, true,
-            "If true, stirling will trace and process HTTP messages");
-DEFINE_bool(stirling_enable_http2_tracing, true,
-            "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_bool(stirling_enable_mysql_tracing, true,
-            "If true, stirling will trace and process MySQL messages.");
-DEFINE_bool(stirling_enable_pgsql_tracing, true,
-            "If true, stirling will trace and process PostgreSQL messages.");
-DEFINE_bool(stirling_enable_cass_tracing, true,
-            "If true, stirling will trace and process Cassandra messages.");
-DEFINE_bool(stirling_enable_dns_tracing, true,
-            "If true, stirling will trace and process DNS messages.");
-DEFINE_bool(stirling_enable_redis_tracing, true,
-            "If true, stirling will trace and process Redis messages.");
-DEFINE_bool(stirling_enable_nats_tracing, true,
-            "If true, stirling will trace and process NATS messages.");
-DEFINE_bool(stirling_enable_kafka_tracing, true,
-            "If true, stirling will trace and process Kafka messages.");
-DEFINE_bool(stirling_enable_mux_tracing, gflags::BoolFromEnv("PL_STIRLING_TRACER_ENABLE_MUX", true),
-            "If true, stirling will trace and process Mux messages.");
+DEFINE_int32(stirling_enable_http_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process HTTP messages");
+DEFINE_int32(stirling_enable_http2_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process gRPC RPCs.");
+DEFINE_int32(stirling_enable_mysql_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process MySQL messages.");
+DEFINE_int32(stirling_enable_pgsql_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process PostgreSQL messages.");
+DEFINE_int32(stirling_enable_cass_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process Cassandra messages.");
+DEFINE_int32(stirling_enable_dns_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process DNS messages.");
+DEFINE_int32(stirling_enable_redis_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process Redis messages.");
+DEFINE_int32(stirling_enable_nats_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process NATS messages.");
+DEFINE_int32(stirling_enable_kafka_tracing, px::stirling::TraceMode::On,
+             "If true, stirling will trace and process Kafka messages.");
+DEFINE_int32(stirling_enable_mux_tracing,
+             gflags::Uint32FromEnv("PL_STIRLING_TRACER_ENABLE_MUX", px::stirling::TraceMode::Off),
+             "If true, stirling will trace and process Mux messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -164,15 +165,6 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
 #define TRANSFER_STREAM_PROTOCOL(protocol_name) \
   &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
 
-  // If kernel version is older than 5.2, we turn off some protocol tracers due to instruction
-  // limits.
-  constexpr uint32_t kLinux5p2VersionCode = 328192;
-  auto kernel_version = utils::GetKernelVersion();
-  if (!kernel_version.ok() || kernel_version.ConsumeValueOrDie().code() < kLinux5p2VersionCode) {
-    VLOG(1) << "Turning off mux protocol tracer due to eBPF instruction limit.";
-    FLAGS_stirling_enable_mux_tracing = false;
-  }
-
   // PROTOCOL_LIST: Requires update on new protocols.
 
   // We popluate transfer_specs_by_protocol so that we guarantee the protocol_transfer_specs_
@@ -223,11 +215,11 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(mux)}},
       // TODO(chengruizhe): Update Mongo after implementing protocol parsers.
-      {kProtocolMongo, TransferSpec{/* enabled */ false,
+      {kProtocolMongo, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                     /* table_num */ static_cast<uint32_t>(-1),
                                     /* trace_roles */ {},
                                     /* transfer_fn */ nullptr}},
-      {kProtocolUnknown, TransferSpec{/*enabled*/ false,
+      {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
                                       /* transfer_fn */ nullptr}}};
@@ -239,6 +231,9 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
     // by indexing into the transfer_specs_by_protocol map.
     DCHECK(transfer_specs_by_protocol.contains(traffic_protocol_t(i))) << absl::Substitute(
         "Protocol $0 is not mapped in transfer_specs_by_protocol.", traffic_protocol_t(i));
+
+    // Enables protocol tracing based on trace mode flags and kernel version.
+    EnableIfNeeded(&transfer_specs_by_protocol[traffic_protocol_t(i)]);
     protocol_transfer_specs_.push_back(transfer_specs_by_protocol[traffic_protocol_t(i)]);
   }
 }
