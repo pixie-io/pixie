@@ -101,6 +101,7 @@ message K8sResource {
     px.shared.k8s.metadatapb.Endpoints endpoints = 4;
     px.shared.k8s.metadatapb.Namespace namespace = 5;
     px.shared.k8s.metadatapb.Node node = 6;
+    px.shared.k8s.metadatapb.ReplicaSet replica_set = 7;
   }
 }
 
