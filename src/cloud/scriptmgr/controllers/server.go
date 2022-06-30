@@ -152,6 +152,7 @@ func (s *Server) storeUpdater() {
 				WithField("bucket", s.bundleBucket).
 				WithField("path", s.bundlePath).
 				Error("Failed to get attrs of bundle.json")
+			continue
 		}
 		if attrs.Updated.After(s.storeLastUpdate) {
 			log.Trace("Update to bundle required. Updating...")
