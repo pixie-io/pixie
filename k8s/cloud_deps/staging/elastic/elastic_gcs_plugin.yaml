@@ -1,0 +1,19 @@
+---
+- op: add
+  path: /spec/nodeSets/0/podTemplate/spec/initContainers/0
+  value:
+    name: install-plugins
+    command:
+    - sh
+    - -c
+    - |
+        bin/elasticsearch-plugin install --batch repository-gcs
+- op: add
+  path: /spec/nodeSets/1/podTemplate/spec/initContainers/0
+  value:
+    name: install-plugins
+    command:
+    - sh
+    - -c
+    - |
+        bin/elasticsearch-plugin install --batch repository-gcs
