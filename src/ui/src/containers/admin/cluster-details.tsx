@@ -305,7 +305,7 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
     <React.Fragment key={name}>
       <TableRow key={name}>
         <AdminTooltip title={status}>
-          <StyledLeftTableCell>
+          <StyledLeftTableCell sx={{ width: (t) => t.spacing(3) }}>
             <StatusCell statusGroup={statusGroup} />
           </StyledLeftTableCell>
         </AdminTooltip>
@@ -464,7 +464,14 @@ const PixiePodsTab: React.FC<{
             dataPlanePods?.length > 0
               ? dataPlaneDisplay.map((podStatus) => (
                 <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
-              )) : <div className={classes.errorMessage}> Cluster has no unhealthy Pixie data plane pods. </div>
+              )) : (
+                <TableRow>
+                  <TableCell sx={{ width: (t) => t.spacing(3) }}/>
+                  <TableCell colSpan={3}>
+                    Cluster has no unhealthy Pixie data plane pods.
+                  </TableCell>
+                </TableRow>
+              )
           }
         </TableBody>
       </Table>

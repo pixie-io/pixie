@@ -183,41 +183,42 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
   return (
     /* eslint-disable react-memo/require-usememo */
     <TableRow key={id}>
-      <TableCell>
+      <TableCell sx={{ width: '50%' }}>
         <Tooltip title={description}>
           <Link to={`${path}/update/${script.id}`}>{name}</Link>
         </Tooltip>
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ width: '50%' }}>
         {selectedClusters.length > 0 ? (
-          selectedClusters.map(cluster => (
-            <Chip
-              key={cluster.id}
-              variant='outlined'
-              size='small'
-              label={cluster.prettyClusterName}
-              sx={{ mr: 1 }}
-            />
-          ))
+          <Box sx={{ display: 'flex', flexFlow: 'row wrap', gap: (t) => t.spacing(0.5) }}>
+            {selectedClusters.map(cluster => (
+              <Chip
+                key={cluster.id}
+                variant='outlined'
+                size='small'
+                label={cluster.prettyClusterName}
+              />
+            ))}
+          </Box>
         ) : (
           <Typography variant='caption' sx={{ color: 'text.disabled' }}>All Clusters (Default)</Typography>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ minWidth: (t) => t.spacing(26) }}>
         <Tooltip title={frequencyS > 60 ? `${Number(frequencyS).toLocaleString()} seconds` : ''}>
           <span>{distanceInWordsStrict(0, frequencyS * 1000)}</span>
         </Tooltip>
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ minWidth: (t) => t.spacing(30) }}>
         <Box sx={{ display: 'flex', flexFlow: 'row nowrap', alignItems: 'center' }}>
           <PluginIcon iconString={plugin?.logo ?? ''} />
           <span>{plugin?.name ?? ''}</span>
         </Box>
       </TableCell>
-      <TableCell align='center'>
+      <TableCell align='center' sx={{ minWidth: (t) => t.spacing(18) }}>
         <HistoryLink path={path} script={script} />
       </TableCell>
-      <TableCell align='right' sx={({ spacing }) => ({ minWidth: spacing(33) })}>
+      <TableCell align='right' sx={{ minWidth: (t) => t.spacing(33) }}>
         <FormControlLabel
           sx={{ mr: 1 }}
           label={script.enabled ? 'Enabled' : 'Disabled'}
@@ -296,7 +297,7 @@ const RetentionScriptTable = React.memo<{
       <Typography variant='h3' ml={2} mb={2}>{title}</Typography>
       {description.length > 0 && <Typography variant='subtitle2' ml={2} mb={4}>{description}</Typography>}
       {scripts.length > 0 ? (
-        <Table>
+        <Table style={{ tableLayout: 'auto' }}>
           <TableHead>
             <TableRow>
               <StyledTableHeaderCell>Script Name</StyledTableHeaderCell>
