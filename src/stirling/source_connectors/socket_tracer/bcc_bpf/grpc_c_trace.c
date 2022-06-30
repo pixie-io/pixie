@@ -130,22 +130,9 @@ typedef void grpc_mdelem_data;
  *          heap.
  *          Otherwise, a metadata struct on our percpu "heap".
  */
-static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
-  u32 zero = 0;
-
-  struct grpc_c_metadata_t* metadata = grpc_c_metadata_buffer_heap.lookup(&zero);
-  if (NULL == metadata) {
-    // User mode did not initiate the percpu buffer.
-    return NULL;
-  }
-
-  volatile u8* metadata_bytes = (u8*)metadata;
-#pragma unroll
-  for (u16 i = 0; i < sizeof(*metadata); i++) {
-    metadata_bytes[i] = 0;
-  }
-
-  return metadata;
+static inline struct grpc_c_metadata_t* get_grpc_metadata() {
+  u32 kZero = 0;
+  return grpc_c_metadata_buffer_heap.lookup(&kZero);
 }
 
 /*
@@ -885,7 +872,7 @@ static inline int handle_maybe_complete_recv_metadata(struct pt_regs* ctx, const
     return 0;
   }
 
-  metadata = initiate_empty_grpc_metadata();
+  metadata = get_grpc_metadata();
   if (NULL == metadata) {
     return -1;
   }
@@ -987,7 +974,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != initial_metadata) {
-    metadata = initiate_empty_grpc_metadata();
+    metadata = get_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1008,7 +995,7 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != trailing_metadata) {
-    metadata = initiate_empty_grpc_metadata();
+    metadata = get_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1166,7 +1153,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != initial_metadata) {
-    metadata = initiate_empty_grpc_metadata();
+    metadata = get_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
@@ -1187,7 +1174,7 @@ int probe_ret_grpc_chttp2_list_pop_writable_stream(struct pt_regs* ctx) {
     return -1;
   }
   if (NULL != trailing_metadata) {
-    metadata = initiate_empty_grpc_metadata();
+    metadata = get_grpc_metadata();
     if (NULL == metadata) {
       return -1;
     }
