@@ -38,6 +38,7 @@ message MetadataObject {
     Service service = 3;
     Namespace namespace = 4;
     Node node = 5;
+    ReplicaSet replicaSet = 6;
   }
 }
 
@@ -597,6 +598,117 @@ message NodeUpdate {
   repeated NodeCondition conditions = 8;
 }
 
+// ReplicaSet ensures that a specified number of pod replicas are running at any given time.
+message ReplicaSet {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+  // Spec defines the specification of the desired behavior of the ReplicaSet.
+  ReplicaSetSpec spec = 2;
+  // Status is the most recently observed status of the ReplicaSet.
+  // This data may be out of date by some window of time.
+  // Populated by the system.
+  ReplicaSetStatus status = 3;
+}
+
+// ReplicaSetCondition describes the state of a replica set at a certain point.
+message ReplicaSetCondition {
+  // Type of replica set condition.
+  string type = 1;
+  // Status of the condition, one of True, False, Unknown.
+  ConditionStatus status = 2;
+}
+
+// A label selector requirement is a selector that contains values, a key, and an operator that
+// relates the key and values.
+message LabelSelectorRequirement {
+  // key is the label key that the selector applies to.
+  string key = 1;
+
+  // operator represents a key's relationship to a set of values.
+  // Valid operators are In, NotIn, Exists and DoesNotExist.
+  string operator = 2;
+
+  // values is an array of string values. If the operator is In or NotIn,
+  // the values array must be non-empty. If the operator is Exists or DoesNotExist,
+  // the values array must be empty. This array is replaced during a strategic
+  // merge patch.
+  repeated string values = 3;
+}
+
+// LabelSelector describes the label selectors definitions
+message LabelSelector {
+  // matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+  // map is equivalent to an element of matchExpressions, whose key field is "key", the
+  // operator is "In", and the values array contains only "value".
+  map<string, string> match_labels = 1;
+
+  // matchExpressions is a list of label selector requirements. The requirements are ANDed.
+  repeated LabelSelectorRequirement match_expressions = 2;
+}
+
+// PodTemplateSpec describes the data a pod should have when created from a template
+message PodTemplateSpec {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+  // Specification of the desired behavior of the pod.
+  PodSpec spec = 2;
+}
+
+// ReplicaSetSpec is the specification of a ReplicaSet.
+message ReplicaSetSpec {
+  // Replicas is the number of desired replicas.
+  int32 replicas = 1;
+
+  // Minimum number of seconds for which a newly created pod should be ready
+  // without any of its container crashing, for it to be considered available.
+  // Defaults to 0 (pod will be considered available as soon as it is ready)
+  int32 min_ready_seconds = 4;
+
+  // Selector is a label query over pods that should match the replica count.
+  // Label keys and values that must match in order to be controlled by this replica set.
+  // It must match the pod template's labels.
+  LabelSelector selector = 2;
+
+  // Template is the object that describes the pod that will be created if
+  // insufficient replicas are detected.
+  PodTemplateSpec template = 3;
+}
+
+// ReplicaSetStatus represents the current status of a ReplicaSet.
+message ReplicaSetStatus {
+  // Replicas is the most recently oberved number of replicas.
+  int32 replicas = 1;
+  // The number of pods that have labels matching the labels of the pod template of the replicaset.
+  int32 fully_labeled_replicas = 2;
+  // readyReplicas is the number of pods targeted by this ReplicaSet with a Ready Condition.
+  int32 ready_replicas = 4;
+  // The number of available replicas (ready for at least minReadySeconds) for this replica set.
+  int32 available_replicas = 5;
+  // ObservedGeneration reflects the generation of the most recently observed ReplicaSet.
+  int64 observed_generation = 3;
+  // Represents the latest available observations of a replica set's current state.
+  repeated ReplicaSetCondition conditions = 6;
+}
+
+// ReplicaSetUpdate is the update that is sent to the agents when there are any replica set changes.
+// This should contain information important for our agents to know.
+message ReplicaSetUpdate {
+  // UID is the unique ID of this replicaset in both space and time.
+  string uid = 1 [(gogoproto.customname) = "UID"];
+  // Name of the replicaSet, unique in space, but not time.
+  string name = 2;
+  // The unix time in nanoseconds when the this replicaset was created.
+  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  // The unix time in nanoseconds when the this replicaset was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int32 replicas = 5;
+  int32 fully_labeled_replicas = 6;
+  int32 ready_replicas = 7;
+  int32 available_replicas = 8;
+  int32 observed_generation = 9;
+  repeated ReplicaSetCondition conditions = 10;
+}
+
 // Resource update is the message we send to the agent/compute nodes
 // from the metadata service (MDS).
 // These updates can contain cross references to other objects (ie. pods can refer to containers).
@@ -609,6 +721,7 @@ message ResourceUpdate {
     ServiceUpdate service_update = 3;
     NamespaceUpdate namespace_update = 6;
     NodeUpdate node_update = 7;
+    ReplicaSetUpdate replica_set_update = 10;
   }
   int64 update_version = 8;
   int64 prev_update_version = 9;

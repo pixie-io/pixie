@@ -19,6 +19,7 @@
 package k8s
 
 import (
+	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -632,5 +633,77 @@ func NodeSpecToProto(n *v1.NodeSpec) *metadatapb.NodeSpec {
 	return &metadatapb.NodeSpec{
 		PodCIDRs: n.PodCIDRs,
 		PodCIDR:  n.PodCIDR,
+	}
+}
+
+// ReplicaSetToProto converts a k8s ReplicaSet object into a proto.
+func ReplicaSetToProto(rs *apps.ReplicaSet) *metadatapb.ReplicaSet {
+	return &metadatapb.ReplicaSet{
+		Metadata: ObjectMetadataToProto(&rs.ObjectMeta),
+		Spec:     ReplicaSetSpecToProto(&rs.Spec),
+		Status:   ReplicaSetStatusToProto(&rs.Status),
+	}
+}
+
+// ReplicaSetStatusToProto converts a k8s ReplicaSet status into a proto.
+func ReplicaSetStatusToProto(rss *apps.ReplicaSetStatus) *metadatapb.ReplicaSetStatus {
+	conditions := make([]*metadatapb.ReplicaSetCondition, len(rss.Conditions))
+	for i, c := range rss.Conditions {
+		conditions[i] = &metadatapb.ReplicaSetCondition{
+			Type:   string(c.Type),
+			Status: conditionStatusToPbMap[c.Status],
+		}
+	}
+
+	return &metadatapb.ReplicaSetStatus{
+		Replicas:             rss.Replicas,
+		FullyLabeledReplicas: rss.FullyLabeledReplicas,
+		ReadyReplicas:        rss.ReadyReplicas,
+		AvailableReplicas:    rss.AvailableReplicas,
+		ObservedGeneration:   rss.ObservedGeneration,
+		Conditions:           conditions,
+	}
+}
+
+// ReplicaSetSpecToProto converts a k8s ReplicaSet spec into a proto.
+func ReplicaSetSpecToProto(rs *apps.ReplicaSetSpec) *metadatapb.ReplicaSetSpec {
+	var replicas int32
+	if rs.Replicas == nil {
+		replicas = 1
+	} else {
+		replicas = int32(*rs.Replicas)
+	}
+
+	return &metadatapb.ReplicaSetSpec{
+		Replicas:        replicas,
+		MinReadySeconds: rs.MinReadySeconds,
+		Selector:        LabelSelectorToProto(rs.Selector),
+		Template:        PodTemplateSpecToProto(rs.Template),
+	}
+}
+
+// LabelSelectorToProto converts a k8s label selector to proto.
+func LabelSelectorToProto(ls *metav1.LabelSelector) *metadatapb.LabelSelector {
+	matchExpressions := make([]*metadatapb.LabelSelectorRequirement, len(ls.MatchExpressions))
+
+	for i, me := range ls.MatchExpressions {
+		matchExpressions[i] = &metadatapb.LabelSelectorRequirement{
+			Key:      me.Key,
+			Operator: string(me.Operator),
+			Values:   me.Values,
+		}
+	}
+
+	return &metadatapb.LabelSelector{
+		MatchLabels:      ls.MatchLabels,
+		MatchExpressions: matchExpressions,
+	}
+}
+
+// PodTemplateSpecToProto converts a k8s pod template spec to proto.
+func PodTemplateSpecToProto(ts v1.PodTemplateSpec) *metadatapb.PodTemplateSpec {
+	return &metadatapb.PodTemplateSpec{
+		Metadata: ObjectMetadataToProto(&ts.ObjectMeta),
+		Spec:     PodSpecToProto(&ts.Spec),
 	}
 }
