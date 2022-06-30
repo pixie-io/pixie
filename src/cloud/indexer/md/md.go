@@ -239,7 +239,7 @@ func nodeConditionToState(node *metadatapb.NodeUpdate) ESMDEntityState {
 
 	for _, c := range node.Conditions {
 		if c.Type == metadatapb.NODE_CONDITION_READY {
-			if c.Status == metadatapb.NODE_CONDITION_STATUS_TRUE {
+			if c.Status == metadatapb.CONDITION_STATUS_TRUE {
 				return ESMDEntityStateRunning
 			}
 		}

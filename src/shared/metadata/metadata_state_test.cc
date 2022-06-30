@@ -44,7 +44,7 @@ constexpr char kPod0UpdatePbTxt[] = R"(
   phase: RUNNING
   conditions: {
     type: READY
-    status: STATUS_TRUE
+    status: CONDITION_STATUS_TRUE
   }
   node_name: "a_node"
   hostname: "a_host"
@@ -69,7 +69,7 @@ constexpr char kPod1UpdatePbTxt[] = R"(
   phase: RUNNING
   conditions: {
     type: READY
-    status: STATUS_TRUE
+    status: CONDITION_STATUS_TRUE
   }
   node_name: "a_node"
   hostname: "a_host"
@@ -94,7 +94,7 @@ constexpr char kPod2UpdatePbTxt[] = R"(
   phase: RUNNING
   conditions: {
     type: READY
-    status: STATUS_TRUE
+    status: CONDITION_STATUS_TRUE
   }
   node_name: "a_node"
   hostname: "a_host"
@@ -224,7 +224,7 @@ TEST(K8sMetadataStateTest, HandlePodUpdate) {
   EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info->qos_class());
   EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
   EXPECT_EQ(1, pod_info->conditions().size());
-  EXPECT_EQ(PodConditionStatus::kTrue, pod_info->conditions()[PodConditionType::kReady]);
+  EXPECT_EQ(ConditionStatus::kTrue, pod_info->conditions()[PodConditionType::kReady]);
   EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info->qos_class());
   EXPECT_EQ(101, pod_info->start_time_ns());
   EXPECT_EQ(103, pod_info->stop_time_ns());
