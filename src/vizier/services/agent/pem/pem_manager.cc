@@ -34,8 +34,8 @@ DEFINE_int32(table_store_http_events_percent,
              "The percent of the table store data limit that should be devoted to the http_events "
              "table. Defaults to 40%.");
 
-DEFINE_int32(table_store_stirling_error_limit,
-             gflags::Int32FromEnv("PL_TABLE_STORE_STIRLING_ERROR_LIMIT_MB", 2),
+DEFINE_int32(table_store_stirling_error_limit_bytes,
+             gflags::Int32FromEnv("PL_TABLE_STORE_STIRLING_ERROR_LIMIT_BYTES", 2 * 1024 * 1024),
              "The maximum amount of data to store in the two tables for Stirling error reporting, "
              "the stirling_error table and probe_status table.");
 
@@ -95,8 +95,8 @@ Status PEMManager::InitSchemas() {
   int64_t memory_limit = FLAGS_table_store_data_limit * 1024 * 1024;
   int64_t num_tables = relation_info_vec.size();
   int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
-  int64_t stirling_error_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
-  int64_t probe_status_table_size = (FLAGS_table_store_stirling_error_limit / 2) * 1024 * 1024;
+  int64_t stirling_error_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
+  int64_t probe_status_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
   int64_t proc_exit_events_table_size = FLAGS_table_store_proc_exit_events_limit_bytes;
   int64_t other_table_size = (memory_limit - http_table_size - stirling_error_table_size -
                               probe_status_table_size - proc_exit_events_table_size) /
