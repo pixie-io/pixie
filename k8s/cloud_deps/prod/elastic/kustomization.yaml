@@ -14,6 +14,9 @@ patches:
 - path: node_selector_patch.yaml
   target:
     kind: Elasticsearch
+- path: elastic_gcs_plugin.yaml
+  target:
+    kind: Elasticsearch
 patchesJson6902:
 - path: elastic_storage_patch.yaml
   target:
