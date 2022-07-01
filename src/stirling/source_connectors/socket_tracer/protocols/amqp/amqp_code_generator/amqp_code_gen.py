@@ -100,6 +100,7 @@ class Field:
     field_name: str
     field_type: FieldType
     c_field_name: str = ""  # Represents type used in struct
+    class_property_field: bool = False
 
     def __post_init__(self):
         self.c_field_name = self.field_name.replace("-", "_")
@@ -139,6 +140,18 @@ class Field:
         """
         extract_function = FieldType.get_field_extract_function(self.field_type)
         return f"PL_ASSIGN_OR_RETURN(r.{self.c_field_name}, {extract_function});"
+
+    def get_class_buffer_extract(self, index):
+        """
+        Content header fields can optionally show up based on if the property flag at an index is set.
+        ex: Nth bit flag in class fields is 1, then the Nth class field will be assigned
+        """
+        extract_function = FieldType.get_field_extract_function(self.field_type)
+        return f"""
+            if((property_flags >> {index}) & 1) {{
+                PL_ASSIGN_OR_RETURN(r.{self.c_field_name}, {extract_function});
+            }}
+            """
 
 
 @dataclass
@@ -222,6 +235,42 @@ class AMQPMethod:
                 return Extract{self.c_struct_name}(decoder, req);
         """
 
+    def get_class_buffer_extract(self):
+        """
+        This extracts fields for the content header and uses the property flag field to set the relevant fields.
+        The property flag is always 16 bits.
+
+        The list of propert fields can be:
+            content-type,
+            content-encoding,
+            delivery-mode
+        If the bits 101 are set in a 3 bit property flag,
+        the fields content-type and deliver-mode would have to be extracted and assigned.
+
+        TODO: There is a special case where the property flags overflows beyonds 16 bits not handled.
+        However, this is currently not handled or implemented anywhere in other decoders.
+        """
+        class_property_flag_len: int = 17
+        field_buffer_extractions = "\n".join(
+            [
+                field.get_class_buffer_extract(class_property_flag_len - i)
+                for i, field in enumerate(self.fields)
+                if field.class_property_field
+            ]
+        )
+        return f"""
+            Status Extract{self.c_struct_name}(BinaryDecoder* decoder, Frame* frame) {{
+                {self.c_struct_name} r;
+                PL_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
+                PL_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+                r.property_flags = property_flags;
+                {field_buffer_extractions}
+                frame->msg = ToString(r);
+                frame->synchronous = {self.synchronous};
+                return Status::OK();
+            }}
+        """
+
 
 @dataclass
 class AMQPClass:
@@ -246,8 +295,12 @@ class AMQPClass:
             method_id=-1,
             class_id=self.class_id,
             method_name="content-header",
-            synchronous=1,
-            fields=self.class_fields,
+            synchronous=0,
+            fields=[
+                Field(field_name="body-size", field_type=FieldType.longlong),
+                Field(field_name="property-flags", field_type=FieldType.short),
+            ]
+            + self.class_fields,
         )
 
     @property
@@ -270,6 +323,18 @@ class AMQPClass:
                 {method_declaration}
             }};
             """
+
+    def gen_content_header_enum_select(self):
+        """
+        This will be included to easily select the extraction methods given class_id
+        switch (method_id) {
+            case AMQPConnectionMethods::kAMQPConnectionStart:
+                return ExtractAMQPConnectionStart(decoder, req);
+        """
+        return f"""
+            case AMQPClasses::k{self.class_name}:
+                return Extract{self.content_header_method.c_struct_name}(decoder, req);
+        """
 
     def gen_method_select(self):
         """
@@ -302,6 +367,40 @@ class AMQPClass:
         }
         """
         return f"k{self.class_name} = {self.class_id}"
+
+    def gen_process_content_header_select(self):
+        amqp_extract_class_case = []
+        for amqp_class in self.amqp_classes:
+            amqp_class_case = amqp_class.gen_content_header_enum_select()
+            amqp_extract_class_case.append(amqp_class_case)
+
+        amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
+        return f"""
+        Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {{
+            PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
+            PL_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
+            req->class_id = class_id;
+
+            if(weight != 0) {{
+                return error::Internal("AMQP content header weight should be 0");
+            }}
+            switch(static_cast<AMQPClasses>(class_id)) {{
+                {amqp_extract_class_case_str}
+            }}
+        }}
+        """
+
+    def gen_class_enum_select_case(self):
+        """
+        This will be included to easily select the extraction methods given class_id for Content Header Frame Type
+        switch (class_id) {
+            case AMQPConnectionMethods::kAMQPConnectionStart:
+                return ExtractAMQPConnectionStart(decoder, req);
+        """
+        return f"""
+            case AMQPClasses::k{self.class_name}:
+                return Process{self.class_name}(decoder, req, method_id);
+        """
 
 
 class CodeGenerator:
@@ -422,7 +521,8 @@ class CodeGenerator:
                 )
                 method_structs.append(method_struct)
             class_fields = self.process_fields(class_xml)
-
+            for field in class_fields:
+                field.class_property_field = True
             amqp_classes.append(
                 AMQPClass(
                     class_name=class_name,
@@ -576,7 +676,29 @@ class CodeGenerator:
         }"""
 
     def gen_process_content_header_select(self):
-        pass  # TODO handle processing content header frame type
+        """
+        Process the content header frame type by selecting the relevant content header extract method
+        """
+        amqp_extract_class_case = []
+        for amqp_class in self.amqp_classes:
+            amqp_class_case = amqp_class.gen_content_header_enum_select()
+            amqp_extract_class_case.append(amqp_class_case)
+
+        amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
+        return f"""
+        Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {{
+            PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
+            PL_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
+            req->class_id = class_id;
+
+            if(weight != 0) {{
+                return error::Internal("AMQP content header weight should be 0");
+            }}
+            switch(static_cast<AMQPClasses>(class_id)) {{
+                {amqp_extract_class_case_str}
+            }}
+        }}
+        """
 
 
 class CodeGeneratorWriter:
@@ -694,5 +816,6 @@ class CodeGeneratorWriter:
         pass
 
 
+# TODO(vsrivatsa) ADD followup test for api
 if __name__ == "__main__":
     fire.Fire(CodeGeneratorWriter)
