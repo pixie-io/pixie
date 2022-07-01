@@ -25,7 +25,7 @@ filegroup(
 
 # This rule is a hack so that local development of bcc can be done without bazel rerunning the full bcc build each time. It assumes
 # that the following commands have been run in the local bcc directory:
-#   mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=install ..
+#   mkdir -p build && cd build && cmake -DCMAKE_INSTALL_PREFIX=install ..
 #   make install
 # Then anytime you update bcc sources, you have to run `make install` in the bcc build dir, and then run bazel build.
 # Since bpftrace uses bcc as a dependency, if you want to get the benefits of the local incremental builds, you have to build both
