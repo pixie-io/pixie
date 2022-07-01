@@ -122,27 +122,7 @@ func GetVizierList(cloudAddr string) ([]*cloudpb.ClusterInfo, error) {
 }
 
 func createVizierConnection(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Connector, error) {
-	l, err := NewLister(cloudAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	passthrough := false
-	if vzInfo.Config != nil {
-		passthrough = vzInfo.Config.PassthroughEnabled
-	}
-
-	u := utils.UUIDFromProtoOrNil(vzInfo.ID)
-
-	var vzConn *ConnectionInfo
-	if !passthrough {
-		vzConn, err = l.GetVizierConnection(u)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	v, err := NewConnector(cloudAddr, vzInfo, vzConn)
+	v, err := NewConnector(cloudAddr, vzInfo)
 	if err != nil {
 		return nil, err
 	}

@@ -116,13 +116,9 @@ var GetViziersCmd = &cobra.Command{
 
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
-		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Vizier Version", "Last Heartbeat", "Passthrough", "Status", "Status Message"})
+		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Vizier Version", "Last Heartbeat", "Status", "Status Message"})
 
 		for _, vz := range vzs {
-			passthrough := false
-			if vz.Config != nil {
-				passthrough = vz.Config.PassthroughEnabled
-			}
 			var lastHeartbeat interface{}
 			lastHeartbeat = vz.LastHeartbeatNs
 			if format == "" || format == "table" {
@@ -147,7 +143,7 @@ var GetViziersCmd = &cobra.Command{
 				}
 			}
 			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion, sb.String(),
-				lastHeartbeat, passthrough, vz.Status, vz.StatusMessage})
+				lastHeartbeat, vz.Status, vz.StatusMessage})
 		}
 	},
 }

@@ -64,7 +64,6 @@ func init() {
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(LiveCmd)
 	RootCmd.AddCommand(GetCmd)
-	RootCmd.AddCommand(ConfigCmd)
 	RootCmd.AddCommand(ScriptCmd)
 	RootCmd.AddCommand(CreateBundle)
 	RootCmd.AddCommand(DeployKeyCmd)
@@ -180,7 +179,7 @@ var RootCmd = &cobra.Command{
 
 func checkAuthForCmd(c *cobra.Command) {
 	switch c {
-	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ConfigCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
+	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
 		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
 		if !authenticated {
 			utils.Errorf("Failed to authenticate. Please retry `px auth login`.")

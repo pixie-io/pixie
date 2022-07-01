@@ -46,7 +46,8 @@ import (
 
 const (
 	dialTimeout = 5 * time.Second
-	// We need an extra long retryTimeout because in passthrough mode the query broker takes a while to receive the cancel message from the ptproxy.
+	// We need an extra long retryTimeout because in passthrough mode the query broker
+	// takes a while to receive the cancel message from the ptproxy.
 	retryTimeout        = 30 * time.Second
 	sleepBetweenRetries = 1 * time.Second
 )
@@ -54,24 +55,19 @@ const (
 // Connector is an interface to Vizier.
 type Connector struct {
 	// The ID of the vizier.
-	id                 uuid.UUID
-	conn               *grpc.ClientConn
-	vz                 vizierpb.VizierServiceClient
-	vzDebug            vizierpb.VizierDebugServiceClient
-	vzToken            string
-	passthroughEnabled bool
-	cloudAddr          string
+	id        uuid.UUID
+	conn      *grpc.ClientConn
+	vz        vizierpb.VizierServiceClient
+	vzDebug   vizierpb.VizierDebugServiceClient
+	cloudAddr string
 }
 
 // NewConnector returns a new connector.
-func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *ConnectionInfo) (*Connector, error) {
+func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Connector, error) {
 	c := &Connector{
 		id: utils.UUIDFromProtoOrNil(vzInfo.ID),
 	}
 	c.cloudAddr = cloudAddr
-	if vzInfo.Config != nil {
-		c.passthroughEnabled = vzInfo.Config.PassthroughEnabled
-	}
 
 	err := c.connect(cloudAddr)
 	if err != nil {
@@ -111,11 +107,6 @@ func (c *Connector) connect(addr string) error {
 	c.conn = conn
 
 	return nil
-}
-
-// PassthroughMode returns true if passthrough mode is enabled.
-func (c *Connector) PassthroughMode() bool {
-	return c.passthroughEnabled
 }
 
 func lookupVariable(variable string, computedArgs []script.Arg) (string, error) {
@@ -235,24 +226,6 @@ func checkForJWTExpired(s *status.Status) bool {
 	return s.Code() == codes.Unauthenticated && strings.Contains(s.Message(), "invalid auth token")
 }
 
-func (c *Connector) getNewVzConnInfo() error {
-	if c.passthroughEnabled {
-		return nil
-	}
-
-	l, err := NewLister(c.cloudAddr)
-	if err != nil {
-		return err
-	}
-
-	vzConn, err := l.GetVizierConnection(c.id)
-	if err != nil {
-		return err
-	}
-	c.vzToken = vzConn.Token
-	return nil
-}
-
 type streamState struct {
 	resp                vizierpb.VizierService_ExecuteScriptClient
 	lastSuccessfulRetry time.Time
@@ -280,10 +253,6 @@ func (c *Connector) handleStream(ctx context.Context, state *streamState, first 
 						}
 						return retry
 					} else if checkForJWTExpired(s) {
-						if err := c.getNewVzConnInfo(); err != nil {
-							cliUtils.Errorf("Failed to renew auth token with error: %s", err.Error())
-							return doNotRetry
-						}
 						if state.firstErr == nil {
 							state.firstErr = s.Err()
 						}
@@ -336,14 +305,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		QueryName:         scriptName,
 	}
 
-	getAuthCtx := func(ctx context.Context) context.Context {
-		if c.passthroughEnabled {
-			return auth.CtxWithCreds(ctx)
-		}
-		return ctxWithTokenCreds(ctx, c.vzToken)
-	}
-
-	resp, err := c.vz.ExecuteScript(getAuthCtx(ctx), reqPB)
+	resp, err := c.vz.ExecuteScript(auth.CtxWithCreds(ctx), reqPB)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +331,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 				}
 				return
 			}
-			s.resp, err = c.restartConnAndResumeExecute(getAuthCtx(ctx), s.queryID)
+			s.resp, err = c.restartConnAndResumeExecute(auth.CtxWithCreds(ctx), s.queryID)
 			if err != nil {
 				continue
 			}
@@ -393,12 +355,7 @@ func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bo
 		Previous:  prev,
 		Container: container,
 	}
-	if c.passthroughEnabled {
-		ctx = auth.CtxWithCreds(ctx)
-	} else {
-		ctx = ctxWithTokenCreds(ctx, c.vzToken)
-	}
-
+	ctx = auth.CtxWithCreds(ctx)
 	resp, err := c.vzDebug.DebugLog(ctx, reqPB)
 	if err != nil {
 		return nil, err
@@ -450,12 +407,7 @@ func (c *Connector) DebugPodsRequest(ctx context.Context) (chan *DebugPodsRespon
 	reqPB := &vizierpb.DebugPodsRequest{
 		ClusterID: c.id.String(),
 	}
-	if c.passthroughEnabled {
-		ctx = auth.CtxWithCreds(ctx)
-	} else {
-		ctx = ctxWithTokenCreds(ctx, c.vzToken)
-	}
-
+	ctx = auth.CtxWithCreds(ctx)
 	resp, err := c.vzDebug.DebugPods(ctx, reqPB)
 	if err != nil {
 		return nil, err

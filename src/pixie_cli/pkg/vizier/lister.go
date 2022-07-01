@@ -20,7 +20,6 @@ package vizier
 
 import (
 	"context"
-	"errors"
 
 	"github.com/gofrs/uuid"
 
@@ -32,12 +31,6 @@ import (
 // Lister allows fetching information about Viziers from the cloud.
 type Lister struct {
 	vc cloudpb.VizierClusterInfoClient
-}
-
-// ConnectionInfo has connection info about a Vizier.
-type ConnectionInfo struct {
-	ID    uuid.UUID
-	Token string
 }
 
 // NewLister returns a Lister.
@@ -70,27 +63,6 @@ func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudpb.ClusterInfo, error) {
 		return nil, err
 	}
 	return c.Clusters, nil
-}
-
-// GetVizierConnection gets connection information for the specified Vizier.
-func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
-	ctx := auth.CtxWithCreds(context.Background())
-
-	ci, err := l.vc.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{
-		ID: utils.ProtoFromUUID(id),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(ci.Token) == 0 {
-		return nil, errors.New("invalid token received")
-	}
-
-	return &ConnectionInfo{
-		ID:    id,
-		Token: ci.Token,
-	}, nil
 }
 
 // UpdateVizierConfig updates the config for the given Vizier.
