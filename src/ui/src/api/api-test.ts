@@ -80,7 +80,7 @@ describe('Pixie TypeScript API Client', () => {
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
         .mockReturnValue({} as unknown as Promise<GQLClusterConnectionInfo>);
 
-      const out = await client.health('foo').toPromise();
+      const out = await client.health({ id: 'foo', passthroughClusterAddress: '' }).toPromise();
       expect(spy).toHaveBeenCalled();
       expect(out).toBe('bar');
     });
@@ -93,7 +93,11 @@ describe('Pixie TypeScript API Client', () => {
       jest.spyOn(client.getCloudClient(), 'getClusterConnection')
         .mockReturnValue({} as unknown as Promise<GQLClusterConnectionInfo>);
 
-      const out = await client.executeScript('foo', 'import px', { enableE2EEncryption: false }).toPromise();
+      const out = await client.executeScript(
+        { id: 'foo', passthroughClusterAddress: '' },
+        'import px',
+        { enableE2EEncryption: false },
+      ).toPromise();
       expect(spy).toHaveBeenCalled();
       expect(out).toBe('bar');
     });

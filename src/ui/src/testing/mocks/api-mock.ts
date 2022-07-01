@@ -37,13 +37,13 @@ export class MockPixieAPIClient implements PixieAPIClientAbstract {
 
   // eslint-disable-next-line class-methods-use-this
   executeScript(
-    cluster: string | ClusterConfig, script: string, opts: ExecuteScriptOptions, funcs?: VizierQueryFunc[],
+    cluster: ClusterConfig, script: string, opts: ExecuteScriptOptions, funcs?: VizierQueryFunc[],
   ): Observable<ExecutionStateUpdate> {
     return observableOf({} as ExecutionStateUpdate);
   }
 
   // eslint-disable-next-line class-methods-use-this
-  health(cluster: string | ClusterConfig): Observable<Status> {
+  health(cluster: ClusterConfig): Observable<Status> {
     return observableOf(new Status().setCode(0));
   }
 
