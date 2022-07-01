@@ -16,8 +16,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-script_dir="$(dirname "$0")"
-
 # shellcheck source=./src/stirling/scripts/utils.sh
 source src/stirling/scripts/utils.sh
 

@@ -30,8 +30,6 @@
 # Clean-up any spawned background processes on exit.
 trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 
-script_dir="$(dirname "$0")"
-
 # shellcheck source=./src/stirling/scripts/utils.sh
 source src/stirling/scripts/utils.sh
 
