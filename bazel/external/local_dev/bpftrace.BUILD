@@ -24,7 +24,8 @@ filegroup(
 )
 
 # In order to get the same build as the production bpftrace build, you should run the following commands in the bpftrace local repo:
-#   mkdir build && cd build
+#   mkdir -p build && cd build
+#   export BCC_INSTALL=/<BCC repo path>/build/install
 #   cmake -DCMAKE_INSTALL_PREFIX=install -DBUILD_TESTING=OFF -DENABLE_BFD_DISABLE=OFF -DENABLE_LIBDW=OFF -DENABLE_MAN=OFF
 #       -DLIBBCC_BPF_LIBRARIES=$BCC_INSTALL/lib/libbcc_bpf.a -DLIBBCC_INCLUDE_DIRS=$BCC_INSTALL/include
 #       -DLIBBCC_LIBRARIES=$BCC_INSTALL/lib/libbcc.a
