@@ -321,8 +321,8 @@ REPOSITORY_LOCATIONS = dict(
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
-        commit = "e8c1d8fa8d91c7ec834cecb9b6594a27c8c9ffc7",
-        shallow_since = "1654320155 -0700",
+        commit = "665ef026d27e0e066d0cd1816ebd1ab63ce8c1ef",
+        shallow_since = "1656825375 -0700",
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
