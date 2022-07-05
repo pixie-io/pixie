@@ -46,10 +46,6 @@ export interface ClusterConfig {
    * This includes the protocol, the host, and optionally the port. For example, `https://pixie.example.com:1234`.
    */
   passthroughClusterAddress: string;
-  /**
-   * If true, passes an HTTP Authorization header as part of each request to gRPC services.
-   */
-  attachCredentials?: boolean;
 }
 
 export abstract class PixieAPIClientAbstract {
@@ -124,7 +120,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
       // If in embed mode, we should always use the auth token with bearer auth.
       this.options.authToken ? this.options.authToken : token,
       cluster.id,
-      (this.options.authToken ? false : cluster.attachCredentials ?? false),
+      (this.options.authToken ? false : true),
     );
 
     // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long
