@@ -24,7 +24,6 @@ export interface GQLQuery {
   cluster: GQLClusterInfo;
   clusterByName: GQLClusterInfo;
   clusters: Array<GQLClusterInfo>;
-  clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
   autocomplete: GQLAutocompleteResult;
   autocompleteField: GQLAutocompleteFieldResult;
@@ -251,10 +250,6 @@ export interface GQLClusterInfo {
   previousStatusTimeMs?: number;
 }
 
-export interface GQLClusterConnectionInfo {
-  token: string;
-}
-
 export interface GQLUserInvite {
   email: string;
   inviteLink: string;
@@ -423,7 +418,6 @@ export interface GQLResolver {
   K8sEvent?: GQLK8sEventTypeResolver;
   PodStatus?: GQLPodStatusTypeResolver;
   ClusterInfo?: GQLClusterInfoTypeResolver;
-  ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
   UserInvite?: GQLUserInviteTypeResolver;
   LiveViewMetadata?: GQLLiveViewMetadataTypeResolver;
   LiveViewContents?: GQLLiveViewContentsTypeResolver;
@@ -450,7 +444,6 @@ export interface GQLQueryTypeResolver<TParent = any> {
   cluster?: QueryToClusterResolver<TParent>;
   clusterByName?: QueryToClusterByNameResolver<TParent>;
   clusters?: QueryToClustersResolver<TParent>;
-  clusterConnection?: QueryToClusterConnectionResolver<TParent>;
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   autocomplete?: QueryToAutocompleteResolver<TParent>;
   autocompleteField?: QueryToAutocompleteFieldResolver<TParent>;
@@ -524,13 +517,6 @@ export interface QueryToClusterByNameResolver<TParent = any, TResult = any> {
 
 export interface QueryToClustersResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToClusterConnectionArgs {
-  id: string;
-}
-export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToClusterConnectionArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToCliArtifactArgs {
@@ -1254,14 +1240,6 @@ export interface ClusterInfoToPreviousStatusResolver<TParent = any, TResult = an
 }
 
 export interface ClusterInfoToPreviousStatusTimeMsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLClusterConnectionInfoTypeResolver<TParent = any> {
-  token?: ClusterConnectionInfoToTokenResolver<TParent>;
-}
-
-export interface ClusterConnectionInfoToTokenResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

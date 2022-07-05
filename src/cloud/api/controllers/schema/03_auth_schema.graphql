@@ -7,7 +7,6 @@ extend type Query {
   cluster(id: ID!): ClusterInfo!
   clusterByName(name: String!): ClusterInfo!
   clusters: [ClusterInfo!]!
-  clusterConnection(id: ID!): ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType!): CLIArtifact!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
   autocompleteField(input: String, fieldType: AutocompleteEntityKind,
@@ -253,10 +252,6 @@ type ClusterInfo {
   statusMessage: String!
   previousStatus: ClusterStatus
   previousStatusTimeMs: Float
-}
-
-type ClusterConnectionInfo {
-  token: String!
 }
 
 type UserInvite {
