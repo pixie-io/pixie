@@ -114,13 +114,11 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
 
   // Note: this doesn't check if the client already exists, and clobbers any existing client.
   private async createVizierClient(cluster: ClusterConfig) {
-    const { token } = await this.gqlClient.getClusterConnection(cluster.id);
     const client = new VizierGRPCClient(
       cluster.passthroughClusterAddress,
       // If in embed mode, we should always use the auth token with bearer auth.
-      this.options.authToken ? this.options.authToken : token,
+      this.options.authToken,
       cluster.id,
-      (this.options.authToken ? false : true),
     );
 
     // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long

@@ -32,7 +32,6 @@ import { CachePersistor } from 'apollo3-cache-persist';
 import fetch from 'cross-fetch';
 
 import { isPixieEmbedded } from 'app/common/embed-context';
-import { GQLClusterConnectionInfo } from 'app/types/schema';
 
 import { GetCSRFCookie } from '../pages/auth/utils';
 import { PixieAPIClientOptions } from './api-options';
@@ -219,23 +218,5 @@ export class CloudClient {
     await this.persistor?.purge();
     await this.graphQL.clearStore();
     this.persistor?.resume();
-  }
-
-  /**
-   * Implementation detail for forming a connection to a cluster for health check and script execution requests.
-   */
-  async getClusterConnection(id: string): Promise<GQLClusterConnectionInfo> {
-    const { data } = await this.graphQL.query<{ clusterConnection: GQLClusterConnectionInfo }>({
-      query: gql`
-        query GetClusterConnection($id: ID!) {
-          clusterConnection(id: $id) {
-            token
-          }
-        }
-      `,
-      variables: { id },
-      fetchPolicy: 'no-cache',
-    });
-    return data.clusterConnection;
   }
 }

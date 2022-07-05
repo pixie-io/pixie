@@ -267,9 +267,8 @@ export class VizierGRPCClient {
     addr: string,
     private token: string,
     readonly clusterID: string,
-    private attachCreds: boolean,
   ) {
-    this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
+    this.client = new VizierServiceClient(addr, null, token ? {} : { withCredentials: 'true' });
     // Generate once per client and cache it to avoid the expense of regenrating on every
     // request. The key pair will rotate on browser reload or on creation of a new client.
     this.rsaKeyPromise = getRSAKeyPair();
@@ -282,7 +281,7 @@ export class VizierGRPCClient {
     */
   health(): Observable<Status> {
     const headers = {
-      ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
+      ...(this.token ? { Authorization: `bearer ${this.token}` } : {}),
     };
     const req = new HealthCheckRequest();
     req.setClusterId(this.clusterID);
@@ -325,7 +324,7 @@ export class VizierGRPCClient {
       mergeMap((kp: KeyPair) => {
         keyPair = kp;
         const headers = {
-          ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
+          ...(this.token ? { Authorization: `bearer ${this.token}` } : {}),
         };
         const req = new ExecuteScriptRequest();
         req.setClusterId(this.clusterID);
