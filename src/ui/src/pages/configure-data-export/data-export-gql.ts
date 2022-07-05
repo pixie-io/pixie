@@ -291,7 +291,11 @@ export function useCreateRetentionScript(): (newScript: GQLEditableRetentionScri
         console.error(`Could not create script named "${newScript.name}":`, err?.message);
       },
     }).then(
-      ({ data: { CreateRetentionScript: id } }) => id,
+      (res) => {
+        if (res.data) return res.data.CreateRetentionScript; // The ID of the script that was created
+        else if (res.errors) return res.errors;
+        throw new Error(`useCreateRetentionScript: response doesn't make sense: ${JSON.stringify(res)}`);
+      },
       (err) => err,
     );
   }, [createScript]);
