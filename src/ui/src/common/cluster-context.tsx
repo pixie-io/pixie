@@ -131,7 +131,6 @@ export function useClusterConfig(): ClusterConfig | null {
     const passthroughClusterAddress = window.location.origin + (PASSTHROUGH_PROXY_PORT && `:${PASSTHROUGH_PROXY_PORT}`);
     return {
       id: selectedClusterID,
-      attachCredentials: true,
       passthroughClusterAddress,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

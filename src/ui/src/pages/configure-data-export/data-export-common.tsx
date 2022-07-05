@@ -118,7 +118,6 @@ function getExportScriptStats(
   const promise = makeCancellable<VizierTable | { error: VizierQueryError }>(new Promise((resolve) => {
     const clusterConfig = {
       id: clusterId,
-      attachCredentials: true,
       passthroughClusterAddress: window.location.origin +  (PASSTHROUGH_PROXY_PORT ? `:${PASSTHROUGH_PROXY_PORT}` : ''),
     };
 
