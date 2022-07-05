@@ -25,9 +25,6 @@ describe('selectCluster', () => {
     clusterVersion: '1.0.0',
     vizierVersion: '1.0.0',
     lastHeartbeatMs: 0,
-    vizierConfig: {
-      passthroughEnabled: true,
-    },
     controlPlanePodStatuses: [],
     unhealthyDataPlanePodStatuses: [],
     numNodes: 1,

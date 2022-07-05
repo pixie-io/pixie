@@ -24,7 +24,7 @@ import { ClusterConfig } from 'app/api';
 import { useSnackbar } from 'app/components';
 import { LiveRouteContext, push } from 'app/containers/App/live-routing';
 import { PASSTHROUGH_PROXY_PORT } from 'app/containers/constants';
-import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
+import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 import { stableSerializeArgs } from 'app/utils/args-utils';
 import { WithChildren } from 'app/utils/react-boilerplate';
 
@@ -34,7 +34,6 @@ export interface ClusterContextProps {
   selectedClusterName: string;
   selectedClusterPrettyName: string;
   selectedClusterUID: string;
-  selectedClusterVizierConfig: GQLVizierConfig;
   selectedClusterStatus: GQLClusterStatus;
   selectedClusterStatusMessage: string;
   setClusterByName: (id: string) => void;
@@ -45,7 +44,7 @@ ClusterContext.displayName = 'ClusterContext';
 
 type SelectedClusterInfo = Pick<
 GQLClusterInfo,
-'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status' | 'statusMessage'
+'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'status' | 'statusMessage'
 >;
 
 const invalidCluster = (name: string): SelectedClusterInfo => ({
@@ -53,7 +52,6 @@ const invalidCluster = (name: string): SelectedClusterInfo => ({
   clusterUID: '',
   status: GQLClusterStatus.CS_UNKNOWN,
   statusMessage: '',
-  vizierConfig: null,
   clusterName: name,
   prettyClusterName: name,
 });
@@ -75,9 +73,6 @@ export const ClusterContextProvider = React.memo<WithChildren>(({ children }) =>
           clusterName
           prettyClusterName
           clusterUID
-          vizierConfig {
-              passthroughEnabled
-          }
           status
           statusMessage
         }
@@ -99,7 +94,6 @@ export const ClusterContextProvider = React.memo<WithChildren>(({ children }) =>
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
     selectedClusterUID: cluster?.clusterUID,
-    selectedClusterVizierConfig: cluster?.vizierConfig,
     selectedClusterStatus: cluster?.status,
     selectedClusterStatusMessage: cluster?.statusMessage,
     setClusterByName,
@@ -129,7 +123,7 @@ export const ClusterContextProvider = React.memo<WithChildren>(({ children }) =>
 ClusterContextProvider.displayName = 'ClusterContextProvider';
 
 export function useClusterConfig(): ClusterConfig | null {
-  const { loading, selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
+  const { loading, selectedClusterID } = React.useContext(ClusterContext);
   return React.useMemo(() => {
     if (loading || !selectedClusterID) return null;
     // If a PASSTHROUGH_PROXY_PORT is explicitly specified then there's probably no Ingress
@@ -141,5 +135,5 @@ export function useClusterConfig(): ClusterConfig | null {
       passthroughClusterAddress,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClusterID, selectedClusterVizierConfig, loading]);
+  }, [selectedClusterID, loading]);
 }

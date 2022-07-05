@@ -135,7 +135,6 @@ const ExtraNavContext = React.memo<WithChildren>(({ children }) => {
         selectedClusterStatus: GQLClusterStatus.CS_UNKNOWN,
         selectedClusterStatusMessage: '',
         selectedClusterUID: '',
-        selectedClusterVizierConfig: null,
         setClusterByName: () => {},
       }}>
         {children}

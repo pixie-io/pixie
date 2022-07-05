@@ -138,17 +138,11 @@ func podStatusToResolver(podStatus cloudpb.PodStatus) PodStatusResolver {
 	return resolver
 }
 
-// VizierConfigResolver is the resolver responsible for config belonging to the given cluster.
-type VizierConfigResolver struct {
-	PassthroughEnabled bool
-}
-
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
 	clusterID                     uuid.UUID
 	Status                        string
 	LastHeartbeatMs               float64
-	VizierConfig                  VizierConfigResolver
 	VizierVersion                 string
 	ClusterVersion                string
 	ClusterUID                    string
@@ -191,12 +185,9 @@ func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, 
 	}
 
 	resolver := &ClusterInfoResolver{
-		clusterID:       clusterID,
-		Status:          cluster.Status.String(),
-		LastHeartbeatMs: float64(cluster.LastHeartbeatNs) / 1e6,
-		VizierConfig: VizierConfigResolver{
-			PassthroughEnabled: cluster.Config.PassthroughEnabled,
-		},
+		clusterID:                     clusterID,
+		Status:                        cluster.Status.String(),
+		LastHeartbeatMs:               float64(cluster.LastHeartbeatNs) / 1e6,
 		VizierVersion:                 cluster.VizierVersion,
 		ClusterVersion:                cluster.ClusterVersion,
 		ClusterUID:                    cluster.ClusterUID,
@@ -277,49 +268,6 @@ func (q *QueryResolver) ClusterByName(ctx context.Context, args *clusterNameArgs
 		}
 	}
 	return nil, errors.New("Could not find cluster with name")
-}
-
-type editableVizierConfig struct {
-	PassthroughEnabled *bool
-}
-
-type updateVizierConfigArgs struct {
-	ClusterID    graphql.ID
-	VizierConfig *editableVizierConfig
-}
-
-// UpdateVizierConfig updates the Vizier config of the input cluster
-func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (*ClusterInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterInfo
-
-	clusterID := utils.ProtoFromUUIDStrOrNil(string(args.ClusterID))
-	req := &cloudpb.UpdateClusterVizierConfigRequest{
-		ID:           clusterID,
-		ConfigUpdate: &cloudpb.VizierConfigUpdate{},
-	}
-
-	if args.VizierConfig.PassthroughEnabled != nil {
-		req.ConfigUpdate.PassthroughEnabled = &types.BoolValue{Value: *args.VizierConfig.PassthroughEnabled}
-	}
-
-	_, err := grpcAPI.UpdateClusterVizierConfig(ctx, req)
-	if err != nil {
-		return nil, rpcErrorHelper(err)
-	}
-
-	res, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{
-		ID: clusterID,
-	})
-	if err != nil {
-		return nil, rpcErrorHelper(err)
-	}
-	if len(res.Clusters) == 0 {
-		return nil, errors.New("org has no matching clusters")
-	}
-	if len(res.Clusters) != 1 {
-		return nil, errors.New("got multiple matching clusters for ID")
-	}
-	return clusterInfoToResolver(res.Clusters[0])
 }
 
 // ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.

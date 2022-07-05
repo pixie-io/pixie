@@ -189,7 +189,6 @@ export const DataExportHistory = React.memo<{
     selectedClusterStatus: cluster?.status,
     selectedClusterStatusMessage: '',
     selectedClusterUID: '',
-    selectedClusterVizierConfig: null,
     setClusterByName: () => {},
   }), [cluster]);
 
