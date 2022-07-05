@@ -28,9 +28,6 @@ export const CLUSTER_CONTEXT_DEFAULTS: ClusterContextProps = {
   selectedClusterName: '',
   selectedClusterPrettyName: '',
   selectedClusterUID: '',
-  selectedClusterVizierConfig: {
-    passthroughEnabled: true,
-  },
   selectedClusterStatus: GQLClusterStatus.CS_UNKNOWN,
   selectedClusterStatusMessage: '',
   setClusterByName: jest.fn(),

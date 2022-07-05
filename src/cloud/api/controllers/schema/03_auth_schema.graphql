@@ -39,7 +39,6 @@ extend type Query {
 
 extend type Mutation {
   CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
-  UpdateVizierConfig(clusterID: ID!, vizierConfig: EditableVizierConfig!): ClusterInfo!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
   CreateAPIKey: APIKey!
@@ -238,15 +237,10 @@ enum ClusterStatus {
   CS_DEGRADED
 }
 
-type VizierConfig {
-  passthroughEnabled: Boolean!
-}
-
 type ClusterInfo {
   id: ID!
   status: ClusterStatus!
   lastHeartbeatMs: Float!
-  vizierConfig: VizierConfig!
   vizierVersion: String!
   clusterVersion: String!
   clusterName: String!
@@ -310,10 +304,6 @@ enum ArtifactType {
 type CLIArtifact {
   url: String!
   sha256: String!
-}
-
-input EditableVizierConfig {
-  passthroughEnabled: Boolean
 }
 
 input EditableUserPermissions {

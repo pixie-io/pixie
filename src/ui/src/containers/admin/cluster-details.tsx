@@ -513,8 +513,7 @@ const ClusterSummaryTable = ({ cluster }: {
   'numInstrumentedNodes' |
   'vizierVersion' |
   'clusterVersion' |
-  'lastHeartbeatMs' |
-  'vizierConfig'
+  'lastHeartbeatMs'
   >
 }) => {
   const classes = useClusterDetailStyles();
@@ -647,7 +646,6 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     'vizierVersion' |
     'prettyClusterName' |
     'clusterUID' |
-    'vizierConfig' |
     'status' |
     'statusMessage' |
     'controlPlanePodStatuses' |
@@ -721,7 +719,6 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
     selectedClusterUID: cluster?.clusterUID,
-    selectedClusterVizierConfig: cluster?.vizierConfig,
     selectedClusterStatus: cluster?.status,
     selectedClusterStatusMessage: cluster?.statusMessage,
     setClusterByName: () => {},

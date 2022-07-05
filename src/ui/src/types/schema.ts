@@ -52,7 +52,6 @@ export interface GQLMutation {
    * @deprecated Clusters are now created via px deploy
    */
   CreateCluster?: GQLClusterInfo;
-  UpdateVizierConfig: GQLClusterInfo;
   CreateDeploymentKey: GQLDeploymentKey;
   DeleteDeploymentKey: boolean;
   CreateAPIKey: GQLAPIKey;
@@ -234,15 +233,10 @@ export enum GQLClusterStatus {
   CS_DEGRADED = 'CS_DEGRADED'
 }
 
-export interface GQLVizierConfig {
-  passthroughEnabled: boolean;
-}
-
 export interface GQLClusterInfo {
   id: string;
   status: GQLClusterStatus;
   lastHeartbeatMs: number;
-  vizierConfig: GQLVizierConfig;
   vizierVersion: string;
   clusterVersion: string;
   clusterName: string;
@@ -302,10 +296,6 @@ export enum GQLArtifactType {
 export interface GQLCLIArtifact {
   url: string;
   sha256: string;
-}
-
-export interface GQLEditableVizierConfig {
-  passthroughEnabled?: boolean;
 }
 
 export interface GQLEditableUserPermissions {
@@ -432,7 +422,6 @@ export interface GQLResolver {
   ContainerStatus?: GQLContainerStatusTypeResolver;
   K8sEvent?: GQLK8sEventTypeResolver;
   PodStatus?: GQLPodStatusTypeResolver;
-  VizierConfig?: GQLVizierConfigTypeResolver;
   ClusterInfo?: GQLClusterInfoTypeResolver;
   ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
   UserInvite?: GQLUserInviteTypeResolver;
@@ -658,7 +647,6 @@ export interface QueryToRetentionScriptResolver<TParent = any, TResult = any> {
 export interface GQLMutationTypeResolver<TParent = any> {
   noop?: MutationToNoopResolver<TParent>;
   CreateCluster?: MutationToCreateClusterResolver<TParent>;
-  UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
   CreateDeploymentKey?: MutationToCreateDeploymentKeyResolver<TParent>;
   DeleteDeploymentKey?: MutationToDeleteDeploymentKeyResolver<TParent>;
   CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
@@ -684,14 +672,6 @@ export interface MutationToNoopResolver<TParent = any, TResult = any> {
 
 export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToUpdateVizierConfigArgs {
-  clusterID: string;
-  vizierConfig: GQLEditableVizierConfig;
-}
-export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface MutationToCreateDeploymentKeyResolver<TParent = any, TResult = any> {
@@ -1199,19 +1179,10 @@ export interface PodStatusToRestartCountResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLVizierConfigTypeResolver<TParent = any> {
-  passthroughEnabled?: VizierConfigToPassthroughEnabledResolver<TParent>;
-}
-
-export interface VizierConfigToPassthroughEnabledResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
 export interface GQLClusterInfoTypeResolver<TParent = any> {
   id?: ClusterInfoToIdResolver<TParent>;
   status?: ClusterInfoToStatusResolver<TParent>;
   lastHeartbeatMs?: ClusterInfoToLastHeartbeatMsResolver<TParent>;
-  vizierConfig?: ClusterInfoToVizierConfigResolver<TParent>;
   vizierVersion?: ClusterInfoToVizierVersionResolver<TParent>;
   clusterVersion?: ClusterInfoToClusterVersionResolver<TParent>;
   clusterName?: ClusterInfoToClusterNameResolver<TParent>;
@@ -1235,10 +1206,6 @@ export interface ClusterInfoToStatusResolver<TParent = any, TResult = any> {
 }
 
 export interface ClusterInfoToLastHeartbeatMsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface ClusterInfoToVizierConfigResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
