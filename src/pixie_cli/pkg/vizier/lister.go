@@ -64,10 +64,3 @@ func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudpb.ClusterInfo, error) {
 	}
 	return c.Clusters, nil
 }
-
-// UpdateVizierConfig updates the config for the given Vizier.
-func (l *Lister) UpdateVizierConfig(req *cloudpb.UpdateClusterVizierConfigRequest) error {
-	ctx := auth.CtxWithCreds(context.Background())
-	_, err := l.vc.UpdateClusterVizierConfig(ctx, req)
-	return err
-}
