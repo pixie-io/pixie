@@ -54,6 +54,7 @@ import {
   useMutateRetentionScript,
   useRetentionPlugins,
   useRetentionScript,
+  useRetentionScripts,
 } from './data-export-gql';
 
 const useStyles = makeStyles(({ breakpoints, spacing, typography }: Theme) => createStyles({
@@ -218,7 +219,10 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
 
   const { clusters } = useClustersForRetentionScripts();
   const { plugins } = useRetentionPlugins();
+  const { scripts: existingScripts } = useRetentionScripts();
   const { script } = useRetentionScript(scriptId);
+
+  const takenScriptNames = React.useMemo(() => existingScripts.map(s => s.name), [existingScripts]);
 
   const enabledPlugins = React.useMemo(() => (plugins?.filter(p => p.retentionEnabled) ?? []), [plugins]);
 
@@ -246,17 +250,28 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const allowCustomExportURL = schema?.allowCustomExportURL === true;
   const defaultExportURL = values?.customExportURL || schema?.defaultExportURL || '';
 
+  const [dirty, setDirty] = React.useState(false);
+
   const setPendingField = React.useCallback(<K extends keyof RetentionScriptForm>(
     field: K,
     value: RetentionScriptForm[K],
   ) => {
-    setFullPendingValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    let newlyDirty = false;
+    setFullPendingValues((prev) => {
+      if (prev[field] === value) {
+        return prev;
+      }
+      newlyDirty = true;
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
+    if (newlyDirty) setDirty(true);
   }, []);
 
   React.useEffect(() => {
+    setDirty(false);
     setFullPendingValues({
       name: script?.name ?? '',
       description: script?.description ?? '',
@@ -269,23 +284,38 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   }, [isCreate, script, validClusters]);
 
   const [saving, setSaving] = React.useState(false);
-  const [valid, setValid] = React.useState(true);
-  const save = React.useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const nowValid = pendingValues.name.trim().length
+  const valid = React.useMemo(() => (
+    pendingValues.name.trim().length
+      && (pendingValues.name.trim() === script?.name || !takenScriptNames.includes(pendingValues.name.trim()))
       && pendingValues.clusters != null
       && pendingValues.clusters.every(c => validClusters.some(v => v.id === c.id))
       && pendingValues.contents != null
       && pendingValues.frequencyS > 0
       && pendingValues.pluginID
       && enabledPlugins.some(p => p.id === pendingValues.pluginID)
-      && pendingValues.exportPath != null;
-    setValid(nowValid);
+      && pendingValues.exportPath != null
+  ), [
+    enabledPlugins, pendingValues.clusters, pendingValues.contents, pendingValues.exportPath, pendingValues.frequencyS,
+    pendingValues.name, pendingValues.pluginID, takenScriptNames, validClusters, script?.name,
+  ]);
 
-    if (saving || !nowValid) return;
+  const nameErrorText = React.useMemo(() => {
+    const name = pendingValues.name.trim();
+    if (dirty && !name.length) {
+      return 'Script needs a name';
+    } else if (name !== script?.name && takenScriptNames.includes(name)) {
+      return 'That name is already in use';
+    }
+    return ' ';
+  }, [pendingValues.name, dirty, script?.name, takenScriptNames]);
+
+  const save = React.useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (saving || !valid) return;
     setSaving(true);
+
     const newScript: GQLEditableRetentionScript = {
       name: pendingValues.name.trim(),
       description: pendingValues.description.trim(),
@@ -317,9 +347,9 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       })
       .catch(() => setSaving(false));
   }, [
-    pendingValues.name, pendingValues.description, pendingValues.clusters, pendingValues.contents,
-    pendingValues.frequencyS, pendingValues.pluginID, pendingValues.exportPath,
-    enabledPlugins, saving, createOrUpdate, validClusters, script?.enabled, showSnackbar, navBackToAllScripts,
+    saving, valid, pendingValues.name, pendingValues.description, pendingValues.frequencyS, pendingValues.clusters,
+    pendingValues.contents, pendingValues.pluginID, pendingValues.exportPath, script?.enabled,
+    createOrUpdate, showSnackbar, navBackToAllScripts,
   ]);
 
   const labelProps = React.useMemo(() => ({ shrink: true }), []);
@@ -339,7 +369,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
           <TextField
             sx={{ width: '40ch' }}
             required
-            error={!valid && !pendingValues.name.trim().length}
+            error={nameErrorText !== ' '}
+            helperText={nameErrorText}
             variant='standard'
             disabled={script?.isPreset}
             label='Script Name'
@@ -464,13 +495,13 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
         <Button variant='outlined' type='button' color='primary' onClick={navBackToAllScripts} sx={{ mr: 1 }}>
           Cancel
         </Button>
-        <Button variant='contained' type='submit' disabled={saving || !valid} color={valid ? 'primary' : 'error'}>
+        <Button variant='contained' type='submit' disabled={saving || !valid}>
           {isCreate ? 'Create' : 'Save'}
         </Button>
-        {!valid && (
-          <Typography variant='caption' sx={{ color: 'error' }}>Please fill in all required fields.</Typography>
-        )}
       </Box>
+      <Typography variant='caption' sx={{ color: 'error', textAlign: 'right', mt: 1 }}>
+        {!valid ? 'Please check all required fields.' : <>&nbsp;</>}
+      </Typography>
     </form>
     /* eslint-enable react-memo/require-usememo */
   );
