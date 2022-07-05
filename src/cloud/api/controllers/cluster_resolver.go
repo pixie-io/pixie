@@ -269,24 +269,3 @@ func (q *QueryResolver) ClusterByName(ctx context.Context, args *clusterNameArgs
 	}
 	return nil, errors.New("Could not find cluster with name")
 }
-
-// ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.
-type ClusterConnectionInfoResolver struct {
-	Token string
-}
-
-// ClusterConnection resolves cluster connection information..
-func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs) (*ClusterConnectionInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterInfo
-
-	clusterID := utils.ProtoFromUUIDStrOrNil(string(args.ID))
-	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{
-		ID: clusterID,
-	})
-	if err != nil {
-		return nil, rpcErrorHelper(err)
-	}
-	return &ClusterConnectionInfoResolver{
-		info.Token,
-	}, nil
-}
