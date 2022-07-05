@@ -19,7 +19,6 @@
 import fetch from 'cross-fetch';
 
 import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
-import { GQLClusterConnectionInfo } from 'app/types/schema';
 
 import { PixieAPIClient } from './api';
 // Imported only so that its import in the test subject can be mocked successfully.
@@ -77,9 +76,6 @@ describe('Pixie TypeScript API Client', () => {
       jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ health: spy });
 
       const client = PixieAPIClient.create({ apiKey: '' });
-      jest.spyOn(client.getCloudClient(), 'getClusterConnection')
-        .mockReturnValue({} as unknown as Promise<GQLClusterConnectionInfo>);
-
       const out = await client.health({ id: 'foo', passthroughClusterAddress: '' }).toPromise();
       expect(spy).toHaveBeenCalled();
       expect(out).toBe('bar');
@@ -90,9 +86,6 @@ describe('Pixie TypeScript API Client', () => {
       jest.spyOn(vizierDependency as any, 'VizierGRPCClient').mockReturnValue({ executeScript: spy });
 
       const client = PixieAPIClient.create({ apiKey: '' });
-      jest.spyOn(client.getCloudClient(), 'getClusterConnection')
-        .mockReturnValue({} as unknown as Promise<GQLClusterConnectionInfo>);
-
       const out = await client.executeScript(
         { id: 'foo', passthroughClusterAddress: '' },
         'import px',

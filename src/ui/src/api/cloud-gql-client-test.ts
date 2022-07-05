@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ApolloQueryResult } from '@apollo/client/core';
-
 import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
 
 import { CloudClient } from './cloud-gql-client';
@@ -28,17 +26,5 @@ describe('Cloud client (GQL wrapper)', () => {
   it('instantiates', () => {
     const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
     expect(cloudClient).toBeTruthy();
-  });
-
-  it('gets cluster connections from GraphQL', async () => {
-    const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-    jest.spyOn(cloudClient.graphQL, 'query').mockImplementation(() => Promise.resolve({
-      data: new Proxy({}, {
-        get: () => 'retrieved',
-      }),
-    } as ApolloQueryResult<unknown>));
-
-    const out = await cloudClient.getClusterConnection('fooCluster');
-    expect(out).toBe('retrieved');
   });
 });
