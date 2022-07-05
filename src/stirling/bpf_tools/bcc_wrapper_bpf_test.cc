@@ -232,7 +232,10 @@ TEST(BCCWrapperTest, LoadXDP) {
 TEST(BCCWrapper, Tracepoint) {
   bpf_tools::BCCWrapper bcc_wrapper;
 
+  // Including sched.h is a workaround of a test failure on 5.18.4 kernel.
+  // See https://github.com/iovisor/bcc/issues/4092.
   std::string_view program = R"(
+#include <linux/sched.h>
 int on_sched_process_exit(struct tracepoint__sched__sched_process_exit* args) {
     uint64_t id = bpf_get_current_pid_tgid();
     uint32_t tgid = id >> 32;
