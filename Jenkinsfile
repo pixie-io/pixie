@@ -95,7 +95,7 @@ K8S_TESTING_CLUSTER = 'https://cloud-testing.internal.corp.pixielabs.ai'
 K8S_TESTING_CREDS = 'pixie-prod-testing-cluster'
 
 // PXL Docs variables.
-PXL_DOCS_BINARY = '//src/carnot/docstring:docstring_integration'
+PXL_DOCS_BINARY = '//src/carnot/docstring:docstring'
 PXL_DOCS_FILE = 'pxl-docs.json'
 PXL_DOCS_BUCKET = 'pl-docs'
 PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
@@ -1236,7 +1236,7 @@ def updatePxlDocs() {
   WithSourceCodeK8s {
     container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
-      sh "bazel run ${PXL_DOCS_BINARY} ${pxlDocsOut}"
+      sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
       sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
     }
   }
