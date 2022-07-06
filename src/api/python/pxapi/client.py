@@ -486,9 +486,6 @@ class Cluster:
             return self.id
         return self.info.cluster_name
 
-    def passthrough(self) -> bool:
-        return self.info.config.passthrough_enabled
-
 
 class Client:
     """
@@ -555,7 +552,7 @@ class Client:
         )
         return self._get_cluster(request)[0]
 
-    def _create_passthrough_conn(
+    def _create_cluster_conn(
         self,
         cluster_id: ClusterID,
         cluster_info: cpb.ClusterInfo,
@@ -587,4 +584,4 @@ class Client:
             raise ValueError("Unexpected type for 'cluster': ", type(cluster))
 
         cluster_info = self._get_cluster_info(cluster_id)
-        return self._create_passthrough_conn(cluster_id, cluster_info)
+        return self._create_cluster_conn(cluster_id, cluster_info)
