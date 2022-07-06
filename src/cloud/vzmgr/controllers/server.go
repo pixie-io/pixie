@@ -250,8 +250,6 @@ type VizierInfo struct {
 	ID                            uuid.UUID     `db:"vizier_cluster_id"`
 	Status                        vizierStatus  `db:"status"`
 	LastHeartbeat                 *int64        `db:"last_heartbeat"`
-	PassthroughEnabled            bool          `db:"passthrough_enabled"`
-	AutoUpdateEnabled             bool          `db:"auto_update_enabled"`
 	ClusterUID                    *string       `db:"cluster_uid"`
 	ClusterName                   *string       `db:"cluster_name"`
 	ClusterVersion                *string       `db:"cluster_version"`
@@ -303,13 +301,9 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 	}
 
 	return &cvmsgspb.VizierInfo{
-		VizierID:        utils.ProtoFromUUID(vzInfo.ID),
-		Status:          vzInfo.Status.ToProto(),
-		LastHeartbeatNs: lastHearbeat,
-		Config: &cvmsgspb.VizierConfig{
-			PassthroughEnabled: vzInfo.PassthroughEnabled,
-			AutoUpdateEnabled:  vzInfo.AutoUpdateEnabled,
-		},
+		VizierID:                      utils.ProtoFromUUID(vzInfo.ID),
+		Status:                        vzInfo.Status.ToProto(),
+		LastHeartbeatNs:               lastHearbeat,
 		ClusterUID:                    clusterUID,
 		ClusterName:                   clusterName,
 		ClusterVersion:                clusterVersion,
@@ -343,7 +337,7 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 
 	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version, c.org_id,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+              i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               FROM vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
@@ -396,7 +390,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+              i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
@@ -424,77 +418,6 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return vzInfoPb, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
-}
-
-// getVizierConfig returns the current Vizier config.
-// WARNING: This doesn't check validateOrgOwnsCluster since
-// the certmgr usecase cannot get a valid authcontext from the passed in
-// context.
-func (s *Server) getVizierConfig(ctx context.Context, vizierIDPb *uuidpb.UUID) (*cvmsgspb.VizierConfig, error) {
-	vizierID := utils.UUIDFromProtoOrNil(vizierIDPb)
-
-	query := `
-		SELECT passthrough_enabled, auto_update_enabled
-		FROM vizier_cluster_info
-		WHERE vizier_cluster_id = $1`
-	var val struct {
-		PassthroughEnabled bool `db:"passthrough_enabled"`
-		AutoUpdateEnabled  bool `db:"auto_update_enabled"`
-	}
-
-	err := s.db.Get(&val, query, vizierID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, status.Error(codes.NotFound, "no such cluster")
-		}
-		return nil, err
-	}
-	return &cvmsgspb.VizierConfig{
-		PassthroughEnabled: val.PassthroughEnabled,
-		AutoUpdateEnabled:  val.AutoUpdateEnabled,
-	}, nil
-}
-
-// UpdateVizierConfig supports updating of the Vizier config.
-func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateVizierConfigRequest) (*cvmsgspb.UpdateVizierConfigResponse, error) {
-	if err := s.validateOrgOwnsCluster(ctx, req.VizierID); err != nil {
-		return nil, err
-	}
-
-	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
-
-	if req.ConfigUpdate == nil {
-		return &cvmsgspb.UpdateVizierConfigResponse{}, nil
-	}
-
-	currentConfig, err := s.getVizierConfig(ctx, req.VizierID)
-	if err != nil {
-		return nil, err
-	}
-
-	ptEnabled := currentConfig.PassthroughEnabled
-
-	if req.ConfigUpdate.PassthroughEnabled != nil {
-		if !req.ConfigUpdate.PassthroughEnabled.Value {
-			return nil, status.Error(codes.InvalidArgument, "Deprecated. Disabling passthrough is no longer supported and is being phased out.")
-		}
-		ptEnabled = req.ConfigUpdate.PassthroughEnabled.Value
-	}
-
-	query := `
-    UPDATE vizier_cluster_info
-    SET passthrough_enabled = $1
-    WHERE vizier_cluster_id = $2`
-
-	res, err := s.db.Exec(query, ptEnabled, vizierID)
-	if err != nil {
-		return nil, err
-	}
-	if count, _ := res.RowsAffected(); count == 0 {
-		return nil, status.Error(codes.NotFound, "no such cluster")
-	}
-
-	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }
 
 // GetVizierConnectionInfo gets a viziers connection info,

@@ -1098,26 +1098,6 @@ func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterInfo(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterInfo), varargs...)
 }
 
-// UpdateClusterVizierConfig mocks base method.
-func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Context, in *cloudpb.UpdateClusterVizierConfigRequest, opts ...grpc.CallOption) (*cloudpb.UpdateClusterVizierConfigResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdateClusterVizierConfig", varargs...)
-	ret0, _ := ret[0].(*cloudpb.UpdateClusterVizierConfigResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig.
-func (mr *MockVizierClusterInfoClientMockRecorder) UpdateClusterVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateClusterVizierConfig), varargs...)
-}
-
 // UpdateOrInstallCluster mocks base method.
 func (m *MockVizierClusterInfoClient) UpdateOrInstallCluster(ctx context.Context, in *cloudpb.UpdateOrInstallClusterRequest, opts ...grpc.CallOption) (*cloudpb.UpdateOrInstallClusterResponse, error) {
 	m.ctrl.T.Helper()
@@ -1204,21 +1184,6 @@ func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 
 func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterInfo), arg0, arg1)
-}
-
-// UpdateClusterVizierConfig mocks base method.
-func (m *MockVizierClusterInfoServer) UpdateClusterVizierConfig(arg0 context.Context, arg1 *cloudpb.UpdateClusterVizierConfigRequest) (*cloudpb.UpdateClusterVizierConfigResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateClusterVizierConfig", arg0, arg1)
-	ret0, _ := ret[0].(*cloudpb.UpdateClusterVizierConfigResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig.
-func (mr *MockVizierClusterInfoServerMockRecorder) UpdateClusterVizierConfig(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateClusterVizierConfig), arg0, arg1)
 }
 
 // UpdateOrInstallCluster mocks base method.
