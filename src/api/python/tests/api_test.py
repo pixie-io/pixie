@@ -89,14 +89,10 @@ def create_cluster_info(
     cluster_id: str,
     cluster_name: str,
     status: cpb.ClusterStatus = cpb.CS_HEALTHY,
-    passthrough_enabled: bool = True
 ) -> cpb.ClusterInfo:
     return cpb.ClusterInfo(
         id=utils.uuid_pb_from_string(cluster_id),
         status=status,
-        config=cpb.VizierConfig(
-            passthrough_enabled=passthrough_enabled,
-        ),
         cluster_name=cluster_name,
     )
 
