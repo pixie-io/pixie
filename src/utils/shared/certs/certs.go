@@ -134,12 +134,9 @@ func getCloudDNSNamesForNamespace(namespace string) []string {
 		fmt.Sprintf("*.%s", namespace),
 		fmt.Sprintf("*.%s.svc.cluster.local", namespace),
 		fmt.Sprintf("*.%s.pod.cluster.local", namespace),
+		fmt.Sprintf("*.pl-nats.%s.svc", namespace),
 		"*.pl-nats",
-		"*.pl-nats.plc.svc",
 		"pl-nats",
-		"*.plc-nats",
-		"*.plc-nats.plc.svc",
-		"plc-nats",
 		"*.local",
 		"localhost",
 	}
