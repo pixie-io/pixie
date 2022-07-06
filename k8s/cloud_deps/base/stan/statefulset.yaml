@@ -131,7 +131,7 @@ spec:
       # STAN Server
       containers:
       - name: pl-stan
-        image: nats-streaming:0.22.1
+        image: nats-streaming:0.24.6-alpine3.15
         ports:
         - containerPort: 8222
           name: monitor

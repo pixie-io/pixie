@@ -111,7 +111,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: pl-nats
-        image: gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:2.4.0-alpine3.14
+        image: gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:2.8.4-alpine3.15
         ports:
         - containerPort: 4222
           name: client

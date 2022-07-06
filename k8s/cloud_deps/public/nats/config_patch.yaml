@@ -16,6 +16,7 @@ data:
       timeout: 3
     }
     cluster {
+      name: pl-nats
       port: 6222
       routes [
         nats://pl-nats-0.pl-nats:6222
