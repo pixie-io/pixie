@@ -26,6 +26,7 @@ secret_type=$2
 
 workspace=$(bazel info workspace 2> /dev/null)
 credentials_path=${workspace}/credentials/k8s/${secret_type}
+monitoring_path=${workspace}/credentials/k8s/monitoring/${secret_type}
 
 if [ ! -d "${credentials_path}" ]; then
   echo "Credentials path \"${credentials_path}\" does not exist. Did you slect the right secret type?"
@@ -42,4 +43,14 @@ done
 for yaml in "${credentials_path}"/*.yaml; do
   echo "Loading: ${yaml}"
   sops --decrypt "${yaml}" | kubectl apply -n "${namespace}" -f -
+done
+
+if [ ! -d "${monitoring_path}" ]; then
+  exit 0
+fi
+
+# Apply monitoring secrets.
+for yaml in "${monitoring_path}"/*.yaml; do
+  echo "Loading: ${yaml}"
+  sops --decrypt "${yaml}" | kubectl apply -n "${namespace}-monitoring" -f -
 done
