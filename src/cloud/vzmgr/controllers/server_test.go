@@ -133,28 +133,28 @@ func mustLoadTestData(db *sqlx.DB) {
 	testPastStatus := "UNHEALTHY"
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, jwt_signing_key, last_heartbeat,
-						  passthrough_enabled, auto_update_enabled, vizier_version, cluster_version, control_plane_pod_statuses,
+						  vizier_version, cluster_version, control_plane_pod_statuses,
 							unhealthy_data_plane_pod_statuses, num_nodes, num_instrumented_nodes, status_message,
 							prev_status, prev_status_time)
-						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN",
-		"key0", "2011-05-16 15:36:38", true, false, "", "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
+		"key0", "2011-05-16 15:36:38", "", "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
 		&testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY",
 		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
-		"2011-05-17 15:36:38", false, true, "vzVers", "cVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
+		"2011-05-17 15:36:38", "vzVers", "cVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "key2", "2011-05-18 15:36:38",
-		true, false, "", "", "{}", "{}", 4, 4, "", nil, nil)
+		"", "", "{}", "{}", 4, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 3, 2, "", nil, nil)
+		"", "", "{}", "{}", 3, 2, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 5, 4, "", nil, nil)
+		"", "", "{}", "{}", 5, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 10, 4, "", nil, nil)
+		"", "", "{}", "{}", 10, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "key3", "2011-05-19 15:36:38",
-		true, true, "", "", "{}", "{}", 2, 0, "", nil, nil)
+		"", "", "{}", "{}", 2, 0, "", nil, nil)
 	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 4, 2, "", nil, nil)
+		"", "", "{}", "{}", 4, 2, "", nil, nil)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 }
@@ -242,8 +242,6 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, resp.VizierID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	assert.Equal(t, resp.Status, cvmsgspb.VZ_ST_HEALTHY)
 	assert.Greater(t, resp.LastHeartbeatNs, int64(0))
-	assert.Equal(t, resp.Config.PassthroughEnabled, false)
-	assert.Equal(t, resp.Config.AutoUpdateEnabled, true)
 	assert.Equal(t, "vzVers", resp.VizierVersion)
 	assert.Equal(t, "cVers", resp.ClusterVersion)
 	assert.Equal(t, "healthy_cluster", resp.ClusterName)
@@ -292,106 +290,6 @@ func TestServer_GetVizierInfos(t *testing.T) {
 	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[2])
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), resp.VizierInfos[3].VizierID)
 	assert.Equal(t, "k8sID", resp.VizierInfos[3].ClusterUID)
-}
-
-func TestServer_UpdateVizierConfig(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Check that the value was actually updated.
-	infoResp, err := s.GetVizierInfo(CreateTestContext(), vzIDpb)
-	require.NoError(t, err)
-	require.NotNil(t, infoResp)
-	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
-}
-
-func TestServer_UpdateVizierConfig_PassthroughDisable(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-
-	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: false},
-		},
-	})
-	require.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.InvalidArgument)
-}
-
-func TestServer_UpdateVizierConfig_PassthroughEnable(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-
-	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.NoError(t, err)
-}
-
-func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.Nil(t, resp)
-	require.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.NotFound)
-}
-
-func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Check that the value was not updated.
-	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.NoError(t, err)
-	require.NotNil(t, infoResp)
-	assert.Equal(t, infoResp.Config.PassthroughEnabled, false)
 }
 
 func TestServer_GetVizierConnectionInfo(t *testing.T) {

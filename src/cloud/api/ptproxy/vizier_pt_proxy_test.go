@@ -731,9 +731,6 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("00000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_HEALTHY,
 				LastHeartbeatNs: 0,
-				Config: &cvmsgspb.VizierConfig{
-					PassthroughEnabled: true,
-				},
 			},
 			nil,
 		},
@@ -742,9 +739,6 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("10000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_DISCONNECTED,
 				LastHeartbeatNs: 0,
-				Config: &cvmsgspb.VizierConfig{
-					PassthroughEnabled: true,
-				},
 			},
 			nil,
 		},
@@ -753,9 +747,6 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("10000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_UNHEALTHY,
 				LastHeartbeatNs: 0,
-				Config: &cvmsgspb.VizierConfig{
-					PassthroughEnabled: true,
-				},
 			},
 			nil,
 		},
@@ -764,9 +755,6 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...
 				VizierID:        utils.ProtoFromUUIDStrOrNil("30000000-1111-2222-2222-333333333333"),
 				Status:          cvmsgspb.VZ_ST_UNHEALTHY,
 				LastHeartbeatNs: 0,
-				Config: &cvmsgspb.VizierConfig{
-					PassthroughEnabled: false,
-				},
 			},
 			nil,
 		},
