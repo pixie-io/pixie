@@ -16,11 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <map>
-#include <stack>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/decode.h"
