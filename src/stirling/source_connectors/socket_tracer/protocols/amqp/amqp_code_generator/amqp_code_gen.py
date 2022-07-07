@@ -688,6 +688,9 @@ class CodeGenerator:
             PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
             PL_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractInt<uint16_t>());
 
+            req->class_id = class_id;
+            req->method_id = method_id;
+
             switch(static_cast<AMQPClasses>(class_id)) {{
                 {amqp_extract_class_case_str}
             }}
