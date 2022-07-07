@@ -88,6 +88,9 @@ struct Frame : public FrameBase {
   // if full body parsing already done
   bool full_body_parsed = false;
 
+  uint16_t class_id = 0;
+  uint16_t method_id = 0;
+
   size_t ByteSize() const override { return sizeof(Frame) + msg.size(); }
 };
 
