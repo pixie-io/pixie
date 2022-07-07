@@ -31,6 +31,7 @@ import (
 	"github.com/cenkalti/backoff/v3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -371,6 +372,11 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		if err != nil {
 			log.WithError(err).Warning("Failed to delete deprecated proxy resources")
 		}
+
+		err = r.upgradeNats(ctx, req.Namespace, vz, yamlMap)
+		if err != nil {
+			log.WithError(err).Warning("Failed to upgrade nats")
+		}
 	}
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
@@ -415,6 +421,54 @@ func getSpecChecksum(vz *v1alpha1.Vizier) ([]byte, error) {
 	h := sha256.New()
 	h.Write([]byte(specStr))
 	return h.Sum(nil), nil
+}
+
+func (r *VizierReconciler) upgradeNats(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
+	log.Info("Upgrading NATS if necessary")
+
+	ss, err := r.Clientset.AppsV1().StatefulSets(namespace).Get(ctx, "pl-nats", metav1.GetOptions{})
+	if err != nil {
+		log.WithError(err).Info("No NATS currently running")
+		return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
+	}
+
+	containers := ss.Spec.Template.Spec.Containers
+	if len(containers) == 0 {
+		log.Info("NATS seems to have no containers")
+		return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
+	}
+	natsImage := containers[0].Image
+
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["nats"]))
+	if err != nil {
+		return err
+	}
+
+	var newSS appsv1.StatefulSet
+	for _, r := range resources {
+		if r.GVK.Kind != "StatefulSet" {
+			continue
+		}
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(r.Object.UnstructuredContent(), &newSS)
+		if err != nil {
+			log.WithError(err).Info("Could not decode NATS Statefulset")
+			return err
+		}
+		break
+	}
+
+	if len(newSS.Spec.Template.Spec.Containers) == 0 {
+		log.Info("New NATS spec seems to have no containers")
+		return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
+	}
+
+	if natsImage == newSS.Spec.Template.Spec.Containers[0].Image {
+		log.Info("NATS up to date. Nothing to do.")
+		return nil
+	}
+
+	log.Info("Will upgrade NATS")
+	return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
 }
 
 func (r *VizierReconciler) deleteDeprecatedCertmanager(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
@@ -537,7 +591,7 @@ func (r *VizierReconciler) deployNATSStatefulset(ctx context.Context, namespace 
 			return err
 		}
 	}
-	return retryDeploy(r.Clientset, r.RestConfig, namespace, resources, false)
+	return retryDeploy(r.Clientset, r.RestConfig, namespace, resources, true)
 }
 
 // deployEtcdStatefulset deploys etcd to the given namespace.
