@@ -66,7 +66,6 @@ class FieldType(Enum):
     @staticmethod
     def get_field_extract_function(field_type):
         extract_function_c_mapping = {
-            FieldType.bit: "decoder->ExtractInt<bool>()",
             FieldType.octet: "decoder->ExtractChar<uint8_t>()",
             FieldType.short: "decoder->ExtractInt<uint16_t>()",
             FieldType.long: "decoder->ExtractInt<uint32_t>()",
@@ -141,6 +140,12 @@ class Field:
         extract_function = FieldType.get_field_extract_function(self.field_type)
         return f"PL_ASSIGN_OR_RETURN(r.{self.c_field_name}, {extract_function});"
 
+    def gen_buffer_extract_bit(self, index):
+        """
+        The bit type in AMQP packs multiple values into a single octet
+        """
+        return f"PL_ASSIGN_OR_RETURN(r.{self.c_field_name}, ExtractNthBit(decoder, {index}));"
+
     def get_class_buffer_extract(self, index):
         """
         Content header fields can optionally show up based on if the property flag at an index is set.
@@ -197,10 +202,47 @@ class AMQPMethod:
             }};
         """
 
+    def get_field_buffer_extractions(self, fields: List[Field]):
+        """
+        Extracts the fields from the buffer and assigns them to the struct.
+        Ex:
+        PL_ASSIGN_OR_RETURN(r.replica_id, decoder->ExtractInt32());
+
+        For bit type, consecutive bits are extracted and compacted into a single octet.
+        If there are more than 8 bits, it flows into the next octet.
+
+        The fields:
+        <field name="wait" domain="bit"/>
+        <field name="local" domain="bit" />
+        <field name="test" domain="bit" />
+        will be packed into the octet as 0b00000<test bit><local bit><wait bit>.
+
+        """
+        field_type_bit_counter = 0
+        field_buffer_extractions = []
+        extract_octet_str = f"{FieldType.get_field_extract_function(FieldType.octet)};"
+        for field in fields:
+            if field.field_type == FieldType.bit:
+                if field_type_bit_counter == 8:
+                    field_buffer_extractions.append(extract_octet_str)
+                    field_type_bit_counter = 0
+                field_buffer_extractions.append(
+                    field.gen_buffer_extract_bit(field_type_bit_counter)
+                )
+                field_type_bit_counter += 1
+            else:
+                if field_type_bit_counter > 0:
+                    field_buffer_extractions.append(extract_octet_str)
+                    field_type_bit_counter = 0
+                field_buffer_extractions.append(field.gen_buffer_extract())
+
+        if field_type_bit_counter > 0:
+            field_buffer_extractions.append(extract_octet_str)
+
+        return "\n".join(field_buffer_extractions)
+
     def gen_buffer_extract(self):
-        field_buffer_extractions = "\n".join(
-            [field.gen_buffer_extract() for field in self.fields]
-        )
+        field_buffer_extractions = self.get_field_buffer_extractions(self.fields)
         unused_attribute = "[[maybe_unused]]" if len(self.fields) == 0 else ""
         return f"""
             Status Extract{self.c_struct_name}({unused_attribute} BinaryDecoder* decoder, Frame* frame) {{
