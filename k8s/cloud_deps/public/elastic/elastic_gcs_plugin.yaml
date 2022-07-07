@@ -1,0 +1,5 @@
+---
+- op: remove
+  path: /spec/nodeSets/0/podTemplate/spec/initContainers/0
+- op: remove
+  path: /spec/nodeSets/1/podTemplate/spec/initContainers/0
