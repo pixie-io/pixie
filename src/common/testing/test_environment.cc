@@ -19,6 +19,7 @@
 #include <memory>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_environment.h"
 
 #include "tools/cpp/runfiles/runfiles.h"
@@ -28,15 +29,23 @@ namespace testing {
 
 using bazel::tools::cpp::runfiles::Runfiles;
 
+// Tests that support running outside of bazel (i.e. invoked *not* using "bazel run")
+// call this method to find files based on the build manifest created with the test target.
+// When invoked using "bazel run" the "runfiles" mechanism used here fails, but, the files
+// are found organically based on their relative path.
 std::filesystem::path BazelRunfilePath(const std::filesystem::path& rel_path) {
   std::string error;
   std::unique_ptr<Runfiles> runfiles(Runfiles::CreateForTest(&error));
   if (!error.empty()) {
-    LOG_FIRST_N(WARNING, 1) << "Failed to initialize runfiles";
+    if (!::px::fs::Exists(rel_path)) {
+      char const* const errmsg = "Failed to initialize runfiles, cannot find: $0.";
+      LOG(FATAL) << absl::Substitute(errmsg, rel_path.string());
+    }
+    // else: rel_path exists and there is no need to use "bazel runfiles." (see note above).
     return rel_path;
   }
 
-  std::string path = runfiles->Rlocation(std::filesystem::path("px") / rel_path.string());
+  const std::string path = runfiles->Rlocation(std::filesystem::path("px") / rel_path);
   return path;
 }
 
