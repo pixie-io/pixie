@@ -18,16 +18,7 @@
 
 #pragma once
 
-#include <absl/container/flat_hash_map.h>
-#include <absl/container/flat_hash_set.h>
-#include <chrono>
-#include <deque>
-#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
-
-#include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
