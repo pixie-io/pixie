@@ -17,6 +17,12 @@ spec:
     podTemplate:
       spec:
         initContainers:
+        - name: install-plugins
+          command:
+          - sh
+          - -c
+          - |
+              bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
             privileged: true
@@ -55,6 +61,12 @@ spec:
               cpu: 0.5
               memory: 4Gi
         initContainers:
+        - name: install-plugins
+          command:
+          - sh
+          - -c
+          - |
+              bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
             privileged: true

@@ -19,3 +19,9 @@ patchesJson6902:
     kind: Elasticsearch
     group: elasticsearch.k8s.elastic.co
     version: v1
+- path: elastic_gcs_plugin.yaml
+  target:
+    kind: Elasticsearch
+    name: pl-elastic
+    group: elasticsearch.k8s.elastic.co
+    version: v1
