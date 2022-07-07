@@ -26,16 +26,8 @@ trap 'kill $(jobs -p) &> /dev/null || true' SIGINT SIGTERM EXIT
 # shellcheck source=./src/stirling/scripts/utils.sh
 source src/stirling/scripts/utils.sh
 
-if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
-    echo "Building stirling_wrapper & stirling_ctrl ..."
-    # If the script was run in a stand-alone way, then build and set paths.
-    stirling_wrapper="$(bazel_build //src/stirling/binaries:stirling_wrapper)"
-    stirling_ctrl="$(bazel_build //src/stirling/binaries:stirling_ctrl)"
-else
-    # If the script was run through bazel, the locations are passed as arguments.
-    stirling_wrapper=$1
-    stirling_ctrl=$2
-fi
+stirling_wrapper=$1
+stirling_ctrl=$2
 
 ###############################################################################
 # Main test: Run stirling_wrapper.

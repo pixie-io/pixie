@@ -16,91 +16,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-usage() {
-  echo "This script effectively executes 'bazel run' with sudo"
-  echo ""
-  echo "Usage: $0 <bazel_flags> <bazel_target> [-- <arguments to binary>] [-- <pass thru env vars>]"
-  echo ""
-  echo "Example:"
-  echo "  # To run the following as root (contrived to show bazel args, test args, and pass thru env. vars):"
-  echo "  # PL_HOST_PATH=/tmp/pl bazel run -c dbg //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test"
-  echo "  PL_HOST_PATH=/tmp/pl scripts/sudo_bazel_run.sh -c dbg //src/stirling:socket_trace_bpf_test -- --gtest_filter=Test.Test -- PL_HOST_PATH"
+# Invoke something using sudo. This is *just* to force password entry because
+# bazel run will not handle password entry correctly.
+sudo ls 1> /dev/null
 
-  exit
-}
-
-if [ $# -eq 0 ]; then
-  usage
-fi
-
-if [ "$1" == "-h" ]; then
-  usage
-fi
-
-# Assuming script is installed in $PIXIE_ROOT/bin
-script_dir="$(dirname "$0")"
-cd "$script_dir"/.. || exit
-
-# Extract bazel build args and target.
-# But leave runtime arguments in the array.
-for x in "$@"; do
-  # Look for the argument separator.
-  if [[ "$x" == "--" ]]; then
-    shift
-    break;
-  fi
-  build_args+=("$x")
-  shift
-done
-
-# Extract run args.
-# But leave pass through env. vars in the array.
-for x in "$@"; do
-  # Look for the argument separator.
-  if [[ "$x" == "--" ]]; then
-    shift
-    break;
-  fi
-  run_args+=("$x")
-  shift
-done
-
-for x in "$@"; do
-  # Fail if an additional argument separator is found.
-  if [[ "$x" == "--" ]]; then
-    echo "Extra \"--\" indicates more args, but this script does not understand them."
-    exit 1;
-  fi
-  # ${!x} expands to the value assigned to the env. var whose name is stored in x.
-  # If $x expands to FOO, and FOO is an env. var with value "123" then ${!x} expands to 123.
-  pass_thru_env_args+=("$x=${!x}")
-  pass_thru_env_vars+=("$x")
-  shift
-done
-
-options=("${build_args[@]::${#build_args[@]}-1}")
-target="${build_args[-1]}"
-
-echo "Bazel options: ${options[*]}"
-echo "Bazel target: $target"
-echo "Run args: ${run_args[*]}"
-echo "Pass through env. vars: ${pass_thru_env_vars[*]}"
-
-# Perform the build as user (not as root).
-bazel build --remote_download_outputs=all "${options[@]}" "$target"
-
-target_executable=$(bazel cquery "${options[@]}" "${target}" --output starlark --starlark:expr "target.files.to_list()[0].path" 2>/dev/null)
-
-extra_env_args=()
-if [[ -f "${target_executable}.runfiles/MANIFEST" ]]; then
-  extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles/MANIFEST")
-elif [[ -f "${target_executable}.runfiles_manifest" ]]; then
-  extra_env_args+=("RUNFILES_MANIFEST_FILE=${target_executable}.runfiles_manifest")
-fi
-
-if [[ -d "${target_executable}.runfiles/" ]]; then
-  extra_env_args+=("RUNFILES_DIR=${target_executable}.runfiles/")
-fi
-
-# Run the binary with sudo.
-sudo "${pass_thru_env_args[@]}" "${extra_env_args[@]}" "$target_executable" "${run_args[@]}"
+# Disabling the "test sharding strategy" is needed, despite that we are using bazel run here.
+bazel run --run_under=sudo --test_sharding_strategy=disabled "$@"

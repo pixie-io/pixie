@@ -195,8 +195,6 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
-    FLAGS_stirling_profiler_java_agent_libs = GetAgentLibsFlagValueForTesting();
-    FLAGS_stirling_profiler_px_jattach_path = GetPxJattachFlagValueForTesting();
     FLAGS_stirling_profiler_table_update_period_seconds = 5;
     FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
 

@@ -25,15 +25,8 @@ source src/stirling/scripts/utils.sh
 # shellcheck source=./src/stirling/scripts/test_utils.sh
 source src/stirling/scripts/test_utils.sh
 
-if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
-    # If the script was run in a stand-alone way, then build and set paths.
-    stirling_wrapper=$(bazel_build //src/stirling/binaries:stirling_wrapper)
-    trace_script=src/stirling/testing/exec_snoop.bpftrace.pxl
-else
-    # If the script was run through bazel, the locations are passed as arguments.
-    stirling_wrapper=$1
-    trace_script=$2
-fi
+stirling_wrapper=$1
+trace_script=$2
 
 ###############################################################################
 # Main test: Run stirling_wrapper.

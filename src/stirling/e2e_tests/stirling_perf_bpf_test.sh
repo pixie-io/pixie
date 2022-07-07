@@ -36,22 +36,15 @@ source src/stirling/scripts/utils.sh
 # shellcheck source=./src/stirling/scripts/test_utils.sh
 source src/stirling/scripts/test_utils.sh
 
-if [ -z "$BUILD_WORKSPACE_DIRECTORY" ] && [ -z "$TEST_TMPDIR" ]; then
-    # If the script was run in a stand-alone way, then build and set paths.
-    echo "Building stirling_wrapper with '-c opt'"
-    stirling_wrapper=$(bazel_build //src/stirling/binaries:stirling_wrapper "-c opt")
-else
-    # If the script was run through bazel, the locations are passed as arguments.
-    stirling_wrapper=$1
+stirling_wrapper=$1
 
-    # If not running with admin privileges, check if sudo will work.
-    if [[ $EUID -ne 0 ]]; then
-      echo "If trying to run this locally, use: sudo ./src/stirling/stirling_perf_test.sh"
-      echo "(or run 'sudo echo', enter password and try again)"
+# If not running with admin privileges, check if sudo will work.
+if [[ $EUID -ne 0 ]]; then
+  echo "If trying to run this locally, use: sudo ./src/stirling/stirling_perf_test.sh"
+  echo "(or run 'sudo echo', enter password and try again)"
 
-      # Check that sudo won't block, otherwise this will error and the script will exit.
-      sudo -n echo
-    fi
+  # Check that sudo won't block, otherwise this will error and the script will exit.
+  sudo -n echo
 fi
 
 ###############################################################################
@@ -60,7 +53,7 @@ fi
 
 TIMEOUT_SECS=60
 echo "Running stirling_wrapper for $TIMEOUT_SECS seconds after init."
-flags="--timeout_secs=$TIMEOUT_SECS --sources=kProd --print_record_batches="
+flags="--timeout_secs=$TIMEOUT_SECS --stirling_sources=kProd --print_record_batches="
 out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 ###############################################################################
