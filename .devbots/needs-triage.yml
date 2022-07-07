@@ -1,0 +1,10 @@
+---
+enabled: true
+label: "needs-triage"
+delay: 1
+skip_when_has_labels:
+- triage/unresolved
+- triage/accepted
+- triage/duplicate
+- triage/not-reproducible
+- triage/needs-information
