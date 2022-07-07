@@ -22,6 +22,7 @@ from typing import List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 import fire
+import subprocess
 
 
 def to_camel_case(text):
@@ -852,13 +853,26 @@ class CodeGeneratorWriter:
         self.write_type_gen_header()
         self.write_struct_declr()
         self.write_buffer_decode()
-        # TODO add format_all
+        self.format_all()
 
     def format_all(self):
         """
         Runs clang-format to format outputted c code
         """
-        pass
+        if input("Use clang-format to format code[y/n]") != "y":
+            return
+
+        p = subprocess.Popen(
+            [
+                "clang-format",
+                "-style=Google",
+                "-i",
+                str(self.struct_gen_header_path),
+                str(self.decode_gen_path),
+                str(self.types_gen_header_path),
+            ]
+        )
+        p.wait()
 
 
 # TODO(vsrivatsa) ADD followup test for api
