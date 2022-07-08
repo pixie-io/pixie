@@ -334,6 +334,12 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
+	// Get the checksum up here in case the spec changes midway through.
+	checksum, err := getSpecChecksum(vz)
+	if err != nil {
+		return err
+	}
+
 	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate configs for Vizier YAMLs")
@@ -390,10 +396,6 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Status.Version = vz.Spec.Version
 	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseReady)
 
-	checksum, err := getSpecChecksum(vz)
-	if err != nil {
-		return err
-	}
 	vz.Status.Checksum = checksum
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
