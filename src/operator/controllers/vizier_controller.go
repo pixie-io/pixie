@@ -55,7 +55,7 @@ const (
 	clusterSecretJWTKey = "jwt-signing-key"
 	// updatingFailedTimeout is the amount of time we wait since an Updated started
 	// before we consider the Update Failed.
-	updatingFailedTimeout = 30 * time.Minute
+	updatingFailedTimeout = 10 * time.Minute
 	// How often we should check whether a Vizier update failed.
 	updatingVizierCheckPeriod = 1 * time.Minute
 )
@@ -220,6 +220,7 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
 	}
+	log.Infof("Status checksum '%s' does not match spec checksum '%s' - running an update", string(vz.Status.Checksum), string(checksum))
 
 	return r.deployVizier(ctx, req, vz, true)
 }
@@ -389,6 +390,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	// Refetch the Vizier resource, as it may have changed in the time in which we were waiting for the cluster.
 	err = r.Get(ctx, req.NamespacedName, vz)
 	if err != nil {
+		log.WithError(err).Info("Failed to get vizier after deploy. Vizier was likely deleted")
 		// The Vizier was deleted in the meantime. Do nothing.
 		return nil
 	}
@@ -402,6 +404,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
+	log.Info("Vizier deploy is complete")
 	return nil
 }
 
@@ -875,6 +878,7 @@ func (r *VizierReconciler) watchForFailedVizierUpdates() {
 			if time.Since(vz.Status.LastReconciliationPhaseTime.Time) < updatingFailedTimeout {
 				continue
 			}
+			log.WithField("namespace", vz.Namespace).WithField("vizier", vz.Name).Error("Marking vizier as failed")
 			err := r.Status().Update(ctx, setReconciliationPhase(&vz, v1alpha1.ReconciliationPhaseFailed))
 			if err != nil {
 				log.WithError(err).Error("Unable to update vizier status")
