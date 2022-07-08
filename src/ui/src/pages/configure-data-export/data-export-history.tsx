@@ -31,7 +31,7 @@ import { QueryResultTable } from 'app/containers/live-widgets/table/query-result
 import { DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE } from 'app/containers/live/vis';
 import { SetStateFunc } from 'app/context/common';
 import { ResultsContext } from 'app/context/results-context';
-import { GQLClusterStatus, GQLDetailedRetentionScript } from 'app/types/schema';
+import { GQLClusterStatus, GQLDetailedRetentionScript, GQLRetentionScript } from 'app/types/schema';
 
 import { PluginIcon, useExportScriptStats } from './data-export-common';
 import {
@@ -96,11 +96,45 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'DataExportHistory' });
 
+const HistoryStatusIcon = React.memo<{
+  cluster: Cluster,
+  script: GQLRetentionScript,
+}>(({ cluster, script }) => {
+  const { loading, error, table } = useExportScriptStats(cluster?.id ?? '', script?.id ?? '');
+
+  if (!cluster || !script || loading || error || !table) {
+    return <StatusCell statusGroup='unknown' />;
+  }
+
+  let pass = 0;
+  let fail = 0;
+  for (const { Error:  rowError } of table.rows) {
+    if (rowError) fail++;
+    else pass++;
+  }
+  const pct = pass / (pass + fail);
+
+  // eslint-disable-next-line react-memo/require-usememo
+  let mode: StatusGroup = 'unknown';
+  if (Number.isNaN(pct)) {
+    mode = 'pending';
+  } else {
+    if (pct < 0.5) mode = 'unhealthy';
+    else if (pct < 1) mode = 'degraded';
+    else mode = 'healthy';
+  }
+
+  return <StatusCell statusGroup={mode} />;
+});
+HistoryStatusIcon.displayName = 'HistoryStatusIcon';
+
+
 const HistoryClusterSelector = React.memo<{
   clusters: Cluster[],
   value: Cluster,
   onSelect: SetStateFunc<Cluster>,
-}>(({ clusters, value, onSelect }) => {
+  script: GQLRetentionScript,
+}>(({ clusters, value, onSelect, script }) => {
   /* eslint-disable react-memo/require-usememo */
   return (
     <Autocomplete
@@ -123,16 +157,14 @@ const HistoryClusterSelector = React.memo<{
               name: '', // And prevents this input from being part of the form's data
             },
             startAdornment: (
-              <StatusCell statusGroup={
-                (value?.status.replace('CS_', '').toLowerCase() ?? 'unknown') as StatusGroup
-              } />
+              <HistoryStatusIcon cluster={value} script={script} />
             ),
           }}
         />
       )}
       renderOption={(props, cluster) => (
         <li key={cluster.id} {...props}>
-          <StatusCell statusGroup={cluster.status.replace('CS_', '').toLowerCase() as StatusGroup} />
+          <HistoryStatusIcon cluster={cluster} script={script} />
           <Box sx={{ display: 'inline-block', ml: 1 }}>{cluster.prettyClusterName}</Box>
         </li>
       )}
@@ -214,7 +246,7 @@ export const DataExportHistory = React.memo<{
           }}
         />
         <Box sx={{ flexGrow: 1 }} />
-        <HistoryClusterSelector clusters={clusters} value={cluster} onSelect={setCluster} />
+        <HistoryClusterSelector clusters={clusters} value={cluster} onSelect={setCluster} script={script} />
       </div>
       {(!cluster || loading || error || !table?.rows.length) ? (
         <div className={classes.body}>
