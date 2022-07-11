@@ -22,9 +22,7 @@ spec:
         args:
         - --address=fe:50051
         - --count=0
-        - --quiet=true
-        - --sleep=0
-        - --reqType=post
+        - --sleep=1000
         - --reqSize=16384
         imagePullPolicy: Always
         resources:
