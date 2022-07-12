@@ -34,7 +34,7 @@ spec:
             PLUGIN_PATH=$GRAFANA_PATH/plugins
             PLUGIN_ZIP=pixie-pixie-datasource.tgz
             PLUGIN_FOLDER=pixie-pixie-datasource
-            PLUGIN_URL="https://github.com/pixie-io/grafana-plugin/releases/download/v0.0.3/pixie-pixie-datasource-0.0.3.zip"
+            PLUGIN_URL="https://github.com/pixie-io/grafana-plugin/releases/download/v0.0.4/pixie-pixie-datasource-0.0.4.zip"
 
             if [ ! -d $PLUGIN_PATH/$PLUGIN_FOLDER ]; then
               echo "$PLUGIN_PATH/$PLUGIN_FOLDER doesn't exists. Downloading..."
@@ -63,6 +63,9 @@ spec:
             GRAFANA_GIT_URL="https://github.com/pixie-io/grafana-plugin.git"
             GRAFANA_GIT_PATH=/grafana-plugin
 
+            PLUGIN_UID=HaqB3H3nk
+            PLUGIN_UID_TEMPLATE_STRING="\${DS_PIXIE_GRAFANA DATASOURCE PLUGIN}"
+
             if [ ! -d $GRAFANA_DASHBOARDS_PATH ]; then
               echo "$GRAFANA_DASHBOARDS_PATH doesn't exists. Populating dashboards..."
               git clone $GRAFANA_GIT_URL $GRAFANA_GIT_PATH
@@ -70,11 +73,19 @@ spec:
               cd $GRAFANA_DASHBOARDS_PATH
               cp $GRAFANA_GIT_PATH/dashboards/* .
               echo "Successfully downloaded grafana dashboards from $GRAFANA_GIT_URL"
+
+              #try to replace templated variables with a predefined plugin id if present
+              for FILE in "$GRAFANA_DASHBOARDS_PATH"/*
+              do
+                sed -i "s/${PLUGIN_UID_TEMPLATE_STRING}/${PLUGIN_UID}/g" $FILE
+              done
+              echo 'Replaced ${PLUGIN_UID_TEMPLATE_STRING} with ${PLUGIN_UID}
+              in all dashboard files in $GRAFANA_DASHBOARDS_PATH.'
             fi
         # yamllint enable rule:indentation
       containers:
       - name: grafana
-        image: grafana/grafana:latest
+        image: grafana/grafana:7.5.16
         imagePullPolicy: IfNotPresent
         env:
         # uncomment when plugin is posted on grafana plugins page
