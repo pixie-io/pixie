@@ -663,3 +663,96 @@ spec {
   dns_policy: 2
 }
 `
+
+// ReplicaSetPb is a protobuf for a replicaset object
+const ReplicaSetPb = `
+metadata {
+	name: "rs_1"
+	namespace: "a_namespace"
+	uid: "12345"
+	resource_version: "1"
+	cluster_name: "a_cluster"
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+	labels {
+		key: "env"
+		value: "prod"
+	}
+	labels {
+		key: "app"
+		value: "my-test-app"
+	}
+	owner_references {
+		kind: "deployment"
+		name: "d1"
+		uid: "1111"
+	}
+	annotations {
+		key: "is_testing"
+		value: "this is testing rs"
+	}
+	annotations {
+		key: "provider"
+		value: "gkee"
+	}
+}
+spec {
+	selector {
+		match_expressions {
+			key: "app"
+			operator: "In"
+			values: "hello"
+			values: "world"
+		}
+		match_expressions {
+			key: "service"
+			operator: "Exists"
+		}
+		match_labels {
+			key: "env"
+			value: "prod"
+		}
+		match_labels {
+			key: "managed"
+			value: "helm"
+		}
+	}
+	template {
+		metadata {
+			name: "object_md"
+			namespace: "a_namespace"
+			uid: "ijkl"
+			resource_version: "1",
+			cluster_name: "a_cluster",
+			owner_references {
+			  kind: "pod"
+			  name: "test"
+			  uid: "abcd"
+			}
+			creation_timestamp_ns: 4
+		}
+		spec {
+			node_name: "test"
+			hostname: "hostname"
+			dns_policy: 2
+		}
+	}
+	replicas: 3
+	min_ready_seconds: 10
+}
+status {
+	replicas: 2
+	fully_labeled_replicas: 2
+	ready_replicas: 1
+	available_replicas: 1
+	observed_generation: 10
+	conditions: {
+		type: "1"
+		status: 2
+	}
+	conditions: {
+		type: "2"
+		status: 1
+	}
+}
+`

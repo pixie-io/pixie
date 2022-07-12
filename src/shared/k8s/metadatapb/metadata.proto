@@ -410,6 +410,7 @@ message PodUpdate {
   string reason = 15;
   // A json object containing pod label keys and values
   string labels = 17;
+  repeated OwnerReference owner_references = 18;
 }
 
 enum ContainerType {
@@ -684,6 +685,8 @@ message ReplicaSetStatus {
   repeated ReplicaSetCondition conditions = 6;
 }
 
+
+
 // ReplicaSetUpdate is the update that is sent to the agents when there are any replica set changes.
 // This should contain information important for our agents to know.
 message ReplicaSetUpdate {
@@ -701,6 +704,7 @@ message ReplicaSetUpdate {
   int32 available_replicas = 8;
   int32 observed_generation = 9;
   repeated ReplicaSetCondition conditions = 10;
+  repeated OwnerReference owner_references = 11;
 }
 
 // Resource update is the message we send to the agent/compute nodes

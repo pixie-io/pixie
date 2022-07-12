@@ -139,6 +139,20 @@ func createNamespaceObject() *storepb.K8SResource {
 	}
 }
 
+func createReplicaSetObject() *storepb.K8SResource {
+	pb := &metadatapb.ReplicaSet{}
+	err := proto.UnmarshalText(testutils.ReplicaSetPb, pb)
+	if err != nil {
+		return &storepb.K8SResource{}
+	}
+
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_ReplicaSet{
+			ReplicaSet: pb,
+		},
+	}
+}
+
 type ResourceStore map[int64]*storepb.K8SResourceUpdate
 type InMemoryStore struct {
 	ResourceStoreByTopic map[string]ResourceStore
@@ -1284,6 +1298,120 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
 	}
 	assert.Equal(t, nsUpdate.Update, updates[0].Update)
+	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
+	assert.Contains(t, updates[0].Topics, "127.0.0.1")
+	assert.Contains(t, updates[0].Topics, "127.0.0.2")
+}
+
+func TestReplicaSetUpdateProcessor(t *testing.T) {
+	// Construct replicaset object.
+	o := createReplicaSetObject()
+
+	p := k8smeta.ReplicaSetUpdateProcessor{}
+	p.SetDeleted(o)
+	assert.Equal(t, int64(6), o.GetReplicaSet().Metadata.DeletionTimestampNS)
+
+	o.GetReplicaSet().Metadata.DeletionTimestampNS = 0
+	p.SetDeleted(o)
+	assert.NotEqual(t, 0, o.GetReplicaSet().Metadata.DeletionTimestampNS)
+}
+
+func TestReplicaSetUpdateProcessor_ValidateUpdate(t *testing.T) {
+	// Construct replicaset object.
+	o := createReplicaSetObject()
+
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.ReplicaSetUpdateProcessor{}
+	resp := p.ValidateUpdate(o, state)
+	assert.True(t, resp)
+}
+
+func TestReplicaSetUpdateProcessor_GetStoredProtos(t *testing.T) {
+	// Construct replicaset object.
+	o := createReplicaSetObject()
+
+	p := k8smeta.ReplicaSetUpdateProcessor{}
+
+	expectedPb := &metadatapb.ReplicaSet{}
+	if err := proto.UnmarshalText(testutils.ReplicaSetPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	// Check that the generated store proto matches expected.
+	updates := p.GetStoredProtos(o)
+	assert.Equal(t, 1, len(updates))
+
+	assert.Equal(t, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_ReplicaSet{
+			ReplicaSet: expectedPb,
+		},
+	}, updates[0])
+}
+
+func TestReplicaSetUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct replicaset object.
+	expectedPb := &metadatapb.ReplicaSet{}
+	if err := proto.UnmarshalText(testutils.ReplicaSetPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	storedProtos := []*k8smeta.StoredUpdate{
+		{
+			Update: &storepb.K8SResource{
+				Resource: &storepb.K8SResource_ReplicaSet{
+					ReplicaSet: expectedPb,
+				},
+			},
+			UpdateVersion: 2,
+		},
+	}
+
+	state := &k8smeta.ProcessorState{NodeToIP: map[string]string{
+		"node-1": "127.0.0.1",
+		"node-2": "127.0.0.2",
+	}}
+
+	p := k8smeta.ReplicaSetUpdateProcessor{}
+	updates := p.GetUpdatesToSend(storedProtos, state)
+	assert.Equal(t, 1, len(updates))
+
+	rsUpdate := &k8smeta.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 2,
+			Update: &metadatapb.ResourceUpdate_ReplicaSetUpdate{
+				ReplicaSetUpdate: &metadatapb.ReplicaSetUpdate{
+					UID:                  "12345",
+					Name:                 "rs_1",
+					StartTimestampNS:     4,
+					StopTimestampNS:      6,
+					Replicas:             2,
+					FullyLabeledReplicas: 2,
+					ReadyReplicas:        1,
+					AvailableReplicas:    1,
+					ObservedGeneration:   10,
+					Conditions: []*metadatapb.ReplicaSetCondition{
+						{
+							Type:   "1",
+							Status: 2,
+						}, {
+							Type:   "2",
+							Status: 1,
+						},
+					},
+					OwnerReferences: []*metadatapb.OwnerReference{
+						{
+							UID:  "1111",
+							Name: "d1",
+							Kind: "deployment",
+						},
+					},
+				},
+			},
+		},
+		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
+	}
+
+	assert.Equal(t, rsUpdate.Update, updates[0].Update)
 	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
 	assert.Contains(t, updates[0].Topics, "127.0.0.1")
 	assert.Contains(t, updates[0].Topics, "127.0.0.2")
