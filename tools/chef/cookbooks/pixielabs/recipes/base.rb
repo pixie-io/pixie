@@ -78,7 +78,7 @@ end
 
 template '/opt/pixielabs/plenv.inc' do
   source 'plenv.inc.erb'
-  owner 'root'
+  owner user
   group root_group
   mode '0644'
   action :create
@@ -86,7 +86,7 @@ end
 
 template '/opt/pixielabs/bin/tot' do
   source 'tot.erb'
-  owner 'root'
+  owner user
   group root_group
   mode '0755'
   action :create
@@ -94,7 +94,7 @@ end
 
 template '/opt/pixielabs/bin/bazel' do
   source 'bazel.erb'
-  owner 'root'
+  owner user
   group root_group
   mode '0755'
   action :create
