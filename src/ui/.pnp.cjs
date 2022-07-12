@@ -123,6 +123,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["license-checker", "npm:25.0.1"],
             ["lodash", "npm:4.17.21"],
             ["mini-css-extract-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.4.1"],
+            ["moment", "npm:2.29.4"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
             ["mustache", "npm:4.2.0"],
@@ -4384,7 +4385,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@date-io/moment", "virtual:136a13185126615c7f1faf9b4ffba9903f4fde68ffe03ee103346eaa6f701426e99b572f9769a0b89e9b8bf732f8e0a7dfeb7b06c5d0be80a5503800be9e2666#npm:2.11.0"],
             ["@date-io/core", "npm:2.11.0"],
             ["@types/moment", null],
-            ["moment", null]
+            ["moment", "npm:2.29.4"]
           ],
           "packagePeers": [
             "@types/moment",
@@ -5060,7 +5061,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@jimp/custom", "npm:0.16.1"],
             ["@jimp/utils", "npm:0.16.1"],
             ["@types/jimp__custom", null],
-            ["jpeg-js", "npm:0.4.2"]
+            ["jpeg-js", "npm:0.4.4"]
           ],
           "packagePeers": [
             "@jimp/custom",
@@ -5883,7 +5884,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["date-fns", "npm:1.30.1"],
             ["dayjs", null],
             ["luxon", null],
-            ["moment", null],
+            ["moment", "npm:2.29.4"],
             ["prop-types", "npm:15.7.2"],
             ["react", "npm:18.1.0"],
             ["react-dom", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:18.1.0"],
@@ -6361,6 +6362,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["license-checker", "npm:25.0.1"],
             ["lodash", "npm:4.17.21"],
             ["mini-css-extract-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.4.1"],
+            ["moment", "npm:2.29.4"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
             ["mustache", "npm:4.2.0"],
@@ -16532,10 +16534,10 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]
       ]],
       ["jpeg-js", [
-        ["npm:0.4.2", {
-          "packageLocation": "./.yarn/cache/jpeg-js-npm-0.4.2-cd096142cc-def900757c.zip/node_modules/jpeg-js/",
+        ["npm:0.4.4", {
+          "packageLocation": "./.yarn/cache/jpeg-js-npm-0.4.4-4dd87659c3-bd7cb61aa8.zip/node_modules/jpeg-js/",
           "packageDependencies": [
-            ["jpeg-js", "npm:0.4.2"]
+            ["jpeg-js", "npm:0.4.4"]
           ],
           "linkType": "HARD",
         }]
@@ -17846,6 +17848,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/mkdirp-classic-npm-0.5.3-3b5c991910-3f4e088208.zip/node_modules/mkdirp-classic/",
           "packageDependencies": [
             ["mkdirp-classic", "npm:0.5.3"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["moment", [
+        ["npm:2.29.4", {
+          "packageLocation": "./.yarn/cache/moment-npm-2.29.4-902943305d-0ec3f9c2bc.zip/node_modules/moment/",
+          "packageDependencies": [
+            ["moment", "npm:2.29.4"]
           ],
           "linkType": "HARD",
         }]
@@ -24005,7 +24016,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/moment", null],
             ["@types/uuid", null],
             ["@types/vis-util", null],
-            ["moment", null],
+            ["moment", "npm:2.29.4"],
             ["uuid", "npm:8.3.2"],
             ["vis-util", "npm:4.3.4"]
           ],
@@ -24043,7 +24054,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@types/vis-util", null],
             ["component-emitter", "npm:1.3.0"],
             ["keycharm", "npm:0.3.1"],
-            ["moment", null],
+            ["moment", "npm:2.29.4"],
             ["timsort", "npm:0.3.0"],
             ["uuid", "npm:8.3.2"],
             ["vis-data", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:6.6.1"],
