@@ -21,6 +21,7 @@ package k8smeta
 import (
 	"time"
 
+	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/informers"
@@ -120,6 +121,16 @@ func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubern
 	}
 }
 
+func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: replicaSetConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Apps().V1().ReplicaSets().Informer(),
+	}
+}
+
 func podConverter(obj interface{}) *K8sResourceMessage {
 	o, ok := obj.(*v1.Pod)
 	if !ok {
@@ -190,6 +201,21 @@ func nodeConverter(obj interface{}) *K8sResourceMessage {
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Node{
 				Node: k8s.NodeToProto(o),
+			},
+		},
+	}
+}
+
+func replicaSetConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*apps.ReplicaSet)
+	if !ok {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_ReplicaSet{
+				ReplicaSet: k8s.ReplicaSetToProto(o),
 			},
 		},
 	}
