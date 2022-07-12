@@ -155,11 +155,25 @@ class JSONObjectBuilder {
     writer_.Int(value);
   }
 
+  // Writes a key-value pair where value is an uint32_t.
+  void WriteKV(std::string_view key, uint32_t value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.Uint(value);
+  }
+
   // Writes a key-value pair where value is an int.
   void WriteKV(std::string_view key, int64_t value) {
     DCHECK(!object_ended_);
     writer_.String(key.data(), key.size());
     writer_.Int64(value);
+  }
+
+  // Writes a key-value pair where value is an uint64_t.
+  void WriteKV(std::string_view key, uint64_t value) {
+    DCHECK(!object_ended_);
+    writer_.String(key.data(), key.size());
+    writer_.Uint64(value);
   }
 
   // Writes a key-value pair where value is an array of strings.

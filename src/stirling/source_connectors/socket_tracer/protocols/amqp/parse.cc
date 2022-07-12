@@ -15,8 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/parse.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -29,7 +29,6 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -37,85 +36,86 @@ namespace stirling {
 namespace protocols {
 namespace amqp {
 
-namespace {
+#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
-StatusOr<Message::type> ParseType(BinaryDecoder* decoder) {
-  PL_ASSIGN_OR_RETURN(uint8_t type, decoder->ExtractInt<uint8_t>());
+// The header frame for AMQP is usually split as
+// 0      1         3             7                  size+7 size+8
+// +------+---------+-------------+  +------------+  +-----------+
+// | type | channel |     size    |  |  payload   |  | frame-end |
+// +------+---------+-------------+  +------------+  +-----------+
+//  octet   short         long         size octets       octet
 
-  if (!(type >= 1 && type <= 4)) {
-    return error::InvalidArgument(
-        "AMQP message type is parsed as $0, but only [1,4] are defined in protocol specification.",
-        type);
+// The first octet can be used to quickly determine if the message boundary starts
+size_t FindFrameBoundary(std::string_view buf, size_t start_pos) {
+  // LOG(DEBUG) << "IN AMQP find frame boundary";
+  if (buf.size() < kMinFrameLength) {
+    return std::string::npos;
   }
 
-  return static_cast<Message::type>(type);
-}
-
-StatusOr<uint16_t> ParseChannel(BinaryDecoder* decoder) {
-  PL_ASSIGN_OR_RETURN(uint16_t channel, decoder->ExtractInt<uint16_t>());
-
-  return channel;
-}
-
-StatusOr<uint64_t> ParseLength(BinaryDecoder* decoder) {
-  PL_ASSIGN_OR_RETURN(uint64_t size, decoder->ExtractInt<uint64_t>());
-
-  return size;
-}
-
-StatusOr<std::string_view> ParsePayload(BinaryDecoder* decoder) {
-  // payload parsing
-  return std::string_view();
-}
-
-Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(msg->message_type, ParseType(decoder));
-  PL_ASSIGN_OR_RETURN(msg->message_channel, ParseChannel(decoder));
-  PL_ASSIGN_OR_RETURN(msg->message_length, ParseLength(decoder));
-  PL_ASSIGN_OR_RETURN(msg->message_body, ParsePayload(decoder));
-
-  // This is needed for GCC build.
-  return Status::OK();
-}
-
-}  // namespace
-
-size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
   for (; start_pos < buf.size(); ++start_pos) {
-    const char type_marker = buf[start_pos];
-    if (type_marker == Message::kFrameEnd) {
-      return start_pos + 1;
+    const AMQPFrameTypes type_marker = static_cast<AMQPFrameTypes>(buf[start_pos]);
+    if (type_marker == AMQPFrameTypes::kFrameHeader || type_marker == AMQPFrameTypes::kFrameBody ||
+        type_marker == AMQPFrameTypes::kFrameMethod ||
+        type_marker == AMQPFrameTypes::kFrameHeartbeat) {
+      return start_pos;
     }
   }
   return std::string_view::npos;
 }
 
-ParseState ParseMessage(message_type_t type, std::string_view* buf, Message* msg) {
+// Parse the message's type and channel
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet) {
+  DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
   BinaryDecoder decoder(*buf);
-
-  auto status = ParseMessage(type, &decoder, msg);
-
-  if (!status.ok()) {
-    return TranslateStatus(status);
+  if (decoder.BufSize() < kMinFrameLength) {
+    return ParseState::kNeedsMoreData;
   }
 
-  *buf = decoder.Buf();
+  PL_ASSIGN_OR_RETURN_INVALID(uint8_t frame_type, decoder.ExtractInt<uint8_t>());
+  AMQPFrameTypes frame_type_header = static_cast<AMQPFrameTypes>(frame_type);
+  if (!(frame_type_header == AMQPFrameTypes::kFrameHeader ||
+        frame_type_header == AMQPFrameTypes::kFrameBody ||
+        frame_type_header == AMQPFrameTypes::kFrameMethod ||
+        frame_type_header == AMQPFrameTypes::kFrameHeartbeat)) {
+    return ParseState::kInvalid;
+  }
+  PL_ASSIGN_OR_RETURN_INVALID(uint16_t channel, decoder.ExtractInt<uint16_t>());
+  PL_ASSIGN_OR_RETURN_INVALID(uint32_t payload_size, decoder.ExtractInt<uint32_t>());
+  if (frame_type_header == AMQPFrameTypes::kFrameHeartbeat && payload_size != 0) {
+    return ParseState::kInvalid;
+  }
+  packet->frame_type = frame_type;
+  packet->channel = channel;
+  packet->payload_size = payload_size;
+  if (decoder.BufSize() < payload_size) {
+    return ParseState::kInvalid;
+  }
 
+  // Check end byte is valid
+  const uint8_t frame_end_loc = decoder.Buf().at(packet->payload_size);
+  if (frame_end_loc != kFrameEnd) {
+    return ParseState::kInvalid;
+  }
+
+  // Remove up till start of message payload
+  packet->msg = decoder.Buf().substr(0, payload_size + kEndByteSize);
+  buf->remove_prefix(payload_size + kEndByteSize);
   return ParseState::kSuccess;
 }
 
 }  // namespace amqp
 
 template <>
-size_t FindFrameBoundary<amqp::Message>(message_type_t /*type*/, std::string_view buf,
-                                        size_t start_pos, NoState* /*state*/) {
-  return amqp::FindMessageBoundary(buf, start_pos);
+size_t FindFrameBoundary<amqp::Frame>(message_type_t /*type*/, std::string_view buf,
+                                      size_t start_pos, NoState* /*state*/) {
+  return amqp::FindFrameBoundary(buf, start_pos);
 }
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, redis::Message* msg,
+ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Frame* msg,
                       NoState* /*state*/) {
-  return amqp::ParseMessage(type, buf, msg);
+  return amqp::ParseFrame(type, buf, msg);
 }
 
 }  // namespace protocols

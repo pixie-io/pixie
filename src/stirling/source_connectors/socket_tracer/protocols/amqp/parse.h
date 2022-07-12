@@ -18,22 +18,29 @@
 
 #pragma once
 
-#include <string_view>
+#include <deque>
+#include <string>
+#include <vector>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
+namespace amqp {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result, NoState* state);
+
+size_t FindFrameBoundary(std::string_view buf, size_t start);
+}  // namespace amqp
 
 template <>
-size_t FindFrameBoundary<amqp::Message>(message_type_t, std::string_view buf, size_t start_pos,
-                                        NoState*);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Frame* packet,
+                      NoState* state);
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, amqp::Message* msg,
-                      NoState* /*state*/);
+size_t FindFrameBoundary<amqp::Frame>(message_type_t type, std::string_view buf, size_t start_pos,
+                                      NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling
