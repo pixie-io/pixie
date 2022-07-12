@@ -746,6 +746,9 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
       return -1;
     }
 
+    // to_copy was already validated against the target size, so verifier is happy
+    metadata->items[i].key[to_copy] = '\0';
+
     // Get the value.
     if (0 != get_data_ptr_from_slice((grpc_slice*)(mdelem_data + GRPC_SLICE_SIZE), &current_length,
                                      &current_bytes)) {
@@ -762,6 +765,9 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
     if (0 != bpf_probe_read(metadata->items[i].value, to_copy, current_bytes)) {
       return -1;
     }
+
+    // to_copy was already validated against the target size, so verifier is happy
+    metadata->items[i].value[to_copy] = '\0';
 
     // Go forward in the linked list of mdelems.
     if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem, (void*)(current_linked_mdelem + 0x8))) {
