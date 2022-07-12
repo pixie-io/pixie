@@ -66,6 +66,27 @@ if [[ "$PUBLIC" == "true" ]]; then
       //src/cloud/plugin/load_db:push_plugin_db_updater_image
   bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="latest" \
       //src/cloud/plugin/load_db:push_plugin_db_updater_image
+
+  # Write YAMLs + image paths to a tar file to support easy deployment.
+  mkdir -p "${repo_path}/pixie_cloud"
+  mkdir -p "${repo_path}/pixie_cloud/yamls"
+  image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
+
+  kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+  echo "---" >> "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+  kustomize build "k8s/cloud_deps/base/elastic/operator" >> "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+  kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
+
+  #shellcheck disable=SC2002
+  cat "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
+  #shellcheck disable=SC2002
+  cat "${repo_path}/pixie_cloud/yamls/cloud.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> "${image_list_file}"
+
+  cd "${repo_path}"
+  tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
+  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${image_tag}/pixie_cloud.tar.gz"
+  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
+
   exit 0
 fi
 
