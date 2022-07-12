@@ -120,6 +120,7 @@ def resource_timeseries(start_time: str, pod: px.Pod):
         wchar_bytes_min=('wchar_bytes', px.min),
     )
 
+
     # Next calculate cpu usage and memory stats per window.
     df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
     df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
@@ -281,34 +282,25 @@ def inbound_let_summary(start_time: str, pod: px.Pod):
     df.pod = df.ctx['pod']
     df = df[df.pod == pod]
 
-    quantiles_table = df.groupby(['remote_addr']).agg(
+    df = df.groupby(['remote_addr']).agg(
         latency=('latency', px.quantiles),
         total_request_count=('latency', px.count)
-    )
-
-    df.timestamp = px.bin(df.time_, window_ns)
-    range_agg = df.groupby(['remote_addr', 'timestamp']).agg(
         requests_per_window=('time_', px.count),
-        error_rate=('failure', px.mean)
+        error_rate=('failure', px.mean),
     )
-
-    rps_table = range_agg.groupby(['remote_addr']).agg(
-        requests_per_window=('requests_per_window', px.mean),
-        error_rate=('error_rate', px.mean)
-    )
-
-    df = quantiles_table.merge(rps_table,
-                               how='inner',
-                               left_on=['remote_addr'],
-                               right_on=['remote_addr'],
-                               suffixes=['', '_x'])
 
     df.error_rate = px.Percent(df.error_rate)
-    df.request_throughput = df.requests_per_window / window_ns
+
+    # TODO(philkuz): Replace parse_duration with a more general function that accepts all time formats.
+    df.start_time = px.now() + px.parse_duration(start_time)
+    df.stop_time = px.now()
+    df.window = df.stop_time - df.start_time
+    df.request_throughput = df.requests_per_window / px.DurationNanos(df.window)
 
     df.requesting_ip = df.remote_addr
-    df.requesting_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
-    df.requesting_svc = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
+    df.requesting_pod_id = px.ip_to_pod_id(df.remote_addr)
+    df.requesting_pod = px.pod_id_to_pod_name(df.requesting_pod_id)
+    df.requesting_svc = px.pod_id_to_service_name(df.requesting_pod_id)
 
     return df[['requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
                'error_rate', 'request_throughput']]
