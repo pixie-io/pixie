@@ -59,8 +59,8 @@ static_assert((sizeof(struct grpc_c_data_slice_t) % 8) == 0,
 #endif
 
 struct grpc_c_metadata_item_t {
-  char key[MAXIMUM_LENGTH_OF_KEY_IN_METADATA];
-  char value[MAXIMUM_LENGTH_OF_VALUE_IN_METADATA];
+  char key[MAXIMUM_LENGTH_OF_KEY_IN_METADATA + 1];      // +1 for null terminator
+  char value[MAXIMUM_LENGTH_OF_VALUE_IN_METADATA + 1];  // +1 for null terminator
 };
 
 struct grpc_c_metadata_t {
