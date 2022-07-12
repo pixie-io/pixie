@@ -107,4 +107,65 @@ def pod_resource_stats(start_time, end_time):
     df.status = px.pod_name_to_status(df.pod)
     return df
 
+
+def _http_events(start_time, end_time, include_health_checks, include_ready_checks, include_unresolved_inbound):
+    ''' Returns a dataframe of http events with health/ready requests filtered out and a
+        failure field added.
+
+    Note this script is prefixed with an underscore and therefore at risk of changing in the future.
+    Rely on this function at your own risk.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time, end_time=end_time)
+    df.failure = df.resp_status >= 400
+
+    filter_out_conds = ((df.req_path != '/healthz' or include_health_checks) and (
+        df.req_path != '/readyz' or include_ready_checks)) and (
+        df['remote_addr'] != '-' or include_unresolved_inbound)
+    df = df[filter_out_conds]
+
+    return df
+
+
+def inbound_http_summary(start_time, end_time):
+    ''' Gets a summary of requests inbound to `pod`.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = _http_events(start_time,
+                     end_time,
+                     include_health_checks=False,
+                     include_ready_checks=False,
+                     include_unresolved_inbound=False)
+    df.pod_id = df.ctx['pod_id']
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
+    df = df.groupby(['pod_id', 'remote_addr']).agg(
+        latency=('latency', px.quantiles),
+        num_requests=('time_', px.count),
+        stop_time=('time_', px.max),
+        num_errors=('failure', px.sum),
+
+        # TODO(philkuz) calculate this from the conn_stats table.
+        inbound_bytes=('req_body_size', px.sum),
+        outbound_bytes=('resp_body_size', px.sum)
+    )
+
+    df.requesting_ip = df.remote_addr
+    df.requesting_pod_id = px.ip_to_pod_id(df.remote_addr)
+    df.requesting_pod = px.pod_id_to_pod_name(df.requesting_pod_id)
+    df.requesting_svc = px.pod_id_to_service_name(df.requesting_pod_id)
+    df.time_ = df.stop_time
+
+    return df[['time_', 'pod_id', 'requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
+                         'num_errors', 'num_requests', 'inbound_bytes', 'outbound_bytes']]
+
 )"
