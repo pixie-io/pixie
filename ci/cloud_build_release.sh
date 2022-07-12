@@ -73,12 +73,13 @@ if [[ "$PUBLIC" == "true" ]]; then
   image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
 
   kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-  echo "---" >> "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-  kustomize build "k8s/cloud_deps/base/elastic/operator" >> "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+  kustomize build "k8s/cloud_deps/base/elastic/operator" >> "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
   kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
 
   #shellcheck disable=SC2002
   cat "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
+  #shellcheck disable=SC2002
+  cat "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
   #shellcheck disable=SC2002
   cat "${repo_path}/pixie_cloud/yamls/cloud.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> "${image_list_file}"
 
