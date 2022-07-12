@@ -1014,6 +1014,13 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					HostIP:   "127.0.0.5",
 					Message:  "this is message",
 					Reason:   "this is reason",
+					OwnerReferences: []*metadatapb.OwnerReference{
+						&metadatapb.OwnerReference{
+							Kind: "pod",
+							Name: "test",
+							UID:  "abcd",
+						},
+					},
 				},
 			},
 		},
