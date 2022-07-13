@@ -397,7 +397,10 @@ class AMQPClass:
             Status Process{self.class_name}(BinaryDecoder *decoder, Frame *req, uint16_t  method_id) {{
                 switch(static_cast<{self.constant_enum_name}>(method_id)) {{
                     {method_cases}
+                    default:
+                        VLOG(1) << absl::Substitute("Invalid {self.class_name} frame method $0", method_id);
                 }}
+                return Status::OK();
             }}
         """
 
@@ -410,28 +413,6 @@ class AMQPClass:
         }
         """
         return f"k{self.class_name} = {self.class_id}"
-
-    def gen_process_content_header_select(self):
-        amqp_extract_class_case = []
-        for amqp_class in self.amqp_classes:
-            amqp_class_case = amqp_class.gen_content_header_enum_select()
-            amqp_extract_class_case.append(amqp_class_case)
-
-        amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
-        return f"""
-        Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {{
-            PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-            PL_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
-            req->class_id = class_id;
-
-            if(weight != 0) {{
-                return error::Internal("AMQP content header weight should be 0");
-            }}
-            switch(static_cast<AMQPClasses>(class_id)) {{
-                {amqp_extract_class_case_str}
-            }}
-        }}
-        """
 
     def gen_class_enum_select_case(self):
         """
@@ -694,7 +675,11 @@ class CodeGenerator:
 
             switch(static_cast<AMQPClasses>(class_id)) {{
                 {amqp_extract_class_case_str}
+                default:
+                    VLOG(1) << absl::Substitute("Unparsed frame method class $0 method $1", class_id, method_id);
             }}
+
+            return Status::OK();
         }}
         """
 
@@ -742,7 +727,10 @@ class CodeGenerator:
             }}
             switch(static_cast<AMQPClasses>(class_id)) {{
                 {amqp_extract_class_case_str}
+                default:
+                    VLOG(1) << absl::Substitute("Unparsed content header class $0", class_id);
             }}
+            return Status::OK();
         }}
         """
 
