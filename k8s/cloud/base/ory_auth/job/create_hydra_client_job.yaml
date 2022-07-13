@@ -8,6 +8,7 @@ spec:
     spec:
       initContainers:
       - name: hydra-wait
+        imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
@@ -26,6 +27,7 @@ spec:
               key: PL_HYDRA_PUBLIC_HOST
       containers:
       - name: create-hydra-client-job
+        imagePullPolicy: IfNotPresent
         image: oryd/hydra:v1.9.2-sqlite
         args:
         - clients

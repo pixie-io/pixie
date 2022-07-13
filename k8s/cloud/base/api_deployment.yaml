@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
       - name: api-server
+        imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev/cloud/api_server_image
         ports:
         - containerPort: 51200
