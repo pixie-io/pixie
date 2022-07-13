@@ -171,4 +171,88 @@ def inbound_http_summary(start_time, end_time):
     return df[['time_', 'pod_id', 'requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
                          'num_errors', 'num_requests', 'inbound_bytes', 'outbound_bytes']]
 
+
+def http_graph(start_time, end_time):
+    ''' Calculates the graph of all http requests made within a cluster.
+
+    Calculates a graph of all the pods that make http requests to each other. Users
+    can filter the graph per namespace, service, pod, or ip.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    # TODO(philkuz) fix pxviews can't use False because it's not in scope.
+    df = _http_events(start_time,
+                     end_time,
+                     include_health_checks=False,
+                     include_ready_checks=False,
+                     include_unresolved_inbound=False)
+    df.pod_id = df.ctx['pod_id']
+    df = df.groupby(['pod_id', 'remote_addr', 'trace_role']).agg(
+        latency=('latency', px.quantiles),
+        total_request_count=('latency', px.count)
+        num_requests=('time_', px.count),
+        stop_time=('time_', px.max),
+        num_errors=('failure', px.sum),
+        inbound_bytes=('req_body_size', px.sum),
+        outbound_bytes=('resp_body_size', px.sum)
+    )
+
+    df.traced_pod = df.ctx['pod']
+    df.traced_ip = px.pod_name_to_pod_ip(df.traced_pod)
+    df.traced_service = df.ctx['service']
+
+    # Get the traced and remote pod/service/IP information.
+    df.remote_ip = df.remote_addr
+    localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
+    df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_ip)
+    df.remote_pod = px.select(df.is_remote_addr_localhost,
+                              'localhost:' + df.traced_pod,
+                              px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_ip)))
+    df.remote_service = px.select(df.is_remote_addr_localhost,
+                                  'localhost:' + df.traced_service,
+                                  px.service_id_to_service_name(px.ip_to_service_id(df.remote_ip)))
+
+    # Assign requestor and responder based on the trace_role.
+    df.is_server_side_tracing = df.trace_role == 2
+    df.responder_ip = px.select(df.is_server_side_tracing, df.traced_ip, df.remote_ip)
+    df.requestor_ip = px.select(df.is_server_side_tracing, df.remote_ip, df.traced_ip)
+
+    df.responder_pod = px.select(df.is_server_side_tracing, df.traced_pod, df.remote_pod)
+    df.requestor_pod = px.select(df.is_server_side_tracing, df.remote_pod, df.traced_pod)
+
+    df.responder_service = px.select(df.is_server_side_tracing, df.traced_service, df.remote_service)
+    df.requestor_service = px.select(df.is_server_side_tracing, df.remote_service, df.traced_service)
+
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p99')))
+
+    df = df.groupby([
+        'responder_pod',
+        'requestor_pod',
+        'responder_ip',
+        'requestor_ip',
+        'responder_service',
+        'requestor_service'
+    ]).agg(
+        # TODO(philkuz) build a combine_quantiles udf that does this properly.
+        # latency=('latency', px.combine_quantiles),
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        num_requests=('num_requests', px.sum),
+        num_errors=('num_errors', px.sum),
+        inbound_bytes=('inbound_bytes', px.sum),
+        outbound_bytes=('outbound_bytes', px.sum),
+        stop_time=('stop_time', px.max),
+    )
+
+    df.time_ = df.stop_time
+    return df[['time_', 'responder_pod', 'requestor_pod',
+               'responder_ip', 'requestor_ip','responder_service', 'requestor_service',
+               'latency_p50', 'latency_p90', 'latency_p99', 'num_requests',
+               'num_errors', 'inbound_bytes', 'outbound_bytes']]
+
 )"
