@@ -32,10 +32,19 @@ import (
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
+func init() {
+	DeleteCmd.Flags().BoolP("clobber", "d", true, "Whether to delete all dependencies in the cluster")
+	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where Pixie is located")
+}
+
 // DeleteCmd is the "delete" command.
 var DeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Deletes Pixie on the current K8s cluster",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("clobber", cmd.Flags().Lookup("clobber"))
+		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		clobberAll, _ := cmd.Flags().GetBool("clobber")
 		ns, _ := cmd.Flags().GetString("namespace")
@@ -44,14 +53,6 @@ var DeleteCmd = &cobra.Command{
 		}
 		deletePixie(ns, clobberAll)
 	},
-}
-
-func init() {
-	DeleteCmd.Flags().BoolP("clobber", "d", true, "Whether to delete all dependencies in the cluster")
-	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
-
-	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where Pixie is located")
-	viper.BindPFlag("namespace", DeleteCmd.Flags().Lookup("namespace"))
 }
 
 func deletePixie(ns string, clobberAll bool) {

@@ -34,10 +34,7 @@ func init() {
 	ScriptCmd.AddCommand(RunSubCmd)
 
 	ScriptCmd.PersistentFlags().StringP("bundle", "b", "", "Path/URL to bundle file")
-	viper.BindPFlag("bundle", ScriptCmd.PersistentFlags().Lookup("bundle"))
-
 	ScriptListCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table")
-	viper.BindPFlag("output_format", ScriptListCmd.Flags().Lookup("output"))
 }
 
 // ScriptCmd is the "script" command.
@@ -45,6 +42,9 @@ var ScriptCmd = &cobra.Command{
 	Use:     "script",
 	Short:   "Get information about pre-registered scripts",
 	Aliases: []string{"scripts"},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("bundle", cmd.PersistentFlags().Lookup("bundle"))
+	},
 }
 
 // ScriptListCmd is the "script list" command.
@@ -52,6 +52,9 @@ var ScriptListCmd = &cobra.Command{
 	Use:     "list",
 	Short:   "List pre-registered pxl scripts",
 	Aliases: []string{"scripts"},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("output_format", cmd.Flags().Lookup("output"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		br := mustCreateBundleReader()
 		listBundleScripts(br, viper.GetString("output_format"))
