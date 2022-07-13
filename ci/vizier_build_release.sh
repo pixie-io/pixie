@@ -48,6 +48,7 @@ if [[ -n $DEV_ARTIFACT_BUCKET ]]; then
 fi
 
 output_path="gs://${bucket}/vizier/${release_tag}"
+latest_output_path="gs://${bucket}/vizier/latest"
 
 bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
     --stamp --define public="${public}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
@@ -72,5 +73,9 @@ gsutil cp tmplSha "${output_path}/vizier_template_yamls.tar.sha256"
 
 # Update helm chart if it is a release.
 if [[ $public == "True" ]]; then
+  # Update Vizier YAMLS in latest.
+  gsutil cp "${yamls_tar}" "${latest_output_path}/vizier_yamls.tar"
+  gsutil cp sha "${latest_output_path}/vizier_yamls.tar.sha256"
+
   ./ci/helm_build_release.sh "${release_tag}" "${tmpl_path}"
 fi
