@@ -341,7 +341,8 @@ GIT_REPOSITORY_LOCATIONS = dict(
 # then uncomment the lines with `_local_repo(name_of_repo_you_care_about, ...)` in `repositories.bzl` and
 # comment out the corresponding lines with `_git_repo(name_of_repo_you_care_about, ...)`.
 # Note that if you do this, you have to handle the building of these repos' artifacts yourself.
-# See `bazel/external/local_dev` for more info about the right cmake commands for building these repos yourself.
+# See `bazel/external/local_dev/{bcc,bpftrace}.BUILD` for the cmake commands for building these repos.
+#
 # WARNING: doing this has some downsides, so don't do it for production builds. For instance,
 # cflags and other settings set by bazel (eg -O3) won't be used, since you have to do the building manually.
 LOCAL_REPOSITORY_LOCATIONS = dict(
