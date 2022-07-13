@@ -28,5 +28,6 @@ patchesStrategicMerge:
 - db_config.yaml
 - indexer_config.yaml
 - ory_service_config.yaml
+- script_bundles_config.yaml
 - proxy_envoy.yaml
 - service_config.yaml

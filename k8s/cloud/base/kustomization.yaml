@@ -37,6 +37,7 @@ resources:
 - ory_service_config.yaml
 - indexer_config.yaml
 - indexer_deployment.yaml
+- script_bundles_config.yaml
 - scriptmgr_deployment.yaml
 - scriptmgr_service.yaml
 - scriptmgr_config.yaml

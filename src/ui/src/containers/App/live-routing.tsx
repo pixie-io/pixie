@@ -27,7 +27,7 @@ import {
 import { EmbedContext, isPixieEmbedded } from 'app/common/embed-context';
 import { selectClusterName } from 'app/containers/App/cluster-info';
 import { RouteNotFound } from 'app/containers/App/route-not-found';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptBundleErrorView, ScriptsContext } from 'app/containers/App/scripts-context';
 import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { GQLClusterInfo } from 'app/types/schema';
 import { argsForVis, Arguments } from 'app/utils/args-utils';
@@ -153,7 +153,11 @@ const VanityRouter: React.FC<WithChildren<{ outerPath: string }>> = React.memo((
   const clusters = data?.clusters;
   const defaultCluster = React.useMemo(() => selectClusterName(clusters ?? []), [clusters]);
 
-  const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
+  const {
+    scripts: availableScripts,
+    loading: loadingAvailableScripts,
+    error: availableScriptsError,
+  } = React.useContext(ScriptsContext);
 
   const isEmbedded = isPixieEmbedded();
 
@@ -191,6 +195,8 @@ const VanityRouter: React.FC<WithChildren<{ outerPath: string }>> = React.memo((
 
   // Wait for things to be ready
   if (loadingCluster || loadingAvailableScripts) return null;
+
+  if (availableScriptsError) return <ScriptBundleErrorView reason={availableScriptsError} />;
 
   // Special handling only if a default cluster is available and path is /live w/o args.
   // Otherwise we want to render the LiveRoute which eventually renders something helpful for new users.
