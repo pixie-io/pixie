@@ -136,7 +136,7 @@ pl_cc_test(
         "agent_test.cc",
     ],
     data = [
-        "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
+        ":glibc",
         "//src/stirling/source_connectors/perf_profiler/testing/java:fib_with_agent",
     ],
     tags = [
