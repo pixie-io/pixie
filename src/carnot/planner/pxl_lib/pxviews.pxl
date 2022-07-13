@@ -255,4 +255,68 @@ def http_graph(start_time, end_time):
                'latency_p50', 'latency_p90', 'latency_p99', 'num_requests',
                'num_errors', 'inbound_bytes', 'outbound_bytes']]
 
+
+def container_process_timeseries(start_time, end_time, window_ns):
+    ''' Compute the timeseries of CPU, memory, and IO usage for each container
+    sourced from the `process_stats` table.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    @window_ns The window size in nanoseconds for the timeseries.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    df.timestamp = px.bin(df.time_, window_ns)
+    df.container = df.ctx['container_name']
+    df.pod_id = df.ctx['pod_id']
+
+    # First calculate CPU usage by process (UPID) in each k8s_object
+    # over all windows.
+    df = df.groupby(['upid', 'container','pod_id', 'timestamp']).agg(
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
+    )
+
+    # Next calculate cpu usage and memory stats per window.
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+    df.actual_disk_read_throughput = (df.read_bytes_max - df.read_bytes_min) / window_ns
+    df.actual_disk_write_throughput = (df.write_bytes_max - df.write_bytes_min) / window_ns
+    df.total_disk_read_throughput = (df.rchar_bytes_max - df.rchar_bytes_min) / window_ns
+    df.total_disk_write_throughput = (df.wchar_bytes_max - df.wchar_bytes_min) / window_ns
+
+
+    # Then aggregate per container.
+    df = df.groupby(['timestamp', 'pod_id', 'container']).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.sum),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.sum),
+        total_disk_read_throughput=('total_disk_read_throughput', px.sum),
+        total_disk_write_throughput=('total_disk_write_throughput', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
+    )
+
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
+    df.time_ = df.timestamp
+    return df[['time_', 'pod_id', 'container', 'cpu_usage', 'actual_disk_read_throughput',
+            'actual_disk_write_throughput', 'total_disk_read_throughput',
+            'total_disk_write_throughput', 'rss', 'vsize']]
+
+
 )"
