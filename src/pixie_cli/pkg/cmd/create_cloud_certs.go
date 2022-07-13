@@ -28,11 +28,18 @@ import (
 	"px.dev/pixie/src/utils/shared/certs"
 )
 
+func init() {
+	CreateCloudCertsCmd.Flags().StringP("namespace", "n", "plc", "The namespace for the cloud services.")
+}
+
 // CreateCloudCertsCmd is the "create-cloud-certs" command.
 var CreateCloudCertsCmd = &cobra.Command{
 	Use:    "create-cloud-certs",
 	Short:  "Creates a yaml with server and client certs",
 	Hidden: true,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		namespace, _ := cmd.Flags().GetString("namespace")
 		yaml, err := certs.GenerateCloudCertYAMLs(namespace)
@@ -42,9 +49,4 @@ var CreateCloudCertsCmd = &cobra.Command{
 		}
 		fmt.Print(yaml)
 	},
-}
-
-func init() {
-	CreateCloudCertsCmd.Flags().StringP("namespace", "n", "plc", "The namespace for the cloud services.")
-	viper.BindPFlag("namespace", CreateCloudCertsCmd.Flags().Lookup("namespace"))
 }

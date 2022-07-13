@@ -29,15 +29,10 @@ import (
 func init() {
 	CreateBundle.Flags().StringArrayP("base", "b", []string{"px"},
 		"The base path(s) to use. for creating script bundles")
-	viper.BindPFlag("base", CreateBundle.Flags().Lookup("base"))
-
 	CreateBundle.Flags().StringArrayP("search_path", "s", []string{},
 		"The paths to search for the pxl files")
-	viper.BindPFlag("search_path", CreateBundle.Flags().Lookup("search_path"))
 	CreateBundle.MarkFlagRequired("search_path")
-
 	CreateBundle.Flags().StringP("out", "o", "-", "The output file")
-	viper.BindPFlag("out", CreateBundle.Flags().Lookup("out"))
 }
 
 // CreateBundle is the 'create-bundle' command. It's used to create a script bundle that can be used by the UI/CLI.
@@ -47,6 +42,11 @@ var CreateBundle = &cobra.Command{
 	Short: "Create a bundle for scripts",
 	// Since this is an internal command we will hide it.
 	Hidden: true,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("base", cmd.Flags().Lookup("base"))
+		viper.BindPFlag("search_path", cmd.Flags().Lookup("search_path"))
+		viper.BindPFlag("out", cmd.Flags().Lookup("out"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		basePaths, _ := cmd.Flags().GetStringArray("base")
 		searchPaths, _ := cmd.Flags().GetStringArray("search_path")

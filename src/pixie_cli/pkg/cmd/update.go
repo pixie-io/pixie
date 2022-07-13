@@ -48,15 +48,10 @@ func init() {
 
 	CLIUpdateCmd.Flags().StringP("cli_version", "v", "", "Select a specific version to install")
 	CLIUpdateCmd.Flags().MarkHidden("cli_version")
-	viper.BindPFlag("cli_version", CLIUpdateCmd.Flags().Lookup("cli_version"))
 
 	VizierUpdateCmd.Flags().StringP("vizier_version", "v", "", "Select a specific version to install")
 	VizierUpdateCmd.Flags().MarkHidden("vizier_version")
-	viper.BindPFlag("vizier_version", VizierUpdateCmd.Flags().Lookup("vizier_version"))
-
 	VizierUpdateCmd.Flags().BoolP("redeploy_etcd", "e", false, "Whether or not to redeploy etcd during the update")
-	viper.BindPFlag("redeploy_etcd", VizierUpdateCmd.Flags().Lookup("redeploy_etcd"))
-
 	VizierUpdateCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
 }
 
@@ -75,6 +70,10 @@ var VizierUpdateCmd = &cobra.Command{
 	Use:     "vizier",
 	Aliases: []string{"platform", "pixie"},
 	Short:   "Run updates of Pixie Platform",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("vizier_version", cmd.Flags().Lookup("vizier_version"))
+		viper.BindPFlag("redeploy_etcd", cmd.Flags().Lookup("redeploy_etcd"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		versionString := viper.GetString("vizier_version")
 		cloudAddr := viper.GetString("cloud_addr")
@@ -215,6 +214,9 @@ var VizierUpdateCmd = &cobra.Command{
 var CLIUpdateCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "Run updates of CLI",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("cli_version", cmd.Flags().Lookup("cli_version"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		selectedVersion := viper.GetString("cli_version")
 

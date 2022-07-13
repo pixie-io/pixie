@@ -70,10 +70,60 @@ var BlockListedLabels = []string{
 	"app",
 }
 
+func init() {
+	DeployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
+	DeployCmd.Flags().StringP("vizier_version", "v", "", "Pixie version to deploy")
+	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
+	DeployCmd.Flags().BoolP("check_only", "", false, "Only run check and exit.")
+	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to deploy Vizier to")
+	DeployCmd.Flags().StringP("deploy_key", "k", "", "The deploy key to use to deploy Pixie")
+	DeployCmd.Flags().BoolP("use_etcd_operator", "o", false, "Whether to use the operator for etcd instead of the statefulset")
+	DeployCmd.Flags().StringP("labels", "l", "", "Custom labels to apply to Pixie resources")
+	DeployCmd.Flags().StringP("annotations", "t", "", "Custom annotations to apply to Pixie resources")
+	DeployCmd.Flags().StringP("cluster_name", "u", "", "The name for your cluster. Otherwise, the name will be taken from the current kubeconfig.")
+	DeployCmd.Flags().StringP("pem_memory_limit", "p", "", "The memory limit to specify for the PEMs, otherwise a default is used.")
+	DeployCmd.Flags().StringP("pem_memory_request", "r", "", "The memory request to specify for the PEMs, otherwise a default is used.")
+	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
+	DeployCmd.Flags().String("pem_flags", "", "Flags to be set on the PEM.")
+	// Flags for deploying OLM.
+	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
+	DeployCmd.Flags().Bool("deploy_olm", true, "Whether to deploy Operator Lifecycle Manager. OLM is required. This should only be false if OLM is already deployed on the cluster (either manually or through another application). Note: OLM is deployed by default on Openshift clusters.")
+	DeployCmd.Flags().String("olm_namespace", "olm", "The namespace to use for the Operator Lifecycle Manager")
+	DeployCmd.Flags().String("olm_operator_namespace", "px-operator", "The namespace to use for the Pixie operator")
+	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accessed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
+	DeployCmd.Flags().Uint32("datastream_buffer_size", 0, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
+	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 0, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
+	// Super secret flags for Pixies.
+	DeployCmd.Flags().MarkHidden("namespace")
+}
+
 // DeployCmd is the "deploy" command.
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys Pixie on the current K8s cluster",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("extract_yaml", cmd.Flags().Lookup("extract_yaml"))
+		viper.BindPFlag("vizier_version", cmd.Flags().Lookup("vizier_version"))
+		viper.BindPFlag("check", cmd.Flags().Lookup("check"))
+		viper.BindPFlag("check_only", cmd.Flags().Lookup("check_only"))
+		viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
+		viper.BindPFlag("deploy_key", cmd.Flags().Lookup("deploy_key"))
+		viper.BindPFlag("use_etcd_operator", cmd.Flags().Lookup("use_etcd_operator"))
+		viper.BindPFlag("labels", cmd.Flags().Lookup("labels"))
+		viper.BindPFlag("annotations", cmd.Flags().Lookup("annotations"))
+		viper.BindPFlag("cluster_name", cmd.Flags().Lookup("cluster_name"))
+		viper.BindPFlag("pem_memory_limit", cmd.Flags().Lookup("pem_memory_limit"))
+		viper.BindPFlag("pem_memory_request", cmd.Flags().Lookup("pem_memory_request"))
+		viper.BindPFlag("patches", cmd.Flags().Lookup("patches"))
+		viper.BindPFlag("pem_flags", cmd.Flags().Lookup("pem_flags"))
+		viper.BindPFlag("operator_version", cmd.Flags().Lookup("operator_version"))
+		viper.BindPFlag("deploy_olm", cmd.Flags().Lookup("deploy_olm"))
+		viper.BindPFlag("olm_namespace", cmd.Flags().Lookup("olm_namespace"))
+		viper.BindPFlag("olm_operator_namespace", cmd.Flags().Lookup("olm_operator_namespace"))
+		viper.BindPFlag("data_access", cmd.Flags().Lookup("data_access"))
+		viper.BindPFlag("datastream_buffer_size", cmd.Flags().Lookup("datastream_buffer_size"))
+		viper.BindPFlag("datastream_buffer_spike_size", cmd.Flags().Lookup("datastream_buffer_spike_size"))
+	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		extractPath, _ := cmd.Flags().GetString("extract_yaml")
 		if extractPath != "" {
@@ -123,75 +173,6 @@ func (t *taskWrapper) Name() string {
 
 func (t *taskWrapper) Run() error {
 	return t.run()
-}
-
-func init() {
-	DeployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
-	viper.BindPFlag("extract_yaml", DeployCmd.Flags().Lookup("extract_yaml"))
-
-	DeployCmd.Flags().StringP("vizier_version", "v", "", "Pixie version to deploy")
-	viper.BindPFlag("vizier_version", DeployCmd.Flags().Lookup("vizier_version"))
-
-	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
-	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
-
-	DeployCmd.Flags().BoolP("check_only", "", false, "Only run check and exit.")
-	viper.BindPFlag("check_only", DeployCmd.Flags().Lookup("check_only"))
-
-	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to deploy Vizier to")
-	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
-
-	DeployCmd.Flags().StringP("deploy_key", "k", "", "The deploy key to use to deploy Pixie")
-	viper.BindPFlag("deploy_key", DeployCmd.Flags().Lookup("deploy_key"))
-
-	DeployCmd.Flags().BoolP("use_etcd_operator", "o", false, "Whether to use the operator for etcd instead of the statefulset")
-	viper.BindPFlag("use_etcd_operator", DeployCmd.Flags().Lookup("use_etcd_operator"))
-
-	DeployCmd.Flags().StringP("labels", "l", "", "Custom labels to apply to Pixie resources")
-	viper.BindPFlag("labels", DeployCmd.Flags().Lookup("labels"))
-
-	DeployCmd.Flags().StringP("annotations", "t", "", "Custom annotations to apply to Pixie resources")
-	viper.BindPFlag("annotations", DeployCmd.Flags().Lookup("annotations"))
-
-	DeployCmd.Flags().StringP("cluster_name", "u", "", "The name for your cluster. Otherwise, the name will be taken from the current kubeconfig.")
-	viper.BindPFlag("cluster_name", DeployCmd.Flags().Lookup("cluster_name"))
-
-	DeployCmd.Flags().StringP("pem_memory_limit", "p", "", "The memory limit to specify for the PEMs, otherwise a default is used.")
-	viper.BindPFlag("pem_memory_limit", DeployCmd.Flags().Lookup("pem_memory_limit"))
-
-	DeployCmd.Flags().StringP("pem_memory_request", "r", "", "The memory request to specify for the PEMs, otherwise a default is used.")
-	viper.BindPFlag("pem_memory_request", DeployCmd.Flags().Lookup("pem_memory_request"))
-
-	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
-	viper.BindPFlag("patches", DeployCmd.Flags().Lookup("patches"))
-
-	DeployCmd.Flags().String("pem_flags", "", "Flags to be set on the PEM.")
-	viper.BindPFlag("pem_flags", DeployCmd.Flags().Lookup("pem_flags"))
-
-	// Flags for deploying OLM.
-	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
-	viper.BindPFlag("operator_version", DeployCmd.Flags().Lookup("operator_version"))
-
-	DeployCmd.Flags().Bool("deploy_olm", true, "Whether to deploy Operator Lifecycle Manager. OLM is required. This should only be false if OLM is already deployed on the cluster (either manually or through another application). Note: OLM is deployed by default on Openshift clusters.")
-	viper.BindPFlag("deploy_olm", DeployCmd.Flags().Lookup("deploy_olm"))
-
-	DeployCmd.Flags().String("olm_namespace", "olm", "The namespace to use for the Operator Lifecycle Manager")
-	viper.BindPFlag("olm_namespace", DeployCmd.Flags().Lookup("olm_namespace"))
-
-	DeployCmd.Flags().String("olm_operator_namespace", "px-operator", "The namespace to use for the Pixie operator")
-	viper.BindPFlag("olm_operator_namespace", DeployCmd.Flags().Lookup("olm_operator_namespace"))
-
-	DeployCmd.Flags().String("data_access", "Full", "Data access level defines the level of data that may be accessed when executing a script on the cluster. Options: 'Full' and 'Restricted'")
-	viper.BindPFlag("data_access", DeployCmd.Flags().Lookup("data_access"))
-
-	DeployCmd.Flags().Uint32("datastream_buffer_size", 0, "Internal data collector parameters: the maximum size of a data stream buffer retained between cycles.")
-	viper.BindPFlag("datastream_buffer_size", DeployCmd.Flags().Lookup("datastream_buffer_size"))
-
-	DeployCmd.Flags().Uint32("datastream_buffer_spike_size", 0, "Internal data collector parameters: the maximum temporary size of a data stream buffer before processing.")
-	viper.BindPFlag("datastream_buffer_spike_size", DeployCmd.Flags().Lookup("datastream_buffer_spike_size"))
-
-	// Super secret flags for Pixies.
-	DeployCmd.Flags().MarkHidden("namespace")
 }
 
 func newArtifactTrackerClient(conn *grpc.ClientConn) cloudpb.ArtifactTrackerClient {

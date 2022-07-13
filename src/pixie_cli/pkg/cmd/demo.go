@@ -53,10 +53,22 @@ const manifestFile = "manifest.json"
 
 var errNamespaceAlreadyExists = errors.New("namespace already exists")
 
+func init() {
+	DemoCmd.PersistentFlags().String("artifacts", "https://storage.googleapis.com/pixie-prod-artifacts/prod-demo-apps", "The path to the demo apps")
+
+	DemoCmd.AddCommand(interactDemoCmd)
+	DemoCmd.AddCommand(listDemoCmd)
+	DemoCmd.AddCommand(deployDemoCmd)
+	DemoCmd.AddCommand(deleteDemoCmd)
+}
+
 // DemoCmd is the demo sub-command of the CLI to deploy and delete demo apps.
 var DemoCmd = &cobra.Command{
 	Use:   "demo",
 	Short: "Manage demo apps",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("artifacts", cmd.PersistentFlags().Lookup("artifacts"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
@@ -144,16 +156,6 @@ var deployDemoCmd = &cobra.Command{
 				Set("app", args[0]),
 		})
 	},
-}
-
-func init() {
-	DemoCmd.PersistentFlags().String("artifacts", "https://storage.googleapis.com/pixie-prod-artifacts/prod-demo-apps", "The path to the demo apps")
-	viper.BindPFlag("artifacts", DemoCmd.PersistentFlags().Lookup("artifacts"))
-
-	DemoCmd.AddCommand(interactDemoCmd)
-	DemoCmd.AddCommand(listDemoCmd)
-	DemoCmd.AddCommand(deployDemoCmd)
-	DemoCmd.AddCommand(deleteDemoCmd)
 }
 
 func interactCmd(cmd *cobra.Command, args []string) {

@@ -49,9 +49,7 @@ func init() {
 	GetPEMsCmd.Flags().MarkHidden("all-clusters")
 
 	GetClusterCmd.Flags().Bool("id", false, "Whether to only fetch the cluster ID from the cluster running in the current kubeconfig")
-	viper.BindPFlag("id", GetClusterCmd.Flags().Lookup("id"))
 	GetClusterCmd.Flags().Bool("cloud-addr", false, "Whether to only fetch the cloud address from the cluster running in the current kubeconfig")
-	viper.BindPFlag("cloud-addr", GetClusterCmd.Flags().Lookup("cloud-addr"))
 
 	GetCmd.AddCommand(GetPEMsCmd)
 	GetCmd.AddCommand(GetViziersCmd)
@@ -152,6 +150,10 @@ var GetViziersCmd = &cobra.Command{
 var GetClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Get information about the current kubeconfig cluster",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("id", cmd.Flags().Lookup("id"))
+		viper.BindPFlag("cloud-addr", cmd.Flags().Lookup("cloud-addr"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetBool("id")
 		addr, _ := cmd.Flags().GetBool("cloud-addr")

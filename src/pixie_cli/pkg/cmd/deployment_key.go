@@ -46,15 +46,11 @@ func init() {
 	DeployKeyCmd.AddCommand(LookupDeployKeyCmd)
 
 	CreateDeployKeyCmd.Flags().StringP("desc", "d", "", "A description for the deploy key")
-	viper.BindPFlag("desc", CreateDeployKeyCmd.Flags().Lookup("desc"))
 	CreateDeployKeyCmd.Flags().BoolP("short", "s", false, "Return only the created deploy key, for use to pipe to other tools")
-	viper.BindPFlag("short", CreateDeployKeyCmd.Flags().Lookup("short"))
 
 	DeleteDeployKeyCmd.Flags().StringP("id", "i", "", "The deploy key to delete")
-	viper.BindPFlag("id", DeleteDeployKeyCmd.Flags().Lookup("id"))
 
 	ListDeployKeyCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
-	viper.BindPFlag("output", ListDeployKeyCmd.Flags().Lookup("output"))
 
 	LookupDeployKeyCmd.Flags().StringP("key", "k", "", "Value of the key. Leave blank to be prompted.")
 }
@@ -73,6 +69,10 @@ var DeployKeyCmd = &cobra.Command{
 var CreateDeployKeyCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Generate a deploy key for Pixie",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("desc", cmd.Flags().Lookup("desc"))
+		viper.BindPFlag("short", cmd.Flags().Lookup("short"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		desc := viper.GetString("desc")
@@ -95,6 +95,9 @@ var CreateDeployKeyCmd = &cobra.Command{
 var DeleteDeployKeyCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a deploy key for Pixie",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("id", cmd.Flags().Lookup("id"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		id, _ := cmd.Flags().GetString("id")
@@ -121,6 +124,9 @@ var DeleteDeployKeyCmd = &cobra.Command{
 var ListDeployKeyCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all deployment key metadata",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
