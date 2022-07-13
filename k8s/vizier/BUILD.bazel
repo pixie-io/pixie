@@ -136,6 +136,53 @@ config_setting(
     values = {"define": "public=True"},
 )
 
+genrule(
+    name = "vizier_etcd_image_list",
+    srcs = select({
+        ":dev": [
+            "//k8s/vizier:vizier_etcd_metadata_dev.yaml",
+        ],
+        ":public": [
+            "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
+        ],
+        "//conditions:default": [
+            "//k8s/vizier:private_vizier_etcd_metadata_prod.yaml",
+        ],
+    }) + [
+        "//k8s/vizier_deps:nats_prod",
+        "//k8s/vizier_deps:etcd_prod",
+    ],
+    outs = ["vizier_etcd_image_list.txt"],
+    cmd = """
+      T=`mktemp -d`
+      for FILE in $(SRCS); do cat $$FILE |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> $@; done
+      touch $@
+    """,
+)
+
+genrule(
+    name = "vizier_image_list",
+    srcs = select({
+        ":dev": [
+            "//k8s/vizier:vizier_metadata_persist_dev.yaml",
+        ],
+        ":public": [
+            "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
+        ],
+        "//conditions:default": [
+            "//k8s/vizier:private_vizier_metadata_persist_prod.yaml",
+        ],
+    }) + [
+        "//k8s/vizier_deps:nats_prod",
+    ],
+    outs = ["vizier_image_list.txt"],
+    cmd = """
+      T=`mktemp -d`
+      for FILE in $(SRCS); do cat $$FILE |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> $@; done
+      touch $@
+    """,
+)
+
 pkg_tar(
     name = "vizier_yamls",
     srcs =
@@ -155,14 +202,20 @@ pkg_tar(
         }) + [
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_prod",
+            "//k8s/vizier:vizier_etcd_image_list",
+            "//k8s/vizier:vizier_image_list",
+            "public/secrets.yaml",
         ],
     package_dir = "/yamls",
     remap_paths = {
         "/vizier/private_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public/secrets.yaml": "vizier/secrets.yaml",
         "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/vizier_etcd_image_list.txt": "images/vizier_etcd_image_list.txt",
         "/vizier/vizier_etcd_metadata_dev.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/vizier_image_list.txt": "images/vizier_image_list.txt",
         "/vizier/vizier_metadata_persist_dev.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },
     strip_prefix = "/k8s",
