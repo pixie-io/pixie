@@ -148,6 +148,9 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     maxHeight: '100%',
     width: '100%',
     lineHeight: `${ROW_HEIGHT_PX}px`,
+    '& a': {
+      whiteSpace: 'nowrap', 
+    },
   },
   start: { textAlign: 'left' },
   end: { textAlign: 'right' },
