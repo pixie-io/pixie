@@ -156,10 +156,12 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
-# Note that each ull linux header tarballs is ~15MB compressed and ~230MB uncompressed.
+# Used by stirling runtime to install linux headers on hosts having no Linux headers pre-installed.
+#
+# Note that each linux header tarball is ~15MB compressed and ~230MB uncompressed.
 # Trimmed versions are ~8MB compressed and ~110MB uncompressed.
 # These are all trimmed versions, so we have 8 * 12 = 96 MB of headers.
-linux_headers_tarballs = [
+stirling_linux_headers_tarballs = [
     "@linux_headers_4_14_176_tar_gz//file:file",
     "@linux_headers_4_15_18_tar_gz//file:file",
     "@linux_headers_4_16_18_tar_gz//file:file",
@@ -181,26 +183,43 @@ linux_headers_tarballs = [
     "@linux_headers_5_11_18_tar_gz//file:file",
 ]
 
-linux_timeconst_files = [
+# Used by stirling runtime to replace the on-the-fly installed Linux headers from
+# stirling_linux_headers_tarballs, in order to match the host's actual configs.
+#
+# See GenTimeConst() in src/stirling/utils/linux_headers.h for more details.
+stirling_linux_timeconst_files = [
     "@timeconst_100//file:file",
     "@timeconst_250//file:file",
     "@timeconst_300//file:file",
     "@timeconst_1000//file:file",
 ]
 
-stirling_collateral = [
-    "//src/stirling/binaries:stirling_ctrl",
+# Used by stirling runtime to provide symbolization for Java application profiling.
+stirling_java_profiling_tools = [
     "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
     # TODO(jps): Find a way to package the agent lib .so files w/ Stirling vs. PEM image.
+    #
+    # These 2 targets are used by Java profiling component. They are built inside container, and not
+    # cached by bazel, which means they are built repetitively. When building stirling_wrapper or
+    # any other binaries that do not need them, you can remove these 2 targets temporarily to
+    # accelerate the build.
     "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
     "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
 ]
+
+# Use this binary to dynamically turn on/off Stirling runtime's debug logging.
+# See src/stirling/e2e_tests/stirling_signal_test.sh for its usage.
+stirling_ctrl = [
+    "//src/stirling/binaries:stirling_ctrl",
+]
+
+stirling_collateral = stirling_linux_headers_tarballs + stirling_linux_timeconst_files + stirling_ctrl + stirling_java_profiling_tools
 
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
     directory = "/pl",
-    files = linux_headers_tarballs + linux_timeconst_files + stirling_collateral,
+    files = stirling_collateral,
     visibility = ["//visibility:public"],
 )
 
@@ -208,7 +227,7 @@ container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
     directory = "/pl",
-    files = linux_headers_tarballs + linux_timeconst_files + stirling_collateral,
+    files = stirling_collateral,
     visibility = ["//visibility:public"],
 )
 
