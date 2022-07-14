@@ -220,7 +220,7 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
 	}
-	log.Infof("Status checksum '%s' does not match spec checksum '%s' - running an update", string(vz.Status.Checksum), string(checksum))
+	log.Infof("Status checksum '%x' does not match spec checksum '%x' - running an update", vz.Status.Checksum, checksum)
 
 	return r.deployVizier(ctx, req, vz, true)
 }
