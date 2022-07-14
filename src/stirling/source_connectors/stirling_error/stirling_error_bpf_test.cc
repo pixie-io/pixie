@@ -162,8 +162,6 @@ class FaultyConnector : public SourceConnector {
 class StirlingErrorTest : public ::testing::Test {
  protected:
   inline static const uint32_t kNumSources = 3;
-  inline static const std::string pidsample_bpftrace_script_ =
-      "src/stirling/testing/pidsample.bpftrace.pxl";
 
   template <typename TSourceType>
   std::unique_ptr<SourceRegistry> CreateSources() {
