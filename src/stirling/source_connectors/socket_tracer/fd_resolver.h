@@ -26,7 +26,6 @@
 
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
 namespace px {
 namespace stirling {
