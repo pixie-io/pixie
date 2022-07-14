@@ -50,6 +50,7 @@
 
 DECLARE_uint32(stirling_conn_stats_sampling_ratio);
 DECLARE_bool(stirling_enable_periodic_bpf_map_cleanup);
+DECLARE_int32(test_only_socket_trace_target_pid);
 DECLARE_string(socket_trace_data_events_output_path);
 DECLARE_int32(stirling_enable_http_tracing);
 DECLARE_int32(stirling_enable_http2_tracing);
@@ -127,7 +128,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Role_mask a bit mask, and represents the endpoint_role_t roles that are allowed to transfer
   // data from inside BPF to user-space.
   Status UpdateBPFProtocolTraceRole(traffic_protocol_t protocol, uint64_t role_mask);
-  Status TestOnlySetTargetPID(int64_t pid);
+
+  // Instructs Stirling to log detailed debug information about the traced events from the PID
+  // specified by --test_only_socket_trace_target_pid.
+  Status TestOnlySetTargetPID();
   Status DisableSelfTracing();
 
   void DisablePIDTrace(int pid) override {

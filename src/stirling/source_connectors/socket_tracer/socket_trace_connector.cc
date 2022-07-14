@@ -405,7 +405,7 @@ Status SocketTraceConnector::InitBPF() {
     }
   }
 
-  PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
+  PL_RETURN_IF_ERROR(TestOnlySetTargetPID());
   if (FLAGS_stirling_disable_self_tracing) {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
   }
@@ -416,7 +416,23 @@ Status SocketTraceConnector::InitBPF() {
   return Status::OK();
 }
 
+namespace {
+
+// Check debugging flags are compatible with each other.
+void CheckDebugFlags() {
+  if (FLAGS_test_only_socket_trace_target_pid != kTraceAllTGIDs &&
+      FLAGS_stirling_conn_trace_pid != kUnsetPIDFD) {
+    CHECK_EQ(FLAGS_test_only_socket_trace_target_pid, FLAGS_stirling_conn_trace_pid)
+        << "--test_only_socket_trace_target_pid and --stirling_conn_trace_pid flag values, "
+           "when both specified, must be the same.";
+  }
+}
+
+}  // namespace
+
 Status SocketTraceConnector::InitImpl() {
+  CheckDebugFlags();
+
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
@@ -668,12 +684,16 @@ Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t proto
                                            &control_map_handle);
 }
 
-Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
+Status SocketTraceConnector::TestOnlySetTargetPID() {
+  int64_t pid = FLAGS_test_only_socket_trace_target_pid;
   if (pid != kTraceAllTGIDs) {
     LOG(WARNING) << absl::Substitute(
         "Target trace PID set to pid=$0, will force BPF to ignore event filtering and "
-        "submit events of this PID to userspace.",
+        "submit events of this PID to userspace",
         pid);
+    LOG(WARNING) << absl::Substitute(
+        "Enable CONN_TRACE for pid=$0 following --test_only_socket_trace_target_pid", pid);
+    FLAGS_stirling_conn_trace_pid = pid;
   }
   auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
   return bpf_tools::UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);

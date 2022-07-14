@@ -44,6 +44,7 @@
 #include "src/stirling/utils/stat_counter.h"
 
 DECLARE_bool(treat_loopback_as_in_cluster);
+constexpr int64_t kUnsetPIDFD = -1;
 DECLARE_int64(stirling_conn_trace_pid);
 DECLARE_int64(stirling_conn_trace_fd);
 DECLARE_bool(stirling_conn_disable_to_bpf);

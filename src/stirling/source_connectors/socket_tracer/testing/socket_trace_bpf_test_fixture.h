@@ -65,8 +65,9 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
   }
 
   void TestOnlySetTargetPID(int64_t pid) {
+    FLAGS_test_only_socket_trace_target_pid = pid;
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
-    ASSERT_OK(socket_trace_connector->TestOnlySetTargetPID(pid));
+    ASSERT_OK(socket_trace_connector->TestOnlySetTargetPID());
   }
 
   void RefreshContext(bool blocking_deploy_uprobes = false) {
