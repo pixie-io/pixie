@@ -633,6 +633,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
+		return
 	}
 	defer rows.Close()
 	if rows.Next() {
