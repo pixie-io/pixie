@@ -143,14 +143,11 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   cellContents: {
     display: 'inline-block',
     overflow: 'hidden',
-    whiteSpace: 'pre',
+    whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     maxHeight: '100%',
     width: '100%',
     lineHeight: `${ROW_HEIGHT_PX}px`,
-    '& a': {
-      whiteSpace: 'nowrap', 
-    },
   },
   start: { textAlign: 'left' },
   end: { textAlign: 'right' },
