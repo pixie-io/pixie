@@ -262,10 +262,23 @@ service VizierClusterInfo {
   rpc GetClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest)
       returns (GetClusterConnectionInfoResponse);
+  rpc UpdateClusterVizierConfig(UpdateClusterVizierConfigRequest)
+      returns (UpdateClusterVizierConfigResponse);
   // This call is made when we want to update or install a Vizier. This call is made when deploying
   // a new Vizier through the CLI or by invoking the "update" command in the CLI.
   rpc UpdateOrInstallCluster(UpdateOrInstallClusterRequest)
       returns (UpdateOrInstallClusterResponse);
+}
+
+message VizierConfig {
+  bool passthrough_enabled = 1;
+  bool auto_update_enabled = 2;
+}
+
+message VizierConfigUpdate {
+  // Deprecated: We no longer let users disable passthrough. This will be removed in a future release.
+  google.protobuf.BoolValue passthrough_enabled = 1;
+  reserved 2;
 }
 
 message GetClusterInfoRequest {
@@ -353,6 +366,7 @@ message ClusterInfo {
   px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   ClusterStatus status = 2;
   int64 lastHeartbeatNs = 3;
+  VizierConfig config = 4;
   // A unique ID for the cluster. This is typically the kube-system namespace UID.
   string cluster_uid = 5 [ (gogoproto.customname) = "ClusterUID" ];
   // The name of the cluster. The return value of "kubectl config current-context".
@@ -389,8 +403,6 @@ message ClusterInfo {
   ClusterStatus previous_status = 15;
   // The time at which this cluster changed statuses to the currents tatus.
   google.protobuf.Timestamp previous_status_time = 16;
-
-  reserved 4;
 }
 
 message GetClusterInfoResponse { repeated ClusterInfo clusters = 1; }
@@ -401,6 +413,13 @@ message GetClusterConnectionInfoResponse {
   string token = 2;
   reserved 1;
 }
+
+message UpdateClusterVizierConfigRequest {
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  VizierConfigUpdate config_update = 2;
+}
+
+message UpdateClusterVizierConfigResponse {}
 
 // VizierDeploymentKeyManager is the service that manages deployment keys.
 service VizierDeploymentKeyManager {

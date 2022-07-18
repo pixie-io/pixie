@@ -35,6 +35,7 @@ option go_package = "cvmsgspb";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vizierpb/vizierapi.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
@@ -186,6 +187,17 @@ message VizierHeartbeatAck {
   string error_message = 4;
 }
 
+message VizierConfig {
+  bool passthrough_enabled = 1;
+  bool auto_update_enabled = 2;
+}
+
+message VizierConfigUpdate {
+  // Deprecated: We no longer let users disable passthrough. This will be removed in a future release.
+  google.protobuf.BoolValue passthrough_enabled = 1;
+  reserved 2;
+}
+
 message VizierInfo {
   // The ID for this Vizier.
   uuidpb.UUID vizier_id = 1 [
@@ -195,6 +207,7 @@ message VizierInfo {
   VizierStatus status = 2;
   // Time in ns since the last heart beat. Negative number implies heartbeat never received.
   int64 last_heartbeat_ns = 3 [(gogoproto.moretags) = "db:last_heartbeat"];
+  VizierConfig config = 4;
   // A unique ID for the cluster. This is typically the kube-system namespace UID.
   string cluster_uid = 5 [(gogoproto.customname) = "ClusterUID"];
   // The name of the cluster. The return value of "kubectl config current-context".
@@ -219,9 +232,17 @@ message VizierInfo {
   VizierStatus previous_status = 15;
   // The most recent timestamp of the previous Vizier status (if known)
   google.protobuf.Timestamp previous_status_time = 16;
-
-  reserved 4;
 }
+
+message UpdateVizierConfigRequest {
+  uuidpb.UUID vizier_id = 1 [
+    (gogoproto.customname) = "VizierID",
+    (gogoproto.moretags) = "db:vizier_id"
+  ];
+  VizierConfigUpdate config_update = 2;
+}
+
+message UpdateVizierConfigResponse {}
 
 // UpdateOrInstallVizierRequest is a request to install/update a vizier.
 message UpdateOrInstallVizierRequest {

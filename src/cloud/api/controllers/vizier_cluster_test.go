@@ -120,10 +120,14 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 					Status:          cvmsgspb.VZ_ST_HEALTHY,
 					StatusMessage:   "Everything is running",
 					LastHeartbeatNs: int64(1305646598000000000),
-					VizierVersion:   "1.2.3",
-					ClusterUID:      "a UID",
-					ClusterName:     "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
-					ClusterVersion:  "5.6.7",
+					Config: &cvmsgspb.VizierConfig{
+						PassthroughEnabled: false,
+						AutoUpdateEnabled:  true,
+					},
+					VizierVersion:  "1.2.3",
+					ClusterUID:     "a UID",
+					ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
+					ClusterVersion: "5.6.7",
 					ControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{
 						"vizier-proxy": {
 							Name:   "vizier-proxy",
@@ -201,6 +205,8 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			assert.Equal(t, cluster.ID, clusterID)
 			assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 			assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
+			assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+			assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
 			assert.Equal(t, "1.2.3", cluster.VizierVersion)
 			assert.Equal(t, "a UID", cluster.ClusterUID)
 			assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
@@ -251,9 +257,13 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 				VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
 			}).Return(&vzmgrpb.GetVizierInfosResponse{
 				VizierInfos: []*cvmsgspb.VizierInfo{{
-					VizierID:             clusterID,
-					Status:               cvmsgspb.VZ_ST_HEALTHY,
-					LastHeartbeatNs:      int64(1305646598000000000),
+					VizierID:        clusterID,
+					Status:          cvmsgspb.VZ_ST_HEALTHY,
+					LastHeartbeatNs: int64(1305646598000000000),
+					Config: &cvmsgspb.VizierConfig{
+						PassthroughEnabled: false,
+						AutoUpdateEnabled:  true,
+					},
 					VizierVersion:        "1.2.3",
 					ClusterUID:           "a UID",
 					ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
@@ -262,9 +272,13 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 					NumInstrumentedNodes: 3,
 				},
 					{
-						VizierID:             clusterID,
-						Status:               cvmsgspb.VZ_ST_HEALTHY,
-						LastHeartbeatNs:      int64(1305646598000000000),
+						VizierID:        clusterID,
+						Status:          cvmsgspb.VZ_ST_HEALTHY,
+						LastHeartbeatNs: int64(1305646598000000000),
+						Config: &cvmsgspb.VizierConfig{
+							PassthroughEnabled: false,
+							AutoUpdateEnabled:  true,
+						},
 						VizierVersion:        "1.2.3",
 						ClusterUID:           "a UID2",
 						ClusterName:          "gke_pl-pixies_us-west1-a_dev-cluster-zasgar",
@@ -323,10 +337,14 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 					VizierID:        clusterID,
 					Status:          cvmsgspb.VZ_ST_HEALTHY,
 					LastHeartbeatNs: int64(1305646598000000000),
-					VizierVersion:   "1.2.3",
-					ClusterUID:      "a UID",
-					ClusterName:     "some cluster",
-					ClusterVersion:  "5.6.7",
+					Config: &cvmsgspb.VizierConfig{
+						PassthroughEnabled: false,
+						AutoUpdateEnabled:  true,
+					},
+					VizierVersion:  "1.2.3",
+					ClusterUID:     "a UID",
+					ClusterName:    "some cluster",
+					ClusterVersion: "5.6.7",
 				},
 				},
 			}, nil)
@@ -345,6 +363,61 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 			assert.Equal(t, cluster.ID, clusterID)
 			assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 			assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
+			assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+			assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
+		})
+	}
+}
+
+func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			assert.NotNil(t, clusterID)
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			updateReq := &cvmsgspb.UpdateVizierConfigRequest{
+				VizierID: clusterID,
+				ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+					PassthroughEnabled: &types.BoolValue{Value: true},
+				},
+			}
+
+			mockClients.MockVzMgr.EXPECT().UpdateVizierConfig(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+
+			vzClusterInfoServer := &controllers.VizierClusterInfo{
+				VzMgr: mockClients.MockVzMgr,
+			}
+
+			resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudpb.UpdateClusterVizierConfigRequest{
+				ID: clusterID,
+				ConfigUpdate: &cloudpb.VizierConfigUpdate{
+					PassthroughEnabled: &types.BoolValue{Value: true},
+				},
+			})
+
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
 		})
 	}
 }

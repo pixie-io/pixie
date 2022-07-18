@@ -38,6 +38,7 @@ service VZMgrService {
   rpc GetVizierInfos(GetVizierInfosRequest) returns (GetVizierInfosResponse);
   // Call to acknowledge connection of a vizier.
   rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck);
+  rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse);
   // This call is made when we want to update or install a Vizier.
   rpc UpdateOrInstallVizier(cvmsgspb.UpdateOrInstallVizierRequest) returns (cvmsgspb.UpdateOrInstallVizierResponse);
   // Given a VizierID, get the org who owns that vizier. This should be for internal use only.
