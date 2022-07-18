@@ -149,7 +149,7 @@ func (p requestProxyer) validateRequestAndFetchCreds(ctx context.Context, debugM
 			}
 		}
 
-		if !resp.Config.PassthroughEnabled {
+		if resp.Config != nil && !resp.Config.PassthroughEnabled {
 			return ErrPassthroughDisabled
 		}
 		return nil
