@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
-load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "px_jattach")
+load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "px_jattach", "stirling_profiler_java_args")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -39,6 +39,7 @@ pl_cc_test(
     name = "stirling_error_bpf_test",
     timeout = "moderate",
     srcs = ["stirling_error_bpf_test.cc"],
+    args = stirling_profiler_java_args,
     data = agent_libs + [
         px_jattach,
         "//src/stirling/source_connectors/perf_profiler/testing/java:java_image_base-java-profiler-test-image-omit-frame-pointer.tar",
