@@ -53,6 +53,7 @@ using ContainerUpdate = px::shared::k8s::metadatapb::ContainerUpdate;
 using ServiceUpdate = px::shared::k8s::metadatapb::ServiceUpdate;
 using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
 using NodeUpdate = px::shared::k8s::metadatapb::NodeUpdate;
+using ReplicaSetUpdate = px::shared::k8s::metadatapb::ReplicaSetUpdate;
 
 /**
  * AgentMetadataStateManager has all the metadata that is tracked on a per agent basis.
@@ -218,5 +219,7 @@ Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* 
                              AgentMetadataFilter* metadata_filter);
 Status HandleNodeUpdate(const NodeUpdate& update, AgentMetadataState* state,
                         AgentMetadataFilter* metadata_filter);
+Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update, AgentMetadataState* state,
+                              AgentMetadataFilter* metadata_filter);
 }  // namespace md
 }  // namespace px
