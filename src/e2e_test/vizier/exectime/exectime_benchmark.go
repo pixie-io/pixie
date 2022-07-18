@@ -39,8 +39,8 @@ import (
 	"px.dev/pixie/src/shared/services"
 )
 
-var scriptDisableList = []string{
-	"px/http2_data",
+var disallowedScripts = map[string]struct{}{
+	"px/http2_data": struct{}{},
 }
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
@@ -51,6 +51,7 @@ func init() {
 	pflag.StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
 	pflag.BoolP("all-clusters", "d", false, "Run script across all clusters")
 	pflag.StringP("cluster", "c", "", "Run only on selected cluster")
+	pflag.StringSliceP("scripts", "s", nil, "Run only on selected scripts")
 }
 
 // Distribution is the interface used to make the stats.
@@ -189,13 +190,18 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	return &execRes, nil
 }
 
-func isDisabled(script string) bool {
-	for _, t := range scriptDisableList {
-		if script == t {
-			return true
-		}
+func isAllowed(s *script.ExecutableScript, allowedScripts map[string]struct{}) bool {
+	if _, isDisallowed := disallowedScripts[s.ScriptName]; isDisallowed {
+		return false
 	}
-	return false
+	if isMutation(s) {
+		return false
+	}
+	if len(allowedScripts) == 0 {
+		return true
+	}
+	_, allowed := allowedScripts[s.ScriptName]
+	return allowed
 }
 
 func isMutation(s *script.ExecutableScript) bool {
@@ -286,14 +292,16 @@ func main() {
 		}
 	}
 
+	allowedScripts := make(map[string]struct{})
+	for _, s := range viper.GetStringSlice("scripts") {
+		allowedScripts[s] = struct{}{}
+	}
+
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
 	data := make(map[string]*ScriptExecData)
 	for i, s := range scripts {
-		if isDisabled(s.ScriptName) {
-			continue
-		}
-		if isMutation(s) {
+		if !isAllowed(s, allowedScripts) {
 			continue
 		}
 
