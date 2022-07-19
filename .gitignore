@@ -76,3 +76,6 @@ dump.lsif
 # Ignore files created by vagrant
 .vagrant/
 Vagrantfile
+
+# Ignore symlink to bazel_output_base/external
+external
