@@ -35,7 +35,6 @@ option go_package = "cvmsgspb";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vizierpb/vizierapi.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
@@ -188,14 +187,11 @@ message VizierHeartbeatAck {
 }
 
 message VizierConfig {
-  bool passthrough_enabled = 1;
-  bool auto_update_enabled = 2;
+  reserved 1, 2;
 }
 
 message VizierConfigUpdate {
-  // Deprecated: We no longer let users disable passthrough. This will be removed in a future release.
-  google.protobuf.BoolValue passthrough_enabled = 1;
-  reserved 2;
+  reserved 1, 2;
 }
 
 message VizierInfo {

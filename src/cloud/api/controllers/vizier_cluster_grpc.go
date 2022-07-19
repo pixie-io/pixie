@@ -194,8 +194,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			StatusMessage:   vzInfo.StatusMessage,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
 			Config: &cloudpb.VizierConfig{
-				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
-				AutoUpdateEnabled:  vzInfo.Config.AutoUpdateEnabled,
+				PassthroughEnabled: true,
 			},
 			ClusterUID:                    vzInfo.ClusterUID,
 			ClusterName:                   vzInfo.ClusterName,
@@ -241,21 +240,6 @@ func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, reques
 
 // UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
 func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *cloudpb.UpdateClusterVizierConfigRequest) (*cloudpb.UpdateClusterVizierConfigResponse, error) {
-	ctx, err := contextWithAuthToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = v.VzMgr.UpdateVizierConfig(ctx, &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: req.ID,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return &cloudpb.UpdateClusterVizierConfigResponse{}, nil
 }
 

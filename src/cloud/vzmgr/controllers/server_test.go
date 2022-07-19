@@ -242,8 +242,6 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, resp.VizierID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	assert.Equal(t, resp.Status, cvmsgspb.VZ_ST_HEALTHY)
 	assert.Greater(t, resp.LastHeartbeatNs, int64(0))
-	assert.Equal(t, resp.Config.PassthroughEnabled, false)
-	assert.Equal(t, resp.Config.AutoUpdateEnabled, true)
 	assert.Equal(t, "vzVers", resp.VizierVersion)
 	assert.Equal(t, "cVers", resp.ClusterVersion)
 	assert.Equal(t, "healthy_cluster", resp.ClusterName)
@@ -292,106 +290,6 @@ func TestServer_GetVizierInfos(t *testing.T) {
 	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[2])
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), resp.VizierInfos[3].VizierID)
 	assert.Equal(t, "k8sID", resp.VizierInfos[3].ClusterUID)
-}
-
-func TestServer_UpdateVizierConfig(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Check that the value was actually updated.
-	infoResp, err := s.GetVizierInfo(CreateTestContext(), vzIDpb)
-	require.NoError(t, err)
-	require.NotNil(t, infoResp)
-	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
-}
-
-func TestServer_UpdateVizierConfig_PassthroughDisable(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-
-	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: false},
-		},
-	})
-	require.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.InvalidArgument)
-}
-
-func TestServer_UpdateVizierConfig_PassthroughEnable(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
-
-	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: vzIDpb,
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.NoError(t, err)
-}
-
-func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	})
-	require.Nil(t, resp)
-	require.NotNil(t, err)
-	assert.Equal(t, status.Code(err), codes.NotFound)
-}
-
-func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s := controllers.New(db, "test", nil, nil)
-	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Check that the value was not updated.
-	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.NoError(t, err)
-	require.NotNil(t, infoResp)
-	assert.Equal(t, infoResp.Config.PassthroughEnabled, false)
 }
 
 func TestServer_GetVizierConnectionInfo(t *testing.T) {
