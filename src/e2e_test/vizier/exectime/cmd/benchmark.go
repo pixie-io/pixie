@@ -74,6 +74,7 @@ type Distribution interface {
 	Summarize() string
 	Type() string
 	Append(interface{})
+	Diff(Distribution) (DistributionDiff, error)
 }
 
 // TimeDistribution contains Times and implements the Distribution interface.

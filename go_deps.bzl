@@ -32,6 +32,7 @@ def pl_go_dependencies():
         sum = "h1:UoveltGrhghAA7ePc+e+QYDHXrBps2PqFZiHkGR/xK8=",
         version = "v0.0.1-2020.1.4",
     )
+
     go_repository(
         name = "com_github_adalogics_go_fuzz_headers",
         importpath = "github.com/AdaLogics/go-fuzz-headers",
@@ -1325,6 +1326,7 @@ def pl_go_dependencies():
         sum = "h1:QGQ5CvK74E28t3DkegGweKR+auemUi5IdpMc4x3UW6s=",
         version = "v0.20.1",
     )
+
     go_repository(
         name = "com_github_go_sql_driver_mysql",
         importpath = "github.com/go-sql-driver/mysql",
@@ -2490,8 +2492,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_mattn_go_sqlite3",
         importpath = "github.com/mattn/go-sqlite3",
-        sum = "h1:pDRiWfl+++eC2FEFRy6jXmQlvp4Yh3z1MJKg4UeYM/4=",
-        version = "v1.9.0",
+        sum = "h1:1IdxlwTNazvbKJQSxoJ5/9ECbEeaTTyeU7sEAZ5KKTQ=",
+        version = "v1.14.5",
     )
 
     go_repository(
@@ -4263,6 +4265,7 @@ def pl_go_dependencies():
         sum = "h1:SRsZGA7aFnCZETmov57jwPrWuTmaZK6+4R4v5FUe1/c=",
         version = "v0.0.0-20200407214033-5883e5a4b512",
     )
+
     go_repository(
         name = "org_golang_google_api",
         importpath = "google.golang.org/api",
@@ -4369,6 +4372,7 @@ def pl_go_dependencies():
         sum = "h1:97HRwvCO2J4GwWidxSLTMnbt0OFtQznRG4RBXOcvEvI=",
         version = "v0.0.0-20210819190943-2bc19b11175f",
     )
+
     go_repository(
         name = "org_golang_x_sync",
         importpath = "golang.org/x/sync",
