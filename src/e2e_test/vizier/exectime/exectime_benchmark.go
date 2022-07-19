@@ -39,8 +39,8 @@ import (
 	"px.dev/pixie/src/shared/services"
 )
 
-var disallowedScripts = map[string]struct{}{
-	"px/http2_data": struct{}{},
+var disallowedScripts = map[string]bool{
+	"px/http2_data": true,
 }
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
@@ -190,8 +190,8 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	return &execRes, nil
 }
 
-func isAllowed(s *script.ExecutableScript, allowedScripts map[string]struct{}) bool {
-	if _, isDisallowed := disallowedScripts[s.ScriptName]; isDisallowed {
+func isAllowed(s *script.ExecutableScript, allowedScripts map[string]bool) bool {
+	if disallowedScripts[s.ScriptName] {
 		return false
 	}
 	if isMutation(s) {
@@ -200,8 +200,7 @@ func isAllowed(s *script.ExecutableScript, allowedScripts map[string]struct{}) b
 	if len(allowedScripts) == 0 {
 		return true
 	}
-	_, allowed := allowedScripts[s.ScriptName]
-	return allowed
+	return allowedScripts[s.ScriptName]
 }
 
 func isMutation(s *script.ExecutableScript) bool {
@@ -292,9 +291,9 @@ func main() {
 		}
 	}
 
-	allowedScripts := make(map[string]struct{})
+	allowedScripts := make(map[string]bool)
 	for _, s := range viper.GetStringSlice("scripts") {
-		allowedScripts[s] = struct{}{}
+		allowedScripts[s] = true
 	}
 
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
