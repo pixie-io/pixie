@@ -133,28 +133,28 @@ func mustLoadTestData(db *sqlx.DB) {
 	testPastStatus := "UNHEALTHY"
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, jwt_signing_key, last_heartbeat,
-						  passthrough_enabled, auto_update_enabled, vizier_version, cluster_version, control_plane_pod_statuses,
+						  vizier_version, cluster_version, control_plane_pod_statuses,
 							unhealthy_data_plane_pod_statuses, num_nodes, num_instrumented_nodes, status_message,
 							prev_status, prev_status_time)
-						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN",
-		"key0", "2011-05-16 15:36:38", true, false, "", "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
+		"key0", "2011-05-16 15:36:38", "", "", testPodStatuses, testDataPlanePodStatuses, 10, 8, "",
 		&testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY",
 		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
-		"2011-05-17 15:36:38", false, true, "vzVers", "cVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
+		"2011-05-17 15:36:38", "vzVers", "cVers", "{}", "{}", 12, 9, "This is a test", &testPastStatus, testPastTime)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "key2", "2011-05-18 15:36:38",
-		true, false, "", "", "{}", "{}", 4, 4, "", nil, nil)
+		"", "", "{}", "{}", 4, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 3, 2, "", nil, nil)
+		"", "", "{}", "{}", 3, 2, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 5, 4, "", nil, nil)
+		"", "", "{}", "{}", 5, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 10, 4, "", nil, nil)
+		"", "", "{}", "{}", 10, 4, "", nil, nil)
 	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "key3", "2011-05-19 15:36:38",
-		true, true, "", "", "{}", "{}", 2, 0, "", nil, nil)
+		"", "", "{}", "{}", 2, 0, "", nil, nil)
 	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "key3", "2011-05-19 15:36:38",
-		false, true, "", "", "{}", "{}", 4, 2, "", nil, nil)
+		"", "", "{}", "{}", 4, 2, "", nil, nil)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 }

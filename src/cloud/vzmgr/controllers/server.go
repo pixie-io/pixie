@@ -250,8 +250,6 @@ type VizierInfo struct {
 	ID                            uuid.UUID     `db:"vizier_cluster_id"`
 	Status                        vizierStatus  `db:"status"`
 	LastHeartbeat                 *int64        `db:"last_heartbeat"`
-	PassthroughEnabled            bool          `db:"passthrough_enabled"`
-	AutoUpdateEnabled             bool          `db:"auto_update_enabled"`
 	ClusterUID                    *string       `db:"cluster_uid"`
 	ClusterName                   *string       `db:"cluster_name"`
 	ClusterVersion                *string       `db:"cluster_version"`
@@ -340,7 +338,7 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 
 	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version, c.org_id,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+              i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               FROM vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
@@ -393,7 +391,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
+              i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
