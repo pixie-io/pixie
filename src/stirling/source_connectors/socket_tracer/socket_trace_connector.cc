@@ -818,6 +818,7 @@ void SocketTraceConnector::HandleGrpcCHeaderEvent(void* cb_cookie, void* data, i
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   struct grpc_c_header_event_data_t* event_data =
       static_cast<struct grpc_c_header_event_data_t*>(data);
+  // TODO(yzhao): Implement a C++ companion of the C struct so that smart object management applies.
   auto event = std::make_unique<struct grpc_c_header_event_data_t>(*event_data);
 
   connector->AcceptGrpcCHeaderEventData(std::move(event));
@@ -829,6 +830,7 @@ void SocketTraceConnector::HandleGrpcCEvent(void* cb_cookie, void* data, int /*d
 
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   struct grpc_c_event_data_t* event_data = static_cast<struct grpc_c_event_data_t*>(data);
+  // TODO(yzhao): Implement a C++ companion of the C struct so that smart object management applies.
   auto event = std::make_unique<struct grpc_c_event_data_t>(*event_data);
 
   connector->AcceptGrpcCEventData(std::move(event));
