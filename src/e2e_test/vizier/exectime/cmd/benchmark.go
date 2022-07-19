@@ -20,6 +20,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -41,6 +42,11 @@ var disallowedScripts = map[string]bool{
 	"px/http2_data": true,
 }
 
+var allowedOutputFmts = map[string]bool{
+	"table": true,
+	"json":  true,
+}
+
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
 func init() {
@@ -50,17 +56,24 @@ func init() {
 	BenchmarkCmd.PersistentFlags().BoolP("all-clusters", "d", false, "Run script across all clusters")
 	BenchmarkCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
 	BenchmarkCmd.PersistentFlags().StringSliceP("scripts", "s", nil, "Run only on selected scripts")
+	BenchmarkCmd.PersistentFlags().StringP("output", "o", "table", "Output format to use. Currently supports 'table' or 'json'")
 	RootCmd.AddCommand(BenchmarkCmd)
 }
 
 // Distribution is the interface used to make the stats.
 type Distribution interface {
 	Summarize() string
+	Type() string
 }
 
 // TimeDistribution contains Times and implements the Distribution interface.
 type TimeDistribution struct {
 	Times []time.Duration
+}
+
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (t *TimeDistribution) Type() string {
+	return "Time"
 }
 
 // Mean caluates the mean of the time distribution.
@@ -92,6 +105,11 @@ type ErrorDistribution struct {
 	Errors []error
 }
 
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (d *ErrorDistribution) Type() string {
+	return "Error"
+}
+
 // Num counts the number of errors.
 func (d *ErrorDistribution) Num() int {
 	var numErrs int
@@ -111,6 +129,11 @@ func (d *ErrorDistribution) Summarize() string {
 // BytesDistribution contains Bytess and implements the Distribution interface.
 type BytesDistribution struct {
 	Bytes []int
+}
+
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (d *BytesDistribution) Type() string {
+	return "Bytes"
 }
 
 // Mean caluates the mean of the time distribution.
@@ -206,12 +229,61 @@ func isMutation(s *script.ExecutableScript) bool {
 	return strings.Contains(s.ScriptString, "pxtrace")
 }
 
+type distributionMap map[string]Distribution
+type distributionContainer struct {
+	Type      string
+	TimeDist  *TimeDistribution  `json:",omitempty"`
+	BytesDist *BytesDistribution `json:",omitempty"`
+	ErrorDist *ErrorDistribution `json:",omitempty"`
+}
+
+func (dm *distributionMap) MarshalJSON() ([]byte, error) {
+	containers := make(map[string]*distributionContainer, len(*dm))
+	for k, dist := range *dm {
+		containers[k] = &distributionContainer{
+			Type: dist.Type(),
+		}
+		switch dist.Type() {
+		case (&TimeDistribution{}).Type():
+			timeDist, _ := dist.(*TimeDistribution)
+			containers[k].TimeDist = timeDist
+		case (&BytesDistribution{}).Type():
+			byteDist, _ := dist.(*BytesDistribution)
+			containers[k].BytesDist = byteDist
+		case (&ErrorDistribution{}).Type():
+			errorDist, _ := dist.(*ErrorDistribution)
+			containers[k].ErrorDist = errorDist
+		}
+	}
+	return json.Marshal(containers)
+}
+
+func (dm *distributionMap) UnmarshalJSON(data []byte) error {
+	var containers map[string]*distributionContainer
+	err := json.Unmarshal(data, &containers)
+	if err != nil {
+		return err
+	}
+	(*dm) = make(distributionMap, len(containers))
+	for k, container := range containers {
+		switch container.Type {
+		case (&TimeDistribution{}).Type():
+			(*dm)[k] = container.TimeDist
+		case (&BytesDistribution{}).Type():
+			(*dm)[k] = container.BytesDist
+		case (&ErrorDistribution{}).Type():
+			(*dm)[k] = container.ErrorDist
+		}
+	}
+	return nil
+}
+
 // ScriptExecData contains the data for a single executed script.
 type ScriptExecData struct {
 	// The Name of the script we're running.
 	Name string
 	// The Distributions of Statistics to record.
-	Distributions map[string]Distribution
+	Distributions distributionMap
 }
 
 // stdoutTableWriter writes the execStats out to a table in stdout. Implements ExecStatsWriter.
@@ -267,13 +339,22 @@ func (s *stdoutTableWriter) Write(data *[]*ScriptExecData) error {
 }
 
 func benchmarkCmd(cmd *cobra.Command) {
+	// Set the logger to use stderr so that json output can be consumed without log lines.
+	log.SetOutput(os.Stderr)
+
 	repeatCount, _ := cmd.Flags().GetInt("num_runs")
 	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 	bundleFile, _ := cmd.Flags().GetString("bundle")
 	allClusters, _ := cmd.Flags().GetBool("all-clusters")
 	selectedCluster, _ := cmd.Flags().GetString("cluster")
 	selectedScripts, _ := cmd.Flags().GetStringSlice("scripts")
+	outputFmt, _ := cmd.Flags().GetString("output")
+
 	clusterID := uuid.FromStringOrNil(selectedCluster)
+
+	if !allowedOutputFmts[outputFmt] {
+		log.WithField("output", outputFmt).Fatal("invalid output format")
+	}
 
 	br, err := createBundleReader(bundleFile)
 	if err != nil {
@@ -342,7 +423,7 @@ func benchmarkCmd(cmd *cobra.Command) {
 
 		data[s.ScriptName] = &ScriptExecData{
 			Name: s.ScriptName,
-			Distributions: map[string]Distribution{
+			Distributions: distributionMap{
 				"Exec Time: External": &TimeDistribution{externalExecTiming},
 				"Exec Time: Internal": &TimeDistribution{internalExecTiming},
 				"Compilation Time":    &TimeDistribution{compilationTiming},
@@ -352,12 +433,21 @@ func benchmarkCmd(cmd *cobra.Command) {
 		}
 	}
 
-	s := &stdoutTableWriter{}
-	// Sort by key names.
-	sortedData := sortByKeys(&data)
-	err = s.Write(&sortedData)
-	if err != nil {
-		log.WithError(err).Fatalf("Failure on writing table")
+	if outputFmt == "table" {
+		s := &stdoutTableWriter{}
+		// Sort by key names.
+		sortedData := sortByKeys(&data)
+		err = s.Write(&sortedData)
+		if err != nil {
+			log.WithError(err).Fatalf("Failure on writing table")
+		}
+	}
+	if outputFmt == "json" {
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to marshal results to json")
+		}
+		os.Stdout.Write(jsonData)
 	}
 }
 
