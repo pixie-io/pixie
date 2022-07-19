@@ -22,7 +22,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <filesystem>
 #include <utility>
 
@@ -962,7 +961,7 @@ void SocketTraceConnector::AcceptGrpcCEventData(std::unique_ptr<struct grpc_c_ev
   slices.push_back(event->slice);
 
   this->AcceptGrpcCEvent(event->conn_id, event->stream_id, event->timestamp,
-                         event->direction == kEgress, event->position_in_stream, slices);
+                         event->direction == kEgress, event->position_in_stream, std::move(slices));
 }
 
 void SocketTraceConnector::InitiateHeaderEventDataGoStyle(
