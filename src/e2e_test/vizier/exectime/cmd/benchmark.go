@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package main
+package cmd
 
 import (
 	"context"
@@ -31,12 +31,10 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"github.com/spf13/cobra"
 
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
-	"px.dev/pixie/src/shared/services"
 )
 
 var disallowedScripts = map[string]bool{
@@ -46,12 +44,13 @@ var disallowedScripts = map[string]bool{
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
 func init() {
-	pflag.Int("num_runs", 10, "number of times to run a script ")
-	pflag.StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
-	pflag.StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
-	pflag.BoolP("all-clusters", "d", false, "Run script across all clusters")
-	pflag.StringP("cluster", "c", "", "Run only on selected cluster")
-	pflag.StringSliceP("scripts", "s", nil, "Run only on selected scripts")
+	BenchmarkCmd.PersistentFlags().Int("num_runs", 10, "number of times to run a script ")
+	BenchmarkCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
+	BenchmarkCmd.PersistentFlags().StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
+	BenchmarkCmd.PersistentFlags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	BenchmarkCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
+	BenchmarkCmd.PersistentFlags().StringSliceP("scripts", "s", nil, "Run only on selected scripts")
+	RootCmd.AddCommand(BenchmarkCmd)
 }
 
 // Distribution is the interface used to make the stats.
@@ -267,13 +266,13 @@ func (s *stdoutTableWriter) Write(data *[]*ScriptExecData) error {
 	return nil
 }
 
-func main() {
-	services.PostFlagSetupAndParse()
-	repeatCount := viper.GetInt("num_runs")
-	cloudAddr := viper.GetString("cloud_addr")
-	bundleFile := viper.GetString("bundle")
-	allClusters := viper.GetBool("all-clusters")
-	selectedCluster := viper.GetString("cluster")
+func benchmarkCmd(cmd *cobra.Command) {
+	repeatCount, _ := cmd.Flags().GetInt("num_runs")
+	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
+	bundleFile, _ := cmd.Flags().GetString("bundle")
+	allClusters, _ := cmd.Flags().GetBool("all-clusters")
+	selectedCluster, _ := cmd.Flags().GetString("cluster")
+	selectedScripts, _ := cmd.Flags().GetStringSlice("scripts")
 	clusterID := uuid.FromStringOrNil(selectedCluster)
 
 	br, err := createBundleReader(bundleFile)
@@ -292,7 +291,7 @@ func main() {
 	}
 
 	allowedScripts := make(map[string]bool)
-	for _, s := range viper.GetStringSlice("scripts") {
+	for _, s := range selectedScripts {
 		allowedScripts[s] = true
 	}
 
@@ -360,4 +359,19 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatalf("Failure on writing table")
 	}
+}
+
+// RootCmd executes the subcommands.
+var RootCmd = &cobra.Command{
+	Use:   "exectime_benchmark",
+	Short: "Run and compare exectime benchmarks",
+}
+
+// BenchmarkCmd executes the script execution benchmark.
+var BenchmarkCmd = &cobra.Command{
+	Use:   "benchmark",
+	Short: "Run exec time benchmarks",
+	Run: func(cmd *cobra.Command, args []string) {
+		benchmarkCmd(cmd)
+	},
 }

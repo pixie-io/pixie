@@ -13,21 +13,20 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "exectime_lib",
-    srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/e2e_test/vizier/exectime",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//src/e2e_test/vizier/exectime/cmd:cmd_lib",
-        "@com_github_sirupsen_logrus//:logrus",
-    ],
-)
-
-go_binary(
-    name = "exectime",
-    embed = [":exectime_lib"],
+    name = "cmd_lib",
+    srcs = ["benchmark.go"],
+    importpath = "px.dev/pixie/src/e2e_test/vizier/exectime/cmd",
     visibility = ["//visibility:public"],
+    deps = [
+        "//src/pixie_cli/pkg/script",
+        "//src/pixie_cli/pkg/vizier",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_olekukonko_tablewriter//:tablewriter",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_cobra//:cobra",
+    ],
 )
