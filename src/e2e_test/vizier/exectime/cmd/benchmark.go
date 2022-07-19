@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"sort"
 	"strings"
@@ -49,6 +50,14 @@ var allowedOutputFmts = map[string]bool{
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
+const (
+	execTimeExternalLabel = "Exec Time: External"
+	execTimeInternalLabel = "Exec Time: Internal"
+	compTimeLabel         = "Compilation Time"
+	numErrorsLabel        = "Num Errors"
+	numBytesLabel         = "Num Bytes"
+)
+
 func init() {
 	BenchmarkCmd.PersistentFlags().Int("num_runs", 10, "number of times to run a script ")
 	BenchmarkCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
@@ -64,6 +73,7 @@ func init() {
 type Distribution interface {
 	Summarize() string
 	Type() string
+	Append(interface{})
 }
 
 // TimeDistribution contains Times and implements the Distribution interface.
@@ -74,6 +84,15 @@ type TimeDistribution struct {
 // Type returns the type of distribution this is, for json marshalling purposes.
 func (t *TimeDistribution) Type() string {
 	return "Time"
+}
+
+// Append a value to the time distribution.
+func (t *TimeDistribution) Append(v interface{}) {
+	dur, ok := v.(time.Duration)
+	if !ok {
+		log.Fatal("failed to append to TimeDistribution")
+	}
+	t.Times = append(t.Times, dur)
 }
 
 // Mean caluates the mean of the time distribution.
@@ -110,6 +129,19 @@ func (d *ErrorDistribution) Type() string {
 	return "Error"
 }
 
+// Append a value to the error distribution.
+func (d *ErrorDistribution) Append(v interface{}) {
+	if v == nil {
+		d.Errors = append(d.Errors, nil)
+		return
+	}
+	e, ok := v.(error)
+	if !ok {
+		log.Fatal("failed to append to ErrorDistribution")
+	}
+	d.Errors = append(d.Errors, e)
+}
+
 // Num counts the number of errors.
 func (d *ErrorDistribution) Num() int {
 	var numErrs int
@@ -134,6 +166,15 @@ type BytesDistribution struct {
 // Type returns the type of distribution this is, for json marshalling purposes.
 func (d *BytesDistribution) Type() string {
 	return "Bytes"
+}
+
+// Append a value to the bytes distribution.
+func (d *BytesDistribution) Append(v interface{}) {
+	e, ok := v.(int)
+	if !ok {
+		log.Fatal("failed to append to BytesDistribution")
+	}
+	d.Bytes = append(d.Bytes, e)
 }
 
 // Mean caluates the mean of the time distribution.
@@ -378,13 +419,13 @@ func benchmarkCmd(cmd *cobra.Command) {
 
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
+	scriptsToRun := make([]*script.ExecutableScript, 0)
 	data := make(map[string]*ScriptExecData)
-	for i, s := range scripts {
+	for _, s := range scripts {
 		if !isAllowed(s, allowedScripts) {
 			continue
 		}
 
-		log.WithField("script", s.ScriptName).WithField("idx", i).Infof("Executing new script")
 		s.Args = make(map[string]script.Arg)
 		s.Args["start_time"] = script.Arg{Name: "start_time", Value: "-5m"}
 
@@ -402,35 +443,47 @@ func benchmarkCmd(cmd *cobra.Command) {
 			s.Args[v.Name] = script.Arg{Name: v.Name, Value: value}
 		}
 
-		externalExecTiming := make([]time.Duration, repeatCount)
-		internalExecTiming := make([]time.Duration, repeatCount)
-		compilationTiming := make([]time.Duration, repeatCount)
-		scriptErrors := make([]error, repeatCount)
-		numBytes := make([]int, repeatCount)
-
-		// Run script.
 		for i := 0; i < repeatCount; i++ {
-			res, err := executeScript(vzrConns, s)
-			if err != nil {
-				log.WithError(err).Fatalf("Failed to execute script")
-			}
-			scriptErrors[i] = res.scriptErr
-			externalExecTiming[i] = res.externalExecTime
-			compilationTiming[i] = res.compileTime
-			internalExecTiming[i] = res.internalExecTime
-			numBytes[i] = res.numBytes
+			scriptsToRun = append(scriptsToRun, s)
 		}
 
+		externalExecTiming := make([]time.Duration, 0)
+		internalExecTiming := make([]time.Duration, 0)
+		compilationTiming := make([]time.Duration, 0)
+		scriptErrors := make([]error, 0)
+		numBytes := make([]int, 0)
 		data[s.ScriptName] = &ScriptExecData{
 			Name: s.ScriptName,
 			Distributions: distributionMap{
-				"Exec Time: External": &TimeDistribution{externalExecTiming},
-				"Exec Time: Internal": &TimeDistribution{internalExecTiming},
-				"Compilation Time":    &TimeDistribution{compilationTiming},
-				"Num Errors":          &ErrorDistribution{scriptErrors},
-				"Num Bytes":           &BytesDistribution{numBytes},
+				execTimeExternalLabel: &TimeDistribution{externalExecTiming},
+				execTimeInternalLabel: &TimeDistribution{internalExecTiming},
+				compTimeLabel:         &TimeDistribution{compilationTiming},
+				numErrorsLabel:        &ErrorDistribution{scriptErrors},
+				numBytesLabel:         &BytesDistribution{numBytes},
 			},
 		}
+	}
+
+	// Shuffle scripts to run, to increase independence of samples across time.
+	rand.Seed(42)
+	rand.Shuffle(len(scriptsToRun), func(i, j int) {
+		scriptsToRun[i], scriptsToRun[j] = scriptsToRun[j], scriptsToRun[i]
+	})
+
+	// Run scripts in shuffled order.
+	for _, s := range scriptsToRun {
+		// Run script.
+		log.WithField("script", s.ScriptName).Infof("Executing script")
+		res, err := executeScript(vzrConns, s)
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to execute script")
+		}
+		dists := data[s.ScriptName].Distributions
+		dists[numErrorsLabel].Append(res.scriptErr)
+		dists[execTimeExternalLabel].Append(res.externalExecTime)
+		dists[compTimeLabel].Append(res.compileTime)
+		dists[execTimeInternalLabel].Append(res.internalExecTime)
+		dists[numBytesLabel].Append(res.numBytes)
 	}
 
 	if outputFmt == "table" {
