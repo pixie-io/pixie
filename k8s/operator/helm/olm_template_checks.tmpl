@@ -1,0 +1,4 @@
+{{- $olmCRDFound := false }} \
+{{- range $index, $crdLookup := (lookup "apiextensions.k8s.io/v1" "CustomResourceDefinition" "" "").items -}}{{ if eq $crdLookup.metadata.name "operators.operators.coreos.com"}}{{ $olmCRDFound = true }}{{ end }}{{end}} \
+{{ if not $olmCRDFound }}{{ fail "CRDs missing! Please deploy CRDs from https://github.com/pixie-io/pixie/tree/main/k8s/operator/helm/crds to continue with deploy." }}{{end}} \
+{{- $lookupLen := 0 -}}{{- $opLookup := (lookup "operators.coreos.com/v1" "OperatorGroup" "" "").items -}}{{if $opLookup }}{{ $lookupLen = len $opLookup }}{{ end }}\n{{ if (or (eq (.Values.deployOLM | toString) "true") (and (not (eq (.Values.deployOLM | toString) "false")) (eq $lookupLen 0))) }}
