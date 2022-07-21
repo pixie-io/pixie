@@ -18,115 +18,117 @@ spec:
         name: kratos
     spec:
       initContainers:
-      - name: migrate
-        args:
-        - -c
-        - /etc/config/kratos/kratos.yml
-        - migrate
-        - sql
-        - -e
-        - --yes
-        envFrom:
-        - configMapRef:
-            name: pl-db-config
-        env:
-        - name: PL_POSTGRES_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: pl-db-secrets
-              key: PL_POSTGRES_USERNAME
-        - name: PL_POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: pl-db-secrets
-              key: PL_POSTGRES_PASSWORD
-        - name: DSN
-          # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
-        image: oryd/kratos:v0.5.5
-        resources: {}
-        volumeMounts:
-        - mountPath: /etc/config/kratos
-          name: config
+        - name: migrate
+          args:
+            - -c
+            - /etc/config/kratos/kratos.yml
+            - migrate
+            - sql
+            - -e
+            - --yes
+          envFrom:
+            - configMapRef:
+                name: pl-db-config
+          env:
+            - name: PL_POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pl-db-secrets
+                  key: PL_POSTGRES_USERNAME
+            - name: PL_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pl-db-secrets
+                  key: PL_POSTGRES_PASSWORD
+            - name: DSN
+              # yamllint disable-line rule:line-length
+              value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+          imagePullPolicy: IfNotPresent
+          image: oryd/kratos:v0.5.5
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/config/kratos
+              name: config
       containers:
-      - name: server
-        args:
-        - serve
-        - -c
-        - /etc/config/kratos/kratos.yml
-        - --dev
-        envFrom:
-        - configMapRef:
-            name: pl-db-config
-        - configMapRef:
-            name: pl-domain-config
-        env:
-        - name: PL_POSTGRES_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: pl-db-secrets
-              key: PL_POSTGRES_USERNAME
-        - name: PL_POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: pl-db-secrets
-              key: PL_POSTGRES_PASSWORD
-        - name: DSN
-          # yamllint disable-line rule:line-length
-          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
-        - name: LOG_LEVEL
-          value: trace
-        - name: PL_WORK_DOMAIN
-          value: work.$(PL_DOMAIN_NAME)
-        - name: PL_OAUTH_DOMAIN
-          value: $(PL_WORK_DOMAIN)/oauth
-        - name: FRONTEND_URL
-          value: https://$(PL_WORK_DOMAIN)/auth/ossauth
-        - name: ADMIN_URL
-          value: http://kratos:4434
-        - name: AUTH_LOGIN_URL
-          value: https://$(PL_WORK_DOMAIN)/auth/password-login
-        - name: SERVE_PUBLIC_BASE_URL
-          value: https://$(PL_OAUTH_DOMAIN)/kratos/
-        - name: SERVE_ADMIN_BASE_URL
-          value: $(ADMIN_URL)/
-        - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
-          value: $(AUTH_LOGIN_URL)/
-        - name: HYDRA_LOGIN_URL
-          value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
-        - name: SELFSERVICE_WHITELISTED_RETURN_URLS
-          value: $(FRONTEND_URL)/,$(HYDRA_LOGIN_URL)
-        # The settings UI is where recovery and invite links redirect when resetting password.
-        # All other user settings must be changed via the Pixie API, not the self-service flow
-        # because that profile information is duplicated in Kratos and the Profile service.
-        - name: SELFSERVICE_FLOWS_SETTINGS_UI_URL
-          value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
-        - name: SELFSERVICE_FLOWS_SETTINGS_AFTER_PASSWORD_DEFAULT_BROWSER_RETURN_URL
-          value: https://$(PL_WORK_DOMAIN)/
-        - name: SELFSERVICE_FLOWS_RECOVERY_UI_URL
-          value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
-        - name: SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL
-          value: $(AUTH_LOGIN_URL)
-        - name: SELFSERVICE_FLOWS_LOGIN_UI_URL
-          value: $(AUTH_LOGIN_URL)
-        - name: SELFSERVICE_FLOWS_ERROR_UI_URL
-          value: https://$(PL_WORK_DOMAIN)/auth/password/error
-        image: oryd/kratos:v0.5.5
-        ports:
-        - containerPort: 4433
-        - containerPort: 4434
-        resources: {}
-        volumeMounts:
-        - mountPath: /etc/config/kratos
-          name: config
+        - name: server
+          args:
+            - serve
+            - -c
+            - /etc/config/kratos/kratos.yml
+            - --dev
+          envFrom:
+            - configMapRef:
+                name: pl-db-config
+            - configMapRef:
+                name: pl-domain-config
+          env:
+            - name: PL_POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pl-db-secrets
+                  key: PL_POSTGRES_USERNAME
+            - name: PL_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pl-db-secrets
+                  key: PL_POSTGRES_PASSWORD
+            - name: DSN
+              # yamllint disable-line rule:line-length
+              value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+            - name: LOG_LEVEL
+              value: trace
+            - name: PL_WORK_DOMAIN
+              value: work.$(PL_DOMAIN_NAME)
+            - name: PL_OAUTH_DOMAIN
+              value: $(PL_WORK_DOMAIN)/oauth
+            - name: FRONTEND_URL
+              value: https://$(PL_WORK_DOMAIN)/auth/ossauth
+            - name: ADMIN_URL
+              value: http://kratos:4434
+            - name: AUTH_LOGIN_URL
+              value: https://$(PL_WORK_DOMAIN)/auth/password-login
+            - name: SERVE_PUBLIC_BASE_URL
+              value: https://$(PL_OAUTH_DOMAIN)/kratos/
+            - name: SERVE_ADMIN_BASE_URL
+              value: $(ADMIN_URL)/
+            - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
+              value: $(AUTH_LOGIN_URL)/
+            - name: HYDRA_LOGIN_URL
+              value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
+            - name: SELFSERVICE_WHITELISTED_RETURN_URLS
+              value: $(FRONTEND_URL)/,$(HYDRA_LOGIN_URL)
+            # The settings UI is where recovery and invite links redirect when resetting password.
+            # All other user settings must be changed via the Pixie API, not the self-service flow
+            # because that profile information is duplicated in Kratos and the Profile service.
+            - name: SELFSERVICE_FLOWS_SETTINGS_UI_URL
+              value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
+            - name: SELFSERVICE_FLOWS_SETTINGS_AFTER_PASSWORD_DEFAULT_BROWSER_RETURN_URL
+              value: https://$(PL_WORK_DOMAIN)/
+            - name: SELFSERVICE_FLOWS_RECOVERY_UI_URL
+              value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
+            - name: SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL
+              value: $(AUTH_LOGIN_URL)
+            - name: SELFSERVICE_FLOWS_LOGIN_UI_URL
+              value: $(AUTH_LOGIN_URL)
+            - name: SELFSERVICE_FLOWS_ERROR_UI_URL
+              value: https://$(PL_WORK_DOMAIN)/auth/password/error
+          imagePullPolicy: IfNotPresent
+          image: oryd/kratos:v0.5.5
+          ports:
+            - containerPort: 4433
+            - containerPort: 4434
+          resources: {}
+          volumeMounts:
+            - mountPath: /etc/config/kratos
+              name: config
       restartPolicy: Always
       serviceAccountName: ""
       volumes:
-      - name: config
-        configMap:
-          name: kratos-config
-          items:
-          - key: kratos.yml
-            path: kratos.yml
-          - key: identity.schema.json
-            path: identity.schema.json
+        - name: config
+          configMap:
+            name: kratos-config
+            items:
+              - key: kratos.yml
+                path: kratos.yml
+              - key: identity.schema.json
+                path: identity.schema.json
