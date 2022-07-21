@@ -23,8 +23,8 @@ def pod_resource_stats(start_time, end_time):
     ''' Resource usage statistics for each pod.
     Provides start_time, number of containers, associated node, cpu, disk I/O and memory info.
     Args:
-    @start_time: The timestamp of data to start at.
-    @end_time: The timestamp of data to end at.
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
     '''
     pod_metadata_df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
     pod_metadata_df.pod = pod_metadata_df.ctx['pod_name']
@@ -105,7 +105,10 @@ def pod_resource_stats(start_time, end_time):
     df.namespace = df.ctx['namespace']
     df.start_time = px.pod_name_to_start_time(df.pod)
     df.status = px.pod_name_to_status(df.pod)
-    return df
+    return df[['pod_id', 'pod', 'service', 'node', 'namespace', 'container_count',
+               'start_time', 'status', 'cpu_usage', 'rss', 'vsize',
+               'actual_disk_read_throughput', 'actual_disk_write_throughput',
+               'total_disk_read_throughput', 'total_disk_write_throughput']]
 
 
 def _http_events(start_time, end_time, include_health_checks, include_ready_checks, include_unresolved_inbound):
