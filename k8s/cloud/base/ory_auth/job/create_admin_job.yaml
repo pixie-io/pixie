@@ -7,60 +7,56 @@ spec:
   template:
     spec:
       initContainers:
-        - name: kratos-wait
-          imagePullPolicy: IfNotPresent
-          image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
-          # yamllint disable rule:indentation
-          command: [
-              "sh",
-              "-c",
-              'set -x;
-              URL="${PL_KRATOS_PUBLIC_HOST}/health/ready";
-              until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
-              echo "waiting for ${URL}"
-              sleep 2;
-              done;
-              ',
-            ]
-          # yamllint enable rule:indentation
-          env:
-            - name: PL_KRATOS_PUBLIC_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-ory-service-config
-                  key: PL_KRATOS_PUBLIC_HOST
+      - name: kratos-wait
+        imagePullPolicy: IfNotPresent
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        # yamllint disable rule:indentation
+        command: ['sh', '-c', 'set -x;
+          URL="${PL_KRATOS_PUBLIC_HOST}/health/ready";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        # yamllint enable rule:indentation
+        env:
+        - name: PL_KRATOS_PUBLIC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: pl-ory-service-config
+              key: PL_KRATOS_PUBLIC_HOST
       containers:
-        - name: create-admin-job
-          imagePullPolicy: IfNotPresent
-          image: gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image
-          envFrom:
-            - configMapRef:
-                name: pl-tls-config
-            - configMapRef:
-                name: pl-domain-config
-            - configMapRef:
-                name: pl-ory-service-config
-          env:
-            - name: PL_JWT_SIGNING_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: cloud-auth-secrets
-                  key: jwt-signing-key
-            - name: PL_PROFILE_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_PROFILE_SERVICE
-            - name: PL_AUTH_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_AUTH_SERVICE
-          volumeMounts:
-            - name: certs
-              mountPath: /certs
+      - name: create-admin-job
+        imagePullPolicy: IfNotPresent
+        image: gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_PROFILE_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROFILE_SERVICE
+        - name: PL_AUTH_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_AUTH_SERVICE
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
       restartPolicy: Never
       volumes:
-        - name: certs
-          secret:
-            secretName: service-tls-certs
+      - name: certs
+        secret:
+          secretName: service-tls-certs

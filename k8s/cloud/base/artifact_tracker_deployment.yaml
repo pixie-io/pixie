@@ -15,66 +15,66 @@ spec:
         name: artifact-tracker-server
     spec:
       containers:
-        - name: artifact-tracker-server
-          imagePullPolicy: IfNotPresent
-          image: gcr.io/pixie-oss/pixie-dev/cloud/artifact_tracker_server_image
-          ports:
-            - containerPort: 50750
-              name: http2
-            - containerPort: 50751
-              name: metrics-http
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 50750
-          livenessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 50750
-          envFrom:
-            - configMapRef:
-                name: pl-db-config
-            - configMapRef:
-                name: pl-tls-config
-            - configMapRef:
-                name: pl-artifact-config
-            - configMapRef:
-                name: pl-domain-config
-          env:
-            - name: PL_JWT_SIGNING_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: cloud-auth-secrets
-                  key: jwt-signing-key
-            - name: PL_POSTGRES_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: pl-db-secrets
-                  key: PL_POSTGRES_USERNAME
-            - name: PL_POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pl-db-secrets
-                  key: PL_POSTGRES_PASSWORD
-            - name: PL_VIZIER_VERSION
-              value: ""
-            - name: PL_CLI_VERSION
-              value: ""
-            - name: PL_OPERATOR_VERSION
-              value: ""
-          volumeMounts:
-            - name: certs
-              mountPath: /certs
-            - name: artifact-access-sa
-              mountPath: /creds
-              readOnly: true
-      volumes:
+      - name: artifact-tracker-server
+        imagePullPolicy: IfNotPresent
+        image: gcr.io/pixie-oss/pixie-dev/cloud/artifact_tracker_server_image
+        ports:
+        - containerPort: 50750
+          name: http2
+        - containerPort: 50751
+          name: metrics-http
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50750
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50750
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-artifact-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: PL_VIZIER_VERSION
+          value: ""
+        - name: PL_CLI_VERSION
+          value: ""
+        - name: PL_OPERATOR_VERSION
+          value: ""
+        volumeMounts:
         - name: certs
-          secret:
-            secretName: service-tls-certs
+          mountPath: /certs
         - name: artifact-access-sa
-          secret:
-            secretName: artifact-access-sa
-            optional: true
+          mountPath: /creds
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: artifact-access-sa
+        secret:
+          secretName: artifact-access-sa
+          optional: true

@@ -13,139 +13,139 @@ spec:
         name: api-server
     spec:
       containers:
-        - name: api-server
-          imagePullPolicy: IfNotPresent
-          image: gcr.io/pixie-oss/pixie-dev/cloud/api_server_image
-          ports:
-            - containerPort: 51200
-              name: http2
-            - containerPort: 51201
-              name: metrics-http
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 51200
-          livenessProbe:
-            httpGet:
-              scheme: HTTPS
-              path: /healthz
-              port: 51200
-          envFrom:
-            - configMapRef:
-                name: pl-tls-config
-            - configMapRef:
-                name: pl-domain-config
-            - configMapRef:
-                name: pl-ory-service-config
-            - configMapRef:
-                name: pl-auth-connector-config
-            - configMapRef:
-                name: pl-errors-config
-                optional: true
-          env:
-            - name: PL_JWT_SIGNING_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: cloud-auth-secrets
-                  key: jwt-signing-key
-            - name: PL_SESSION_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: cloud-session-secrets
-                  key: session-key
-            - name: PL_VZMGR_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_VZMGR_SERVICE
-            - name: PL_AUTH_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_AUTH_SERVICE
-            - name: PL_PLUGIN_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_PLUGIN_SERVICE
-            - name: PL_PROJECT_MANAGER_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_PROJECT_MANAGER_SERVICE
-            - name: PL_PROFILE_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_PROFILE_SERVICE
-            - name: PL_ARTIFACT_TRACKER_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_ARTIFACT_TRACKER_SERVICE
-            - name: PL_ELASTIC_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_ELASTIC_SERVICE
-            - name: PL_MD_INDEX_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-indexer-config
-                  key: PL_MD_INDEX_NAME
-            - name: PL_CONFIG_MANAGER_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_CONFIG_MANAGER_SERVICE
-            - name: PL_SEGMENT_WRITE_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: segment-config
-                  key: write-key
-            - name: PL_CRON_SCRIPT_SERVICE
-              valueFrom:
-                configMapKeyRef:
-                  name: pl-service-config
-                  key: PL_CRON_SCRIPT_SERVICE
-            - name: PL_VIZIER_IMAGE_SECRET_PATH
-              value: /vizier-image-secret
-            - name: PL_VIZIER_IMAGE_SECRET_FILE
-              value: vizier_image_secret.json
-            - name: PL_ELASTIC_USERNAME
-              value: elastic
-            - name: PL_ELASTIC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pl-elastic-es-elastic-user
-                  key: elastic
-            - name: PL_ELASTIC_CA_CERT
-              value: /elastic-certs-pub/tls.crt
-            - name: PL_WORK_DOMAIN
-              value: work.$(PL_DOMAIN_NAME)
-            - name: PL_KRATOS_BROWSER_URL
-              value: https://$(PL_WORK_DOMAIN)/oauth/kratos
-            - name: PL_HYDRA_BROWSER_URL
-              value: https://$(PL_WORK_DOMAIN)/oauth/hydra
-          volumeMounts:
-            - name: certs
-              mountPath: /certs
-            - name: vizier-image-secret
-              mountPath: /vizier-image-secret
-            - name: elastic-certs-pub
-              mountPath: /elastic-certs-pub
-      volumes:
-        - name: certs
-          secret:
-            secretName: service-tls-certs
-        - name: vizier-image-secret
-          secret:
-            secretName: vizier-image-secret
+      - name: api-server
+        imagePullPolicy: IfNotPresent
+        image: gcr.io/pixie-oss/pixie-dev/cloud/api_server_image
+        ports:
+        - containerPort: 51200
+          name: http2
+        - containerPort: 51201
+          name: metrics-http
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51200
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51200
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
+        - configMapRef:
+            name: pl-auth-connector-config
+        - configMapRef:
+            name: pl-errors-config
             optional: true
-        - name: envoy-yaml
-          configMap:
-            name: proxy-envoy-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_SESSION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-session-secrets
+              key: session-key
+        - name: PL_VZMGR_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_VZMGR_SERVICE
+        - name: PL_AUTH_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_AUTH_SERVICE
+        - name: PL_PLUGIN_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PLUGIN_SERVICE
+        - name: PL_PROJECT_MANAGER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROJECT_MANAGER_SERVICE
+        - name: PL_PROFILE_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROFILE_SERVICE
+        - name: PL_ARTIFACT_TRACKER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_ARTIFACT_TRACKER_SERVICE
+        - name: PL_ELASTIC_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_ELASTIC_SERVICE
+        - name: PL_MD_INDEX_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: pl-indexer-config
+              key: PL_MD_INDEX_NAME
+        - name: PL_CONFIG_MANAGER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_CONFIG_MANAGER_SERVICE
+        - name: PL_SEGMENT_WRITE_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: segment-config
+              key: write-key
+        - name: PL_CRON_SCRIPT_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_CRON_SCRIPT_SERVICE
+        - name: PL_VIZIER_IMAGE_SECRET_PATH
+          value: /vizier-image-secret
+        - name: PL_VIZIER_IMAGE_SECRET_FILE
+          value: vizier_image_secret.json
+        - name: PL_ELASTIC_USERNAME
+          value: elastic
+        - name: PL_ELASTIC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-elastic-es-elastic-user
+              key: elastic
+        - name: PL_ELASTIC_CA_CERT
+          value: /elastic-certs-pub/tls.crt
+        - name: PL_WORK_DOMAIN
+          value: work.$(PL_DOMAIN_NAME)
+        - name: PL_KRATOS_BROWSER_URL
+          value: https://$(PL_WORK_DOMAIN)/oauth/kratos
+        - name: PL_HYDRA_BROWSER_URL
+          value: https://$(PL_WORK_DOMAIN)/oauth/hydra
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: vizier-image-secret
+          mountPath: /vizier-image-secret
         - name: elastic-certs-pub
-          secret:
-            secretName: pl-elastic-es-http-certs-public
+          mountPath: /elastic-certs-pub
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: vizier-image-secret
+        secret:
+          secretName: vizier-image-secret
+          optional: true
+      - name: envoy-yaml
+        configMap:
+          name: proxy-envoy-config
+      - name: elastic-certs-pub
+        secret:
+          secretName: pl-elastic-es-http-certs-public
