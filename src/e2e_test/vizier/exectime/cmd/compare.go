@@ -84,13 +84,39 @@ type timeDistributionDiff struct {
 	B *TimeDistribution
 }
 
+func toFloat64Arr(times []time.Duration) []float64 {
+	floats := make([]float64, len(times))
+	for i, t := range times {
+		floats[i] = float64(t) / float64(time.Microsecond)
+	}
+	return floats
+}
+
+// Use a significance level of 0.01
+const timeDiffAlpha = 0.01
+
 // Summarize returns a string summary of the difference between the two distributions.
 func (d *timeDistributionDiff) Summarize() string {
 	meanDiff := d.A.Mean() - d.B.Mean()
-	summary := fmt.Sprintf("%v (%v vs %v)",
+	pValue, err := UTest(toFloat64Arr(d.A.Times), toFloat64Arr(d.B.Times))
+	ignorePValue := false
+	if err != nil {
+		log.WithError(err).Error("failed to calculate UTest ignoring p value")
+		ignorePValue = true
+	}
+	pValueStr := fmt.Sprintf("%.2f", pValue)
+	if ignorePValue {
+		pValueStr = "N/A"
+	}
+	summary := fmt.Sprintf("%v (%v vs %v, u: %s)",
 		meanDiff.Round(10*time.Microsecond),
 		d.A.Mean().Round(100*time.Microsecond),
-		d.B.Mean().Round(100*time.Microsecond))
+		d.B.Mean().Round(100*time.Microsecond),
+		pValueStr)
+	if ignorePValue || pValue >= timeDiffAlpha {
+		// Null hypothesis cannot be rejected (or there were too few samples to do a U test).
+		return summary
+	}
 	if meanDiff > 0 {
 		return color.GreenString(summary)
 	}

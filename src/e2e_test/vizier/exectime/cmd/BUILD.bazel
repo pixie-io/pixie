@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "benchmark.go",
         "compare.go",
+        "utest.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/vizier/exectime/cmd",
     visibility = ["//visibility:public"],
@@ -32,5 +33,6 @@ go_library(
         "@com_github_olekukonko_tablewriter//:tablewriter",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_cobra//:cobra",
+        "@org_gonum_v1_gonum//stat/distuv",
     ],
 )

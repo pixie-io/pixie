@@ -59,7 +59,7 @@ const (
 )
 
 func init() {
-	BenchmarkCmd.PersistentFlags().Int("num_runs", 10, "number of times to run a script ")
+	BenchmarkCmd.PersistentFlags().Int("num_runs", 20, "number of times to run a script ")
 	BenchmarkCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
 	BenchmarkCmd.PersistentFlags().StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
 	BenchmarkCmd.PersistentFlags().BoolP("all-clusters", "d", false, "Run script across all clusters")
