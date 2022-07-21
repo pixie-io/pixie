@@ -62,7 +62,7 @@ spec:
           name: config
       containers:
       - name: server
-          imagePullPolicy: IfNotPresent
+        imagePullPolicy: IfNotPresent
         image: oryd/hydra:v1.9.2-sqlite
         args:
         - serve
