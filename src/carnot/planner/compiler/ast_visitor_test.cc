@@ -28,6 +28,7 @@
 #include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/common/base/base.h"
+#include "src/common/testing/status.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
@@ -1984,6 +1985,24 @@ TEST_F(ASTVisitorTest, error_on_global) {
   auto vt = VarTable::Create();
   EXPECT_OK(ParseScript(vt, "l = list"));
   EXPECT_THAT(vt->Lookup("l")->CreateError("new error"), HasCompilerErrorAt(1, 5, "new error"));
+}
+
+TEST_F(ASTVisitorTest, module_uses_global_variable) {
+  std::string moduleUsesGlobal = R"pxl(
+def return_bool():
+  return True
+)pxl";
+  std::string query = R"pxl(
+import tmp
+import px
+df = px.DataFrame('http_events')
+df.column = tmp.return_bool()
+px.display(df)
+)pxl";
+  ASSERT_OK_AND_ASSIGN(auto graph, CompileGraph(query, {}, {{"tmp", moduleUsesGlobal}}));
+  auto maps = graph->FindNodesThatMatch(Map());
+  auto map = static_cast<MapIR*>(maps[0]);
+  EXPECT_MATCH(map->col_exprs()[0].node, Bool(true));
 }
 
 }  // namespace compiler

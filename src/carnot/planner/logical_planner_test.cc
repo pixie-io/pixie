@@ -274,8 +274,6 @@ TEST_F(LogicalPlannerTest, AppendSelfTest) {
 constexpr char kPlannerQueryError[] = R"pxl(
 import px
 
-False = 0 == 1
-True = 1 == 1
 ###############################################################
 # Edit the following variables to change the visualization.
 ###############################################################

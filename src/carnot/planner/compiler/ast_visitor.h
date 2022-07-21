@@ -94,10 +94,11 @@ class ASTVisitorImpl : public ASTVisitor {
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
 
   /**
-   * @brief Creates a top-level AST Visitor with the given graph and compiler state.
+   * @brief Creates a top-level AST Visitor.
    *
    *
    * @param graph
+   * @param global_var_table
    * @param var_table
    * @param module_handler
    * @param compiler_state
@@ -192,11 +193,12 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param ir_graph
    */
   ASTVisitorImpl(IR* ir_graph, MutationsIR* mutations, CompilerState* compiler_state,
-                 std::shared_ptr<VarTable> var_table, bool func_based_exec,
-                 const absl::flat_hash_set<std::string>& reserved_names,
+                 std::shared_ptr<VarTable> global_var_table, std::shared_ptr<VarTable> var_table,
+                 bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
                  ModuleHandler* module_handler, const std::shared_ptr<udf::Registry>& udf_registry)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
+        global_var_table_(global_var_table),
         var_table_(var_table),
         func_based_exec_(func_based_exec),
         reserved_names_(reserved_names),
@@ -589,6 +591,8 @@ class ASTVisitorImpl : public ASTVisitor {
 
   IR* ir_graph_;
   CompilerState* compiler_state_;
+  // The global variable table available to all visitors.
+  std::shared_ptr<VarTable> global_var_table_;
   std::shared_ptr<VarTable> var_table_;
   bool func_based_exec_;
   absl::flat_hash_set<std::string> reserved_names_;
