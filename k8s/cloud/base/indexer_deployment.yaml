@@ -13,69 +13,68 @@ spec:
     metadata:
       labels:
         name: indexer-server
-        monitoring.gke.io/scrape: 'true'
+        monitoring.gke.io/scrape: "true"
       annotations:
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '51800'
-        prometheus.io/scheme: 'https'
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "51800"
+        prometheus.io/scheme: "https"
     spec:
       containers:
-      - name: indexer-server
-        imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev/cloud/indexer_server_image
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 51800
-          name: http2
-        - containerPort: 51801
-          name: metrics-http
-        readinessProbe:
-          httpGet:
-            scheme: HTTPS
-            path: /healthz
-            port: 51800
-          failureThreshold: 6
-          periodSeconds: 15
-        livenessProbe:
-          httpGet:
-            scheme: HTTPS
-            path: /healthz
-            port: 51800
-        envFrom:
-        - configMapRef:
-            name: pl-indexer-config
-        - configMapRef:
-            name: pl-tls-config
-        - configMapRef:
-            name: pl-domain-config
-        - configMapRef:
-            name: pl-errors-config
-            optional: true
-        env:
-        - name: PL_JWT_SIGNING_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cloud-auth-secrets
-              key: jwt-signing-key
-        - name: PL_VZMGR_SERVICE
-          valueFrom:
-            configMapKeyRef:
-              name: pl-service-config
-              key: PL_VZMGR_SERVICE
-        - name: PL_ES_PASSWD
-          valueFrom:
-            secretKeyRef:
-              name: pl-elastic-es-elastic-user
-              key: elastic
-        volumeMounts:
-        - name: certs
-          mountPath: /certs
-        - name: es-certs
-          mountPath: /es-certs
+        - name: indexer-server
+          imagePullPolicy: IfNotPresent
+          image: gcr.io/pixie-oss/pixie-dev/cloud/indexer_server_image
+          ports:
+            - containerPort: 51800
+              name: http2
+            - containerPort: 51801
+              name: metrics-http
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 51800
+            failureThreshold: 6
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /healthz
+              port: 51800
+          envFrom:
+            - configMapRef:
+                name: pl-indexer-config
+            - configMapRef:
+                name: pl-tls-config
+            - configMapRef:
+                name: pl-domain-config
+            - configMapRef:
+                name: pl-errors-config
+                optional: true
+          env:
+            - name: PL_JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-auth-secrets
+                  key: jwt-signing-key
+            - name: PL_VZMGR_SERVICE
+              valueFrom:
+                configMapKeyRef:
+                  name: pl-service-config
+                  key: PL_VZMGR_SERVICE
+            - name: PL_ES_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: pl-elastic-es-elastic-user
+                  key: elastic
+          volumeMounts:
+            - name: certs
+              mountPath: /certs
+            - name: es-certs
+              mountPath: /es-certs
       volumes:
-      - name: certs
-        secret:
-          secretName: service-tls-certs
-      - name: es-certs
-        secret:
-          secretName: pl-elastic-es-http-certs-internal
+        - name: certs
+          secret:
+            secretName: service-tls-certs
+        - name: es-certs
+          secret:
+            secretName: pl-elastic-es-http-certs-internal
