@@ -2005,6 +2005,22 @@ px.display(df)
   EXPECT_MATCH(map->col_exprs()[0].node, Bool(true));
 }
 
+TEST_F(ASTVisitorTest, writing_to_global_variable_throws_error) {
+  EXPECT_COMPILER_ERROR(CompileGraph("True = 'blah'", {}, {}).status(),
+                        ".*?can't assign to True.*?");
+  EXPECT_COMPILER_ERROR(CompileGraph("False = 'blah'", {}, {}).status(),
+                        ".*?can't assign to False.*?");
+  EXPECT_COMPILER_ERROR(CompileGraph("None = 'blah'", {}, {}).status(),
+                        ".*?can't assign to None.*?");
+  // AugAssign
+  EXPECT_COMPILER_ERROR(CompileGraph("True += 'blah'", {}, {}).status(),
+                        ".*?can't assign to True.*?");
+  EXPECT_COMPILER_ERROR(CompileGraph("False += 'blah'", {}, {}).status(),
+                        ".*?can't assign to False.*?");
+  EXPECT_COMPILER_ERROR(CompileGraph("None += 'blah'", {}, {}).status(),
+                        ".*?can't assign to None.*?");
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

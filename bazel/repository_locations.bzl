@@ -245,9 +245,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/tdigest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
     ),
     com_github_vinzenz_libpypa = dict(
-        sha256 = "7ea0fac21dbf4e2496145c8d73b03250d3f31b46147a0abce174ea23dc1dd7ea",
-        strip_prefix = "libpypa-32a0959ab43b1f31db89bc3e8d0133a515af945e",
-        urls = ["https://github.com/pixie-io/libpypa/archive/32a0959ab43b1f31db89bc3e8d0133a515af945e.tar.gz"],
+        sha256 = "a2425b4336d4dea21124b87ce51fa6f67c212f4b5b1496af4fae7cba73724efc",
+        strip_prefix = "libpypa-eba8ec485a6c5e566d0d7a0716a06c91837c9d2f",
+        urls = ["https://github.com/pixie-io/libpypa/archive/eba8ec485a6c5e566d0d7a0716a06c91837c9d2f.tar.gz"],
     ),
     com_github_thoughtspot_threadstacks = dict(
         sha256 = "e54d4c3cd5af3cc136cc952c1ef77cd90b41133cd61140d8488e14c6d6f795e9",
