@@ -433,10 +433,10 @@ func getPEMCrashingState(pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
-// getvizierState determines the state of the Vizier instance based on the snapshot
+// getVizierState determines the state of the Vizier instance based on the snapshot
 // of data available at call time. Reports the first state that fails (does not aggregate),
 // otherwise reports a healthy state.
-func (m *VizierMonitor) getvizierState(vz *pixiev1alpha1.Vizier) *vizierState {
+func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 	// Check the latest vizier version, and current vizier version first. Regardless of
 	// whether the vizier pods are running, we consider the cluster in a degraded state.
 	atClient := cloudpb.NewArtifactTrackerClient(m.cloudClient)
@@ -553,7 +553,7 @@ func (m *VizierMonitor) runReconciler() {
 				continue
 			}
 
-			vizierState := m.getvizierState(vz)
+			vizierState := m.getVizierState(vz)
 
 			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
 			vz.Status.VizierReason = string(vizierState.Reason)
