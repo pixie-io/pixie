@@ -191,7 +191,7 @@ LiveWithProvider.displayName = 'LiveWithProvider';
 export default function PixieWithContext(): React.ReactElement {
   const showSnackbar = useSnackbar();
   const { data, loading: loadingUser, error: userError } = useQuery<{
-    user: Pick<GQLUserInfo, 'email' | 'orgName' >,
+    user: Pick<GQLUserInfo, 'id' | 'email' | 'orgName' >,
   }>(gql`
     query userInfoForContext{
       user {
@@ -227,6 +227,12 @@ export default function PixieWithContext(): React.ReactElement {
       pixieAnalytics.disable();
     }
   }, [userSettings]);
+
+  React.useEffect(() => {
+    if (userSettings && !userSettings.analyticsOptout && user?.id && user?.email) {
+      pixieAnalytics.identify(user.id, { email: user.email });
+    }
+  }, [userSettings, user?.id, user?.email]);
 
   const userContext = React.useMemo(() => ({
     user: {
