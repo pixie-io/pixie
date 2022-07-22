@@ -97,6 +97,10 @@ void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::co
   for (const planpb::OTelAttribute& px_attr : px_attributes) {
     auto otel_attr = mutable_attributes->Add();
     otel_attr->set_key(px_attr.name());
+    if (px_attr.has_string_value()) {
+      otel_attr->mutable_value()->set_string_value(px_attr.string_value());
+      continue;
+    }
     auto attribute_col = rb.ColumnAt(px_attr.column().column_index()).get();
     switch (px_attr.column().column_type()) {
       case types::STRING: {

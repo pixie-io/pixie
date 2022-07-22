@@ -451,8 +451,13 @@ message OTelAttribute {
     // or a json array of multiple values.
     bool can_be_json_encoded_array = 3;
   }
-  // The column that contains the attribute info.
-  Column column = 2;
+  // The source of the attribute value.
+  oneof value {
+  // The column that contains the attribute value
+    Column column = 2;
+    // The actual string value to store in the attribute.
+    string string_value = 3;
+  }
 }
 
 // OTelMetric describes the column mapping to each field of an OpenTelemetry Metric.

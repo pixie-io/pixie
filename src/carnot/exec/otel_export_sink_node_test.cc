@@ -854,6 +854,84 @@ resource_metrics {
     }
   }
 })pb"}},
+                             {"string_value_attribute",
+                              R"pb(
+resource{
+  attributes {
+    name: "pixie_cloud_addr"
+    string_value: "dev.withpixie.dev"
+  }
+}
+metrics {
+  name: "http.resp.latency"
+  time_column_index: 0
+  attributes {
+    name: "req_path"
+    string_value: "/api/v1/query"
+  }
+  gauge { int_column_index: 1 }
+})pb",
+                              {R"pb(
+cols { time64ns_data { data: 10 data: 11 } }
+cols { int64_data { data: 15 data: 150 } }
+num_rows: 2
+eow: true
+eos: true)pb"},
+                              {R"pb(
+resource_metrics {
+  resource {
+    attributes {
+      key: "pixie_cloud_addr"
+      value {
+        string_value: "dev.withpixie.dev"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          attributes {
+            key: "req_path"
+            value {
+              string_value: "/api/v1/query"
+            }
+          }
+          time_unix_nano: 10
+          as_int: 15
+        }
+      }
+    }
+  }
+}
+resource_metrics {
+  resource {
+    attributes {
+      key: "pixie_cloud_addr"
+      value {
+        string_value: "dev.withpixie.dev"
+      }
+    }
+  }
+  instrumentation_library_metrics {
+    metrics {
+      name: "http.resp.latency"
+      gauge {
+        data_points {
+          attributes {
+            key: "req_path"
+            value {
+              string_value: "/api/v1/query"
+            }
+          }
+          time_unix_nano: 11
+          as_int: 150
+        }
+      }
+    }
+  }
+})pb"}},
                          }),
                          [](const ::testing::TestParamInfo<TestCase>& info) {
                            return info.param.name;
