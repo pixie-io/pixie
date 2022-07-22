@@ -259,6 +259,11 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
     return resource->CreateError("'service.name' must be specified in resource");
   }
 
+  // Append the Pixie resource attributes.
+  for (const auto& attribute : compiler_state->debug_info().otel_debug_attrs) {
+    otel_data.resource_attributes.push_back({attribute.name, nullptr, attribute.value});
+  }
+
   return Exporter::Create(visitor, [otel_data](auto&& ast, auto&& df) -> Status {
     return ExportToOTel(otel_data, std::forward<decltype(ast)>(ast),
                         std::forward<decltype(df)>(df));
