@@ -76,6 +76,23 @@ TEST(PodInfo, add_delete_containers) {
   EXPECT_THAT(pod_info.containers(), testing::UnorderedElementsAre("ABCD2"));
 }
 
+TEST(PodInfo, add_delete_owners) {
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning,
+                   {{PodConditionType::kReady, ConditionStatus::kTrue}}, "pod phase message",
+                   "pod phase reason", "testnode", "testhost", "1.2.3.4");
+  pod_info.AddOwnerReference("1", "rs1", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+
+  EXPECT_THAT(pod_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"1", "rs1", "ReplicaSet"},
+                                            OwnerReference{"2", "rs2", "ReplicaSet"}));
+
+  pod_info.RmOwnerReference("1");
+  EXPECT_THAT(pod_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"2", "rs2", "ReplicaSet"}));
+}
+
 TEST(PodInfo, clone) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning,
                    {{PodConditionType::kReady, ConditionStatus::kTrue}}, "pod phase message",
@@ -84,6 +101,10 @@ TEST(PodInfo, clone) {
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
+
+  pod_info.AddOwnerReference("1", "rs1", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
 
   EXPECT_EQ(PodQOSClass::kBurstable, pod_info.qos_class());
 
@@ -98,6 +119,7 @@ TEST(PodInfo, clone) {
 
   EXPECT_EQ(cloned->type(), pod_info.type());
   EXPECT_EQ(cloned->containers(), pod_info.containers());
+  EXPECT_EQ(cloned->owner_references(), pod_info.owner_references());
   EXPECT_EQ(cloned->phase(), pod_info.phase());
   EXPECT_EQ(cloned->phase_message(), pod_info.phase_message());
   EXPECT_EQ(cloned->phase_reason(), pod_info.phase_reason());

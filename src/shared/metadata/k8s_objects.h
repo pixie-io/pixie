@@ -109,6 +109,21 @@ class K8sMetadataObject {
   int64_t stop_time_ns_ = 0;
 };
 
+/**
+ * Data structure for owner reference object.
+ */
+struct OwnerReference {
+  UID uid;
+  std::string name;
+  std::string kind;
+  friend bool operator==(const OwnerReference l, const OwnerReference r) { return l.uid == r.uid; }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const OwnerReference& owner_reference) {
+    return H::combine(std::move(h), owner_reference.uid);
+  }
+};
+
 enum class PodQOSClass : uint8_t { kUnknown = 0, kGuaranteed, kBestEffort, kBurstable };
 
 inline PodQOSClass ConvertToPodQOsClass(px::shared::k8s::metadatapb::PodQOSClass pb_enum) {
@@ -276,6 +291,12 @@ class PodInfo : public K8sMetadataObject {
 
   void AddService(UIDView uid) { services_.emplace(uid); }
   void RmService(UIDView uid) { services_.erase(uid); }
+
+  void AddOwnerReference(UID uid, std::string name, std::string kind) {
+    owner_references_.emplace(OwnerReference{uid, name, kind});
+  }
+  void RmOwnerReference(UID uid) { owner_references_.erase(OwnerReference{uid, "", ""}); }
+
   PodQOSClass qos_class() const { return qos_class_; }
   PodPhase phase() const { return phase_; }
   void set_phase(PodPhase phase) { phase_ = phase; }
@@ -301,6 +322,7 @@ class PodInfo : public K8sMetadataObject {
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
   const absl::flat_hash_set<std::string>& services() const { return services_; }
+  const absl::flat_hash_set<OwnerReference>& owner_references() const { return owner_references_; }
 
   std::unique_ptr<K8sMetadataObject> Clone() const override {
     return std::unique_ptr<PodInfo>(new PodInfo(*this));
@@ -333,6 +355,13 @@ class PodInfo : public K8sMetadataObject {
    * Should point to ServiceInfo via the data structure containing this pod.
    */
   absl::flat_hash_set<UID> services_;
+  /**
+   * The set of owners which control this pod. K8s allows
+   * multiple owners to control the same pod.
+   *
+   * Should point to owner Info object via the data structure containing this pod.
+   */
+  absl::flat_hash_set<OwnerReference> owner_references_;
 
   std::string node_name_;
   std::string hostname_;
