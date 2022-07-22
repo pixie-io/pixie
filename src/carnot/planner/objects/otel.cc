@@ -111,7 +111,7 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
     if (key->str().empty()) {
       return keyobj->CreateError("Attribute key must be a non-empty string");
     }
-    otel_attributes.push_back({key->str(), val});
+    otel_attributes.push_back({key->str(), val, ""});
   }
   return otel_attributes;
 }

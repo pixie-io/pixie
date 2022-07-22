@@ -80,8 +80,12 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> OTelExportSinkIR::Requir
 Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
   data_.endpoint_config = data.endpoint_config;
   for (const auto& attr : data.resource_attributes) {
+    if (attr.column_reference == nullptr) {
+      data_.resource_attributes.push_back({attr.name, nullptr, attr.string_value});
+      continue;
+    }
     PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
-    data_.resource_attributes.push_back({attr.name, column});
+    data_.resource_attributes.push_back({attr.name, column, ""});
   }
 
   for (const auto& metric : data.metrics) {
@@ -93,8 +97,12 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     PL_ASSIGN_OR_RETURN(new_metric.unit_column, AddColumn(metric.unit_column));
     PL_ASSIGN_OR_RETURN(new_metric.time_column, AddColumn(metric.time_column));
     for (const auto& attr : metric.attributes) {
+      if (attr.column_reference == nullptr) {
+        new_metric.attributes.push_back({attr.name, nullptr, attr.string_value});
+        continue;
+      }
       PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
-      new_metric.attributes.push_back({attr.name, column});
+      new_metric.attributes.push_back({attr.name, column, ""});
     }
 
     PL_RETURN_IF_ERROR(std::visit(
@@ -147,7 +155,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     }
     for (const auto& attr : span.attributes) {
       PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
-      new_span.attributes.push_back({attr.name, column});
+      new_span.attributes.push_back({attr.name, column, ""});
     }
     new_span.span_kind = span.span_kind;
     data_.spans.push_back(std::move(new_span));
