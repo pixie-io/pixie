@@ -75,14 +75,15 @@ spec:
     spec:
       containers:
       - name: carts
-        image: weaveworksdemos/carts:0.4.8
+        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/carts:latest
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
          - name: JAVA_OPTS
            value: >
-             -Xms64m -Xmx128m -XX:PermSize=32m
-             -XX:MaxPermSize=64m -XX:+UseG1GC
+             -Xms64m
+             -Xmx128m
+             -XX:+UseG1GC
              -Djava.security.egd=file:/dev/urandom
              -XX:+PreserveFramePointer
         resources:
@@ -276,7 +277,7 @@ spec:
     spec:
       containers:
       - name: front-end
-        image: weaveworksdemos/front-end:0.3.12
+        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/front-end:latest
         resources:
           limits:
             cpu: 300m
@@ -405,14 +406,15 @@ spec:
     spec:
       containers:
       - name: orders
-        image: weaveworksdemos/orders:0.4.7
+        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/orders:latest
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
          - name: JAVA_OPTS
            value: >
-             -Xms64m -Xmx128m -XX:PermSize=32m
-             -XX:MaxPermSize=64m -XX:+UseG1GC
+             -Xms64m
+             -Xmx128m
+             -XX:+UseG1GC
              -Djava.security.egd=file:/dev/urandom
              -XX:+PreserveFramePointer
         resources:
@@ -557,14 +559,15 @@ spec:
     spec:
       containers:
       - name: queue-master
-        image: weaveworksdemos/queue-master:0.3.1
+        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/queue-master:latest
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
          - name: JAVA_OPTS
            value: >
-             -Xms64m -Xmx128m -XX:PermSize=32m
-             -XX:MaxPermSize=64m -XX:+UseG1GC
+             -Xms64m
+             -Xmx128m
+             -XX:+UseG1GC
              -Djava.security.egd=file:/dev/urandom
              -XX:+PreserveFramePointer
         resources:
@@ -744,14 +747,15 @@ spec:
     spec:
       containers:
       - name: shipping
-        image: weaveworksdemos/shipping:0.4.8
+        image: gcr.io/pixie-oss/demo-apps/px-sock-shop/shipping:latest
         env:
          - name: ZIPKIN
            value: zipkin.jaeger.svc.cluster.local
          - name: JAVA_OPTS
            value: >
-             -Xms64m -Xmx128m -XX:PermSize=32m
-             -XX:MaxPermSize=64m -XX:+UseG1GC
+             -Xms64m
+             -Xmx128m
+             -XX:+UseG1GC
              -Djava.security.egd=file:/dev/urandom
              -XX:+PreserveFramePointer
         resources:
