@@ -34,7 +34,7 @@ spec:
             PLUGIN_PATH=$GRAFANA_PATH/plugins
             PLUGIN_ZIP=pixie-pixie-datasource.tgz
             PLUGIN_FOLDER=pixie-pixie-datasource
-            PLUGIN_URL="https://github.com/pixie-io/grafana-plugin/releases/download/v0.0.4/pixie-pixie-datasource-0.0.4.zip"
+            PLUGIN_URL="https://github.com/pixie-io/grafana-plugin/releases/download/v0.0.8/pixie-pixie-datasource-0.0.8.zip"
 
             if [ ! -d $PLUGIN_PATH/$PLUGIN_FOLDER ]; then
               echo "$PLUGIN_PATH/$PLUGIN_FOLDER doesn't exists. Downloading..."
