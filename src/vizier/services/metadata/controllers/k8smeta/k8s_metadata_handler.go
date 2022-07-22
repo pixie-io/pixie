@@ -1057,6 +1057,7 @@ func getResourceUpdateFromReplicaSet(rs *metadatapb.ReplicaSet, uv int64) *metad
 				Name:                 rs.Metadata.Name,
 				StartTimestampNS:     rs.Metadata.CreationTimestampNS,
 				StopTimestampNS:      rs.Metadata.DeletionTimestampNS,
+				Namespace:            rs.Metadata.Namespace,
 				Replicas:             rs.Status.Replicas,
 				FullyLabeledReplicas: rs.Status.FullyLabeledReplicas,
 				ReadyReplicas:        rs.Status.ReadyReplicas,

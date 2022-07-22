@@ -1391,6 +1391,7 @@ func TestReplicaSetUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					Name:                 "rs_1",
 					StartTimestampNS:     4,
 					StopTimestampNS:      6,
+					Namespace:            "a_namespace",
 					Replicas:             2,
 					FullyLabeledReplicas: 2,
 					ReadyReplicas:        1,

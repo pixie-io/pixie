@@ -698,6 +698,7 @@ message ReplicaSetUpdate {
   int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
   // The unix time in nanoseconds when the this replicaset was deleted. Still active if 0.
   int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  string namespace = 12;
   int32 replicas = 5;
   int32 fully_labeled_replicas = 6;
   int32 ready_replicas = 7;
