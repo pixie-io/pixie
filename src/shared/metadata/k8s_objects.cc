@@ -48,5 +48,11 @@ std::string NamespaceInfo::DebugString(int indent) const {
                           name(), uid(), state);
 }
 
+std::string ReplicaSetInfo::DebugString(int indent) const {
+  std::string state = stop_time_ns() != 0 ? "S" : "R";
+  return absl::Substitute("$0<ReplicaSet:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(),
+                          name(), uid(), state);
+}
+
 }  // namespace md
 }  // namespace px

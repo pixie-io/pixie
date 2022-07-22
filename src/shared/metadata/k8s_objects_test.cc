@@ -247,5 +247,78 @@ TEST(ServiceInfo, clone) {
   EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, cloned->external_ips());
 }
 
+TEST(ReplicaSetInfo, basic_accessors) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+
+  rs_info.set_start_time_ns(123);
+  rs_info.set_stop_time_ns(256);
+
+  EXPECT_EQ("123", rs_info.uid());
+  EXPECT_EQ("pl", rs_info.ns());
+  EXPECT_EQ("rs1", rs_info.name());
+
+  EXPECT_EQ(4, rs_info.replicas());
+  EXPECT_EQ(3, rs_info.fully_labeled_replicas());
+  EXPECT_EQ(2, rs_info.ready_replicas());
+  EXPECT_EQ(2, rs_info.available_replicas());
+  EXPECT_EQ(1, rs_info.observed_generation());
+
+  EXPECT_EQ(123, rs_info.start_time_ns());
+  EXPECT_EQ(256, rs_info.stop_time_ns());
+
+  EXPECT_EQ(K8sObjectType::kReplicaSet, rs_info.type());
+}
+
+TEST(ReplicaSetInfo, debug_string) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(absl::Substitute("$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R>", Indent(i)),
+              rs_info.DebugString(i));
+  }
+
+  rs_info.set_stop_time_ns(1000);
+  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S>", rs_info.DebugString());
+}
+
+TEST(ReplicaSetInfo, add_delete_owners) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  rs_info.AddOwnerReference("1", "deployment1", "Deployment");
+  rs_info.AddOwnerReference("2", "deployment2", "Deployment");
+  rs_info.AddOwnerReference("2", "deployment2", "Deployment");
+
+  EXPECT_THAT(rs_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"1", "deployment1", "Deployment"},
+                                            OwnerReference{"2", "deployment2", "Deployment"}));
+
+  rs_info.RmOwnerReference("1");
+  EXPECT_THAT(rs_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"2", "deployment2", "Deployment"}));
+}
+
+TEST(ReplicaSetInfo, clone) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  rs_info.set_start_time_ns(123);
+  rs_info.set_stop_time_ns(256);
+  rs_info.AddOwnerReference("1", "Deployment", "deployment1");
+  rs_info.AddOwnerReference("2", "Deployment", "deployment2");
+
+  std::unique_ptr<ReplicaSetInfo> cloned(static_cast<ReplicaSetInfo*>(rs_info.Clone().release()));
+  EXPECT_EQ(cloned->uid(), rs_info.uid());
+  EXPECT_EQ(cloned->name(), rs_info.name());
+  EXPECT_EQ(cloned->ns(), rs_info.ns());
+
+  EXPECT_EQ(cloned->start_time_ns(), rs_info.start_time_ns());
+  EXPECT_EQ(cloned->stop_time_ns(), rs_info.stop_time_ns());
+
+  EXPECT_EQ(cloned->replicas(), rs_info.replicas());
+  EXPECT_EQ(cloned->fully_labeled_replicas(), rs_info.fully_labeled_replicas());
+  EXPECT_EQ(cloned->ready_replicas(), rs_info.ready_replicas());
+  EXPECT_EQ(cloned->available_replicas(), rs_info.available_replicas());
+  EXPECT_EQ(cloned->observed_generation(), rs_info.observed_generation());
+
+  EXPECT_EQ(cloned->conditions(), rs_info.conditions());
+  EXPECT_EQ(cloned->owner_references(), rs_info.owner_references());
+}
+
 }  // namespace md
 }  // namespace px
