@@ -21,8 +21,8 @@ from enum import Enum, auto
 from typing import List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-import fire
 import subprocess
+from rules_python.python.runfiles import runfiles
 
 
 def to_camel_case(text):
@@ -432,7 +432,13 @@ class CodeGenerator:
     Parses and generates strings that represent the different classes, methods, and fields
     """
 
-    def __init__(self, xml_file="amqp0-9-1.xml"):
+    def __init__(self, xml_file=None):
+        if xml_file is None:
+            r = runfiles.Create()
+            xml_file = r.Rlocation(
+                "px/src/stirling/source_connectors/socket_tracer/"
+                + "protocols/amqp/amqp_code_generator/amqp0-9-1.stripped.xml"
+            )
         with open(xml_file, "r") as f:
             amqp_xml = ET.fromstring(f.read())
 
@@ -861,8 +867,3 @@ class CodeGeneratorWriter:
             ]
         )
         p.wait()
-
-
-# TODO(vsrivatsa) ADD followup test for api
-if __name__ == "__main__":
-    fire.Fire(CodeGeneratorWriter)

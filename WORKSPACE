@@ -195,3 +195,12 @@ go_download_sdk(
     name = "go_sdk_1_17",
     version = "1.17.11",
 )
+
+pip_parse(
+    name = "amqp_gen_reqs",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
+)
+
+load("@amqp_gen_reqs//:requirements.bzl", "install_deps")
+
+install_deps()
