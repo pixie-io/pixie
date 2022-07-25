@@ -80,9 +80,14 @@ bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -
 
 git checkout main "$versions_file"
 
+# Run the plugin database job.
+bazel run -c opt //src/cloud/plugin/load_db:load_db -- \
+    --postgres_db "pl" --postgres_port "${postgres_port}" --plugin_repo "pixie-io/pixie-plugin"
+
 # Kill kubectl port-forward.
 kill -15 "$!"
 sleep 2
+
 
 # Double check that it's dead.
 if pidof "$!"; then
