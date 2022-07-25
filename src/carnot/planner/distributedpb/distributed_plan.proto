@@ -145,6 +145,14 @@ message PluginConfig {
   int64 end_time_ns = 2;
 }
 
+message DebugInfo {
+  message OTelDebugAttribute {
+    string name = 1;
+    string value = 2;
+  }
+
+  repeated OTelDebugAttribute otel_debug_attributes = 1;
+}
 // LogicalPlannerState contains the information necessary to create the Logical
 // Plan. This message is used by the query broker to send to the logical
 // planner.
@@ -168,7 +176,11 @@ message LogicalPlannerState {
   // config for otel configurations, that plan compilation will fail.
   OTelEndpointConfig otel_endpoint_config = 8 [(gogoproto.customname) = "OTelEndpointConfig"];
 
+  // PluginConfig contains plugin related configuration.
   PluginConfig plugin_config = 9;
+
+  // Debug options for the compiler.
+  DebugInfo debug_info = 10;
 }
 
 // The result for the planner. Contains a status to track any errors

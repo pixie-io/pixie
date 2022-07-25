@@ -36,6 +36,7 @@
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/protobuf.h"
+#include "src/common/testing/status.h"
 
 namespace px {
 namespace carnot {
@@ -665,11 +666,8 @@ px.display(df)
 TEST_F(LogicalPlannerTest, filter_pushdown_bug) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
-  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kFilterPushDownBugQuery));
-  EXPECT_OK(plan_or_s);
-  auto plan = plan_or_s.ConsumeValueOrDie();
-  auto proto_or_s = plan->ToProto();
-  ASSERT_OK(proto_or_s.status());
+  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(state, MakeQueryRequest(kFilterPushDownBugQuery)));
+  ASSERT_OK(plan->ToProto());
 }
 
 TEST_F(LogicalPlannerTest, create_compiler_state_has_endpoint_config) {
@@ -695,6 +693,80 @@ TEST_F(LogicalPlannerTest, default_compiler_state_has_nullptr) {
   ASSERT_OK_AND_ASSIGN(auto compiler_state, CreateCompilerState(state, &registry_info,
                                                                 /* max_output_rows_per_table*/ 0));
   EXPECT_EQ(compiler_state->endpoint_config(), nullptr);
+}
+
+const char kOTelDebugInfo[] = R"pxl(
+import px
+
+df = px.DataFrame(table='http_events', start_time='-6m')
+df.service = df.ctx['service']
+px.export(df, px.otel.Data(
+  endpoint=px.otel.Endpoint(url="px.dev:55555"),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='resp_latency',
+      value=df.resp_latency_ns,
+    )
+  ]
+))
+)pxl";
+
+TEST_F(LogicalPlannerTest, otel_debug_attributes_end_to_end) {
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto debug_info = state.mutable_debug_info();
+  auto attr1 = debug_info->add_otel_debug_attributes();
+  attr1->set_name("pixie_cloud");
+  attr1->set_value("work.dev.px.dev");
+  auto attr2 = debug_info->add_otel_debug_attributes();
+  attr2->set_name("pixie_version");
+  attr2->set_value("v1.2.3");
+  planner::RegistryInfo registry_info;
+  ASSERT_OK(registry_info.Init(info_));
+  ASSERT_OK_AND_ASSIGN(auto compiler_state, CreateCompilerState(state, &registry_info,
+                                                                /* max_output_rows_per_table*/ 0));
+
+  EXPECT_EQ(compiler_state->debug_info().otel_debug_attrs[0].name, "pixie_cloud");
+  EXPECT_EQ(compiler_state->debug_info().otel_debug_attrs[0].value, "work.dev.px.dev");
+  EXPECT_EQ(compiler_state->debug_info().otel_debug_attrs[1].name, "pixie_version");
+  EXPECT_EQ(compiler_state->debug_info().otel_debug_attrs[1].value, "v1.2.3");
+
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(state, MakeQueryRequest(kOTelDebugInfo)));
+  ASSERT_OK_AND_ASSIGN(auto distributed_plan, plan->ToProto());
+  auto kelvin_plan = (*distributed_plan.mutable_qb_address_to_plan())["kelvin"];
+
+  planpb::OTelExportSinkOperator operator_proto;
+  int64_t count = 0;
+  for (const auto& planFragment : kelvin_plan.nodes()) {
+    for (const auto& planNode : planFragment.nodes()) {
+      if (planNode.op().op_type() == planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR) {
+        operator_proto = planNode.op().otel_sink_op();
+        ++count;
+      }
+    }
+  }
+  EXPECT_EQ(count, 1);
+
+  EXPECT_THAT(operator_proto.resource(), EqualsProto(R"proto(
+attributes {
+  name: "service.name"
+  column {
+    column_type: STRING
+    column_index: 2
+    can_be_json_encoded_array: true
+  }
+}
+attributes {
+  name: "pixie_cloud"
+  string_value: "work.dev.px.dev"
+}
+attributes {
+  name: "pixie_version"
+  string_value: "v1.2.3"
+})proto"));
 }
 
 }  // namespace planner
