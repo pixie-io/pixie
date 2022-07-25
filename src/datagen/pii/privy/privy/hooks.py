@@ -14,8 +14,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import logging
+from enum import Enum
 import schemathesis
 from privy.chosen_providers import Providers
+
+
+class ParamType(Enum):
+    """Enum for the different types of http parameters that can be generated."""
+    PATH = 1
+    QUERY = 2
+    HEADER = 3
+    COOKIE = 4
 
 
 class SchemaHooks:
@@ -24,22 +33,27 @@ class SchemaHooks:
     def __init__(self):
         self.logger = logging.getLogger("privy")
         self.providers = Providers()
-        self.pii_types = []
+        self.pii_types = {
+            ParamType.PATH: [],
+            ParamType.QUERY: [],
+            ParamType.HEADER: [],
+            ParamType.COOKIE: [],
+        }
         self.payload_generator_hook()
 
-    def has_pii(self):
-        return len(self.pii_types) > 0
+    def has_pii(self, parameter_type):
+        return len(self.pii_types[parameter_type]) > 0
 
-    def get_pii_types(self):
-        return self.pii_types
+    def get_pii_types(self, parameter_type):
+        return self.pii_types[parameter_type]
 
-    def add_pii_type(self, pii_type):
-        self.pii_types.append(pii_type)
+    def add_pii_type(self, parameter_type, pii_type):
+        self.pii_types[parameter_type].append(pii_type)
 
-    def clear_pii_types(self):
-        self.pii_types.clear()
+    def clear_pii_types(self, parameter_type):
+        self.pii_types[parameter_type].clear()
 
-    def lookup_pii_provider(self, name, case_attr):
+    def lookup_pii_provider(self, name, case_attr, parameter_type):
         """lookup pii provider for a given parameter name and, if a match is found, assign pii"""
         label_pii_tuple = self.providers.pick_random_region().get_pii(name)
         if label_pii_tuple:
@@ -47,7 +61,7 @@ class SchemaHooks:
             self.logger.debug(f"{name} |matched this pii provider| {label}")
             # assign generated pii value to this parameter
             case_attr[name] = pii
-            self.add_pii_type(label)
+            self.add_pii_type(parameter_type, label)
             return (label, pii)
 
     def lookup_nonpii_provider(self, name, case_attr):
@@ -68,11 +82,11 @@ class SchemaHooks:
             if func(str(val), *args):
                 return True
 
-    def check_for_pii_keywords(self, name, schema, case_attr):
+    def check_for_pii_keywords(self, name, schema, case_attr, parameter_type):
         """check if a given parameter name or schema contains a pii keyword and, if so, assign pii"""
-        if name and self.lookup_pii_provider(name, case_attr):
+        if name and self.lookup_pii_provider(name, case_attr, parameter_type):
             return True
-        if schema and self.iterate_schema(schema, self.lookup_pii_provider, case_attr):
+        if schema and self.iterate_schema(schema, self.lookup_pii_provider, case_attr, parameter_type):
             return True
 
     def check_for_nonpii_keywords(self, name, schema, case_attr):
@@ -97,10 +111,19 @@ class SchemaHooks:
                     # Check for pii keywords
                     name = path_param.definition.get('name', None)
                     schema = path_param.definition.get('schema', None)
-                    if self.check_for_pii_keywords(name, schema, case.path_parameters):
+                    if self.check_for_pii_keywords(name, schema, case.path_parameters, ParamType.PATH):
                         continue
                     # Check for non-pii keywords
                     if self.check_for_nonpii_keywords(name, schema, case.path_parameters):
                         continue
+                # -------- QUERY PARAMETERS --------
+                for query_param in op.query:
+                    name = query_param.definition.get('name', None)
+                    schema = query_param.definition.get('schema', None)
+                    if self.check_for_pii_keywords(name, schema, case.query, ParamType.QUERY):
+                        continue
+                    if self.check_for_nonpii_keywords(name, schema, case.query):
+                        continue
+                # todo @benkilimnik: generate cookies, headers
                 return case
             return strategy.map(tune_case)

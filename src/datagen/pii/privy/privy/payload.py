@@ -15,10 +15,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import os
 import pathlib
-import traceback
 import warnings
 import logging
 from datetime import timedelta
+import traceback
 import schemathesis
 from alive_progress import alive_bar
 from schemathesis import DataGenerationMethod
@@ -28,7 +28,7 @@ from hypothesis import (
     settings,
     strategies as st,
 )
-from privy.hooks import SchemaHooks
+from privy.hooks import SchemaHooks, ParamType
 from privy.route import PayloadRoute
 # todo @benkilimnik add fine grained warning filter for schemathesis
 warnings.filterwarnings("ignore")
@@ -86,7 +86,12 @@ class PayloadGenerator:
             # replace default strategies with custom providers in providers.py using before_generate_case in hooks.py
             # and generate data for path parameters in this api spec
             case = data.draw(strategy)
+            # write generated request parameters to csv
             self.route.write_payload_to_csv(
-                case.path_parameters, self.hook.has_pii(), self.hook.get_pii_types()
+                case.path_parameters, self.hook.has_pii(ParamType.PATH), self.hook.get_pii_types(ParamType.PATH)
             )
-            self.hook.clear_pii_types()
+            self.hook.clear_pii_types(ParamType.PATH)
+            self.route.write_payload_to_csv(
+                case.query, self.hook.has_pii(ParamType.QUERY), self.hook.get_pii_types(ParamType.QUERY)
+            )
+            self.hook.clear_pii_types(ParamType.QUERY)
