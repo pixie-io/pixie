@@ -104,6 +104,14 @@ class BinaryDecoder {
     return ExtractStringUntil<TCharType>(std::basic_string_view<TCharType>(sentinel));
   }
 
+  Status ExtractBufIgnore(uint64_t num_bytes) {
+    if (buf_.size() < num_bytes) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    buf_.remove_prefix(num_bytes);
+    return Status::OK();
+  }
+
  protected:
   std::string_view buf_;
 };

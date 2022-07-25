@@ -691,8 +691,7 @@ class CodeGenerator:
 
     def gen_process_frame_type(self):
         return """
-        Status ProcessReq(Frame* req) {
-            BinaryDecoder decoder(req->msg);
+        Status ProcessPayload(Frame* req, BinaryDecoder* decoder) {
             // Extracts api_key, api_version, and correlation_id.
             AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
             switch (amqp_frame_type) {

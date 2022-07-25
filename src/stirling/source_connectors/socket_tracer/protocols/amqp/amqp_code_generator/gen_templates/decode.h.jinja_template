@@ -34,7 +34,7 @@ namespace amqp {
 {{ struct_declr }}
 
 // TODO combine with kafka ToString function
-Status ProcessReq(Frame* req);
+Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 
 }  // namespace amqp

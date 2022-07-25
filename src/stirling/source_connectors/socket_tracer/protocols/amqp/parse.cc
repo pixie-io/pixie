@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/parse.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/decode.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -29,6 +29,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -64,7 +65,7 @@ size_t FindFrameBoundary(std::string_view buf, size_t start_pos) {
   return std::string_view::npos;
 }
 
-// Parse the message's type and channel
+// Parse the message's type, channel
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet) {
   DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
   BinaryDecoder decoder(*buf);
@@ -80,6 +81,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
         frame_type_header == AMQPFrameTypes::kFrameHeartbeat)) {
     return ParseState::kInvalid;
   }
+
   PL_ASSIGN_OR_RETURN_INVALID(uint16_t channel, decoder.ExtractInt<uint16_t>());
   PL_ASSIGN_OR_RETURN_INVALID(uint32_t payload_size, decoder.ExtractInt<uint32_t>());
   if (frame_type_header == AMQPFrameTypes::kFrameHeartbeat && payload_size != 0) {
@@ -97,10 +99,21 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
   if (frame_end_loc != kFrameEnd) {
     return ParseState::kInvalid;
   }
-
   // Remove up till start of message payload
-  packet->msg = decoder.Buf().substr(0, payload_size + kEndByteSize);
-  buf->remove_prefix(payload_size + kEndByteSize);
+  if (!ProcessPayload(packet, &decoder).ok()) {
+    return ParseState::kInvalid;
+  }
+  packet->full_body_parsed = true;
+  PL_ASSIGN_OR_EXIT(uint8_t frame_end_after_parsing, decoder.ExtractChar());
+  if (frame_end_after_parsing != kFrameEnd) {
+    return ParseState::kInvalid;
+  }
+
+  if (frame_end_loc != kFrameEnd) {
+    return ParseState::kInvalid;
+  }
+
+  *buf = decoder.Buf();
   return ParseState::kSuccess;
 }
 

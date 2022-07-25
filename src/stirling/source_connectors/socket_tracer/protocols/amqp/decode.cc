@@ -970,22 +970,25 @@ Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {
   return Status::OK();
 }
 
-Status ProcessReq(Frame* req) {
-  BinaryDecoder decoder(req->msg);
+Status ProcessPayload(Frame* req, BinaryDecoder* decoder) {
   // Extracts api_key, api_version, and correlation_id.
   AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
   switch (amqp_frame_type) {
     case AMQPFrameTypes::kFrameHeader:
-      return ProcessContentHeader(&decoder, req);
+      return ProcessContentHeader(decoder, req);
     case AMQPFrameTypes::kFrameBody:
       req->msg = "";
+      if (!decoder->ExtractBufIgnore(req->payload_size).ok()) {
+        VLOG(1) << absl::Substitute("failed to extract body");
+      }
       break;  // Ignore bytes in content body since length already provided by
               // header
     case AMQPFrameTypes::kFrameHeartbeat:
       req->msg = "";
+
       break;  // Heartbeat frames have no body or length
     case AMQPFrameTypes::kFrameMethod:
-      return ProcessFrameMethod(&decoder, req);
+      return ProcessFrameMethod(decoder, req);
     default:
       VLOG(1) << absl::Substitute("Unparsed frame $0", req->frame_type);
   }
