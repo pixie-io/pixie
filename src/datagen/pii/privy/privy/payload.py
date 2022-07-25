@@ -87,6 +87,6 @@ class PayloadGenerator:
             # and generate data for path parameters in this api spec
             case = data.draw(strategy)
             self.route.write_payload_to_csv(
-                case.path_parameters, self.hook.has_pii(), self.hook.get_pii()
+                case.path_parameters, self.hook.has_pii(), self.hook.get_pii_types()
             )
-            self.hook.clear_pii()
+            self.hook.clear_pii_types()
