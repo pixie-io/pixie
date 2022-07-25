@@ -17,15 +17,21 @@ import re
 import random
 import baluhn
 from faker import Faker
+from privy.providers.generic import GenericProvider
 
 
-class Providers:
+# English United States - inherits standard, region-agnostic methods
+class English_US(GenericProvider):
     def __init__(self):
-        f = Faker()
-        self.f = f
+        # initialize standard, region-agnostic methods
+        super().__init__()
+        # initialize Faker instance with specific Faker locale
+        f = Faker(["en_US"])
         custom = self.CustomProviders(f)
-        # map custom, language/region-specific pii keywords to providers
-        # (labels matched with case insensitive regex)
+        self.f = f
+        # map custom, language/region-specific nonpii keywords to providers
+        # labels matched with case insensitive regex and space separated
+        # (different delimiters are inserted at runtime)
         self.pii_label_to_provider = {
             # ------ Names ------
             "customer": f.name,
@@ -133,6 +139,7 @@ class Providers:
             "driver's license": custom.us_drivers_license,
             "license plate": f.license_plate,
             "lic plate": f.license_plate,
+            "taxId": custom.alphanum,
             # ------ Contact Info ------
             "email": f.email,
             "phone": f.phone_number,
@@ -161,7 +168,6 @@ class Providers:
             "device mac": custom.mac_address,
             "imei": custom.imei,
             "uri path": f.uri_path,
-            "taxId": custom.alphanum,
             # ------ Misc ------
             "password": f.password,
             "file": f.file_name,
@@ -177,36 +183,42 @@ class Providers:
         }
 
     def get_pii(self, name):
-        """Find label that matches input name (if exists), and return generated pii value using matched provider"""
         if not name:
-            return (None, None)
+            return
         for label, provider in self.pii_label_to_provider.items():
-            # returns generator if name is at least partial match with one of the providers
-            if re.match(label, name, re.IGNORECASE):
-                return (label, str(provider()))
-        return (None, None)
+            # check if name at least partially matches pii label
+            # for multiword labels, check versions of the label with different delimiters
+            label_delimited = [
+                label,
+                label.replace(" ", "_"),
+                label.replace(" ", "-"),
+                label.replace(" ", ""),
+            ]
+            for lbl in label_delimited:
+                if re.match(lbl, name, re.IGNORECASE):
+                    return (lbl, str(provider()))
 
     def get_nonpii(self, name):
-        """Find label that matches input name (if exists), and return generated pii value using matched provider"""
         if not name:
-            return (None, None)
+            return
         for label, provider in self.nonpii_label_to_provider.items():
-            # returns generator if name is at least partial match with one of the providers
-            if re.match(label, name, re.IGNORECASE):
-                return (label, str(provider()))
-        return (None, None)
-
-    def get_faker(self, faker_provider):
-        faker_generator = getattr(self.f, faker_provider)
-        return faker_generator
+            # check if name at least partially matches nonpii label
+            # for multiword labels, check versions of the label with different delimiters
+            label_delimited = [
+                label,
+                label.replace(" ", "_"),
+                label.replace(" ", "-"),
+                label.replace(" ", ""),
+            ]
+            for lbl in label_delimited:
+                if re.match(lbl, name, re.IGNORECASE):
+                    return (lbl, str(provider()))
 
     def get_random_pii(self):
-        """choose random label and generate a pii value"""
         label = random.choice(list(self.pii_label_to_provider.keys()))
         return self.get_pii(label)
 
     def sample_pii(self, percent):
-        """Sample a random percentage of pii labels and associated pii values"""
         labels = random.sample(
             list(self.pii_label_to_provider.keys()),
             round(len(self.pii_label_to_provider.keys()) * percent),
@@ -218,11 +230,13 @@ class Providers:
             self.f = faker
 
         def mac_address(self):
-            pattern = random.choice([
-                "^^:^^:^^:^^:^^:^^",
-                "^^-^^-^^-^^-^^-^^",
-                "^^ ^^ ^^ ^^ ^^ ^^",
-            ])
+            pattern = random.choice(
+                [
+                    "^^:^^:^^:^^:^^:^^",
+                    "^^-^^-^^-^^-^^-^^",
+                    "^^ ^^ ^^ ^^ ^^ ^^",
+                ]
+            )
             return self.f.hexify(pattern)
 
         def imei(self):

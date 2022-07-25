@@ -16,7 +16,7 @@
 
 import unittest
 from hypothesis import strategies as st, given
-from privy.providers import Providers
+from privy.chosen_providers import Providers
 
 
 class TestProviders(unittest.TestCase):
@@ -24,45 +24,51 @@ class TestProviders(unittest.TestCase):
         self.providers = Providers()
 
     def test_get_pii(self):
-        for label in self.providers.pii_label_to_provider.keys():
-            label, provider = self.providers.get_pii(label)
-            self.assertTrue(
-                isinstance(provider, str),
-                f"Provider {label} should be str, not {type(provider)}",
-            )
+        for region in self.providers.regions:
+            for label in region.pii_label_to_provider.keys():
+                label, provider = region.get_pii(label)
+                self.assertTrue(
+                    isinstance(provider, str),
+                    f"Provider {label} should be str, not {type(provider)}",
+                )
 
     def test_get_nonpii(self):
-        for label in self.providers.nonpii_label_to_provider.keys():
-            label, provider = self.providers.get_nonpii(label)
-            self.assertTrue(
-                isinstance(provider, str),
-                f"Provider {label} should be str, not {type(provider)}",
-            )
+        for region in self.providers.regions:
+            for label in region.nonpii_label_to_provider.keys():
+                label, provider = region.get_nonpii(label)
+                self.assertTrue(
+                    isinstance(provider, str),
+                    f"Provider {label} should be str, not {type(provider)}",
+                )
 
     def test_get_random_pii(self):
-        self.assertTrue(
-            self.providers.get_random_pii()[0] in self.providers.pii_label_to_provider.keys()
-        )
+        for region in self.providers.regions:
+            self.assertTrue(
+                region.get_random_pii()[0] in region.pii_label_to_provider.keys()
+            )
 
     @given(decimal=st.decimals(min_value=0, max_value=1))
     def test_sample_pii_labels(self, decimal):
-        self.assertTrue(
-            0 <= len(self.providers.sample_pii(decimal)) <= len(self.providers.pii_label_to_provider)
-        )
-        self.assertEqual(
-            len(self.providers.sample_pii(decimal)),
-            round(len(self.providers.pii_label_to_provider.keys()) * decimal),
-        )
+        for region in self.providers.regions:
+            # test that the number of selected labels is valid
+            self.assertTrue(
+                0 <= len(region.sample_pii(decimal)) <= len(region.pii_label_to_provider)
+            )
+            self.assertEqual(
+                len(region.sample_pii(decimal)),
+                round(len(region.pii_label_to_provider.keys()) * decimal),
+            )
 
     def test_custom_providers(self):
-        alphanumeric_check = [c.isalnum() for c in self.providers.get_nonpii("alphanumeric")]
-        self.assertTrue(
-            all(alphanumeric_check)
-        )
-        string_check = [c.isalpha() for c in self.providers.get_nonpii("string")]
-        self.assertTrue(
-            all(string_check)
-        )
+        for region in self.providers.regions:
+            alphanumeric_check = [c.isalnum() for c in region.get_nonpii("alphanumeric")]
+            self.assertTrue(
+                all(alphanumeric_check)
+            )
+            string_check = [c.isalpha() for c in region.get_nonpii("string")]
+            self.assertTrue(
+                all(string_check)
+            )
 
 
 if __name__ == "__main__":
