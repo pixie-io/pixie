@@ -44,3 +44,17 @@ py_binary(
         "@rules_python//python/runfiles",
     ],
 )
+
+py_binary(
+    name = "privy_truncate",
+    testonly = True,
+    srcs = [
+        "truncate.py",
+    ],
+    main = "truncate.py",
+    srcs_version = "PY3",
+    deps = [
+        "//privy:privy_library",
+        "@rules_python//python/runfiles",
+    ],
+)
