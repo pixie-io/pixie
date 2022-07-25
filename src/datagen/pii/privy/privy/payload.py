@@ -28,6 +28,7 @@ from hypothesis import (
     settings,
     strategies as st,
 )
+from privy.hooks import SchemaHooks
 from privy.route import PayloadRoute
 # todo @benkilimnik add fine grained warning filter for schemathesis
 warnings.filterwarnings("ignore")
@@ -40,12 +41,13 @@ class PayloadGenerator:
         self.generate_type = generate_type
         self.logger = logging.getLogger("privy")
         self.route = PayloadRoute(csvwriter, generate_type)
+        self.hook = SchemaHooks()
         self.files = []
 
     def generate_payloads(self):
-        """Generate fake API request payloads from openAPI specifications"""
+        """Generate synthetic API request payloads from openAPI specs."""
         num_files = sum(len(files) for _, _, files in os.walk(self.folder))
-        self.logger.info(f"Generating fake requests from {num_files} files in {self.folder}")
+        self.logger.info(f"Generating synthetic request payloads from {num_files} files in {self.folder}")
         # Retrieve openapi descriptor files
         for dirpath, _, files in os.walk(self.folder):
             descriptors = filter(lambda f: f in ["openapi.json", "swagger.json", "openapi.yaml", "swagger.yaml"], files)
@@ -80,5 +82,10 @@ class PayloadGenerator:
                     break
             # choose default strategies (data generators in hypothesis) based on schema of api path
             strategy = method.as_strategy()
+            # replace default strategies with custom providers in providers.py using before_generate_case in hooks.py
+            # and generate data for path parameters in this api spec
             case = data.draw(strategy)
-            self.route.write_payload_to_csv(case.path_parameters)
+            self.route.write_payload_to_csv(
+                case.path_parameters, self.hook.has_pii(), self.hook.get_pii()
+            )
+            self.hook.clear_pii()

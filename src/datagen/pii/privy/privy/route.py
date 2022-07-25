@@ -18,21 +18,20 @@ from dicttoxml import dicttoxml
 
 
 class PayloadRoute:
-
     def __init__(self, csvwriter, generate_type):
         self.csvwriter = csvwriter
         self.generate_type = generate_type
-
-    def write_payload_to_csv(self, payload):
-        if not payload or "null" in payload.values():
-            return
-        converted = {
-            "json": json.dumps(payload, default=str),
-            "xml": dicttoxml(payload),
+        self.conversions = {
+            "json": (json.dumps, {"default": "str"}),
+            "xml": (dicttoxml, {}),
             # todo @benkilimnik protobuf conversion
             # todo @benkilimnik sql conversion
-        }.get(self.generate_type, None)
-        if not converted:
+        }
+
+    def write_payload_to_csv(self, payload, has_pii, pii_types):
+        if not payload or "null" in payload.values():
             return
-        payload = [converted]
+        converter, kwargs = self.conversions.get(self.generate_type, None)
+        payload = converter(payload, **kwargs)
+        payload = [payload, str(int(has_pii)), ",".join(pii_types)]
         self.csvwriter.writerow(payload)
