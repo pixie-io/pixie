@@ -30,3 +30,9 @@ options:
   --api_specs API_SPECS, -a API_SPECS
                         Absolute path to folder download openapi specs into. Privy checks if this folder already exists. (default: None)
 ```
+
+## Run Tests
+```bazel
+bazel test //privy/tests:test_providers
+bazel test //privy/tests:test_json
+```

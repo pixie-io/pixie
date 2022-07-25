@@ -43,6 +43,7 @@ class PayloadGenerator:
         self.route = PayloadRoute(csvwriter, generate_type)
         self.hook = SchemaHooks()
         self.files = []
+        self.http_types = ["get", "head", "post", "put", "delete", "connect", "options", "trace", "patch"]
 
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
@@ -76,7 +77,7 @@ class PayloadGenerator:
     def parse_http_methods(self, data, schema):
         """instantiate synthetic request payload and choose data providers for a given openapi spec"""
         for path in schema.keys():
-            for http_type in ["get", "head", "post", "put", "delete", "connect", "options", "trace", "patch"]:
+            for http_type in self.http_types:
                 method = schema[path].get(http_type, None)
                 if method:
                     break

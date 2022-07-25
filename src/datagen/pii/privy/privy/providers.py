@@ -200,6 +200,19 @@ class Providers:
         faker_generator = getattr(self.f, faker_provider)
         return faker_generator
 
+    def get_random_pii(self):
+        """choose random label and generate a pii value"""
+        label = random.choice(list(self.pii_label_to_provider.keys()))
+        return self.get_pii(label)
+
+    def sample_pii(self, percent):
+        """Sample a random percentage of pii labels and associated pii values"""
+        labels = random.sample(
+            list(self.pii_label_to_provider.keys()),
+            round(len(self.pii_label_to_provider.keys()) * percent),
+        )
+        return [self.get_pii(label) for label in labels]
+
     class CustomProviders:
         def __init__(self, faker):
             self.f = faker
