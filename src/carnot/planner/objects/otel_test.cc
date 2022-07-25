@@ -882,11 +882,12 @@ otel_sink_op {
   auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
   endpoint_config->set_url(("px.dev:55690"));
   (*endpoint_config->mutable_headers())["apikey"] = "12345";
-  CompilerState compiler_state(
-      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
-      /* time_now */ 0,
-      /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
-      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config), nullptr);
+  CompilerState compiler_state(std::make_unique<RelationMap>(),
+                               /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+                               /* time_now */ 0,
+                               /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
+                               /* redaction_options */ RedactionOptions{},
+                               std::move(endpoint_config), nullptr, planner::DebugInfo{});
 
   // Create the OTel Module with a compiler_state that has an endpoint config.
   ASSERT_OK_AND_ASSIGN(auto otel,

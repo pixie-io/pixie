@@ -129,7 +129,7 @@ class CompilerTest : public ::testing::Test {
         std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssltarget",
-        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
 
     compiler_ = Compiler();
   }

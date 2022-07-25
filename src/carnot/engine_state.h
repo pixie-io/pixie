@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/ml/model_pool.h"
@@ -125,7 +126,8 @@ class EngineState : public NotCopyable {
         std::move(rel_map), planner::SensitiveColumnMap{}, registry_info_.get(), time_now,
         /* max_output_rows_per_table */ 0,
         /* result address */ "",
-        /* ssl target name override*/ "", planner::RedactionOptions{}, nullptr, nullptr);
+        /* ssl target name override*/ "", planner::RedactionOptions{}, nullptr, nullptr,
+        planner::DebugInfo{});
   }
 
   const udf::Registry* func_registry() const { return func_registry_.get(); }

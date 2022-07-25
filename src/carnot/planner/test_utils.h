@@ -1735,7 +1735,7 @@ class DistributedRulesTest : public OperatorTests {
         registry_info_.get(), /* time_now */ 1234,
 
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        planner::RedactionOptions{}, nullptr, nullptr);
+        planner::RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
 
     for (const auto& [plan_id, carnot_info] :
          Enumerate(logical_state_.distributed_state().carnot_info())) {

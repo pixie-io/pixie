@@ -130,7 +130,7 @@ class PixieModuleTest : public QLObjectTest {
         SetUpRelMap(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now_,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
 
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();

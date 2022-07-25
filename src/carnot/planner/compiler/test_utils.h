@@ -314,7 +314,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
       std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
       /* time_now */ types::Time64NSValue(0),
       /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-      /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
+      /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
@@ -871,7 +871,7 @@ class RulesTest : public OperatorTests {
         std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
     md_handler = MetadataHandler::Create();
   }
 
@@ -1131,7 +1131,7 @@ class ASTVisitorTest : public OperatorTests {
     compiler_state_ = std::make_unique<CompilerState>(
         std::move(relation_map_), SensitiveColumnMap{}, registry_info_.get(), time_now,
         max_output_rows_per_table, "result_addr", "result_ssl_targetname", RedactionOptions{},
-        nullptr, nullptr);
+        nullptr, nullptr, DebugInfo{});
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {

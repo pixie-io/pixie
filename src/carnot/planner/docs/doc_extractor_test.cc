@@ -48,7 +48,7 @@ class DocExtractorTest : public ::testing::Test {
         std::make_unique<RelationMap>(), SensitiveColumnMap{}, &registry_info, /* time_now */ 0,
         /* max_output_rows_per_table */ 0,
         /* result_addr */ "", /* ssl_targetname_override */ "", RedactionOptions{}, nullptr,
-        nullptr);
+        nullptr, planner::DebugInfo{});
   }
   std::unique_ptr<CompilerState> compiler_state;
   IR ir;

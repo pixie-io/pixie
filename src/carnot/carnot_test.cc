@@ -634,7 +634,7 @@ px.display(df, '$0'))pxl";
       table_store_->GetRelationMap(), planner::SensitiveColumnMap{}, registry_info.get(),
       current_time,
       /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
-      planner::RedactionOptions{}, nullptr, nullptr);
+      planner::RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
   planpb::Plan plan =
       compiler.Compile(absl::Substitute(query, logical_plan_table_name), &compiler_state)
           .ConsumeValueOrDie();

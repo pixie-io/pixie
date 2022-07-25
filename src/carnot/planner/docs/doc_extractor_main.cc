@@ -33,7 +33,7 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
   CompilerState compiler_state(std::make_unique<RelationMap>(), SensitiveColumnMap{},
                                &registry_info, /* time_now */ 0, /* max_output_rows_per_table */ 0,
                                /* result_addr */ "", /* ssl_targetname_override */ "",
-                               RedactionOptions{}, nullptr, nullptr);
+                               RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
   compiler::ModuleHandler module_handler;
 
   PL_ASSIGN_OR_RETURN(auto ast_visitor, compiler::ASTVisitorImpl::Create(

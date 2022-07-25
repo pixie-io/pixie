@@ -95,7 +95,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       logical_state.result_ssl_targetname(),
       // TODO(philkuz) add an endpoint config to logical_state and pass that in here.
       RedactionOptionsFromPb(logical_state.redaction_options()), std::move(otel_endpoint_config),
-      std::move(plugin_config));
+      // TODO(philkuz) propagate the otel debug attributes here.
+      std::move(plugin_config), planner::DebugInfo{});
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {
