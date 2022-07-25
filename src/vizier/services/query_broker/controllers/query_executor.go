@@ -31,6 +31,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -62,6 +64,7 @@ func init() {
 		},
 		[]string{"script_name"},
 	)
+	pflag.String("cloud_addr", "vzconn-service.plc.svc:51600", "The Pixie Cloud service url (load balancer/list is ok)")
 }
 
 // QueryResultConsumer defines an interface to allow consumption of Query results from a QueryResultExecutor.
@@ -330,6 +333,15 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		}
 	}
 
+	debugInfo := &distributedpb.DebugInfo{
+		OtelDebugAttributes: []*distributedpb.DebugInfo_OTelDebugAttribute{
+			&distributedpb.DebugInfo_OTelDebugAttribute{
+				Name:  "px.cloud.address",
+				Value: viper.GetString("cloud_addr"),
+			},
+		},
+	}
+
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState:    distributedState,
 		PlanOptions:         planOpts,
@@ -338,6 +350,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		RedactionOptions:    redactOptions,
 		OTelEndpointConfig:  otelConfig,
 		PluginConfig:        pluginConfig,
+		DebugInfo:           debugInfo,
 	}
 
 	// Compile the query plan.

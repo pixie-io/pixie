@@ -84,6 +84,12 @@ plan_options: {
 }
 result_address: "qb_address"
 result_ssl_targetname: "qb_hostname"
+debug_info: {
+	otel_debug_attributes {
+		name: "px.cloud.address"
+		value: ""
+	}
+}
 `
 
 const testQuery = `
