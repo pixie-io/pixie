@@ -27,7 +27,7 @@ def parse_args():
     """Perform command-line argument parsing."""
 
     parser = argparse.ArgumentParser(
-        description="PII data generator",
+        description="Synthetic protocol trace & PII data generator",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -104,10 +104,9 @@ def main(args):
         openapi_directory_link = f"https://github.com/APIs-guru/openapi-directory/archive/{commit_hash}.tar.gz"
         with requests.get(openapi_directory_link, stream=True) as rx, tarfile.open(fileobj=rx.raw, mode="r:gz") as tar:
             tar.extractall(api_specs_folder.parent)
-    generate_type = args.generate.lower()
-    output_csv = pathlib.Path(args.out_folder) / "data" / f"{generate_type}.csv"
+    output_csv = pathlib.Path(args.out_folder) / "data" / f"{args.generate.lower()}.csv"
     api_specs_folder = api_specs_folder / "APIs"
-    generate(api_specs_folder, output_csv, generate_type)
+    generate(api_specs_folder, output_csv, args.generate.lower())
 
 
 if __name__ == "__main__":

@@ -18,12 +18,26 @@ load("@rules_python//python:defs.bzl", "py_binary")
 package(default_visibility = ["//privy:__subpackages__"])
 
 py_binary(
-    name = "privy_run",
+    name = "privy_generate",
     testonly = True,
     srcs = [
-        "run.py",
+        "generate.py",
     ],
-    main = "run.py",
+    main = "generate.py",
+    srcs_version = "PY3",
+    deps = [
+        "//privy:privy_library",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
+    name = "privy_visualize",
+    testonly = True,
+    srcs = [
+        "visualize.py",
+    ],
+    main = "visualize.py",
     srcs_version = "PY3",
     deps = [
         "//privy:privy_library",
