@@ -55,7 +55,7 @@ spec:
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
-          imagePullPolicy: IfNotPresent
+        imagePullPolicy: IfNotPresent
         image: oryd/hydra:v1.9.2-sqlite
         volumeMounts:
         - mountPath: /etc/config/hydra
