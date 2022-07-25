@@ -674,6 +674,23 @@ class UPIDToNodeNameUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
+// Converts owner reference object into a json string
+inline types::StringValue OwnerReferenceString(const px::md::OwnerReference& owner_reference) {
+  std::string uid = owner_reference.uid;
+  std::string kind = owner_reference.kind;
+  std::string name = owner_reference.name;
+
+  rapidjson::Document d;
+  d.SetObject();
+  d.AddMember("uid", internal::StringRef(uid), d.GetAllocator());
+  d.AddMember("kind", internal::StringRef(kind), d.GetAllocator());
+  d.AddMember("name", internal::StringRef(name), d.GetAllocator());
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return sb.GetString();
+}
+
 /**
  * @brief Returns the hostname for the pod associated with the input upid.
  */
@@ -781,6 +798,67 @@ class PodIDToServiceIDUDF : public ScalarUDF {
 };
 
 /**
+ * @brief Returns the owner references for the given pod ID.
+ */
+class PodIDToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+    return StringifyVector(owner_references);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references for a given pod ID.")
+        .Details(
+            "Gets the owner references for the pod. If there is no "
+            "owner references associated to this pod, then this function returns an empty string.")
+        .Example("df.owner_references = px.pod_id_to_owner_references(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get owner references for.")
+        .Returns("The k8s owner references for the Pod ID passed in.");
+  }
+};
+
+/**
+ * @brief Returns the owner references for the given pod name.
+ */
+class PodNameToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+    return StringifyVector(owner_references);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references for a given pod name.")
+        .Details(
+            "Gets the owner references for the pod (specified by the pod_name). If there is no "
+            "owner references associated to this pod, then this function returns an empty string.")
+        .Example("df.owner_references = px.pod_name_to_owner_references(df.pod_name)")
+        .Arg("pod_name", "The Pod name of the Pod to get service ID for.")
+        .Returns("The k8s owner references for the Pod name passed in.");
+  }
+};
+
+/**
  * @brief Returns the Node Name of a pod ID passed in.
  */
 class PodIDToNodeNameUDF : public ScalarUDF {
@@ -806,6 +884,78 @@ class PodIDToNodeNameUDF : public ScalarUDF {
         .Example("df.node_name = px.pod_id_to_node_name(df.pod_id)")
         .Arg("pod_id", "The Pod ID of the Pod to get the node name for.")
         .Returns("The k8s node name for the Pod ID passed in.");
+  }
+};
+
+/**
+ * @brief Returns the ReplicaSet name of a pod ID passed in.
+ */
+class PodIDToReplicaSetUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> replica_sets;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        replica_sets.push_back(absl::Substitute("$0/$1", pod_info->ns(), owner_reference.name));
+      }
+    }
+    return StringifyVector(replica_sets);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Get the name of the replica set which controls the pod with pod ID.")
+        .Details(
+            "Gets the Kubernetes name for the replica set that owns the Pod (specified by Pod ID)."
+            "If this pod is not controlled by any replica set, returns an empty string.")
+        .Example("df.replica_set = px.pod_id_to_replica_set(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the replica set name for.")
+        .Returns("The k8s replica set name wich controls the Pod with the Pod ID.");
+  }
+};
+
+/**
+ * @brief Returns the ReplicaSet name of a pod name passed in.
+ */
+class PodNameToReplicaSetUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
+    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> replica_sets;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        replica_sets.push_back(absl::Substitute("$0/$1", pod_info->ns(), owner_reference.name));
+      }
+    }
+    return StringifyVector(replica_sets);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Get the name of the replica set which controls the pod with the specified pod "
+               "name.")
+        .Details(
+            "Gets the Kubernetes name for the replica set that owns the Pod (specified by pod "
+            "name)."
+            "If this pod is not controlled by any replica set, returns an empty string.")
+        .Example("df.replica_set = px.pod_name_to_replica_set(df.pod_name)")
+        .Arg("pod_name", "The Pod name of the Pod to get the replica set name for.")
+        .Returns("The k8s replica set name wich controls the Pod with the Pod ID.");
   }
 };
 
@@ -1196,7 +1346,7 @@ class PodNameToPodStatusUDF : public ScalarUDF {
             "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/"
             "#podstatus-v1-core "
             "for more info about this object. ")
-        .Example("df.pod_status = px.pod_name_to_pod_status(df.pod_name)")
+        .Example("df.pod_status = px.pod_name_to_status(df.pod_name)")
         .Arg("pod_name", "The name of the pod to get the PodStatus for.")
         .Returns("The Kubernetes PodStatus for the Pod passed in.");
   }

@@ -233,6 +233,14 @@ TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
   udf_tester.ForInput("123_uid").Expect("");
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_replica_set_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("pl/rs0");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
 TEST_F(MetadataOpsTest, upid_to_hostname_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToHostnameUDF>(std::move(function_ctx));
@@ -323,6 +331,15 @@ TEST_F(MetadataOpsTest, pod_id_to_service_id_test_multiple_services) {
               AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
 }
 
+TEST_F(MetadataOpsTest, pod_id_to_owner_references_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToOwnerReferencesUDF>(std::move(function_ctx));
+  px::md::OwnerReference ref{"rs0_uid", "rs0", "ReplicaSet"};
+  udf_tester.ForInput("1_uid").Expect(OwnerReferenceString(ref));
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
 TEST_F(MetadataOpsTest, pod_name_to_service_name_test_multiple_services) {
   updates_->enqueue(px::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
@@ -400,6 +417,17 @@ TEST_F(MetadataOpsTest, pod_name_to_stop_time) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/terminating_pod").val, 15);
   // pl/blah is a nonexistant Pod, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_owner_references_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<PodNameToOwnerReferencesUDF>(std::move(function_ctx));
+  px::md::OwnerReference ref1{"rs0_uid", "rs0", "ReplicaSet"};
+  px::md::OwnerReference ref2{"terminating_rs0_uid", "terminating_rs", "ReplicaSet"};
+  udf_tester.ForInput("pl/running_pod").Expect(OwnerReferenceString(ref1));
+  udf_tester.ForInput("pl/terminating_pod").Expect(OwnerReferenceString(ref2));
+  udf_tester.ForInput("badlyformed").Expect("");
 }
 
 TEST_F(MetadataOpsTest, container_name_to_container_id_test) {
@@ -629,6 +657,14 @@ TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
   auto udf_tester = px::carnot::udf::UDFTester<PodNameToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("pl");
   udf_tester.ForInput("px-sock-shop/terminating_pod").Expect("px-sock-shop");
+  udf_tester.ForInput("badlyformed").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_replica_set_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("pl/rs0");
+  udf_tester.ForInput("pl/terminating_pod").Expect("pl/terminating_rs");
   udf_tester.ForInput("badlyformed").Expect("");
 }
 

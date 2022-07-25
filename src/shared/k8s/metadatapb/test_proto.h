@@ -63,6 +63,11 @@ conditions {
   type: 2
   status: 1
 }
+owner_references: {
+  uid: "rs0_uid"
+  name: "rs0"
+  kind: "ReplicaSet"
+}
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
@@ -78,6 +83,11 @@ hostname: "test_host_tbt"
 phase: FAILED
 message: "Failed message unterminated"
 reason: "Failed reason unterminated"
+owner_references: {
+  uid: "terminating_rs0_uid"
+  name: "terminating_rs"
+  kind: "ReplicaSet"
+}
 )";
 
 const char* kTerminatedPodUpdatePbTxt = R"(
@@ -94,6 +104,11 @@ reason: "Failed reason terminated"
 conditions {
   type: 2
   status: 2
+}
+owner_references: {
+  uid: "terminating_rs0_uid"
+  name: "terminating_rs"
+  kind: "ReplicaSet"
 }
 )";
 

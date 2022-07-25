@@ -48,12 +48,15 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodIDToPodLabelsUDF>("pod_id_to_pod_labels");
   registry->RegisterOrDie<PodIDToNamespaceUDF>("pod_id_to_namespace");
   registry->RegisterOrDie<PodIDToNodeNameUDF>("pod_id_to_node_name");
+  registry->RegisterOrDie<PodIDToReplicaSetUDF>("pod_id_to_replica_set");
   registry->RegisterOrDie<PodIDToPodStartTimeUDF>("pod_id_to_start_time");
   registry->RegisterOrDie<PodIDToPodStopTimeUDF>("pod_id_to_stop_time");
   registry->RegisterOrDie<PodIDToServiceNameUDF>("pod_id_to_service_name");
   registry->RegisterOrDie<PodIDToServiceIDUDF>("pod_id_to_service_id");
+  registry->RegisterOrDie<PodIDToOwnerReferencesUDF>("pod_id_to_owner_references");
   registry->RegisterOrDie<IPToServiceIDUDF>("ip_to_service_id");
   registry->RegisterOrDie<PodNameToNamespaceUDF>("pod_name_to_namespace");
+  registry->RegisterOrDie<PodNameToReplicaSetUDF>("pod_name_to_replica_set");
   registry->RegisterOrDie<PodNameToPodIDUDF>("pod_name_to_pod_id");
   registry->RegisterOrDie<PodNameToPodIPUDF>("pod_name_to_pod_ip");
   registry->RegisterOrDie<PodNameToServiceNameUDF>("pod_name_to_service_name");
@@ -61,6 +64,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pod_name_to_start_time");
   registry->RegisterOrDie<PodNameToPodStopTimeUDF>("pod_name_to_stop_time");
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pod_name_to_status");
+  registry->RegisterOrDie<PodNameToOwnerReferencesUDF>("pod_name_to_owner_references");
   registry->RegisterOrDie<ServiceIDToClusterIPUDF>("service_id_to_cluster_ip");
   registry->RegisterOrDie<ServiceIDToExternalIPsUDF>("service_id_to_external_ips");
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("service_id_to_service_name");
