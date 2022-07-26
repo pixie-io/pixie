@@ -33,5 +33,5 @@ class PayloadRoute:
             return
         converter, kwargs = self.conversions.get(self.generate_type, None)
         payload = converter(payload, **kwargs)
-        payload = [payload, str(int(has_pii)), ",".join(pii_types)]
+        payload = [payload, str(int(has_pii)), ",".join(set(pii_types))]
         self.csvwriter.writerow(payload)

@@ -25,6 +25,7 @@ import schemathesis
 from alive_progress import alive_bar
 from schemathesis import DataGenerationMethod
 from hypothesis import (
+    HealthCheck,
     given,
     Verbosity,
     settings,
@@ -43,7 +44,7 @@ class PayloadGenerator:
         self.generate_type = generate_type
         self.logger = logging.getLogger("privy")
         self.route = PayloadRoute(csvwriter, generate_type)
-        self.hook = SchemaHooks()
+        self.hook = SchemaHooks().schema_analyzer
         self.providers = self.hook.providers
         self.files = []
         self.http_types = ["get", "head", "post", "put", "delete", "connect", "options", "trace", "patch"]
@@ -109,7 +110,12 @@ class PayloadGenerator:
         case_attr = dict(case_attr)
         return case_attr
 
-    @settings(verbosity=Verbosity.quiet, deadline=timedelta(milliseconds=5000), max_examples=1)
+    @settings(
+        verbosity=Verbosity.quiet,
+        deadline=timedelta(milliseconds=5000),
+        max_examples=1,
+        suppress_health_check=(HealthCheck.too_slow,)
+    )
     @given(data=st.data())
     def parse_http_methods(self, data, schema):
         """instantiate synthetic request payload and choose data providers for a given openapi spec"""
