@@ -99,11 +99,21 @@ def parse_args():
         when inserting additional PII into sensitive payloads. E.g. 0.03""",
     )
 
+    parser.add_argument(
+        "--timeout",
+        "-t",
+        required=False,
+        default=400,
+        help="""Timeout (in seconds) after which data generation for the current openAPI descriptor will
+        be halted. Very large descriptors tend to slow down data generation and skew the output dataset,
+        so we apply a uniform timeout to each."""
+    )
+
     return parser.parse_args()
 
 
 def generate(api_specs_folder, output_csv, generate_type, multi_threaded,
-             insert_pii_percentage, insert_label_pii_percentage):
+             insert_pii_percentage, insert_label_pii_percentage, timeout):
     """Generate dataset from OpenAPI descriptors"""
     pathlib.Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
     headers = ["payload", "has_pii", "pii_types", "categories"]
@@ -112,7 +122,7 @@ def generate(api_specs_folder, output_csv, generate_type, multi_threaded,
         csvwriter.writerow(headers)
         request_payload_generator = PayloadGenerator(
             api_specs_folder, csvwriter, generate_type, multi_threaded,
-            insert_pii_percentage, insert_label_pii_percentage)
+            insert_pii_percentage, insert_label_pii_percentage, timeout)
         request_payload_generator.generate_payloads()
 
 
@@ -137,7 +147,7 @@ def main(args):
         "data" / f"{args.generate.lower()}.csv"
     api_specs_folder = api_specs_folder / "APIs"
     generate(api_specs_folder, output_csv, args.generate.lower(),
-             args.multi_threaded, args.insert_pii_percentage, args.insert_label_pii_percentage)
+             args.multi_threaded, args.insert_pii_percentage, args.insert_label_pii_percentage, args.timeout)
 
 
 if __name__ == "__main__":

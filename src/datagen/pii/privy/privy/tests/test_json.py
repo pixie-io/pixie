@@ -40,7 +40,7 @@ class TestPayloadGenerator(unittest.TestCase):
                 file = io.StringIO()
                 csvwriter = csv.writer(file, quotechar="|")
                 self.payload_generator = PayloadGenerator(
-                    pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", multi_threaded, 0.25, 0.03
+                    pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", multi_threaded, 0.25, 0.03, 400
                 )
                 self.payload_generator.generate_payloads()
                 file.seek(0)

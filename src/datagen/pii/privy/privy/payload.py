@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import os
+import time
 import pathlib
 import warnings
 import logging
@@ -43,7 +44,7 @@ warnings.filterwarnings("ignore")
 class PayloadGenerator:
 
     def __init__(self, folder, csvwriter, generate_type, multi_threaded,
-                 insert_pii_percentage, insert_label_pii_percentage):
+                 insert_pii_percentage, insert_label_pii_percentage, timeout):
         self.folder = folder
         self.generate_type = generate_type
         self.logger = logging.getLogger("privy")
@@ -56,6 +57,7 @@ class PayloadGenerator:
         self.insert_pii_percent = insert_pii_percentage
         self.insert_label_pii_percent = insert_label_pii_percentage
         self.multi_threaded = multi_threaded
+        self.timeout = timeout
 
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
@@ -73,25 +75,30 @@ class PayloadGenerator:
         if self.multi_threaded:
             with tqdm_joblib(tqdm(total=num_files, position=0, leave=True)) as progress_bar:
                 Parallel(n_jobs=10, prefer='threads')(
-                    delayed(self.parse_openapi_descriptor)(file) for file in self.files
+                    delayed(self.parse_openapi_descriptor)(file, self.timeout) for file in self.files
                 )
                 progress_bar.update()
         # single-threaded
         else:
             with alive_bar(num_files) as progress_bar:
                 for file in self.files:
-                    self.parse_openapi_descriptor(file)
+                    self.parse_openapi_descriptor(file, self.timeout)
                     progress_bar()
 
-    def parse_openapi_descriptor(self, file):
-        self.logger.debug(f"Generating {file}...")
+    def parse_openapi_descriptor(self, file, timeout):
+        self.logger.info(f"Generating {file}...")
+        start = time.time()
         try:
             schema = schemathesis.from_path(
                 file, data_generation_methods=[DataGenerationMethod.positive]
             )
-            self.parse_http_methods(schema)
-            self.logger.debug("Success")
+            self.parse_http_methods(schema=schema, start=time.time(), timeout=timeout)
+            end = time.time()
+            self.logger.info(f"Success in {round(end - start, 2)} seconds")
         except Exception:
+            end = time.time()
+            self.logger.info(f"Failed to generate {file}")
+            self.logger.info(f"Failed after {round(end - start, 2)} seconds")
             self.logger.debug(traceback.format_exc())
 
     def generate_pii_case(self, case_attr, parameter_type):
@@ -134,7 +141,7 @@ class PayloadGenerator:
         suppress_health_check=(HealthCheck.too_slow,)
     )
     @given(data=st.data())
-    def parse_http_methods(self, data, schema):
+    def parse_http_methods(self, data, schema, start, timeout):
         """instantiate synthetic request payload and choose data providers for a given openapi spec"""
         for path in schema.keys():
             for http_type in self.http_types:
@@ -168,3 +175,7 @@ class PayloadGenerator:
                     pii_query_params, self.hook.has_pii(ParamType.QUERY), self.hook.get_pii_types(ParamType.QUERY)
                 )
                 self.hook.clear_pii_types(ParamType.QUERY)
+
+            if time.time() - start > timeout:
+                self.logger.warning(f"OpenAPI spec took too long to parse. Timeout of {timeout} reached.")
+                return
