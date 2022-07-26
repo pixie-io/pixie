@@ -697,9 +697,14 @@ class CodeGenerator:
             switch (amqp_frame_type) {
                 case AMQPFrameTypes::kFrameHeader:
                     return ProcessContentHeader(&decoder, req);
-                case AMQPFrameTypes::kFrameBody:
+                case AMQPFrameTypes::kFrameBody: {
                     req->msg = "";
+                    auto status = decoder->ExtractBufIgnore(req->payload_size);
+                    if (!status.ok()) {
+                        VLOG(1) << absl::Substitute("Failed to extract body for AMQP, error: $0", status.ToString());
+                    }
                     break; // Ignore bytes in content body since length already provided by header
+                }
                 case AMQPFrameTypes::kFrameHeartbeat:
                     req->msg = "";
                     break; // Heartbeat frames have no body or length
