@@ -21,6 +21,7 @@
 #include <bcc/bcc_syms.h>
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/strings/str_format.h>
 
 // Including bcc/BPF.h creates some conflicts with our own code.
 #ifdef DECLARE_ERROR
@@ -48,7 +49,7 @@ class BCCSymbolizer {
   /**
    * Like Symbol(), but if the symbol is not resolved, returns a string of the address.
    */
-  std::string SymbolOrAddrIfUnknown(uintptr_t addr, int pid);
+  std::string_view SymbolOrAddrIfUnknown(uintptr_t addr, int pid);
 
   /**
    * Release any cached resources, such as loaded symbol tables, for the given PID.
@@ -57,6 +58,19 @@ class BCCSymbolizer {
   void ReleasePIDSymCache(uint32_t pid);
 
  private:
+  /**
+   * FormatModuleName(): populates symbol_ when the memory region is known, but symbol is not.
+   */
+  void FormatModuleName(char const* const module, const uintptr_t offset) {
+    symbol_ = absl::StrFormat("[m] %s + 0x%08llx", module, offset);
+  }
+
+  /**
+   * FormatAddress(): populates symbol_ with a stringified addr. (64b hex).
+   * used when no memory region or symbol known is known.
+   */
+  void FormatAddress(const uintptr_t addr) { symbol_ = absl::StrFormat("0x%016llx", addr); }
+
   /**
    * GetBCCSymbolCache() returns a pointer to a BCC symbol cache. Use of void* is inherited
    * from the BCC library. The BCC symbol cache itself is not really a cache, rather, it is

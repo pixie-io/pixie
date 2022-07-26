@@ -18,8 +18,6 @@
 
 #include <linux/elf.h>
 
-#include <absl/strings/str_format.h>
-
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 
@@ -42,7 +40,7 @@ void* BCCSymbolizer::GetBCCSymbolCache(const int pid) {
   return iter->second;
 }
 
-std::string BCCSymbolizer::SymbolOrAddrIfUnknown(const uintptr_t addr, const int pid) {
+std::string_view BCCSymbolizer::SymbolOrAddrIfUnknown(const uintptr_t addr, const int pid) {
   DCHECK(pid >= 0 || pid == -1);
 
   void* bcc_symbol_cache = GetBCCSymbolCache(pid);
@@ -56,10 +54,19 @@ std::string BCCSymbolizer::SymbolOrAddrIfUnknown(const uintptr_t addr, const int
     return symbol_;
   }
 
+  if (bcc_symbol_struct_.module != nullptr && strlen(bcc_symbol_struct_.module) > 0) {
+    // Module is known (from /proc/<pid>/maps), but symbol is not known.
+    // We will create a string like this:
+    // [m] /lib/ld-musl-x86_64.so.1 + 0x0000abcd
+    // This is better than nothing, but not as nice as a symbol.
+    FormatModuleName(bcc_symbol_struct_.module, bcc_symbol_struct_.offset);
+    return symbol_;
+  }
+
   // If we fall through to here, we have truly come up empty handed.
   // Maybe it is a JIT'd or interpreted program? Maybe stack traces are broken (no frame pointers)?
   // We return just the virtual address, as a string, formatted in 64b hex.
-  symbol_ = absl::StrFormat("0x%016llx", addr);
+  FormatAddress(addr);
   return symbol_;
 }
 

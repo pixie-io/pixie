@@ -20,6 +20,7 @@
 
 #include "src/common/base/error.h"
 #include "src/common/base/file.h"
+#include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/testing/symbolization.h"
@@ -37,10 +38,10 @@ namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-TEST(BCCSymbolizerTest, SymbolOrAddrIfUnknown) {
+TEST(BCCSymbolizer, SymbolOrAddrIfUnknown) {
   BCCSymbolizer symbolizer;
 
-  pid_t pid = getpid();
+  const pid_t pid = getpid();
 
   EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(kFooAddr, pid), "test::Foo()");
   EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(kBarAddr, pid), "test::Bar()");
@@ -54,6 +55,22 @@ TEST(BCCSymbolizer, KernelSymbol) {
   BCCSymbolizer symbolizer;
   EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(sym_addr, BCCSymbolizer::kKernelPID), kSymbolName);
   EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(0, BCCSymbolizer::kKernelPID), "0x0000000000000000");
+}
+
+TEST(BCCSymbolizer, ModuleName) {
+  BCCSymbolizer symbolizer;
+  std::vector<system::ProcParser::ProcessSMaps> smaps;
+
+  const pid_t pid = getpid();
+  auto parser_ = std::make_unique<system::ProcParser>("/proc");
+  ASSERT_OK(parser_->ParseProcPIDSMaps(pid, &smaps));
+
+  for (const auto& entry : smaps) {
+    if (entry.pathname == "[vdso]") {
+      const std::string_view symbol = symbolizer.SymbolOrAddrIfUnknown(entry.vmem_start, pid);
+      EXPECT_EQ(symbol, "[m] [vdso] + 0x00000000");
+    }
+  }
 }
 
 }  // namespace bpf_tools
