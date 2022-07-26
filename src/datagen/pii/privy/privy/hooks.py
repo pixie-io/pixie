@@ -13,7 +13,9 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+import ast
 import logging
+import random
 from enum import Enum
 import schemathesis
 from hypothesis import given
@@ -52,16 +54,18 @@ class SchemaHooks:
                 # -------- PATH PARAMETERS --------
                 for path_param in op.path_parameters:
                     name = path_param.definition.get("name", None)
+                    enum = path_param.definition.get("enum", None)
                     schema = path_param.definition.get("schema", None)
                     self.schema_analyzer.assign_parameters(
-                        name, schema, case.path_parameters, ParamType.PATH
+                        name, enum, schema, case.path_parameters, ParamType.PATH
                     )
                 # -------- QUERY PARAMETERS --------
                 for query_param in op.query:
                     name = query_param.definition.get("name", None)
+                    enum = query_param.definition.get("enum", None)
                     schema = query_param.definition.get("schema", None)
                     self.schema_analyzer.assign_parameters(
-                        name, schema, case.query, ParamType.QUERY
+                        name, enum, schema, case.query, ParamType.QUERY
                     )
                 # todo @benkilimnik: generate cookies, headers
                 # todo @benkilimnik: loop arbitrarily deep into schema. Currently only checking first level
@@ -95,8 +99,11 @@ class SchemaHooks:
         def clear_pii_types(self, parameter_type):
             self.pii_types[parameter_type].clear()
 
-        def assign_parameters(self, name, schema, case_attr, parameter_type):
+        def assign_parameters(self, name, enum, schema, case_attr, parameter_type):
             """assign a provider to a given parameter_name in the case_attr"""
+            # Check for enum
+            if self.check_for_enum(name, enum, schema, case_attr):
+                return case_attr[name]
             # Check for pii keywords
             if self.check_for_pii_keywords(
                 name, schema, case_attr, parameter_type
@@ -213,3 +220,29 @@ class SchemaHooks:
                 f"{parameter_name} |matched regex| {regex} |generated| {regex_value}"
             )
             case_attr[parameter_name] = regex_value
+
+        def check_for_enum(self, name, enum, schema, case_attr):
+            """check if a given parameter name or schema contains an enum and, if so, assign pii"""
+            if enum:
+                self.generate_value_from_enum(
+                    parameter_name=name, enum=enum, case_attr=case_attr)
+                return True
+            if name and schema:
+                for schema_key, schema_val in schema.items():
+                    if schema_key == "enum":
+                        self.generate_value_from_enum(
+                            parameter_name=name, enum=schema_val, case_attr=case_attr
+                        )
+                        return True
+
+        def generate_value_from_enum(self, parameter_name, enum, case_attr):
+            """generate a random value from an enum"""
+            # parse string into python list and select random value
+            if isinstance(enum, str):
+                enum = ast.literal_eval(enum)
+            if isinstance(enum, list):
+                enum_value = random.choice(enum)
+                self.logger.debug(
+                    f"{parameter_name} |matched enum| {enum} |generated| {enum_value}"
+                )
+                case_attr[parameter_name] = enum_value
