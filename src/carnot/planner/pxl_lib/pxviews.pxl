@@ -397,4 +397,37 @@ def inbound_http_throughput_timeseries(start_time, end_time, window_ns):
 
     return df[['time_', 'pod_id', 'container', 'num_errors', 'num_requests']]
 
+
+def inbound_http_latency_timeseries(start_time, end_time, window_ns):
+    ''' Compute the inbound HTTP request latency timeseries for each pod
+    in the cluster.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    @window_ns The window size in nanoseconds for the timeseries.
+    '''
+    df = _http_events(start_time, end_time,
+                      include_health_checks=False,
+                      include_ready_checks=False,
+                      include_unresolved_inbound=False)
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
+    df.pod_id = df.ctx['pod_id']
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['timestamp', 'pod_id']).agg(
+        latency_quantiles=('latency', px.quantiles),
+        latency_sum=('latency', px.sum),
+        num_requests=('latency', px.count),
+        num_errors=('failure', px.sum),
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum),
+    )
+    df.time_ = df.timestamp
+
+    return df[['time_', 'pod_id', 'latency_quantiles', 'num_requests', 'num_errors', 'latency_sum', 'req_bytes', 'resp_bytes']]
+
 )"
