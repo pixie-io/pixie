@@ -364,4 +364,37 @@ def pod_network_timeseries(start_time, end_time, window_ns):
     return df[['time_', 'pod_id', 'rx_bytes_per_ns', 'tx_bytes_per_ns',
                'rx_drops_per_ns', 'tx_drops_per_ns', 'rx_errors_per_ns', 'tx_errors_per_ns']]
 
+
+def inbound_http_throughput_timeseries(start_time, end_time, window_ns):
+    ''' Compute the timeseries statistics of inbound HTTP requests for each container
+    in the cluster.
+
+    Returns the portion of erroroneous requests and the total number of requests
+    for each container, labelled by pod.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    @window_ns The window size in nanoseconds for the timeseries.
+    '''
+    df = _http_events(start_time, end_time,
+                      include_health_checks=False,
+                      include_ready_checks=False,
+                      include_unresolved_inbound=False)
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
+    df.pod_id = df.ctx['pod_id']
+    df.container = df.ctx['container']
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['timestamp', 'container', 'pod_id']).agg(
+        num_requests=('latency', px.count),
+        num_errors=('failure', px.sum),
+    )
+    df.time_ = df.timestamp
+
+    return df[['time_', 'pod_id', 'container', 'num_errors', 'num_requests']]
+
 )"
