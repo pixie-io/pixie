@@ -37,16 +37,6 @@ namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-TEST(BCCSymbolizerTest, Symbol) {
-  BCCSymbolizer symbolizer;
-
-  pid_t pid = getpid();
-
-  EXPECT_EQ(symbolizer.Symbol(kFooAddr, pid), "test::Foo()");
-  EXPECT_EQ(symbolizer.Symbol(kBarAddr, pid), "test::Bar()");
-  EXPECT_EQ(symbolizer.Symbol(123, pid), "[UNKNOWN]");
-}
-
 TEST(BCCSymbolizerTest, SymbolOrAddrIfUnknown) {
   BCCSymbolizer symbolizer;
 
@@ -62,8 +52,8 @@ TEST(BCCSymbolizer, KernelSymbol) {
   ASSERT_OK_AND_ASSIGN(uint64_t sym_addr, GetKernelSymAddr(kSymbolName));
 
   BCCSymbolizer symbolizer;
-  EXPECT_EQ(symbolizer.Symbol(sym_addr, BCCSymbolizer::kKernelPID), kSymbolName);
-  EXPECT_EQ(symbolizer.Symbol(0, BCCSymbolizer::kKernelPID), "[UNKNOWN]");
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(sym_addr, BCCSymbolizer::kKernelPID), kSymbolName);
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(0, BCCSymbolizer::kKernelPID), "0x0000000000000000");
 }
 
 }  // namespace bpf_tools
