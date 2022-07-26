@@ -17,7 +17,9 @@ import os
 import pathlib
 import warnings
 import logging
+import random
 from datetime import timedelta
+from copy import deepcopy
 import traceback
 import schemathesis
 from alive_progress import alive_bar
@@ -36,14 +38,17 @@ warnings.filterwarnings("ignore")
 
 class PayloadGenerator:
 
-    def __init__(self, folder, csvwriter, generate_type):
+    def __init__(self, folder, csvwriter, generate_type, insert_pii_percentage, insert_label_pii_percentage):
         self.folder = folder
         self.generate_type = generate_type
         self.logger = logging.getLogger("privy")
         self.route = PayloadRoute(csvwriter, generate_type)
         self.hook = SchemaHooks()
+        self.providers = self.hook.providers
         self.files = []
         self.http_types = ["get", "head", "post", "put", "delete", "connect", "options", "trace", "patch"]
+        self.insert_pii_percent = insert_pii_percentage
+        self.insert_label_pii_percent = insert_label_pii_percentage
 
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
@@ -72,6 +77,38 @@ class PayloadGenerator:
         except Exception:
             self.logger.debug(traceback.format_exc())
 
+    def generate_pii_case(self, case_attr, parameter_type):
+        """insert additional pii data into a request payload or generate new payload"""
+        rand = random.random()
+        if rand > self.insert_pii_percent:
+            # insert additional payload {insert_pii_percent}% of the time
+            return
+        else:
+            # insert additional PII payload
+            if random.randint(0, 1):
+                # clear existing parameters 50% of the time
+                case_attr.clear()
+                self.hook.clear_pii_types(parameter_type)
+            if random.randint(0, 1):
+                # sample just one pii label 50% of the time
+                label, pii = self.providers.pick_random_region().get_random_pii()
+                self.logger.debug(f"Inserting additional pii type: {label}")
+                case_attr[label] = pii
+                self.hook.add_pii_type(parameter_type, label)
+            else:
+                # choose 0 to {insert_label_pii_percent}% of labels
+                percent = random.uniform(0, self.insert_label_pii_percent)
+                label_pii_tuples = self.providers.pick_random_region().sample_pii(percent)
+                for label, pii in label_pii_tuples:
+                    self.logger.debug(f"Inserting additional pii type: {label}")
+                    case_attr[label] = pii
+                    self.hook.add_pii_type(parameter_type, label)
+        # randomize order of parameters
+        case_attr = list(case_attr.items())
+        random.shuffle(case_attr)
+        case_attr = dict(case_attr)
+        return case_attr
+
     @settings(verbosity=Verbosity.quiet, deadline=timedelta(milliseconds=5000), max_examples=1)
     @given(data=st.data())
     def parse_http_methods(self, data, schema):
@@ -90,8 +127,21 @@ class PayloadGenerator:
             self.route.write_payload_to_csv(
                 case.path_parameters, self.hook.has_pii(ParamType.PATH), self.hook.get_pii_types(ParamType.PATH)
             )
-            self.hook.clear_pii_types(ParamType.PATH)
             self.route.write_payload_to_csv(
                 case.query, self.hook.has_pii(ParamType.QUERY), self.hook.get_pii_types(ParamType.QUERY)
             )
-            self.hook.clear_pii_types(ParamType.QUERY)
+            # insert additional pii if this request is identified as containing pii
+            # often in pii requests, the parameters are not given pii keywords for security reasons
+            # to account for this we insert additional random pii fields in requests we know contain pii
+            if self.hook.has_pii(ParamType.PATH) and case.path_parameters:
+                pii_path_params = self.generate_pii_case(deepcopy(case.path_parameters), ParamType.PATH)
+                self.route.write_payload_to_csv(
+                    pii_path_params, self.hook.has_pii(ParamType.PATH), self.hook.get_pii_types(ParamType.PATH)
+                )
+                self.hook.clear_pii_types(ParamType.PATH)
+            if self.hook.has_pii(ParamType.QUERY) and case.query:
+                pii_query_params = self.generate_pii_case(deepcopy(case.query), ParamType.QUERY)
+                self.route.write_payload_to_csv(
+                    pii_query_params, self.hook.has_pii(ParamType.QUERY), self.hook.get_pii_types(ParamType.QUERY)
+                )
+                self.hook.clear_pii_types(ParamType.QUERY)

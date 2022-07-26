@@ -73,17 +73,35 @@ def parse_args():
         help="Absolute path to folder download openapi specs into. Privy checks if this folder already exists.",
     )
 
+    parser.add_argument(
+        "--insert_pii_percentage",
+        "-i",
+        required=False,
+        default=0.60,
+        help="Percentage of PII payloads to insert additional PII into. E.g. 0.50",
+    )
+
+    parser.add_argument(
+        "--insert_label_pii_percentage",
+        "-il",
+        required=False,
+        default=0.05,
+        help="""Upper bound for the percentage of PII labels to sample from
+        when inserting additional PII into sensitive payloads. E.g. 0.03""",
+    )
+
     return parser.parse_args()
 
 
-def generate(api_specs_folder, output_csv, generate_type):
+def generate(api_specs_folder, output_csv, generate_type, insert_pii_percentage, insert_label_pii_percentage):
     """Generate dataset from OpenAPI descriptors"""
     pathlib.Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
     headers = ["payload", "has_pii", "pii_types"]
     with open(output_csv, "w") as csvfile:
         csvwriter = csv.writer(csvfile, quotechar="|")
         csvwriter.writerow(headers)
-        request_payload_generator = PayloadGenerator(api_specs_folder, csvwriter, generate_type)
+        request_payload_generator = PayloadGenerator(
+            api_specs_folder, csvwriter, generate_type, insert_pii_percentage, insert_label_pii_percentage)
         request_payload_generator.generate_payloads()
 
 
@@ -97,16 +115,19 @@ def main(args):
 
     # ------ Data Generation / Loading -------
     logger.info(f"Checking if openapi-directory exists in {args.api_specs}")
-    api_specs_folder = pathlib.Path(args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
+    api_specs_folder = pathlib.Path(
+        args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
     if not api_specs_folder.exists():
         logger.info("Not found. Downloading...")
         commit_hash = "ea4a924b870ca4f6d687809fa7891cccc0d19085"
         openapi_directory_link = f"https://github.com/APIs-guru/openapi-directory/archive/{commit_hash}.tar.gz"
         with requests.get(openapi_directory_link, stream=True) as rx, tarfile.open(fileobj=rx.raw, mode="r:gz") as tar:
             tar.extractall(api_specs_folder.parent)
-    output_csv = pathlib.Path(args.out_folder) / "data" / f"{args.generate.lower()}.csv"
+    output_csv = pathlib.Path(args.out_folder) / \
+        "data" / f"{args.generate.lower()}.csv"
     api_specs_folder = api_specs_folder / "APIs"
-    generate(api_specs_folder, output_csv, args.generate.lower())
+    generate(api_specs_folder, output_csv, args.generate.lower(),
+             args.insert_pii_percentage, args.insert_label_pii_percentage)
 
 
 if __name__ == "__main__":

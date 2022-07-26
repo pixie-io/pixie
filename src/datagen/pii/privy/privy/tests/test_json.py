@@ -34,12 +34,12 @@ class TestPayloadGenerator(unittest.TestCase):
         self.lufthansa_openapi = os.path.join(os.path.dirname(__file__), "openapi.json")
 
     def test_parse_http_methods(self):
-        for region in self.providers.regions:
+        for region in self.providers.get_regions():
             # in-memory file-like object
             file = io.StringIO()
             csvwriter = csv.writer(file, quotechar="|")
             self.payload_generator = PayloadGenerator(
-                pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json"
+                pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", 0.25, 0.03
             )
             self.payload_generator.generate_payloads()
             file.seek(0)

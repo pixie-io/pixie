@@ -55,24 +55,26 @@ class SchemaHooks:
 
     def lookup_pii_provider(self, name, case_attr, parameter_type):
         """lookup pii provider for a given parameter name and, if a match is found, assign pii"""
-        label_pii_tuple = self.providers.pick_random_region().get_pii(name)
-        if label_pii_tuple:
-            label, pii = label_pii_tuple
-            self.logger.debug(f"{name} |matched this pii provider| {label}")
-            # assign generated pii value to this parameter
-            case_attr[name] = pii
-            self.add_pii_type(parameter_type, label)
-            return (label, pii)
+        for region in self.providers.get_regions():
+            label_pii_tuple = region.get_pii(name)
+            if label_pii_tuple:
+                label, pii = label_pii_tuple
+                self.logger.debug(f"{name} |matched this pii provider| {label}")
+                # assign generated pii value to this parameter
+                case_attr[name] = pii
+                self.add_pii_type(parameter_type, label)
+                return (label, pii)
 
     def lookup_nonpii_provider(self, name, case_attr):
         """lookup nonpii provider for a given parameter name and, if a match is found, assign generated nonpii"""
-        label_nonpii_tuple = self.providers.pick_random_region().get_nonpii(name)
-        if label_nonpii_tuple:
-            label, nonpii = label_nonpii_tuple
-            self.logger.debug(f"{name} |matched this nonpii provider| {label}")
-            # assign generated nonpii value to this parameter
-            case_attr[name] = nonpii
-            return (label, nonpii)
+        for region in self.providers.get_regions():
+            label_nonpii_tuple = region.get_nonpii(name)
+            if label_nonpii_tuple:
+                label, nonpii = label_nonpii_tuple
+                self.logger.debug(f"{name} |matched this nonpii provider| {label}")
+                # assign generated nonpii value to this parameter
+                case_attr[name] = nonpii
+                return (label, nonpii)
 
     def iterate_schema(self, schema, func, *args):
         """iterate over schema and call func on each value, passing case attribute/parameter. If func returns a non-None

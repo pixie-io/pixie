@@ -28,5 +28,8 @@ class Providers:
         """Pick a random region/language specific provider to execute a GenericProvider method on"""
         return random.choice(self.regions)
 
+    def get_regions(self):
+        return self.regions
+
     def __repr__(self):
         return f"Providers.regions - {self.regions}"
