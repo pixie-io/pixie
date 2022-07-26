@@ -56,16 +56,18 @@ class SchemaHooks:
                     name = path_param.definition.get("name", None)
                     enum = path_param.definition.get("enum", None)
                     schema = path_param.definition.get("schema", None)
+                    type_ = path_param.definition.get("type", None)
                     self.schema_analyzer.assign_parameters(
-                        name, enum, schema, case.path_parameters, ParamType.PATH
+                        name, enum, schema, type_, case.path_parameters, ParamType.PATH
                     )
                 # -------- QUERY PARAMETERS --------
                 for query_param in op.query:
                     name = query_param.definition.get("name", None)
                     enum = query_param.definition.get("enum", None)
                     schema = query_param.definition.get("schema", None)
+                    type_ = query_param.definition.get("type", None)
                     self.schema_analyzer.assign_parameters(
-                        name, enum, schema, case.query, ParamType.QUERY
+                        name, enum, schema, type_, case.query, ParamType.QUERY
                     )
                 # todo @benkilimnik: generate cookies, headers
                 # todo @benkilimnik: loop arbitrarily deep into schema. Currently only checking first level
@@ -99,21 +101,21 @@ class SchemaHooks:
         def clear_pii_types(self, parameter_type):
             self.pii_types[parameter_type].clear()
 
-        def assign_parameters(self, name, enum, schema, case_attr, parameter_type):
+        def assign_parameters(self, name, enum, schema, type_, case_attr, parameter_type):
             """assign a provider to a given parameter_name in the case_attr"""
             # Check for enum
             if self.check_for_enum(name, enum, schema, case_attr):
                 return case_attr[name]
             # Check for pii keywords
             if self.check_for_pii_keywords(
-                name, schema, case_attr, parameter_type
+                name, schema, type_, case_attr, parameter_type
             ):
                 return case_attr[name]
             # Check schema for pattern keyword and use provided regex if present
             if self.check_for_regex_pattern(name, schema, case_attr):
                 return case_attr[name]
             # Check for non-pii keywords
-            if self.check_for_nonpii_keywords(name, schema, case_attr):
+            if self.check_for_nonpii_keywords(name, schema, type_, case_attr):
                 return case_attr[name]
             # last resort, assign string value
             if name:
@@ -122,9 +124,7 @@ class SchemaHooks:
                 _, pii = self.providers.pick_random_region().get_nonpii("string")
                 case_attr[name] = pii
 
-        def check_for_pii_keywords(
-            self, name, schema, case_attr, parameter_type
-        ):
+        def check_for_pii_keywords(self, name, type_, schema, case_attr, parameter_type):
             """check if a given parameter name or schema contains a pii keyword and, if so, assign pii"""
             if name and self.lookup_pii_provider(
                 keyword=name,
@@ -151,12 +151,22 @@ class SchemaHooks:
                             parameter_type=parameter_type,
                         ):
                             return True
+            if type_:
+                if isinstance(type_, str):
+                    if self.lookup_pii_provider(
+                        keyword=type_,
+                        parameter_name=name,
+                        case_attr=case_attr,
+                        parameter_type=parameter_type,
+                    ):
+                        return True
+                if isinstance(type_, bool):
+                    case_attr[name] = random.choice(["True", "False"])
+                    return True
 
-        def check_for_nonpii_keywords(self, name, schema, case_attr):
+        def check_for_nonpii_keywords(self, name, type_, schema, case_attr):
             """check if a given parameter name or schema contains a non-pii keyword and, if so, assign pii"""
-            if name and self.lookup_nonpii_provider(
-                keyword=name, parameter_name=name, case_attr=case_attr
-            ):
+            if name and self.lookup_nonpii_provider(keyword=name, parameter_name=name, case_attr=case_attr):
                 return True
             if schema:
                 if isinstance(schema, str):
@@ -170,6 +180,15 @@ class SchemaHooks:
                             keyword=schema_val, parameter_name=name, case_attr=case_attr
                         ):
                             return True
+            if type_:
+                if isinstance(type_, str):
+                    if self.lookup_nonpii_provider(
+                        keyword=type_, parameter_name=name, case_attr=case_attr
+                    ):
+                        return True
+                if isinstance(type_, bool):
+                    case_attr[name] = random.choice(["True", "False"])
+                    return True
 
         def lookup_pii_provider(
             self, keyword, parameter_name, case_attr, parameter_type
