@@ -43,6 +43,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ContainerNameToContainerStopTimeUDF>("container_name_to_stop_time");
   registry->RegisterOrDie<HasServiceIDUDF>("has_service_id");
   registry->RegisterOrDie<HasServiceNameUDF>("has_service_name");
+  registry->RegisterOrDie<HasValueUDF>("has_value");
   registry->RegisterOrDie<IPToPodIDUDF>("ip_to_pod_id");
   registry->RegisterOrDie<PodIDToPodNameUDF>("pod_id_to_pod_name");
   registry->RegisterOrDie<PodIDToPodLabelsUDF>("pod_id_to_pod_labels");

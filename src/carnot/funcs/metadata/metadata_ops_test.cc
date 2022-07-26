@@ -696,6 +696,17 @@ TEST_F(MetadataOpsTest, has_service_name_test) {
   udf_tester.ForInput("[]", "4").Expect(false);
 }
 
+TEST_F(MetadataOpsTest, in_value_or_array_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<HasValueUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1", "1").Expect(true);
+  udf_tester.ForInput("2", "1").Expect(false);
+  udf_tester.ForInput("[\"3\", \"4\"]", "4").Expect(true);
+  udf_tester.ForInput("[\"4\"]", "4").Expect(true);
+  udf_tester.ForInput("[\"3\", \"4\"]", "5").Expect(false);
+  udf_tester.ForInput("[]", "4").Expect(false);
+}
+
 TEST_F(MetadataOpsTest, vizier_id_test) {
   auto metadata_state = std::make_shared<px::md::AgentMetadataState>(
       /* hostname */ "myhost",

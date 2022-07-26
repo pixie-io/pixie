@@ -1759,6 +1759,29 @@ class HasServiceIDUDF : public ScalarUDF {
   }
 };
 
+// Same functionality as HasServiceNameUDF but with a better name. New class to avoid breaking code
+// which uses HasServiceNameUDF
+class HasValueUDF : public ScalarUDF {
+ public:
+  BoolValue Exec(FunctionContext*, StringValue array_or_value, StringValue value) {
+    return EqualsOrArrayContains(array_or_value, value);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Determine if a value is present in an array.")
+        .Details(
+            "Checks to see if a given value is present in an array. Can include matching an "
+            "individual "
+            "value, or checking against an array of services.")
+        .Example(
+            "df = df[px.has_value(df.ctx[\"replica_set\"], "
+            "\"kube-system/kube-dns-79c57c8c9b\")]")
+        .Arg("array_or_value", "Array or value to check.")
+        .Arg("value", "The value to check for in passed in value.")
+        .Returns("True if value is present in the input, otherwise false.");
+  }
+};
+
 class VizierIDUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext* ctx) {
