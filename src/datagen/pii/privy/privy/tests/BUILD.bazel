@@ -28,7 +28,10 @@ py_test(
 py_test(
     name = "test_json",
     srcs = ["test_json.py"],
-    data = ["openapi.json"],
+    data = [
+        "openapi.json",
+        "openapi2.json",
+    ],
     srcs_version = "PY3",
     deps = [
         "//privy:privy_library",

@@ -34,38 +34,39 @@ class TestPayloadGenerator(unittest.TestCase):
         self.lufthansa_openapi = os.path.join(os.path.dirname(__file__), "openapi.json")
 
     def test_parse_http_methods(self):
-        for region in self.providers.get_regions():
-            # in-memory file-like object
-            file = io.StringIO()
-            csvwriter = csv.writer(file, quotechar="|")
-            self.payload_generator = PayloadGenerator(
-                pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", 0.25, 0.03
-            )
-            self.payload_generator.generate_payloads()
-            file.seek(0)
+        for multi_threaded in [False, True]:
+            for region in self.providers.get_regions():
+                # in-memory file-like object
+                file = io.StringIO()
+                csvwriter = csv.writer(file, quotechar="|")
+                self.payload_generator = PayloadGenerator(
+                    pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", multi_threaded, 0.25, 0.03
+                )
+                self.payload_generator.generate_payloads()
+                file.seek(0)
 
-            # no header added to data in test since that occurs in run / generate.py
-            df = pd.read_csv(file, engine="python", quotechar="|", header=None)
-            df.rename(
-                columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True
-            )
-            # check that pii_type column values match pii_types present in the request payload
-            payload_params = [
-                json.loads(r).keys() if r is not np.nan else {} for r in df["payload"]
-            ]
-            pii_types_per_payload = [
-                p.split(",") if p is not np.nan else [] for p in df["pii_types"]
-            ]
-            for params, pii_types in zip(payload_params, pii_types_per_payload):
-                for param in params:
-                    label_pii_tuple = region.get_pii(param)
-                    if label_pii_tuple:
-                        pii_label, _ = label_pii_tuple
-                        if pii_label:
-                            self.assertTrue(pii_label in pii_types)
-                        else:
-                            self.assertTrue(pii_label not in pii_types)
-            file.close()
+                # no header added to data in test since that occurs in run / generate.py
+                df = pd.read_csv(file, engine="python", quotechar="|", header=None)
+                df.rename(
+                    columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True
+                )
+                # check that pii_type column values match pii_types present in the request payload
+                payload_params = [
+                    json.loads(r).keys() if r is not np.nan else {} for r in df["payload"]
+                ]
+                pii_types_per_payload = [
+                    p.split(",") if p is not np.nan else [] for p in df["pii_types"]
+                ]
+                for params, pii_types in zip(payload_params, pii_types_per_payload):
+                    for param in params:
+                        label_pii_tuple = region.get_pii(param)
+                        if label_pii_tuple:
+                            pii_label, _ = label_pii_tuple
+                            if pii_label:
+                                self.assertTrue(pii_label in pii_types)
+                            else:
+                                self.assertTrue(pii_label not in pii_types)
+                file.close()
 
 
 if __name__ == "__main__":

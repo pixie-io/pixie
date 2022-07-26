@@ -22,6 +22,9 @@ from datetime import timedelta
 from copy import deepcopy
 import traceback
 import schemathesis
+from joblib import Parallel, delayed
+from tqdm_joblib import tqdm_joblib
+from tqdm import tqdm
 from alive_progress import alive_bar
 from schemathesis import DataGenerationMethod
 from hypothesis import (
@@ -39,7 +42,8 @@ warnings.filterwarnings("ignore")
 
 class PayloadGenerator:
 
-    def __init__(self, folder, csvwriter, generate_type, insert_pii_percentage, insert_label_pii_percentage):
+    def __init__(self, folder, csvwriter, generate_type, multi_threaded,
+                 insert_pii_percentage, insert_label_pii_percentage):
         self.folder = folder
         self.generate_type = generate_type
         self.logger = logging.getLogger("privy")
@@ -47,25 +51,37 @@ class PayloadGenerator:
         self.hook = SchemaHooks().schema_analyzer
         self.providers = self.hook.providers
         self.files = []
-        self.http_types = ["get", "head", "post", "put", "delete", "connect", "options", "trace", "patch"]
+        self.http_types = ["get", "head", "post", "put",
+                           "delete", "connect", "options", "trace", "patch"]
         self.insert_pii_percent = insert_pii_percentage
         self.insert_label_pii_percent = insert_label_pii_percentage
+        self.multi_threaded = multi_threaded
 
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
         num_files = sum(len(files) for _, _, files in os.walk(self.folder))
-        self.logger.info(f"Generating synthetic request payloads from {num_files} files in {self.folder}")
+        self.logger.info(
+            f"Generating synthetic request payloads from {num_files} files in {self.folder}")
         # Retrieve openapi descriptor files
         for dirpath, _, files in os.walk(self.folder):
-            descriptors = filter(lambda f: f in ["openapi.json", "swagger.json", "openapi.yaml", "swagger.yaml"], files)
+            descriptors = filter(lambda f: f in [
+                                 "openapi.json", "swagger.json", "openapi.yaml", "swagger.yaml"], files)
             for desc in descriptors:
                 file = pathlib.Path(dirpath) / desc
                 self.files.append(file)
-
-        with alive_bar(num_files) as progress_bar:
-            for file in self.files:
-                self.parse_openapi_descriptor(file)
-                progress_bar()
+        # multi-threaded
+        if self.multi_threaded:
+            with tqdm_joblib(tqdm(total=num_files, position=0, leave=True)) as progress_bar:
+                Parallel(n_jobs=10, prefer='threads')(
+                    delayed(self.parse_openapi_descriptor)(file) for file in self.files
+                )
+                progress_bar.update()
+        # single-threaded
+        else:
+            with alive_bar(num_files) as progress_bar:
+                for file in self.files:
+                    self.parse_openapi_descriptor(file)
+                    progress_bar()
 
     def parse_openapi_descriptor(self, file):
         self.logger.debug(f"Generating {file}...")
@@ -101,7 +117,8 @@ class PayloadGenerator:
                 percent = random.uniform(0, self.insert_label_pii_percent)
                 label_pii_tuples = self.providers.pick_random_region().sample_pii(percent)
                 for label, pii in label_pii_tuples:
-                    self.logger.debug(f"Inserting additional pii type: {label}")
+                    self.logger.debug(
+                        f"Inserting additional pii type: {label}")
                     case_attr[label] = pii
                     self.hook.add_pii_type(parameter_type, label)
         # randomize order of parameters

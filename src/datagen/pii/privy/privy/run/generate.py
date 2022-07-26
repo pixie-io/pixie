@@ -74,6 +74,15 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--multi-threaded",
+        "-m",
+        action="store_true",
+        required=False,
+        default=False,
+        help="Generate data multithreaded",
+    )
+
+    parser.add_argument(
         "--insert_pii_percentage",
         "-i",
         required=False,
@@ -93,7 +102,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate(api_specs_folder, output_csv, generate_type, insert_pii_percentage, insert_label_pii_percentage):
+def generate(api_specs_folder, output_csv, generate_type, multi_threaded,
+             insert_pii_percentage, insert_label_pii_percentage):
     """Generate dataset from OpenAPI descriptors"""
     pathlib.Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
     headers = ["payload", "has_pii", "pii_types"]
@@ -101,7 +111,8 @@ def generate(api_specs_folder, output_csv, generate_type, insert_pii_percentage,
         csvwriter = csv.writer(csvfile, quotechar="|")
         csvwriter.writerow(headers)
         request_payload_generator = PayloadGenerator(
-            api_specs_folder, csvwriter, generate_type, insert_pii_percentage, insert_label_pii_percentage)
+            api_specs_folder, csvwriter, generate_type, multi_threaded,
+            insert_pii_percentage, insert_label_pii_percentage)
         request_payload_generator.generate_payloads()
 
 
@@ -115,8 +126,7 @@ def main(args):
 
     # ------ Data Generation / Loading -------
     logger.info(f"Checking if openapi-directory exists in {args.api_specs}")
-    api_specs_folder = pathlib.Path(
-        args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
+    api_specs_folder = pathlib.Path(args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
     if not api_specs_folder.exists():
         logger.info("Not found. Downloading...")
         commit_hash = "ea4a924b870ca4f6d687809fa7891cccc0d19085"
@@ -127,7 +137,7 @@ def main(args):
         "data" / f"{args.generate.lower()}.csv"
     api_specs_folder = api_specs_folder / "APIs"
     generate(api_specs_folder, output_csv, args.generate.lower(),
-             args.insert_pii_percentage, args.insert_label_pii_percentage)
+             args.multi_threaded, args.insert_pii_percentage, args.insert_label_pii_percentage)
 
 
 if __name__ == "__main__":
