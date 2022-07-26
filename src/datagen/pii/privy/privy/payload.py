@@ -108,19 +108,19 @@ class PayloadGenerator:
                 self.hook.clear_pii_types(parameter_type)
             if random.randint(0, 1):
                 # sample just one pii label 50% of the time
-                label, pii = self.providers.pick_random_region().get_random_pii()
-                self.logger.debug(f"Inserting additional pii type: {label}")
+                label, pii, category = self.providers.pick_random_region().get_random_pii()
+                self.logger.debug(f"|Inserting additional pii type| {label} |with category| {category}")
                 case_attr[label] = pii
-                self.hook.add_pii_type(parameter_type, label)
+                self.hook.add_pii_type(parameter_type, label, category)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
                 percent = random.uniform(0, self.insert_label_pii_percent)
                 label_pii_tuples = self.providers.pick_random_region().sample_pii(percent)
-                for label, pii in label_pii_tuples:
+                for label, pii, category in label_pii_tuples:
                     self.logger.debug(
                         f"Inserting additional pii type: {label}")
                     case_attr[label] = pii
-                    self.hook.add_pii_type(parameter_type, label)
+                    self.hook.add_pii_type(parameter_type, label, category)
         # randomize order of parameters
         case_attr = list(case_attr.items())
         random.shuffle(case_attr)

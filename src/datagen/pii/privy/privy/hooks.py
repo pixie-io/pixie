@@ -80,6 +80,7 @@ class SchemaHooks:
         """Analyze an openapi schema and assign pii values to the corresponding parameter_name in the case_attr"""
 
         def __init__(self):
+            # store tuples of (pii_type, category)
             self.pii_types = {
                 ParamType.PATH: [],
                 ParamType.QUERY: [],
@@ -95,8 +96,8 @@ class SchemaHooks:
         def get_pii_types(self, parameter_type):
             return self.pii_types[parameter_type]
 
-        def add_pii_type(self, parameter_type, pii_type):
-            self.pii_types[parameter_type].append(pii_type)
+        def add_pii_type(self, parameter_type, pii_type, category):
+            self.pii_types[parameter_type].append((pii_type, category))
 
         def clear_pii_types(self, parameter_type):
             self.pii_types[parameter_type].clear()
@@ -198,13 +199,13 @@ class SchemaHooks:
             for region in self.providers.get_regions():
                 label_pii_tuple = region.get_pii(keyword)
                 if label_pii_tuple:
-                    label, pii = label_pii_tuple
+                    label, pii, category = label_pii_tuple
                     self.logger.debug(
-                        f"{parameter_name} |matched this pii provider| {label}"
+                        f"{parameter_name} |matched this pii provider| {label} |and this category| {category}"
                     )
                     # assign generated pii value to this parameter
                     case_attr[parameter_name] = pii
-                    self.add_pii_type(parameter_type, label)
+                    self.add_pii_type(parameter_type, label, category)
                     return (label, pii)
 
         def lookup_nonpii_provider(self, keyword, parameter_name, case_attr):

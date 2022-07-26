@@ -33,5 +33,9 @@ class PayloadRoute:
             return
         converter, kwargs = self.conversions.get(self.generate_type, None)
         payload = converter(payload, **kwargs)
-        payload = [payload, str(int(has_pii)), ",".join(set(pii_types))]
+        if pii_types:
+            pii_types, categories = zip(*pii_types)
+        else:
+            pii_types, categories = [], []
+        payload = [payload, str(int(has_pii)), ",".join(set(pii_types)), ",".join(set(categories))]
         self.csvwriter.writerow(payload)

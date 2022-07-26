@@ -61,7 +61,7 @@ class TestPayloadGenerator(unittest.TestCase):
                     for param in params:
                         label_pii_tuple = region.get_pii(param)
                         if label_pii_tuple:
-                            pii_label, _ = label_pii_tuple
+                            pii_label, _, _ = label_pii_tuple
                             if pii_label:
                                 self.assertTrue(pii_label in pii_types)
                             else:

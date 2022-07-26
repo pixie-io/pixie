@@ -106,7 +106,7 @@ def generate(api_specs_folder, output_csv, generate_type, multi_threaded,
              insert_pii_percentage, insert_label_pii_percentage):
     """Generate dataset from OpenAPI descriptors"""
     pathlib.Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
-    headers = ["payload", "has_pii", "pii_types"]
+    headers = ["payload", "has_pii", "pii_types", "categories"]
     with open(output_csv, "w") as csvfile:
         csvwriter = csv.writer(csvfile, quotechar="|")
         csvwriter.writerow(headers)
