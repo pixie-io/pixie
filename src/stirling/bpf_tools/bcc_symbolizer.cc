@@ -40,7 +40,7 @@ void* BCCSymbolizer::GetBCCSymbolCache(const int pid) {
   return iter->second;
 }
 
-std::string_view BCCSymbolizer::SymbolOrAddrIfUnknown(const uintptr_t addr, const int pid) {
+std::string_view BCCSymbolizer::SymbolOrAddrIfUnknown(const int pid, const uintptr_t addr) {
   DCHECK(pid >= 0 || pid == -1);
 
   void* bcc_symbol_cache = GetBCCSymbolCache(pid);

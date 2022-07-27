@@ -43,9 +43,9 @@ TEST(BCCSymbolizer, SymbolOrAddrIfUnknown) {
 
   const pid_t pid = getpid();
 
-  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(kFooAddr, pid), "test::Foo()");
-  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(kBarAddr, pid), "test::Bar()");
-  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(123, pid), "0x000000000000007b");
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(pid, kFooAddr), "test::Foo()");
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(pid, kBarAddr), "test::Bar()");
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(pid, 123), "0x000000000000007b");
 }
 
 TEST(BCCSymbolizer, KernelSymbol) {
@@ -53,8 +53,8 @@ TEST(BCCSymbolizer, KernelSymbol) {
   ASSERT_OK_AND_ASSIGN(uint64_t sym_addr, GetKernelSymAddr(kSymbolName));
 
   BCCSymbolizer symbolizer;
-  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(sym_addr, BCCSymbolizer::kKernelPID), kSymbolName);
-  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(0, BCCSymbolizer::kKernelPID), "0x0000000000000000");
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(BCCSymbolizer::kKernelPID, sym_addr), kSymbolName);
+  EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(BCCSymbolizer::kKernelPID, 0), "0x0000000000000000");
 }
 
 TEST(BCCSymbolizer, ModuleName) {
@@ -67,7 +67,7 @@ TEST(BCCSymbolizer, ModuleName) {
 
   for (const auto& entry : smaps) {
     if (entry.pathname == "[vdso]") {
-      const std::string_view symbol = symbolizer.SymbolOrAddrIfUnknown(entry.vmem_start, pid);
+      const std::string_view symbol = symbolizer.SymbolOrAddrIfUnknown(pid, entry.vmem_start);
       EXPECT_EQ(symbol, "[m] [vdso] + 0x00000000");
     }
   }

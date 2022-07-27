@@ -39,14 +39,9 @@ void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
   bcc_symbolizer_.ReleasePIDSymCache(upid.pid);
 }
 
-std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
-  static std::string symbol;
-  symbol = bcc_symbolizer_.SymbolOrAddrIfUnknown(addr, pid);
-  return symbol;
-}
-
 profiler::SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
-  auto fn = absl::bind_front(&BCCSymbolizer::Symbolize, this, static_cast<int32_t>(upid.pid));
+  auto fn = absl::bind_front(&bpf_tools::BCCSymbolizer::SymbolOrAddrIfUnknown, &bcc_symbolizer_,
+                             static_cast<int32_t>(upid.pid));
   return fn;
 }
 

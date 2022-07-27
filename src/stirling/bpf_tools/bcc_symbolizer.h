@@ -49,7 +49,7 @@ class BCCSymbolizer {
   /**
    * Like Symbol(), but if the symbol is not resolved, returns a string of the address.
    */
-  std::string_view SymbolOrAddrIfUnknown(uintptr_t addr, int pid);
+  std::string_view SymbolOrAddrIfUnknown(int pid, uintptr_t addr);
 
   /**
    * Release any cached resources, such as loaded symbol tables, for the given PID.
