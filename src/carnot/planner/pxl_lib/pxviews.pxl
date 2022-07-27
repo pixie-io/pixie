@@ -431,4 +431,52 @@ def inbound_http_latency_timeseries(start_time, end_time, window_ns):
 
     return df[['time_', 'pod_id', 'latency_quantiles', 'num_requests', 'num_errors', 'latency_sum', 'req_bytes', 'resp_bytes']]
 
+
+def stacktraces(start_time, end_time):
+    ''' Compute the stacktraces for the entire cluster.
+
+    Returns the stacktraces for the cluster, labelled with pod, container, cmdline, and
+    function stack names.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='stack_traces.beta', start_time=start_time, end_time=end_time)
+
+    df.namespace = df.ctx['namespace']
+    df.pod = df.ctx['pod']
+    df.container = df.ctx['container']
+    df.cmdline = df.ctx['cmdline']
+    df.service = df.ctx['service']
+
+    # Compute node using _exec_hostname() instead of `df.ctx['node']`
+    # We do this so it works for non-k8s processes too.
+    # This is important for determining total number of stack trace samples per node,
+    # as we need to include the non-K8s processes in the computation.
+    df.node = px.Node(px._exec_hostname())
+    df.node_num_cpus = px._exec_host_num_cpus()
+
+    # Combine flamegraphs from different intervals into one larger framegraph.
+    df = df.groupby(['node', 'namespace', 'service', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
+        stack_trace=('stack_trace', px.any),
+        count=('count', px.sum),
+        time_=('time_', px.max),
+        node_num_cpus=('node_num_cpus', px.any),
+    )
+
+    return df[[
+        'namespace',
+        'node',
+        'service',
+        'pod',
+        'container',
+        'cmdline',
+        'stack_trace',
+        'time_',
+        'stack_trace_id',
+        'count',
+        'node_num_cpus',
+     ]]
+
 )"
