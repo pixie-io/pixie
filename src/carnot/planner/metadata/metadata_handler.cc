@@ -56,6 +56,10 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
   handler->AddObject<NameMetadataProperty>(MetadataType::NAMESPACE, {},
                                            {MetadataType::UPID, MetadataType::POD_ID,
                                             MetadataType::POD_NAME, MetadataType::SERVICE_NAME});
+  handler->AddObject<NameMetadataProperty>(
+      MetadataType::REPLICA_SET, {},
+      {MetadataType::UPID, MetadataType::POD_ID, MetadataType::POD_NAME, MetadataType::SERVICE_NAME,
+       MetadataType::DEPLOYMENT_NAME});
   handler->AddObject<NameMetadataProperty>(MetadataType::NODE_NAME, {"node"},
                                            {MetadataType::UPID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::HOSTNAME, {"host"}, {MetadataType::UPID});

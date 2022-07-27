@@ -188,6 +188,74 @@ start_timestamp_ns: 7
 pod_ids: "1_uid"
 )";
 
+/*
+ * Templates for replica set updates.
+ */
+const char* kRunningReplicaSetUpdatePbTxt = R"(
+uid: "rs0_uid"
+name: "rs0"
+start_timestamp_ns: 101
+stop_timestamp_ns: 0
+namespace: "pl"
+replicas: 5
+fully_labeled_replicas: 5
+ready_replicas: 3
+available_replicas: 3
+observed_generation: 5
+conditions: {
+  type: "ready"
+  status: 1
+}
+owner_references: {
+  kind: "Deployment"
+  name: "deployment1"
+  uid: "deployment_uid"
+}
+)";
+
+const char* kTerminatingReplicaSetUpdatePbTxt = R"(
+uid: "terminating_rs0_uid"
+name: "terminating_rs"
+namespace: "pl"
+replicas: 0
+fully_labeled_replicas: 0
+ready_replicas: 0
+available_replicas: 0
+observed_generation: 5
+start_timestamp_ns: 101
+conditions: {
+  type: "Terminating"
+  status: 1
+}
+owner_references: {
+  kind: "Deployment"
+  name: "deployment1"
+  uid: "deployment_uid"
+}
+)";
+
+const char* kTerminatedReplicaSetUpdatePbTxt = R"(
+uid: "terminating_rs0_uid"
+name: "terminating_rs"
+namespace: "pl"
+start_timestamp_ns: 101
+stop_timestamp_ns: 150
+replicas: 0
+fully_labeled_replicas: 0
+ready_replicas: 0
+available_replicas: 0
+observed_generation: 5
+conditions: {
+  type: "Terminating"
+  status: 1
+}
+owner_references: {
+  kind: "Deployment"
+  name: "deployment1"
+  uid: "deployment_uid"
+}
+)";
+
 std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
@@ -281,6 +349,33 @@ std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateServiceWithSa
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kServiceWithDuplicatePodUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningReplicaSetUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "replica_set_update", kRunningReplicaSetUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingReplicaSetUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto = absl::Substitute(kResourceUpdateTmpl, "replica_set_update",
+                                       kTerminatingReplicaSetUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedReplicaSetUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "replica_set_update", kTerminatedReplicaSetUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

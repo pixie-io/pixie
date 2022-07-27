@@ -71,6 +71,19 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("service_id_to_service_name");
   registry->RegisterOrDie<ServiceNameToServiceIDUDF>("service_name_to_service_id");
   registry->RegisterOrDie<ServiceNameToNamespaceUDF>("service_name_to_namespace");
+  registry->RegisterOrDie<ReplicaSetIDToReplicaSetNameUDF>("replica_set_id_to_replica_set_name");
+  registry->RegisterOrDie<ReplicaSetIDToStartTimeUDF>("replica_set_id_to_start_time");
+  registry->RegisterOrDie<ReplicaSetIDToStopTimeUDF>("replica_set_id_to_stop_time");
+  registry->RegisterOrDie<ReplicaSetIDToNamespaceUDF>("replica_set_id_to_namespace");
+  registry->RegisterOrDie<ReplicaSetIDToOwnerReferencesUDF>("replica_set_id_to_owner_references");
+  registry->RegisterOrDie<ReplicaSetIDToStatusUDF>("replica_set_id_to_status");
+  registry->RegisterOrDie<ReplicaSetNameToReplicaSetIDUDF>("replica_set_name_to_replica_set_id");
+  registry->RegisterOrDie<ReplicaSetNameToStartTimeUDF>("replica_set_name_to_start_time");
+  registry->RegisterOrDie<ReplicaSetNameToStopTimeUDF>("replica_set_name_to_stop_time");
+  registry->RegisterOrDie<ReplicaSetNameToNamespaceUDF>("replica_set_name_to_namespace");
+  registry->RegisterOrDie<ReplicaSetNameToOwnerReferencesUDF>(
+      "replica_set_name_to_owner_references");
+  registry->RegisterOrDie<ReplicaSetNameToStatusUDF>("replica_set_name_to_status");
   registry->RegisterOrDie<UPIDToASIDUDF>("upid_to_asid");
   registry->RegisterOrDie<UPIDToContainerIDUDF>("upid_to_container_id");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("upid_to_cmdline");
@@ -85,6 +98,9 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<UPIDToPodStatusUDF>("upid_to_pod_status");
   registry->RegisterOrDie<UPIDToServiceNameUDF>("upid_to_service_name");
   registry->RegisterOrDie<UPIDToServiceIDUDF>("upid_to_service_id");
+  registry->RegisterOrDie<UPIDToReplicaSetNameUDF>("upid_to_replica_set");
+  registry->RegisterOrDie<UPIDToReplicaSetNameUDF>("upid_to_replica_set_name");
+  registry->RegisterOrDie<UPIDToReplicaSetIDUDF>("upid_to_replica_set_id");
   registry->RegisterOrDie<UPIDToStringUDF>("upid_to_string");
   registry->RegisterOrDie<HostnameUDF>("_exec_hostname");
   registry->RegisterOrDie<HostNumCPUsUDF>("_exec_host_num_cpus");
