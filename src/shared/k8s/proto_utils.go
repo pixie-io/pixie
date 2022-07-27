@@ -19,10 +19,13 @@
 package k8s
 
 import (
+	"fmt"
+
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 )
@@ -699,5 +702,118 @@ func PodTemplateSpecToProto(ts v1.PodTemplateSpec) *metadatapb.PodTemplateSpec {
 	return &metadatapb.PodTemplateSpec{
 		Metadata: ObjectMetadataToProto(&ts.ObjectMeta),
 		Spec:     PodSpecToProto(&ts.Spec),
+	}
+}
+
+// IntOrStringToString converts intstr object to string
+func IntOrStringToString(v *intstr.IntOrString) string {
+	switch v.Type {
+	case 0:
+		return fmt.Sprint(v.IntVal)
+	default:
+		return v.StrVal
+	}
+}
+
+// DeploymentSpecToProto converts apps deployment spec to proto
+func DeploymentSpecToProto(d *apps.DeploymentSpec) *metadatapb.DeploymentSpec {
+	var sType metadatapb.DeploymentStrategyType
+	switch d.Strategy.Type {
+	case "Recreate":
+		sType = metadatapb.DEPLOYMENT_STRATEGY_RECREATE
+	case "RollingUpdate":
+		sType = metadatapb.DEPLOYMENT_STRATEGY_ROLLING_UPDATE
+	default:
+		sType = metadatapb.DEPLOYMENT_STRATEGY_UNKNOWN
+	}
+
+	var rollingUpdate *metadatapb.RollingUpdateDeployment
+	if d.Strategy.Type == "RollingUpdate" {
+		rollingUpdate = &metadatapb.RollingUpdateDeployment{
+			MaxUnavailable: IntOrStringToString(d.Strategy.RollingUpdate.MaxUnavailable),
+			MaxSurge:       IntOrStringToString(d.Strategy.RollingUpdate.MaxSurge),
+		}
+	}
+
+	var replicas, revisionHistoryLimit, progressDeadlineSeconds int32
+	if d.Replicas != nil {
+		replicas = *d.Replicas
+	}
+	if d.RevisionHistoryLimit != nil {
+		revisionHistoryLimit = *d.RevisionHistoryLimit
+	}
+	if d.ProgressDeadlineSeconds != nil {
+		progressDeadlineSeconds = *d.ProgressDeadlineSeconds
+	}
+
+	return &metadatapb.DeploymentSpec{
+		Replicas: replicas,
+		Selector: LabelSelectorToProto(d.Selector),
+		Template: PodTemplateSpecToProto(d.Template),
+		Strategy: &metadatapb.DeploymentStrategy{
+			Type:          sType,
+			RollingUpdate: rollingUpdate,
+		},
+		MinReadySeconds:         d.MinReadySeconds,
+		RevisionHistoryLimit:    revisionHistoryLimit,
+		Paused:                  d.Paused,
+		ProgressDeadlineSeconds: progressDeadlineSeconds,
+	}
+}
+
+// DeploymentConditionToProto converts apps DeploymentCondition to proto
+func DeploymentConditionToProto(d *apps.DeploymentCondition) *metadatapb.DeploymentCondition {
+	var dType metadatapb.DeploymentConditionType
+	switch d.Type {
+	case "Available":
+		dType = metadatapb.DEPLOYMENT_CONDITION_AVAILABLE
+	case "Progressing":
+		dType = metadatapb.DEPLOYMENT_CONDITION_PROGRESSING
+	case "ReplicaFailure":
+		dType = metadatapb.DEPLOYMENT_CONDITION_REPLICA_FAILURE
+	default:
+		dType = metadatapb.DEPLOYMENT_CONDITION_TYPE_UNKNOWN
+	}
+
+	return &metadatapb.DeploymentCondition{
+		Type:                 dType,
+		Status:               conditionStatusObjToPbMap[d.Status],
+		LastUpdateTimeNS:     d.LastUpdateTime.UnixNano(),
+		LastTransitionTimeNS: d.LastTransitionTime.UnixNano(),
+		Reason:               d.Reason,
+		Message:              d.Message,
+	}
+}
+
+// DeploymentStatusToProto converts apps.DeploymentStatus to proto
+func DeploymentStatusToProto(d *apps.DeploymentStatus) *metadatapb.DeploymentStatus {
+	var conditions []*metadatapb.DeploymentCondition
+	for _, c := range d.Conditions {
+		conditions = append(conditions, DeploymentConditionToProto(&c))
+	}
+
+	var collisionCount int32
+	if d.CollisionCount != nil {
+		collisionCount = *d.CollisionCount
+	}
+
+	return &metadatapb.DeploymentStatus{
+		ObservedGeneration:  d.ObservedGeneration,
+		Replicas:            d.Replicas,
+		UpdatedReplicas:     d.UpdatedReplicas,
+		ReadyReplicas:       d.ReadyReplicas,
+		AvailableReplicas:   d.AvailableReplicas,
+		UnavailableReplicas: d.UnavailableReplicas,
+		Conditions:          conditions,
+		CollisionCount:      collisionCount,
+	}
+}
+
+// DeploymentToProto converts apps.Deployment to proto
+func DeploymentToProto(d *apps.Deployment) *metadatapb.Deployment {
+	return &metadatapb.Deployment{
+		Metadata: ObjectMetadataToProto(&d.ObjectMeta),
+		Spec:     DeploymentSpecToProto(&d.Spec),
+		Status:   DeploymentStatusToProto(&d.Status),
 	}
 }
