@@ -36,6 +36,7 @@
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
 #define LOOP_LIMIT 43
+#define PROTOCOL_VEC_LIMIT 3
 
 const int32_t kInvalidFD = -1;
 
@@ -729,10 +730,19 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
       update_traffic_class(conn_info, direction, args->buf, bytes_count);
     } else {
       struct iovec iov_cpy;
-      BPF_PROBE_READ_VAR(iov_cpy, &args->iov[0]);
-      // Ensure we are not reading beyond the available data.
-      const size_t buf_size = min_size_t(iov_cpy.iov_len, bytes_count);
-      update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
+      size_t buf_size = 0;
+      // With vectorized buffers, there can be empty elements sent.
+      // For protocol inference, it requires a non empty buffer to get the real data
+
+#pragma unroll
+      for (size_t i = 0; i < PROTOCOL_VEC_LIMIT && i < args->iovlen; i++) {
+        BPF_PROBE_READ_VAR(iov_cpy, &args->iov[i]);
+        buf_size = min_size_t(iov_cpy.iov_len, bytes_count);
+        if (buf_size != 0) {
+          update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
+          break;
+        }
+      }
     }
 
     if (should_send_data(tgid, conn_disabled_tsid, force_trace_tgid, conn_info)) {
