@@ -479,4 +479,63 @@ def stacktraces(start_time, end_time):
         'node_num_cpus',
      ]]
 
+
+def connection_throughput_stats(start_time, end_time):
+    ''' Compute the throughput of all network connections inside each pod ofthe cluster.
+
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='conn_stats', start_time=start_time, end_time=end_time)
+
+    df.pod_id = df.ctx['pod_id']
+
+    # Find min/max bytes transferred over the selected time window per pod.
+    # Each connection is identified by the tuple: (upid, remote_addr, and remote_port, ssl, protocol).
+    df = df.groupby(['upid', 'pod_id', 'trace_role', 'remote_addr', 'remote_port', 'ssl', 'protocol']).agg(
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+        time_max=('time_', px.max),
+        time_min=('time_', px.min),
+    )
+    # Calculate bytes transferred over the time window
+    df.bytes_sent = df.bytes_sent_max - df.bytes_sent_min
+    df.bytes_recv = df.bytes_recv_max - df.bytes_recv_min
+
+    df = df.groupby(['pod_id', 'trace_role', 'remote_addr']).agg(
+        bytes_recv=('bytes_recv', px.sum),
+        bytes_sent=('bytes_sent', px.sum),
+        time_max=('time_max', px.max),
+    )
+
+    # Get RX/TX stats for the server side connections.
+    server_df = df[df.trace_role == 2]
+    server_df.rx_server = server_df.bytes_recv
+    server_df.tx_server = server_df.bytes_sent
+    server_df = server_df[['time_max', 'pod_id', 'rx_server', 'tx_server', 'remote_addr']]
+
+    # Get RX/TX stats for the client side connections.
+    client_df = df[df.trace_role == 1]
+    client_df.rx_client = client_df.bytes_recv
+    client_df.tx_client = client_df.bytes_sent
+    client_df = client_df[['time_max', 'pod_id', 'rx_client', 'tx_client', 'remote_addr']]
+
+    # Create a dataframe that contains both server-side and client-side RX/TX stats.
+    df = server_df.merge(client_df,
+                         how='outer',
+                         left_on=['pod_id', 'remote_addr'],
+                         right_on=['pod_id', 'remote_addr'],
+                         suffixes=['', '_x'])
+
+    df.time_ = px.select(px.greaterThanEqual(df.time_max, df.time_max_x),  df.time_max, df.time_max_x)
+    df.pod_id = px.select(df.pod_id != '',  df.pod_id, df.pod_id_x)
+    df.remote_addr = px.select(df.remote_addr != '',  df.remote_addr, df.remote_addr_x)
+
+    df.inbound_conn_throughput = df.rx_server + df.tx_server
+    df.outbound_conn_throughput = df.tx_client + df.rx_client
+
+    return df[['time_', 'remote_addr', 'pod_id', 'inbound_conn_throughput', 'outbound_conn_throughput']]
+
 )"
