@@ -21,6 +21,7 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,6 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -537,6 +539,27 @@ func (m *VizierMonitor) statusAggregator(nodeStateCh, pvcStateCh <-chan *vizierS
 	}
 }
 
+func (m *VizierMonitor) repairVizier(state *vizierState) error {
+	// Input validation: Return if the pod to repair hasn't failed
+	if state.Reason == "" {
+		err := errors.New("Trying to repair a pod that hasn't failed")
+		log.WithError(err)
+		return err
+	}
+
+	// Delete pod if nats pod failed
+	if state.Reason == status.NATSPodFailed {
+		err := m.clientset.CoreV1().Pods(m.namespace).Delete(m.ctx, natsPodName, metav1.DeleteOptions{})
+		if err != nil {
+			log.WithError(err).Error("Failed to delete pod")
+			return err
+		}
+		log.Info("Pod was successfully deleted")
+	}
+
+	return nil
+}
+
 // runReconciler periodically evaluates the state of the Vizier Cluster and sends the state as an update.
 func (m *VizierMonitor) runReconciler() {
 	t := time.NewTicker(statuszCheckInterval)
@@ -554,9 +577,16 @@ func (m *VizierMonitor) runReconciler() {
 			}
 
 			vizierState := m.getVizierState(vz)
-
 			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
 			vz.Status.VizierReason = string(vizierState.Reason)
+
+			if vizierState != okState() {
+				err := m.repairVizier(vizierState)
+				if err != nil {
+					return
+				}
+			}
+
 			vz.Status.Message = status.GetMessageFromReason(vizierState.Reason)
 			// Default to the VizierReason if the message is empty.
 			if vz.Status.Message == "" {
