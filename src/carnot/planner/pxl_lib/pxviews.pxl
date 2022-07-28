@@ -538,4 +538,30 @@ def connection_throughput_stats(start_time, end_time):
 
     return df[['time_', 'remote_addr', 'pod_id', 'inbound_conn_throughput', 'outbound_conn_throughput']]
 
+
+def processes(start_time, end_time):
+    ''' Collects all of the processes running on the cluster inside containers.
+
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    df.pod_id = df.ctx['pod_id']
+    df.container_name = df.ctx['container_name']
+    df.container_id = df.ctx['container_id']
+    df.cmdline = df.ctx['cmdline']
+    df.pid = df.ctx['pid']
+
+    df = df.groupby(['upid', 'pod_id', 'container_name', 'container_id', 'cmdline', 'pid']).agg(
+        time_=('time_', px.max),
+    )
+    df.pod = px.pod_id_to_pod_name(df.pod_id)
+    df.service = px.pod_id_to_service_name(df.pod_id)
+    df.namespace = px.pod_id_to_namespace(df.pod_id)
+    df.node = px.pod_id_to_node_name(df.pod_id)
+    df.container_status = px.container_id_to_status(df.container_id)
+
+    return df[['time_', 'service', 'namespace', 'node', 'upid', 'pod_id', 'pod',
+               'container_name', 'container_id', 'cmdline', 'pid', 'container_status']]
+
 )"
