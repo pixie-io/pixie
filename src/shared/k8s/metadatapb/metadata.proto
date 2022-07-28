@@ -850,6 +850,28 @@ message RollingUpdateDeployment {
   string max_surge = 2;
 }
 
+// DeploymentUpdate is the update that is sent to the agents when there are any deployment changes.
+// This should contain information important for our agents to know.
+message DeploymentUpdate {
+  // UID is the unique ID of this deployment in both space and time.
+  string uid = 1 [(gogoproto.customname) = "UID"];
+  // Name of the deployment, unique in space, but not time.
+  string name = 2;
+  // The unix time in nanoseconds when the this deployment was created.
+  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  // The unix time in nanoseconds when the this deployment was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  // Namespace of this deployment
+  string namespace = 5;
+  int32 observed_generation = 6;
+  int32 replicas = 7;
+  int32 updated_replicas = 8;
+  int32 ready_replicas = 9;
+  int32 available_replicas = 10;
+  int32 unavailable_replicas = 11;
+  repeated DeploymentCondition conditions = 12;
+}
+
 // Resource update is the message we send to the agent/compute nodes
 // from the metadata service (MDS).
 // These updates can contain cross references to other objects (ie. pods can refer to containers).
@@ -863,6 +885,7 @@ message ResourceUpdate {
     NamespaceUpdate namespace_update = 6;
     NodeUpdate node_update = 7;
     ReplicaSetUpdate replica_set_update = 10;
+    DeploymentUpdate deployment_update = 11;
   }
   int64 update_version = 8;
   int64 prev_update_version = 9;
