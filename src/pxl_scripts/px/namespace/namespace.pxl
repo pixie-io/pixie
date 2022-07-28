@@ -145,7 +145,6 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     df.remote_service = px.select(df.is_remote_addr_localhost,
                                   'localhost:' + df.traced_service,
                                   px.service_id_to_service_name(px.ip_to_service_id(df.remote_addr)))
-    df.drop(['is_remote_addr_localhost'])
 
     df.remote_ip = df.remote_addr
     # If external IPs are excluded in the service graph, then we also exclude any

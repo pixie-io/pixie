@@ -65,8 +65,6 @@ def net_flow_graph(start_time: str, ns: px.Namespace, from_entity_filter: str,
                              'localhost:' + df.pod,
                              px.nslookup(df.remote_addr))
 
-    df = df.drop(['is_remote_addr_localhost'])
-
     # Filter out entities as specified by the user.
     df = df[px.contains(df.from_entity, from_entity_filter)]
     df = df[px.contains(df.to_entity, to_entity_filter)]
