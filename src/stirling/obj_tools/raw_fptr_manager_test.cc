@@ -84,12 +84,7 @@ TEST(RawFptrManager, OpenDynamicLibraryAndGetFunctionPointers) {
   std::filesystem::path so_path =
       px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/c/library.so");
 
-  const system::Config& sysconfig = system::Config::GetInstance();
-  system::ProcParser proc_parser(sysconfig);
-
-  ASSERT_OK_AND_ASSIGN(auto reader, ElfReader::Create(so_path));
-  auto fptr_manager =
-      std::make_unique<obj_tools::RawFptrManager>(reader.get(), &proc_parser, so_path);
+  auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(so_path);
   ASSERT_OK(fptr_manager->Init());
 
   // Test a symbol from the .dynsym table.

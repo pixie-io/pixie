@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
-#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
 namespace px {
@@ -32,8 +32,7 @@ namespace obj_tools {
 // provided the symbols are not stripped.
 class RawFptrManager : NotCopyMoveable {
  public:
-  RawFptrManager(obj_tools::ElfReader* elf_reader, ::px::system::ProcParser* proc_parser,
-                 std::string lib_path);
+  explicit RawFptrManager(std::string lib_path);
 
   ~RawFptrManager();
 
@@ -49,12 +48,10 @@ class RawFptrManager : NotCopyMoveable {
  private:
   StatusOr<void*> RawSymbolToFptrImpl(const std::string& symbol_name);
 
-  obj_tools::ElfReader* elf_reader_;
-  ::px::system::ProcParser* proc_parser_;
-  uint64_t text_segment_offset_;
-  void* dlopen_handle_;
   std::string lib_path_;
-  ::px::system::ProcParser::ProcessSMaps map_entry_;
+  std::unique_ptr<obj_tools::ElfReader> elf_reader_;
+  void* dlopen_handle_ = nullptr;
+  uint64_t dl_vmem_start_ = 0;
 };
 
 }  // namespace obj_tools

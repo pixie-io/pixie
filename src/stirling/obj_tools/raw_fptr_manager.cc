@@ -19,8 +19,10 @@
 #include "src/stirling/obj_tools/raw_fptr_manager.h"
 
 #include <dlfcn.h>
+#include <link.h>
 
 #include <string>
+#include <utility>
 
 #include "src/stirling/obj_tools/elf_reader.h"
 
@@ -30,38 +32,35 @@ namespace px {
 namespace stirling {
 namespace obj_tools {
 
-RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_parser,
-                               std::string lib_path)
-    : elf_reader_(elf_reader),
-      proc_parser_(proc_parser),
-      dlopen_handle_(nullptr),
-      lib_path_(lib_path) {}
+RawFptrManager::RawFptrManager(std::string lib_path) : lib_path_(std::move(lib_path)) {}
 
 Status RawFptrManager::Init() {
+  PL_ASSIGN_OR_RETURN(elf_reader_, ElfReader::Create(lib_path_));
+
   dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
   if (dlopen_handle_ == nullptr) {
     return error::Internal("Failed to dlopen so file: $0, $1", lib_path_, dlerror());
   }
 
-  PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
-  auto pid = getpid();
+  struct link_map* dl_link_map = nullptr;
+  int retval = dlinfo(dlopen_handle_, RTLD_DI_LINKMAP, &dl_link_map);
 
-  // The dlopen pointer will store the address of the shared library's virtual memory location.
-  // This is dependent on the implementation details of the dl library and was discovered
-  // from the following forum post
-  // https://www.linuxquestions.org/questions/programming-9/getting-base-address-of-dynamic-library-256670/#post4189790
-  // It's crucial to find the correct /prod/<pid>/maps entry otherwise we cannot guarantee that
-  // it will still be mapped when the function is later invoked. In practice, this appears to happen
-  // because the openssl_trace_bpf_tests segfault without this additional verification.
-  auto vmem_start = text_segment_offset_ + (uint64_t) * (size_t const*)dlopen_handle_;
-  auto entry = proc_parser_->GetExecutableMapEntry(pid, lib_path_, vmem_start);
-  if (!entry.ok()) {
-    return error::NotFound(
-        "Failed to find map entry for pid: $0 and path: $1 vmem start: $2 and segment offset: $3",
-        pid, lib_path_, absl::Hex(vmem_start), absl::Hex(text_segment_offset_));
+  if (retval != 0) {
+    return error::Internal("dlinfo() failed to return info [dlerror=$0].", dlerror());
   }
 
-  map_entry_ = entry.ValueOrDie();
+  if (dl_link_map == nullptr) {
+    return error::Internal("dlinfo() returned nullptr.");
+  }
+
+  // The link_map is a linked list, but the last element, and the one that is returned by dinfo()
+  // should be the library that we just loaded.
+  // Because containerized environments can interfere with the paths, just check the filenames.
+  DCHECK_EQ(std::filesystem::path(dl_link_map->l_name).filename(),
+            std::filesystem::path(lib_path_).filename());
+
+  dl_vmem_start_ = dl_link_map->l_addr;
+
   return Status::OK();
 }
 
@@ -71,7 +70,7 @@ StatusOr<void*> RawFptrManager::RawSymbolToFptrImpl(const std::string& symbol_na
     return error::NotFound("Could not find symbol '$0'", symbol_name);
   }
 
-  uint64_t fptr_addr = sym_addr - text_segment_offset_ + map_entry_.vmem_start;
+  uint64_t fptr_addr = sym_addr + dl_vmem_start_;
   return reinterpret_cast<void*>(fptr_addr);
 }
 

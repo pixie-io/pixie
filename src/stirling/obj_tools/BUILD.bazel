@@ -132,9 +132,6 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata/c:library",
     ],
-    # Disable the test for now. It doesn't pass on Jenkins due to the containerized environment.
-    # A future planned version will not be subject to the same restriction.
-    tags = ["manual"],
     deps = [
         ":cc_library",
     ],
