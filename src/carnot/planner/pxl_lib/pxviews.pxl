@@ -152,24 +152,23 @@ def inbound_http_summary(start_time, end_time):
     df = df[df.trace_role == 2]
 
     df = df.groupby(['pod_id', 'remote_addr']).agg(
-        latency=('latency', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         num_requests=('time_', px.count),
         stop_time=('time_', px.max),
         num_errors=('failure', px.sum),
 
-        # TODO(philkuz) calculate this from the conn_stats table.
-        inbound_bytes=('req_body_size', px.sum),
-        outbound_bytes=('resp_body_size', px.sum)
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum)
     )
 
-    df.requesting_ip = df.remote_addr
-    df.requesting_pod_id = px.ip_to_pod_id(df.remote_addr)
-    df.requesting_pod = px.pod_id_to_pod_name(df.requesting_pod_id)
-    df.requesting_svc = px.pod_id_to_service_name(df.requesting_pod_id)
+    df.requestor_ip = df.remote_addr
+    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
+    df.requestor_pod = px.pod_id_to_pod_name(df.requestor_pod_id)
+    df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
     df.time_ = df.stop_time
 
-    return df[['time_', 'pod_id', 'requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
-                         'num_errors', 'num_requests', 'inbound_bytes', 'outbound_bytes']]
+    return df[['time_', 'pod_id', 'requestor_ip', 'requestor_pod', 'requestor_service', 'latency_quantiles',
+               'num_errors', 'num_requests', 'req_bytes', 'resp_bytes']]
 
 
 def http_graph(start_time, end_time):
@@ -190,13 +189,13 @@ def http_graph(start_time, end_time):
                      include_unresolved_inbound=False)
     df.pod_id = df.ctx['pod_id']
     df = df.groupby(['pod_id', 'remote_addr', 'trace_role']).agg(
-        latency=('latency', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
         total_request_count=('latency', px.count)
         num_requests=('time_', px.count),
         stop_time=('time_', px.max),
         num_errors=('failure', px.sum),
-        inbound_bytes=('req_body_size', px.sum),
-        outbound_bytes=('resp_body_size', px.sum)
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum)
     )
 
     df.traced_pod = df.ctx['pod']
@@ -225,9 +224,9 @@ def http_graph(start_time, end_time):
     df.responder_service = px.select(df.is_server_side_tracing, df.traced_service, df.remote_service)
     df.requestor_service = px.select(df.is_server_side_tracing, df.remote_service, df.traced_service)
 
-    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p50')))
-    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p90')))
-    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p99')))
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
 
     df = df.groupby([
         'responder_pod',
@@ -238,22 +237,23 @@ def http_graph(start_time, end_time):
         'requestor_service'
     ]).agg(
         # TODO(philkuz) build a combine_quantiles udf that does this properly.
-        # latency=('latency', px.combine_quantiles),
+        # latency_quantiles=('latency_quantiles', px.combine_quantiles),
+        latency_quantiles=('latency_quantiles', px.any),
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
         num_requests=('num_requests', px.sum),
         num_errors=('num_errors', px.sum),
-        inbound_bytes=('inbound_bytes', px.sum),
-        outbound_bytes=('outbound_bytes', px.sum),
+        req_bytes=('req_bytes', px.sum),
+        resp_bytes=('resp_bytes', px.sum),
         stop_time=('stop_time', px.max),
     )
 
     df.time_ = df.stop_time
     return df[['time_', 'responder_pod', 'requestor_pod',
                'responder_ip', 'requestor_ip','responder_service', 'requestor_service',
-               'latency_p50', 'latency_p90', 'latency_p99', 'num_requests',
-               'num_errors', 'inbound_bytes', 'outbound_bytes']]
+               'latency_p50', 'latency_p90', 'latency_p99', 'latency_quantiles', 'num_requests',
+               'num_errors', 'req_bytes', 'resp_bytes']]
 
 
 def container_process_timeseries(start_time, end_time, window_ns):
