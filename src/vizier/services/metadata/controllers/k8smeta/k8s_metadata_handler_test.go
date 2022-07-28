@@ -153,6 +153,20 @@ func createReplicaSetObject() *storepb.K8SResource {
 	}
 }
 
+func createDeploymentObject() *storepb.K8SResource {
+	pb := &metadatapb.Deployment{}
+	err := proto.UnmarshalText(testutils.DeploymentPb, pb)
+	if err != nil {
+		return &storepb.K8SResource{}
+	}
+
+	return &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Deployment{
+			Deployment: pb,
+		},
+	}
+}
+
 type ResourceStore map[int64]*storepb.K8SResourceUpdate
 type InMemoryStore struct {
 	ResourceStoreByTopic map[string]ResourceStore
@@ -1420,6 +1434,123 @@ func TestReplicaSetUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	}
 
 	assert.Equal(t, rsUpdate.Update, updates[0].Update)
+	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
+	assert.Contains(t, updates[0].Topics, "127.0.0.1")
+	assert.Contains(t, updates[0].Topics, "127.0.0.2")
+}
+
+func TestDeploymentUpdateProcessor(t *testing.T) {
+	// Construct deployment object.
+	o := createDeploymentObject()
+	p := k8smeta.DeploymentUpdateProcessor{}
+
+	p.SetDeleted(o)
+	assert.Equal(t, int64(6), o.GetDeployment().Metadata.DeletionTimestampNS)
+
+	o.GetDeployment().Metadata.DeletionTimestampNS = 0
+	p.SetDeleted(o)
+	assert.NotEqual(t, 0, o.GetDeployment().Metadata.DeletionTimestampNS)
+}
+
+func TestDeploymentUpdateProcessor_ValidateUpdate(t *testing.T) {
+	// Construct deployment object.
+	o := createDeploymentObject()
+	p := k8smeta.DeploymentUpdateProcessor{}
+
+	state := &k8smeta.ProcessorState{}
+	resp := p.ValidateUpdate(o, state)
+	assert.True(t, resp)
+}
+
+func TestDeploymentUpdateProcessor_GetStoredProtos(t *testing.T) {
+	// Construct deployment object.
+	o := createDeploymentObject()
+	p := k8smeta.DeploymentUpdateProcessor{}
+
+	expectedPb := &metadatapb.Deployment{}
+	if err := proto.UnmarshalText(testutils.DeploymentPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	// Check that the generated store proto matches expected.
+	updates := p.GetStoredProtos(o)
+	assert.Equal(t, 1, len(updates))
+
+	assert.Equal(t, &storepb.K8SResource{
+		Resource: &storepb.K8SResource_Deployment{
+			Deployment: expectedPb,
+		},
+	}, updates[0])
+}
+
+func TestDeploymentUpdateProcessor_GetUpdatesToSend(t *testing.T) {
+	// Construct deployment object.
+	expectedPb := &metadatapb.Deployment{}
+	if err := proto.UnmarshalText(testutils.DeploymentPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	storedProtos := []*k8smeta.StoredUpdate{
+		{
+			Update: &storepb.K8SResource{
+				Resource: &storepb.K8SResource_Deployment{
+					Deployment: expectedPb,
+				},
+			},
+			UpdateVersion: 2,
+		},
+	}
+
+	state := &k8smeta.ProcessorState{NodeToIP: map[string]string{
+		"node-1": "127.0.0.1",
+		"node-2": "127.0.0.2",
+	}}
+
+	p := k8smeta.DeploymentUpdateProcessor{}
+	updates := p.GetUpdatesToSend(storedProtos, state)
+	assert.Equal(t, 1, len(updates))
+
+	depUpdate := &k8smeta.OutgoingUpdate{
+		Update: &metadatapb.ResourceUpdate{
+			UpdateVersion: 2,
+			Update: &metadatapb.ResourceUpdate_DeploymentUpdate{
+				DeploymentUpdate: &metadatapb.DeploymentUpdate{
+					UID:                 "ijkl",
+					Name:                "deployment_1",
+					StartTimestampNS:    4,
+					StopTimestampNS:     6,
+					Namespace:           "a_namespace",
+					ObservedGeneration:  2,
+					Replicas:            4,
+					UpdatedReplicas:     3,
+					ReadyReplicas:       2,
+					AvailableReplicas:   3,
+					UnavailableReplicas: 1,
+					Conditions: []*metadatapb.DeploymentCondition{
+						{
+							Type:                 metadatapb.DEPLOYMENT_CONDITION_AVAILABLE,
+							Status:               metadatapb.CONDITION_STATUS_TRUE,
+							LastUpdateTimeNS:     4,
+							LastTransitionTimeNS: 5,
+							Reason:               "DeploymentAvailable",
+							Message:              "Deployment replicas are available",
+						},
+						{
+							Type:                 metadatapb.DEPLOYMENT_CONDITION_PROGRESSING,
+							Status:               metadatapb.CONDITION_STATUS_TRUE,
+							LastUpdateTimeNS:     4,
+							LastTransitionTimeNS: 5,
+							Reason:               "ReplicaUpdate",
+							Message:              "Updated Replica",
+						},
+					},
+				},
+			},
+		},
+		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
+	}
+
+	assert.Equal(t, depUpdate.Update, updates[0].Update)
 	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
 	assert.Contains(t, updates[0].Topics, "127.0.0.1")
 	assert.Contains(t, updates[0].Topics, "127.0.0.2")
