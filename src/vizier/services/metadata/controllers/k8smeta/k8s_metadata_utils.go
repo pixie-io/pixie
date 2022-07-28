@@ -131,6 +131,16 @@ func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset *
 	}
 }
 
+func deploymentWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+	return &informerWatcher{
+		convert: deploymentConverter,
+		objType: resource,
+		ch:      ch,
+		inf:     factory.Apps().V1().Deployments().Informer(),
+	}
+}
+
 func podConverter(obj interface{}) *K8sResourceMessage {
 	o, ok := obj.(*v1.Pod)
 	if !ok {
@@ -216,6 +226,21 @@ func replicaSetConverter(obj interface{}) *K8sResourceMessage {
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_ReplicaSet{
 				ReplicaSet: k8s.ReplicaSetToProto(o),
+			},
+		},
+	}
+}
+
+func deploymentConverter(obj interface{}) *K8sResourceMessage {
+	o, ok := obj.(*apps.Deployment)
+	if !ok {
+		return nil
+	}
+
+	return &K8sResourceMessage{
+		Object: &storepb.K8SResource{
+			Resource: &storepb.K8SResource_Deployment{
+				Deployment: k8s.DeploymentToProto(o),
 			},
 		},
 	}

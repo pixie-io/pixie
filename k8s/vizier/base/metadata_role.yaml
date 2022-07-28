@@ -18,6 +18,7 @@ rules:
   - endpoints
   - namespaces
   - replicasets
+  - deployments
   verbs:
   - "*"
 ---

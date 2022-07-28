@@ -72,6 +72,7 @@ func NewController(updateCh chan *K8sResourceMessage) (*Controller, error) {
 		endpointsWatcher("endpoints", updateCh, clientset),
 		serviceWatcher("services", updateCh, clientset),
 		replicaSetWatcher("replicasets", updateCh, clientset),
+		deploymentWatcher("deployments", updateCh, clientset),
 	}
 
 	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}

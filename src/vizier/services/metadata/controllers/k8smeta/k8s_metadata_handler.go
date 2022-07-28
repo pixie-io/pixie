@@ -169,6 +169,7 @@ func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, conn *nats.Conn)
 	mh.processHandlerMap["nodes"] = &NodeUpdateProcessor{}
 	mh.processHandlerMap["namespaces"] = &NamespaceUpdateProcessor{}
 	mh.processHandlerMap["replicasets"] = &ReplicaSetUpdateProcessor{}
+	mh.processHandlerMap["deployments"] = &DeploymentUpdateProcessor{}
 
 	go mh.processUpdates()
 	return mh
@@ -899,6 +900,62 @@ func (p *ReplicaSetUpdateProcessor) GetUpdatesToSend(updates []*StoredUpdate, st
 	}
 }
 
+// DeploymentUpdateProcessor is a processor for deployment updates.
+type DeploymentUpdateProcessor struct{}
+
+// IsNodeScoped returns whether this update is scoped to specific nodes, or should be sent to all nodes.
+func (p *DeploymentUpdateProcessor) IsNodeScoped() bool {
+	return false
+}
+
+// SetDeleted sets the deletion timestamp for the object, if there is none already set.
+func (p *DeploymentUpdateProcessor) SetDeleted(obj *storepb.K8SResource) {
+	dep := obj.GetDeployment()
+	if dep == nil {
+		return
+	}
+	setDeleted(dep.Metadata)
+}
+
+// ValidateUpdate checks that the provided service object is valid, and casts it to the correct type.
+func (p *DeploymentUpdateProcessor) ValidateUpdate(obj *storepb.K8SResource, state *ProcessorState) bool {
+	dep := obj.GetDeployment()
+	if dep == nil {
+		log.WithField("object", obj).Trace("Received non-deployment object when handling node metadata.")
+		return false
+	}
+
+	return true
+}
+
+// GetStoredProtos gets the update protos that should be persisted.
+func (p *DeploymentUpdateProcessor) GetStoredProtos(obj *storepb.K8SResource) []*storepb.K8SResource {
+	return []*storepb.K8SResource{obj}
+}
+
+// GetUpdatesToSend gets the resource updates that should be sent out to the agents, along with the agent IPs that the update should be sent to.
+func (p *DeploymentUpdateProcessor) GetUpdatesToSend(updates []*StoredUpdate, state *ProcessorState) []*OutgoingUpdate {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	rv := updates[0].UpdateVersion
+	dep := updates[0].Update.GetDeployment()
+
+	// Send the update to the node's PEM + Kelvin.
+	agents := []string{KelvinUpdateTopic}
+	for _, ip := range state.NodeToIP {
+		agents = append(agents, ip)
+	}
+
+	return []*OutgoingUpdate{
+		{
+			Update: getResourceUpdateFromDeployment(dep, rv),
+			Topics: agents,
+		},
+	}
+}
+
 func formatContainerID(cid string) (metadatapb.ContainerType, string) {
 	// Strip prefixes like docker:// or containerd://
 	tokens := strings.SplitN(cid, "://", 2)
@@ -1065,6 +1122,28 @@ func getResourceUpdateFromReplicaSet(rs *metadatapb.ReplicaSet, uv int64) *metad
 				ObservedGeneration:   int32(rs.Status.ObservedGeneration),
 				Conditions:           rs.Status.Conditions,
 				OwnerReferences:      rs.Metadata.OwnerReferences,
+			},
+		},
+	}
+}
+
+func getResourceUpdateFromDeployment(dep *metadatapb.Deployment, uv int64) *metadatapb.ResourceUpdate {
+	return &metadatapb.ResourceUpdate{
+		UpdateVersion: uv,
+		Update: &metadatapb.ResourceUpdate_DeploymentUpdate{
+			DeploymentUpdate: &metadatapb.DeploymentUpdate{
+				UID:                 dep.Metadata.UID,
+				Name:                dep.Metadata.Name,
+				StartTimestampNS:    dep.Metadata.CreationTimestampNS,
+				StopTimestampNS:     dep.Metadata.DeletionTimestampNS,
+				Namespace:           dep.Metadata.Namespace,
+				ObservedGeneration:  int32(dep.Status.ObservedGeneration),
+				Replicas:            dep.Status.Replicas,
+				UpdatedReplicas:     dep.Status.UpdatedReplicas,
+				ReadyReplicas:       dep.Status.ReadyReplicas,
+				AvailableReplicas:   dep.Status.AvailableReplicas,
+				UnavailableReplicas: dep.Status.UnavailableReplicas,
+				Conditions:          dep.Status.Conditions,
 			},
 		},
 	}
