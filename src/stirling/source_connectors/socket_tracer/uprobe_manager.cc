@@ -142,7 +142,7 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-Status UProbeManager::UpdateOpenSSLSymAddrs(RawFptrManager* fptr_manager,
+Status UProbeManager::UpdateOpenSSLSymAddrs(obj_tools::RawFptrManager* fptr_manager,
                                             std::filesystem::path libcrypto_path, uint32_t pid) {
   PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
                       OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
@@ -289,8 +289,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   }
 
   PL_ASSIGN_OR_RETURN(auto reader, ElfReader::Create(container_libcrypto));
-  auto fptr_manager = std::unique_ptr<RawFptrManager>(
-      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
+  auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(reader.get(), proc_parser_.get(),
+                                                                  container_libcrypto);
 
   PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
 

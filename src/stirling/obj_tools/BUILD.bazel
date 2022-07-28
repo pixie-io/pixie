@@ -125,6 +125,20 @@ pl_cc_test(
     ],
 )
 
+pl_cc_test(
+    name = "raw_fptr_manager_test",
+    srcs = ["raw_fptr_manager_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata/c:library",
+    ],
+    # Disable the test for now. It doesn't pass on Jenkins due to the containerized environment.
+    # A future planned version will not be subject to the same restriction.
+    tags = ["manual"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
 pl_cc_binary(
     name = "elf_reader_tool",
     srcs = ["elf_reader_tool.cc"],
