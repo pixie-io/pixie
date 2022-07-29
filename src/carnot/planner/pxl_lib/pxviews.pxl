@@ -103,10 +103,11 @@ def pod_resource_stats(start_time, end_time):
     df.service = df.ctx['service_name']
     df.node = df.ctx['node_name']
     df.namespace = df.ctx['namespace']
-    df.start_time = px.pod_name_to_start_time(df.pod)
-    df.status = px.pod_name_to_status(df.pod)
-    return df[['pod_id', 'pod', 'service', 'node', 'namespace', 'container_count',
-               'start_time', 'status', 'cpu_usage', 'rss', 'vsize',
+    df.pod_start_time = px.pod_name_to_start_time(df.pod)
+    df.pod_status = px.pod_name_to_status(df.pod)
+    df.time_ = df.timestamp
+    return df[['time_', 'pod_id', 'pod', 'service', 'node', 'namespace', 'container_count',
+               'pod_start_time', 'pod_status', 'cpu_usage', 'rss', 'vsize',
                'actual_disk_read_throughput', 'actual_disk_write_throughput',
                'total_disk_read_throughput', 'total_disk_write_throughput']]
 
