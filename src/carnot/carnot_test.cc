@@ -1218,7 +1218,11 @@ TEST_P(TransferResultChunkTests, send_and_forward_messages) {
                 ::testing::MatchesRegex(tc.error_regex));
   }
 
-  EXPECT_EQ(result_server_->raw_query_results().size(), tc.num_expected_query_results);
+  EXPECT_EQ(result_server_->raw_query_results().size(), tc.num_expected_query_results)
+      << "result_server_->raw_query_results():\n"
+      << absl::StrJoin(
+             result_server_->raw_query_results(), "\n",
+             [](std::string* out, const auto& qr) { absl::StrAppend(out, qr.DebugString()); });
 };
 
 INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
