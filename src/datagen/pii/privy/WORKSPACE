@@ -2,10 +2,11 @@ workspace(name = "privy")
 
 local_repository(
     name = "px",
-    path = "../../../../"
+    path = "../../../../",
 )
 
 load("@px//bazel:repositories.bzl", "pl_deps")
+
 pl_deps()
 
 load("@rules_python//python:pip.bzl", "pip_parse")
