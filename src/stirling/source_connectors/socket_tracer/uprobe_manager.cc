@@ -781,8 +781,7 @@ int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids)
     auto count_or = AttachGrpcCUProbesOnDynamicPythonLib(pid.pid());
     if (!count_or.ok()) {
       VLOG(1) << absl::Substitute(
-          "Attaching gRPC-C uprobes on dynamic python library failed for PID $0: $1",
-          pid.pid(),
+          "Attaching gRPC-C uprobes on dynamic python library failed for PID $0: $1", pid.pid(),
           count_or.ToString());
       continue;
     }
@@ -790,8 +789,7 @@ int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids)
     uprobe_count += count_or.ValueOrDie();
     VLOG(1) << absl::Substitute(
         "Attaching gRPC-C uprobes on dynamic python library succeeded for PID $0: $1 probes",
-        pid.pid(),
-        count_or.ValueOrDie());
+        pid.pid(), count_or.ValueOrDie());
   }
 
   return uprobe_count;
