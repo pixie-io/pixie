@@ -195,6 +195,11 @@ Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesyst
   return Status::OK();
 }
 
+enum class HostPathForPIDPathSearchType {
+  kSearchTypeEndsWith,
+  kSearchTypeContains
+};
+
 // Find the paths for some libraries, which may be inside of a container.
 // Return those paths as a vector, in the same order that they came in as function arguments.
 // e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
@@ -202,7 +207,7 @@ Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesyst
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
 StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
-    LazyLoadedFPResolver* fp_resolver) {
+    LazyLoadedFPResolver* fp_resolver, HostPathForPIDPathSearchType search_type) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
   // i.e. mapping from lib_name to lib_path.
   // This would relieve the caller of the burden of tracking which entry
@@ -228,30 +233,45 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
     }
 
     for (const auto& mapped_lib_path : mapped_lib_paths) {
-      if (absl::EndsWith(mapped_lib_path, lib_name)) {
-        // We found a mapped_lib_path that matches to the desired lib_name.
-        // First, get the containerized file path using ResolvePath().
-        StatusOr<std::filesystem::path> container_lib_status =
-            fp_resolver->ResolvePath(mapped_lib_path);
-
-        if (!container_lib_status.ok()) {
-          VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
-                                      container_lib_status.msg());
+      if (HostPathForPIDPathSearchType::kSearchTypeEndsWith == search_type) {
+        if(!absl::EndsWith(mapped_lib_path, lib_name)) {
           continue;
         }
-
-        // Assign the resolved path into the output vector at the appropriate index.
-        // Update found status,
-        // and continue to search current set of mapped libs for next desired lib.
-        container_libs[lib_idx] = container_lib_status.ValueOrDie();
-        found_vector[lib_idx] = true;
-        VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
-                                    container_libs[lib_idx].string());
-        break;
       }
+      else if (HostPathForPIDPathSearchType::kSearchTypeContains == search_type) {
+        if(!absl::StrContains(mapped_lib_path, lib_name)) {
+          continue;
+        }
+      }
+
+      // We found a mapped_lib_path that matches to the desired lib_name.
+      // First, get the containerized file path using ResolvePath().
+      StatusOr<std::filesystem::path> container_lib_status =
+          fp_resolver->ResolvePath(mapped_lib_path);
+
+      if (!container_lib_status.ok()) {
+        VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
+                                    container_lib_status.msg());
+        continue;
+      }
+
+      // Assign the resolved path into the output vector at the appropriate index.
+      // Update found status,
+      // and continue to search current set of mapped libs for next desired lib.
+      container_libs[lib_idx] = container_lib_status.ValueOrDie();
+      found_vector[lib_idx] = true;
+      VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
+                                  container_libs[lib_idx].string());
+      break;
     }
   }
   return container_libs;
+}
+
+StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
+    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
+    LazyLoadedFPResolver* fp_resolver) {
+  return FindHostPathForPIDPath(lib_names, pid, proc_parser, fp_resolver, HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
 // Return error if something unexpected occurs.
