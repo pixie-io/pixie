@@ -583,6 +583,93 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
   return uprobe_count;
 }
 
+bool UProbeManager::InitiateGrpcCPercpuMetadataHeap() {
+  struct grpc_c_metadata_item_t empty_metadata_item =
+      {
+        .key = { 0 },
+        .value = { 0 }
+      };
+  auto array = bcc_->GetPerCPUArrayTable<struct grpc_c_metadata_t>(kGrpcCMetadataHeapName);
+  struct grpc_c_metadata_t empty_value =
+      {
+        .count = 0,
+        .items = { empty_metadata_item }
+      };
+  std::vector<struct grpc_c_metadata_t> empty_values(bpf_tools::BCCWrapper::kCPUCount, empty_value);
+  auto update_result = array.update_value(0, empty_values);
+  if (! update_result.ok()) {
+    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c metadata heap.");
+    return false;
+  }
+
+  return true;
+}
+
+bool UProbeManager::InitiateGrpcCPercpuEventDataHeap() {
+  struct grpc_c_data_slice_t empty_slice =
+      {
+        .length = 0,
+        .bytes = { 0 }
+      };
+  auto array = bcc_->GetPerCPUArrayTable<struct grpc_c_event_data_t>(kGrpcCEventDataHeapName);
+  struct grpc_c_event_data_t empty_value =
+      {
+        .stream_id = 0,
+        .timestamp = 0,
+        .direction = kEgress,
+        .position_in_stream = 0,
+        .slice = empty_slice
+      };
+  std::vector<struct grpc_c_event_data_t> empty_values(bpf_tools::BCCWrapper::kCPUCount, empty_value);
+  auto update_result = array.update_value(0, empty_values);
+  if (! update_result.ok()) {
+    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c event data local.");
+    return false;
+  }
+
+  return true;
+}
+
+bool UProbeManager::InitiateGrpcCPercpuHeaderEventDataHeap() {
+  struct grpc_c_metadata_item_t empty_metadata_item =
+      {
+        .key = { 0 },
+        .value = { 0 }
+      };
+  auto array = bcc_->GetPerCPUArrayTable<struct grpc_c_header_event_data_t>(kGrpcCHeaderEventDataHeapName);
+  struct grpc_c_header_event_data_t empty_value =
+      {
+        .stream_id = 0,
+        .timestamp = 0,
+        .direction = kEgress,
+        .header = empty_metadata_item
+      };
+  std::vector<struct grpc_c_header_event_data_t> empty_values(bpf_tools::BCCWrapper::kCPUCount, empty_value);
+  auto update_result = array.update_value(0, empty_values);
+  if (! update_result.ok()) {
+    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c header event data local.");
+    return false;
+  }
+
+  return true;
+}
+
+bool UProbeManager::InitiateGrpcCPercpuVariables() {
+  if (!InitiateGrpcCPercpuMetadataHeap()) {
+    return false;
+  }
+
+  if (!InitiateGrpcCPercpuEventDataHeap()) {
+    return false;
+  }
+
+  if (!InitiateGrpcCPercpuHeaderEventDataHeap()) {
+    return false;
+  }
+
+  return true;
+}
+
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 

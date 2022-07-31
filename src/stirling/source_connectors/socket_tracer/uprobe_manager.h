@@ -422,6 +422,9 @@ class UProbeManager {
   int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
   StatusOr<int> AttachPythonGrpcUProbesOnDynamicLib(uint32_t pid);
   StatusOr<int> AttachGrpcCUProbesOnSpecialExecutable(uint32_t pid);
+  bool InitiateGrpcCPercpuMetadataHeap();
+  bool InitiateGrpcCPercpuEventDataHeap();
+  bool InitiateGrpcCPercpuHeaderEventDataHeap();
   bool InitiateGrpcCPercpuVariables();
   bool grpc_c_local_variables_initiated_ = false;
 
