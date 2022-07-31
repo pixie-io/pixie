@@ -195,10 +195,7 @@ Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesyst
   return Status::OK();
 }
 
-enum class HostPathForPIDPathSearchType {
-  kSearchTypeEndsWith,
-  kSearchTypeContains
-};
+enum class HostPathForPIDPathSearchType { kSearchTypeEndsWith, kSearchTypeContains };
 
 // Find the paths for some libraries, which may be inside of a container.
 // Return those paths as a vector, in the same order that they came in as function arguments.
@@ -234,12 +231,11 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
 
     for (const auto& mapped_lib_path : mapped_lib_paths) {
       if (HostPathForPIDPathSearchType::kSearchTypeEndsWith == search_type) {
-        if(!absl::EndsWith(mapped_lib_path, lib_name)) {
+        if (!absl::EndsWith(mapped_lib_path, lib_name)) {
           continue;
         }
-      }
-      else if (HostPathForPIDPathSearchType::kSearchTypeContains == search_type) {
-        if(!absl::StrContains(mapped_lib_path, lib_name)) {
+      } else if (HostPathForPIDPathSearchType::kSearchTypeContains == search_type) {
+        if (!absl::StrContains(mapped_lib_path, lib_name)) {
           continue;
         }
       }
@@ -271,7 +267,8 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
 StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
     LazyLoadedFPResolver* fp_resolver) {
-  return FindHostPathForPIDPath(lib_names, pid, proc_parser, fp_resolver, HostPathForPIDPathSearchType::kSearchTypeEndsWith);
+  return FindHostPathForPIDPath(lib_names, pid, proc_parser, fp_resolver,
+                                HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
 // Return error if something unexpected occurs.
