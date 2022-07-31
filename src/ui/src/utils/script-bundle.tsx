@@ -19,12 +19,14 @@
 import Axios from 'axios';
 import * as QueryString from 'query-string';
 
+import { SCRIPT_BUNDLE_DEV, SCRIPT_BUNDLE_URLS } from 'app/containers/constants';
 import {
   parseVis, Vis,
 } from 'app/containers/live/vis';
 
-const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json';
-const OSS_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json';
+const OVERRIDE_URLS_KEY = 'px-custom-script-bundle-paths';
+const OLD_OVERRIDE_CORE_KEY = 'px-custom-core-bundle-path';
+const OLD_OVERRIDE_OSS_KEY = 'px-custom-oss-bundle-path';
 
 export interface Script {
   id: string;
@@ -53,64 +55,86 @@ function bypassCacheURL(url: string) {
   return QueryString.stringifyUrl(queryURL);
 }
 
-export function GetPxScripts(orgID: string, orgName: string): Promise<Script[]> {
-  let localStorageCoreBundle: string;
-  let localStorageOSSBundle: string;
-  try {
-    localStorageCoreBundle = localStorage.getItem('px-custom-core-bundle-path');
-    localStorageOSSBundle = localStorage.getItem('px-custom-oss-bundle-path');
-  } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
+function getBundleUrls(): { urls: string[], isDev: boolean } {
+  let urls: string[] = JSON.parse(SCRIPT_BUNDLE_URLS); // Should be a string[] in JSON form.
+  let isDev = SCRIPT_BUNDLE_DEV;
 
-  if (localStorageCoreBundle) {
-    localStorageCoreBundle = bypassCacheURL(localStorageCoreBundle);
-  }
-  if (localStorageOSSBundle) {
-    localStorageOSSBundle = bypassCacheURL(localStorageOSSBundle);
-  }
-  const coreBundlePath = localStorageCoreBundle || PROD_SCRIPTS;
-  const ossBundlePath = localStorageOSSBundle || OSS_SCRIPTS;
-  const fetchPromises = [Axios({ method: 'get', url: coreBundlePath }), Axios({ method: 'get', url: ossBundlePath })];
-  return Promise.all(fetchPromises).then((response) => {
-    const scripts = [];
-    response.forEach((resp) => {
-      Object.entries(resp.data.scripts as ScriptJSON[]).forEach(([id, s]) => {
-        if (s.orgID && orgID !== s.orgID) {
-          return;
-        }
-        let prettyID = id;
-        if (id.startsWith('org_id/')) {
-          if (!orgName) {
+  // Backwards compatibility: honor older localStorage keys if present. Newer key overrides.
+  try {
+    const localCore = localStorage.getItem(OLD_OVERRIDE_CORE_KEY);
+    const localOss = localStorage.getItem(OLD_OVERRIDE_OSS_KEY);
+    if (localCore || localOss) {
+      urls = [localCore, localOss].filter(u => u);
+      isDev = true;
+    }
+  } catch { /* localStorage isn't guaranteed to be available */}
+
+  try {
+    const localRaw = localStorage.getItem(OVERRIDE_URLS_KEY);
+    const localParsed = JSON.parse(localRaw);
+    if (Array.isArray(localParsed) && localParsed.length > 0) {
+      urls = localParsed;
+      isDev = true;
+    }
+  } catch { /* localStorage isn't guaranteed to be available; even if it is, the setting need to be valid. */ }
+
+  return {
+    urls: isDev ? urls.map((url) => bypassCacheURL(url)) : urls,
+    isDev,
+  };
+}
+
+export function GetPxScripts(orgID: string, orgName: string): Promise<Script[]> {
+  const { urls, isDev } = getBundleUrls();
+  const fetchPromises = urls.map(url => Axios({ method: 'get', url }));
+  return Promise.all(fetchPromises)
+    .then((response) => {
+      const scripts: Script[] = [];
+      for (const resp of response) {
+        for (const [id, s] of Object.entries<ScriptJSON>(resp.data.scripts)) {
+          if (s.orgID && orgID !== s.orgID) {
+            continue;
+          }
+          let prettyID = id;
+          if (id.startsWith('org_id/')) {
+            if (!orgName) {
+              continue;
+            }
+            const splits = id.split('/', 3);
+            if (splits.length < 3) {
+              continue;
+            }
+            if (splits[1] !== orgID) {
+              continue;
+            }
+            prettyID = `${orgName}/${splits[2]}`;
+          }
+          let vis = {
+            variables: [],
+            widgets: [],
+            globalFuncs: [],
+          } as Vis;
+          try {
+            vis = parseVis(s.vis);
+          } catch (e) {
             return;
           }
-          const splits = id.split('/', 3);
-          if (splits.length < 3) {
-            return;
-          }
-          if (splits[1] !== orgID) {
-            return;
-          }
-          prettyID = `${orgName}/${splits[2]}`;
+          scripts.push({
+            id: prettyID,
+            title: s.ShortDoc,
+            code: s.pxl,
+            vis,
+            description: s.LongDoc,
+            hidden: s.hidden,
+          });
         }
-        let vis = {
-          variables: [],
-          widgets: [],
-          globalFuncs: [],
-        } as Vis;
-        try {
-          vis = parseVis(s.vis);
-        } catch (e) {
-          return;
-        }
-        scripts.push({
-          id: prettyID,
-          title: s.ShortDoc,
-          code: s.pxl,
-          vis,
-          description: s.LongDoc,
-          hidden: s.hidden,
-        });
-      });
+      }
+      return scripts;
+    })
+    .catch((error) => {
+      if (isDev) {
+        error.message = `${error.message} (SCRIPT_BUNDLES_OVERRIDDEN)`;
+      }
+      throw error;
     });
-    return scripts;
-  });
 }

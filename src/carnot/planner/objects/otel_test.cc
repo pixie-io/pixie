@@ -23,6 +23,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include "src/carnot/planner/compiler/compiler.h"
+#include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/exporter.h"
 #include "src/carnot/planner/objects/otel.h"
@@ -882,11 +883,12 @@ otel_sink_op {
   auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
   endpoint_config->set_url(("px.dev:55690"));
   (*endpoint_config->mutable_headers())["apikey"] = "12345";
-  CompilerState compiler_state(
-      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
-      /* time_now */ 0,
-      /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
-      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config), nullptr);
+  CompilerState compiler_state(std::make_unique<RelationMap>(),
+                               /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+                               /* time_now */ 0,
+                               /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
+                               /* redaction_options */ RedactionOptions{},
+                               std::move(endpoint_config), nullptr, planner::DebugInfo{});
 
   // Create the OTel Module with a compiler_state that has an endpoint config.
   ASSERT_OK_AND_ASSIGN(auto otel,
@@ -898,6 +900,88 @@ otel_sink_op {
   ASSERT_OK(otel_export_sink->ToProto(&op));
   EXPECT_THAT(op, testing::proto::EqualsProto(expected_proto));
 }
+
+TEST_F(OTelExportTest, resource_attributes_from_debug) {
+  std::string otel_export_expression = R"pxl(
+otel.Data(
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='runtime.jvm.gc.collection',
+      value=df.young_gc_time,
+    ),
+    oteltrace.Span(
+      name='svc',
+      start_time=df.start_time,
+      end_time=df.time_,
+      kind=oteltrace.SPAN_KIND_CLIENT,
+    ),
+  ]
+))pxl";
+  std::string expected_proto = R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "px.dev:55690"
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 1
+      }
+    }
+    attributes {
+      name: "pixie_cloud_addr"
+      string_value: "px.dev"
+    }
+  }
+  metrics {
+    name: "runtime.jvm.gc.collection"
+    time_column_index: 0
+    unit: "ns"
+    gauge {
+      int_column_index: 3
+    }
+  }
+  spans {
+    name_string: "svc"
+    start_time_column_index: 4
+    end_time_column_index: 0
+    trace_id_column_index: -1
+    span_id_column_index: -1
+    parent_span_id_column_index: -1
+    kind_value: 3
+  }
+})pb";
+  table_store::schema::Relation relation{
+      {types::TIME64NS, types::STRING, types::STRING, types::INT64, types::TIME64NS},
+      {"time_", "service", "young", "young_gc_time", "start_time"},
+      {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS, types::ST_NONE},
+  };
+  auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
+  endpoint_config->set_url(("px.dev:55690"));
+  CompilerState compiler_state(
+      std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
+      /* time_now */ 0,
+      /* max_output_rows_per_table */ 0, "addrr", "result_ssl_targetname",
+      /* redaction_options */ RedactionOptions{}, std::move(endpoint_config), nullptr,
+      planner::DebugInfo{{{"pixie_cloud_addr", "px.dev"}}});
+
+  // Create the OTel Module with a compiler_state that has an endpoint config.
+  ASSERT_OK_AND_ASSIGN(auto otel,
+                       OTelModule::Create(&compiler_state, ast_visitor.get(), graph.get()));
+  var_table->Add("otel", otel);
+  ASSERT_OK_AND_ASSIGN(auto otel_export_sink,
+                       ParseOutOTelExportIR(otel_export_expression, relation));
+  planpb::Operator op;
+  ASSERT_OK(otel_export_sink->ToProto(&op));
+  EXPECT_THAT(op, testing::proto::EqualsProto(expected_proto));
+}
+
 TEST_F(OTelExportTest, valid_metric_names) {
   auto df = Dataframe::Create(MakeMemSource(), ast_visitor.get()).ConsumeValueOrDie();
   var_table->Add("df", df);

@@ -21,8 +21,8 @@ from enum import Enum, auto
 from typing import List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-import fire
 import subprocess
+from rules_python.python.runfiles import runfiles
 
 
 def to_camel_case(text):
@@ -397,7 +397,10 @@ class AMQPClass:
             Status Process{self.class_name}(BinaryDecoder *decoder, Frame *req, uint16_t  method_id) {{
                 switch(static_cast<{self.constant_enum_name}>(method_id)) {{
                     {method_cases}
+                    default:
+                        VLOG(1) << absl::Substitute("Invalid {self.class_name} frame method $0", method_id);
                 }}
+                return Status::OK();
             }}
         """
 
@@ -410,28 +413,6 @@ class AMQPClass:
         }
         """
         return f"k{self.class_name} = {self.class_id}"
-
-    def gen_process_content_header_select(self):
-        amqp_extract_class_case = []
-        for amqp_class in self.amqp_classes:
-            amqp_class_case = amqp_class.gen_content_header_enum_select()
-            amqp_extract_class_case.append(amqp_class_case)
-
-        amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
-        return f"""
-        Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {{
-            PL_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-            PL_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
-            req->class_id = class_id;
-
-            if(weight != 0) {{
-                return error::Internal("AMQP content header weight should be 0");
-            }}
-            switch(static_cast<AMQPClasses>(class_id)) {{
-                {amqp_extract_class_case_str}
-            }}
-        }}
-        """
 
     def gen_class_enum_select_case(self):
         """
@@ -451,7 +432,13 @@ class CodeGenerator:
     Parses and generates strings that represent the different classes, methods, and fields
     """
 
-    def __init__(self, xml_file="amqp0-9-1.xml"):
+    def __init__(self, xml_file=None):
+        if xml_file is None:
+            r = runfiles.Create()
+            xml_file = r.Rlocation(
+                "px/src/stirling/source_connectors/socket_tracer/"
+                + "protocols/amqp/amqp_code_generator/amqp0-9-1.stripped.xml"
+            )
         with open(xml_file, "r") as f:
             amqp_xml = ET.fromstring(f.read())
 
@@ -694,22 +681,30 @@ class CodeGenerator:
 
             switch(static_cast<AMQPClasses>(class_id)) {{
                 {amqp_extract_class_case_str}
+                default:
+                    VLOG(1) << absl::Substitute("Unparsed frame method class $0 method $1", class_id, method_id);
             }}
+
+            return Status::OK();
         }}
         """
 
     def gen_process_frame_type(self):
         return """
-        Status ProcessReq(Frame* req) {
-            BinaryDecoder decoder(req->msg);
+        Status ProcessPayload(Frame* req, BinaryDecoder* decoder) {
             // Extracts api_key, api_version, and correlation_id.
             AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
             switch (amqp_frame_type) {
                 case AMQPFrameTypes::kFrameHeader:
                     return ProcessContentHeader(&decoder, req);
-                case AMQPFrameTypes::kFrameBody:
+                case AMQPFrameTypes::kFrameBody: {
                     req->msg = "";
+                    auto status = decoder->ExtractBufIgnore(req->payload_size);
+                    if (!status.ok()) {
+                        VLOG(1) << absl::Substitute("Failed to extract body for AMQP, error: $0", status.ToString());
+                    }
                     break; // Ignore bytes in content body since length already provided by header
+                }
                 case AMQPFrameTypes::kFrameHeartbeat:
                     req->msg = "";
                     break; // Heartbeat frames have no body or length
@@ -742,7 +737,10 @@ class CodeGenerator:
             }}
             switch(static_cast<AMQPClasses>(class_id)) {{
                 {amqp_extract_class_case_str}
+                default:
+                    VLOG(1) << absl::Substitute("Unparsed content header class $0", class_id);
             }}
+            return Status::OK();
         }}
         """
 
@@ -873,8 +871,3 @@ class CodeGeneratorWriter:
             ]
         )
         p.wait()
-
-
-# TODO(vsrivatsa) ADD followup test for api
-if __name__ == "__main__":
-    fire.Fire(CodeGeneratorWriter)

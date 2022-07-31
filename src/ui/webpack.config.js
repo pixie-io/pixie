@@ -307,6 +307,10 @@ module.exports = (env, argv) => {
   const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
     'contact_config.yaml'), false);
 
+  // Get URLs where PxL scripts can be found.
+  const scriptBundleYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
+    'script_bundles_config.yaml'), false);
+
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
       __CONTACT_ENABLED__: JSON.parse(contactYAML.data.CONTACT_ENABLED),
@@ -321,6 +325,8 @@ module.exports = (env, argv) => {
       __CONFIG_AUTH_EMAIL_PASSWORD_CONN__: JSON.stringify(authEmailPasswordConnection),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
+      __CONFIG_SCRIPT_BUNDLE_URLS__: JSON.stringify(scriptBundleYAML.data.SCRIPT_BUNDLE_URLS),
+      __CONFIG_SCRIPT_BUNDLE_DEV__: JSON.parse(scriptBundleYAML.data.SCRIPT_BUNDLE_DEV),
       __SEGMENT_ANALYTICS_JS_DOMAIN__: `"segment.${domainYAML.data.PL_DOMAIN_NAME}"`,
     }),
   );

@@ -15,10 +15,16 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/decode.h"
+
+#include <map>
+#include <stack>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/decode.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/utils/binary_decoder.h"
 
@@ -718,7 +724,11 @@ Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {
 
     case AMQPClasses::kTx:
       return ExtractAMQPTxContentHeader(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Unparsed frame method class $0", class_id);
   }
+  return Status::OK();
 }
 
 Status ProcessConnection(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -752,7 +762,11 @@ Status ProcessConnection(BinaryDecoder* decoder, Frame* req, uint16_t method_id)
 
     case AMQPConnectionMethods::kAMQPConnectionCloseOk:
       return ExtractAMQPConnectionCloseOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Connection frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessChannel(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -774,7 +788,11 @@ Status ProcessChannel(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 
     case AMQPChannelMethods::kAMQPChannelCloseOk:
       return ExtractAMQPChannelCloseOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Channel frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessExchange(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -790,7 +808,11 @@ Status ProcessExchange(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 
     case AMQPExchangeMethods::kAMQPExchangeDeleteOk:
       return ExtractAMQPExchangeDeleteOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Exchange frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessQueue(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -824,7 +846,11 @@ Status ProcessQueue(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 
     case AMQPQueueMethods::kAMQPQueueDeleteOk:
       return ExtractAMQPQueueDeleteOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Queue frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessBasic(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -879,7 +905,11 @@ Status ProcessBasic(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 
     case AMQPBasicMethods::kAMQPBasicRecoverOk:
       return ExtractAMQPBasicRecoverOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Basic frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessTx(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
@@ -901,7 +931,11 @@ Status ProcessTx(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 
     case AMQPTxMethods::kAMQPTxRollbackOk:
       return ExtractAMQPTxRollbackOk(decoder, req);
+
+    default:
+      VLOG(1) << absl::Substitute("Invalid Tx frame method $0", method_id);
   }
+  return Status::OK();
 }
 
 Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {
@@ -929,25 +963,34 @@ Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {
 
     case AMQPClasses::kTx:
       return ProcessTx(decoder, req, method_id);
+
+    default:
+      VLOG(1) << absl::Substitute("Unparsed frame method class $0 method $1", class_id, method_id);
   }
+  return Status::OK();
 }
 
-Status ProcessReq(Frame* req) {
-  BinaryDecoder decoder(req->msg);
+Status ProcessPayload(Frame* req, BinaryDecoder* decoder) {
   // Extracts api_key, api_version, and correlation_id.
   AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
   switch (amqp_frame_type) {
     case AMQPFrameTypes::kFrameHeader:
-      return ProcessContentHeader(&decoder, req);
-    case AMQPFrameTypes::kFrameBody:
+      return ProcessContentHeader(decoder, req);
+    case AMQPFrameTypes::kFrameBody: {
       req->msg = "";
+      auto status = decoder->ExtractBufIgnore(req->payload_size);
+      if (!status.ok()) {
+        VLOG(1) << absl::Substitute("Failed to extract body for AMQP, error: $0",
+                                    status.ToString());
+      }
       break;  // Ignore bytes in content body since length already provided by
               // header
+    }
     case AMQPFrameTypes::kFrameHeartbeat:
       req->msg = "";
       break;  // Heartbeat frames have no body or length
     case AMQPFrameTypes::kFrameMethod:
-      return ProcessFrameMethod(&decoder, req);
+      return ProcessFrameMethod(decoder, req);
     default:
       VLOG(1) << absl::Substitute("Unparsed frame $0", req->frame_type);
   }

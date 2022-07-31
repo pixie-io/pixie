@@ -5,8 +5,10 @@ captures data, and reassemble & parse them back into application-level protocol 
 
 ## Summary of important facts
 
-* http2/gRPC tracing uses uprobes, which only capture data on K8s managed processes (through MDS);
-  all other protocols uses kprobes.
+* http2/gRPC tracing uses uprobes, which only capture data on K8s managed processes (through
+  Metadata Service).
+* OpenSSL tracing uses uprobes, which traces clear-text data trough probes on OpenSSL
+  `SSL_{write,read}` functions.
 
 ## Debugging missing records for a protocol
 
@@ -17,7 +19,7 @@ The following is a step-by-step process for root-causing missing records for a p
 The first step is to verify that the raw data events were captured by `eBPF` probes:
 
 * First use `strace` to verify syscalls are invoked, and their arguments (i.e., the raw data) were
-  as expected. (You may need to install strace with `sudo apt-get install strace` on gke nodes):
+  as expected. (You may need to install strace with `sudo apt-get install strace` on GKE nodes):
 
   ```shell
   # -f is critical as it allows tracing all threads of a process.
@@ -59,3 +61,10 @@ You could do this by specifying target PID and FD to `stirling_wrapper` flags:
 These flag automatically set debug trace logging level to `2`. The debug level `1` is usually for
 specific events that affect the ConnTracker's state, for instance, being disabled; level `2` is for
 detailed processing steps.
+
+If `--stirling_conn_trace_fd=<target_fd>` is unspecified, all FDs of the target PID are logged.
+
+Alternatively, specify target PID as the value of `--test_only_socket_trace_target_pid=<target_pid>`
+implies `--stirling_conn_trace_pid=<target_pid>`. `--test_only_socket_trace_target_pid=<target_pid>`
+also turns off event filtering inside eBPF, for example, data events of an unknown protocol would be
+transferred to userspace.

@@ -51,7 +51,6 @@ import { SetStateFunc } from 'app/context/common';
 import { LayoutContext } from 'app/context/layout-context';
 import { SidebarContext } from 'app/context/sidebar-context';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
-import pixieAnalytics from 'app/utils/analytics';
 import { buildClass } from 'app/utils/build-class';
 import { WithChildren } from 'app/utils/react-boilerplate';
 import { Logo } from 'configurable/logo';
@@ -225,19 +224,12 @@ const ProfileItem = React.memo<{ setSidebarOpen: SetStateFunc<boolean> }>(({ set
   let name = '';
   let picture = '';
   let email = '';
-  let id = '';
   /* eslint-enable react-memo/require-usememo */
   if (userInfo) {
     ({
-      name, picture, email, id,
+      name, picture, email,
     } = userInfo);
   }
-
-  React.useEffect(() => {
-    if (id) {
-      pixieAnalytics.identify(id, { email });
-    }
-  }, [id, email]);
 
   return (
     <>

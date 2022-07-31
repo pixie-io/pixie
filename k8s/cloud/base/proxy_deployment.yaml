@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
       - name: cloud-proxy-server
+        imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev/cloud/proxy_server_image
         ports:
         - containerPort: 56000
@@ -47,6 +48,8 @@ spec:
             name: pl-announcement-config
         - configMapRef:
             name: pl-contact-config
+        - configMapRef:
+            name: pl-script-bundles-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
@@ -76,6 +79,7 @@ spec:
         - name: certs
           mountPath: /certs
       - name: envoy
+        imagePullPolicy: IfNotPresent
         image: envoyproxy/envoy:v1.12.2
         command: ["envoy"]
         args: ["-c", "/etc/envoy.yaml", "--service-cluster", "$(POD_NAME)"]

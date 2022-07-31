@@ -129,7 +129,7 @@ class CompilerTest : public ::testing::Test {
         std::move(rel_map), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now,
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssltarget",
-        /* redaction_options */ RedactionOptions{}, nullptr, nullptr);
+        /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
 
     compiler_ = Compiler();
   }
@@ -3254,6 +3254,12 @@ TEST_F(CompilerTest, crash) {
   ASSERT_NOT_OK(plan_or_s);
   EXPECT_THAT(plan_or_s.status(),
               HasCompilerError(R"err(Expected 'string', received 'data_type_unknown')err"));
+}
+
+TEST_F(CompilerTest, pxviews) {
+  ASSERT_OK(compiler_.CompileToIR(
+      "import pxviews\nimport px\npx.display(pxviews.pod_resource_stats('-5m', px.now()))",
+      compiler_state_.get()));
 }
 
 }  // namespace compiler

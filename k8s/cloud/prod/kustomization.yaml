@@ -37,6 +37,7 @@ patchesStrategicMerge:
 - service_config.yaml
 - domain_config.yaml
 - cloud_ingress_ip.yaml
+- script_bundles_config.yaml
 - scriptmgr_config.yaml
 - proxy_envoy.yaml
 patches:

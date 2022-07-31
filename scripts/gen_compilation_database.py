@@ -94,10 +94,37 @@ def fixCompilationDatabase(args):
     db = [modifyCompileCommand(target, args)
           for target in db if isCompileTarget(target, args)]
 
+    db = make_paths_stable(db)
+
     # Remove to avoid writing into symlink.
     os.remove("compile_commands.json")
     with open("compile_commands.json", "w") as db_file:
         json.dump(db, db_file, indent=2)
+
+
+def get_bazel_workspace_root():
+    res = subprocess.run(["bazel", "info", "workspace"], capture_output=True)
+    res.check_returncode()
+    return res.stdout.decode('utf-8').strip()
+
+
+def get_bazel_output_base():
+    res = subprocess.run(["bazel", "info", "output_base"], capture_output=True)
+    res.check_returncode()
+    return res.stdout.decode('utf-8').strip()
+
+
+def make_paths_stable(db):
+    workspace_root = get_bazel_workspace_root()
+    bazel_output_base = get_bazel_output_base()
+    external_path = os.path.join(bazel_output_base, "external")
+    external_symlink = os.path.join(workspace_root, "external")
+    # Make a symlink to external at the top of the repo, so that we don't have to modify compile commands.
+    subprocess.run(["ln", "-sf", external_path, external_symlink]).check_returncode()
+
+    for target in db:
+        target["directory"] = workspace_root
+    return db
 
 
 if __name__ == "__main__":

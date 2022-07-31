@@ -167,14 +167,14 @@ INSTANTIATE_TEST_SUITE_P(
               (*data.endpoint_config.mutable_headers())["api_key"] = "abcd";
 
               data.resource_attributes.push_back(
-                  {"service.name", CreateTypedColumn(graph, "service", relation)});
+                  {"service.name", CreateTypedColumn(graph, "service", relation), ""});
 
               auto& metric = data.metrics.emplace_back();
               metric.name = "http.resp.latency";
               metric.description = "the latency";
               metric.time_column = CreateTypedColumn(graph, "time_", relation);
               metric.attributes = {
-                  {"http.method", CreateTypedColumn(graph, "req_method", relation)}};
+                  {"http.method", CreateTypedColumn(graph, "req_method", relation), ""}};
 
               auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
               metric.unit_column = latency_col;
@@ -212,7 +212,7 @@ INSTANTIATE_TEST_SUITE_P(
               metric.name = "http.resp.latency";
               metric.time_column = CreateTypedColumn(graph, "time_", relation);
               metric.attributes = {
-                  {"http.method", CreateTypedColumn(graph, "req_method", relation)}};
+                  {"http.method", CreateTypedColumn(graph, "req_method", relation), ""}};
 
               auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
               metric.unit_column = latency_col;
@@ -404,7 +404,7 @@ INSTANTIATE_TEST_SUITE_P(
               span.span_id_column = CreateTypedColumn(graph, "span_id", relation);
               span.parent_span_id_column = CreateTypedColumn(graph, "parent_span_id", relation);
               span.attributes.push_back(
-                  {"req_method", CreateTypedColumn(graph, "req_method", relation)});
+                  {"req_method", CreateTypedColumn(graph, "req_method", relation), ""});
               span.span_kind = 3;
 
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
@@ -442,7 +442,47 @@ INSTANTIATE_TEST_SUITE_P(
               return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
                   .ConsumeValueOrDie();
             },
-        }}),
+        },
+        {
+            "string_value_attributes",
+            table_store::schema::Relation{{types::TIME64NS, types::INT64},
+                                          {"time_", "latency_ns"},
+                                          {types::ST_NONE, types::ST_NONE}},
+            R"pb(
+            endpoint_config {}
+            resource {
+              attributes {
+                name: "pixie.cloud.addr"
+                string_value: "localhost"
+              }
+            }
+            metrics {
+              name: "http.resp.latency"
+              time_column_index: 0
+              attributes {
+                name: "req_method"
+                string_value: "GET"
+              }
+              gauge {
+                int_column_index: 1
+              }
+            })pb",
+            [](IR* graph, OperatorIR* parent, table_store::schema::Relation* relation) {
+              OTelData data;
+              data.resource_attributes.push_back({"pixie.cloud.addr", nullptr, "localhost"});
+              auto& metric = data.metrics.emplace_back();
+              metric.name = "http.resp.latency";
+              metric.time_column = CreateTypedColumn(graph, "time_", relation);
+              metric.attributes = {{"req_method", nullptr, "GET"}};
+
+              auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
+              metric.unit_column = latency_col;
+              metric.metric = OTelMetricGauge{latency_col};
+              return graph->CreateNode<OTelExportSinkIR>(parent->ast(), parent, data)
+                  .ConsumeValueOrDie();
+            },
+        },
+    }),
     [](const ::testing::TestParamInfo<MetricTestCase>& info) { return info.param.name; });
 
 struct WrongColumnTypesTestCase {
@@ -589,7 +629,7 @@ INSTANTIATE_TEST_SUITE_P(
               metric.name = "http.resp.latency";
               metric.time_column = CreateTypedColumn(graph, "time_", relation);
               metric.attributes = {
-                  {"http.method", CreateTypedColumn(graph, "req_method", relation)}};
+                  {"http.method", CreateTypedColumn(graph, "req_method", relation), ""}};
 
               auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
               metric.unit_column = latency_col;
@@ -612,7 +652,7 @@ INSTANTIATE_TEST_SUITE_P(
               metric.name = "http.resp.latency";
               metric.time_column = CreateTypedColumn(graph, "time_", relation);
               data.resource_attributes.push_back(
-                  {"service.name", CreateTypedColumn(graph, "service", relation)});
+                  {"service.name", CreateTypedColumn(graph, "service", relation), ""});
 
               auto latency_col = CreateTypedColumn(graph, "latency_ns", relation);
               metric.unit_column = latency_col;

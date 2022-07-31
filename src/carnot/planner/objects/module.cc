@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/objects/module.h"
+#include <memory>
 #include "src/carnot/planner/parser/parser.h"
 
 namespace px {

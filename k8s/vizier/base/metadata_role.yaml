@@ -11,11 +11,14 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  - "apps"
   resources:
   - pods
   - services
   - endpoints
   - namespaces
+  - replicasets
+  - deployments
   verbs:
   - "*"
 ---

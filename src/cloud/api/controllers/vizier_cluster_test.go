@@ -120,6 +120,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 					Status:          cvmsgspb.VZ_ST_HEALTHY,
 					StatusMessage:   "Everything is running",
 					LastHeartbeatNs: int64(1305646598000000000),
+					Config:          &cvmsgspb.VizierConfig{},
 					VizierVersion:   "1.2.3",
 					ClusterUID:      "a UID",
 					ClusterName:     "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
@@ -254,6 +255,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 					VizierID:             clusterID,
 					Status:               cvmsgspb.VZ_ST_HEALTHY,
 					LastHeartbeatNs:      int64(1305646598000000000),
+					Config:               &cvmsgspb.VizierConfig{},
 					VizierVersion:        "1.2.3",
 					ClusterUID:           "a UID",
 					ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
@@ -265,6 +267,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 						VizierID:             clusterID,
 						Status:               cvmsgspb.VZ_ST_HEALTHY,
 						LastHeartbeatNs:      int64(1305646598000000000),
+						Config:               &cvmsgspb.VizierConfig{},
 						VizierVersion:        "1.2.3",
 						ClusterUID:           "a UID2",
 						ClusterName:          "gke_pl-pixies_us-west1-a_dev-cluster-zasgar",
@@ -323,6 +326,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 					VizierID:        clusterID,
 					Status:          cvmsgspb.VZ_ST_HEALTHY,
 					LastHeartbeatNs: int64(1305646598000000000),
+					Config:          &cvmsgspb.VizierConfig{},
 					VizierVersion:   "1.2.3",
 					ClusterUID:      "a UID",
 					ClusterName:     "some cluster",
@@ -345,6 +349,48 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 			assert.Equal(t, cluster.ID, clusterID)
 			assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 			assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
+		})
+	}
+}
+
+func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			assert.NotNil(t, clusterID)
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			vzClusterInfoServer := &controllers.VizierClusterInfo{
+				VzMgr: mockClients.MockVzMgr,
+			}
+
+			resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudpb.UpdateClusterVizierConfigRequest{
+				ID:           clusterID,
+				ConfigUpdate: &cloudpb.VizierConfigUpdate{},
+			})
+
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
 		})
 	}
 }

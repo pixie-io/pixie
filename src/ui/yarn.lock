@@ -3759,6 +3759,7 @@ __metadata:
     license-checker: ^25.0.1
     lodash: ^4.17.21
     mini-css-extract-plugin: ^1.3.1
+    moment: ^2.24.0
     monaco-editor: 0.20.0
     monaco-editor-webpack-plugin: ^1.9.0
     mustache: ^4.2.0
@@ -12295,10 +12296,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jpeg-js@npm:0.4.2":
-  version: 0.4.2
-  resolution: "jpeg-js@npm:0.4.2"
-  checksum: def900757c395e6376446aef5c13ed122cae1ab15308e84784d260c8d3c14d30c2092eaf32a4f57528d6e1f96a6b240a801e92122f00c9f3bb5d5c4d38df5bc0
+"jpeg-js@npm:^0.4.4":
+  version: 0.4.4
+  resolution: "jpeg-js@npm:0.4.4"
+  checksum: bd7cb61aa8df40a9ee2c2106839c3df6054891e56cfc22c0ac581402e06c6295f962a4754b0b2ac50a401789131b1c6dc9df8d24400f1352168be1894833c590
   languageName: node
   linkType: hard
 
@@ -13447,6 +13448,13 @@ __metadata:
   bin:
     mkdirp: bin/cmd.js
   checksum: a96865108c6c3b1b8e1d5e9f11843de1e077e57737602de1b82030815f311be11f96f09cce59bd5b903d0b29834733e5313f9301e3ed6d6f6fba2eae0df4298f
+  languageName: node
+  linkType: hard
+
+"moment@npm:^2.24.0":
+  version: 2.29.4
+  resolution: "moment@npm:2.29.4"
+  checksum: 0ec3f9c2bcba38dc2451b1daed5daded747f17610b92427bebe1d08d48d8b7bdd8d9197500b072d14e326dd0ccf3e326b9e3d07c5895d3d49e39b6803b76e80e
   languageName: node
   linkType: hard
 

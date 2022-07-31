@@ -62,7 +62,7 @@ const (
 	// NATSBackoffMaxElapsedTime is the maximum elapsed time that we should retry.
 	NATSBackoffMaxElapsedTime = 10 * time.Minute
 	logChunkSize              = 500
-	operatorMessage           = "Please update to the operator-controlled version of Pixie. If Pixie was deployed through the CLI, run `px delete` then `px deploy`. If Pixie was deployed through Helm Charts, run `helm delete` and install the new charts listed in our docs: docs.px.dev. If you installed with another APM provider, contact them for information on how to upgrade to the operator version of Pixie."
+	operatorMessage           = "You are running the non-operator version of Pixie. The operator version of Pixie has additional features that help you manage Pixie and keep it up-to-date. To update to the operator-controlled version of Pixie, follow instructions on docs.px.dev to redeploy Pixie with the CLI or Helm Chart. Using the operator version of Pixie is optional and will not affect functionality or data. Note that the operator version of Pixie is not available for air gapped systems."
 )
 
 // UpdaterJobYAML is the YAML that should be applied for the updater job.

@@ -67,8 +67,8 @@ def pod_stats(start_time: str):
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df['pod_id'] = df.ctx['pod_id']
     df = df.groupby(['pod_id', 'upid']).agg(
-        avg_rss=('rss_bytes', px.mean),
-        avg_vsize=('vsize_bytes', px.mean),
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
         cpu_utime_ns_max=('cpu_utime_ns', px.max),
         cpu_utime_ns_min=('cpu_utime_ns', px.min),
@@ -103,8 +103,8 @@ def pod_stats(start_time: str):
         write_bytes=('write_bytes', px.sum),
         rchar_bytes=('rchar_bytes', px.sum),
         wchar_bytes=('wchar_bytes', px.sum),
-        avg_rss=('avg_rss', px.sum),
-        avg_vsize=('avg_vsize', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
         # We take the max across all windows for a pod as a best effort to
         # show the rate of resource usage for the pod. That means dead pods that
         # used a large amount of resources during their lifetimes will appear
@@ -180,12 +180,12 @@ def namespaces_for_cluster(start_time: str):
                                         left_on='namespace', right_on='namespace',
                                         suffixes=['', '_x'])
     df = df.groupby(['namespace']).agg(
-        avg_vsize=('avg_vsize', px.sum),
-        avg_rss=('avg_rss', px.sum),
+        vsize=('vsize', px.sum),
+        rss=('rss', px.sum),
     )
     output = df.merge(pod_and_svc_count, how='inner', left_on='namespace',
                       right_on='namespace', suffixes=['', '_y'])
-    return output[['namespace', 'pod_count', 'service_count', 'avg_vsize', 'avg_rss']]
+    return output[['namespace', 'pod_count', 'service_count', 'vsize', 'rss']]
 
 
 def services_for_cluster(start_time: str):
@@ -378,7 +378,6 @@ def service_let_graph(start_time: str):
     df.remote_service = px.select(df.is_remote_addr_localhost,
                                   'localhost:' + df.traced_service,
                                   px.service_id_to_service_name(px.ip_to_service_id(df.remote_addr)))
-    df.drop(['is_remote_addr_localhost'])
 
     df.remote_ip = df.remote_addr
     # If external IPs are excluded in the service graph, then we also exclude any

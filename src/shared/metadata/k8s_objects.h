@@ -34,9 +34,24 @@ namespace px {
 namespace md {
 
 /**
+ * Data structure for owner reference object.
+ */
+struct OwnerReference {
+  UID uid;
+  std::string name;
+  std::string kind;
+  friend bool operator==(const OwnerReference l, const OwnerReference r) { return l.uid == r.uid; }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const OwnerReference& owner_reference) {
+    return H::combine(std::move(h), owner_reference.uid);
+  }
+};
+
+/**
  * Enum with all the different metadata types.
  */
-enum class K8sObjectType { kUnknown, kPod, kService, kNamespace };
+enum class K8sObjectType { kUnknown, kPod, kService, kNamespace, kReplicaSet, kDeployment };
 
 /**
  * Base class for all K8s metadata objects.
@@ -67,6 +82,12 @@ class K8sMetadataObject {
 
   int64_t stop_time_ns() const { return stop_time_ns_; }
   void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
+
+  const absl::flat_hash_set<OwnerReference>& owner_references() const { return owner_references_; }
+  void AddOwnerReference(UID uid, std::string name, std::string kind) {
+    owner_references_.emplace(OwnerReference{uid, name, kind});
+  }
+  void RmOwnerReference(UID uid) { owner_references_.erase(OwnerReference{uid, "", ""}); }
 
   virtual std::unique_ptr<K8sMetadataObject> Clone() const = 0;
   virtual std::string DebugString(int indent = 0) const = 0;
@@ -107,6 +128,14 @@ class K8sMetadataObject {
    * A value of 0 implies that the object is still active.
    */
   int64_t stop_time_ns_ = 0;
+
+  /**
+   * The set of owners which control this pod. K8s allows
+   * multiple owners to control the same pod.
+   *
+   * Should point to owner Info object via the data structure containing this pod.
+   */
+  absl::flat_hash_set<OwnerReference> owner_references_;
 };
 
 enum class PodQOSClass : uint8_t { kUnknown = 0, kGuaranteed, kBestEffort, kBurstable };
@@ -276,6 +305,7 @@ class PodInfo : public K8sMetadataObject {
 
   void AddService(UIDView uid) { services_.emplace(uid); }
   void RmService(UIDView uid) { services_.erase(uid); }
+
   PodQOSClass qos_class() const { return qos_class_; }
   PodPhase phase() const { return phase_; }
   void set_phase(PodPhase phase) { phase_ = phase; }
@@ -506,5 +536,200 @@ class NamespaceInfo : public K8sMetadataObject {
   NamespaceInfo& operator=(const NamespaceInfo& other) = delete;
 };
 
+using ReplicaSetConditions = absl::flat_hash_map<std::string, ConditionStatus>;
+
+inline ReplicaSetConditions ConvertToReplicaSetConditions(
+    const google::protobuf::RepeatedPtrField<px::shared::k8s::metadatapb::ReplicaSetCondition>&
+        replica_set_conditions) {
+  ReplicaSetConditions conditions;
+  for (const auto& condition : replica_set_conditions) {
+    conditions.try_emplace(condition.type(), ConvertToConditionStatus(condition.status()));
+  }
+  return conditions;
+}
+
+/**
+ * ReplicaSetInfo contains information about K8s replica sets.
+ */
+class ReplicaSetInfo : public K8sMetadataObject {
+ public:
+  ReplicaSetInfo(UID uid, std::string_view ns, std::string_view name, int32_t replicas,
+                 int32_t fully_labeled_replicas, int32_t ready_replicas, int32_t available_replicas,
+                 int32_t observed_generation, ReplicaSetConditions conditions,
+                 int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
+      : K8sMetadataObject(K8sObjectType::kReplicaSet, uid, ns, name, start_timestamp_ns,
+                          stop_timestamp_ns),
+        replicas_(replicas),
+        fully_labeled_replicas_(fully_labeled_replicas),
+        ready_replicas_(ready_replicas),
+        available_replicas_(available_replicas),
+        observed_generation_(observed_generation),
+        conditions_(conditions) {}
+
+  explicit ReplicaSetInfo(
+      const px::shared::k8s::metadatapb::ReplicaSetUpdate& replica_set_update_info)
+      : ReplicaSetInfo(replica_set_update_info.uid(), replica_set_update_info.namespace_(),
+                       replica_set_update_info.name(), replica_set_update_info.replicas(),
+                       replica_set_update_info.fully_labeled_replicas(),
+                       replica_set_update_info.ready_replicas(),
+                       replica_set_update_info.available_replicas(),
+                       replica_set_update_info.observed_generation(),
+                       ConvertToReplicaSetConditions(replica_set_update_info.conditions()),
+                       replica_set_update_info.start_timestamp_ns(),
+                       replica_set_update_info.stop_timestamp_ns()) {}
+
+  virtual ~ReplicaSetInfo() = default;
+
+  int32_t replicas() const { return replicas_; }
+  int32_t fully_labeled_replicas() const { return fully_labeled_replicas_; }
+  int32_t ready_replicas() const { return ready_replicas_; }
+  int32_t available_replicas() const { return available_replicas_; }
+  int32_t observed_generation() const { return observed_generation_; }
+
+  void set_replicas(int32_t replicas) { replicas_ = replicas; }
+  void set_fully_labeled_replicas(int32_t fully_labeled_replicas) {
+    fully_labeled_replicas_ = fully_labeled_replicas;
+  }
+  void set_ready_replicas(int32_t ready_replicas) { ready_replicas_ = ready_replicas; }
+  void set_available_replicas(int32_t available_replicas) {
+    available_replicas_ = available_replicas;
+  }
+  void set_observed_generation(int32_t observed_generation) {
+    observed_generation_ = observed_generation;
+  }
+
+  ReplicaSetConditions conditions() const { return conditions_; }
+  void set_conditions(ReplicaSetConditions conditions) { conditions_ = conditions; }
+
+  std::unique_ptr<K8sMetadataObject> Clone() const override {
+    return std::unique_ptr<ReplicaSetInfo>(new ReplicaSetInfo(*this));
+  }
+
+  std::string DebugString(int indent = 0) const override;
+
+ protected:
+  ReplicaSetInfo(const ReplicaSetInfo& other) = default;
+  ReplicaSetInfo& operator=(const ReplicaSetInfo& other) = delete;
+
+ private:
+  int32_t replicas_;
+  int32_t fully_labeled_replicas_;
+  int32_t ready_replicas_;
+  int32_t available_replicas_;
+  int32_t observed_generation_;
+  ReplicaSetConditions conditions_;
+};
+
+enum class DeploymentConditionType : uint8_t {
+  kTypeUnknown = 0,
+  kAvailable,
+  kProgressing,
+  kReplicaFailure,
+};
+
+using DeploymentConditions = absl::flat_hash_map<DeploymentConditionType, ConditionStatus>;
+
+inline DeploymentConditionType ConvertToDeploymentConditionType(
+    px::shared::k8s::metadatapb::DeploymentConditionType condition_type) {
+  using type_pb = px::shared::k8s::metadatapb::DeploymentConditionType;
+  switch (condition_type) {
+    case type_pb::DEPLOYMENT_CONDITION_AVAILABLE:
+      return DeploymentConditionType::kAvailable;
+    case type_pb::DEPLOYMENT_CONDITION_PROGRESSING:
+      return DeploymentConditionType::kProgressing;
+    case type_pb::DEPLOYMENT_CONDITION_REPLICA_FAILURE:
+      return DeploymentConditionType::kReplicaFailure;
+    default:
+      return DeploymentConditionType::kTypeUnknown;
+  }
+}
+
+inline DeploymentConditions ConvertToDeploymentConditions(
+    const google::protobuf::RepeatedPtrField<px::shared::k8s::metadatapb::DeploymentCondition>&
+        deployment_conditions) {
+  DeploymentConditions conditions;
+  for (const auto& condition : deployment_conditions) {
+    conditions.try_emplace(ConvertToDeploymentConditionType(condition.type()),
+                           ConvertToConditionStatus(condition.status()));
+  }
+  return conditions;
+}
+
+/**
+ * DeploymentInfo contains information about K8s deployments.
+ */
+class DeploymentInfo : public K8sMetadataObject {
+ public:
+  DeploymentInfo(UID uid, std::string_view ns, std::string_view name, int32_t observed_generation,
+                 int32_t replicas, int32_t updated_replicas, int32_t ready_replicas,
+                 int32_t available_replicas, int32_t unavailable_replicas,
+                 DeploymentConditions conditions, int64_t start_timestamp_ns = 0,
+                 int64_t stop_timestamp_ns = 0)
+      : K8sMetadataObject(K8sObjectType::kDeployment, uid, ns, name, start_timestamp_ns,
+                          stop_timestamp_ns),
+        observed_generation_(observed_generation),
+        replicas_(replicas),
+        updated_replicas_(updated_replicas),
+        ready_replicas_(ready_replicas),
+        available_replicas_(available_replicas),
+        unavailable_replicas_(unavailable_replicas),
+        conditions_(conditions) {}
+
+  explicit DeploymentInfo(
+      const px::shared::k8s::metadatapb::DeploymentUpdate& deployment_update_info)
+      : DeploymentInfo(deployment_update_info.uid(), deployment_update_info.namespace_(),
+                       deployment_update_info.name(), deployment_update_info.observed_generation(),
+                       deployment_update_info.replicas(), deployment_update_info.updated_replicas(),
+                       deployment_update_info.ready_replicas(),
+                       deployment_update_info.available_replicas(),
+                       deployment_update_info.unavailable_replicas(),
+                       ConvertToDeploymentConditions(deployment_update_info.conditions()),
+                       deployment_update_info.start_timestamp_ns(),
+                       deployment_update_info.stop_timestamp_ns()) {}
+
+  virtual ~DeploymentInfo() = default;
+
+  int32_t observed_generation() const { return observed_generation_; }
+  int32_t replicas() const { return replicas_; }
+  int32_t updated_replicas() const { return updated_replicas_; }
+  int32_t ready_replicas() const { return ready_replicas_; }
+  int32_t available_replicas() const { return available_replicas_; }
+  int32_t unavailable_replicas() const { return unavailable_replicas_; }
+
+  void set_observed_generation(int32_t observed_generation) {
+    observed_generation_ = observed_generation;
+  }
+  void set_replicas(int32_t replicas) { replicas_ = replicas; }
+  void set_updated_replicas(int32_t updated_replicas) { updated_replicas_ = updated_replicas; }
+  void set_ready_replicas(int32_t ready_replicas) { ready_replicas_ = ready_replicas; }
+  void set_available_replicas(int32_t available_replicas) {
+    available_replicas_ = available_replicas;
+  }
+  void set_unavailable_replicas(int32_t unavailable_replicas) {
+    unavailable_replicas_ = unavailable_replicas;
+  }
+
+  DeploymentConditions conditions() const { return conditions_; }
+  void set_conditions(DeploymentConditions conditions) { conditions_ = conditions; }
+
+  std::unique_ptr<K8sMetadataObject> Clone() const override {
+    return std::unique_ptr<DeploymentInfo>(new DeploymentInfo(*this));
+  }
+
+  std::string DebugString(int indent = 0) const override;
+
+ protected:
+  DeploymentInfo(const DeploymentInfo& other) = default;
+  DeploymentInfo& operator=(const DeploymentInfo& other) = delete;
+
+ private:
+  int32_t observed_generation_;
+  int32_t replicas_;
+  int32_t updated_replicas_;
+  int32_t ready_replicas_;
+  int32_t available_replicas_;
+  int32_t unavailable_replicas_;
+  DeploymentConditions conditions_;
+};
 }  // namespace md
 }  // namespace px

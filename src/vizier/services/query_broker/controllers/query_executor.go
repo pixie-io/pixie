@@ -31,6 +31,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -62,6 +64,7 @@ func init() {
 		},
 		[]string{"script_name"},
 	)
+	pflag.String("cloud_addr", "vzconn-service.plc.svc:51600", "The Pixie Cloud service url (load balancer/list is ok)")
 }
 
 // QueryResultConsumer defines an interface to allow consumption of Query results from a QueryResultExecutor.
@@ -330,6 +333,15 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		}
 	}
 
+	debugInfo := &distributedpb.DebugInfo{
+		OtelDebugAttributes: []*distributedpb.DebugInfo_OTelDebugAttribute{
+			&distributedpb.DebugInfo_OTelDebugAttribute{
+				Name:  "px.cloud.address",
+				Value: viper.GetString("cloud_addr"),
+			},
+		},
+	}
+
 	plannerState := &distributedpb.LogicalPlannerState{
 		DistributedState:    distributedState,
 		PlanOptions:         planOpts,
@@ -338,18 +350,22 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		RedactionOptions:    redactOptions,
 		OTelEndpointConfig:  otelConfig,
 		PluginConfig:        pluginConfig,
+		DebugInfo:           debugInfo,
 	}
 
 	// Compile the query plan.
 	start := time.Now()
 	plannerResultPB, err := q.planner.Plan(plannerState, req)
+	// This `err` is nil if there's a user compilation error (ie Syntax, invalid arg, etc).
+	// User compilation errors are stored in `plannerResultPB.Status` which is handled below.
 	if err != nil {
-		// send the compilation error and return nil.
 		return nil, err
 	}
 	q.compilationTimeNs = time.Since(start).Nanoseconds()
 
-	// When the status is not OK, this means it's a compilation error on the query passed in.
+	// An erroneous status in the planner result means there is a user compilation error
+	// (i.e. syntax error, invalid argument, etc). We first send this status on the resultCh, then error
+	// out of this function.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
 		if err := q.sendResponse(ctx, resultCh, StatusToVizierResponse(q.queryID, plannerResultPB.Status)); err != nil {
 			return nil, err
@@ -451,6 +467,8 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 		return err
 	}
 
+	// compilePlan will attempt to compile the plan. If it receives a compiler error, will
+	// send that message over the resultCh and the method will also throw an error.
 	plan, err := q.compilePlan(ctx, resultCh, convertedReq, planOpts, &distributedState)
 	if err != nil {
 		return err

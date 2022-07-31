@@ -45,7 +45,6 @@
 DEFINE_bool(treat_loopback_as_in_cluster, true,
             "Whether loopback is treated as inside the cluster of not");
 
-constexpr int64_t kUnsetPIDFD = -1;
 DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
 DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
 
@@ -58,8 +57,6 @@ DEFINE_int64(
 DEFINE_int64(stirling_untracked_upid_threshold_seconds, 0,
              "If non-zero, Stirling will disable data tracking of processes that are outside the "
              "list of PIDs tracked by the context after the specified time period.");
-
-DECLARE_int32(test_only_socket_trace_target_pid);
 
 namespace px {
 namespace stirling {
@@ -431,9 +428,7 @@ bool ConnTracker::AllEventsReceived() const {
 namespace {
 
 bool ShouldTraceConn(const struct conn_id_t& conn_id) {
-  bool pid_match =
-      FLAGS_stirling_conn_trace_pid == conn_id.upid.pid ||
-      static_cast<uint32_t>(FLAGS_test_only_socket_trace_target_pid) == conn_id.upid.pid;
+  bool pid_match = FLAGS_stirling_conn_trace_pid == conn_id.upid.pid;
   bool fd_match =
       FLAGS_stirling_conn_trace_fd == kUnsetPIDFD || FLAGS_stirling_conn_trace_fd == conn_id.fd;
   return pid_match && fd_match;

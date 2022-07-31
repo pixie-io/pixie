@@ -92,7 +92,7 @@ func init() {
 	_ = RootCmd.ParseFlags(os.Args[1:])
 }
 
-func printTestingBanner() {
+func printEnvVars() {
 	envs := os.Environ()
 	var pxEnvs []string
 	for _, env := range envs {
@@ -103,13 +103,13 @@ func printTestingBanner() {
 	if len(pxEnvs) == 0 {
 		return
 	}
-	red := color.New(color.Bold, color.FgRed)
-	red.Fprintf(os.Stderr, "*******************************\n")
-	red.Fprintf(os.Stderr, "* IN TESTING MODE\n")
+	green := color.New(color.Bold, color.FgGreen)
+	green.Fprintf(os.Stderr, "*******************************\n")
+	green.Fprintf(os.Stderr, "* ENV VARS\n")
 	for _, env := range pxEnvs {
-		red.Fprintf(os.Stderr, "* \t %s\n", env)
+		green.Fprintf(os.Stderr, "* \t %s\n", env)
 	}
-	red.Fprintf(os.Stderr, "*******************************\n")
+	green.Fprintf(os.Stderr, "*******************************\n")
 }
 
 // RootCmd is the base command for Cobra.
@@ -119,7 +119,7 @@ var RootCmd = &cobra.Command{
 	// TODO(zasgar): Add description and update this.
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		printTestingBanner()
+		printEnvVars()
 
 		cloudAddr := viper.GetString("cloud_addr")
 		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {

@@ -51,6 +51,7 @@ class K8sMetadataState : NotCopyable {
   using ServiceUpdate = px::shared::k8s::metadatapb::ServiceUpdate;
   using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
   using NodeUpdate = px::shared::k8s::metadatapb::NodeUpdate;
+  using ReplicaSetUpdate = px::shared::k8s::metadatapb::ReplicaSetUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -97,6 +98,7 @@ class K8sMetadataState : NotCopyable {
 
   using PodsByNameMap = K8sEntityByNameMap;
   using ServicesByNameMap = K8sEntityByNameMap;
+  using ReplicaSetByNameMap = K8sEntityByNameMap;
   using NamespacesByNameMap = K8sEntityByNameMap;
   using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
@@ -189,6 +191,21 @@ class K8sMetadataState : NotCopyable {
    */
   UID NamespaceIDByName(K8sNameIdentView namespace_name) const;
 
+  /**
+   * ReplicaSetInfoByID gets an unowned pointer to the replica Set. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param replica_set_id the id of the ReplicaSet.
+   * @return Pointer to the ReplicaSetInfo.
+   */
+  const ReplicaSetInfo* ReplicaSetInfoByID(UIDView replica_set_id) const;
+
+  /**
+   * ReplicaSetIDByName returns the ReplicaSetID for the replica set of the given name.
+   * @param replica_set_name the replica set name
+   * @return the replica set id or empty string if the replica set does not exist.
+   */
+  UID ReplicaSetIDByName(K8sNameIdentView replica_set_name) const;
+
   std::unique_ptr<K8sMetadataState> Clone() const;
 
   Status HandlePodUpdate(const PodUpdate& update);
@@ -196,6 +213,7 @@ class K8sMetadataState : NotCopyable {
   Status HandleServiceUpdate(const ServiceUpdate& update);
   Status HandleNamespaceUpdate(const NamespaceUpdate& update);
   Status HandleNodeUpdate(const NodeUpdate& update);
+  Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update);
 
   Status CleanupExpiredMetadata(int64_t retention_time_ns);
 
@@ -231,6 +249,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of namespaces by name.
    */
   NamespacesByNameMap namespaces_by_name_;
+
+  /**
+   * Mapping of replica sets by name.
+   */
+  ReplicaSetByNameMap replica_sets_by_name_;
 
   /**
    * Mapping of containers by name.

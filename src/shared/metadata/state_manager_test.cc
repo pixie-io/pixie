@@ -70,6 +70,11 @@ constexpr char kUpdate1_1Pbtxt[] = R"(
     phase: RUNNING
     message: "running message"
     reason: "running reason"
+    owner_references: {
+      kind: "ReplicaSet"
+      name: "rs0"
+      uid: "rs0_uid"
+    }
   }
 )";
 
@@ -123,6 +128,30 @@ constexpr char kUpdate2_2Pbtxt[] = R"(
   }
 )";
 
+constexpr char kUpdate3_0Pbtxt[] = R"(
+  replica_set_update {
+    uid: "rs0_uid"
+    name: "rs0"
+    start_timestamp_ns: 101
+    stop_timestamp_ns: 0
+    namespace: "ns0"
+    replicas: 5
+    fully_labeled_replicas: 5
+    ready_replicas: 3
+    available_replicas: 3
+    observed_generation: 5
+    conditions: {
+      type: "ready"
+      status: CONDITION_STATUS_TRUE
+    }
+    owner_references: {
+      kind: "Deployment"
+      name: "deployment1"
+      uid: "deployment_uid"
+    }
+  }
+)";
+
 class FakePIDData : public MockCGroupMetadataReader {
  public:
   Status ReadPIDs(PodQOSClass qos, std::string_view pod_id, std::string_view container_id,
@@ -156,6 +185,10 @@ void GenerateTestUpdateEvents(
   auto update1_2 = std::make_unique<ResourceUpdate>();
   CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate1_2Pbtxt, update1_2.get()));
   updates->enqueue(std::move(update1_2));
+
+  auto update3_0 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate3_0Pbtxt, update3_0.get()));
+  updates->enqueue(std::move(update3_0));
 }
 
 // Generates some test updates for entry into the AgentMetadataState.
@@ -224,6 +257,10 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
   EXPECT_EQ("running message", pod_info->phase_message());
   EXPECT_EQ("running reason", pod_info->phase_reason());
+  EXPECT_THAT(pod_info->owner_references(),
+              UnorderedElementsAre(OwnerReference{"rs0_uid", "rs0", "ReplicaSet"}));
+  // test that we can access replica set which is the owner of this pod
+  EXPECT_NE(nullptr, state->ReplicaSetInfoByID(pod_info->owner_references().begin()->uid));
 
   auto* container_info = state->ContainerInfoByID("container_id1");
   ASSERT_NE(nullptr, container_info);
@@ -246,6 +283,22 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("namespace_1", ns_info->uid());
   EXPECT_EQ("pl", ns_info->name());
   EXPECT_EQ("pl", ns_info->ns());
+
+  auto* rs_info = state->ReplicaSetInfoByID("rs0_uid");
+  ASSERT_NE(nullptr, rs_info);
+  EXPECT_EQ(101, rs_info->start_time_ns());
+  EXPECT_EQ(0, rs_info->stop_time_ns());
+  EXPECT_EQ("rs0_uid", rs_info->uid());
+  EXPECT_EQ("rs0", rs_info->name());
+  EXPECT_EQ("ns0", rs_info->ns());
+  EXPECT_EQ(5, rs_info->replicas());
+  EXPECT_EQ(5, rs_info->fully_labeled_replicas());
+  EXPECT_EQ(3, rs_info->ready_replicas());
+  EXPECT_EQ(3, rs_info->available_replicas());
+  EXPECT_EQ(5, rs_info->observed_generation());
+
+  EXPECT_THAT(rs_info->owner_references(),
+              UnorderedElementsAre(OwnerReference{"deployment_uid", "deployment1", "Deployment"}));
 }
 
 TEST_F(AgentMetadataStateTest, pid_created) {

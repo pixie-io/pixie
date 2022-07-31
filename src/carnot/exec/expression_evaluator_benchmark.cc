@@ -86,6 +86,9 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto exec_state = std::make_unique<ExecState>(
       func_registry.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, sole::uuid4(), nullptr);
+  EXPECT_OK(exec_state->AddScalarUDF(
+      0, "add",
+      std::vector<px::types::DataType>({px::types::DataType::INT64, px::types::DataType::INT64})));
 
   auto in1 = px::datagen::CreateLargeData<Int64Value>(data_size);
   auto in2 = px::datagen::CreateLargeData<Int64Value>(data_size);

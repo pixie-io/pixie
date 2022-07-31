@@ -217,7 +217,7 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 // TODO(ddelnano): This function only works with sections that exist in LOAD segments.
 // This function should be able to handle any section, but for the time being its is limited
 // in scope.
-StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string section_name) {
+StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string_view section_name) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
   auto section_offset = text_section->get_offset();
 

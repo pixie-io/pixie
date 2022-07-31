@@ -58,10 +58,10 @@ static __inline int32_t read_big_endian_int32(const char* buf) {
   return bpf_ntohl(length);
 }
 
-static __inline int32_t read_big_endian_int16(const char* buf) {
+static __inline int16_t read_big_endian_int16(const char* buf) {
   int16_t val;
   BPF_PROBE_READ_VAR(val, buf);
-  return bpf_ntohl(val);
+  return bpf_ntohs(val);
 }
 
 // Returns 0 if lhs and rhs compares equal up to n bytes. Otherwise a non-zero value is returned.

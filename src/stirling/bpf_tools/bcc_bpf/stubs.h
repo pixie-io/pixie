@@ -45,4 +45,6 @@ inline void bpf_probe_read(TDestCharType* destination, size_t len, TSrcCharType*
 
 inline int32_t bpf_ntohl(int32_t val) { return ntohl(val); }
 
+inline int16_t bpf_ntohs(int16_t val) { return ntohs(val); }
+
 #endif

@@ -16,42 +16,67 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/bpf_tools/bcc_symbolizer.h"
+#include <linux/elf.h>
 
-#include <absl/strings/str_format.h>
+#include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/bcc_symbolizer.h"
 
 namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-// A bogus BPF STACK_TRACE table descriptor.
-// Its purpose is only to provide access to the BCC symbolizer.
-// The table itself is bogus and is never read/written, so its params mostly don't matter.
-const ebpf::TableDesc kBogusTable(
-    /* name */ "bogus",
-    /* fd */ ebpf::FileDesc(-1), BPF_MAP_TYPE_STACK_TRACE,
-    /* key_size */ sizeof(uint32_t),
-    /* value_size */ sizeof(uint32_t),
-    /* max_entries */ 1,
-    /* flags */ 0);
-
 BCCSymbolizer::BCCSymbolizer()
-    : bcc_stack_table_(kBogusTable, /* use_debug_file */ false, /* check_debug_file_crc */ false) {}
+    : bcc_symbolization_options_({.use_debug_file = false,
+                                  .check_debug_file_crc = false,
+                                  .lazy_symbolize = true,
+                                  .use_symbol_type = ((1 << STT_FUNC) | (1 << STT_GNU_IFUNC))}) {}
 
-std::string BCCSymbolizer::Symbol(const uintptr_t addr, const int pid) {
-  return bcc_stack_table_.get_addr_symbol(addr, pid);
-}
+void* BCCSymbolizer::GetBCCSymbolCache(const int pid) {
+  const auto [iter, inserted] = bcc_symbol_caches_by_pid_.try_emplace(pid, nullptr);
 
-std::string BCCSymbolizer::SymbolOrAddrIfUnknown(const uintptr_t addr, const int pid) {
-  static constexpr std::string_view kUnknown = "[UNKNOWN]";
-  std::string sym_or_addr = bcc_stack_table_.get_addr_symbol(addr, pid);
-  if (sym_or_addr == kUnknown) {
-    sym_or_addr = absl::StrFormat("0x%016llx", addr);
+  if (inserted) {
+    iter->second = bcc_symcache_new(pid, &bcc_symbolization_options_);
   }
-  return sym_or_addr;
+  return iter->second;
 }
 
-void BCCSymbolizer::ReleasePIDSymCache(uint32_t pid) { bcc_stack_table_.free_symcache(pid); }
+std::string_view BCCSymbolizer::SymbolOrAddrIfUnknown(const int pid, const uintptr_t addr) {
+  DCHECK(pid >= 0 || pid == -1);
+
+  void* bcc_symbol_cache = GetBCCSymbolCache(pid);
+  const bool resolved = 0 == bcc_symcache_resolve(bcc_symbol_cache, addr, &bcc_symbol_struct_);
+
+  if (resolved) {
+    // Symbol was resolved. Our work is done here.
+    symbol_ = bcc_symbol_struct_.demangle_name;
+    bcc_symbol_free_demangle_name(&bcc_symbol_struct_);
+
+    return symbol_;
+  }
+
+  if (bcc_symbol_struct_.module != nullptr && strlen(bcc_symbol_struct_.module) > 0) {
+    // Module is known (from /proc/<pid>/maps), but symbol is not known.
+    // We will create a string like this:
+    // [m] /lib/ld-musl-x86_64.so.1 + 0x0000abcd
+    // This is better than nothing, but not as nice as a symbol.
+    FormatModuleName(bcc_symbol_struct_.module, bcc_symbol_struct_.offset);
+    return symbol_;
+  }
+
+  // If we fall through to here, we have truly come up empty handed.
+  // Maybe it is a JIT'd or interpreted program? Maybe stack traces are broken (no frame pointers)?
+  // We return just the virtual address, as a string, formatted in 64b hex.
+  FormatAddress(addr);
+  return symbol_;
+}
+
+void BCCSymbolizer::ReleasePIDSymCache(uint32_t pid) {
+  auto iter = bcc_symbol_caches_by_pid_.find(pid);
+  if (iter != bcc_symbol_caches_by_pid_.end()) {
+    bcc_free_symcache(iter->second, pid);
+    bcc_symbol_caches_by_pid_.erase(iter);
+  }
+}
 
 }  // namespace bpf_tools
 }  // namespace stirling

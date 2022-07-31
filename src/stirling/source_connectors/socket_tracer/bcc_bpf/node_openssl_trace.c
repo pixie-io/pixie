@@ -35,6 +35,9 @@ BPF_HASH(active_TLSWrap_memfn_this, uint64_t, void*);
 // pointer of a node executable.
 //   Key: TGID
 //   Value: Symbol offsets for the node executable with that TGID.
+//
+// Userspace examines the nodejs process' executable's version to write the corresponding offsets to
+// this map.
 BPF_HASH(node_tlswrap_symaddrs_map, uint32_t, struct node_tlswrap_symaddrs_t);
 
 static __inline void* get_tls_wrap_for_memfn() {
@@ -95,6 +98,11 @@ static __inline int32_t get_fd_from_tlswrap_ptr(const struct node_tlswrap_symadd
   return fd;
 }
 
+// TLSWrap holds a pointer to a SSL object. SSL object does not store the file descriptor used for
+// socket IO, TLSWrap does. So the overall process of obtaining the file descriptor works as
+// follows:
+// * Get TLSWrap object's address from node_ssl_tls_wrap_map
+// * Get FD from TLSWrap object, with fields' offsets from userspace
 static __inline int32_t get_fd_node(uint32_t tgid, void* ssl) {
   void** tls_wrap_ptr = node_ssl_tls_wrap_map.lookup(&ssl);
   if (tls_wrap_ptr == NULL) {

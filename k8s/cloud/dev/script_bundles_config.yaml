@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-script-bundles-config
+data:
+  SCRIPT_BUNDLE_URLS: >-
+    [
+    "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json",
+    "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
+    ]
+  SCRIPT_BUNDLE_DEV: "false"

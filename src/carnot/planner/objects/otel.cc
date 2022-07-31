@@ -111,7 +111,7 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
     if (key->str().empty()) {
       return keyobj->CreateError("Attribute key must be a non-empty string");
     }
-    otel_attributes.push_back({key->str(), val});
+    otel_attributes.push_back({key->str(), val, ""});
   }
   return otel_attributes;
 }
@@ -257,6 +257,11 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
 
   if (!has_service_name) {
     return resource->CreateError("'service.name' must be specified in resource");
+  }
+
+  // Append the Pixie resource attributes.
+  for (const auto& attribute : compiler_state->debug_info().otel_debug_attrs) {
+    otel_data.resource_attributes.push_back({attribute.name, nullptr, attribute.value});
   }
 
   return Exporter::Create(visitor, [otel_data](auto&& ast, auto&& df) -> Status {

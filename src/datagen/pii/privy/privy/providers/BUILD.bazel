@@ -13,20 +13,16 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("@rules_python//python:defs.bzl", "py_library")
 
-import pxtrace
+package(default_visibility = ["//privy:__subpackages__"])
 
-# The program below intentionally contains a semantic error: too many arguments to printf.
-program = """
-interval:ms:100 {
-         printf("username:%s foo   %s inet:%s",
-                 username, strftime("%H:%M:%S", nsecs), ntop(0), 0);
-      }
-"""
-
-table_name = 'pid_sample_table'
-pxtrace.UpsertTracepoint('pid_sample_tracer',
-                         table_name,
-                         program,
-                         pxtrace.kprobe(),
-                         "10m")
+py_library(
+    name = "privy_providers",
+    testonly = True,
+    srcs = glob([
+        "*.py",
+        "**/*.py",
+    ]),
+    srcs_version = "PY3",
+)

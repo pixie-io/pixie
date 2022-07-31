@@ -24,6 +24,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
+#include "src/shared/types/typespb/types.pb.h"
 
 namespace px {
 namespace carnot {
@@ -633,8 +634,9 @@ class SumUDA : public udf::UDA {
   void Merge(FunctionContext*, const SumUDA& other) { sum_ = sum_.val + other.sum_.val; }
   TAggType Finalize(FunctionContext*) { return sum_; }
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<SumUDA>::Create(
-        {types::ST_BYTES, types::ST_THROUGHPUT_PER_NS, types::ST_THROUGHPUT_BYTES_PER_NS})};
+    return {udf::InheritTypeFromArgs<SumUDA>::Create({types::ST_BYTES, types::ST_THROUGHPUT_PER_NS,
+                                                      types::ST_THROUGHPUT_BYTES_PER_NS,
+                                                      types::ST_PERCENT})};
   }
   StringValue Serialize(FunctionContext*) {
     return StringValue(reinterpret_cast<char*>(&sum_), sizeof(sum_));

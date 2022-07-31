@@ -154,6 +154,11 @@ Status ApplyK8sUpdates(
       case ResourceUpdate::kNodeUpdate:
         PL_RETURN_IF_ERROR(HandleNodeUpdate(update->node_update(), state, metadata_filter));
         break;
+      case ResourceUpdate::kReplicaSetUpdate:
+        PL_RETURN_IF_ERROR(
+            HandleReplicaSetUpdate(update->replica_set_update(), state, metadata_filter));
+        break;
+
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
@@ -338,6 +343,12 @@ Status HandleNodeUpdate(const NodeUpdate& update, AgentMetadataState* state, Age
   VLOG(2) << "Node Update: " << update.DebugString();
 
   return state->k8s_metadata_state()->HandleNodeUpdate(update);
+}
+
+Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update, AgentMetadataState* state,
+                              AgentMetadataFilter*) {
+  VLOG(2) << "Replica Set Update: " << update.DebugString();
+  return state->k8s_metadata_state()->HandleReplicaSetUpdate(update);
 }
 
 }  // namespace md

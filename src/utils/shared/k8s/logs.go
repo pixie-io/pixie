@@ -174,5 +174,11 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 		log.WithError(err).Warnf("failed to log services")
 	}
 
+	// Describe vizier and write it to vizier.log
+	err = c.logKubeCmd(zf, "vizier.log", "describe", "vizier", "--all-namespaces")
+	if err != nil {
+		log.WithError(err).Warnf("failed to log vizier crd")
+	}
+
 	return nil
 }

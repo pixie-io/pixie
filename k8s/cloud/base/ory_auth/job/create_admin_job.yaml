@@ -8,6 +8,7 @@ spec:
     spec:
       initContainers:
       - name: kratos-wait
+        imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
@@ -26,6 +27,7 @@ spec:
               key: PL_KRATOS_PUBLIC_HOST
       containers:
       - name: create-admin-job
+        imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image
         envFrom:
         - configMapRef:

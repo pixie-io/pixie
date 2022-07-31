@@ -21,16 +21,26 @@
 
 #include <gmock/gmock.h>
 
+#include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
+#include "src/stirling/source_connectors/dynamic_bpftrace/utils.h"
 #include "src/stirling/testing/common.h"
+
+#include "src/stirling/proto/stirling.pb.h"
 
 namespace px {
 namespace stirling {
 
+using ::google::protobuf::TextFormat;
+using ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 using ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepoint;
-
+using ::px::stirling::dynamic_tracing::ir::shared::DeploymentSpec;
+using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::RecordBatchSizeIs;
 using ::px::testing::status::StatusIs;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -442,6 +452,84 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
       DynamicBPFTraceConnector::Create("test", tracepoint).status(),
       StatusIs(statuspb::INTERNAL,
                HasSubstr("All printf statements must have exactly the same format string")));
+}
+
+constexpr std::string_view kServerPath =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "golang_1_16_grpc_server_/golang_1_16_grpc_server";
+
+TEST(DynamicBPFTraceConnectorTest, InsertUProbeObjPath) {
+  std::string target_binary_path = px::testing::BazelRunfilePath(kServerPath).string();
+  ASSERT_TRUE(fs::Exists(target_binary_path));
+
+  DeploymentSpec spec;
+  spec.set_path(target_binary_path);
+
+  std::string uprobe_script =
+      "uprobe:\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
+      "{ printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }";
+  InsertUprobeTargetObjPath(spec, &uprobe_script);
+  EXPECT_EQ(uprobe_script,
+            absl::StrCat("uprobe:", target_binary_path,
+                         ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\"{ "
+                         "printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }"));
+}
+
+class CPPDynamicBPFTraceTest : public ::testing::Test {
+ protected:
+  void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
+    CHECK(TextFormat::ParseFromString(text_pb, &deployment_));
+
+    ASSERT_TRUE(fs::Exists(test_exe_fixture_.Path()));
+    deployment_.mutable_deployment_spec()->set_path(test_exe_fixture_.Path().string());
+
+    auto tracepoint = deployment_.tracepoints(0);
+    std::string* script = tracepoint.mutable_bpftrace()->mutable_program();
+    if (ContainsUProbe(*script)) {
+      InsertUprobeTargetObjPath(deployment_.deployment_spec(), script);
+    }
+
+    ASSERT_OK_AND_ASSIGN(connector_,
+                         DynamicBPFTraceConnector::Create("my_dynamic_source", tracepoint));
+
+    ASSERT_OK(connector_->Init());
+
+    ASSERT_OK(test_exe_fixture_.Run());
+  }
+
+  std::vector<TaggedRecordBatch> GetRecords() {
+    constexpr int kTableNum = 0;
+    auto ctx = std::make_unique<SystemWideStandaloneContext>();
+    auto data_table = std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
+    connector_->TransferData(ctx.get(), {data_table.get()});
+    return data_table->ConsumeRecords();
+  }
+
+  // Need debug build to include the dwarf info.
+  obj_tools::TestExeFixture test_exe_fixture_;
+
+  TracepointDeployment deployment_;
+  std::unique_ptr<SourceConnector> connector_;
+};
+
+constexpr char kTestExeTraceProgram[] = R"(
+tracepoints {
+  bpftrace {
+    program: "uprobe:\"px::testing::Foo::Bar\"{ printf(\"ptr: %d, i: %d\", arg0, arg1); }"
+  }
+}
+)";
+
+TEST_F(CPPDynamicBPFTraceTest, TraceTestExe) {
+  ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kTestExeTraceProgram));
+  std::vector<TaggedRecordBatch> tablets = GetRecords();
+
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_THAT(record_batch, RecordBatchSizeIs(10));
+
+  constexpr size_t kArgIdx = 1;
+
+  EXPECT_EQ(record_batch[kArgIdx]->Get<types::Int64Value>(0).val, 3);
 }
 
 }  // namespace stirling

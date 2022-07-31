@@ -19,6 +19,7 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -72,7 +73,8 @@ type VizierReconciler struct {
 	Clientset  *kubernetes.Clientset
 	RestConfig *rest.Config
 
-	monitor *VizierMonitor
+	monitor      *VizierMonitor
+	lastChecksum []byte
 }
 
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
@@ -211,7 +213,14 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 	if err != nil {
 		return err
 	}
-	if string(checksum) == string(vz.Status.Checksum) {
+
+	if bytes.Equal(checksum, vz.Status.Checksum) {
+		log.Info("Checksums matched, no need to reconcile")
+		return nil
+	}
+
+	if len(vz.Status.Checksum) == 0 && bytes.Equal(checksum, r.lastChecksum) {
+		log.Warn("No checksum written to status")
 		log.Info("Checksums matched, no need to reconcile")
 		return nil
 	}
@@ -220,7 +229,7 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 		log.Info("Already in the process of updating, nothing to do")
 		return nil
 	}
-	log.Infof("Status checksum '%s' does not match spec checksum '%s' - running an update", string(vz.Status.Checksum), string(checksum))
+	log.Infof("Status checksum '%x' does not match spec checksum '%x' - running an update", vz.Status.Checksum, checksum)
 
 	return r.deployVizier(ctx, req, vz, true)
 }
@@ -399,6 +408,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz = setReconciliationPhase(vz, v1alpha1.ReconciliationPhaseReady)
 
 	vz.Status.Checksum = checksum
+	r.lastChecksum = checksum
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err

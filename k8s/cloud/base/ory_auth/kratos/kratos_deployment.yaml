@@ -43,6 +43,7 @@ spec:
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        imagePullPolicy: IfNotPresent
         image: oryd/kratos:v0.5.5
         resources: {}
         volumeMounts:
@@ -111,6 +112,7 @@ spec:
           value: $(AUTH_LOGIN_URL)
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
+        imagePullPolicy: IfNotPresent
         image: oryd/kratos:v0.5.5
         ports:
         - containerPort: 4433

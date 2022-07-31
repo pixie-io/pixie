@@ -31,53 +31,32 @@ declare global {
 // Use this class instead of `window.analytics`.
 // This should be the only user of window.analytics.
 class PixieAnalytics {
-  loaded: boolean;
+  loaded = false;
 
-  optOut: boolean;
+  optOut = false;
 
-  constructor() {
-    this.loaded = false;
-    this.optOut = false;
+  private get active() {
+    return this.loaded && !this.optOut;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get page() {
-    if (this.optOut) {
-      return () => {};
-    }
-    return window.analytics.page;
+    return this.active ? window.analytics.page : () => {};
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get track() {
-    if (this.optOut) {
-      return () => {};
-    }
-    return window.analytics.track;
+    return this.active ? window.analytics.track : () => {};
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get identify() {
-    if (this.optOut) {
-      return () => {};
-    }
-    return window.analytics.identify;
+    return this.active ? window.analytics.identify : () => {};
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get alias() {
-    if (this.optOut) {
-      return () => {};
-    }
-    return window.analytics.alias;
+    return this.active ? window.analytics.alias : () => {};
   }
 
-  // eslint-disable-next-line class-methods-use-this
   get reset() {
-    if (this.optOut) {
-      return () => {};
-    }
-    return window.analytics.reset;
+    return this.active ? window.analytics.reset : () => {};
   }
 
   disable() {
@@ -88,7 +67,6 @@ class PixieAnalytics {
     this.optOut = false;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   load() {
     if (this.loaded || this.optOut) {
       return;

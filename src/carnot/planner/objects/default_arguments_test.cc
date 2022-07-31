@@ -74,7 +74,7 @@ class DefaultArgumentsTest : public OperatorTests {
         /* max_output_rows_per_table */ 0, "result_addr", "result_ssl_targetname",
 
         /* redaction_options */ RedactionOptions{}, nullptr,
-        std::unique_ptr<PluginConfig>(new PluginConfig{0, 0}));
+        std::unique_ptr<PluginConfig>(new PluginConfig{0, 0}), planner::DebugInfo{});
 
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state_.get(),
                                           &module_handler_)

@@ -49,9 +49,9 @@ func init() {
 	RunCmd.Flags().MarkHidden("all-clusters")
 
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
-	viper.BindPFlag("bundle", RunCmd.Flags().Lookup("bundle"))
 
 	RunCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		viper.BindPFlag("bundle", command.Flags().Lookup("bundle"))
 		br, err := createBundleReader()
 		if err != nil {
 			// Keep this as a log.Fatal() as opposed to using the utils, because it
@@ -110,6 +110,9 @@ func createNewCobraCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "run",
 		Short: "Execute a script",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			cloudAddr := viper.GetString("cloud_addr")
 			format, _ := cmd.Flags().GetString("output")

@@ -140,18 +140,18 @@ pip_parse(
     requirements_lock = "//src/api/python:requirements.txt",
 )
 
-load("@vizier_api_python_deps//:requirements.bzl", "install_deps")
+load("@vizier_api_python_deps//:requirements.bzl", vizier_api_install_deps = "install_deps")
 
-install_deps()
+vizier_api_install_deps()
 
 pip_parse(
     name = "pxapi_python_doc_deps",
     requirements_lock = "//src/api/python/doc:requirements.txt",
 )
 
-load("@pxapi_python_doc_deps//:requirements.bzl", "install_deps")
+load("@pxapi_python_doc_deps//:requirements.bzl", pxapi_py_doc_install_deps = "install_deps")
 
-install_deps()
+pxapi_py_doc_install_deps()
 
 # Setup thrift: used for building Stirling tracing targets.
 load("//bazel:thrift.bzl", "thrift_deps")
@@ -195,3 +195,12 @@ go_download_sdk(
     name = "go_sdk_1_17",
     version = "1.17.11",
 )
+
+pip_parse(
+    name = "amqp_gen_reqs",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
+)
+
+load("@amqp_gen_reqs//:requirements.bzl", "install_deps")
+
+install_deps()

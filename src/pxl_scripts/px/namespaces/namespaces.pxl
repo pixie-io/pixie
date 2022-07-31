@@ -95,8 +95,8 @@ def process_stats_by_namespace(start_time: str):
 
     # Finally, we get the mean value across the total time window.
     df = df.groupby('namespace').agg(
-        avg_vsize=('vsize', px.mean),
-        avg_rss=('rss', px.mean),
+        vsize=('vsize', px.mean),
+        rss=('rss', px.mean),
         actual_disk_read_throughput=('actual_disk_read_throughput', px.mean),
         actual_disk_write_throughput=('actual_disk_write_throughput', px.mean),
         total_disk_read_throughput=('total_disk_read_throughput', px.mean),

@@ -62,7 +62,7 @@ class ElfReader {
     }
   };
 
-  StatusOr<int32_t> FindSegmentOffsetOfSection(std::string section_name);
+  StatusOr<int32_t> FindSegmentOffsetOfSection(std::string_view section_name);
 
   /**
    * Returns a list of symbol names that meets the search criteria.

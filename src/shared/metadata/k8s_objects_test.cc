@@ -76,6 +76,23 @@ TEST(PodInfo, add_delete_containers) {
   EXPECT_THAT(pod_info.containers(), testing::UnorderedElementsAre("ABCD2"));
 }
 
+TEST(PodInfo, add_delete_owners) {
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning,
+                   {{PodConditionType::kReady, ConditionStatus::kTrue}}, "pod phase message",
+                   "pod phase reason", "testnode", "testhost", "1.2.3.4");
+  pod_info.AddOwnerReference("1", "rs1", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+
+  EXPECT_THAT(pod_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"1", "rs1", "ReplicaSet"},
+                                            OwnerReference{"2", "rs2", "ReplicaSet"}));
+
+  pod_info.RmOwnerReference("1");
+  EXPECT_THAT(pod_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"2", "rs2", "ReplicaSet"}));
+}
+
 TEST(PodInfo, clone) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning,
                    {{PodConditionType::kReady, ConditionStatus::kTrue}}, "pod phase message",
@@ -84,6 +101,10 @@ TEST(PodInfo, clone) {
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
+
+  pod_info.AddOwnerReference("1", "rs1", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
+  pod_info.AddOwnerReference("2", "rs2", "ReplicaSet");
 
   EXPECT_EQ(PodQOSClass::kBurstable, pod_info.qos_class());
 
@@ -98,6 +119,7 @@ TEST(PodInfo, clone) {
 
   EXPECT_EQ(cloned->type(), pod_info.type());
   EXPECT_EQ(cloned->containers(), pod_info.containers());
+  EXPECT_EQ(cloned->owner_references(), pod_info.owner_references());
   EXPECT_EQ(cloned->phase(), pod_info.phase());
   EXPECT_EQ(cloned->phase_message(), pod_info.phase_message());
   EXPECT_EQ(cloned->phase_reason(), pod_info.phase_reason());
@@ -223,6 +245,151 @@ TEST(ServiceInfo, clone) {
   EXPECT_EQ(cloned->type(), service_info.type());
   EXPECT_EQ("127.0.0.2", cloned->cluster_ip());
   EXPECT_EQ(std::vector<std::string>{"127.0.0.1"}, cloned->external_ips());
+}
+
+TEST(ReplicaSetInfo, basic_accessors) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+
+  rs_info.set_start_time_ns(123);
+  rs_info.set_stop_time_ns(256);
+
+  EXPECT_EQ("123", rs_info.uid());
+  EXPECT_EQ("pl", rs_info.ns());
+  EXPECT_EQ("rs1", rs_info.name());
+
+  EXPECT_EQ(4, rs_info.replicas());
+  EXPECT_EQ(3, rs_info.fully_labeled_replicas());
+  EXPECT_EQ(2, rs_info.ready_replicas());
+  EXPECT_EQ(2, rs_info.available_replicas());
+  EXPECT_EQ(1, rs_info.observed_generation());
+
+  EXPECT_EQ(123, rs_info.start_time_ns());
+  EXPECT_EQ(256, rs_info.stop_time_ns());
+
+  EXPECT_EQ(K8sObjectType::kReplicaSet, rs_info.type());
+}
+
+TEST(ReplicaSetInfo, debug_string) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(
+        absl::Substitute(
+            "$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R:replicas=4:ready_replicas:2>", Indent(i)),
+        rs_info.DebugString(i));
+  }
+
+  rs_info.set_stop_time_ns(1000);
+  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S:replicas=4:ready_replicas:2>",
+            rs_info.DebugString());
+}
+
+TEST(ReplicaSetInfo, add_delete_owners) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  rs_info.AddOwnerReference("1", "deployment1", "Deployment");
+  rs_info.AddOwnerReference("2", "deployment2", "Deployment");
+  rs_info.AddOwnerReference("2", "deployment2", "Deployment");
+
+  EXPECT_THAT(rs_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"1", "deployment1", "Deployment"},
+                                            OwnerReference{"2", "deployment2", "Deployment"}));
+
+  rs_info.RmOwnerReference("1");
+  EXPECT_THAT(rs_info.owner_references(),
+              testing::UnorderedElementsAre(OwnerReference{"2", "deployment2", "Deployment"}));
+}
+
+TEST(ReplicaSetInfo, clone) {
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  rs_info.set_start_time_ns(123);
+  rs_info.set_stop_time_ns(256);
+  rs_info.AddOwnerReference("1", "Deployment", "deployment1");
+  rs_info.AddOwnerReference("2", "Deployment", "deployment2");
+
+  std::unique_ptr<ReplicaSetInfo> cloned(static_cast<ReplicaSetInfo*>(rs_info.Clone().release()));
+  EXPECT_EQ(cloned->uid(), rs_info.uid());
+  EXPECT_EQ(cloned->name(), rs_info.name());
+  EXPECT_EQ(cloned->ns(), rs_info.ns());
+
+  EXPECT_EQ(cloned->start_time_ns(), rs_info.start_time_ns());
+  EXPECT_EQ(cloned->stop_time_ns(), rs_info.stop_time_ns());
+
+  EXPECT_EQ(cloned->replicas(), rs_info.replicas());
+  EXPECT_EQ(cloned->fully_labeled_replicas(), rs_info.fully_labeled_replicas());
+  EXPECT_EQ(cloned->ready_replicas(), rs_info.ready_replicas());
+  EXPECT_EQ(cloned->available_replicas(), rs_info.available_replicas());
+  EXPECT_EQ(cloned->observed_generation(), rs_info.observed_generation());
+
+  EXPECT_EQ(cloned->conditions(), rs_info.conditions());
+  EXPECT_EQ(cloned->owner_references(), rs_info.owner_references());
+}
+
+TEST(DeploymentInfo, basic_accessors) {
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+                          {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
+                           {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
+
+  dep_info.set_start_time_ns(123);
+  dep_info.set_stop_time_ns(256);
+
+  EXPECT_EQ("123", dep_info.uid());
+  EXPECT_EQ("pl", dep_info.ns());
+  EXPECT_EQ("dep1", dep_info.name());
+
+  EXPECT_EQ(4, dep_info.observed_generation());
+  EXPECT_EQ(4, dep_info.replicas());
+  EXPECT_EQ(3, dep_info.updated_replicas());
+  EXPECT_EQ(3, dep_info.ready_replicas());
+  EXPECT_EQ(3, dep_info.available_replicas());
+  EXPECT_EQ(1, dep_info.unavailable_replicas());
+
+  EXPECT_EQ(123, dep_info.start_time_ns());
+  EXPECT_EQ(256, dep_info.stop_time_ns());
+
+  EXPECT_EQ(K8sObjectType::kDeployment, dep_info.type());
+}
+
+TEST(DeploymentInfo, debug_string) {
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+                          {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
+                           {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
+
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(absl::Substitute(
+                  "$0<Deployment:ns=pl:name=dep1:uid=123:state=R:replicas=4:ready_replicas:3>",
+                  Indent(i)),
+              dep_info.DebugString(i));
+  }
+
+  dep_info.set_stop_time_ns(1000);
+  EXPECT_EQ("<Deployment:ns=pl:name=dep1:uid=123:state=S:replicas=4:ready_replicas:3>",
+            dep_info.DebugString());
+}
+
+TEST(DeploymentInfo, clone) {
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+                          {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
+                           {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
+
+  dep_info.set_start_time_ns(123);
+  dep_info.set_stop_time_ns(256);
+
+  std::unique_ptr<DeploymentInfo> cloned(static_cast<DeploymentInfo*>(dep_info.Clone().release()));
+  EXPECT_EQ(cloned->uid(), dep_info.uid());
+  EXPECT_EQ(cloned->name(), dep_info.name());
+  EXPECT_EQ(cloned->ns(), dep_info.ns());
+
+  EXPECT_EQ(cloned->start_time_ns(), dep_info.start_time_ns());
+  EXPECT_EQ(cloned->stop_time_ns(), dep_info.stop_time_ns());
+
+  EXPECT_EQ(cloned->replicas(), dep_info.replicas());
+  EXPECT_EQ(cloned->updated_replicas(), dep_info.updated_replicas());
+  EXPECT_EQ(cloned->ready_replicas(), dep_info.ready_replicas());
+  EXPECT_EQ(cloned->available_replicas(), dep_info.available_replicas());
+  EXPECT_EQ(cloned->unavailable_replicas(), dep_info.unavailable_replicas());
+  EXPECT_EQ(cloned->observed_generation(), dep_info.observed_generation());
+
+  EXPECT_EQ(cloned->conditions(), dep_info.conditions());
+  EXPECT_EQ(cloned->owner_references(), dep_info.owner_references());
 }
 
 }  // namespace md

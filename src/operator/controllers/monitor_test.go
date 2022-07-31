@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -29,6 +30,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	testclient "k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
@@ -191,6 +195,96 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 			state := getCloudConnState(httpClient, pods)
 			assert.Equal(t, test.expectedReason, state.Reason)
 			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+		})
+	}
+}
+
+func TestMonitor_repairVizier(t *testing.T) {
+	tests := []struct {
+		name               string
+		podName            string
+		state              *vizierState
+		expectedError      string
+		expectedDeleteCall string
+	}{
+		{
+			name:               "natsPodFailed and correct name",
+			podName:            "pl-nats-0",
+			state:              &vizierState{Reason: status.NATSPodFailed},
+			expectedError:      "",
+			expectedDeleteCall: "pl-nats-0",
+		},
+		{
+			name:               "natsPodFailed and incorrect name",
+			podName:            "pl-nats-fail",
+			state:              &vizierState{Reason: status.NATSPodFailed},
+			expectedError:      "not found",
+			expectedDeleteCall: "pl-nats-fail",
+		},
+		{
+			name:               "natsPodPending and correct name",
+			podName:            "pl-nats-0",
+			state:              &vizierState{Reason: status.NATSPodPending},
+			expectedError:      "",
+			expectedDeleteCall: "",
+		},
+		{
+			name:               "natsPod is running and correct name",
+			podName:            "pl-nats-0",
+			state:              &vizierState{Reason: ""},
+			expectedError:      "hasn't failed",
+			expectedDeleteCall: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			testPod := &v1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pod",
+					APIVersion: "v1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      test.podName,
+					Namespace: "pl-nats",
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:            "nginx",
+							Image:           "nginx",
+							ImagePullPolicy: "Always",
+						},
+					},
+				},
+			}
+
+			// Setting deleteCall to an empty string and changing it to test.podName if a delete action is called
+			deleteCall := ""
+
+			cs := testclient.NewSimpleClientset(testPod)
+			cs.PrependReactor("*", "*", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				switch action := action.(type) {
+				case k8stesting.DeleteActionImpl:
+					// Records name of the pod sent to the delete function
+					deleteCall = test.podName
+					return false, nil, nil
+
+				default:
+					return false, nil, fmt.Errorf("No reaction implemented for %s", action)
+				}
+			})
+
+			monitor := &VizierMonitor{clientset: cs, namespace: "pl-nats"}
+			err := monitor.repairVizier(test.state)
+
+			if test.expectedError != "" {
+				assert.Regexp(t, test.expectedError, err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+
+			assert.Regexp(t, test.expectedDeleteCall, deleteCall)
 		})
 	}
 }

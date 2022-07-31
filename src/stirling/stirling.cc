@@ -43,6 +43,7 @@
 #include "src/stirling/proto/stirling.pb.h"
 
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
+#include "src/stirling/source_connectors/dynamic_bpftrace/utils.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
 #include "src/stirling/source_connectors/network_stats/network_stats_connector.h"
@@ -525,7 +526,7 @@ StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
     return error::Internal("Only one Tracepoint is currently supported.");
   }
 
-  const auto tracepoint = tracepoint_deployment->tracepoints(0);
+  auto tracepoint = tracepoint_deployment->tracepoints(0);
 
   if (tracepoint.has_program() && tracepoint.has_bpftrace()) {
     return error::Internal("Cannot have both PXL program and bpftrace.");
@@ -534,6 +535,14 @@ StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
   std::string source_name = absl::StrCat(kDynTraceSourcePrefix, trace_id.str());
 
   if (tracepoint.has_bpftrace()) {
+    std::string* script = tracepoint.mutable_bpftrace()->mutable_program();
+
+    if (ContainsUProbe(*script)) {
+      // BPFTrace script contains uprobes/uretprobes. Insert target path after each `uprobe:` or
+      // `uretprobe` based on deployment spec.
+      InsertUprobeTargetObjPath(tracepoint_deployment->deployment_spec(), script);
+    }
+
     return DynamicBPFTraceConnector::Create(source_name, tracepoint);
   }
   return DynamicTraceConnector::Create(source_name, tracepoint_deployment);

@@ -41,6 +41,7 @@ go_library(
         "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",
+        "@io_k8s_api//apps/v1:apps",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/watch",
         "@io_k8s_client_go//informers",

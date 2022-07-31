@@ -46,7 +46,7 @@ set_stirling_dynamic_perf_eval_cluster_config() {
   PROJECT=pl-pixies
   ZONE=us-west1-a
   NETWORK=projects/pl-pixies/global/networks/dev
-  SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-1
+  SUBNETWORK=STIRLING_PERF_DYNAMIC
   LABELS="k8s-dev-cluster=,stirling-perf-eval-dynamic="
 }
 
@@ -177,6 +177,13 @@ if [[ $AUTOSCALING == true ]]; then
   AUTOSCALING_ARGS=(--enable-autoscaling --min-nodes "${MIN_NODES}" --max-nodes "${MAX_NODES}")
 fi
 
+SUBNETWORK_ARGS=()
+if [[ $SUBNETWORK == "STIRLING_PERF_DYNAMIC" ]]; then
+  SUBNETWORK_ARGS=(--create-subnetwork "name=subnet-${CLUSTER_NAME}")
+else
+  SUBNETWORK_ARGS=(--subnetwork "${SUBNETWORK}")
+fi
+
 ##################
 # Start the cluster
 ##################
@@ -195,7 +202,7 @@ gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  "${AUTOSCALING_ARGS[@]}" \
  --enable-ip-alias \
  --network "${NETWORK}" \
- --subnetwork "${SUBNETWORK}" \
+ "${SUBNETWORK_ARGS[@]}" \
  --addons HorizontalPodAutoscaling,HttpLoadBalancing \
  --no-enable-autoupgrade \
  --no-enable-autorepair \

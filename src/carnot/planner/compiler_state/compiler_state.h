@@ -96,6 +96,15 @@ struct PluginConfig {
   int64_t end_time_ns;
 };
 
+struct OTelDebugAttribute {
+  std::string name;
+  std::string value;
+};
+
+struct DebugInfo {
+  std::vector<OTelDebugAttribute> otel_debug_attrs;
+};
+
 using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
 using SensitiveColumnMap = absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>;
 class CompilerState : public NotCopyable {
@@ -110,7 +119,7 @@ class CompilerState : public NotCopyable {
                 int64_t max_output_rows_per_table, std::string_view result_address,
                 std::string_view result_ssl_targetname, const RedactionOptions& redaction_options,
                 std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config,
-                std::unique_ptr<PluginConfig> plugin_config)
+                std::unique_ptr<PluginConfig> plugin_config, DebugInfo debug_info)
       : relation_map_(std::move(relation_map)),
         table_names_to_sensitive_columns_(table_names_to_sensitive_columns),
         registry_info_(registry_info),
@@ -120,7 +129,8 @@ class CompilerState : public NotCopyable {
         result_ssl_targetname_(std::string(result_ssl_targetname)),
         redaction_options_(redaction_options),
         endpoint_config_(std::move(endpoint_config)),
-        plugin_config_(std::move(plugin_config)) {}
+        plugin_config_(std::move(plugin_config)),
+        debug_info_(std::move(debug_info)) {}
 
   CompilerState() = delete;
 
@@ -164,6 +174,7 @@ class CompilerState : public NotCopyable {
 
   planpb::OTelEndpointConfig* endpoint_config() { return endpoint_config_.get(); }
   PluginConfig* plugin_config() { return plugin_config_.get(); }
+  const DebugInfo& debug_info() { return debug_info_; }
 
  private:
   std::unique_ptr<RelationMap> relation_map_;
@@ -179,6 +190,7 @@ class CompilerState : public NotCopyable {
   RedactionOptions redaction_options_;
   std::unique_ptr<planpb::OTelEndpointConfig> endpoint_config_ = nullptr;
   std::unique_ptr<PluginConfig> plugin_config_ = nullptr;
+  DebugInfo debug_info_;
 };
 
 }  // namespace planner

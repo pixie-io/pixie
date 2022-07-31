@@ -20,6 +20,7 @@
 
 #include <utility>
 
+#include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace px {
@@ -88,6 +89,10 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
         new planner::PluginConfig{logical_state.plugin_config().start_time_ns(),
                                   logical_state.plugin_config().end_time_ns()});
   }
+  planner::DebugInfo debug_info;
+  for (const auto& debug_info_pb : logical_state.debug_info().otel_debug_attributes()) {
+    debug_info.otel_debug_attrs.push_back({debug_info_pb.name(), debug_info_pb.value()});
+  }
   // Create a CompilerState obj using the relation map and grabbing the current time.
   return std::make_unique<planner::CompilerState>(
       std::move(rel_map), sensitive_columns, registry_info, px::CurrentTimeNS(),
@@ -95,7 +100,8 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       logical_state.result_ssl_targetname(),
       // TODO(philkuz) add an endpoint config to logical_state and pass that in here.
       RedactionOptionsFromPb(logical_state.redaction_options()), std::move(otel_endpoint_config),
-      std::move(plugin_config));
+      // TODO(philkuz) propagate the otel debug attributes here.
+      std::move(plugin_config), debug_info);
 }
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {

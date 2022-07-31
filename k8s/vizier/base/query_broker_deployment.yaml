@@ -70,6 +70,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: PL_CLOUD_ADDR
+          valueFrom:
+            configMapKeyRef:
+              name: pl-cloud-config
+              key: PL_CLOUD_ADDR
         - name: PL_DATA_ACCESS
           value: "Full"
         envFrom:

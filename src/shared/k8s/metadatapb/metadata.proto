@@ -27,8 +27,9 @@ import "google/protobuf/timestamp.proto";
 import "src/shared/types/typespb/types.proto";
 
 // This file is mostly copied from
-// github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto and
-// github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto
+// github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto,
+// github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto and
+// github.com/kubernetes/api/blob/f6f0d0e54216133456777fa675f58cf10cf79330/apps/v1/generated.proto
 // with some modifications, such as deletion of unnecessary fields and field re-naming.
 
 message MetadataObject {
@@ -410,6 +411,7 @@ message PodUpdate {
   string reason = 15;
   // A json object containing pod label keys and values
   string labels = 17;
+  repeated OwnerReference owner_references = 18;
 }
 
 enum ContainerType {
@@ -695,12 +697,179 @@ message ReplicaSetUpdate {
   int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
   // The unix time in nanoseconds when the this replicaset was deleted. Still active if 0.
   int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  string namespace = 12;
   int32 replicas = 5;
   int32 fully_labeled_replicas = 6;
   int32 ready_replicas = 7;
   int32 available_replicas = 8;
   int32 observed_generation = 9;
   repeated ReplicaSetCondition conditions = 10;
+  repeated OwnerReference owner_references = 11;
+}
+
+// Deployment enables declarative updates for Pods and ReplicaSets.
+message Deployment {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+
+  // Specification of the desired behavior of the Deployment.
+  DeploymentSpec spec = 2;
+
+  // Most recently observed status of the Deployment.
+  DeploymentStatus status = 3;
+}
+
+enum DeploymentConditionType {
+  DEPLOYMENT_CONDITION_TYPE_UNKNOWN = 0;
+  DEPLOYMENT_CONDITION_AVAILABLE = 1;
+  DEPLOYMENT_CONDITION_PROGRESSING = 2;
+  DEPLOYMENT_CONDITION_REPLICA_FAILURE = 3;
+}
+
+// DeploymentCondition describes the state of a deployment at a certain point.
+message DeploymentCondition {
+  // Type of deployment condition.
+  DeploymentConditionType type = 1;
+
+  // Status of the condition, one of True, False, Unknown.
+  ConditionStatus status = 2;
+
+  // The last time this condition was updated.
+  int64 last_update_time_ns = 3 [(gogoproto.customname) = "LastUpdateTimeNS"];
+
+  // Last time the condition transitioned from one status to another.
+  int64 last_transition_time_ns = 4 [(gogoproto.customname) = "LastTransitionTimeNS"];
+
+  // The reason for the condition's last transition.
+  string reason = 5;
+
+  // A human readable message indicating details about the transition.
+  string message = 6;
+}
+
+// DeploymentStatus is the most recently observed status of the Deployment.
+message DeploymentStatus {
+  // The generation observed by the deployment controller.
+  int64 observed_generation = 1;
+
+  // Total number of non-terminated pods targeted by this deployment (their labels match the selector).
+  int32 replicas = 2;
+
+  // Total number of non-terminated pods targeted by this deployment that have the desired template spec.
+  int32 updated_replicas = 3;
+
+  // readyReplicas is the number of pods targeted by this Deployment with a Ready Condition.
+  int32 ready_replicas = 4;
+
+  // Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
+  int32 available_replicas = 5;
+
+  // Total number of unavailable pods targeted by this deployment. This is the total number of
+  // pods that are still required for the deployment to have 100% available capacity. They may
+  // either be pods that are running but not yet available or pods that still have not been created.
+  int32 unavailable_replicas = 6;
+
+  // Represents the latest available observations of a deployment's current state.
+  repeated DeploymentCondition conditions = 7;
+
+  // Count of hash collisions for the Deployment object. The Deployment controller uses this
+  // field as a collision avoidance mechanism when it needs to create the name for the
+  // newest ReplicaSet.
+  int32 collision_count = 8;
+}
+
+// DeploymentSpec is the specification of the desired behavior of the Deployment.
+message DeploymentSpec {
+  // Number of desired pods. This is a pointer to distinguish between explicit
+  // zero and not specified. Defaults to 1.
+  int32 replicas = 1;
+
+  // Label selector for pods. Existing ReplicaSets whose pods are
+  // selected by this will be the ones affected by this deployment.
+  // It must match the pod template's labels.
+  LabelSelector selector = 2;
+
+  // Template describes the pods that will be created.
+  PodTemplateSpec template = 3;
+
+  // The deployment strategy to use to replace existing pods with new ones.
+  DeploymentStrategy strategy = 4;
+
+  // Minimum number of seconds for which a newly created pod should be ready
+  // without any of its container crashing, for it to be considered available.
+  // Defaults to 0 (pod will be considered available as soon as it is ready)
+  int32 min_ready_seconds = 5;
+
+  // The number of old ReplicaSets to retain to allow rollback.
+  // This is a pointer to distinguish between explicit zero and not specified.
+  // Defaults to 10.
+  int32 revision_history_limit = 6;
+
+  // Indicates that the deployment is paused.
+  bool paused = 7;
+
+  // The maximum time in seconds for a deployment to make progress before it
+  // is considered to be failed. The deployment controller will continue to
+  // process failed deployments and a condition with a ProgressDeadlineExceeded
+  // reason will be surfaced in the deployment status. Note that progress will
+  // not be estimated during the time a deployment is paused. Defaults to 600s.
+  int32 progress_deadline_seconds = 9;
+}
+
+enum DeploymentStrategyType {
+  DEPLOYMENT_STRATEGY_UNKNOWN = 0;
+  DEPLOYMENT_STRATEGY_RECREATE = 1;
+  DEPLOYMENT_STRATEGY_ROLLING_UPDATE = 2;
+}
+
+// DeploymentStrategy describes how to replace existing pods with new ones.
+message DeploymentStrategy {
+  // Type of deployment. Can be "Recreate" or "RollingUpdate". Default is RollingUpdate.
+  DeploymentStrategyType type = 1;
+
+  // Rolling update config params. Present only if DeploymentStrategyType =
+  // RollingUpdate.
+  RollingUpdateDeployment rolling_update = 2;
+}
+
+// Spec to control the desired behavior of rolling update.
+message RollingUpdateDeployment {
+  // The maximum number of pods that can be unavailable during the update.
+  // Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+  // Absolute number is calculated from percentage by rounding down.
+  // This can not be 0 if MaxSurge is 0.
+  // Defaults to 25%.
+  string max_unavailable = 1;
+
+  // The maximum number of pods that can be scheduled above the desired number of
+  // pods.
+  // Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%).
+  // This can not be 0 if MaxUnavailable is 0.
+  // Absolute number is calculated from percentage by rounding up.
+  // Defaults to 25%.
+  string max_surge = 2;
+}
+
+// DeploymentUpdate is the update that is sent to the agents when there are any deployment changes.
+// This should contain information important for our agents to know.
+message DeploymentUpdate {
+  // UID is the unique ID of this deployment in both space and time.
+  string uid = 1 [(gogoproto.customname) = "UID"];
+  // Name of the deployment, unique in space, but not time.
+  string name = 2;
+  // The unix time in nanoseconds when the this deployment was created.
+  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  // The unix time in nanoseconds when the this deployment was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  // Namespace of this deployment
+  string namespace = 5;
+  int32 observed_generation = 6;
+  int32 replicas = 7;
+  int32 updated_replicas = 8;
+  int32 ready_replicas = 9;
+  int32 available_replicas = 10;
+  int32 unavailable_replicas = 11;
+  repeated DeploymentCondition conditions = 12;
 }
 
 // Resource update is the message we send to the agent/compute nodes
@@ -716,6 +885,7 @@ message ResourceUpdate {
     NamespaceUpdate namespace_update = 6;
     NodeUpdate node_update = 7;
     ReplicaSetUpdate replica_set_update = 10;
+    DeploymentUpdate deployment_update = 11;
   }
   int64 update_version = 8;
   int64 prev_update_version = 9;

@@ -18,6 +18,8 @@
 
 #include "src/carnot/planner/compiler/ast_visitor.h"
 
+#include <utility>
+
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/objects/collection_object.h"
@@ -58,9 +60,9 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
     CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
     const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
-  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, mutations, compiler_state, var_table, func_based_exec,
-                         reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
+  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
+      graph, mutations, compiler_state, VarTable::Create(), std::move(var_table), func_based_exec,
+      reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
@@ -89,8 +91,8 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
     std::shared_ptr<VarTable> var_table) {
   // The flag values should come from the parent var table, not be copied here.
   auto visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, mutations_, compiler_state_, var_table, func_based_exec_, {},
-                         module_handler_, udf_registry_));
+      new ASTVisitorImpl(ir_graph_, mutations_, compiler_state_, global_var_table_, var_table,
+                         func_based_exec_, {}, module_handler_, udf_registry_));
   return visitor;
 }
 
@@ -113,17 +115,17 @@ Status ASTVisitorImpl::SetupModules(
 Status ASTVisitorImpl::InitGlobals() {
   // Populate the type objects
   PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));
-  var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
+  global_var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
   PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt, this));
-  var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
+  global_var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
   PL_ASSIGN_OR_RETURN(auto float_type_object, TypeObject::Create(IRNodeType::kFloat, this));
-  var_table_->Add(ASTVisitorImpl::kFloatTypeName, float_type_object);
+  global_var_table_->Add(ASTVisitorImpl::kFloatTypeName, float_type_object);
   PL_ASSIGN_OR_RETURN(auto bool_type_object, TypeObject::Create(IRNodeType::kBool, this));
-  var_table_->Add(ASTVisitorImpl::kBoolTypeName, bool_type_object);
+  global_var_table_->Add(ASTVisitorImpl::kBoolTypeName, bool_type_object);
   PL_ASSIGN_OR_RETURN(auto list_type_object, TypeObject::Create(QLObjectType::kList, this));
-  var_table_->Add(ASTVisitorImpl::kListTypeName, list_type_object);
+  global_var_table_->Add(ASTVisitorImpl::kListTypeName, list_type_object);
   // Populate other reserved words
-  var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
+  global_var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
 
   return CreateBoolLiterals();
 }
@@ -134,10 +136,10 @@ Status ASTVisitorImpl::CreateBoolLiterals() {
   bool_ast->column = 0;
   PL_ASSIGN_OR_RETURN(auto true_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, true));
   PL_ASSIGN_OR_RETURN(auto true_object, ExprObject::Create(true_ir, this));
-  var_table_->Add(ASTVisitorImpl::kTrueName, true_object);
+  global_var_table_->Add(ASTVisitorImpl::kTrueName, true_object);
   PL_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
   PL_ASSIGN_OR_RETURN(auto false_object, ExprObject::Create(false_ir, this));
-  var_table_->Add(ASTVisitorImpl::kFalseName, false_object);
+  global_var_table_->Add(ASTVisitorImpl::kFalseName, false_object);
   return Status::OK();
 }
 
@@ -837,11 +839,16 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
 StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
                                                      const std::string& name) {
   auto var = var_table_->Lookup(name);
-  if (var == nullptr) {
+  if (var != nullptr) {
+    var->SetAst(ast);
+    return var;
+  }
+  auto global_var = global_var_table_->Lookup(name);
+  if (global_var == nullptr) {
     return CreateAstError(ast, "name '$0' is not defined", name);
   }
-  var->SetAst(ast);
-  return var;
+  global_var->SetAst(ast);
+  return global_var;
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node,

@@ -46,6 +46,11 @@ constexpr char kPod0UpdatePbTxt[] = R"(
     type: READY
     status: CONDITION_STATUS_TRUE
   }
+  owner_references: {
+    uid: "1234"
+    kind: "ReplicaSet"
+    name: "rs1"
+  }
   node_name: "a_node"
   hostname: "a_host"
   pod_ip: "1.2.3.4"
@@ -144,6 +149,28 @@ constexpr char kRunningNamespaceUpdatePbTxt[] = R"(
   stop_timestamp_ns: 8
 )";
 
+constexpr char kReplicaSetUpdatePbTxt[] = R"(
+  uid: "rs0_uid"
+  name: "rs0"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 0
+  namespace: "ns0"
+  replicas: 5
+  fully_labeled_replicas: 5
+  ready_replicas: 3
+  available_replicas: 3
+  observed_generation: 5
+  conditions: {
+    type: "ready"
+    status: CONDITION_STATUS_TRUE
+  }
+  owner_references: {
+    kind: "Deployment"
+    name: "deployment1"
+    uid: "deployment_uid"
+  }
+)";
+
 TEST(K8sMetadataStateTest, CloneCopiedCIDR) {
   K8sMetadataState state;
 
@@ -234,6 +261,8 @@ TEST(K8sMetadataStateTest, HandlePodUpdate) {
   EXPECT_EQ("a_host", pod_info->hostname());
   EXPECT_EQ("1.2.3.4", pod_info->pod_ip());
   EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container0_uid"));
+  EXPECT_THAT(pod_info->owner_references(),
+              UnorderedElementsAre(OwnerReference{"1234", "rs0", "ReplicaSet"}));
 
   // Check that the container info pod ID got set.
   EXPECT_EQ("pod0_uid", container_info->pod_id());
@@ -307,6 +336,22 @@ TEST(K8sMetadataStateTest, HandleNamespaceUpdate) {
   EXPECT_EQ("ns0", info->name());
   EXPECT_EQ(7, info->start_time_ns());
   EXPECT_EQ(8, info->stop_time_ns());
+}
+
+TEST(K8sMetadataStateTest, HandleReplicaSetUpdate) {
+  K8sMetadataState state;
+
+  K8sMetadataState::ReplicaSetUpdate update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kReplicaSetUpdatePbTxt, &update))
+      << "Failed to parse proto";
+
+  EXPECT_OK(state.HandleReplicaSetUpdate(update));
+  auto info = state.ReplicaSetInfoByID("rs0_uid");
+  ASSERT_NE(nullptr, info);
+  EXPECT_EQ("rs0_uid", info->uid());
+  EXPECT_EQ("rs0", info->name());
+  EXPECT_EQ(101, info->start_time_ns());
+  EXPECT_EQ(0, info->stop_time_ns());
 }
 
 TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {

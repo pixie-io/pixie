@@ -675,6 +675,547 @@ class UPIDToNodeNameUDF : public ScalarUDF {
 };
 
 /**
+ * @brief Returns string representation of condition status
+ */
+inline std::string conditionStatusToString(md::ConditionStatus status) {
+  switch (status) {
+    case md::ConditionStatus::kTrue:
+      return "True";
+    case md::ConditionStatus::kFalse:
+      return "False";
+    default:
+      return "Unknown";
+  }
+}
+
+/**
+ * @brief Converts replica set info to a json string.
+ */
+
+inline types::StringValue ReplicaSetInfoToStatus(const px::md::ReplicaSetInfo* rs_info) {
+  int replicas = 0;
+  int fully_labeled_replicas = 0;
+  int ready_replicas = 0;
+  int available_replicas = 0;
+  int observed_generation = 0;
+  std::string conditions = "";
+
+  if (rs_info != nullptr) {
+    replicas = rs_info->replicas();
+    fully_labeled_replicas = rs_info->fully_labeled_replicas();
+    ready_replicas = rs_info->ready_replicas();
+    available_replicas = rs_info->available_replicas();
+    observed_generation = rs_info->observed_generation();
+
+    auto rs_conditions = rs_info->conditions();
+    for (const auto& condition : rs_info->conditions()) {
+      std::string conditionStatus;
+      conditions = absl::Substitute(R"("$0": "$1", $2)", condition.first,
+                                    conditionStatusToString(condition.second), conditions);
+    }
+  }
+
+  rapidjson::Document d;
+  d.SetObject();
+  d.AddMember("replicas", replicas, d.GetAllocator());
+  d.AddMember("fully_labeled_replicas", fully_labeled_replicas, d.GetAllocator());
+  d.AddMember("ready_replicas", ready_replicas, d.GetAllocator());
+  d.AddMember("available_replicas", available_replicas, d.GetAllocator());
+  d.AddMember("observed_generation", observed_generation, d.GetAllocator());
+  d.AddMember("conditions", internal::StringRef(conditions), d.GetAllocator());
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return sb.GetString();
+}
+
+// Converts owner reference object into a json string
+inline types::StringValue OwnerReferenceString(const px::md::OwnerReference& owner_reference) {
+  std::string uid = owner_reference.uid;
+  std::string kind = owner_reference.kind;
+  std::string name = owner_reference.name;
+
+  rapidjson::Document d;
+  d.SetObject();
+  d.AddMember("uid", internal::StringRef(uid), d.GetAllocator());
+  d.AddMember("kind", internal::StringRef(kind), d.GetAllocator());
+  d.AddMember("name", internal::StringRef(name), d.GetAllocator());
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  d.Accept(writer);
+  return sb.GetString();
+}
+
+/**
+ * @brief Returns the replica set id for the given replica set name.
+ */
+class ReplicaSetIDToReplicaSetNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+
+    return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Replica Set Name from a Replica Set ID.")
+        .Details(
+            "Gets the Kubernetes Replica Set Name for the Replica Set ID."
+            "If the given ID doesn't have an associated Kubernetes replica set, this function "
+            "returns "
+            "an empty string")
+        .Example("df.replica_set_name = px.replica_set_id_to_replica_set_name(replica_set_id)")
+        .Arg("replica_set_id", "The UID of the replica set to get the name for.")
+        .Returns("The Kubernetes Replica Set Name for the UID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set start time for replica set id.
+ */
+class ReplicaSetIDToStartTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return 0;
+    }
+    return rs_info->start_time_ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a replica set from its ID.")
+        .Details(
+            "Gets the start time (in nanosecond unix time format) of a replica set from its ID.")
+        .Example("df.rs_start_time = px.replica_set_id_to_start_time(replica_set_id)")
+        .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the start time for.")
+        .Returns("The start time (as an integer) for the Replica Set ID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set stop time for replica set id.
+ */
+class ReplicaSetIDToStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return 0;
+    }
+    return rs_info->stop_time_ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a replica set from its ID.")
+        .Details(
+            "Gets the stop time (in nanosecond unix time format) of a replica set from its ID.")
+        .Example("df.rs_stop_time = px.replica_set_id_to_stop_time(replica_set_id)")
+        .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the stop time for.")
+        .Returns("The stop time (as an integer) for the Replica Set ID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set namespace for replica set id.
+ */
+class ReplicaSetIDToNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+    return rs_info->ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the namespace of a replica set from its ID.")
+        .Details("Gets the namespace of a replica set from its ID.")
+        .Example("df.namespace = px.replica_set_id_to_namespace(replica_set_id)")
+        .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the namespace for.")
+        .Returns("The namespace for the Replica Set ID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set owner references for replica sets id.
+ */
+class ReplicaSetIDToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : rs_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+
+    return VectorToStringArray(owner_references);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references of a replica set from its ID.")
+        .Details("Gets the owner references of a replica set from its ID.")
+        .Example("df.owner_references = px.replica_set_id_to_owner_references(replica_set_id)")
+        .Arg("replica_set_id",
+             "The Replica Set ID of the Replica Set to get the owner references for.")
+        .Returns("The owner references for the Replica Set ID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set status for replica set id.
+ */
+class ReplicaSetIDToStatusUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_id) {
+    auto md = GetMetadataState(ctx);
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+
+    return ReplicaSetInfoToStatus(rs_info);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references of a replica set from its ID.")
+        .Details("Gets the owner references of a replica set from its ID.")
+        .Example("df.owner_references = px.replica_set_id_to_owner_references(replica_set_id)")
+        .Arg("replica_set_id",
+             "The Replica Set ID of the Replica Set to get the owner references for.")
+        .Returns("The owner references for the Replica Set ID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set id from replica set name.
+ */
+class ReplicaSetNameToReplicaSetIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    return replica_set_id;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Replica Set ID from a Replica Set name.")
+        .Details(
+            "Gets the Kubernetes Replica Set ID for the Replica Set name."
+            "If the given name doesn't have an associated Kubernetes replica set, this function "
+            "returns "
+            "an empty string")
+        .Example("df.replica_set_id = px.replica_set_name_to_replica_set_id(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The Kubernetes Replica Set Name for the name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set start time for replica set name.
+ */
+class ReplicaSetNameToStartTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return 0;
+    }
+    return rs_info->start_time_ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the start time of a replica set from its name.")
+        .Details(
+            "Gets the start time (in nanosecond unix time format) of a replica set from its name.")
+        .Example("df.rs_start_time = px.replica_set_id_to_start_time(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The start time (as an integer) for the Replica Set name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set stop time for replica set name.
+ */
+class ReplicaSetNameToStopTimeUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return 0;
+    }
+    return rs_info->stop_time_ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the stop time of a replica set from its name.")
+        .Details(
+            "Gets the stop time (in nanosecond unix time format) of a replica set from its name.")
+        .Example("df.rs_stop_time = px.replica_set_name_to_stop_time(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The stop time (as an integer) for the Replica Set name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set namespace for replica set name.
+ */
+class ReplicaSetNameToNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+    return rs_info->ns();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the namespace of a replica set from its name.")
+        .Details("Gets the namespace of a replica set from its name.")
+        .Example("df.namespace = px.replica_set_name_to_namespace(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The namespace for the Replica Set name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set owner references for replica set name.
+ */
+class ReplicaSetNameToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : rs_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+
+    return VectorToStringArray(owner_references);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references of a replica set from its name.")
+        .Details("Gets the owner references of a replica set from its name.")
+        .Example("df.owner_references = px.replica_set_name_to_owner_references(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The owner references for the Replica Set name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set status for replica set name.
+ */
+class ReplicaSetNameToStatusUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue replica_set_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the replica set name to be in the format of "<ns>/<replica-set-name>".
+    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
+
+    auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
+    if (rs_info == nullptr) {
+      return "";
+    }
+
+    return ReplicaSetInfoToStatus(rs_info);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references of a replica set from its name.")
+        .Details("Gets the owner references of a replica set from its name.")
+        .Example("df.owner_references = px.replica_set_id_to_owner_references(replica_set_name)")
+        .Arg("replica_set_name",
+             "The name of the replica set to get the name for. The name includes the namespace of "
+             "the replica set. i.e. \"ns/rs_name\"")
+        .Returns("The owner references for the Replica Set name passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set names for replica sets that are currently running.
+ */
+class UPIDToReplicaSetNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+
+    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+      return "";
+    }
+
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        auto replica_set_info = md->k8s_metadata_state().ReplicaSetInfoByID(owner_reference.uid);
+        if (replica_set_info == nullptr) {
+          continue;
+        }
+        if (replica_set_info->stop_time_ns() == 0) {
+          // return the first found replica set name
+          return absl::Substitute("$0/$1", replica_set_info->ns(), replica_set_info->name());
+        }
+      }
+    }
+    return "";
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Replica Set Name from a UPID.")
+        .Details(
+            "Gets the Kubernetes Replica Set Name for the process with the given Unique Process ID "
+            "(UPID). "
+            "If the given process doesn't have an associated Kubernetes replica set, this function "
+            "returns "
+            "an empty string")
+        .Example("df.replica_set_name = px.upid_to_replica_set_name(df.upid)")
+        .Arg("upid", "The UPID of the process to get the service name for.")
+        .Returns("The Kubernetes Replica Set Name for the UPID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
+ * @brief Returns the replica set ids for replica sets that are currently running.
+ */
+class UPIDToReplicaSetIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+      return "";
+    }
+    std::string running_replica_sets_id;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        auto replica_set_info = md->k8s_metadata_state().ReplicaSetInfoByID(owner_reference.uid);
+        if (replica_set_info == nullptr) {
+          continue;
+        }
+        if (replica_set_info->stop_time_ns() == 0) {
+          // return the first found replica set id
+          running_replica_sets_id = replica_set_info->uid();
+          break;
+        }
+      }
+    }
+    return running_replica_sets_id;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Service ID from a UPID.")
+        .Details(
+            "Gets the Kubernetes Replica Set ID for the process with the given Unique Process ID "
+            "(UPID). "
+            "If the given process doesn't have an associated Kubernetes replica set, this function "
+            "returns "
+            "an empty string.")
+        .Example("df.replica_set_id = px.upid_to_replica_set_id(df.upid)")
+        .Arg("upid", "The UPID of the process to get the service ID for.")
+        .Returns("The kubernetes replica set ID for the UPID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+/**
  * @brief Returns the hostname for the pod associated with the input upid.
  */
 class UPIDToHostnameUDF : public ScalarUDF {
@@ -781,6 +1322,67 @@ class PodIDToServiceIDUDF : public ScalarUDF {
 };
 
 /**
+ * @brief Returns the owner references for the given pod ID.
+ */
+class PodIDToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+    return VectorToStringArray(owner_references);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references for a given pod ID.")
+        .Details(
+            "Gets the owner references for the pod. If there is no "
+            "owner references associated to this pod, then this function returns an empty string.")
+        .Example("df.owner_references = px.pod_id_to_owner_references(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get owner references for.")
+        .Returns("The k8s owner references for the Pod ID passed in.");
+  }
+};
+
+/**
+ * @brief Returns the owner references for the given pod name.
+ */
+class PodNameToOwnerReferencesUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> owner_references;
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      owner_references.push_back(OwnerReferenceString(owner_reference));
+    }
+    return VectorToStringArray(owner_references);
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the owner references for a given pod name.")
+        .Details(
+            "Gets the owner references for the pod (specified by the pod_name). If there is no "
+            "owner references associated to this pod, then this function returns an empty string.")
+        .Example("df.owner_references = px.pod_name_to_owner_references(df.pod_name)")
+        .Arg("pod_name", "The Pod name of the Pod to get service ID for.")
+        .Returns("The k8s owner references for the Pod name passed in.");
+  }
+};
+
+/**
  * @brief Returns the Node Name of a pod ID passed in.
  */
 class PodIDToNodeNameUDF : public ScalarUDF {
@@ -806,6 +1408,78 @@ class PodIDToNodeNameUDF : public ScalarUDF {
         .Example("df.node_name = px.pod_id_to_node_name(df.pod_id)")
         .Arg("pod_id", "The Pod ID of the Pod to get the node name for.")
         .Returns("The k8s node name for the Pod ID passed in.");
+  }
+};
+
+/**
+ * @brief Returns the ReplicaSet name of a pod ID passed in.
+ */
+class PodIDToReplicaSetUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        // return the first found replica set
+        return absl::Substitute("$0/$1", pod_info->ns(), owner_reference.name);
+      }
+    }
+    return "";
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Get the name of the replica set which controls the pod with pod ID.")
+        .Details(
+            "Gets the Kubernetes name for the replica set that owns the Pod (specified by Pod ID)."
+            "If this pod is not controlled by any replica set, returns an empty string.")
+        .Example("df.replica_set = px.pod_id_to_replica_set(df.pod_id)")
+        .Arg("pod_id", "The Pod ID of the Pod to get the replica set name for.")
+        .Returns("The k8s replica set name wich controls the Pod with the Pod ID.");
+  }
+};
+
+/**
+ * @brief Returns the ReplicaSet name of a pod name passed in.
+ */
+class PodNameToReplicaSetUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
+    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    for (const auto& owner_reference : pod_info->owner_references()) {
+      if (owner_reference.kind == "ReplicaSet") {
+        // return the first found replica set
+        return absl::Substitute("$0/$1", pod_info->ns(), owner_reference.name);
+      }
+    }
+    return "";
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder(
+               "Get the name of the replica set which controls the pod with the specified pod "
+               "name.")
+        .Details(
+            "Gets the Kubernetes name for the replica set that owns the Pod (specified by pod "
+            "name)."
+            "If this pod is not controlled by any replica set, returns an empty string.")
+        .Example("df.replica_set = px.pod_name_to_replica_set(df.pod_name)")
+        .Arg("pod_name", "The Pod name of the Pod to get the replica set name for.")
+        .Returns("The k8s replica set name wich controls the Pod with the Pod ID.");
   }
 };
 
@@ -1196,7 +1870,7 @@ class PodNameToPodStatusUDF : public ScalarUDF {
             "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/"
             "#podstatus-v1-core "
             "for more info about this object. ")
-        .Example("df.pod_status = px.pod_name_to_pod_status(df.pod_name)")
+        .Example("df.pod_status = px.pod_name_to_status(df.pod_name)")
         .Arg("pod_name", "The name of the pod to get the PodStatus for.")
         .Returns("The Kubernetes PodStatus for the Pod passed in.");
   }
@@ -1606,6 +2280,29 @@ class HasServiceIDUDF : public ScalarUDF {
         .Arg("service_id", "The service ID to check")
         .Arg("value", "The value to check for in service")
         .Returns("True if value is present in service_id, otherwise false");
+  }
+};
+
+// Same functionality as HasServiceNameUDF but with a better name. New class to avoid breaking code
+// which uses HasServiceNameUDF
+class HasValueUDF : public ScalarUDF {
+ public:
+  BoolValue Exec(FunctionContext*, StringValue array_or_value, StringValue value) {
+    return EqualsOrArrayContains(array_or_value, value);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Determine if a value is present in an array.")
+        .Details(
+            "Checks to see if a given value is present in an array. Can include matching an "
+            "individual "
+            "value, or checking against an array of services.")
+        .Example(
+            "df = df[px.has_value(df.ctx[\"replica_set\"], "
+            "\"kube-system/kube-dns-79c57c8c9b\")]")
+        .Arg("array_or_value", "Array or value to check.")
+        .Arg("value", "The value to check for in passed in value.")
+        .Returns("True if value is present in the input, otherwise false.");
   }
 };
 

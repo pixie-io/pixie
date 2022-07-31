@@ -304,6 +304,7 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 		VizierID:                      utils.ProtoFromUUID(vzInfo.ID),
 		Status:                        vzInfo.Status.ToProto(),
 		LastHeartbeatNs:               lastHearbeat,
+		Config:                        &cvmsgspb.VizierConfig{},
 		ClusterUID:                    clusterUID,
 		ClusterName:                   clusterName,
 		ClusterVersion:                clusterVersion,
@@ -418,6 +419,15 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return vzInfoPb, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
+}
+
+// UpdateVizierConfig supports updating of the Vizier config.
+func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateVizierConfigRequest) (*cvmsgspb.UpdateVizierConfigResponse, error) {
+	if err := s.validateOrgOwnsCluster(ctx, req.VizierID); err != nil {
+		return nil, err
+	}
+
+	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }
 
 // GetVizierConnectionInfo gets a viziers connection info,
@@ -633,6 +643,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
+		return
 	}
 	defer rows.Close()
 	if rows.Next() {

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
+	"github.com/spf13/viper"
 	"github.com/vbauerster/mpb/v4"
 	"github.com/vbauerster/mpb/v4/decor"
 )
@@ -50,8 +51,13 @@ type SpinnerTable struct {
 
 // NewSpinnerTable creates a new table with Spinners.
 func NewSpinnerTable() *SpinnerTable {
+	var opt mpb.ContainerOption
+	if viper.GetBool("quiet") {
+		opt = mpb.WithOutput(nil)
+	}
+
 	return &SpinnerTable{
-		mpb.New(),
+		mpb.New(opt),
 		make([]*TaskInfo, 0),
 	}
 }

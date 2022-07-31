@@ -94,6 +94,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/boringssl/" +
                 "archive/83da28a68f32023fd3b95a8ae94991a07b1f6c6.tar.gz"],
     ),
+    com_github_openssl_openssl = dict(
+        sha256 = "9f54d42aed56f62889e8384895c968e24d57eae701012776d5f18fb9f2ae48b0",
+        strip_prefix = "openssl-openssl-3.0.2",
+        urls = ["https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.2.tar.gz"],
+    ),
     com_github_gflags_gflags = dict(
         sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
         strip_prefix = "gflags-524b83d0264cb9f1b2d134c564ef1aa23f207a41",
@@ -240,9 +245,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/tdigest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
     ),
     com_github_vinzenz_libpypa = dict(
-        sha256 = "7ea0fac21dbf4e2496145c8d73b03250d3f31b46147a0abce174ea23dc1dd7ea",
-        strip_prefix = "libpypa-32a0959ab43b1f31db89bc3e8d0133a515af945e",
-        urls = ["https://github.com/pixie-io/libpypa/archive/32a0959ab43b1f31db89bc3e8d0133a515af945e.tar.gz"],
+        sha256 = "a2425b4336d4dea21124b87ce51fa6f67c212f4b5b1496af4fae7cba73724efc",
+        strip_prefix = "libpypa-eba8ec485a6c5e566d0d7a0716a06c91837c9d2f",
+        urls = ["https://github.com/pixie-io/libpypa/archive/eba8ec485a6c5e566d0d7a0716a06c91837c9d2f.tar.gz"],
     ),
     com_github_thoughtspot_threadstacks = dict(
         sha256 = "e54d4c3cd5af3cc136cc952c1ef77cd90b41133cd61140d8488e14c6d6f795e9",
@@ -341,7 +346,8 @@ GIT_REPOSITORY_LOCATIONS = dict(
 # then uncomment the lines with `_local_repo(name_of_repo_you_care_about, ...)` in `repositories.bzl` and
 # comment out the corresponding lines with `_git_repo(name_of_repo_you_care_about, ...)`.
 # Note that if you do this, you have to handle the building of these repos' artifacts yourself.
-# See `bazel/external/local_dev` for more info about the right cmake commands for building these repos yourself.
+# See `bazel/external/local_dev/{bcc,bpftrace}.BUILD` for the cmake commands for building these repos.
+#
 # WARNING: doing this has some downsides, so don't do it for production builds. For instance,
 # cflags and other settings set by bazel (eg -O3) won't be used, since you have to do the building manually.
 LOCAL_REPOSITORY_LOCATIONS = dict(

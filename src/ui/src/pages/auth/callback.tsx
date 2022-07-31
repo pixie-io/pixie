@@ -328,6 +328,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
       ...c,
       loading: false,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config?.err?.errorType, performSignup, performUILogin, sendTokenToCLI]);
 
   const handleAccessToken = React.useCallback((token: Token) => {

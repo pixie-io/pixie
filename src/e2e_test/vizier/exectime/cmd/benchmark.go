@@ -16,13 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package main
+package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"sort"
 	"strings"
@@ -31,36 +33,67 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"github.com/spf13/cobra"
 
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
-	"px.dev/pixie/src/shared/services"
 )
 
-var scriptDisableList = []string{
-	"px/http2_data",
+var disallowedScripts = map[string]bool{
+	"px/http2_data": true,
+}
+
+var allowedOutputFmts = map[string]bool{
+	"table": true,
+	"json":  true,
 }
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
 
+const (
+	execTimeExternalLabel = "Exec Time: External"
+	execTimeInternalLabel = "Exec Time: Internal"
+	compTimeLabel         = "Compilation Time"
+	numErrorsLabel        = "Num Errors"
+	numBytesLabel         = "Num Bytes"
+)
+
 func init() {
-	pflag.Int("num_runs", 10, "number of times to run a script ")
-	pflag.StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
-	pflag.StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
-	pflag.BoolP("all-clusters", "d", false, "Run script across all clusters")
-	pflag.StringP("cluster", "c", "", "Run only on selected cluster")
+	BenchmarkCmd.PersistentFlags().Int("num_runs", 20, "number of times to run a script ")
+	BenchmarkCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
+	BenchmarkCmd.PersistentFlags().StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
+	BenchmarkCmd.PersistentFlags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	BenchmarkCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
+	BenchmarkCmd.PersistentFlags().StringSliceP("scripts", "s", nil, "Run only on selected scripts")
+	BenchmarkCmd.PersistentFlags().StringP("output", "o", "table", "Output format to use. Currently supports 'table' or 'json'")
+	RootCmd.AddCommand(BenchmarkCmd)
 }
 
 // Distribution is the interface used to make the stats.
 type Distribution interface {
 	Summarize() string
+	Type() string
+	Append(interface{})
+	Diff(Distribution) (DistributionDiff, error)
 }
 
 // TimeDistribution contains Times and implements the Distribution interface.
 type TimeDistribution struct {
 	Times []time.Duration
+}
+
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (t *TimeDistribution) Type() string {
+	return "Time"
+}
+
+// Append a value to the time distribution.
+func (t *TimeDistribution) Append(v interface{}) {
+	dur, ok := v.(time.Duration)
+	if !ok {
+		log.Fatal("failed to append to TimeDistribution")
+	}
+	t.Times = append(t.Times, dur)
 }
 
 // Mean caluates the mean of the time distribution.
@@ -92,6 +125,24 @@ type ErrorDistribution struct {
 	Errors []error
 }
 
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (d *ErrorDistribution) Type() string {
+	return "Error"
+}
+
+// Append a value to the error distribution.
+func (d *ErrorDistribution) Append(v interface{}) {
+	if v == nil {
+		d.Errors = append(d.Errors, nil)
+		return
+	}
+	e, ok := v.(error)
+	if !ok {
+		log.Fatal("failed to append to ErrorDistribution")
+	}
+	d.Errors = append(d.Errors, e)
+}
+
 // Num counts the number of errors.
 func (d *ErrorDistribution) Num() int {
 	var numErrs int
@@ -111,6 +162,20 @@ func (d *ErrorDistribution) Summarize() string {
 // BytesDistribution contains Bytess and implements the Distribution interface.
 type BytesDistribution struct {
 	Bytes []int
+}
+
+// Type returns the type of distribution this is, for json marshalling purposes.
+func (d *BytesDistribution) Type() string {
+	return "Bytes"
+}
+
+// Append a value to the bytes distribution.
+func (d *BytesDistribution) Append(v interface{}) {
+	e, ok := v.(int)
+	if !ok {
+		log.Fatal("failed to append to BytesDistribution")
+	}
+	d.Bytes = append(d.Bytes, e)
 }
 
 // Mean caluates the mean of the time distribution.
@@ -189,17 +254,70 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	return &execRes, nil
 }
 
-func isDisabled(script string) bool {
-	for _, t := range scriptDisableList {
-		if script == t {
-			return true
-		}
+func isAllowed(s *script.ExecutableScript, allowedScripts map[string]bool) bool {
+	if disallowedScripts[s.ScriptName] {
+		return false
 	}
-	return false
+	if isMutation(s) {
+		return false
+	}
+	if len(allowedScripts) == 0 {
+		return true
+	}
+	return allowedScripts[s.ScriptName]
 }
 
 func isMutation(s *script.ExecutableScript) bool {
 	return strings.Contains(s.ScriptString, "pxtrace")
+}
+
+type distributionMap map[string]Distribution
+type distributionContainer struct {
+	Type      string
+	TimeDist  *TimeDistribution  `json:",omitempty"`
+	BytesDist *BytesDistribution `json:",omitempty"`
+	ErrorDist *ErrorDistribution `json:",omitempty"`
+}
+
+func (dm *distributionMap) MarshalJSON() ([]byte, error) {
+	containers := make(map[string]*distributionContainer, len(*dm))
+	for k, dist := range *dm {
+		containers[k] = &distributionContainer{
+			Type: dist.Type(),
+		}
+		switch dist.Type() {
+		case (&TimeDistribution{}).Type():
+			timeDist, _ := dist.(*TimeDistribution)
+			containers[k].TimeDist = timeDist
+		case (&BytesDistribution{}).Type():
+			byteDist, _ := dist.(*BytesDistribution)
+			containers[k].BytesDist = byteDist
+		case (&ErrorDistribution{}).Type():
+			errorDist, _ := dist.(*ErrorDistribution)
+			containers[k].ErrorDist = errorDist
+		}
+	}
+	return json.Marshal(containers)
+}
+
+func (dm *distributionMap) UnmarshalJSON(data []byte) error {
+	var containers map[string]*distributionContainer
+	err := json.Unmarshal(data, &containers)
+	if err != nil {
+		return err
+	}
+	(*dm) = make(distributionMap, len(containers))
+	for k, container := range containers {
+		switch container.Type {
+		case (&TimeDistribution{}).Type():
+			(*dm)[k] = container.TimeDist
+		case (&BytesDistribution{}).Type():
+			(*dm)[k] = container.BytesDist
+		case (&ErrorDistribution{}).Type():
+			(*dm)[k] = container.ErrorDist
+		}
+	}
+	return nil
 }
 
 // ScriptExecData contains the data for a single executed script.
@@ -207,7 +325,7 @@ type ScriptExecData struct {
 	// The Name of the script we're running.
 	Name string
 	// The Distributions of Statistics to record.
-	Distributions map[string]Distribution
+	Distributions distributionMap
 }
 
 // stdoutTableWriter writes the execStats out to a table in stdout. Implements ExecStatsWriter.
@@ -262,14 +380,23 @@ func (s *stdoutTableWriter) Write(data *[]*ScriptExecData) error {
 	return nil
 }
 
-func main() {
-	services.PostFlagSetupAndParse()
-	repeatCount := viper.GetInt("num_runs")
-	cloudAddr := viper.GetString("cloud_addr")
-	bundleFile := viper.GetString("bundle")
-	allClusters := viper.GetBool("all-clusters")
-	selectedCluster := viper.GetString("cluster")
+func benchmarkCmd(cmd *cobra.Command) {
+	// Set the logger to use stderr so that json output can be consumed without log lines.
+	log.SetOutput(os.Stderr)
+
+	repeatCount, _ := cmd.Flags().GetInt("num_runs")
+	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
+	bundleFile, _ := cmd.Flags().GetString("bundle")
+	allClusters, _ := cmd.Flags().GetBool("all-clusters")
+	selectedCluster, _ := cmd.Flags().GetString("cluster")
+	selectedScripts, _ := cmd.Flags().GetStringSlice("scripts")
+	outputFmt, _ := cmd.Flags().GetString("output")
+
 	clusterID := uuid.FromStringOrNil(selectedCluster)
+
+	if !allowedOutputFmts[outputFmt] {
+		log.WithField("output", outputFmt).Fatal("invalid output format")
+	}
 
 	br, err := createBundleReader(bundleFile)
 	if err != nil {
@@ -286,18 +413,20 @@ func main() {
 		}
 	}
 
+	allowedScripts := make(map[string]bool)
+	for _, s := range selectedScripts {
+		allowedScripts[s] = true
+	}
+
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
+	scriptsToRun := make([]*script.ExecutableScript, 0)
 	data := make(map[string]*ScriptExecData)
-	for i, s := range scripts {
-		if isDisabled(s.ScriptName) {
-			continue
-		}
-		if isMutation(s) {
+	for _, s := range scripts {
+		if !isAllowed(s, allowedScripts) {
 			continue
 		}
 
-		log.WithField("script", s.ScriptName).WithField("idx", i).Infof("Executing new script")
 		s.Args = make(map[string]script.Arg)
 		s.Args["start_time"] = script.Arg{Name: "start_time", Value: "-5m"}
 
@@ -315,42 +444,78 @@ func main() {
 			s.Args[v.Name] = script.Arg{Name: v.Name, Value: value}
 		}
 
-		externalExecTiming := make([]time.Duration, repeatCount)
-		internalExecTiming := make([]time.Duration, repeatCount)
-		compilationTiming := make([]time.Duration, repeatCount)
-		scriptErrors := make([]error, repeatCount)
-		numBytes := make([]int, repeatCount)
-
-		// Run script.
 		for i := 0; i < repeatCount; i++ {
-			res, err := executeScript(vzrConns, s)
-			if err != nil {
-				log.WithError(err).Fatalf("Failed to execute script")
-			}
-			scriptErrors[i] = res.scriptErr
-			externalExecTiming[i] = res.externalExecTime
-			compilationTiming[i] = res.compileTime
-			internalExecTiming[i] = res.internalExecTime
-			numBytes[i] = res.numBytes
+			scriptsToRun = append(scriptsToRun, s)
 		}
 
+		externalExecTiming := make([]time.Duration, 0)
+		internalExecTiming := make([]time.Duration, 0)
+		compilationTiming := make([]time.Duration, 0)
+		scriptErrors := make([]error, 0)
+		numBytes := make([]int, 0)
 		data[s.ScriptName] = &ScriptExecData{
 			Name: s.ScriptName,
-			Distributions: map[string]Distribution{
-				"Exec Time: External": &TimeDistribution{externalExecTiming},
-				"Exec Time: Internal": &TimeDistribution{internalExecTiming},
-				"Compilation Time":    &TimeDistribution{compilationTiming},
-				"Num Errors":          &ErrorDistribution{scriptErrors},
-				"Num Bytes":           &BytesDistribution{numBytes},
+			Distributions: distributionMap{
+				execTimeExternalLabel: &TimeDistribution{externalExecTiming},
+				execTimeInternalLabel: &TimeDistribution{internalExecTiming},
+				compTimeLabel:         &TimeDistribution{compilationTiming},
+				numErrorsLabel:        &ErrorDistribution{scriptErrors},
+				numBytesLabel:         &BytesDistribution{numBytes},
 			},
 		}
 	}
 
-	s := &stdoutTableWriter{}
-	// Sort by key names.
-	sortedData := sortByKeys(&data)
-	err = s.Write(&sortedData)
-	if err != nil {
-		log.WithError(err).Fatalf("Failure on writing table")
+	// Shuffle scripts to run, to increase independence of samples across time.
+	rand.Seed(42)
+	rand.Shuffle(len(scriptsToRun), func(i, j int) {
+		scriptsToRun[i], scriptsToRun[j] = scriptsToRun[j], scriptsToRun[i]
+	})
+
+	// Run scripts in shuffled order.
+	for _, s := range scriptsToRun {
+		// Run script.
+		log.WithField("script", s.ScriptName).Infof("Executing script")
+		res, err := executeScript(vzrConns, s)
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to execute script")
+		}
+		dists := data[s.ScriptName].Distributions
+		dists[numErrorsLabel].Append(res.scriptErr)
+		dists[execTimeExternalLabel].Append(res.externalExecTime)
+		dists[compTimeLabel].Append(res.compileTime)
+		dists[execTimeInternalLabel].Append(res.internalExecTime)
+		dists[numBytesLabel].Append(res.numBytes)
 	}
+
+	if outputFmt == "table" {
+		s := &stdoutTableWriter{}
+		// Sort by key names.
+		sortedData := sortByKeys(&data)
+		err = s.Write(&sortedData)
+		if err != nil {
+			log.WithError(err).Fatalf("Failure on writing table")
+		}
+	}
+	if outputFmt == "json" {
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to marshal results to json")
+		}
+		os.Stdout.Write(jsonData)
+	}
+}
+
+// RootCmd executes the subcommands.
+var RootCmd = &cobra.Command{
+	Use:   "exectime_benchmark",
+	Short: "Run and compare exectime benchmarks",
+}
+
+// BenchmarkCmd executes the script execution benchmark.
+var BenchmarkCmd = &cobra.Command{
+	Use:   "benchmark",
+	Short: "Run exec time benchmarks",
+	Run: func(cmd *cobra.Command, args []string) {
+		benchmarkCmd(cmd)
+	},
 }

@@ -37,6 +37,7 @@ TEST(MetadataPropertyTests, retrieval) {
   EXPECT_OK(md_handle->GetProperty("pod_name"));
   EXPECT_OK(md_handle->GetProperty("service_name"));
   EXPECT_OK(md_handle->GetProperty("pid"));
+  EXPECT_OK(md_handle->GetProperty("replica_set"));
 }
 
 TEST(MetadataPropertyTests, types) {
@@ -68,9 +69,9 @@ TEST_P(MetadataGetPropertyTests, has_property) {
   EXPECT_OK(property_status);
 }
 
-std::vector<std::string> metadata_strs = {"service_name",  "service_id",   "pod_name",
-                                          "pod_id",        "container_id", "deployment_id",
-                                          "container_name"};
+std::vector<std::string> metadata_strs = {"service_name",   "service_id",   "pod_name",
+                                          "pod_id",         "container_id", "deployment_id",
+                                          "container_name", "replica_set"};
 
 INSTANTIATE_TEST_SUITE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
                          ::testing::ValuesIn(metadata_strs));

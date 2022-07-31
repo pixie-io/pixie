@@ -57,6 +57,11 @@ const NamespaceInfo* K8sMetadataState::NamespaceInfoByID(UIDView ns_id) const {
   return static_cast<const NamespaceInfo*>(K8sMetadataObjectByID(ns_id, type));
 }
 
+const ReplicaSetInfo* K8sMetadataState::ReplicaSetInfoByID(UIDView replica_set_id) const {
+  auto type = K8sObjectType::kReplicaSet;
+  return static_cast<const ReplicaSetInfo*>(K8sMetadataObjectByID(replica_set_id, type));
+}
+
 const ContainerInfo* K8sMetadataState::ContainerInfoByID(CIDView id) const {
   auto it = containers_by_id_.find(id);
 
@@ -97,6 +102,11 @@ UID K8sMetadataState::NamespaceIDByName(K8sNameIdentView namespace_name) const {
   return (it == namespaces_by_name_.end()) ? "" : it->second;
 }
 
+UID K8sMetadataState::ReplicaSetIDByName(K8sNameIdentView replica_set_name) const {
+  auto it = replica_sets_by_name_.find(replica_set_name);
+  return (it == replica_sets_by_name_.end()) ? "" : it->second;
+}
+
 std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   auto other = std::make_unique<K8sMetadataState>();
 
@@ -116,6 +126,7 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->pods_by_name_ = pods_by_name_;
   other->services_by_name_ = services_by_name_;
   other->namespaces_by_name_ = namespaces_by_name_;
+  other->replica_sets_by_name_ = replica_sets_by_name_;
   other->containers_by_name_ = containers_by_name_;
   other->pods_by_ip_ = pods_by_ip_;
   other->services_by_cluster_ip_ = services_by_cluster_ip_;
@@ -184,6 +195,10 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
 
     pod_info->AddContainer(cid);
     containers_by_id_[cid]->set_pod_id(object_uid);
+  }
+
+  for (const auto& owner_ref : update.owner_references()) {
+    pod_info->AddOwnerReference(owner_ref.uid(), owner_ref.name(), owner_ref.kind());
   }
 
   pod_info->set_start_time_ns(update.start_timestamp_ns());
@@ -301,6 +316,38 @@ Status K8sMetadataState::HandleNodeUpdate(const NodeUpdate& update) {
   // We currently do not use node updates in the PEM.
   VLOG(1) << "node update: " << update.name();
 
+  return Status::OK();
+}
+
+Status K8sMetadataState::HandleReplicaSetUpdate(const ReplicaSetUpdate& update) {
+  const UID& replica_set_uid = update.uid();
+  const std::string& name = update.name();
+  const std::string& ns = update.namespace_();
+
+  auto it = k8s_objects_by_id_.find(replica_set_uid);
+  if (it == k8s_objects_by_id_.end()) {
+    auto replica_set = std::make_unique<ReplicaSetInfo>(update);
+    VLOG(1) << "Adding ReplicaSet: " << replica_set->DebugString();
+    it = k8s_objects_by_id_.try_emplace(replica_set_uid, std::move(replica_set)).first;
+  }
+  auto replica_set_info = static_cast<ReplicaSetInfo*>(it->second.get());
+
+  for (const auto& owner_ref : update.owner_references()) {
+    replica_set_info->AddOwnerReference(owner_ref.uid(), owner_ref.name(), owner_ref.kind());
+  }
+
+  replica_set_info->set_start_time_ns(update.start_timestamp_ns());
+  replica_set_info->set_stop_time_ns(update.stop_timestamp_ns());
+  replica_set_info->set_conditions(ConvertToReplicaSetConditions(update.conditions()));
+  replica_set_info->set_replicas(update.replicas());
+  replica_set_info->set_fully_labeled_replicas(update.fully_labeled_replicas());
+  replica_set_info->set_ready_replicas(update.ready_replicas());
+  replica_set_info->set_available_replicas(update.available_replicas());
+  replica_set_info->set_observed_generation(update.observed_generation());
+
+  VLOG(1) << "replica set update: " << update.name();
+
+  replica_sets_by_name_[{ns, name}] = replica_set_uid;
   return Status::OK();
 }
 

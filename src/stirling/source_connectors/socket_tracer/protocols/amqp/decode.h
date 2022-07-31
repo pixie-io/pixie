@@ -719,7 +719,7 @@ std::string ToString(T obj) {
   obj.ToJSON(&json_object_builder);
   return json_object_builder.GetString();
 }
-Status ProcessReq(Frame* req);
+Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 }  // namespace amqp
 }  // namespace protocols

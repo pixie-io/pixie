@@ -44,7 +44,7 @@ check_stirling_output() {
   err_count=$(echo "$out" | grep -c -e ^E -e ^W || true)
   echo "Error/Warning count = $err_count"
   if [ "$err_count" != "0" ]; then
-    echo "Test FAILED"
+    echo "[FAILED]"
     return 1
   fi
 
@@ -52,7 +52,7 @@ check_stirling_output() {
   num_kprobes=$(echo "$out" | sed -n "s/.*Number of kprobes deployed = //p")
   if [ "$num_kprobes" = "0" ]; then
     echo "No kprobes deployed"
-    echo "Test FAILED"
+    echo "[FAILED]"
     return 1
   fi
 
@@ -60,17 +60,17 @@ check_stirling_output() {
   num_uprobes=$(echo "$out" | sed -n "s/.*Number of uprobes deployed = //p")
   if [ "$num_uprobes" = "0" ]; then
     echo "No uprobes deployed"
-    echo "Test FAILED"
+    echo "[FAILED]"
     return 1
   fi
 
   success_msg=$(echo "$out" | grep -c -e "Probes successfully deployed" || true)
   if [ "$success_msg" != "1" ]; then
     echo "Could not find success message"
-    echo "Test FAILED"
+    echo "[FAILED]"
     return 1
   fi
 
-  echo "Test PASSED"
+  echo "[OK]"
   return 0
 }

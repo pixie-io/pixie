@@ -21,6 +21,8 @@ package k8s_test
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	apps "k8s.io/api/apps/v1"
@@ -536,6 +538,103 @@ status {
 	}
 	conditions: {
 		type: "2"
+		status: 1
+	}
+}
+`
+
+const deploymentPb = `
+metadata {
+	name: "deployment_1"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1"
+	cluster_name: "a_cluster"
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+	owner_references {
+		kind: "Pod"
+		name: "pod"
+		uid: "1234"
+	}
+	labels {
+		key: "env"
+		value: "prod"
+	}
+	labels {
+		key: "app"
+		value: "my-test-app"
+	}
+	annotations {
+		key: "is_testing"
+		value: "this is testing deployment"
+	}
+	annotations {
+		key: "provider"
+		value: "gkee"
+	}
+}
+spec {
+	selector {
+		match_expressions {
+			key: "app"
+			operator: "In"
+			values: "hello"
+			values: "world"
+		}
+		match_expressions {
+			key: "service"
+			operator: "Exists"
+		}
+		match_labels {
+			key: "env"
+			value: "prod"
+		}
+		match_labels {
+			key: "managed"
+			value: "helm"
+		}
+	}
+	template {
+		metadata {
+			name: "object_md"
+			namespace: "a_namespace"
+			uid: "ijkl"
+			resource_version: "1",
+			cluster_name: "a_cluster",
+			owner_references {
+				kind: "ReplicaSet"
+				name: "pod1"
+				uid: "abcd"
+			}
+			creation_timestamp_ns: 4
+		}
+		spec {
+			node_name: "test"
+			hostname: "hostname"
+			dns_policy: 2
+		}
+	}
+	replicas: 3
+	strategy {
+		type: 2
+		rolling_update: {
+			max_unavailable: "10"
+			max_surge: "5"
+		}
+	}
+}
+status {
+	replicas: 2
+	ready_replicas: 1
+	available_replicas: 1
+	observed_generation: 10
+	conditions: {
+		type: 1
+		status: 1
+	}
+	conditions: {
+		type: 2
 		status: 1
 	}
 }
@@ -1643,6 +1742,134 @@ func TestReplicaSetToProto(t *testing.T) {
 
 	expectedPb := &metadatapb.ReplicaSet{}
 	if err := proto.UnmarshalText(replicaSetPb, expectedPb); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf. %v", err)
+	}
+	t.Logf("%v\n", expectedPb)
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestDeploymentToProto(t *testing.T) {
+	deletionTime := metav1.Unix(0, 6)
+
+	metadata := metav1.ObjectMeta{
+		Name:              "deployment_1",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		CreationTimestamp: metav1.Unix(0, 4),
+		DeletionTimestamp: &deletionTime,
+		OwnerReferences: []metav1.OwnerReference{
+			{
+				Kind: "Pod",
+				Name: "pod",
+				UID:  "1234"},
+		},
+		Labels: map[string]string{
+			"env": "prod",
+			"app": "my-test-app",
+		},
+		Annotations: map[string]string{
+			"is_testing": "this is testing deployment",
+			"provider":   "gkee",
+		},
+	}
+
+	selector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"env":     "prod",
+			"managed": "helm",
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      "app",
+				Operator: metav1.LabelSelectorOpIn,
+				Values: []string{
+					"hello", "world",
+				},
+			},
+			{
+				Key:      "service",
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	}
+
+	podCreationTime := metav1.Unix(0, 4)
+	var replicas int32 = 3
+
+	spec := apps.DeploymentSpec{
+		Selector: &selector,
+		Template: v1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "object_md",
+				Namespace:       "a_namespace",
+				UID:             "ijkl",
+				ResourceVersion: "1",
+				ClusterName:     "a_cluster",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind: "ReplicaSet",
+						Name: "pod1",
+						UID:  "abcd",
+					},
+				},
+				CreationTimestamp: podCreationTime,
+			},
+			Spec: v1.PodSpec{
+				NodeName:  "test",
+				Hostname:  "hostname",
+				DNSPolicy: v1.DNSClusterFirst,
+			},
+		},
+		Replicas: &replicas,
+		Strategy: apps.DeploymentStrategy{
+			Type: apps.RollingUpdateDeploymentStrategyType,
+			RollingUpdate: &apps.RollingUpdateDeployment{
+				MaxUnavailable: &intstr.IntOrString{
+					IntVal: 10,
+					Type:   intstr.Int,
+				},
+				MaxSurge: &intstr.IntOrString{
+					IntVal: 5,
+					Type:   intstr.Int,
+				},
+			},
+		},
+	}
+
+	updateTimes := metav1.Unix(0, 0)
+	status := apps.DeploymentStatus{
+		Replicas:           2,
+		ReadyReplicas:      1,
+		AvailableReplicas:  1,
+		ObservedGeneration: 10,
+		Conditions: []apps.DeploymentCondition{
+			{
+				Type:               "Available",
+				Status:             v1.ConditionTrue,
+				LastUpdateTime:     updateTimes,
+				LastTransitionTime: updateTimes,
+			},
+			{
+				Type:               "Progressing",
+				Status:             v1.ConditionTrue,
+				LastUpdateTime:     updateTimes,
+				LastTransitionTime: updateTimes,
+			},
+		},
+	}
+
+	o := apps.Deployment{
+		ObjectMeta: metadata,
+		Status:     status,
+		Spec:       spec,
+	}
+
+	oPb := k8s.DeploymentToProto(&o)
+
+	expectedPb := &metadatapb.Deployment{}
+	if err := proto.UnmarshalText(deploymentPb, expectedPb); err != nil {
 		t.Fatalf("Cannot Unmarshal protobuf. %v", err)
 	}
 	t.Logf("%v\n", expectedPb)

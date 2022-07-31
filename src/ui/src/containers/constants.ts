@@ -27,6 +27,8 @@ declare global {
       DOMAIN_NAME: string;
       SEGMENT_UI_WRITE_KEY: string;
       LD_CLIENT_ID: string;
+      SCRIPT_BUNDLE_URLS: string; // Actually a string[] in JSON form
+      SCRIPT_BUNDLE_DEV: boolean;
       ANALYTICS_ENABLED: boolean;
       ANNOUNCEMENT_ENABLED: boolean;
       ANNOUNCE_WIDGET_URL: string;
@@ -36,27 +38,19 @@ declare global {
   }
 }
 
-// eslint-disable-next-line no-underscore-dangle
+/* eslint-disable no-underscore-dangle */
 export const { OAUTH_PROVIDER } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { AUTH_URI } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { AUTH_CLIENT_ID } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { AUTH_EMAIL_PASSWORD_CONN } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { DOMAIN_NAME } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
+export const { SCRIPT_BUNDLE_URLS } = window.__PIXIE_FLAGS__;
+export const { SCRIPT_BUNDLE_DEV } = window.__PIXIE_FLAGS__;
 export const { ANALYTICS_ENABLED } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { ANNOUNCEMENT_ENABLED } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { ANNOUNCE_WIDGET_URL } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { CONTACT_ENABLED } = window.__PIXIE_FLAGS__;
-// eslint-disable-next-line no-underscore-dangle
 export const { PASSTHROUGH_PROXY_PORT } = window.__PIXIE_FLAGS__;
+/* eslint-enable no-underscore-dangle */

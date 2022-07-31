@@ -47,10 +47,17 @@ struct OTelAttribute {
   // The name of the attribute
   std::string name;
   // The column that references this attribute.
-  ColumnIR* column_reference;
+  ColumnIR* column_reference = nullptr;
+  // The string value to use for the attribute value.
+  // Only used if column_reference is null.
+  std::string string_value;
 
   Status ToProto(planpb::OTelAttribute* attribute) const {
     attribute->set_name(name);
+    if (column_reference == nullptr) {
+      attribute->set_string_value(string_value);
+      return Status::OK();
+    }
     auto column_pb = attribute->mutable_column();
 
     auto column_type = column_reference->resolved_value_type();

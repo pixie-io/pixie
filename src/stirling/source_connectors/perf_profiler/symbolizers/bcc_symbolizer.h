@@ -39,8 +39,6 @@ class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
 
  private:
   BCCSymbolizer() = default;
-  std::string_view Symbolize(const int pid, const uintptr_t addr);
-
   bpf_tools::BCCSymbolizer bcc_symbolizer_;
 };
 
