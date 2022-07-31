@@ -761,7 +761,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   LOG(INFO) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
                                 kGrpcCUProbes.size(), pid);
 
-  return kGrpcCUProbes.size();
+  return kGrpcCUProbes.size() + 1;
 }
 
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
