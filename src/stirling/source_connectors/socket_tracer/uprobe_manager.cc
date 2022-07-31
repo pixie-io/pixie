@@ -18,6 +18,10 @@
 
 #include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"
 
+#include <fcntl.h>
+#include <openssl/md5.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -38,6 +42,8 @@
 DEFINE_bool(stirling_rescan_for_dlopen, false,
             "If enabled, Stirling will use mmap tracing information to rescan binaries for delay "
             "loaded libraries like OpenSSL");
+DEFINE_bool(stirling_enable_grpc_c_tracing, false,
+            "If true, enable gRPC tracing for C dynamic libraries used for python");
 DEFINE_double(stirling_rescan_exp_backoff_factor, 2.0,
               "Exponential backoff factor used in decided how often to rescan binaries for "
               "dynamically loaded libraries");
@@ -195,6 +201,8 @@ Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesyst
   return Status::OK();
 }
 
+enum class HostPathForPIDPathSearchType { kSearchTypeEndsWith, kSearchTypeContains };
+
 // Find the paths for some libraries, which may be inside of a container.
 // Return those paths as a vector, in the same order that they came in as function arguments.
 // e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
@@ -202,7 +210,7 @@ Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesyst
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
 StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
-    LazyLoadedFPResolver* fp_resolver) {
+    LazyLoadedFPResolver* fp_resolver, HostPathForPIDPathSearchType search_type) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
   // i.e. mapping from lib_name to lib_path.
   // This would relieve the caller of the burden of tracking which entry
@@ -228,30 +236,45 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
     }
 
     for (const auto& mapped_lib_path : mapped_lib_paths) {
-      if (absl::EndsWith(mapped_lib_path, lib_name)) {
-        // We found a mapped_lib_path that matches to the desired lib_name.
-        // First, get the containerized file path using ResolvePath().
-        StatusOr<std::filesystem::path> container_lib_status =
-            fp_resolver->ResolvePath(mapped_lib_path);
-
-        if (!container_lib_status.ok()) {
-          VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
-                                      container_lib_status.msg());
+      if (HostPathForPIDPathSearchType::kSearchTypeEndsWith == search_type) {
+        if (!absl::EndsWith(mapped_lib_path, lib_name)) {
           continue;
         }
-
-        // Assign the resolved path into the output vector at the appropriate index.
-        // Update found status,
-        // and continue to search current set of mapped libs for next desired lib.
-        container_libs[lib_idx] = container_lib_status.ValueOrDie();
-        found_vector[lib_idx] = true;
-        VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
-                                    container_libs[lib_idx].string());
-        break;
+      } else if (HostPathForPIDPathSearchType::kSearchTypeContains == search_type) {
+        if (!absl::StrContains(mapped_lib_path, lib_name)) {
+          continue;
+        }
       }
+
+      // We found a mapped_lib_path that matches to the desired lib_name.
+      // First, get the containerized file path using ResolvePath().
+      StatusOr<std::filesystem::path> container_lib_status =
+          fp_resolver->ResolvePath(mapped_lib_path);
+
+      if (!container_lib_status.ok()) {
+        VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
+                                    container_lib_status.msg());
+        continue;
+      }
+
+      // Assign the resolved path into the output vector at the appropriate index.
+      // Update found status,
+      // and continue to search current set of mapped libs for next desired lib.
+      container_libs[lib_idx] = container_lib_status.ValueOrDie();
+      found_vector[lib_idx] = true;
+      VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
+                                  container_libs[lib_idx].string());
+      break;
     }
   }
   return container_libs;
+}
+
+StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
+    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
+    LazyLoadedFPResolver* fp_resolver) {
+  return FindHostPathForPIDLibs(lib_names, pid, proc_parser, fp_resolver,
+                                HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
 // Return error if something unexpected occurs.
@@ -566,6 +589,161 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
   return uprobe_count;
 }
 
+StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
+  // Implementation based on
+  // https://stackoverflow.com/questions/1220046/how-to-get-the-md5-hash-of-a-file-in-c
+  unsigned char md5_hash[MD5_DIGEST_LENGTH] = {0};
+  int file_descript = open(file.c_str(), O_RDONLY);
+  if (-1 == file_descript) {
+    return error::Internal(absl::Substitute(
+        "Failed to get the MD5 hash of file $0 because of open failure. errno $1.", file, errno));
+  }
+
+  struct stat statbuf;
+  if (-1 == fstat(file_descript, &statbuf)) {
+    close(file_descript);  // Ignore if close fails, we already exit the function with an error on
+                           // the file.
+    return error::Internal(absl::Substitute(
+        "Failed to get the MD5 hash of file $0 because of stat failure. errno $1.", file, errno));
+  }
+  uint64_t file_size = statbuf.st_size;
+
+  void* mapped_file_buffer =
+      mmap(/*addr*/ 0, file_size, PROT_READ, MAP_SHARED, file_descript, /*offset*/ 0);
+  if (MAP_FAILED == mapped_file_buffer) {
+    return error::Internal(absl::Substitute(
+        "Failed to map area to store file $0 that needs hashing. errno $1.", file, errno));
+  }
+  if (-1 == close(file_descript)) {
+    return error::Internal(
+        absl::Substitute("Failed to close file $0 that needs hashing. errno $1.", file, errno));
+  }
+  // This can't fail, it always returns the pointer to the hash value (3rd argument).
+  MD5((unsigned char*)mapped_file_buffer, file_size, md5_hash);
+  if (0 != munmap(mapped_file_buffer, file_size)) {
+    return error::Internal(
+        absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
+  }
+
+  std::basic_string_view<char> md5_hash_str_view{reinterpret_cast<char*>(md5_hash),
+                                                 MD5_DIGEST_LENGTH};
+  std::string hash_str =
+      absl::AsciiStrToLower(BytesToString<bytes_format::HexCompact>(md5_hash_str_view));
+
+  return hash_str;
+}
+
+StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) {
+  // grpc-c libraries that are used by python normally have this prefix,
+  // I have not seen a case where it's not used.
+  static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
+  const std::vector<std::string_view> lib_names = {kGrpcCPythonLibPrefix};
+
+  const system::Config& sysconfig = system::Config::GetInstance();
+
+  // Find path to grpc-c shared object, if it's used (i.e. mapped).
+  PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
+                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_,
+                                             HostPathForPIDPathSearchType::kSearchTypeContains));
+
+  std::filesystem::path container_libgrpcc = container_lib_paths[0];
+
+  if (container_libgrpcc.empty()) {
+    // Looks like this process doesn't have dynamic grpc-c library mapped.
+    return 0;
+  }
+
+  // Convert to host path, in case we're running inside a container ourselves.
+  container_libgrpcc = sysconfig.ToHostPath(container_libgrpcc);
+  if (!fs::Exists(container_libgrpcc)) {
+    return error::Internal("grpc-c library not found [path = $0]", container_libgrpcc.string());
+  }
+
+  // Only try probing .so files that we haven't already set probes on.
+  auto result = grpc_c_probed_binaries_.insert(container_libgrpcc);
+  if (!result.second) {
+    return 0;
+  }
+
+  // Calculate MD5 hash of the grpc-c library to know which version it is.
+  // For further explanation see the definition of kGrpcCMD5HashToVersion.
+  PL_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
+  VLOG(1) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
+                              container_libgrpcc.string());
+
+  // Find the version of the library by its MD5 hash.
+  auto iter = kGrpcCMD5HashToVersion.find(hash_str);
+  if (iter == kGrpcCMD5HashToVersion.end()) {
+    return error::Unimplemented("Unknown MD5 hash $0 of library $1 and pid $2.", hash_str,
+                                container_libgrpcc.string(), pid);
+  }
+  const enum grpc_c_version_t version = iter->second;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, uint64_t>> grpc_c_versions_map = nullptr;
+  static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
+  grpc_c_versions_map = std::make_unique<ebpf::BPFHashTable<uint32_t, uint64_t>>(
+      bcc_->GetHashTable<uint32_t, uint64_t>(kGrpcCVersionsName));
+  VLOG(1) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
+  if (!grpc_c_versions_map->update_value(pid, version).ok()) {
+    return error::Internal("Failed to set version of library of pid $0 to $1.", pid,
+                           (uint32_t)version);
+  }
+
+  // Attach the needed probes.
+  // This currently works only for non-stripped versions of the shared object.
+  VLOG(1) << absl::Substitute("Attaching GRPC-C uprobes to $0 for pid $1",
+                              container_libgrpcc.string(), pid);
+  for (auto spec : kGrpcCUProbes) {
+    spec.binary_path = container_libgrpcc.string();
+    auto return_value = bcc_->AttachUProbe(spec);
+    if (!return_value.ok()) {
+      LOG(WARNING) << absl::Substitute("Failed to attach gRPC-C probe $0 to pid $1 and file $2",
+                                       spec.symbol, pid, container_libgrpcc.string());
+      return return_value;
+    }
+  }
+  bool attached_data_parser_parse_probe = false;
+  for (auto spec : kGrpcCDataParserParseUProbes) {
+    spec.binary_path = container_libgrpcc.string();
+    auto return_value = bcc_->AttachUProbe(spec);
+    if (return_value.ok()) {
+      attached_data_parser_parse_probe = true;
+      break;
+    }
+  }
+  if (!attached_data_parser_parse_probe) {
+    return error::Internal("Failed to attach a data parser parse probe.");
+  }
+
+  VLOG(1) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
+                              kGrpcCUProbes.size(), pid);
+
+  return kGrpcCUProbes.size() + 1;  // +1 for the data parser parse probe.
+}
+
+int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids) {
+  int uprobe_count = 0;
+  for (const auto& pid : pids) {
+    if (cfg_disable_self_probing_ && pid.pid() == static_cast<uint32_t>(getpid())) {
+      continue;
+    }
+
+    auto count_or = AttachGrpcCUProbesOnDynamicPythonLib(pid.pid());
+    if (!count_or.ok()) {
+      VLOG(1) << absl::Substitute(
+          "Attaching gRPC-C uprobes on dynamic python library failed for PID $0: $1", pid.pid(),
+          count_or.ToString());
+      continue;
+    }
+
+    uprobe_count += count_or.ValueOrDie();
+    VLOG(1) << absl::Substitute(
+        "Attaching gRPC-C uprobes on dynamic python library succeeded for PID $0: $1 probes",
+        pid.pid(), count_or.ValueOrDie());
+  }
+
+  return uprobe_count;
+}
+
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
@@ -730,9 +908,18 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  if (FLAGS_stirling_rescan_for_dlopen) {
-    uprobe_count += DeployOpenSSLUProbes(PIDsToRescanForUProbes());
+  if (FLAGS_stirling_enable_grpc_c_tracing) {
+    uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
   }
+
+  if (FLAGS_stirling_rescan_for_dlopen) {
+    auto pids_to_rescan_for_uprobes = PIDsToRescanForUProbes();
+    uprobe_count += DeployOpenSSLUProbes(pids_to_rescan_for_uprobes);
+    if (FLAGS_stirling_enable_grpc_c_tracing) {
+      uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
+    }
+  }
+
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
   if (uprobe_count != 0) {

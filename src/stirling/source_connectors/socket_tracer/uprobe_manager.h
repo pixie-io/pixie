@@ -32,6 +32,7 @@
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/obj_tools/raw_fptr_manager.h"
 
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/grpc_c.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
@@ -332,6 +333,104 @@ class UProbeManager {
           },
       });
 
+  // When the gRPC-c probes run, they need to know the library's version.
+  // To tell them which version is deployed, we find the version during probe attachment.
+  // No neat mechanism was found to tell the version (we can't run the library with "--version"
+  // and running "strings" on the library does not always return the correct version as well).
+  // To tell the version, we hash the library's binary. A hash will match a single version.
+  // When adding support for more versions, we should add their respective hashes here (for
+  // example by building the relevant docker images with gRPC-c installed and hashing the library).
+  // TODO(yzhao) - Add hashes of more docker images that use the supported versions.
+  inline static const std::map<std::string, enum grpc_c_version_t> kGrpcCMD5HashToVersion = {
+      {"64c205d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
+       grpc_c_version_t::GRPC_C_V1_19_0},
+      {"43946bf95efc74729b96ea5630aa8067",  // python:3.7-slim grpcio-1.24.1
+       grpc_c_version_t::GRPC_C_V1_24_1},
+      {"3f9097d182b9a9392522e78945e776af",  // python:3.7-slim grpcio-1.33.2
+       grpc_c_version_t::GRPC_C_V1_33_2},
+      {"ddf1c743895aaf9fff5d2ca944e16052",  // python:3.5-alpine
+       grpc_c_version_t::GRPC_C_V1_41_1}};
+
+  // Probes for GRPC-C tracing.
+  // The binary path field is going to be changed during attachment, so it's meaningless here.
+  // TODO(yzhao) - consider using UProbeTmpls instead of UProbeSpecs. This way, we won't have to
+  // provide the exact function name, and can instead use obj_tools::SymbolMatchType::kSubstr.
+  // However, UProbeTmpls don't allow attaching by address (only by symbol), which we will
+  // potentially need for these probes, because the gRPC-C library is stripped in newer version.
+  inline static const auto kGrpcCUProbes = MakeArray<bpf_tools::UProbeSpec>({
+      // grpc_chttp2_list_pop_writable_stream
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
+                    "chttp2_stream",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_grpc_chttp2_list_pop_writable_stream",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
+                    "chttp2_stream",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_grpc_chttp2_list_pop_writable_stream",
+      },
+      // grpc_chttp2_mark_stream_closed
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z30grpc_chttp2_mark_stream_closedP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "streamiiP10grpc_error",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_mark_stream_closed",
+      },
+      // grpc_chttp2_maybe_complete_recv_initial_metadata
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z48grpc_chttp2_maybe_complete_recv_initial_metadataP21grpc_chttp2_"
+                    "transportP18grpc_chttp2_stream",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_maybe_complete_recv_initial_metadata",
+      },
+      // grpc_chttp2_maybe_complete_recv_trailing_metadata
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z49grpc_chttp2_maybe_complete_recv_trailing_metadataP21grpc_chttp2_"
+                    "transportP18grpc_chttp2_stream",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_maybe_complete_recv_trailing_metadata",
+      },
+  });
+
+  // grpc_chttp2_data_parser_parse
+  // This function's symbol changes slightly between library version. Since to attach to it with a
+  // UProbeSpec we need the exact symbol, we need to store the different options.
+  // The symbol could be one of two: once where the slice is const (e.g.
+  // version 1.19.1) and once where it ain't.
+  // To overcome that, we try to attach the symbols in this array, until we find one that succeeds.
+  // TODO(yzhao) - We should probably change UProbeSpec to UProbeTmpl (currently not feasible
+  // because UProbeTmpl does not support attachment by address) and then we can add this probe to
+  // the same array with the other grpc-c probes (because we would only need a part of the symbol).
+  inline static const auto kGrpcCDataParserParseUProbes = MakeArray<bpf_tools::UProbeSpec>({
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "streamRK10grpc_slicei",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_data_parser_parse",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "",
+          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "stream10grpc_slicei",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_data_parser_parse",
+      },
+  });
+
+  int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
+  // We hash grpc-c libraries to know its version.
+  // For further explanation see the definition of kGrpcCMD5HashToVersion.
+  StatusOr<std::string> MD5onFile(const std::string& file);
+  StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
+
   static StatusOr<std::array<UProbeTmpl, 6>> GetNodeOpensslUProbeTmpls(const SemVer& ver);
 
   // Probes for OpenSSL tracing.
@@ -543,6 +642,7 @@ class UProbeManager {
   absl::flat_hash_set<std::string> go_http2_probed_binaries_;
   absl::flat_hash_set<std::string> go_tls_probed_binaries_;
   absl::flat_hash_set<std::string> nodejs_binaries_;
+  absl::flat_hash_set<std::string> grpc_c_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>>
