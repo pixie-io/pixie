@@ -362,22 +362,6 @@ class UProbeManager {
   // However, UProbeTmpls don't allow attaching by address (only by symbol), which we will
   // potentially need for these probes, because the gRPC-C library is stripped in newer version.
   inline static const auto kGrpcCUProbes = MakeArray<bpf_tools::UProbeSpec>({
-      // grpc_chttp2_data_parser_parse
-      // TODO(yzhao) - The symbol could be one of two: once where the slice is const (e.g.
-      // version 1.19.1) and once where it ain't.
-      // We should probably change UProbeSpec to UProbeTmpl (currently not feasible because
-      // UProbeTmpl does not support
-      // address attachment) and then we can use non-exact-symbol attachment
-      // (for example, attach to anything that contains "data_parser_parse").
-      bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
-          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
-                    "streamRK10grpc_slicei",
-          // second option -
-          // _Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_stream10grpc_slicei
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_grpc_chttp2_data_parser_parse",
-      },
       // grpc_chttp2_list_pop_writable_stream
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
@@ -419,9 +403,33 @@ class UProbeManager {
       },
   });
 
+    // grpc_chttp2_data_parser_parse
+    // We add only one of the probes in this array.
+    // The symbol could be one of two: once where the slice is const (e.g.
+    // version 1.19.1) and once where it ain't.
+    // TODO(yzhao) - We should probably change UProbeSpec to UProbeTmpl (currently not feasible because
+    // UProbeTmpl does not support address attachment) and then we can add this probe
+    // to the same array with the other grpc-c probes (because we would only need a part
+    // of the symbol).
+  inline static const auto kGrpcCDataParserParseUProbes = MakeArray<bpf_tools::UProbeSpec>({
+      bpf_tools::UProbeSpec{
+          .binary_path = "cygrpc.cpython",
+          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "streamRK10grpc_slicei",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_data_parser_parse",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "cygrpc.cpython",
+          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "stream10grpc_slicei",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_grpc_chttp2_data_parser_parse",
+      },
+  });
+
   int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
-  StatusOr<int> AttachPythonGrpcUProbesOnDynamicLib(uint32_t pid);
-  StatusOr<int> AttachGrpcCUProbesOnSpecialExecutable(uint32_t pid);
+  StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
   bool InitiateGrpcCPercpuMetadataHeap();
   bool InitiateGrpcCPercpuEventDataHeap();
   bool InitiateGrpcCPercpuHeaderEventDataHeap();
