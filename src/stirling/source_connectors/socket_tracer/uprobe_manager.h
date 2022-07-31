@@ -341,76 +341,77 @@ class UProbeManager {
   static constexpr char kGrpcCEventDataHeapName[] = "grpc_c_event_buffer_heap";
 
   inline static const std::map<std::string, enum grpc_c_version_e> kGrpcCMD5HashToVersion = {
-    {
-        "64c25d1bc547cd53d6979fb76674f4b", // python:3.7-slim grpcio-1.19.0
-        // TODO(yzhao) - For some unknown reason, when using linux's md5sum it prints 64c205d1bc547cd53d6979fb76674f4b.
-        // However, Stirling finds the md5sum above instead (without a zero?!)
-        grpc_c_version_e::GRPC_C_V1_19_0
-    },
-    {
-        "43946bf95efc74729b96ea5630aa8067", // python:3.7-slim grpcio-1.24.1
-        grpc_c_version_e::GRPC_C_V1_24_1
-    },
-    {
-        "3f9097d182b9a9392522e78945e776af", // python:3.7-slim grpcio-1.33.2
-        grpc_c_version_e::GRPC_C_V1_33_2
-    },
-    {
-        "ddf1c743895aaf9fff5d2ca944e16052", // python:3.5-alpine
-        grpc_c_version_e::GRPC_C_V1_41_1
-    }
-  };
+      {"64c25d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
+       // TODO(yzhao) - For some unknown reason, when using linux's md5sum it prints
+       // 64c205d1bc547cd53d6979fb76674f4b. However, Stirling finds the md5sum above instead
+       // (without a zero?!)
+       grpc_c_version_e::GRPC_C_V1_19_0},
+      {"43946bf95efc74729b96ea5630aa8067",  // python:3.7-slim grpcio-1.24.1
+       grpc_c_version_e::GRPC_C_V1_24_1},
+      {"3f9097d182b9a9392522e78945e776af",  // python:3.7-slim grpcio-1.33.2
+       grpc_c_version_e::GRPC_C_V1_33_2},
+      {"ddf1c743895aaf9fff5d2ca944e16052",  // python:3.5-alpine
+       grpc_c_version_e::GRPC_C_V1_41_1}};
 
   // Probes for GRPC-C tracing.
   // The binary path field is going to be changed during attachment, so it's meaningless here.
-  // TODO(yzhao) - consider using UProbeTmpls instead of UProbeSpecs. This way, we won't have to provide
-  // the exact function name, and can instead use obj_tools::SymbolMatchType::kSubstr. However, UProbeTmpls
-  // don't allow attaching by address (only by symbol), which we will potentially need for these probes,
-  // because the gRPC-C library is stripped in newer version.
+  // TODO(yzhao) - consider using UProbeTmpls instead of UProbeSpecs. This way, we won't have to
+  // provide the exact function name, and can instead use obj_tools::SymbolMatchType::kSubstr.
+  // However, UProbeTmpls don't allow attaching by address (only by symbol), which we will
+  // potentially need for these probes, because the gRPC-C library is stripped in newer version.
   inline static const auto kGrpcCUProbes = MakeArray<bpf_tools::UProbeSpec>({
       // grpc_chttp2_data_parser_parse
-      // TODO(yzhao) - The symbol could be one of two: once where the slice is const (e.g. version 1.19.1) and once where it ain't.
-      // We should probably change UProbeSpec to UProbeTmpl (currently not feasible because UProbeTmpl does not support
+      // TODO(yzhao) - The symbol could be one of two: once where the slice is const (e.g.
+      // version 1.19.1) and once where it ain't.
+      // We should probably change UProbeSpec to UProbeTmpl (currently not feasible because
+      // UProbeTmpl does not support
       // address attachment) and then we can use non-exact-symbol attachment
       // (for example, attach to anything that contains "data_parser_parse").
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_streamRK10grpc_slicei",
-                   //second option - _Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_stream10grpc_slicei
+          .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "streamRK10grpc_slicei",
+          // second option -
+          // _Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_stream10grpc_slicei
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_grpc_chttp2_data_parser_parse",
       },
       // grpc_chttp2_list_pop_writable_stream
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_chttp2_stream",
+          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
+                    "chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_grpc_chttp2_list_pop_writable_stream",
       },
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_chttp2_stream",
+          .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
+                    "chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_grpc_chttp2_list_pop_writable_stream",
       },
       // grpc_chttp2_mark_stream_closed
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z30grpc_chttp2_mark_stream_closedP21grpc_chttp2_transportP18grpc_chttp2_streamiiP10grpc_error",
+          .symbol = "_Z30grpc_chttp2_mark_stream_closedP21grpc_chttp2_transportP18grpc_chttp2_"
+                    "streamiiP10grpc_error",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_grpc_chttp2_mark_stream_closed",
       },
       // grpc_chttp2_maybe_complete_recv_initial_metadata
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z48grpc_chttp2_maybe_complete_recv_initial_metadataP21grpc_chttp2_transportP18grpc_chttp2_stream",
+          .symbol = "_Z48grpc_chttp2_maybe_complete_recv_initial_metadataP21grpc_chttp2_"
+                    "transportP18grpc_chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_grpc_chttp2_maybe_complete_recv_initial_metadata",
       },
       // grpc_chttp2_maybe_complete_recv_trailing_metadata
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
-          .symbol = "_Z49grpc_chttp2_maybe_complete_recv_trailing_metadataP21grpc_chttp2_transportP18grpc_chttp2_stream",
+          .symbol = "_Z49grpc_chttp2_maybe_complete_recv_trailing_metadataP21grpc_chttp2_"
+                    "transportP18grpc_chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_grpc_chttp2_maybe_complete_recv_trailing_metadata",
       },
