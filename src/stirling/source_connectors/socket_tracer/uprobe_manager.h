@@ -31,6 +31,7 @@
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/grpc_c.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
@@ -340,18 +341,19 @@ class UProbeManager {
   static constexpr char kGrpcCHeaderEventDataHeapName[] = "grpc_c_header_event_buffer_heap";
   static constexpr char kGrpcCEventDataHeapName[] = "grpc_c_event_buffer_heap";
 
-  inline static const std::map<std::string, enum grpc_c_version_e> kGrpcCMD5HashToVersion = {
+  inline static const std::map<std::string, enum grpc_c_version_t> kGrpcCMD5HashToVersion = {
       {"64c25d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
-       // TODO(yzhao) - For some unknown reason, when using linux's md5sum it prints
-       // 64c205d1bc547cd53d6979fb76674f4b. However, Stirling finds the md5sum above instead
-       // (without a zero?!)
-       grpc_c_version_e::GRPC_C_V1_19_0},
+                                           // TODO(yzhao) - For some unknown reason, when using
+                                           // linux's md5sum it prints
+                                           // 64c205d1bc547cd53d6979fb76674f4b. However, Stirling
+                                           // finds the md5sum above instead (without a zero?!)
+       grpc_c_version_t::GRPC_C_V1_19_0},
       {"43946bf95efc74729b96ea5630aa8067",  // python:3.7-slim grpcio-1.24.1
-       grpc_c_version_e::GRPC_C_V1_24_1},
+       grpc_c_version_t::GRPC_C_V1_24_1},
       {"3f9097d182b9a9392522e78945e776af",  // python:3.7-slim grpcio-1.33.2
-       grpc_c_version_e::GRPC_C_V1_33_2},
+       grpc_c_version_t::GRPC_C_V1_33_2},
       {"ddf1c743895aaf9fff5d2ca944e16052",  // python:3.5-alpine
-       grpc_c_version_e::GRPC_C_V1_41_1}};
+       grpc_c_version_t::GRPC_C_V1_41_1}};
 
   // Probes for GRPC-C tracing.
   // The binary path field is going to be changed during attachment, so it's meaningless here.
