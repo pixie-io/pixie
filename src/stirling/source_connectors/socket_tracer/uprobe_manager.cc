@@ -18,12 +18,12 @@
 
 #include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"
 
-#include <sys/types.h>
-#include <unistd.h>
+#include <fcntl.h>
 #include <openssl/md5.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -661,12 +661,8 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
 
   // Find path to grpc-c shared object, if it's used (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindHostPathForPIDPath(
-                        lib_names,
-                        pid,
-                        proc_parser_.get(),
-                        &fp_resolver_,
-                        HostPathForPIDPathSearchType::kSearchTypeContains));
+                      FindHostPathForPIDPath(lib_names, pid, proc_parser_.get(), &fp_resolver_,
+                                             HostPathForPIDPathSearchType::kSearchTypeContains));
 
   std::filesystem::path container_libgrpcc = container_lib_paths[0];
 
@@ -689,32 +685,37 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
 
   // Calculate MD5 hash of the grpc-c library to know which version it is.
   // Based on https://stackoverflow.com/questions/1220046/how-to-get-the-md5-hash-of-a-file-in-c
-  unsigned char md5_hash[MD5_DIGEST_LENGTH] = { 0 };
+  unsigned char md5_hash[MD5_DIGEST_LENGTH] = {0};
   int file_descript = open(container_libgrpcc.string().c_str(), O_RDONLY);
   if (file_descript < 0) {
-    LOG(WARNING) << absl::Substitute("Failed to open $0 when attaching gRPC-C probes.", container_libgrpcc.string());
+    LOG(WARNING) << absl::Substitute("Failed to open $0 when attaching gRPC-C probes.",
+                                     container_libgrpcc.string());
     return error::Internal("Failed to get the MD5 hash of library.");
   }
   struct stat statbuf;
-  if(fstat(file_descript, &statbuf) < 0) {
-    LOG(WARNING) << absl::Substitute("Failed to stat $0 when attaching gRPC-C probes.", container_libgrpcc.string());
+  if (fstat(file_descript, &statbuf) < 0) {
+    LOG(WARNING) << absl::Substitute("Failed to stat $0 when attaching gRPC-C probes.",
+                                     container_libgrpcc.string());
     return error::Internal("Failed to get the MD5 hash of library.");
   }
   uint64_t file_size = statbuf.st_size;
-  char * file_buffer = (char *)mmap(0, file_size, PROT_READ, MAP_SHARED, file_descript, 0);
-  MD5((unsigned char*) file_buffer, file_size, md5_hash);
-  munmap((void *)file_buffer, file_size);
+  char* file_buffer =
+      reinterpret_cast<char*>(mmap(0, file_size, PROT_READ, MAP_SHARED, file_descript, 0));
+  MD5((unsigned char*)file_buffer, file_size, md5_hash);
+  munmap(reinterpret_cast<void*>(file_buffer), file_size);
   close(file_descript);
   std::stringstream ss;
-  for(uint32_t i=0 ; i < MD5_DIGEST_LENGTH ; i++) {
-    ss << std::hex << (int)md5_hash[i];
+  for (uint32_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
+    ss << std::hex << static_cast<int>(md5_hash[i]);
   }
   std::string hash_str = ss.str();
-  LOG(INFO) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str, container_libgrpcc.string());
+  LOG(INFO) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
+                                container_libgrpcc.string());
 
   // Find the version of the library by its MD5 hash.
   if (kGrpcCMD5HashToVersion.find(hash_str) == kGrpcCMD5HashToVersion.end()) {
-    LOG(INFO) << absl::Substitute("Failed to map hash $0 of gRPC-C library $1 and pid $2", hash_str, container_libgrpcc.string(), pid);
+    LOG(INFO) << absl::Substitute("Failed to map hash $0 of gRPC-C library $1 and pid $2", hash_str,
+                                  container_libgrpcc.string(), pid);
     return error::Unimplemented("Unsupported to MD5 hash of library.");
   }
   const enum grpc_c_version_t version = kGrpcCMD5HashToVersion.at(hash_str);
@@ -723,23 +724,21 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
       bcc_->GetHashTable<uint32_t, uint64_t>(UProbeManager::kGrpcCVersionsName));
   LOG(INFO) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
   if (!grpc_c_versions_map->update_value(pid, version).ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to update version of pid $0 to $1", pid, (uint32_t)version);
+    LOG(WARNING) << absl::Substitute("Failed to update version of pid $0 to $1", pid,
+                                     (uint32_t)version);
     return error::Internal("Failed to set version of library.");
   }
 
   // Attach the needed probes.
   // This currently works only for non-stripped versions of the shared object.
-  LOG(INFO) << absl::Substitute("Attaching GRPC-C uprobes to $0 for pid $1", container_libgrpcc.string(), pid);
+  LOG(INFO) << absl::Substitute("Attaching GRPC-C uprobes to $0 for pid $1",
+                                container_libgrpcc.string(), pid);
   for (auto spec : kGrpcCUProbes) {
     spec.binary_path = container_libgrpcc.string();
     auto return_value = bcc_->AttachUProbe(spec);
-    if (!return_value.ok())
-    {
-      LOG(WARNING) << absl::Substitute(
-        "Failed to attach gRPC-C probe $0 to pid $1 and file $2",
-        spec.symbol,
-        pid,
-        container_libgrpcc.string());
+    if (!return_value.ok()) {
+      LOG(WARNING) << absl::Substitute("Failed to attach gRPC-C probe $0 to pid $1 and file $2",
+                                       spec.symbol, pid, container_libgrpcc.string());
       return return_value;
     }
   }
@@ -747,13 +746,10 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   for (auto spec : kGrpcCDataParserParseUProbes) {
     spec.binary_path = container_libgrpcc.string();
     auto return_value = bcc_->AttachUProbe(spec);
-    if (return_value.ok())
-    {
+    if (return_value.ok()) {
       LOG(INFO) << absl::Substitute(
-        "Attached gRPC-C data parse prase probe $0 to pid $1 and file $2",
-        spec.symbol,
-        pid,
-        container_libgrpcc.string());
+          "Attached gRPC-C data parse prase probe $0 to pid $1 and file $2", spec.symbol, pid,
+          container_libgrpcc.string());
       attached_data_parser_parse_probe = true;
       break;
     }
@@ -763,8 +759,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   }
 
   LOG(INFO) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
-                                kGrpcCUProbes.size(),
-                                pid);
+                                kGrpcCUProbes.size(), pid);
 
   return kGrpcCUProbes.size();
 }
