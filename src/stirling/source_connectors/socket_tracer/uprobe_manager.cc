@@ -764,6 +764,39 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   return kGrpcCUProbes.size() + 1;
 }
 
+int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids) {
+  if (!grpc_c_heap_variables_initiated_) {
+    if (InitiateGrpcCPercpuVariables()) {
+      grpc_c_heap_variables_initiated_ = true;
+      LOG(INFO) << absl::Substitute("Initiated gRPC-c PerCPU variables successfully");
+    }
+  }
+
+  int uprobe_count = 0;
+  for (const auto& pid : pids) {
+    if (cfg_disable_self_probing_ && pid.pid() == static_cast<uint32_t>(getpid())) {
+      continue;
+    }
+
+    auto count_or = AttachGrpcCUProbesOnDynamicPythonLib(pid.pid());
+    if (!count_or.ok()) {
+      VLOG(1) << absl::Substitute(
+          "Attaching gRPC-C uprobes on dynamic python library failed for PID $0: $1",
+          pid.pid(),
+          count_or.ToString());
+      continue;
+    }
+
+    uprobe_count += count_or.ValueOrDie();
+    VLOG(1) << absl::Substitute(
+        "Attaching gRPC-C uprobes on dynamic python library succeeded for PID $0: $1 probes",
+        pid.pid(),
+        count_or.ValueOrDie());
+  }
+
+  return uprobe_count;
+}
+
 int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
@@ -928,10 +961,14 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  if (FLAGS_stirling_rescan_for_dlopen) {
-    uprobe_count += DeployOpenSSLUProbes(PIDsToRescanForUProbes());
-  }
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
+  uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
+
+  if (FLAGS_stirling_rescan_for_dlopen) {
+    auto pids_to_rescan_for_uprobes = PIDsToRescanForUProbes();
+    uprobe_count += DeployOpenSSLUProbes(pids_to_rescan_for_uprobes);
+    uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
+  }
 
   if (uprobe_count != 0) {
     LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);

@@ -433,7 +433,7 @@ class UProbeManager {
   bool InitiateGrpcCPercpuEventDataHeap();
   bool InitiateGrpcCPercpuHeaderEventDataHeap();
   bool InitiateGrpcCPercpuVariables();
-  bool grpc_c_local_variables_initiated_ = false;
+  bool grpc_c_heap_variables_initiated_ = false;
 
   static StatusOr<std::array<UProbeTmpl, 6>> GetNodeOpensslUProbeTmpls(const SemVer& ver);
 
