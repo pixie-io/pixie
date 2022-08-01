@@ -4,7 +4,6 @@ cryptography==3.4.7
 gogo-python==0.0.1
 grpcio==1.46.3
 grpcio-tools==1.46.3
-pip==22.0.3
 protobuf==3.20.1
 pycparser==2.21
 setuptools==44.0.0
