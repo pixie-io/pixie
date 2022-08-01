@@ -35,17 +35,12 @@ TEST(MetadataPropertyTests, retrieval) {
   EXPECT_TRUE(md_handle->HasProperty("container_name"));
   EXPECT_TRUE(md_handle->HasProperty("pid"));
   EXPECT_TRUE(md_handle->HasProperty("deployment"));
-  EXPECT_TRUE(md_handle->HasProperty("replicaset_name"));
-  EXPECT_TRUE(md_handle->HasProperty("replicaset_id"));
-  EXPECT_TRUE(md_handle->HasProperty("deployment"));
   EXPECT_TRUE(md_handle->HasProperty("deployment_name"));
   EXPECT_TRUE(md_handle->HasProperty("deployment_id"));
   EXPECT_OK(md_handle->GetProperty("pod_name"));
   EXPECT_OK(md_handle->GetProperty("service_name"));
   EXPECT_OK(md_handle->GetProperty("pid"));
   EXPECT_OK(md_handle->GetProperty("replica_set"));
-  EXPECT_OK(md_handle->GetProperty("replicaset_name"));
-  EXPECT_OK(md_handle->GetProperty("replicaset_id"));
   EXPECT_OK(md_handle->GetProperty("deployment"));
   EXPECT_OK(md_handle->GetProperty("deployment_name"));
   EXPECT_OK(md_handle->GetProperty("deployment_id"));
@@ -80,10 +75,9 @@ TEST_P(MetadataGetPropertyTests, has_property) {
   EXPECT_OK(property_status);
 }
 
-std::vector<std::string> metadata_strs = {"service_name",  "service_id",      "pod_name",
-                                          "pod_id",        "container_id",    "deployment",
-                                          "deployment_id", "deployment_name", "container_name",
-                                          "replica_set",   "replicaset_name", "replicaset_id"};
+std::vector<std::string> metadata_strs = {
+    "service_name", "service_id",    "pod_name",        "pod_id",         "container_id",
+    "deployment",   "deployment_id", "deployment_name", "container_name", "replica_set"};
 
 INSTANTIATE_TEST_SUITE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
                          ::testing::ValuesIn(metadata_strs));
