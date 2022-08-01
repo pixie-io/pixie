@@ -342,11 +342,7 @@ class UProbeManager {
   static constexpr char kGrpcCEventDataHeapName[] = "grpc_c_event_buffer_heap";
 
   inline static const std::map<std::string, enum grpc_c_version_t> kGrpcCMD5HashToVersion = {
-      {"64c25d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
-                                           // TODO(yzhao) - For some unknown reason, when using
-                                           // linux's md5sum it prints
-                                           // 64c205d1bc547cd53d6979fb76674f4b. However, Stirling
-                                           // finds the md5sum above instead (without a zero?!)
+      {"64c205d1bc547cd53d6979fb76674f4b", // python:3.7-slim grpcio-1.19.0
        grpc_c_version_t::GRPC_C_V1_19_0},
       {"43946bf95efc74729b96ea5630aa8067",  // python:3.7-slim grpcio-1.24.1
        grpc_c_version_t::GRPC_C_V1_24_1},

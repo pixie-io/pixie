@@ -676,7 +676,7 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
 
   std::stringstream ss;
   for (uint32_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
-    ss << std::hex << static_cast<int>(md5_hash[i]);
+    ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(md5_hash[i]);
   }
   std::string hash_str = ss.str();
 
