@@ -211,7 +211,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
-TEST_F(MetadataOpsTest, upid_to_replica_set_name_test) {
+TEST_F(MetadataOpsTest, upid_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToReplicaSetNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -227,7 +227,7 @@ TEST_F(MetadataOpsTest, upid_to_replica_set_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
-TEST_F(MetadataOpsTest, upid_to_replica_set_id_test) {
+TEST_F(MetadataOpsTest, upid_to_replicaset_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToReplicaSetIDUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -269,10 +269,18 @@ TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
   udf_tester.ForInput("123_uid").Expect("");
 }
 
-TEST_F(MetadataOpsTest, pod_id_to_replica_set_test) {
+TEST_F(MetadataOpsTest, pod_id_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetUDF>(std::move(function_ctx));
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl/rs0");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_replicaset_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("rs0_uid");
   // This pod is not available, should return empty.
   udf_tester.ForInput("123_uid").Expect("");
 }
@@ -697,11 +705,19 @@ TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
   udf_tester.ForInput("badlyformed").Expect("");
 }
 
-TEST_F(MetadataOpsTest, pod_name_to_replica_set_test) {
+TEST_F(MetadataOpsTest, pod_name_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetUDF>(std::move(function_ctx));
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("pl/rs0");
   udf_tester.ForInput("pl/terminating_pod").Expect("pl/terminating_rs");
+  udf_tester.ForInput("badlyformed").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_replicaset_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("rs0_uid");
+  udf_tester.ForInput("pl/terminating_pod").Expect("terminating_rs0_uid");
   udf_tester.ForInput("badlyformed").Expect("");
 }
 
@@ -713,7 +729,7 @@ TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
   udf_tester.ForInput("").Expect("");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_replica_set_name_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetIDToReplicaSetNameUDF>(std::move(function_ctx));
@@ -726,7 +742,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_replica_set_name_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect("pl/terminating_rs");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_start_time_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_start_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStartTimeUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect(101);
@@ -738,7 +754,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_start_time_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(101);
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_stop_time_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_stop_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStopTimeUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect(0);
@@ -750,7 +766,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_stop_time_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(150);
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_namespace_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_namespace_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect("pl");
@@ -762,7 +778,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_namespace_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect("pl");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_owner_references_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_owner_references_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetIDToOwnerReferencesUDF>(std::move(function_ctx));
@@ -781,7 +797,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_owner_references_test) {
           R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_status_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_status_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStatusUDF>(std::move(function_ctx));
 
@@ -799,7 +815,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_status_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_replica_set_id_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_replicaset_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToReplicaSetIDUDF>(std::move(function_ctx));
@@ -812,7 +828,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_replica_set_id_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect("terminating_rs0_uid");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_start_time_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_start_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToStartTimeUDF>(std::move(function_ctx));
@@ -825,7 +841,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_start_time_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect(101);
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_stop_time_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_stop_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToStopTimeUDF>(std::move(function_ctx));
@@ -838,7 +854,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_stop_time_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect(150);
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_namespace_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_namespace_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToNamespaceUDF>(std::move(function_ctx));
@@ -851,7 +867,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_namespace_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect("pl");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_owner_references_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_owner_references_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToOwnerReferencesUDF>(std::move(function_ctx));
@@ -872,7 +888,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_owner_references_test) {
           R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_status_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_status_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetNameToStatusUDF>(std::move(function_ctx));
 
