@@ -461,6 +461,49 @@ class RedisContainer : public ContainerRunner {
 };
 
 //-----------------------------------------------------------------------------
+// RabbitMQ
+//-----------------------------------------------------------------------------
+
+class RabbitMQContainer : public ContainerRunner {
+ public:
+  RabbitMQContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/amqp_image.tar";
+  static constexpr std::string_view kReadyMessage = "Server startup complete";
+  static constexpr std::string_view kContainerNamePrefix = "amqp_server";
+};
+
+class RabbitMQProducer : public ContainerRunner {
+ public:
+  RabbitMQProducer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/amqp/producer_image.tar";
+  static constexpr std::string_view kReadyMessage = "Starting AMQP producer";
+  static constexpr std::string_view kContainerNamePrefix = "amqp_producer";
+};
+
+class RabbitMQConsumer : public ContainerRunner {
+ public:
+  RabbitMQConsumer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/amqp/consumer_image.tar";
+  static constexpr std::string_view kReadyMessage = "Starting AMQP consumer";
+  static constexpr std::string_view kContainerNamePrefix = "amqp_consumer";
+};
+
+//-----------------------------------------------------------------------------
 // Cassandra
 //-----------------------------------------------------------------------------
 

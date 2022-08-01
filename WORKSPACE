@@ -196,11 +196,28 @@ go_download_sdk(
     version = "1.17.11",
 )
 
+
 pip_parse(
     name = "amqp_gen_reqs",
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
 )
 
-load("@amqp_gen_reqs//:requirements.bzl", "install_deps")
+load("@amqp_gen_reqs//:requirements.bzl", amp_gen_install_deps = "install_deps")
 
-install_deps()
+amp_gen_install_deps()
+
+load(
+    "@io_bazel_rules_docker//python3:image.bzl",
+    py_image_repos = "repositories",
+)
+
+py_image_repos()
+
+pip_parse(
+    name = "amqp_bpf_test_requirements",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.txt",
+)
+
+load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
+
+ampq_bpf_test_install_deps()

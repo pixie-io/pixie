@@ -111,3 +111,8 @@ node_http_server_image(
     name = "node_14_18_1_alpine_image",
     base = "@node_14_18_1_alpine_amd64_image//image",
 )
+
+container_image(
+    name = "amqp_image",
+    base = "@rabbitmq_3_management//image",
+)
