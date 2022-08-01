@@ -658,14 +658,16 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
   int file_descript = open(file.c_str(), O_RDONLY);
   if (file_descript < 0) {
     LOG(WARNING) << absl::Substitute("Failed to open $0 when calculating MD5 of file $0.", file);
-    return error::Internal(absl::Substitute("Failed to get the MD5 hash of file $0 because of open failure.", file));
+    return error::Internal(
+        absl::Substitute("Failed to get the MD5 hash of file $0 because of open failure.", file));
   }
 
   struct stat statbuf;
   if (fstat(file_descript, &statbuf) < 0) {
     close(file_descript);
     LOG(WARNING) << absl::Substitute("Failed to stat $0 when calculating MD5 of file $0.", file);
-    return error::Internal(absl::Substitute("Failed to get the MD5 hash of file $0 because of stat failure.", file));
+    return error::Internal(
+        absl::Substitute("Failed to get the MD5 hash of file $0 because of stat failure.", file));
   }
   uint64_t file_size = statbuf.st_size;
 
@@ -766,7 +768,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   LOG(INFO) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
                                 kGrpcCUProbes.size(), pid);
 
-  return kGrpcCUProbes.size() + 1; // +1 for the data parser parse probe.
+  return kGrpcCUProbes.size() + 1;  // +1 for the data parser parse probe.
 }
 
 int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids) {
