@@ -663,6 +663,7 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
 
   struct stat statbuf;
   if (fstat(file_descript, &statbuf) < 0) {
+    close(file_descript);
     LOG(WARNING) << absl::Substitute("Failed to stat $0 when calculating MD5 of file $0.", file);
     return error::Internal(absl::Substitute("Failed to get the MD5 hash of file $0 because of stat failure.", file));
   }
