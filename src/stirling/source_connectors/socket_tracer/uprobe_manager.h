@@ -408,8 +408,8 @@ class UProbeManager {
   // The symbol could be one of two: once where the slice is const (e.g.
   // version 1.19.1) and once where it ain't.
   // TODO(yzhao) - We should probably change UProbeSpec to UProbeTmpl (currently not feasible
-  // because UProbeTmpl does not support attachment by address) and then we can add this probe to the
-  // same array with the other grpc-c probes (because we would only need a part of the symbol).
+  // because UProbeTmpl does not support attachment by address) and then we can add this probe to
+  // the same array with the other grpc-c probes (because we would only need a part of the symbol).
   inline static const auto kGrpcCDataParserParseUProbes = MakeArray<bpf_tools::UProbeSpec>({
       bpf_tools::UProbeSpec{
           .binary_path = "cygrpc.cpython",
