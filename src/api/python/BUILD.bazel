@@ -24,6 +24,8 @@ py_wheel(
     classifiers = [
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: Apache Software License",
         "Typing :: Typed",
@@ -41,7 +43,6 @@ py_wheel(
         "gogo-python==0.0.1",
         "grpcio==1.46.3",
         "grpcio-tools==1.46.3",
-        "pip==22.0.3",
         "protobuf==3.20.1",
         "pycparser==2.21",
         "setuptools==44.0.0",
