@@ -428,6 +428,7 @@ class UProbeManager {
   });
 
   int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
+  StatusOr<std::string> MD5onFile(const std::string& file);
   StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
   bool InitiateGrpcCPercpuMetadataHeap();
   bool InitiateGrpcCPercpuEventDataHeap();
