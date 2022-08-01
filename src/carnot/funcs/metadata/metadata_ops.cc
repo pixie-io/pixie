@@ -51,6 +51,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodIDToNodeNameUDF>("pod_id_to_node_name");
   registry->RegisterOrDie<PodIDToReplicaSetNameUDF>("pod_id_to_replicaset_name");
   registry->RegisterOrDie<PodIDToReplicaSetIDUDF>("pod_id_to_replicaset_id");
+  registry->RegisterOrDie<PodIDToDeploymentNameUDF>("pod_id_to_deployment_name");
+  registry->RegisterOrDie<PodIDToDeploymentIDUDF>("pod_id_to_deployment_id");
   registry->RegisterOrDie<PodIDToPodStartTimeUDF>("pod_id_to_start_time");
   registry->RegisterOrDie<PodIDToPodStopTimeUDF>("pod_id_to_stop_time");
   registry->RegisterOrDie<PodIDToServiceNameUDF>("pod_id_to_service_name");
@@ -60,6 +62,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodNameToNamespaceUDF>("pod_name_to_namespace");
   registry->RegisterOrDie<PodNameToReplicaSetNameUDF>("pod_name_to_replicaset_name");
   registry->RegisterOrDie<PodNameToReplicaSetIDUDF>("pod_name_to_replicaset_id");
+  registry->RegisterOrDie<PodNameToDeploymentNameUDF>("pod_name_to_deployment_name");
+  registry->RegisterOrDie<PodNameToDeploymentIDUDF>("pod_name_to_deployment_id");
   registry->RegisterOrDie<PodNameToPodIDUDF>("pod_name_to_pod_id");
   registry->RegisterOrDie<PodNameToPodIPUDF>("pod_name_to_pod_ip");
   registry->RegisterOrDie<PodNameToServiceNameUDF>("pod_name_to_service_name");
@@ -79,6 +83,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ReplicaSetIDToNamespaceUDF>("replicaset_id_to_namespace");
   registry->RegisterOrDie<ReplicaSetIDToOwnerReferencesUDF>("replicaset_id_to_owner_references");
   registry->RegisterOrDie<ReplicaSetIDToStatusUDF>("replicaset_id_to_status");
+  registry->RegisterOrDie<ReplicaSetIDToDeploymentNameUDF>("replicaset_id_to_deployment_name");
+  registry->RegisterOrDie<ReplicaSetIDToDeploymentIDUDF>("replicaset_id_to_deployment_id");
   registry->RegisterOrDie<ReplicaSetNameToReplicaSetIDUDF>("replicaset_name_to_replicaset_id");
   registry->RegisterOrDie<ReplicaSetNameToStartTimeUDF>("replicaset_name_to_start_time");
   registry->RegisterOrDie<ReplicaSetNameToStopTimeUDF>("replicaset_name_to_stop_time");
@@ -86,6 +92,18 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ReplicaSetNameToOwnerReferencesUDF>(
       "replicaset_name_to_owner_references");
   registry->RegisterOrDie<ReplicaSetNameToStatusUDF>("replicaset_name_to_status");
+  registry->RegisterOrDie<ReplicaSetNameToDeploymentNameUDF>("replicaset_name_to_deployment_name");
+  registry->RegisterOrDie<ReplicaSetNameToDeploymentIDUDF>("replicaset_name_to_deployment_id");
+  registry->RegisterOrDie<DeploymentIDToDeploymentNameUDF>("deployment_id_to_deployment_name");
+  registry->RegisterOrDie<DeploymentIDToStartTimeUDF>("deployment_id_to_start_time");
+  registry->RegisterOrDie<DeploymentIDToStopTimeUDF>("deployment_id_to_stop_time");
+  registry->RegisterOrDie<DeploymentIDToNamespaceUDF>("deployment_id_to_namespace");
+  registry->RegisterOrDie<DeploymentIDToStatusUDF>("deployment_id_to_status");
+  registry->RegisterOrDie<DeploymentNameToDeploymentIDUDF>("deployment_name_to_deployment_id");
+  registry->RegisterOrDie<DeploymentNameToStartTimeUDF>("deployment_name_to_start_time");
+  registry->RegisterOrDie<DeploymentNameToStopTimeUDF>("deployment_name_to_stop_time");
+  registry->RegisterOrDie<DeploymentNameToNamespaceUDF>("deployment_name_to_namespace");
+  registry->RegisterOrDie<DeploymentNameToStatusUDF>("deployment_name_to_status");
   registry->RegisterOrDie<UPIDToASIDUDF>("upid_to_asid");
   registry->RegisterOrDie<UPIDToContainerIDUDF>("upid_to_container_id");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("upid_to_cmdline");
@@ -102,6 +120,8 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<UPIDToServiceIDUDF>("upid_to_service_id");
   registry->RegisterOrDie<UPIDToReplicaSetNameUDF>("upid_to_replicaset_name");
   registry->RegisterOrDie<UPIDToReplicaSetIDUDF>("upid_to_replicaset_id");
+  registry->RegisterOrDie<UPIDToDeploymentNameUDF>("upid_to_deployment_name");
+  registry->RegisterOrDie<UPIDToDeploymentIDUDF>("upid_to_deployment_id");
   registry->RegisterOrDie<UPIDToStringUDF>("upid_to_string");
   registry->RegisterOrDie<HostnameUDF>("_exec_hostname");
   registry->RegisterOrDie<HostNumCPUsUDF>("_exec_host_num_cpus");
