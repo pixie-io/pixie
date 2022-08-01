@@ -804,9 +804,6 @@ class ReplicaSetIDToReplicaSetNameUDF : public ScalarUDF {
         .Arg("replica_set_id", "The UID of the Replica Set to get the name for.")
         .Returns("The Kubernetes Replica Set Name for the UID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -831,9 +828,6 @@ class ReplicaSetIDToStartTimeUDF : public ScalarUDF {
         .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the start time for.")
         .Returns("The start time (as an integer) for the Replica Set ID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -858,9 +852,6 @@ class ReplicaSetIDToStopTimeUDF : public ScalarUDF {
         .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the stop time for.")
         .Returns("The stop time (as an integer) for the Replica Set ID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -884,9 +875,6 @@ class ReplicaSetIDToNamespaceUDF : public ScalarUDF {
         .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the namespace for.")
         .Returns("The namespace for the Replica Set ID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -917,9 +905,6 @@ class ReplicaSetIDToOwnerReferencesUDF : public ScalarUDF {
              "The Replica Set ID of the Replica Set to get the owner references for.")
         .Returns("The owner references for the Replica Set ID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -944,9 +929,6 @@ class ReplicaSetIDToStatusUDF : public ScalarUDF {
         .Arg("replica_set_id", "The Replica Set ID of the Replica Set to get the status for.")
         .Returns("The status for the Replica Set ID passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -977,9 +959,6 @@ class ReplicaSetNameToReplicaSetIDUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The Kubernetes Replica Set ID for the name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1011,9 +990,6 @@ class ReplicaSetNameToStartTimeUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The start time (as an integer) for the Replica Set name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1045,9 +1021,6 @@ class ReplicaSetNameToStopTimeUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The stop time (as an integer) for the Replica Set name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1078,9 +1051,6 @@ class ReplicaSetNameToNamespaceUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The namespace for the Replica Set name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1117,9 +1087,6 @@ class ReplicaSetNameToOwnerReferencesUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The owner references for the Replica Set name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1151,9 +1118,6 @@ class ReplicaSetNameToStatusUDF : public ScalarUDF {
              "the Replica Set. i.e. \"ns/rs_name\"")
         .Returns("The status for the Replica Set name passed in.");
   }
-
-  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
-  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
