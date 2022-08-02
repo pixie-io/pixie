@@ -202,6 +202,7 @@ fully_labeled_replicas: 5
 ready_replicas: 3
 available_replicas: 3
 observed_generation: 5
+requested_replicas: 5
 conditions: {
   type: "ready"
   status: 1
@@ -222,6 +223,7 @@ fully_labeled_replicas: 0
 ready_replicas: 0
 available_replicas: 0
 observed_generation: 5
+requested_replicas: 0
 start_timestamp_ns: 101
 conditions: {
   type: "Terminating"
@@ -244,6 +246,7 @@ replicas: 0
 fully_labeled_replicas: 0
 ready_replicas: 0
 available_replicas: 0
+requested_replicas: 0
 observed_generation: 5
 conditions: {
   type: "Terminating"
@@ -270,6 +273,7 @@ updated_replicas: 4
 ready_replicas: 3
 available_replicas: 3
 unavailable_replicas: 2
+requested_replicas: 5
 observed_generation: 5
 conditions: {
   type: 1
@@ -288,6 +292,7 @@ updated_replicas: 5
 ready_replicas: 3
 available_replicas: 3
 unavailable_replicas: 2
+requested_replicas: 0
 observed_generation: 2
 conditions: {
   type: 1
@@ -306,6 +311,7 @@ updated_replicas: 0
 ready_replicas: 0
 available_replicas: 0
 unavailable_replicas: 0
+requested_replicas: 0
 observed_generation: 2
 conditions: {
   type: 1

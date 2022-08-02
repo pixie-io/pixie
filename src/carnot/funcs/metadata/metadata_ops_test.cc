@@ -899,8 +899,9 @@ TEST_F(MetadataOpsTest, replicaset_id_to_status_test) {
 
   md::ReplicaSetConditions conditions_ready{{"ready", md::ConditionStatus::kTrue}};
   md::ReplicaSetConditions conditions_terminated{{"Terminating", md::ConditionStatus::kTrue}};
-  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, conditions_ready, 101, 0);
-  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, conditions_terminated, 101, 0);
+  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, 5, conditions_ready, 101, 0);
+  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, 0, conditions_terminated, 101,
+                                         0);
 
   udf_tester.ForInput("rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_ready));
   udf_tester.ForInput("terminating_rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
@@ -1018,8 +1019,9 @@ TEST_F(MetadataOpsTest, replicaset_name_to_status_test) {
 
   md::ReplicaSetConditions conditionsReady{{"ready", md::ConditionStatus::kTrue}};
   md::ReplicaSetConditions conditionsTerminating{{"Terminating", md::ConditionStatus::kTrue}};
-  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, conditionsReady, 101, 0);
-  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, conditionsTerminating, 101, 0);
+  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, 5, conditionsReady, 101, 0);
+  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, 0, conditionsTerminating, 101,
+                                         0);
 
   udf_tester.ForInput("pl/rs0").Expect(ReplicaSetInfoToStatus(&rs_info_ready));
   udf_tester.ForInput("pl/terminating_rs").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
@@ -1120,11 +1122,11 @@ TEST_F(MetadataOpsTest, deployment_id_to_status_test) {
   md::DeploymentConditions conditions_terminating{
       {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kFalse}};
 
-  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, conditions_ready, 101, 0);
-  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, conditions_terminating, 123,
-                                          0);
-  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, conditions_terminating, 123,
-                                         150);
+  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, 5, conditions_ready, 101, 0);
+  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, 0, conditions_terminating,
+                                          123, 0);
+  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, 0, conditions_terminating,
+                                         123, 150);
 
   udf_tester.ForInput("deployment_uid").Expect(DeploymentInfoToStatus(&dep_info_ready));
   udf_tester.ForInput("terminating_deployment_uid")
@@ -1202,11 +1204,11 @@ TEST_F(MetadataOpsTest, deployment_name_to_status_test) {
   md::DeploymentConditions conditions_terminating{
       {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kFalse}};
 
-  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, conditions_ready, 101, 0);
-  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, conditions_terminating, 123,
-                                          0);
-  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, conditions_terminating, 123,
-                                         150);
+  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, 5, conditions_ready, 101, 0);
+  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, 0, conditions_terminating,
+                                          123, 0);
+  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, 0, conditions_terminating,
+                                         123, 150);
 
   udf_tester.ForInput("pl/deployment1").Expect(DeploymentInfoToStatus(&dep_info_ready));
   udf_tester.ForInput("pl/terminating_deployment1")

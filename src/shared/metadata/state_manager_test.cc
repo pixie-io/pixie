@@ -140,6 +140,7 @@ constexpr char kUpdate3_0Pbtxt[] = R"(
     ready_replicas: 3
     available_replicas: 3
     observed_generation: 5
+  requested_replicas: 5
     conditions: {
       type: "ready"
       status: CONDITION_STATUS_TRUE
@@ -165,6 +166,7 @@ constexpr char kUpdate3_1Pbtxt[] = R"(
     available_replicas: 3
     unavailable_replicas: 2
     observed_generation: 5
+    requested_replicas: 5
     conditions: {
       type: 1
       status: CONDITION_STATUS_TRUE
@@ -324,6 +326,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ(3, rs_info->ready_replicas());
   EXPECT_EQ(3, rs_info->available_replicas());
   EXPECT_EQ(5, rs_info->observed_generation());
+  EXPECT_EQ(5, rs_info->requested_replicas());
 
   EXPECT_THAT(rs_info->owner_references(),
               UnorderedElementsAre(OwnerReference{"deployment_uid", "deployment1", "Deployment"}));
@@ -339,6 +342,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ(3, dep_info->available_replicas());
   EXPECT_EQ(2, dep_info->unavailable_replicas());
   EXPECT_EQ(5, dep_info->observed_generation());
+  EXPECT_EQ(5, dep_info->requested_replicas());
   EXPECT_EQ(101, dep_info->start_time_ns());
   EXPECT_EQ(0, dep_info->stop_time_ns());
   EXPECT_EQ(2, dep_info->conditions().size());

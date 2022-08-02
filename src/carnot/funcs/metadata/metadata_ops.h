@@ -698,6 +698,7 @@ inline types::StringValue ReplicaSetInfoToStatus(const px::md::ReplicaSetInfo* r
   int ready_replicas = 0;
   int available_replicas = 0;
   int observed_generation = 0;
+  int requested_replicas = 0;
   std::string conditions = "";
 
   if (rs_info != nullptr) {
@@ -706,6 +707,7 @@ inline types::StringValue ReplicaSetInfoToStatus(const px::md::ReplicaSetInfo* r
     ready_replicas = rs_info->ready_replicas();
     available_replicas = rs_info->available_replicas();
     observed_generation = rs_info->observed_generation();
+    requested_replicas = rs_info->requested_replicas();
 
     auto rs_conditions = rs_info->conditions();
     for (const auto& condition : rs_info->conditions()) {
@@ -721,6 +723,7 @@ inline types::StringValue ReplicaSetInfoToStatus(const px::md::ReplicaSetInfo* r
   d.AddMember("fully_labeled_replicas", fully_labeled_replicas, d.GetAllocator());
   d.AddMember("ready_replicas", ready_replicas, d.GetAllocator());
   d.AddMember("available_replicas", available_replicas, d.GetAllocator());
+  d.AddMember("requested_replicas", requested_replicas, d.GetAllocator());
   d.AddMember("observed_generation", observed_generation, d.GetAllocator());
   d.AddMember("conditions", internal::StringRef(conditions), d.GetAllocator());
   rapidjson::StringBuffer sb;
@@ -774,6 +777,8 @@ inline types::StringValue DeploymentInfoToStatus(const px::md::DeploymentInfo* d
   int available_replicas = 0;
   int unavailable_replicas = 0;
   int observed_generation = 0;
+  int requested_replicas = 0;
+
   std::string conditions = "";
 
   if (dep_info != nullptr) {
@@ -783,6 +788,7 @@ inline types::StringValue DeploymentInfoToStatus(const px::md::DeploymentInfo* d
     available_replicas = dep_info->available_replicas();
     unavailable_replicas = dep_info->unavailable_replicas();
     observed_generation = dep_info->observed_generation();
+    requested_replicas = dep_info->requested_replicas();
 
     auto rs_conditions = dep_info->conditions();
     for (const auto& condition : dep_info->conditions()) {
@@ -799,6 +805,7 @@ inline types::StringValue DeploymentInfoToStatus(const px::md::DeploymentInfo* d
   d.AddMember("ready_replicas", ready_replicas, d.GetAllocator());
   d.AddMember("available_replicas", available_replicas, d.GetAllocator());
   d.AddMember("unavailable_replicas", unavailable_replicas, d.GetAllocator());
+  d.AddMember("requested_replicas", requested_replicas, d.GetAllocator());
   d.AddMember("observed_generation", observed_generation, d.GetAllocator());
   d.AddMember("conditions", internal::StringRef(conditions), d.GetAllocator());
   rapidjson::StringBuffer sb;

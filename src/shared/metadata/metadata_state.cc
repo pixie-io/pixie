@@ -356,6 +356,7 @@ Status K8sMetadataState::HandleReplicaSetUpdate(const ReplicaSetUpdate& update) 
   replica_set_info->set_ready_replicas(update.ready_replicas());
   replica_set_info->set_available_replicas(update.available_replicas());
   replica_set_info->set_observed_generation(update.observed_generation());
+  replica_set_info->set_requested_replicas(update.requested_replicas());
 
   VLOG(1) << "replica set update: " << update.name();
 
@@ -384,6 +385,7 @@ Status K8sMetadataState::HandleDeploymentUpdate(const DeploymentUpdate& update) 
   deployment_info->set_ready_replicas(update.ready_replicas());
   deployment_info->set_available_replicas(update.available_replicas());
   deployment_info->set_unavailable_replicas(update.unavailable_replicas());
+  deployment_info->set_requested_replicas(update.requested_replicas());
   deployment_info->set_conditions(ConvertToDeploymentConditions(update.conditions()));
 
   VLOG(1) << "deployment update: " << update.name();

@@ -160,6 +160,7 @@ constexpr char kReplicaSetUpdatePbTxt[] = R"(
   ready_replicas: 3
   available_replicas: 3
   observed_generation: 5
+  requested_replicas: 5
   conditions: {
     type: "ready"
     status: CONDITION_STATUS_TRUE
@@ -183,6 +184,7 @@ constexpr char kDeploymentUpdatePbTxt00[] = R"(
   available_replicas: 3
   unavailable_replicas: 2
   observed_generation: 5
+  requested_replicas: 5
   conditions: {
     type: 1
     status: CONDITION_STATUS_TRUE
@@ -205,6 +207,7 @@ constexpr char kDeploymentUpdatePbTxt01[] = R"(
   available_replicas: 2
   unavailable_replicas: 4
   observed_generation: 6
+  requested_replicas: 6
   conditions: {
     type: 1
     status: CONDITION_STATUS_TRUE
@@ -231,6 +234,8 @@ constexpr char kDeploymentUpdatePbTxt02[] = R"(
   available_replicas: 0
   unavailable_replicas: 10
   observed_generation: 10
+  requested_replicas: 7
+
   conditions: {
     type: 1
     status: CONDITION_STATUS_FALSE
@@ -426,6 +431,12 @@ TEST(K8sMetadataStateTest, HandleReplicaSetUpdate) {
   EXPECT_EQ("rs0", info->name());
   EXPECT_EQ(101, info->start_time_ns());
   EXPECT_EQ(0, info->stop_time_ns());
+  EXPECT_EQ(5, info->replicas());
+  EXPECT_EQ(5, info->fully_labeled_replicas());
+  EXPECT_EQ(3, info->ready_replicas());
+  EXPECT_EQ(3, info->available_replicas());
+  EXPECT_EQ(5, info->observed_generation());
+  EXPECT_EQ(5, info->requested_replicas());
 }
 
 TEST(K8sMetadataStateTest, HandleDeploymentUpdate) {
@@ -449,6 +460,7 @@ TEST(K8sMetadataStateTest, HandleDeploymentUpdate) {
   EXPECT_EQ(3, info->available_replicas());
   EXPECT_EQ(2, info->unavailable_replicas());
   EXPECT_EQ(5, info->observed_generation());
+  EXPECT_EQ(5, info->observed_generation());
   EXPECT_EQ(101, info->start_time_ns());
   EXPECT_EQ(0, info->stop_time_ns());
   EXPECT_EQ(2, info->conditions().size());
@@ -470,6 +482,7 @@ TEST(K8sMetadataStateTest, HandleDeploymentUpdate) {
   EXPECT_EQ(2, info->ready_replicas());
   EXPECT_EQ(2, info->available_replicas());
   EXPECT_EQ(4, info->unavailable_replicas());
+  EXPECT_EQ(6, info->observed_generation());
   EXPECT_EQ(6, info->observed_generation());
   EXPECT_EQ(101, info->start_time_ns());
   EXPECT_EQ(0, info->stop_time_ns());
@@ -497,6 +510,7 @@ TEST(K8sMetadataStateTest, HandleDeploymentUpdate) {
   EXPECT_EQ(0, info->available_replicas());
   EXPECT_EQ(10, info->unavailable_replicas());
   EXPECT_EQ(10, info->observed_generation());
+  EXPECT_EQ(7, info->requested_replicas());
   EXPECT_EQ(110, info->start_time_ns());
   EXPECT_EQ(200, info->stop_time_ns());
   EXPECT_EQ(3, info->conditions().size());

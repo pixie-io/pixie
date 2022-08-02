@@ -248,7 +248,7 @@ TEST(ServiceInfo, clone) {
 }
 
 TEST(ReplicaSetInfo, basic_accessors) {
-  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, 4, {{"ready", ConditionStatus::kTrue}});
 
   rs_info.set_start_time_ns(123);
   rs_info.set_stop_time_ns(256);
@@ -262,6 +262,7 @@ TEST(ReplicaSetInfo, basic_accessors) {
   EXPECT_EQ(2, rs_info.ready_replicas());
   EXPECT_EQ(2, rs_info.available_replicas());
   EXPECT_EQ(1, rs_info.observed_generation());
+  EXPECT_EQ(4, rs_info.requested_replicas());
 
   EXPECT_EQ(123, rs_info.start_time_ns());
   EXPECT_EQ(256, rs_info.stop_time_ns());
@@ -270,21 +271,22 @@ TEST(ReplicaSetInfo, basic_accessors) {
 }
 
 TEST(ReplicaSetInfo, debug_string) {
-  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, 4, {{"ready", ConditionStatus::kTrue}});
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(
         absl::Substitute(
-            "$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R:replicas=4:ready_replicas:2>", Indent(i)),
+            "$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R:requested=4:replicas=4:ready_replicas:2>",
+            Indent(i)),
         rs_info.DebugString(i));
   }
 
   rs_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S:replicas=4:ready_replicas:2>",
+  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S:requested=4:replicas=4:ready_replicas:2>",
             rs_info.DebugString());
 }
 
 TEST(ReplicaSetInfo, add_delete_owners) {
-  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, 4, {{"ready", ConditionStatus::kTrue}});
   rs_info.AddOwnerReference("1", "deployment1", "Deployment");
   rs_info.AddOwnerReference("2", "deployment2", "Deployment");
   rs_info.AddOwnerReference("2", "deployment2", "Deployment");
@@ -299,7 +301,7 @@ TEST(ReplicaSetInfo, add_delete_owners) {
 }
 
 TEST(ReplicaSetInfo, clone) {
-  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, {{"ready", ConditionStatus::kTrue}});
+  ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, 4, {{"ready", ConditionStatus::kTrue}});
   rs_info.set_start_time_ns(123);
   rs_info.set_stop_time_ns(256);
   rs_info.AddOwnerReference("1", "Deployment", "deployment1");
@@ -318,13 +320,14 @@ TEST(ReplicaSetInfo, clone) {
   EXPECT_EQ(cloned->ready_replicas(), rs_info.ready_replicas());
   EXPECT_EQ(cloned->available_replicas(), rs_info.available_replicas());
   EXPECT_EQ(cloned->observed_generation(), rs_info.observed_generation());
+  EXPECT_EQ(cloned->requested_replicas(), rs_info.requested_replicas());
 
   EXPECT_EQ(cloned->conditions(), rs_info.conditions());
   EXPECT_EQ(cloned->owner_references(), rs_info.owner_references());
 }
 
 TEST(DeploymentInfo, basic_accessors) {
-  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1, 4,
                           {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
                            {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
 
@@ -341,6 +344,7 @@ TEST(DeploymentInfo, basic_accessors) {
   EXPECT_EQ(3, dep_info.ready_replicas());
   EXPECT_EQ(3, dep_info.available_replicas());
   EXPECT_EQ(1, dep_info.unavailable_replicas());
+  EXPECT_EQ(4, dep_info.requested_replicas());
 
   EXPECT_EQ(123, dep_info.start_time_ns());
   EXPECT_EQ(256, dep_info.stop_time_ns());
@@ -349,24 +353,24 @@ TEST(DeploymentInfo, basic_accessors) {
 }
 
 TEST(DeploymentInfo, debug_string) {
-  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1, 4,
                           {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
                            {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
 
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute(
-                  "$0<Deployment:ns=pl:name=dep1:uid=123:state=R:replicas=4:ready_replicas:3>",
-                  Indent(i)),
+    EXPECT_EQ(absl::Substitute("$0<Deployment:ns=pl:name=dep1:uid=123:state=R:requested=4:replicas="
+                               "4:ready_replicas:3>",
+                               Indent(i)),
               dep_info.DebugString(i));
   }
 
   dep_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<Deployment:ns=pl:name=dep1:uid=123:state=S:replicas=4:ready_replicas:3>",
+  EXPECT_EQ("<Deployment:ns=pl:name=dep1:uid=123:state=S:requested=4:replicas=4:ready_replicas:3>",
             dep_info.DebugString());
 }
 
 TEST(DeploymentInfo, clone) {
-  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1,
+  DeploymentInfo dep_info("123", "pl", "dep1", 4, 4, 3, 3, 3, 1, 4,
                           {{DeploymentConditionType::kAvailable, ConditionStatus::kTrue},
                            {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
 
@@ -387,6 +391,7 @@ TEST(DeploymentInfo, clone) {
   EXPECT_EQ(cloned->available_replicas(), dep_info.available_replicas());
   EXPECT_EQ(cloned->unavailable_replicas(), dep_info.unavailable_replicas());
   EXPECT_EQ(cloned->observed_generation(), dep_info.observed_generation());
+  EXPECT_EQ(cloned->requested_replicas(), dep_info.requested_replicas());
 
   EXPECT_EQ(cloned->conditions(), dep_info.conditions());
   EXPECT_EQ(cloned->owner_references(), dep_info.owner_references());

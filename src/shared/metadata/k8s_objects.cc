@@ -51,15 +51,17 @@ std::string NamespaceInfo::DebugString(int indent) const {
 std::string ReplicaSetInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
   return absl::Substitute(
-      "$0<ReplicaSet:ns=$1:name=$2:uid=$3:state=$4:replicas=$5:ready_replicas:$6>", Indent(indent),
-      ns(), name(), uid(), state, replicas(), ready_replicas());
+      "$0<ReplicaSet:ns=$1:name=$2:uid=$3:state=$4:requested=$5:replicas=$6:ready_replicas:$7>",
+      Indent(indent), ns(), name(), uid(), state, requested_replicas(), replicas(),
+      ready_replicas());
 }
 
 std::string DeploymentInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
   return absl::Substitute(
-      "$0<Deployment:ns=$1:name=$2:uid=$3:state=$4:replicas=$5:ready_replicas:$6>", Indent(indent),
-      ns(), name(), uid(), state, replicas(), ready_replicas());
+      "$0<Deployment:ns=$1:name=$2:uid=$3:state=$4:requested=$5:replicas=$6:ready_replicas:$7>",
+      Indent(indent), ns(), name(), uid(), state, requested_replicas(), replicas(),
+      ready_replicas());
 }
 
 }  // namespace md
