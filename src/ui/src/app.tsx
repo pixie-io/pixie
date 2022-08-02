@@ -234,7 +234,7 @@ const ThemedApp: React.FC = () => {
     }
 
     if (pixieTheme && (pixieTheme === 'light' || pixieTheme === 'dark')) {
-      setThemeFromName(pixieTheme);
+      setThemeFromName(pixieTheme, true);
     }
 
     // If the parent sends a ready message, it probably missed Pixie's
