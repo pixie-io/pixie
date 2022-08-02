@@ -94,6 +94,8 @@ DEFINE_int32(stirling_enable_kafka_tracing, px::stirling::TraceMode::On,
 DEFINE_int32(stirling_enable_mux_tracing,
              gflags::Uint32FromEnv("PL_STIRLING_TRACER_ENABLE_MUX", px::stirling::TraceMode::Off),
              "If true, stirling will trace and process Mux messages.");
+DEFINE_int32(stirling_enable_amqp_tracing, px::stirling::TraceMode::Off,
+             "If true, stirling will trace and process AMQP messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -219,6 +221,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     /* table_num */ static_cast<uint32_t>(-1),
                                     /* trace_roles */ {},
                                     /* transfer_fn */ nullptr}},
+      {kProtocolAMQP, TransferSpec{FLAGS_stirling_enable_amqp_tracing,
+                                   kAMQPTableNum,
+                                   {kRoleClient, kRoleServer},
+                                   TRANSFER_STREAM_PROTOCOL(amqp)}},
       {kProtocolUnknown, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
                                       /* table_num */ static_cast<uint32_t>(-1),
                                       /* trace_roles */ {},
@@ -389,6 +395,7 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_REDIS_TRACING=", FLAGS_stirling_enable_redis_tracing),
       absl::StrCat("-DENABLE_NATS_TRACING=", FLAGS_stirling_enable_nats_tracing),
       absl::StrCat("-DENABLE_MUX_TRACING=", FLAGS_stirling_enable_mux_tracing),
+      absl::StrCat("-DENABLE_AMQP_TRACING=", FLAGS_stirling_enable_amqp_tracing),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
   };
   PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
@@ -1312,6 +1319,30 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, entry));
 #endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::amqp::Record entry, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+  DataTable::RecordBuilder<&kAMQPTable> r(data_table, entry.req.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
+
+  size_t frame_type = std::max(entry.req.frame_type, entry.resp.frame_type);
+  r.Append<r.ColIndex("frame_type")>(frame_type);
+  r.Append<r.ColIndex("req_class_id")>(entry.req.class_id);
+  r.Append<r.ColIndex("req_method_id")>(entry.req.method_id);
+
+  r.Append<r.ColIndex("resp_class_id")>(entry.resp.class_id);
+  r.Append<r.ColIndex("resp_method_id")>(entry.resp.method_id);
+
+  r.Append<r.ColIndex("req_msg")>(entry.req.msg);
+  r.Append<r.ColIndex("resp_msg")>(entry.resp.msg);
 }
 
 namespace {

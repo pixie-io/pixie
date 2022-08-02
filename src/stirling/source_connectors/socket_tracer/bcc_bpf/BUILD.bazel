@@ -73,6 +73,7 @@ pl_cc_test(
         "ENABLE_NATS_TRACING=true",
         "ENABLE_MUX_TRACING=true",
         "ENABLE_MONGO_TRACING=true",
+        "ENABLE_AMQP_TRACING=false",
     ],
     deps = [
         "//src/stirling/utils:cc_library",

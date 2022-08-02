@@ -21,6 +21,7 @@
 #include <deque>
 #include <variant>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
@@ -47,7 +48,8 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        std::deque<dns::Frame>,
                                        std::deque<redis::Message>,
                                        std::deque<kafka::Packet>,
-                                       std::deque<nats::Message>>;
+                                       std::deque<nats::Message>,
+                                       std::deque<amqp::Frame>>;
 // clang-format off
 
 }  // namespace protocols

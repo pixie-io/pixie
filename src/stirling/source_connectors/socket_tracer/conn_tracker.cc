@@ -652,6 +652,8 @@ auto CreateTraceRoles() {
   res.Set(kProtocolMongo, {kRoleServer});
   res.Set(kProtocolKafka, {kRoleServer});
   res.Set(kProtocolMux, {kRoleServer});
+  res.Set(kProtocolAMQP, {kRoleServer});
+
   DCHECK(res.AreAllKeysSet());
   return res;
 }
