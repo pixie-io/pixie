@@ -196,6 +196,15 @@ go_download_sdk(
     version = "1.17.11",
 )
 
+go_download_sdk(
+    name = "go_sdk_1_18",
+    version = "1.18.5",
+)
+
+go_download_sdk(
+    name = "go_sdk_1_19",
+    version = "1.19",
+)
 
 pip_parse(
     name = "amqp_gen_reqs",

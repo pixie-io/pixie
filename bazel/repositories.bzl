@@ -208,7 +208,7 @@ def _list_pl_deps(name):
 def _pl_deps():
     _bazel_repo("bazel_skylib")
     _bazel_repo("bazel_gazelle")
-    _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go.patch"], patch_args = ["-p1"])
+    _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go_cross.patch"], patch_args = ["-p1"])
     _bazel_repo("io_bazel_rules_scala")
     _bazel_repo("rules_jvm_external")
     _bazel_repo("rules_foreign_cc")
