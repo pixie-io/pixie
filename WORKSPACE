@@ -137,7 +137,7 @@ load("@python3_10//:defs.bzl", "interpreter")
 pip_parse(
     name = "vizier_api_python_deps",
     python_interpreter_target = interpreter,
-    requirements_lock = "//src/api/python:requirements.txt",
+    requirements_lock = "//src/api/python:requirements.bazel.txt",
 )
 
 load("@vizier_api_python_deps//:requirements.bzl", vizier_api_install_deps = "install_deps")
