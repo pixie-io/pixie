@@ -208,10 +208,10 @@ def http_graph(start_time, end_time):
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
     df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_ip)
     df.remote_pod = px.select(df.is_remote_addr_localhost,
-                              'localhost:' + df.traced_pod,
+                              df.traced_pod,
                               px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_ip)))
     df.remote_service = px.select(df.is_remote_addr_localhost,
-                                  'localhost:' + df.traced_service,
+                                  df.traced_service,
                                   px.service_id_to_service_name(px.ip_to_service_id(df.remote_ip)))
 
     # Assign requestor and responder based on the trace_role.
