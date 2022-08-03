@@ -95,7 +95,7 @@ TEST_F(ProcParserTest, ParsePidStat) {
   PL_CHECK_OK(parser_->ParseProcPIDStat(123, bytes_per_page_, kernel_tick_time_ns_, &stats));
 
   // The expeted values are from the test file above.
-  EXPECT_EQ("ibazel", stats.process_name);
+  EXPECT_EQ("npm (start)", stats.process_name);
 
   EXPECT_EQ(800, stats.utime_ns);
   EXPECT_EQ(2300, stats.ktime_ns);
@@ -114,7 +114,7 @@ TEST_F(ProcParserTest, ParsePidStatLargePageSize) {
   PL_CHECK_OK(parser_->ParseProcPIDStat(123, large_page_size, kernel_tick_time_ns_, &stats));
 
   // The expeted values are from the test file above.
-  EXPECT_EQ("ibazel", stats.process_name);
+  EXPECT_EQ("npm (start)", stats.process_name);
 
   EXPECT_EQ(800, stats.utime_ns);
   EXPECT_EQ(2300, stats.ktime_ns);
