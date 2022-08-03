@@ -67,7 +67,13 @@ var DemoCmd = &cobra.Command{
 	Use:   "demo",
 	Short: "Manage demo apps",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		viper.BindPFlag("artifacts", cmd.PersistentFlags().Lookup("artifacts"))
+		// This pre run might be run from a subcommand. To bind the correct flag, we should check
+		// the persistent flags on both the current command and the parent.
+		if cmd.PersistentFlags().Lookup("artifacts") != nil {
+			viper.BindPFlag("artifacts", cmd.PersistentFlags().Lookup("artifacts"))
+			return
+		}
+		viper.BindPFlag("artifacts", cmd.Parent().PersistentFlags().Lookup("artifacts"))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.Info("Nothing here... Please execute one of the subcommands")
