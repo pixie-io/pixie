@@ -191,6 +191,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			vzUpdate:       r.Status().Update,
 			vzGet:          r.Get,
 			clientset:      r.Clientset,
+			vzSpecUpdate:   r.Update,
 		}
 		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace)
 		if err != nil {

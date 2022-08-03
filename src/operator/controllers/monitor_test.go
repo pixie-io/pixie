@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,6 +32,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	k8stypes "k8s.io/apimachinery/pkg/types"
 	testclient "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
@@ -199,7 +203,7 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 	}
 }
 
-func TestMonitor_repairVizier(t *testing.T) {
+func TestMonitor_repairVizier_NATS(t *testing.T) {
 	tests := []struct {
 		name               string
 		podName            string
@@ -232,7 +236,7 @@ func TestMonitor_repairVizier(t *testing.T) {
 			name:               "natsPod is running and correct name",
 			podName:            "pl-nats-0",
 			state:              &vizierState{Reason: ""},
-			expectedError:      "hasn't failed",
+			expectedError:      "Trying to repair when state is good",
 			expectedDeleteCall: "",
 		},
 	}
@@ -285,6 +289,57 @@ func TestMonitor_repairVizier(t *testing.T) {
 			}
 
 			assert.Regexp(t, test.expectedDeleteCall, deleteCall)
+		})
+	}
+}
+
+func TestMonitor_repairVizier_PVC(t *testing.T) {
+	tests := []struct {
+		name         string
+		state        *vizierState
+		updateCalled bool
+	}{
+		{
+			name:         "MetadataPVCMissing",
+			state:        &vizierState{Reason: status.MetadataPVCMissing},
+			updateCalled: true,
+		},
+		{
+			name:         "MetadataPVCStorageClassUnavailable",
+			state:        &vizierState{Reason: status.MetadataPVCStorageClassUnavailable},
+			updateCalled: true,
+		},
+		{
+			name:         "MetadataPVCPendingBinding",
+			state:        &vizierState{Reason: status.MetadataPVCPendingBinding},
+			updateCalled: true,
+		},
+		{
+			name:         "StateNotHandled",
+			state:        &vizierState{Reason: status.CloudConnectorPodFailed},
+			updateCalled: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cs := testclient.NewSimpleClientset()
+
+			checkUpdateCall := false
+			update := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+				checkUpdateCall = true
+				return nil
+			}
+
+			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object) error {
+				return nil
+			}
+
+			monitor := &VizierMonitor{clientset: cs, namespace: "pl-nats", vzGet: get, vzSpecUpdate: update}
+
+			err := monitor.repairVizier(test.state)
+			assert.Equal(t, test.updateCalled, checkUpdateCall)
+			assert.Nil(t, err)
 		})
 	}
 }
