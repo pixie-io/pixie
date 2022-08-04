@@ -180,7 +180,8 @@ INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
                              // our knowledge, and to minimize test size to reduce flakiness.
                              TestParams{"1_16", true, true}, TestParams{"1_16", true, false},
                              TestParams{"1_17", false, true}, TestParams{"1_17", false, false},
-                             TestParams{"1_18", false, true}, TestParams{"1_18", true, false}));
+                             TestParams{"1_18", false, true}, TestParams{"1_18", true, false},
+                             TestParams{"1_19", false, false}, TestParams{"1_19", true, true}));
 
 }  // namespace stirling
 }  // namespace px

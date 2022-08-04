@@ -48,6 +48,18 @@ go_cross(
     target = ":test_go_binary",
 )
 
+go_cross(
+    name = "test_go_1_18_binary",
+    sdk_version = "1.18",
+    target = ":test_go_binary",
+)
+
+go_cross(
+    name = "test_go_1_19_binary",
+    sdk_version = "1.19",
+    target = ":test_go_binary",
+)
+
 filegroup(
     name = "test_binaries",
     testonly = True,
@@ -55,6 +67,7 @@ filegroup(
         "sockshop_payments_service",
         ":test_go_1_16_binary",
         ":test_go_1_17_binary",
-        ":test_go_binary",
+        ":test_go_1_18_binary",
+        ":test_go_1_19_binary",
     ],
 )
