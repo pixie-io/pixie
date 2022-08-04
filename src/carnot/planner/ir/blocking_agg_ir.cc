@@ -24,6 +24,17 @@ namespace px {
 namespace carnot {
 namespace planner {
 
+std::string BlockingAggIR::DebugString() const {
+  return absl::Substitute(
+      "$0(id=$1, groups=[$2], aggs={\n$3\n})", type_string(), id(),
+      absl::StrJoin(groups(), ", ",
+                    [](std::string* out, const ColumnIR* col) { *out = col->DebugString(); }),
+      absl::StrJoin(aggregate_expressions_, ", ",
+                    [](std::string* out, const ColumnExpression& expr) {
+                      *out = absl::Substitute("$0=$1", expr.name, expr.node->DebugString());
+                    }));
+}
+
 Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
                            const ColExpressionVector& agg_expr) {
   PL_RETURN_IF_ERROR(AddParent(parent));
