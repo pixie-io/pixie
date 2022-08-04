@@ -106,8 +106,10 @@ def _encode_uint128_as_UUID(uint128: vpb.UInt128) -> uuid.UUID:
     return uuid.UUID(bytes=int_to_bytes(uint128.high) + int_to_bytes(uint128.low))
 
 
-class _UInt128Encoder(json.JSONEncoder):
+class _CustomEncoder(json.JSONEncoder):
     def default(self, o: Any) -> str:
+        if isinstance(o, uuid.UUID):
+            return str(o)
         if isinstance(o, vpb.UInt128):
             return str(_encode_uint128_as_UUID(o))
         return json.JSONEncoder().encode(o)
@@ -164,7 +166,7 @@ class Row:
         out = OrderedDict()
         for i, c in enumerate(self._data):
             out[self.relation.get_col_name(i)] = c
-        return json.dumps(out, indent=2, cls=_UInt128Encoder)
+        return json.dumps(out, indent=2, cls=_CustomEncoder)
 
 
 RowGenerator = AsyncGenerator[Row, None]
