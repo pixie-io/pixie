@@ -38,7 +38,8 @@ TEST_F(VarTableTest, test_parent_var_table) {
   EXPECT_FALSE(var_table->HasVariable(var_name));
   auto mem_src = MakeMemSource();
 
-  auto dataframe_object = Dataframe::Create(mem_src, ast_visitor.get()).ConsumeValueOrDie();
+  auto dataframe_object =
+      Dataframe::Create(compiler_state.get(), mem_src, ast_visitor.get()).ConsumeValueOrDie();
   var_table->Add(var_name, dataframe_object);
 
   EXPECT_TRUE(var_table->HasVariable(var_name));
@@ -54,7 +55,8 @@ TEST_F(VarTableTest, test_nested_var_table_lookup) {
   EXPECT_FALSE(child_table->HasVariable(foo));
   auto mem_src = MakeMemSource();
 
-  auto dataframe_object = Dataframe::Create(mem_src, ast_visitor.get()).ConsumeValueOrDie();
+  auto dataframe_object =
+      Dataframe::Create(compiler_state.get(), mem_src, ast_visitor.get()).ConsumeValueOrDie();
   parent_table->Add(foo, dataframe_object);
 
   EXPECT_TRUE(parent_table->HasVariable(foo));
@@ -67,7 +69,8 @@ TEST_F(VarTableTest, test_nested_var_table_lookup) {
   EXPECT_FALSE(parent_table->HasVariable(bar));
   EXPECT_FALSE(child_table->HasVariable(bar));
 
-  auto dataframe_object2 = Dataframe::Create(mem_src, ast_visitor.get()).ConsumeValueOrDie();
+  auto dataframe_object2 =
+      Dataframe::Create(compiler_state.get(), mem_src, ast_visitor.get()).ConsumeValueOrDie();
   child_table->Add(bar, dataframe_object2);
 
   EXPECT_FALSE(parent_table->HasVariable(bar));

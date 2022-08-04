@@ -43,8 +43,10 @@ class Dataframe : public QLObject {
       /* name */ "DataFrame",
       /* type */ QLObjectType::kDataframe,
   };
-  static StatusOr<std::shared_ptr<Dataframe>> Create(OperatorIR* op, ASTVisitor* visitor);
-  static StatusOr<std::shared_ptr<Dataframe>> Create(IR* graph, ASTVisitor* visitor);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(CompilerState* compiler_state, OperatorIR* op,
+                                                     ASTVisitor* visitor);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(CompilerState* compiler_state, IR* graph,
+                                                     ASTVisitor* visitor);
   static bool IsDataframe(const QLObjectPtr& object) {
     return object->type() == DataframeType.type();
   }
@@ -415,12 +417,16 @@ class Dataframe : public QLObject {
   // Attribute names.
   inline static constexpr char kMetadataAttrName[] = "ctx";
 
-  StatusOr<std::shared_ptr<Dataframe>> FromColumnAssignment(const pypa::AstPtr& expr_node,
+  StatusOr<std::shared_ptr<Dataframe>> FromColumnAssignment(CompilerState* compiler_state,
+                                                            const pypa::AstPtr& expr_node,
                                                             ColumnIR* column, ExpressionIR* expr);
 
  protected:
-  explicit Dataframe(OperatorIR* op, IR* graph, ASTVisitor* visitor)
-      : QLObject(DataframeType, op ? op->ast() : nullptr, visitor), op_(op), graph_(graph) {}
+  explicit Dataframe(CompilerState* compiler_state, OperatorIR* op, IR* graph, ASTVisitor* visitor)
+      : QLObject(DataframeType, op ? op->ast() : nullptr, visitor),
+        compiler_state_(compiler_state),
+        op_(op),
+        graph_(graph) {}
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        std::string_view name) const override;
 
@@ -428,6 +434,7 @@ class Dataframe : public QLObject {
   bool HasNonMethodAttribute(std::string_view /* name */) const override { return true; }
 
  private:
+  CompilerState* compiler_state_;
   OperatorIR* op_ = nullptr;
   IR* graph_ = nullptr;
 };

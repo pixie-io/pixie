@@ -49,7 +49,7 @@ class DataframeTest : public QLObjectTest {
   void SetUp() override {
     QLObjectTest::SetUp();
     src = MakeMemSource();
-    ASSERT_OK_AND_ASSIGN(df, Dataframe::Create(src, ast_visitor.get()));
+    ASSERT_OK_AND_ASSIGN(df, Dataframe::Create(compiler_state.get(), src, ast_visitor.get()));
     var_table = VarTable::Create();
     var_table->Add("df", df);
     var_table->Add("mean", FuncObject::Create(
@@ -69,7 +69,8 @@ class DataframeTest : public QLObjectTest {
 
 TEST_F(DataframeTest, Merge_ListKeys) {
   MemorySourceIR* src2 = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2,
+                       Dataframe::Create(compiler_state.get(), src2, ast_visitor.get()));
   var_table->Add("df2", df2);
 
   std::string script = R"pxl(join = df.merge(
@@ -106,7 +107,8 @@ TEST_F(DataframeTest, Merge_ListKeys) {
 
 TEST_F(DataframeTest, Merge_NonListKeys) {
   MemorySourceIR* src2 = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2,
+                       Dataframe::Create(compiler_state.get(), src2, ast_visitor.get()));
   var_table->Add("df2", df2);
 
   std::string script = R"pxl(join = df.merge(
@@ -314,8 +316,10 @@ TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
 TEST_F(DataframeTest, UnionTest_array) {
   MemorySourceIR* src2 = MakeMemSource();
   MemorySourceIR* src3 = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df3, Dataframe::Create(src3, ast_visitor.get()));
+  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2,
+                       Dataframe::Create(compiler_state.get(), src2, ast_visitor.get()));
+  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df3,
+                       Dataframe::Create(compiler_state.get(), src3, ast_visitor.get()));
   var_table->Add("df2", df2);
   var_table->Add("df3", df3);
   ASSERT_OK(ParseScript(var_table, "union = df.append([df2, df3])"));
@@ -332,7 +336,8 @@ TEST_F(DataframeTest, UnionTest_array) {
 
 TEST_F(DataframeTest, UnionTest_single) {
   MemorySourceIR* src2 = MakeMemSource();
-  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2, Dataframe::Create(src2, ast_visitor.get()));
+  ASSERT_OK_AND_ASSIGN(std::shared_ptr<QLObject> df2,
+                       Dataframe::Create(compiler_state.get(), src2, ast_visitor.get()));
   var_table->Add("df2", df2);
   ASSERT_OK(ParseScript(var_table, "union = df.append(df2)"));
   auto var = var_table->Lookup("union");
@@ -348,7 +353,7 @@ TEST_F(DataframeTest, UnionTest_single) {
 
 TEST_F(DataframeTest, ConstructorTest) {
   ASSERT_OK_AND_ASSIGN(std::shared_ptr<Dataframe> df,
-                       Dataframe::Create(graph.get(), ast_visitor.get()));
+                       Dataframe::Create(compiler_state.get(), graph.get(), ast_visitor.get()));
   var_table->Add("DataFrame", df);
   ASSERT_OK(ParseScript(var_table, "http = DataFrame('http_events')"));
   auto var = var_table->Lookup("http");

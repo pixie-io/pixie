@@ -55,7 +55,7 @@ class OTelExportTest : public QLObjectTest {
                                                    const table_store::schema::Relation& relation) {
     (*compiler_state->relation_map())["table"] = relation;
     auto src = MakeMemSource("table");
-    auto df = Dataframe::Create(src, ast_visitor.get()).ConsumeValueOrDie();
+    auto df = Dataframe::Create(compiler_state.get(), src, ast_visitor.get()).ConsumeValueOrDie();
     var_table->Add("df", df);
     PL_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
     if (!Exporter::IsExporter(sp)) {
@@ -728,7 +728,8 @@ TEST_P(OTelErrorTests, parse_expression_for_error) {
       {types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_NONE, types::ST_DURATION_NS,
        types::ST_DURATION_NS},
   };
-  auto df2 = Dataframe::Create(MakeMemSource("table2"), ast_visitor.get()).ConsumeValueOrDie();
+  auto df2 = Dataframe::Create(compiler_state.get(), MakeMemSource("table2"), ast_visitor.get())
+                 .ConsumeValueOrDie();
   var_table->Add("df2", df2);
   EXPECT_THAT(ParseOutOTelExportIR(tc.otel_export_expression, relation).status(),
               HasCompilerError(tc.regex_error));
@@ -983,7 +984,8 @@ otel_sink_op {
 }
 
 TEST_F(OTelExportTest, valid_metric_names) {
-  auto df = Dataframe::Create(MakeMemSource(), ast_visitor.get()).ConsumeValueOrDie();
+  auto df = Dataframe::Create(compiler_state.get(), MakeMemSource(), ast_visitor.get())
+                .ConsumeValueOrDie();
   var_table->Add("df", df);
   ASSERT_OK(
       ParseExpression(

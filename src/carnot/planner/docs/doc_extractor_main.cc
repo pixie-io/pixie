@@ -53,7 +53,8 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
   ast->column = 0;
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
                       ir.CreateNode<MemorySourceIR>(ast, "", std::vector<std::string>{}));
-  PL_ASSIGN_OR_RETURN(auto df, compiler::Dataframe::Create(mem_source_op, ast_visitor.get()));
+  PL_ASSIGN_OR_RETURN(
+      auto df, compiler::Dataframe::Create(&compiler_state, mem_source_op, ast_visitor.get()));
   auto df_doc = extractor.ExtractDoc(df);
   PL_RETURN_IF_ERROR(df_doc.ToProto(parent.add_docstring_nodes()));
 
