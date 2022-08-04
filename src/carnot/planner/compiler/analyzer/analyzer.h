@@ -35,7 +35,6 @@
 #include "src/carnot/planner/compiler/analyzer/resolve_stream_rule.h"
 #include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
 #include "src/carnot/planner/compiler/analyzer/restrict_columns_rule.h"
-#include "src/carnot/planner/compiler/analyzer/set_memory_source_times_rule.h"
 #include "src/carnot/planner/compiler/analyzer/setup_join_type_rule.h"
 #include "src/carnot/planner/compiler/analyzer/unique_sink_names_rule.h"
 #include "src/carnot/planner/compiler/analyzer/verify_filter_expression_rule.h"
@@ -85,12 +84,6 @@ class Analyzer : public RuleExecutor<IR> {
     limit_to_res_sink->AddRule<AddLimitToBatchResultSinkRule>(compiler_state_);
   }
 
-  void CreateOperatorCompileTimeExpressionRuleBatch() {
-    RuleBatch* intermediate_resolution_batch =
-        CreateRuleBatch<FailOnMax>("CompileTimeResolution", 100);
-    intermediate_resolution_batch->AddRule<SetMemorySourceTimesRule>();
-  }
-
   // TODO(philkuz) need to add a new optimization that combines maps.
   void CreateCombineConsecutiveMapsRule() {
     RuleBatch* consecutive_maps = CreateRuleBatch<FailOnMax>("CombineConsecutiveMapsRule", 2);
@@ -130,7 +123,6 @@ class Analyzer : public RuleExecutor<IR> {
     CreateSourceAndMetadataResolutionBatch();
     CreateUniqueSinkNamesBatch();
     CreateAddLimitToBatchResultSinkBatch();
-    CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
     CreateManageColumnAccessBatch();

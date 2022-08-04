@@ -71,36 +71,6 @@ Status MemorySourceIR::Init(const std::string& table_name,
   return Status::OK();
 }
 
-Status MemorySourceIR::SetTimeExpressions(ExpressionIR* new_start_time_expr,
-                                          ExpressionIR* new_end_time_expr) {
-  CHECK(new_start_time_expr != nullptr);
-  CHECK(new_end_time_expr != nullptr);
-
-  auto old_start_time_expr = start_time_expr_;
-  auto old_end_time_expr = end_time_expr_;
-
-  if (start_time_expr_) {
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_start_time_expr));
-  }
-  if (end_time_expr_) {
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_end_time_expr));
-  }
-
-  PL_ASSIGN_OR_RETURN(start_time_expr_,
-                      graph()->OptionallyCloneWithEdge(this, new_start_time_expr));
-  PL_ASSIGN_OR_RETURN(end_time_expr_, graph()->OptionallyCloneWithEdge(this, new_end_time_expr));
-
-  if (old_start_time_expr) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_start_time_expr->id()));
-  }
-  if (old_end_time_expr) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_end_time_expr->id()));
-  }
-
-  has_time_expressions_ = true;
-  return Status::OK();
-}
-
 StatusOr<absl::flat_hash_set<std::string>> MemorySourceIR::PruneOutputColumnsToImpl(
     const absl::flat_hash_set<std::string>& output_colnames) {
   DCHECK(column_index_map_set());
@@ -122,8 +92,8 @@ StatusOr<absl::flat_hash_set<std::string>> MemorySourceIR::PruneOutputColumnsToI
   return output_colnames;
 }
 
-Status MemorySourceIR::CopyFromNodeImpl(
-    const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node,
+                                        absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MemorySourceIR* source_ir = static_cast<const MemorySourceIR*>(node);
 
   table_name_ = source_ir->table_name_;
@@ -133,16 +103,8 @@ Status MemorySourceIR::CopyFromNodeImpl(
   column_names_ = source_ir->column_names_;
   column_index_map_set_ = source_ir->column_index_map_set_;
   column_index_map_ = source_ir->column_index_map_;
-  has_time_expressions_ = source_ir->has_time_expressions_;
   streaming_ = source_ir->streaming_;
 
-  if (has_time_expressions_) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_start_expr,
-                        graph()->CopyNode(source_ir->start_time_expr_, copied_nodes_map));
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_stop_expr,
-                        graph()->CopyNode(source_ir->end_time_expr_, copied_nodes_map));
-    PL_RETURN_IF_ERROR(SetTimeExpressions(new_start_expr, new_stop_expr));
-  }
   return Status::OK();
 }
 
