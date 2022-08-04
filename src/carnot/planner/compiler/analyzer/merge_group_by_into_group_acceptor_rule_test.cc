@@ -69,7 +69,7 @@ TEST_F(RulesTest, MergeGroupByAggRule) {
 TEST_F(RulesTest, MergeGroupByRollingRule) {
   MemorySourceIR* mem_source = MakeMemSource();
   GroupByIR* group_by = MakeGroupBy(mem_source, {MakeColumn("col1", 0), MakeColumn("col2", 0)});
-  RollingIR* rolling = MakeRolling(group_by, MakeColumn("time_", 0), MakeTime(0));
+  RollingIR* rolling = MakeRolling(group_by, MakeColumn("time_", 0), 1);
   MakeMemSink(rolling, "");
 
   EXPECT_THAT(rolling->parents(), ElementsAre(group_by));

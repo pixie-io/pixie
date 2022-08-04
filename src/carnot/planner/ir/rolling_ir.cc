@@ -24,27 +24,10 @@ namespace px {
 namespace carnot {
 namespace planner {
 
-Status RollingIR::Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* window_size) {
+Status RollingIR::Init(OperatorIR* parent, ColumnIR* window_col, int64_t window_size) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   PL_RETURN_IF_ERROR(SetWindowCol(window_col));
-  PL_RETURN_IF_ERROR(SetWindowSize(window_size));
-  return Status::OK();
-}
-
-Status RollingIR::SetWindowSize(ExpressionIR* window_size) {
-  PL_ASSIGN_OR_RETURN(window_size_, graph()->OptionallyCloneWithEdge(this, window_size));
-  return Status::OK();
-}
-
-Status RollingIR::ReplaceWindowSize(ExpressionIR* new_window_size) {
-  if (new_window_size->id() == window_size_->id()) {
-    return Status::OK();
-  }
-  if (window_size_ == nullptr) {
-    return SetWindowSize(new_window_size);
-  }
-  PL_RETURN_IF_ERROR(graph()->DeleteNode(window_size_->id()));
-  PL_RETURN_IF_ERROR(SetWindowSize(new_window_size));
+  window_size_ = window_size;
   return Status::OK();
 }
 
@@ -60,10 +43,7 @@ Status RollingIR::CopyFromNodeImpl(const IRNode* source,
                       graph()->CopyNode(rolling_node->window_col(), copied_nodes_map));
   DCHECK(Match(new_window_col, ColumnNode()));
   PL_RETURN_IF_ERROR(SetWindowCol(static_cast<ColumnIR*>(new_window_col)));
-  PL_ASSIGN_OR_RETURN(IRNode * new_window_size,
-                      graph()->CopyNode(rolling_node->window_size(), copied_nodes_map));
-  DCHECK(Match(new_window_size, DataNode()));
-  PL_RETURN_IF_ERROR(SetWindowSize(static_cast<DataIR*>(new_window_size)));
+  window_size_ = rolling_node->window_size();
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : rolling_node->groups()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));

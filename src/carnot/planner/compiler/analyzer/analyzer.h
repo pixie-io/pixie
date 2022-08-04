@@ -26,7 +26,6 @@
 #include "src/carnot/planner/compiler/analyzer/add_limit_to_batch_result_sink_rule.h"
 #include "src/carnot/planner/compiler/analyzer/combine_consecutive_maps_rule.h"
 #include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
-#include "src/carnot/planner/compiler/analyzer/convert_string_times_rule.h"
 #include "src/carnot/planner/compiler/analyzer/drop_to_map_rule.h"
 #include "src/carnot/planner/compiler/analyzer/merge_group_by_into_group_acceptor_rule.h"
 #include "src/carnot/planner/compiler/analyzer/nested_blocking_agg_fn_check_rule.h"
@@ -72,7 +71,6 @@ class Analyzer : public RuleExecutor<IR> {
         IRNodeType::kBlockingAgg);
     source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoGroupAcceptorRule>(
         IRNodeType::kRolling);
-    source_and_metadata_resolution_batch->AddRule<ConvertStringTimesRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<NestedBlockingAggFnCheckRule>();
     source_and_metadata_resolution_batch->AddRule<ResolveStreamRule>();
   }
