@@ -69,9 +69,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/ELFIO/archive/9a70dd299199477bf9f8319424922d0fa436c225.tar.gz"],
     ),
     bazel_skylib = dict(
-        sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
-        strip_prefix = "bazel-skylib-1.0.2",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.0.2.tar.gz"],
+        sha256 = "710c2ca4b4d46250cdce2bf8f5aa76ea1f0cba514ab368f2988f70e864cfaf51",
+        strip_prefix = "bazel-skylib-1.2.1",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.2.1.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
         sha256 = "27d53c1d646fc9537a70427ad7b034734d08a9c38924cc6357cc973fed300820",
