@@ -410,6 +410,51 @@ static __inline enum message_type_t infer_kafka_message(const char* buf, size_t 
   return result;
 }
 
+// Const Reference: https://www.rabbitmq.com/resources/specs/amqp0-9-1.xml
+// Frame breakdown Ref: https://www.rabbitmq.com/resources/specs/amqp0-9-1.pdf
+static __inline enum message_type_t infer_amqp_message(const char* rbuf, size_t count) {
+  static const uint16_t kConnectionClass = 10;
+  static const uint16_t kBasicClass = 60;
+
+  static const uint16_t kMethodConnectionStart = 10;
+  static const uint16_t kMethodConnectionStartOk = 11;
+  static const uint16_t kMethodBasicPublish = 40;
+  static const uint16_t kMethodBasicDeliver = 60;
+
+  static const uint8_t kFrameMethodType = 1;
+  static const uint8_t kMinFrameLength = 8;
+  if (count < kMinFrameLength) {
+    return kUnknown;
+  }
+
+  const uint8_t* buf = (const uint8_t*)rbuf;
+  uint8_t frame_type = buf[0];
+  // Check only for types Connection Start/Start-OK. Publish/Deliver
+  if (frame_type != kFrameMethodType) {
+    return kUnknown;
+  }
+
+  uint16_t class_id = read_big_endian_int16(rbuf + 7);
+  uint16_t method_id = read_big_endian_int16(rbuf + 9);
+  // ConnectionStart, ConnectionStartOk, BasicPublish, BasicDeliver are the most likely methods to
+  // consider
+  if (class_id == kConnectionClass && method_id == kMethodConnectionStart) {
+    return kRequest;
+  }
+  if (class_id == kConnectionClass && method_id == kMethodConnectionStartOk) {
+    return kResponse;
+  }
+
+  if (class_id == kBasicClass && method_id == kMethodBasicPublish) {
+    return kRequest;
+  }
+  if (class_id == kBasicClass && method_id == kMethodBasicDeliver) {
+    return kResponse;
+  }
+
+  return kUnknown;
+}
+
 static __inline enum message_type_t infer_dns_message(const char* buf, size_t count) {
   const int kDNSHeaderSize = 12;
 
@@ -646,6 +691,9 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
   } else if (ENABLE_DNS_TRACING &&
              (inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
+  } else if (ENABLE_AMQP_TRACING &&
+             (inferred_message.type = infer_amqp_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolAMQP;
   } else if (ENABLE_REDIS_TRACING && is_redis_message(buf, count)) {
     // For Redis, the message type is left to be kUnknown.
     // The message types are then inferred via traffic direction and client/server role.
