@@ -197,7 +197,7 @@ func GetCurrentVizier(cloudAddr string) (uuid.UUID, error) {
 		}
 	}
 	if clusterID == uuid.Nil {
-		return uuid.Nil, fmt.Errorf("No current Vizier exists in kubeconfig")
+		return uuid.Nil, fmt.Errorf("The current cluster in the kubeconfig does not have Pixie installed.")
 	}
 	return clusterID, nil
 }
