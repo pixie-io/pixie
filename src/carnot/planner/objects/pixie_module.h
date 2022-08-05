@@ -220,6 +220,31 @@ class PixieModule : public QLObject {
   Returns:
     px.Duration: The duration in nanoseconds.
   )doc";
+  inline static constexpr char kParseTimeOpID[] = "parse_time";
+  inline static constexpr char kParseTimeDocstring[] = R"doc(
+  Parse the various time formats into a unified format.
+
+  This function can unify all possible time formats into a single consistent type.
+  Useful for doing calculations on these values in a way that is agnostic to their format.
+
+  Examples:
+    ## As a relative time string.
+    # time = now -300000000000
+    time = px.parse_time("-5m")
+    # time = now + 300000000000
+    time = px.parse_time("5m")
+    # Takes in px.Time
+    time = px.parse_time(px.strptime("2020-03-12 19:39:59 -0200", "%Y-%m-%d %H:%M:%S %z"))
+    # Takes in int
+    time = px.parse_time(10)
+
+  :topic: compile_time_fn
+
+  Args:
+    time (string, int, time): The time as a string, int, or px.Time.
+  Returns:
+    px.Time: The unix timestamp in nanoseconds.
+  )doc";
 
   inline static constexpr char kScriptReferenceID[] = "script_reference";
   inline static constexpr char kScriptReferenceDocstring[] = R"doc(

@@ -30,7 +30,9 @@
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/otel.h"
 #include "src/carnot/planner/objects/plugin.h"
+#include "src/carnot/planner/objects/time.h"
 #include "src/carnot/planner/objects/viz_object.h"
+#include "src/common/base/statusor.h"
 #include "src/shared/upid/upid.h"
 
 namespace px {
@@ -375,6 +377,19 @@ StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast, const Pa
   return ExprObject::Create(node, visitor);
 }
 
+StatusOr<QLObjectPtr> ParseTime(int64_t time_now, IR* graph, const pypa::AstPtr& ast,
+                                const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(ExpressionIR * time_ir, GetArgAs<ExpressionIR>(ast, args, "time"));
+
+  auto int_or_s = ParseAllTimeFormats(time_now, time_ir);
+  if (!int_or_s.ok()) {
+    return WrapAstError(time_ir->ast(), int_or_s.status());
+  }
+
+  PL_ASSIGN_OR_RETURN(TimeIR * node, graph->CreateNode<TimeIR>(ast, int_or_s.ConsumeValueOrDie()));
+  return ExprObject::Create(node, visitor);
+}
+
 StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
 
@@ -476,6 +491,17 @@ Status PixieModule::RegisterCompileTimeFuncs() {
   PL_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseDurationDocstring));
   AddMethod(kParseDurationOpID, parse_duration_fn);
 
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> parse_time_fn,
+      FuncObject::Create(
+          kParseTimeOpID, {"time"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&ParseTime, compiler_state_->time_now().val, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+
+  PL_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseTimeDocstring));
+  AddMethod(kParseTimeOpID, parse_time_fn);
   return Status::OK();
 }
 

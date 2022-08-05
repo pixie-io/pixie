@@ -19,13 +19,13 @@
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ast_utils.h"
-#include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/metadata_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/pixie_module.h"
+#include "src/carnot/planner/objects/time.h"
 #include "src/common/base/statusor.h"
 
 namespace px {
@@ -99,18 +99,6 @@ StatusOr<std::vector<std::string>> ParseAsListOfStrings(QLObjectPtr obj,
   return strs;
 }
 
-StatusOr<int64_t> ParseTime(int64_t time_now, ExpressionIR* time_expr) {
-  if (Match(time_expr, Int())) {
-    return static_cast<IntIR*>(time_expr)->val();
-  } else if (Match(time_expr, Time())) {
-    return static_cast<TimeIR*>(time_expr)->val();
-  } else if (Match(time_expr, String())) {
-    return ParseStringToTime(static_cast<StringIR*>(time_expr), time_now);
-  }
-  CHECK(!Match(time_expr, Func()));
-  return 0;
-}
-
 /**
  * @brief Implements the DataFrame() constructor logic.
  */
@@ -122,8 +110,10 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
   PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
   PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-  PL_ASSIGN_OR_RETURN(auto start_time_ns, ParseTime(compiler_state->time_now().val, start_time));
-  PL_ASSIGN_OR_RETURN(auto end_time_ns, ParseTime(compiler_state->time_now().val, end_time));
+  PL_ASSIGN_OR_RETURN(auto start_time_ns,
+                      ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+  PL_ASSIGN_OR_RETURN(auto end_time_ns,
+                      ParseAllTimeFormats(compiler_state->time_now().val, end_time));
 
   std::string table_name = table->str();
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
@@ -404,7 +394,7 @@ StatusOr<QLObjectPtr> RollingHandler(CompilerState* compiler_state, IR* graph, O
 
   PL_ASSIGN_OR_RETURN(ExpressionIR * window_size_node, GetArgAs<ExpressionIR>(ast, args, "window"));
   // Set time_now to 0 because we don't need an offset time.
-  PL_ASSIGN_OR_RETURN(auto window_size, ParseTime(/* time_now */ 0, window_size_node));
+  PL_ASSIGN_OR_RETURN(auto window_size, ParseAllTimeFormats(/* time_now */ 0, window_size_node));
   if (window_size <= 0) {
     return window_size_node->CreateIRNodeError("Window size must be > 0");
   }

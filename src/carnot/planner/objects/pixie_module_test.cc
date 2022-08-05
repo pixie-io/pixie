@@ -316,6 +316,41 @@ TEST_F(PixieModuleTest, parse_duration) {
   }
 }
 
+TEST_F(PixieModuleTest, parse_time) {
+  // Accepts string.
+  {
+    ASSERT_OK_AND_ASSIGN(auto result, ParseExpression("px.parse_time('-5m')"));
+    ASSERT_TRUE(ExprObject::IsExprObject(result));
+    auto expr = static_cast<ExprObject*>(result.get());
+    ASSERT_MATCH(expr->expr(), Time());
+    EXPECT_EQ(static_cast<TimeIR*>(expr->expr())->val(), time_now_ - 300000000000);
+  }
+  // Accepts integer.
+  {
+    ASSERT_OK_AND_ASSIGN(auto result, ParseExpression("px.parse_time(100)"));
+    ASSERT_TRUE(ExprObject::IsExprObject(result));
+    auto expr = static_cast<ExprObject*>(result.get());
+    ASSERT_MATCH(expr->expr(), Time());
+    EXPECT_EQ(static_cast<TimeIR*>(expr->expr())->val(), 100);
+  }
+  // Accepts time.
+  {
+    ASSERT_OK_AND_ASSIGN(
+        auto result,
+        ParseExpression(
+            "px.parse_time(px.strptime('2020-03-12 19:39:59 -0200', '%Y-%m-%d %H:%M:%S %z'))"));
+    ASSERT_TRUE(ExprObject::IsExprObject(result));
+    auto expr = static_cast<ExprObject*>(result.get());
+    ASSERT_MATCH(expr->expr(), Time());
+    EXPECT_EQ(static_cast<TimeIR*>(expr->expr())->val(), 1584049199000000000);
+  }
+
+  // Test that bad format fails.
+  {
+    EXPECT_COMPILER_ERROR(ParseExpression("px.parse_time('randomstring')"), "Failed to parse time");
+  }
+}
+
 TEST_F(PixieModuleTest, plugin_module) {
   EXPECT_COMPILER_ERROR(ParseExpression("px.plugin.start_time"), "No plugin config found");
 }

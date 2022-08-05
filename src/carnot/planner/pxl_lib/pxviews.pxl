@@ -398,7 +398,7 @@ def container_process_summary(start_time, end_time):
     df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
     df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
 
-    window = end_time - start_time
+    window = px.parse_time(end_time) - px.parse_time(start_time)
     df.actual_disk_read_throughput = (df.read_bytes_max - df.read_bytes_min) / window
     df.actual_disk_write_throughput = (df.write_bytes_max - df.write_bytes_min) / window
     df.total_disk_read_throughput = (df.rchar_bytes_max - df.rchar_bytes_min) / window
@@ -517,7 +517,7 @@ def pod_network_summary(start_time, end_time):
         time_=('time_', px.max),
     )
 
-    window = end_time - start_time
+    window = px.parse_time(end_time) - px.parse_time(start_time)
     # Calculate the network statistics rate over the window.
     # We subtract the counter value at the beginning ('_start')
     # from the value at the end ('_end').
