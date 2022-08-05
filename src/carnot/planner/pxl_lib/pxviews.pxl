@@ -277,14 +277,11 @@ def http_graph(start_time, end_time):
 
     df.responder_namespace = px.pod_name_to_namespace(df.responder_pod)
     df.requestor_namespace = px.pod_name_to_namespace(df.requestor_pod)
-    df.window_start_time = start_time
-    df.window_end_time = end_time
     return df[['time_', 'responder_pod', 'requestor_pod', 'responder_namespace', 'requestor_namespace',
                'responder_node', 'requestor_node',
                'responder_ip', 'requestor_ip','responder_service', 'requestor_service',
                'latency_p50', 'latency_p90', 'latency_p99', 'latency_quantiles', 'latency_sum', 'num_requests',
-               'num_errors', 'req_bytes', 'resp_bytes',
-               'window_start_time', 'window_end_time']]
+               'num_errors', 'req_bytes', 'resp_bytes']]
 
 
 def container_process_timeseries(start_time, end_time, window_ns):
