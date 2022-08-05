@@ -1326,8 +1326,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
                                          protocols::amqp::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
-  DataTable::RecordBuilder<&kAMQPTable> r(data_table, entry.req.timestamp_ns);
-  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  int64_t timestamp_ns = std::max(entry.req.timestamp_ns, entry.resp.timestamp_ns);
+  DataTable::RecordBuilder<&kAMQPTable> r(data_table, timestamp_ns);
+
+  r.Append<r.ColIndex("time_")>(timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
