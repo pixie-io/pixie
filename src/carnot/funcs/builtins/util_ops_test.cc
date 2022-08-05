@@ -32,8 +32,6 @@ TEST(UtilOps, grpc_status_code_test) {
 
   udf_tester.ForInput(::grpc::StatusCode::OK).Expect("OK");
   udf_tester.ForInput(::grpc::StatusCode::PERMISSION_DENIED).Expect("PERMISSION_DENIED");
-
-  udf_tester.ForInput(1024).Expect("unknown code");
 }
 
 }  // namespace builtins
