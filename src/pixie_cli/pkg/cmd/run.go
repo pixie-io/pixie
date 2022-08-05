@@ -179,7 +179,7 @@ func createNewCobraCommand() *cobra.Command {
 			clusterID := uuid.FromStringOrNil(selectedCluster)
 
 			if !allClusters && clusterID == uuid.Nil {
-				clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
+				clusterID, err = vizier.GetCurrentVizier(cloudAddr)
 				if err != nil {
 					utils.WithError(err).Fatal("Could not fetch healthy vizier")
 				}
