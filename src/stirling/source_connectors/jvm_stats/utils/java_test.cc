@@ -68,7 +68,7 @@ TEST(HsperfdataPathTest, ResultIsAsExpected) {
 
   // Give some time for the JVM process to start.
   std::string s;
-  while (!absl::StartsWith(s, "Hello, World")) {
+  while (!absl::StrContains(s, "Hello, World")) {
     ASSERT_OK(hello_world.Stdout(&s));
   }
 
