@@ -65,6 +65,38 @@ TEST_F(PruneUnconnectedOperatorsRuleTest, basic) {
   EXPECT_TRUE(sink_type->Equals(sink->resolved_table_type()));
 }
 
+TEST_F(PruneUnconnectedOperatorsRuleTest, multiple_parents_should_not_be_deleted) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  compiler_state_->relation_map()->emplace("table", MakeRelation());
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+
+  auto map1 = MakeMap(mem_src, {expr1}, false);
+  auto map1_id = map1->id();
+
+  auto map2 = MakeMap(mem_src, {expr1}, false);
+  auto map2_id = map2->id();
+
+  auto sink = MakeMemSink(map2, "abc", {"count_1"});
+
+  ResolveTypesRule type_rule(compiler_state_.get());
+  ASSERT_OK(type_rule.Execute(graph.get()));
+
+  auto sink_type = sink->resolved_table_type();
+
+  PruneUnconnectedOperatorsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_TRUE(graph->HasNode(map2_id));
+  EXPECT_TRUE(graph->HasNode(expr1.node->id()));
+  EXPECT_FALSE(graph->HasNode(map1_id));
+
+  // Should be unchanged
+  EXPECT_TRUE(sink_type->Equals(sink->resolved_table_type()));
+}
+
 TEST_F(PruneUnconnectedOperatorsRuleTest, unchanged) {
   MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
   compiler_state_->relation_map()->emplace("table", MakeRelation());
