@@ -52,9 +52,6 @@ type UserInfo struct {
 	// HostedDomain is the name of an org that a user belongs to according to the IdentityProvider.
 	// If empty, the IdentityProvider does not consider the user as part of an org.
 	HostedDomain string
-	// UseSelfOrg is a legacy setting for users that should be created with a self org. Most new auth clients
-	// will not set this value, but we still need to maintain this behavior for backward compatibility.
-	UseSelfOrg bool
 }
 
 // CreateInviteLinkResponse contaions the InviteLink and any accompanying information.
