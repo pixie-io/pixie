@@ -587,72 +587,6 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
   return uprobe_count;
 }
 
-bool UProbeManager::InitiateGrpcCPercpuMetadataHeap() {
-  struct grpc_c_metadata_item_t empty_metadata_item = {.key = {0}, .value = {0}};
-  auto array = bcc_->GetPerCPUArrayTable<struct grpc_c_metadata_t>(kGrpcCMetadataHeapName);
-  struct grpc_c_metadata_t empty_value = {.count = 0, .items = {empty_metadata_item}};
-  std::vector<struct grpc_c_metadata_t> empty_values(bpf_tools::BCCWrapper::kCPUCount, empty_value);
-  auto update_result = array.update_value(0, empty_values);
-  if (!update_result.ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c metadata heap.");
-    return false;
-  }
-
-  return true;
-}
-
-bool UProbeManager::InitiateGrpcCPercpuEventDataHeap() {
-  struct grpc_c_data_slice_t empty_slice = {.length = 0, .bytes = {0}};
-  auto array = bcc_->GetPerCPUArrayTable<struct grpc_c_event_data_t>(kGrpcCEventDataHeapName);
-  struct grpc_c_event_data_t empty_value = {.stream_id = 0,
-                                            .timestamp = 0,
-                                            .direction = kEgress,
-                                            .position_in_stream = 0,
-                                            .slice = empty_slice};
-  std::vector<struct grpc_c_event_data_t> empty_values(bpf_tools::BCCWrapper::kCPUCount,
-                                                       empty_value);
-  auto update_result = array.update_value(0, empty_values);
-  if (!update_result.ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c event data local.");
-    return false;
-  }
-
-  return true;
-}
-
-bool UProbeManager::InitiateGrpcCPercpuHeaderEventDataHeap() {
-  struct grpc_c_metadata_item_t empty_metadata_item = {.key = {0}, .value = {0}};
-  auto array =
-      bcc_->GetPerCPUArrayTable<struct grpc_c_header_event_data_t>(kGrpcCHeaderEventDataHeapName);
-  struct grpc_c_header_event_data_t empty_value = {
-      .stream_id = 0, .timestamp = 0, .direction = kEgress, .header = empty_metadata_item};
-  std::vector<struct grpc_c_header_event_data_t> empty_values(bpf_tools::BCCWrapper::kCPUCount,
-                                                              empty_value);
-  auto update_result = array.update_value(0, empty_values);
-  if (!update_result.ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to initiate gRPC-c header event data local.");
-    return false;
-  }
-
-  return true;
-}
-
-bool UProbeManager::InitiateGrpcCPercpuVariables() {
-  if (!InitiateGrpcCPercpuMetadataHeap()) {
-    return false;
-  }
-
-  if (!InitiateGrpcCPercpuEventDataHeap()) {
-    return false;
-  }
-
-  if (!InitiateGrpcCPercpuHeaderEventDataHeap()) {
-    return false;
-  }
-
-  return true;
-}
-
 StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
   unsigned char md5_hash[MD5_DIGEST_LENGTH] = {0};
   int file_descript = open(file.c_str(), O_RDONLY);
@@ -771,13 +705,6 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
 }
 
 int UProbeManager::DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids) {
-  if (!grpc_c_heap_variables_initiated_) {
-    if (InitiateGrpcCPercpuVariables()) {
-      grpc_c_heap_variables_initiated_ = true;
-      LOG(INFO) << absl::Substitute("Initiated gRPC-c PerCPU variables successfully");
-    }
-  }
-
   int uprobe_count = 0;
   for (const auto& pid : pids) {
     if (cfg_disable_self_probing_ && pid.pid() == static_cast<uint32_t>(getpid())) {

@@ -337,9 +337,6 @@ class UProbeManager {
 
   // grpc-c percpu arrays.
   static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
-  static constexpr char kGrpcCMetadataHeapName[] = "grpc_c_metadata_buffer_heap";
-  static constexpr char kGrpcCHeaderEventDataHeapName[] = "grpc_c_header_event_buffer_heap";
-  static constexpr char kGrpcCEventDataHeapName[] = "grpc_c_event_buffer_heap";
 
   inline static const std::map<std::string, enum grpc_c_version_t> kGrpcCMD5HashToVersion = {
       {"64c205d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
@@ -426,11 +423,6 @@ class UProbeManager {
   int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
   StatusOr<std::string> MD5onFile(const std::string& file);
   StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
-  bool InitiateGrpcCPercpuMetadataHeap();
-  bool InitiateGrpcCPercpuEventDataHeap();
-  bool InitiateGrpcCPercpuHeaderEventDataHeap();
-  bool InitiateGrpcCPercpuVariables();
-  bool grpc_c_heap_variables_initiated_ = false;
   // grpc-c libraries that are used by python normally have this prefix,
   // I have not seen a case where it's not used.
   static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
