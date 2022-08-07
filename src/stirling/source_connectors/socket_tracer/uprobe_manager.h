@@ -360,14 +360,14 @@ class UProbeManager {
   inline static const auto kGrpcCUProbes = MakeArray<bpf_tools::UProbeSpec>({
       // grpc_chttp2_list_pop_writable_stream
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
                     "chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_grpc_chttp2_list_pop_writable_stream",
       },
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z36grpc_chttp2_list_pop_writable_streamP21grpc_chttp2_transportPP18grpc_"
                     "chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
@@ -375,7 +375,7 @@ class UProbeManager {
       },
       // grpc_chttp2_mark_stream_closed
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z30grpc_chttp2_mark_stream_closedP21grpc_chttp2_transportP18grpc_chttp2_"
                     "streamiiP10grpc_error",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
@@ -383,7 +383,7 @@ class UProbeManager {
       },
       // grpc_chttp2_maybe_complete_recv_initial_metadata
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z48grpc_chttp2_maybe_complete_recv_initial_metadataP21grpc_chttp2_"
                     "transportP18grpc_chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
@@ -391,7 +391,7 @@ class UProbeManager {
       },
       // grpc_chttp2_maybe_complete_recv_trailing_metadata
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z49grpc_chttp2_maybe_complete_recv_trailing_metadataP21grpc_chttp2_"
                     "transportP18grpc_chttp2_stream",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
@@ -408,14 +408,14 @@ class UProbeManager {
   // the same array with the other grpc-c probes (because we would only need a part of the symbol).
   inline static const auto kGrpcCDataParserParseUProbes = MakeArray<bpf_tools::UProbeSpec>({
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
                     "streamRK10grpc_slicei",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_grpc_chttp2_data_parser_parse",
       },
       bpf_tools::UProbeSpec{
-          .binary_path = "cygrpc.cpython",
+          .binary_path = "",
           .symbol = "_Z29grpc_chttp2_data_parser_parsePvP21grpc_chttp2_transportP18grpc_chttp2_"
                     "stream10grpc_slicei",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
@@ -431,6 +431,9 @@ class UProbeManager {
   bool InitiateGrpcCPercpuHeaderEventDataHeap();
   bool InitiateGrpcCPercpuVariables();
   bool grpc_c_heap_variables_initiated_ = false;
+  // grpc-c libraries that are used by python normally have this prefix,
+  // I have not seen a case where it's not used.
+  static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
 
   static StatusOr<std::array<UProbeTmpl, 6>> GetNodeOpensslUProbeTmpls(const SemVer& ver);
 
