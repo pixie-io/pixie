@@ -405,9 +405,11 @@ class UProbeManager {
   });
 
   // grpc_chttp2_data_parser_parse
-  // We add only one of the probes in this array.
+  // This function's symbol changes slightly between library version. Since to attach to it with a
+  // UProbeSpec we need the exact symbol, we need to store the different options.
   // The symbol could be one of two: once where the slice is const (e.g.
   // version 1.19.1) and once where it ain't.
+  // To overcome that, we try to attach the symbols in this array, until we find one that succeeds.
   // TODO(yzhao) - We should probably change UProbeSpec to UProbeTmpl (currently not feasible
   // because UProbeTmpl does not support attachment by address) and then we can add this probe to
   // the same array with the other grpc-c probes (because we would only need a part of the symbol).
