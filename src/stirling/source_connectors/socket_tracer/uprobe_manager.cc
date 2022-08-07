@@ -892,7 +892,6 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
   uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
 
   if (FLAGS_stirling_rescan_for_dlopen) {
@@ -900,6 +899,8 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     uprobe_count += DeployOpenSSLUProbes(pids_to_rescan_for_uprobes);
     uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
   }
+
+  uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
 
   if (uprobe_count != 0) {
     LOG(INFO) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
