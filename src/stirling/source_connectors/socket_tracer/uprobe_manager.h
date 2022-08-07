@@ -338,6 +338,14 @@ class UProbeManager {
   // grpc-c percpu arrays.
   static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
 
+  // When the gRPC-c probes run, they need to know the library's version.
+  // To tell them which version is deployed, we find the version during probe attachment.
+  // No neat mechanism was found to tell the version (we can't run the library with "--version"
+  // and running "strings" on the library does not always return the correct version as well).
+  // To tell the version, we hash the library's binary. A hash will match a single version.
+  // When adding support for more versions, we should add their respective hashes here (for
+  // example by building the relevant docker images with gRPC-c installed and hashing the library).
+  // TODO(yzhao) - Add hashes of more docker images that use the supported versions.
   inline static const std::map<std::string, enum grpc_c_version_t> kGrpcCMD5HashToVersion = {
       {"64c205d1bc547cd53d6979fb76674f4b",  // python:3.7-slim grpcio-1.19.0
        grpc_c_version_t::GRPC_C_V1_19_0},
