@@ -21,14 +21,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
-	"sort"
-
 	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"io/ioutil"
+	"os"
+	"path"
 
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
@@ -64,14 +62,6 @@ func listBundleScripts(br *script.BundleManager, format string) {
 	defer w.Finish()
 	w.SetHeader("script_list", []string{"Name", "Description"})
 	scripts := br.GetScripts()
-
-	// Sort show org scripts show up first.
-	sort.Slice(scripts, func(i, j int) bool {
-		if len(scripts[i].OrgID) != 0 || len(scripts[j].OrgID) != 0 {
-			return scripts[i].OrgID > scripts[j].OrgID
-		}
-		return scripts[i].ScriptName < scripts[j].ScriptName
-	})
 
 	for _, script := range scripts {
 		if script.Hidden {
