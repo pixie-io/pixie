@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: px-http-echo
+  name: px-http-echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-echo-server
+  labels:
+    name: http-echo-server
+  namespace: px-http-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: http-echo-server
+  template:
+    metadata:
+      labels:
+        name: http-echo-server
+    spec:
+      containers:
+      - name: http-echo-server
+        image: hashicorp/http-echo
+        ports:
+        - containerPort: 5678
+        args: ["--text=\"Hello world!\""]
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 10m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fe
+  labels:
+    name: fe
+  namespace: px-http-echo
+spec:
+  ports:
+  - protocol: "TCP"
+    port: 5678
+    targetPort: 5678
+  selector:
+    name: http-echo-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+  labels:
+    name: client
+  namespace: px-http-echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: client
+  template:
+    metadata:
+      labels:
+        name: client
+    spec:
+      containers:
+      - name: client
+        image: curlimages/curl:latest
+        command: ["sh"]
+        args: ["-c", "while true; do curl -s fe:5678; sleep 1; done"]
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 10m
+            memory: 512Mi
