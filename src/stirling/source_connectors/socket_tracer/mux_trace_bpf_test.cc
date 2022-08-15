@@ -140,15 +140,6 @@ mux::Record RecordWithType(mux::Type req_type) {
 //-----------------------------------------------------------------------------
 
 TEST_F(MuxTraceTest, Capture) {
-  // If kernel version is older than 5.2, we turn off some protocol tracers due to instruction
-  // limits.
-  constexpr uint32_t kLinux5p2VersionCode = 328192;
-  auto kernel_version = utils::GetKernelVersion();
-  if (!kernel_version.ok() || kernel_version.ConsumeValueOrDie().code() < kLinux5p2VersionCode) {
-    VLOG(1) << "Mux Tracing is turned off for kernel version older than 5.2.";
-    return;
-  }
-
   StartTransferDataThread();
 
   ASSERT_OK(RunThriftMuxClient());

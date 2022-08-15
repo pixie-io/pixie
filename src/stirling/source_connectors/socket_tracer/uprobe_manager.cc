@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <map>
+#include <tuple>
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
@@ -282,53 +283,82 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
                                 HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
+// SSLLibMatcher allows customizing the search of shared object files
+// that need to be traced with the SSL_write and SSL_read uprobes.
+// In dynamically linked cases, it's likely that there are two
+// shared libraries (libssl and libcrypto). In constrast, statically
+// linked cases are contained within the same binary.
+struct SSLLibMatcher {
+  std::string_view libssl;
+  std::string_view libcrypto;
+  HostPathForPIDPathSearchType search_type;
+};
+
+static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
+    SSLLibMatcher{
+        .libssl = "libssl.so.1.1",
+        .libcrypto = "libcrypto.so.1.1",
+        .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
+    },
+    SSLLibMatcher{
+        .libssl = kLibNettyTcnativePrefix,
+        .libcrypto = kLibNettyTcnativePrefix,
+        .search_type = HostPathForPIDPathSearchType::kSearchTypeContains,
+    },
+});
+
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
-  constexpr std::string_view kLibSSL = "libssl.so.1.1";
-  constexpr std::string_view kLibCrypto = "libcrypto.so.1.1";
-  const std::vector<std::string_view> lib_names = {kLibSSL, kLibCrypto};
-
   const system::Config& sysconfig = system::Config::GetInstance();
 
-  // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
-  PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_));
+  for (auto ssl_library_match : kLibSSLMatchers) {
+    const auto libssl = ssl_library_match.libssl;
+    const auto libcrypto = ssl_library_match.libcrypto;
 
-  std::filesystem::path container_libssl = container_lib_paths[0];
-  std::filesystem::path container_libcrypto = container_lib_paths[1];
+    const std::vector<std::string_view> lib_names = {libssl, libcrypto};
+    const auto search_type = ssl_library_match.search_type;
 
-  if (container_libssl.empty() || container_libcrypto.empty()) {
-    // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
-    // map both of libssl.so.x.x & libcrypto.so.x.x.
-    // Return "0" to indicate zero probes were attached. This is not an error.
-    return 0;
-  }
+    // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
+    PL_ASSIGN_OR_RETURN(
+        const std::vector<std::filesystem::path> container_lib_paths,
+        FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_, search_type));
 
-  // Convert to host path, in case we're running inside a container ourselves.
-  container_libssl = sysconfig.ToHostPath(container_libssl);
-  container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
+    std::filesystem::path container_libssl = container_lib_paths[0];
+    std::filesystem::path container_libcrypto = container_lib_paths[1];
 
-  if (!fs::Exists(container_libssl)) {
-    return error::Internal("libssl not found [path = $0]", container_libssl.string());
-  }
-  if (!fs::Exists(container_libcrypto)) {
-    return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
-  }
+    if ((container_libssl.empty() || container_libcrypto.empty())) {
+      // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
+      // map both of libssl.so.x.x & libcrypto.so.x.x or another compatible library.
+      // Move on to the next possible SSL library. This is not an error.
+      continue;
+    }
 
-  auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
+    // Convert to host path, in case we're running inside a container ourselves.
+    container_libssl = sysconfig.ToHostPath(container_libssl);
+    container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
 
-  PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
+    if (!fs::Exists(container_libssl)) {
+      return error::Internal("libssl not found [path = $0]", container_libssl.string());
+    }
+    if (!fs::Exists(container_libcrypto)) {
+      return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
+    }
 
-  // Only try probing .so files that we haven't already set probes on.
-  auto result = openssl_probed_binaries_.insert(container_libssl);
-  if (!result.second) {
-    return 0;
-  }
+    auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
 
-  for (auto spec : kOpenSSLUProbes) {
-    spec.binary_path = container_libssl.string();
-    PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+    PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
+
+    // Only try probing .so files that we haven't already set probes on.
+    auto result = openssl_probed_binaries_.insert(container_libssl);
+    if (!result.second) {
+      return 0;
+    }
+
+    for (auto spec : kOpenSSLUProbes) {
+      spec.binary_path = container_libssl.string();
+      PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+    }
   }
   return kOpenSSLUProbes.size();
 }
