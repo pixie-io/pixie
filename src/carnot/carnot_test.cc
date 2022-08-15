@@ -1167,9 +1167,11 @@ nodes {
 struct TransferResultChunkTestCase {
   std::string name;
   std::string plan;
-  // Each element of this vector represents an independent TransferResultChunk context.
-  // The number of results sent over to the local results server by Carnot.
-  int64_t num_expected_query_results;
+  // The number of results sent over to the local results server by Carnot that are not zero batch
+  // results. Carnot maintains connections by sending over zero-batch results and the frequency is
+  // dependent on the machine running the test. We maintain test-determinism by only counting a
+  // result if it is not a row batch, has rows, or is marked eow/eos.
+  int64_t num_non_zero_results;
   // the regex for the error. If the string is empty, the test does not consider this an error.
   // Will be tested agains the error from the plan and the exec_errors.
   std::string error_regex;
@@ -1218,11 +1220,18 @@ TEST_P(TransferResultChunkTests, send_and_forward_messages) {
                 ::testing::MatchesRegex(tc.error_regex));
   }
 
-  EXPECT_EQ(result_server_->raw_query_results().size(), tc.num_expected_query_results)
-      << "result_server_->raw_query_results():\n"
-      << absl::StrJoin(
-             result_server_->raw_query_results(), "\n",
-             [](std::string* out, const auto& qr) { absl::StrAppend(out, qr.DebugString()); });
+  size_t num_non_zero = result_server_->raw_query_results().size();
+  for (const auto& result : result_server_->raw_query_results()) {
+    if (!result.has_query_result() || !result.query_result().has_row_batch()) {
+      continue;
+    }
+    const auto& rb = result.query_result().row_batch();
+    if (rb.num_rows() == 0 && !rb.eos() && !rb.eow()) {
+      --num_non_zero;
+    }
+  }
+
+  EXPECT_EQ(num_non_zero, tc.num_non_zero_results);
 };
 
 INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
@@ -1230,7 +1239,7 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                              TransferResultChunkTestCase{
                                  "end2end",
                                  kGRPCSourcePlan,
-                                 /* num_expected_query_results */ 4,
+                                 /* num_non_zero_results */ 3,
                                  "",
                                  {
                                      {
@@ -1253,8 +1262,10 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                                         row_batch {
                                           cols {
                                             int64_data {
+                                              data: 1
                                             }
                                           }
+                                          num_rows: 1
                                           eow: true
                                           eos: true
                                         }
@@ -1281,7 +1292,7 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                              TransferResultChunkTestCase{
                                  "timeout_does_not_throw_error",
                                  kGRPCSourcePlan,
-                                 /* num_expected_query_results */ 5,
+                                 /* num_non_zero_results */ 4,
                                  "",
                                  {
                                      {
@@ -1304,8 +1315,10 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                                         row_batch {
                                           cols {
                                             int64_data {
+                                              data: 1
                                             }
                                           }
+                                          num_rows: 1
                                         }
                                       })proto",
                                      },
@@ -1315,7 +1328,7 @@ INSTANTIATE_TEST_SUITE_P(TransferResultChunks, TransferResultChunkTests,
                              TransferResultChunkTestCase{
                                  "receive_error_from_parent_agent",
                                  kGRPCSourcePlan,
-                                 /* num_expected_query_results */ 5,
+                                 /* num_non_zero_results */ 3,
                                  ".*didnt process data.*",
                                  {
                                      {
