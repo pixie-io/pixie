@@ -17,7 +17,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_jar")
 
 def fetch_netty_tcnative_jars(version):
-
     http_jar(
         name = "netty_tcnative_boringssl_static",
         url = "https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/%s/netty-tcnative-boringssl-static-%s.jar" % (version, version),

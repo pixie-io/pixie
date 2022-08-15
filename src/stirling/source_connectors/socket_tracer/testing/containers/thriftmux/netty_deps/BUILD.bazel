@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_java//java:defs.bzl", "java_image")
+load("@rules_java//java:defs.bzl", "java_import")
 
 java_import(
     name = "io_netty_netty_tcnative_boringssl_static_osx_x86_64",
