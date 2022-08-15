@@ -96,7 +96,8 @@ DEFINE_int32(stirling_enable_nats_tracing, px::stirling::TraceMode::On,
 DEFINE_int32(stirling_enable_kafka_tracing, px::stirling::TraceMode::On,
              "If true, stirling will trace and process Kafka messages.");
 DEFINE_int32(stirling_enable_mux_tracing,
-             gflags::Uint32FromEnv("PL_STIRLING_TRACER_ENABLE_MUX", px::stirling::TraceMode::Off),
+             gflags::Uint32FromEnv("PL_STIRLING_TRACER_ENABLE_MUX",
+                                   px::stirling::TraceMode::OnForNewerKernel),
              "If true, stirling will trace and process Mux messages.");
 DEFINE_int32(stirling_enable_amqp_tracing, px::stirling::TraceMode::On,
              "If true, stirling will trace and process AMQP messages.");

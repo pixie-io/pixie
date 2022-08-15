@@ -33,6 +33,8 @@ DECLARE_bool(openssl_raw_fptrs_enabled);
 namespace px {
 namespace stirling {
 
+constexpr std::string_view kLibNettyTcnativePrefix = "libnetty_tcnative_linux_x86";
+
 /**
  * Uses ELF and DWARF information to return the locations of all relevant symbols for general Go
  * uprobe deployment.

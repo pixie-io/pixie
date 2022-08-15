@@ -637,6 +637,17 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
 
 }  // namespace
 
+// Used for determining if a given tracing target is using
+// borginssl or not. At this time it's difficult to generalize this
+// to other use cases until more boringssl integrations are made. This
+// interface will likely change as we learn more about other ssl library
+// integrations.
+bool IsBoringSSL(const std::filesystem::path& openssl_lib) {
+  if (absl::StrContains(openssl_lib.string(), kLibNettyTcnativePrefix)) return true;
+
+  return false;
+}
+
 StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
                                                     const std::filesystem::path& openssl_lib,
                                                     uint32_t pid) {
@@ -657,6 +668,21 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   //  - 1.1.1a to 1.1.1e
   constexpr int32_t kSSL_RBIO_offset = 0x10;
 
+  // BoringSSL was originally derived from OpenSSL 1.0.2. For now we
+  // are only supporting the offsets of its current release, which tracks
+  // OpenSSL 1.1.0 at this time (Sept 2022). See it's PORTING.md doc for
+  // more details.
+  // https://github.com/google/boringssl/blob/0cc51a793eef6b5295b9e0de8aafb1d87a39e210/PORTING.md
+  //
+  // TODO(yzhao): Determine the offsets for BoringSSL's openssl 1.0.x compatibility.
+  // See https://github.com/pixie-io/pixie/issues/588 for more details.
+  //
+  // These were calculated from compiling libnetty_tcnative locally
+  // with symbols and attaching gdb to walk the data structures.
+  // https://pixie-community.slack.com/files/U027UA1MRPA/F03FA23U8FQ/untitled.txt
+  constexpr int32_t kBoringSSL_RBIO_offset = 0x18;
+  constexpr int32_t kBoringSSL_1_1_1_RBIO_num_offset = 0x18;
+
   // Offset of num in struct bio_st.
   // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
   //  - In 1.1.1a to 1.1.1e, the offset appears to be 0x30
@@ -670,18 +696,32 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
                       OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
 
-  switch (openssl_fix_sub_version) {
-    case 0:
-      symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
-      break;
-    case 1:
-      symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
-      break;
-    default:
-      // Supported versions are checked in function OpenSSLFixSubversionNum(),
-      // should not fall through to here, ever.
-      DCHECK(false);
-      return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
+  if (!IsBoringSSL(openssl_lib)) {
+    switch (openssl_fix_sub_version) {
+      case 0:
+        symaddrs.RBIO_num_offset = kOpenSSL_1_1_0_RBIO_num_offset;
+        break;
+      case 1:
+        symaddrs.RBIO_num_offset = kOpenSSL_1_1_1_RBIO_num_offset;
+        break;
+      default:
+        // Supported versions are checked in function OpenSSLFixSubversionNum(),
+        // should not fall through to here, ever.
+        DCHECK(false);
+        return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
+    }
+  } else {
+    switch (openssl_fix_sub_version) {
+      case 1:
+        symaddrs.RBIO_num_offset = kBoringSSL_1_1_1_RBIO_num_offset;
+        symaddrs.SSL_rbio_offset = kBoringSSL_RBIO_offset;
+        break;
+      default:
+        // Supported versions are checked in function OpenSSLFixSubversionNum(),
+        // should not fall through to here, ever.
+        DCHECK(false);
+        return error::Internal("Unsupported openssl_fix_sub_version: $0", openssl_fix_sub_version);
+    }
   }
 
   // Using GDB to confirm member offsets on OpenSSL 1.1.1:
