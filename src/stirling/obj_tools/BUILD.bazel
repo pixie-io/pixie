@@ -79,6 +79,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
+        "//src/stirling/utils:cc_library",
     ],
 )
 
