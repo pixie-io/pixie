@@ -14,8 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//src/stirling/testing:go_versioned_binary.bzl", "go_1_16_binary", "go_1_17_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -23,16 +22,6 @@ go_library(
     name = "lib",
     srcs = ["test_go_binary.go"],
     importpath = "px.dev/pixie/src/stirling/obj_tools/testdata/go",
-)
-
-go_1_16_binary(
-    name = "test_go_1_16_binary",
-    embed = [":lib"],
-)
-
-go_1_17_binary(
-    name = "test_go_1_17_binary",
-    embed = [":lib"],
 )
 
 go_binary(
@@ -47,6 +36,30 @@ go_binary(
     }),
 )
 
+go_cross(
+    name = "test_go_1_16_binary",
+    sdk_version = "1.16",
+    target = ":test_go_binary",
+)
+
+go_cross(
+    name = "test_go_1_17_binary",
+    sdk_version = "1.17",
+    target = ":test_go_binary",
+)
+
+go_cross(
+    name = "test_go_1_18_binary",
+    sdk_version = "1.18",
+    target = ":test_go_binary",
+)
+
+go_cross(
+    name = "test_go_1_19_binary",
+    sdk_version = "1.19",
+    target = ":test_go_binary",
+)
+
 filegroup(
     name = "test_binaries",
     testonly = True,
@@ -54,6 +67,7 @@ filegroup(
         "sockshop_payments_service",
         ":test_go_1_16_binary",
         ":test_go_1_17_binary",
-        ":test_go_binary",
+        ":test_go_1_18_binary",
+        ":test_go_1_19_binary",
     ],
 )

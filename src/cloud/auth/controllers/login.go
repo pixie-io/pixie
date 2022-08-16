@@ -447,20 +447,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, false /* newOrg */)
 	}
 
-	// Case 2: Legacy User with UseSelfOrg set will join a Self org.
-	if userInfo.UseSelfOrg {
-		updatedUserInfo, orgID, err := s.createUserAndOrg(ctx, "", userInfo.Email, userInfo)
-		if err != nil {
-			return nil, err
-		}
-		orgInfoPb, err := s.env.OrgClient().GetOrg(ctx, orgID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		return s.signupUser(ctx, updatedUserInfo, orgInfoPb, true /* newOrg */)
-	}
-
-	// Case 3: An empty HostedDomain means this user will be created without an org.
+	// Case 2: An empty HostedDomain means this user will be created without an org.
 	if userInfo.HostedDomain == "" {
 		updatedUserInfo, err := s.createUser(ctx, userInfo, nil)
 		if err != nil {
@@ -469,7 +456,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		return s.signupUser(ctx, updatedUserInfo, nil, false /* newOrg */)
 	}
 
-	// Case 4: We go through all permutations of orgs that might exist for a user and find any that exist.
+	// Case 3: We go through all permutations of orgs that might exist for a user and find any that exist.
 	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
 	if err != nil && status.Code(err) != codes.NotFound {
 		return nil, err

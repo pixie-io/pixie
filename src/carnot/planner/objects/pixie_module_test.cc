@@ -135,7 +135,9 @@ class PixieModuleTest : public QLObjectTest {
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();
     var_table->Add("px", module_);
-    var_table->Add("df", Dataframe::Create(MakeMemSource(), ast_visitor.get()).ConsumeValueOrDie());
+    var_table->Add("df",
+                   Dataframe::Create(compiler_state_.get(), MakeMemSource(), ast_visitor.get())
+                       .ConsumeValueOrDie());
   }
 
   std::unique_ptr<CompilerState> compiler_state_;

@@ -1,0 +1,377 @@
+diff --git a/go/def.bzl b/go/def.bzl
+index 0fd41297..56e3ccaf 100644
+--- a/go/def.bzl
++++ b/go/def.bzl
+@@ -75,6 +75,11 @@ load(
+     _nogo = "nogo_wrapper",
+ )
+ 
++load(
++    "//go/private/rules:cross.bzl",
++    _go_cross = "go_cross",
++)
++
+ # TOOLS_NOGO is a list of all analysis passes in
+ # golang.org/x/tools/go/analysis/passes.
+ # This is not backward compatible, so use caution when depending on this --
+@@ -164,6 +169,9 @@ go_source = _go_source
+ # See docs/go/core/rules.md#go_path for full documentation.
+ go_path = _go_path
+ 
++# See docs/go/core/rules.md#go_cross for full documentation.
++go_cross = _go_cross
++
+ def go_vet_test(*args, **kwargs):
+     fail("The go_vet_test rule has been removed. Please migrate to nogo instead, which supports vet tests.")
+ 
+diff --git a/go/private/BUILD.sdk.bazel b/go/private/BUILD.sdk.bazel
+index 50d9127d..328d8478 100644
+--- a/go/private/BUILD.sdk.bazel
++++ b/go/private/BUILD.sdk.bazel
+@@ -1,6 +1,7 @@
+ load("@{rules_go_repo_name}//go/private/rules:binary.bzl", "go_tool_binary")
+ load("@{rules_go_repo_name}//go/private/rules:sdk.bzl", "package_list")
+ load("@{rules_go_repo_name}//go:def.bzl", "declare_toolchains", "go_sdk")
++load("@bazel_skylib//lib:selects.bzl", "selects")
+ 
+ package(default_visibility = ["//visibility:public"])
+ 
+@@ -58,10 +59,60 @@ package_list(
+     root_file = "ROOT",
+ )
+ 
++sdk_version_label = "@{rules_go_repo_name}//go/toolchain:sdk_version"
++
++config_setting(
++    name = "match_all_versions",
++    flag_values = {
++        sdk_version_label: "",
++    },
++)
++
++config_setting(
++    name = "match_major_version",
++    flag_values = {
++        sdk_version_label: "{major_version}",
++    },
++)
++
++config_setting(
++    name = "match_major_minor_version",
++    flag_values = {
++        sdk_version_label: "{major_version}.{minor_version}",
++    },
++)
++
++config_setting(
++    name = "match_patch_version",
++    flag_values = {
++        sdk_version_label: "{major_version}.{minor_version}.{patch_version}",
++    },
++)
++
++# If prerelease version is "", this will be the same as ":match_patch_version", but that's fine since we use match_any in config_setting_group.
++config_setting(
++    name = "match_prerelease_version",
++    flag_values = {
++        sdk_version_label: "{major_version}.{minor_version}.{patch_version}{prerelease_suffix}",
++    },
++)
++
++selects.config_setting_group(
++    name = "sdk_version_settings",
++    match_any = [
++        ":match_all_versions",
++        ":match_major_version",
++        ":match_major_minor_version",
++        ":match_patch_version",
++        "match_prerelease_version",
++    ],
++)
++
+ declare_toolchains(
+     builder = ":builder",
+     host = "{goos}_{goarch}",
+     sdk = ":go_sdk",
++    sdk_version_settings = ":sdk_version_settings",
+ )
+ 
+ filegroup(
+diff --git a/go/private/go_toolchain.bzl b/go/private/go_toolchain.bzl
+index 9a364815..a02645bc 100644
+--- a/go/private/go_toolchain.bzl
++++ b/go/private/go_toolchain.bzl
+@@ -92,7 +92,7 @@ go_toolchain = rule(
+     provides = [platform_common.ToolchainInfo],
+ )
+ 
+-def declare_toolchains(host, sdk, builder):
++def declare_toolchains(host, sdk, builder, sdk_version_settings):
+     """Declares go_toolchain and toolchain targets for each platform."""
+ 
+     # keep in sync with generate_toolchain_names
+@@ -139,5 +139,6 @@ def declare_toolchains(host, sdk, builder):
+                 "@io_bazel_rules_go//go/toolchain:" + host_goarch,
+             ],
+             target_compatible_with = constraints,
++            target_settings = [sdk_version_settings],
+             toolchain = ":" + impl_name,
+         )
+diff --git a/go/private/rules/cross.bzl b/go/private/rules/cross.bzl
+new file mode 100644
+index 00000000..caa6f4d4
+--- /dev/null
++++ b/go/private/rules/cross.bzl
+@@ -0,0 +1,74 @@
++# Copyright 2014 The Bazel Authors. All rights reserved.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#    http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
++load("//go/private/rules:transition.bzl", "go_cross_transition")
++load("//go/private:providers.bzl",
++     "GoLibrary",
++     "GoSource",
++     "GoArchive",
++)
++
++def _go_cross_impl(ctx):
++    old_default_info = ctx.attr.target[DefaultInfo]
++    old_executable = old_default_info.files_to_run.executable
++    if not old_executable:
++        fail('target must have executable')
++    new_executable = ctx.actions.declare_file(ctx.attr.name)
++    ctx.actions.symlink(output=new_executable, target_file=old_executable)
++
++    new_default_info = DefaultInfo(
++        files = depset([new_executable]),
++        runfiles = old_default_info.default_runfiles,
++        executable = new_executable,
++    )
++    
++    providers = [new_default_info] + [
++        ctx.attr.target[provider]
++        for provider in [
++            GoLibrary,
++            GoSource,
++            GoArchive,
++            OutputGroupInfo,
++        ]
++    ]
++    if CcInfo in ctx.attr.target:
++        providers.append(ctx.attr.target[CcInfo])
++    return providers
++
++
++_go_cross_kwargs = {
++    "implementation": _go_cross_impl,
++    "attrs": {
++        "target": attr.label(
++            doc = """Go binary to transition to the given platform and/or sdk_version.
++            """,
++        ),
++        "platform": attr.label(
++            doc = """Platform to transition the given target to.
++            """,
++        ),
++        "sdk_version": attr.string(
++            doc = """GoSDK version to transition the given target to.
++            """,
++        ),
++        "_allowlist_function_transition": attr.label(
++            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
++        ),
++    },
++    "cfg": go_cross_transition,
++    "doc": """    """,
++}
++
++go_cross = rule(executable=True, **_go_cross_kwargs)
++
+diff --git a/go/private/rules/transition.bzl b/go/private/rules/transition.bzl
+index f5670283..f07d0244 100644
+--- a/go/private/rules/transition.bzl
++++ b/go/private/rules/transition.bzl
+@@ -400,3 +400,25 @@ def _set_ternary(settings, attr, name):
+         label = filter_transition_label("@io_bazel_rules_go//go/config:{}".format(name))
+         settings[label] = value == "on"
+     return value
++
++_SDK_VERSION_BUILD_SETTING = filter_transition_label("@io_bazel_rules_go//go/toolchain:sdk_version")
++TRANSITIONED_GO_CROSS_SETTING_KEYS = [
++    _SDK_VERSION_BUILD_SETTING,
++    "//command_line_option:platforms",
++]
++
++def _go_cross_transition_impl(settings, attr):
++    settings = dict(settings)
++    if attr.sdk_version != None:
++        settings[_SDK_VERSION_BUILD_SETTING] = attr.sdk_version
++
++    if attr.platform != None:
++        settings["//command_line_option:platforms"] = str(attr.platform)
++
++    return settings
++
++go_cross_transition = transition(
++    implementation = _go_cross_transition_impl,
++    inputs = TRANSITIONED_GO_CROSS_SETTING_KEYS,
++    outputs = TRANSITIONED_GO_CROSS_SETTING_KEYS,
++)
+diff --git a/go/private/sdk.bzl b/go/private/sdk.bzl
+index ee53cb0b..1e105e40 100644
+--- a/go/private/sdk.bzl
++++ b/go/private/sdk.bzl
+@@ -30,7 +30,8 @@ MIN_SUPPORTED_VERSION = (1, 14, 0)
+ def _go_host_sdk_impl(ctx):
+     goroot = _detect_host_sdk(ctx)
+     platform = _detect_sdk_platform(ctx, goroot)
+-    _sdk_build_file(ctx, platform)
++    version = _detect_sdk_version(ctx, goroot)
++    _sdk_build_file(ctx, platform, version)
+     _local_sdk(ctx, goroot)
+ 
+ _go_host_sdk = repository_rule(
+@@ -53,7 +54,6 @@ def _go_download_sdk_impl(ctx):
+             fail("goos set but goarch not set")
+         goos, goarch = ctx.attr.goos, ctx.attr.goarch
+     platform = goos + "_" + goarch
+-    _sdk_build_file(ctx, platform)
+ 
+     version = ctx.attr.version
+     sdks = ctx.attr.sdks
+@@ -100,6 +100,9 @@ def _go_download_sdk_impl(ctx):
+     filename, sha256 = sdks[platform]
+     _remote_sdk(ctx, [url.format(filename) for url in ctx.attr.urls], ctx.attr.strip_prefix, sha256)
+ 
++    detected_version = _detect_sdk_version(ctx, ".")
++    _sdk_build_file(ctx, platform, detected_version)
++
+     if not ctx.attr.sdks and not ctx.attr.version:
+         # Returning this makes Bazel print a message that 'version' must be
+         # specified for a reproducible build.
+@@ -134,7 +137,8 @@ def go_download_sdk(name, register_toolchains = True, **kwargs):
+ def _go_local_sdk_impl(ctx):
+     goroot = ctx.attr.path
+     platform = _detect_sdk_platform(ctx, goroot)
+-    _sdk_build_file(ctx, platform)
++    version = _detect_sdk_version(ctx, goroot)
++    _sdk_build_file(ctx, platform, version)
+     _local_sdk(ctx, goroot)
+ 
+ _go_local_sdk = repository_rule(
+@@ -164,7 +168,8 @@ def _go_wrap_sdk_impl(ctx):
+         root_file = Label(ctx.attr.root_files[platform])
+     goroot = str(ctx.path(root_file).dirname)
+     platform = _detect_sdk_platform(ctx, goroot)
+-    _sdk_build_file(ctx, platform)
++    version = _detect_sdk_version(ctx, goroot)
++    _sdk_build_file(ctx, platform, version)
+     _local_sdk(ctx, goroot)
+ 
+ _go_wrap_sdk = repository_rule(
+@@ -226,9 +231,16 @@ def _local_sdk(ctx, path):
+     for entry in ["src", "pkg", "bin", "lib"]:
+         ctx.symlink(path + "/" + entry, entry)
+ 
+-def _sdk_build_file(ctx, platform):
++def _sdk_build_file(ctx, platform, version):
+     ctx.file("ROOT")
+     goos, _, goarch = platform.partition("_")
++
++    pv = _parse_version(version)
++    if pv == None or len(pv) < 3:
++        fail("error parsing sdk version: " + version)
++    major, minor, patch = pv[0], pv[1], pv[2]
++    prerelease = pv[3] if len(pv) > 3 else ""
++
+     ctx.template(
+         "BUILD.bazel",
+         Label("//go/private:BUILD.sdk.bazel"),
+@@ -238,6 +250,10 @@ def _sdk_build_file(ctx, platform):
+             "{goarch}": goarch,
+             "{exe}": ".exe" if goos == "windows" else "",
+             "{rules_go_repo_name}": "io_bazel_rules_go",
++            "{major_version}": str(major),
++            "{minor_version}": str(minor),
++            "{patch_version}": str(patch),
++            "{prerelease_suffix}": prerelease,
+         },
+     )
+ 
+@@ -321,6 +337,16 @@ def _detect_sdk_platform(ctx, goroot):
+         fail("Could not detect SDK platform: found multiple platforms %s in %s" % (platforms, path))
+     return platforms[0]
+ 
++def _detect_sdk_version(ctx, goroot):
++    path = goroot + "/VERSION"
++    version_contents = ctx.read(path)
++
++    # VERSION file has version prefixed by go, eg. go1.18.3
++    version = version_contents[2:]
++    if _parse_version(version) == None:
++        fail("Could not parse SDK version from version file (%s): %s" % (path, version_contents))
++    return version
++
+ def _parse_versions_json(data):
+     """Parses version metadata returned by golang.org.
+ 
+diff --git a/go/toolchain/BUILD.bazel b/go/toolchain/BUILD.bazel
+index b5e33a69..ba47e905 100644
+--- a/go/toolchain/BUILD.bazel
++++ b/go/toolchain/BUILD.bazel
+@@ -1,4 +1,5 @@
+ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
++load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+ load(
+     ":toolchains.bzl",
+     "declare_constraints",
+@@ -8,6 +9,11 @@ package(default_visibility = ["//visibility:public"])
+ 
+ declare_constraints()
+ 
++string_flag(
++    name = "sdk_version",
++    build_setting_default = "",
++)
++
+ filegroup(
+     name = "all_rules",
+     srcs = glob(["*.bzl"]),
+diff --git a/go/tools/gopackagesdriver/aspect.bzl b/go/tools/gopackagesdriver/aspect.bzl
+index 5cce8b1e..d5e1609b 100644
+--- a/go/tools/gopackagesdriver/aspect.bzl
++++ b/go/tools/gopackagesdriver/aspect.bzl
+@@ -52,16 +52,19 @@ def _go_archive_to_pkg(archive):
+         ExportFile = _file_path(archive.data.export_file),
+         GoFiles = [
+             _file_path(src)
+-            for src in archive.data.orig_srcs if not src.path.endswith(".s")
++            for src in archive.data.orig_srcs
++            if not src.path.endswith(".s")
+         ],
+         CompiledGoFiles = [
+             _file_path(src)
+-            for src in archive.data.srcs if not src.path.endswith(".s")
++            for src in archive.data.srcs
++            if not src.path.endswith(".s")
+         ],
+         SFiles = [
+             _file_path(src)
+-            for src in archive.data.orig_srcs if src.path.endswith(".s")
+-        ]
++            for src in archive.data.orig_srcs
++            if src.path.endswith(".s")
++        ],
+     )
+ 
+ def _make_pkg_json(ctx, archive, pkg_info):

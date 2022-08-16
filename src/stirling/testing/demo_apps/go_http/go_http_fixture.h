@@ -29,14 +29,10 @@ namespace testing {
 class GoHTTPFixture {
  public:
   GoHTTPFixture() {
-    constexpr char kClientPath[] =
-        "src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client/"
-        "go_http_client_/"
-        "go_http_client";
-    constexpr char kServerPath[] =
-        "src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server/"
-        "go_http_server_/"
-        "go_http_server";
+    constexpr std::string_view kClientPath =
+        "src/stirling/testing/demo_apps/go_http/go_http_client/go_http_client_/go_http_client";
+    constexpr std::string_view kServerPath =
+        "src/stirling/testing/demo_apps/go_http/go_http_server/go_http_server_/go_http_server";
 
     client_path_ = px::testing::BazelRunfilePath(kClientPath);
     server_path_ = px::testing::BazelRunfilePath(kServerPath);

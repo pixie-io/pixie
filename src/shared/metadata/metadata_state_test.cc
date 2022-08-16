@@ -160,6 +160,7 @@ constexpr char kReplicaSetUpdatePbTxt[] = R"(
   ready_replicas: 3
   available_replicas: 3
   observed_generation: 5
+  requested_replicas: 5
   conditions: {
     type: "ready"
     status: CONDITION_STATUS_TRUE
@@ -168,6 +169,84 @@ constexpr char kReplicaSetUpdatePbTxt[] = R"(
     kind: "Deployment"
     name: "deployment1"
     uid: "deployment_uid"
+  }
+)";
+
+constexpr char kDeploymentUpdatePbTxt00[] = R"(
+  uid: "deployment_uid"
+  name: "deployment1"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 0
+  namespace: "ns0"
+  replicas: 5
+  updated_replicas: 5
+  ready_replicas: 3
+  available_replicas: 3
+  unavailable_replicas: 2
+  observed_generation: 5
+  requested_replicas: 5
+  conditions: {
+    type: 1
+    status: CONDITION_STATUS_TRUE
+  }
+  conditions: {
+    type: 2
+    status: CONDITION_STATUS_TRUE
+  }
+)";
+
+constexpr char kDeploymentUpdatePbTxt01[] = R"(
+  uid: "deployment_uid"
+  name: "deployment1"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 0
+  namespace: "ns0"
+  replicas: 6
+  updated_replicas: 4
+  ready_replicas: 2
+  available_replicas: 2
+  unavailable_replicas: 4
+  observed_generation: 6
+  requested_replicas: 6
+  conditions: {
+    type: 1
+    status: CONDITION_STATUS_TRUE
+  }
+  conditions: {
+    type: 2
+    status: CONDITION_STATUS_FALSE
+  }
+  conditions: {
+    type: 3
+    status: CONDITION_STATUS_TRUE
+  }
+)";
+
+constexpr char kDeploymentUpdatePbTxt02[] = R"(
+  uid: "deployment_uid_2"
+  name: "deployment2"
+  start_timestamp_ns: 110
+  stop_timestamp_ns: 200
+  namespace: "ns1"
+  replicas: 10
+  updated_replicas: 6
+  ready_replicas: 1
+  available_replicas: 0
+  unavailable_replicas: 10
+  observed_generation: 10
+  requested_replicas: 7
+
+  conditions: {
+    type: 1
+    status: CONDITION_STATUS_FALSE
+  }
+  conditions: {
+    type: 2
+    status: CONDITION_STATUS_FALSE
+  }
+  conditions: {
+    type: 3
+    status: CONDITION_STATUS_TRUE
   }
 )";
 
@@ -352,6 +431,92 @@ TEST(K8sMetadataStateTest, HandleReplicaSetUpdate) {
   EXPECT_EQ("rs0", info->name());
   EXPECT_EQ(101, info->start_time_ns());
   EXPECT_EQ(0, info->stop_time_ns());
+  EXPECT_EQ(5, info->replicas());
+  EXPECT_EQ(5, info->fully_labeled_replicas());
+  EXPECT_EQ(3, info->ready_replicas());
+  EXPECT_EQ(3, info->available_replicas());
+  EXPECT_EQ(5, info->observed_generation());
+  EXPECT_EQ(5, info->requested_replicas());
+}
+
+TEST(K8sMetadataStateTest, HandleDeploymentUpdate) {
+  K8sMetadataState state;
+
+  K8sMetadataState::DeploymentUpdate update01;
+  ASSERT_TRUE(TextFormat::MergeFromString(kDeploymentUpdatePbTxt00, &update01))
+      << "Failed to parse proto";
+
+  auto info = state.DeploymentInfoByID("deployment_uid");
+  ASSERT_EQ(nullptr, info);
+  EXPECT_OK(state.HandleDeploymentUpdate(update01));
+  info = state.DeploymentInfoByID("deployment_uid");
+  ASSERT_NE(nullptr, info);
+  EXPECT_EQ("deployment_uid", info->uid());
+  EXPECT_EQ("deployment1", info->name());
+  EXPECT_EQ("ns0", info->ns());
+  EXPECT_EQ(5, info->replicas());
+  EXPECT_EQ(5, info->updated_replicas());
+  EXPECT_EQ(3, info->ready_replicas());
+  EXPECT_EQ(3, info->available_replicas());
+  EXPECT_EQ(2, info->unavailable_replicas());
+  EXPECT_EQ(5, info->observed_generation());
+  EXPECT_EQ(5, info->observed_generation());
+  EXPECT_EQ(101, info->start_time_ns());
+  EXPECT_EQ(0, info->stop_time_ns());
+  EXPECT_EQ(2, info->conditions().size());
+  EXPECT_EQ(ConditionStatus::kTrue, info->conditions()[DeploymentConditionType::kAvailable]);
+  EXPECT_EQ(ConditionStatus::kTrue, info->conditions()[DeploymentConditionType::kProgressing]);
+
+  // check that all fields update when another update comes in
+  K8sMetadataState::DeploymentUpdate update02;
+  ASSERT_TRUE(TextFormat::MergeFromString(kDeploymentUpdatePbTxt01, &update02))
+      << "Failed to parse proto";
+  EXPECT_OK(state.HandleDeploymentUpdate(update02));
+  info = state.DeploymentInfoByID("deployment_uid");
+  ASSERT_NE(nullptr, info);
+  EXPECT_EQ("deployment_uid", info->uid());
+  EXPECT_EQ("deployment1", info->name());
+  EXPECT_EQ("ns0", info->ns());
+  EXPECT_EQ(6, info->replicas());
+  EXPECT_EQ(4, info->updated_replicas());
+  EXPECT_EQ(2, info->ready_replicas());
+  EXPECT_EQ(2, info->available_replicas());
+  EXPECT_EQ(4, info->unavailable_replicas());
+  EXPECT_EQ(6, info->observed_generation());
+  EXPECT_EQ(6, info->observed_generation());
+  EXPECT_EQ(101, info->start_time_ns());
+  EXPECT_EQ(0, info->stop_time_ns());
+  EXPECT_EQ(3, info->conditions().size());
+  EXPECT_EQ(ConditionStatus::kTrue, info->conditions()[DeploymentConditionType::kAvailable]);
+  EXPECT_EQ(ConditionStatus::kFalse, info->conditions()[DeploymentConditionType::kProgressing]);
+  EXPECT_EQ(ConditionStatus::kTrue, info->conditions()[DeploymentConditionType::kReplicaFailure]);
+
+  // //check that a new update updates a different info object
+  info = state.DeploymentInfoByID("deployment_uid_2");
+  ASSERT_EQ(nullptr, info);
+
+  K8sMetadataState::DeploymentUpdate update03;
+  ASSERT_TRUE(TextFormat::MergeFromString(kDeploymentUpdatePbTxt02, &update03))
+      << "Failed to parse proto";
+  EXPECT_OK(state.HandleDeploymentUpdate(update03));
+  info = state.DeploymentInfoByID("deployment_uid_2");
+  ASSERT_NE(nullptr, info);
+  EXPECT_EQ("deployment_uid_2", info->uid());
+  EXPECT_EQ("deployment2", info->name());
+  EXPECT_EQ("ns1", info->ns());
+  EXPECT_EQ(10, info->replicas());
+  EXPECT_EQ(6, info->updated_replicas());
+  EXPECT_EQ(1, info->ready_replicas());
+  EXPECT_EQ(0, info->available_replicas());
+  EXPECT_EQ(10, info->unavailable_replicas());
+  EXPECT_EQ(10, info->observed_generation());
+  EXPECT_EQ(7, info->requested_replicas());
+  EXPECT_EQ(110, info->start_time_ns());
+  EXPECT_EQ(200, info->stop_time_ns());
+  EXPECT_EQ(3, info->conditions().size());
+  EXPECT_EQ(ConditionStatus::kFalse, info->conditions()[DeploymentConditionType::kAvailable]);
+  EXPECT_EQ(ConditionStatus::kFalse, info->conditions()[DeploymentConditionType::kProgressing]);
+  EXPECT_EQ(ConditionStatus::kTrue, info->conditions()[DeploymentConditionType::kReplicaFailure]);
 }
 
 TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {

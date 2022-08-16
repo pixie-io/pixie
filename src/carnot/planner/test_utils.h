@@ -1233,13 +1233,23 @@ relation_map {
       column_semantic_type: ST_PORT
     }
     columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "addr_family"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
       column_name: "protocol"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "role"
-      column_type: INT64
+      column_name: "ssl"
+      column_type: BOOLEAN
       column_semantic_type: ST_NONE
     }
     columns {
@@ -1260,12 +1270,12 @@ relation_map {
     columns {
       column_name: "bytes_sent"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "bytes_recv"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
   }
 }
@@ -1318,7 +1328,62 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "latency_ns"
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "dns_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_header"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_header"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
       column_type: INT64
       column_semantic_type: ST_DURATION_NS
     }
@@ -1375,7 +1440,7 @@ relation_map {
     columns {
       column_name: "req_method"
       column_type: STRING
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_HTTP_REQ_METHOD
     }
     columns {
       column_name: "req_path"
@@ -1388,6 +1453,11 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
+      column_name: "req_body_size"
+      column_type: INT64
+      column_semantic_type: ST_BYTES
+    }
+    columns {
       column_name: "resp_headers"
       column_type: STRING
       column_semantic_type: ST_NONE
@@ -1395,12 +1465,12 @@ relation_map {
     columns {
       column_name: "resp_status"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_HTTP_RESP_STATUS
     }
     columns {
       column_name: "resp_message"
       column_type: STRING
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_HTTP_RESP_MESSAGE
     }
     columns {
       column_name: "resp_body"
@@ -1410,15 +1480,16 @@ relation_map {
     columns {
       column_name: "resp_body_size"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
-      column_name: "resp_latency_ns"
+      column_name: "latency"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_DURATION_NS
     }
   }
 }
+
 relation_map {
   key: "jvm_stats"
   value {
@@ -1456,6 +1527,101 @@ relation_map {
       column_name: "max_heap_size"
       column_type: INT64
       column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "kafka_events.beta"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_cmd"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "client_id"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "mux_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_type"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
     }
   }
 }
@@ -1508,9 +1674,54 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "latency_ns"
+      column_name: "latency"
       column_type: INT64
       column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "nats_events.beta"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "cmd"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "body"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp"
+      column_type: STRING
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -1530,7 +1741,7 @@ relation_map {
     columns {
       column_name: "rx_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "rx_packets"
@@ -1550,7 +1761,7 @@ relation_map {
     columns {
       column_name: "tx_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "tx_packets"
@@ -1598,6 +1809,11 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
+      column_name: "req_cmd"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
       column_name: "req"
       column_type: STRING
       column_semantic_type: ST_NONE
@@ -1608,8 +1824,78 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "latency_ns"
+      column_name: "latency"
       column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "probe_status"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "source_connector"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "tracepoint"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "status"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "error"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "info"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "proc_exit_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "exit_code"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "signal"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "comm"
+      column_type: STRING
       column_semantic_type: ST_NONE
     }
   }
@@ -1640,12 +1926,12 @@ relation_map {
     columns {
       column_name: "cpu_utime_ns"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_DURATION_NS
     }
     columns {
       column_name: "cpu_ktime_ns"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_DURATION_NS
     }
     columns {
       column_name: "num_threads"
@@ -1655,31 +1941,146 @@ relation_map {
     columns {
       column_name: "vsize_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "rss_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "rchar_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "wchar_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "read_bytes"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_BYTES
     }
     columns {
       column_name: "write_bytes"
       column_type: INT64
+      column_semantic_type: ST_BYTES
+    }
+  }
+}
+relation_map {
+  key: "redis_events"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+      column_semantic_type: ST_IP_ADDRESS
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+      column_semantic_type: ST_PORT
+    }
+    columns {
+      column_name: "trace_role"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_cmd"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "req_args"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "resp"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_DURATION_NS
+    }
+  }
+}
+relation_map {
+  key: "stack_traces.beta"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "stack_trace_id"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "stack_trace"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "count"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+relation_map {
+  key: "stirling_error"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "source_connector"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "status"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "error"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "context"
+      column_type: STRING
       column_semantic_type: ST_NONE
     }
   }

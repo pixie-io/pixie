@@ -30,6 +30,7 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/elf_reader.h"
+#include "src/stirling/obj_tools/raw_fptr_manager.h"
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
@@ -45,9 +46,6 @@ DECLARE_double(stirling_rescan_exp_backoff_factor);
 
 namespace px {
 namespace stirling {
-
-using px::stirling::RawFptrManager;
-using system::ProcParser;
 
 /**
  * Describes a UProbe template.
@@ -492,8 +490,8 @@ class UProbeManager {
   // Returns set of PIDs that have had mmap called on them since the last call.
   absl::flat_hash_set<md::UPID> PIDsToRescanForUProbes();
 
-  Status UpdateOpenSSLSymAddrs(RawFptrManager* fptrManager, std::filesystem::path container_lib,
-                               uint32_t pid);
+  Status UpdateOpenSSLSymAddrs(px::stirling::obj_tools::RawFptrManager* fptrManager,
+                               std::filesystem::path container_lib, uint32_t pid);
   Status UpdateGoCommonSymAddrs(obj_tools::ElfReader* elf_reader,
                                 obj_tools::DwarfReader* dwarf_reader,
                                 const std::vector<int32_t>& pids);

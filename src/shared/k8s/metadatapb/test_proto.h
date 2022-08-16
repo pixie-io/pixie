@@ -202,6 +202,7 @@ fully_labeled_replicas: 5
 ready_replicas: 3
 available_replicas: 3
 observed_generation: 5
+requested_replicas: 5
 conditions: {
   type: "ready"
   status: 1
@@ -222,6 +223,7 @@ fully_labeled_replicas: 0
 ready_replicas: 0
 available_replicas: 0
 observed_generation: 5
+requested_replicas: 0
 start_timestamp_ns: 101
 conditions: {
   type: "Terminating"
@@ -229,8 +231,8 @@ conditions: {
 }
 owner_references: {
   kind: "Deployment"
-  name: "deployment1"
-  uid: "deployment_uid"
+  name: "terminating_deployment1"
+  uid: "terminating_deployment_uid"
 }
 )";
 
@@ -244,6 +246,7 @@ replicas: 0
 fully_labeled_replicas: 0
 ready_replicas: 0
 available_replicas: 0
+requested_replicas: 0
 observed_generation: 5
 conditions: {
   type: "Terminating"
@@ -251,8 +254,68 @@ conditions: {
 }
 owner_references: {
   kind: "Deployment"
-  name: "deployment1"
-  uid: "deployment_uid"
+  name: "terminating_deployment1"
+  uid: "terminating_deployment_uid"
+}
+)";
+
+/*
+ * Templates for deployment updates.
+ */
+const char* kRunningDeploymentUpdatePbTxt = R"(
+uid: "deployment_uid"
+name: "deployment1"
+start_timestamp_ns: 101
+stop_timestamp_ns: 0
+namespace: "pl"
+replicas: 5
+updated_replicas: 4
+ready_replicas: 3
+available_replicas: 3
+unavailable_replicas: 2
+requested_replicas: 5
+observed_generation: 5
+conditions: {
+  type: 1
+  status: CONDITION_STATUS_TRUE
+}
+)";
+
+const char* kTerminatingDeploymentUpdatePbTxt = R"(
+uid: "terminating_deployment_uid"
+name: "terminating_deployment1"
+namespace: "pl"
+start_timestamp_ns: 123
+stop_timestamp_ns: 0
+replicas: 6
+updated_replicas: 5
+ready_replicas: 3
+available_replicas: 3
+unavailable_replicas: 2
+requested_replicas: 0
+observed_generation: 2
+conditions: {
+  type: 1
+  status: CONDITION_STATUS_FALSE
+}
+)";
+
+const char* kTerminatedDeploymentUpdatePbTxt = R"(
+uid: "terminating_deployment_uid"
+name: "terminating_deployment1"
+namespace: "pl"
+start_timestamp_ns: 123
+stop_timestamp_ns: 150
+replicas: 0
+updated_replicas: 0
+ready_replicas: 0
+available_replicas: 0
+unavailable_replicas: 0
+requested_replicas: 0
+observed_generation: 2
+conditions: {
+  type: 1
+  status: CONDITION_STATUS_FALSE
 }
 )";
 
@@ -376,6 +439,33 @@ std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedRep
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "replica_set_update", kTerminatedReplicaSetUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningDeploymentUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "deployment_update", kRunningDeploymentUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingDeploymentUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "deployment_update", kTerminatingDeploymentUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedDeploymentUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "deployment_update", kTerminatedDeploymentUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

@@ -52,6 +52,7 @@ class K8sMetadataState : NotCopyable {
   using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
   using NodeUpdate = px::shared::k8s::metadatapb::NodeUpdate;
   using ReplicaSetUpdate = px::shared::k8s::metadatapb::ReplicaSetUpdate;
+  using DeploymentUpdate = px::shared::k8s::metadatapb::DeploymentUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -99,6 +100,7 @@ class K8sMetadataState : NotCopyable {
   using PodsByNameMap = K8sEntityByNameMap;
   using ServicesByNameMap = K8sEntityByNameMap;
   using ReplicaSetByNameMap = K8sEntityByNameMap;
+  using DeploymentByNameMap = K8sEntityByNameMap;
   using NamespacesByNameMap = K8sEntityByNameMap;
   using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
@@ -206,6 +208,21 @@ class K8sMetadataState : NotCopyable {
    */
   UID ReplicaSetIDByName(K8sNameIdentView replica_set_name) const;
 
+  /**
+   * DeploymentInfoByID gets an unowned pointer to the deployment. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param deployment_id the id of the Deployment.
+   * @return Pointer to the DeploymentInfo.
+   */
+  const DeploymentInfo* DeploymentInfoByID(UIDView deployment_id) const;
+
+  /**
+   * DeploymentIDByName returns the Deployment ID for the deployment of the given name.
+   * @param deployment_name the deployment name
+   * @return the deployment id or empty string if the deployment does not exist.
+   */
+  UID DeploymentIDByName(K8sNameIdentView deployment_name) const;
+
   std::unique_ptr<K8sMetadataState> Clone() const;
 
   Status HandlePodUpdate(const PodUpdate& update);
@@ -214,6 +231,7 @@ class K8sMetadataState : NotCopyable {
   Status HandleNamespaceUpdate(const NamespaceUpdate& update);
   Status HandleNodeUpdate(const NodeUpdate& update);
   Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update);
+  Status HandleDeploymentUpdate(const DeploymentUpdate& update);
 
   Status CleanupExpiredMetadata(int64_t retention_time_ns);
 
@@ -254,6 +272,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of replica sets by name.
    */
   ReplicaSetByNameMap replica_sets_by_name_;
+
+  /**
+   * Mapping of deployments by name.
+   */
+  DeploymentByNameMap deployments_by_name_;
 
   /**
    * Mapping of containers by name.

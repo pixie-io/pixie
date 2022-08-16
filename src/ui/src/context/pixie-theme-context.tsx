@@ -34,7 +34,7 @@ export interface PixieThemeContextProps {
   theme: Theme;
   customTheme: Theme | null;
   parseAndSetTheme(raw: string): void;
-  setThemeFromName(name: string): void;
+  setThemeFromName(name: string, override?: boolean): void;
 }
 
 export const PixieThemeContext = React.createContext<PixieThemeContextProps>({
@@ -49,7 +49,8 @@ export const PixieThemeContextProvider = React.memo<WithChildren>(({ children })
   const [theme, setTheme] = React.useState<Theme>(DARK_THEME);
   const [parsedCustomTheme, setParsedCustomTheme] = React.useState<Theme | null>(null);
 
-  const setThemeFromName = React.useCallback((name: string) => {
+  const setThemeFromName = React.useCallback((name: string, override = false) => {
+    if (theme === parsedCustomTheme && !override) return;
     switch (name) {
       case 'light':
         setTheme(LIGHT_THEME);
@@ -63,7 +64,7 @@ export const PixieThemeContextProvider = React.memo<WithChildren>(({ children })
         setTheme(DARK_THEME);
         break;
     }
-  }, [parsedCustomTheme]);
+  }, [theme, parsedCustomTheme]);
 
   const [prevRaw, setPrevRaw] = React.useState('');
   const parseAndSetTheme = React.useCallback((raw: string) => {

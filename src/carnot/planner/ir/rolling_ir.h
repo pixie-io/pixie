@@ -45,17 +45,16 @@ class RollingIR : public GroupAcceptorIR {
  public:
   RollingIR() = delete;
   explicit RollingIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kRolling) {}
-  Status Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* window_size);
+  Status Init(OperatorIR* parent, ColumnIR* window_col, int64_t window_size);
 
   Status ToProto(planpb::Operator*) const override;
   ColumnIR* window_col() const { return window_col_; }
-  ExpressionIR* window_size() const { return window_size_; }
+  int64_t window_size() const { return window_size_; }
 
   Status CopyFromNodeImpl(const IRNode* source,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
-  Status ReplaceWindowSize(ExpressionIR* new_window_size);
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -63,10 +62,9 @@ class RollingIR : public GroupAcceptorIR {
 
  private:
   Status SetWindowCol(ColumnIR* window_col);
-  Status SetWindowSize(ExpressionIR* window_size);
 
   ColumnIR* window_col_;
-  ExpressionIR* window_size_;
+  int64_t window_size_;
 };
 }  // namespace planner
 }  // namespace carnot

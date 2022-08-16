@@ -109,10 +109,7 @@ TEST_F(ConnTrackersManagerTest, DebugInfo) {
   std::string debug_info = trackers_mgr_.DebugInfo();
   EXPECT_THAT(debug_info, HasSubstr("ConnTracker count statistics: kTotal=1 kReadyForDestruction=0 "
                                     "kCreated=1 kDestroyed=0 kDestroyedGens=0"));
-  EXPECT_THAT(debug_info,
-              HasSubstr("conn_tracker=conn_id=[upid=1:1 fd=1 gen=1] state=kCollecting "
-                        "remote_addr=-:-1 role=kRoleUnknown protocol=kProtocolUnknown zombie=false "
-                        "ready_for_destruction=false\n"));
+  EXPECT_THAT(debug_info, HasSubstr("conn_tracker=conn_id=[upid=1:1 fd=1 gen=1]"));
 }
 
 class ConnTrackerGenerationsTest : public ::testing::Test {

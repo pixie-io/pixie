@@ -82,7 +82,6 @@ constexpr int kProcNetDevTxDropField = 12;
 constexpr int kProcStatNumFields = 52;
 
 constexpr int kProcStatPIDField = 0;
-constexpr int kProcStatProcessNameField = 1;
 
 constexpr int kProcStatMinorFaultsField = 9;
 constexpr int kProcStatMajorFaultsField = 11;
@@ -231,26 +230,33 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
     if (split.size() < kProcStatNumFields) {
       return error::Unknown("Incorrect number of fields in stat file: $0", fpath);
     }
-    ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
-    // The name is surrounded by () we remove it here.
-    const std::string_view& name_field = split[kProcStatProcessNameField];
-    if (name_field.length() > 2) {
-      out->process_name = std::string(name_field.substr(1, name_field.size() - 2));
-    } else {
-      ok = false;
-    }
-    ok &= absl::SimpleAtoi(split[kProcStatMinorFaultsField], &out->minor_faults);
-    ok &= absl::SimpleAtoi(split[kProcStatMajorFaultsField], &out->major_faults);
 
-    ok &= absl::SimpleAtoi(split[kProcStatUTimeField], &out->utime_ns);
-    ok &= absl::SimpleAtoi(split[kProcStatKTimeField], &out->ktime_ns);
+    // The name is surrounded by (). We remove it first.
+    size_t open_paren_idx = line.find_first_of('(');
+    size_t close_paren_idx = line.find_last_of(')');
+    if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
+      return error::Internal("Invalid command name in file $0", fpath);
+    }
+    out->process_name = line.substr(open_paren_idx + 1, close_paren_idx - open_paren_idx - 1);
+
+    // When split_size > kProcStatNumFields, there are spaces in the command we need to handle.
+    // command_offset adjusts index for the number of spaces in the command field.
+    int command_offset = std::count(out->process_name.begin(), out->process_name.end(), ' ');
+
+    ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
+
+    ok &= absl::SimpleAtoi(split[kProcStatMinorFaultsField + command_offset], &out->minor_faults);
+    ok &= absl::SimpleAtoi(split[kProcStatMajorFaultsField + command_offset], &out->major_faults);
+
+    ok &= absl::SimpleAtoi(split[kProcStatUTimeField + command_offset], &out->utime_ns);
+    ok &= absl::SimpleAtoi(split[kProcStatKTimeField + command_offset], &out->ktime_ns);
     // The kernel tracks utime and ktime in kernel ticks.
     out->utime_ns *= kernel_tick_time_ns;
     out->ktime_ns *= kernel_tick_time_ns;
 
-    ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField], &out->num_threads);
-    ok &= absl::SimpleAtoi(split[kProcStatVSizeField], &out->vsize_bytes);
-    ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField]), &out->rss_bytes);
+    ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField + command_offset], &out->num_threads);
+    ok &= absl::SimpleAtoi(split[kProcStatVSizeField + command_offset], &out->vsize_bytes);
+    ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField + command_offset]), &out->rss_bytes);
 
     // RSS is in pages.
     out->rss_bytes *= page_size_bytes;
@@ -757,6 +763,17 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   }
 #endif
 
+  size_t open_paren_idx = line.find_first_of('(');
+  size_t close_paren_idx = line.find_last_of(')');
+  if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
+    return error::Internal("Invalid command name in file $0", fpath);
+  }
+
+  // When split_size > kProcStatNumFields, there are spaces in the command we need to handle.
+  // command_offset adjusts index for the number of spaces in the command field.
+  int command_offset =
+      std::count(line.begin() + open_paren_idx, line.begin() + close_paren_idx, ' ');
+
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
   // We check less than in case more fields are added later.
   if (split.size() < kProcStatNumFields) {
@@ -765,7 +782,7 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   }
 
   int64_t start_time_ticks;
-  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ticks)) {
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField + command_offset], &start_time_ticks)) {
     return error::Internal("Time value does not parse in file $0", fpath);
   }
 

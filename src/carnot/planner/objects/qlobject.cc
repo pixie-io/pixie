@@ -65,9 +65,10 @@ Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object)
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node, ASTVisitor* ast_visitor) {
+StatusOr<QLObjectPtr> QLObject::FromIRNode(CompilerState* compiler_state, IRNode* node,
+                                           ASTVisitor* ast_visitor) {
   if (Match(node, Operator())) {
-    return Dataframe::Create(static_cast<OperatorIR*>(node), ast_visitor);
+    return Dataframe::Create(compiler_state, static_cast<OperatorIR*>(node), ast_visitor);
   } else if (Match(node, Expression())) {
     return ExprObject::Create(static_cast<ExpressionIR*>(node), ast_visitor);
   } else {

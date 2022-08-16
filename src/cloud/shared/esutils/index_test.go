@@ -594,6 +594,8 @@ func cleanupIndex(t *testing.T, indexName string) {
 
 	_, err = elasticClient.Refresh(indexName).Do(context.Background())
 	if err != nil {
-		require.Equal(t, 404, err.(*elastic.Error).Status)
+		if esError, ok := err.(*elastic.Error); ok {
+			require.Equal(t, 404, esError.Status)
+		}
 	}
 }

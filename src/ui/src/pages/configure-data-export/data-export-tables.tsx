@@ -75,7 +75,9 @@ const HistoryLink = React.memo<{ path: string, script: GQLRetentionScript }>(({ 
   const pct = state.pass / (state.pass + state.fail);
 
   const tooltip: React.ReactNode = React.useMemo(() => {
-    if (loading) {
+    if (!script.enabled) {
+      return 'Script is disabled';
+    } else if (loading) {
       return 'Loading export status...';
     } else if (!ready) {
       return (unavailableClusters > 0
@@ -103,7 +105,7 @@ const HistoryLink = React.memo<{ path: string, script: GQLRetentionScript }>(({ 
         </>
       );
     }
-  }, [loading, ready, unavailableClusters, state, pct]);
+  }, [loading, ready, unavailableClusters, state, pct, script.enabled]);
 
   return (
     <Tooltip title={tooltip}>

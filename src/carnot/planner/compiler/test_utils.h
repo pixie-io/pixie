@@ -568,7 +568,7 @@ class OperatorTests : public ::testing::Test {
     return agg;
   }
 
-  RollingIR* MakeRolling(OperatorIR* parent, ColumnIR* window_col, DataIR* window_size) {
+  RollingIR* MakeRolling(OperatorIR* parent, ColumnIR* window_col, int64_t window_size) {
     RollingIR* rolling =
         graph->CreateNode<RollingIR>(ast, parent, window_col, window_size).ConsumeValueOrDie();
     return rolling;

@@ -30,7 +30,7 @@ using ::testing::Field;
 using ::testing::StrEq;
 
 constexpr std::string_view kTestGoBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary_/test_go_1_16_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 
 TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);

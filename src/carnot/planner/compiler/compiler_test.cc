@@ -2667,9 +2667,7 @@ TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_MATCH(rolling->window_size(), Int());
-  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
-  ASSERT_EQ(window_size_int->val(),
+  ASSERT_EQ(rolling->window_size(),
             std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(3)).count());
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
@@ -2691,9 +2689,7 @@ TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_MATCH(rolling->window_size(), Int());
-  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
-  ASSERT_EQ(window_size_int->val(), 3000);
+  ASSERT_EQ(rolling->window_size(), 3000);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
 }
@@ -2714,9 +2710,7 @@ TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_MATCH(rolling->window_size(), Int());
-  IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
-  ASSERT_EQ(window_size_int->val(), compiler_state_->time_now().val + 1);
+  ASSERT_EQ(rolling->window_size(), compiler_state_->time_now().val + 1);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_THAT(*rolling->resolved_table_type(), IsTableType(rolling_relation));
 }

@@ -51,41 +51,14 @@ TEST(IRTypes, types_enum_test) {
             sizeof(kIRNodeStrings) / sizeof(*kIRNodeStrings));
 }
 
-/**
- * Creates IR Graph that is the following query compiled
- *
- * `pl.DataFrame(table="tableName", select=["testCol"], start_time"-2m")`
- */
-
-TEST(IRTest, CreateSource) {
-  auto ast = MakeTestAstPtr();
-  auto ig = std::make_shared<IR>();
-  auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
-                 .ValueOrDie();
-  auto start_rng_str = ig->CreateNode<IntIR>(ast, 0).ValueOrDie();
-  auto stop_rng_str = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
-
-  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
-
-  EXPECT_EQ(src->start_time_expr(), start_rng_str);
-  EXPECT_EQ(src->end_time_expr(), stop_rng_str);
-
-  EXPECT_EQ(src->table_name(), "table_str");
-  EXPECT_THAT(src->column_names(), ElementsAre("testCol"));
-}
-
 TEST(IRTest, FindNodesOfType) {
   auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
   auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
                  .ValueOrDie();
-  auto start_rng_str = ig->CreateNode<IntIR>(ast, 0).ValueOrDie();
-  auto stop_rng_str = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
 
-  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
-
-  auto int_nodes = ig->FindNodesOfType(IRNodeType::kInt);
-  EXPECT_THAT(int_nodes, UnorderedElementsAre(start_rng_str, stop_rng_str));
+  auto int_nodes = ig->FindNodesOfType(IRNodeType::kMemorySource);
+  EXPECT_THAT(int_nodes, UnorderedElementsAre(src));
 
   // Shouldn't return anything when it doesn't have a type of node.
   auto string_nodes = ig->FindNodesOfType(IRNodeType::kString);
@@ -97,31 +70,13 @@ TEST(IRTest, FindNodesThatMatch) {
   auto ig = std::make_shared<IR>();
   auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
                  .ValueOrDie();
-  auto start_rng_str = ig->CreateNode<IntIR>(ast, 0).ValueOrDie();
-  auto stop_rng_str = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
 
-  EXPECT_OK(src->SetTimeExpressions(start_rng_str, stop_rng_str));
-
-  auto int_nodes = ig->FindNodesThatMatch(Int());
-  EXPECT_THAT(int_nodes, UnorderedElementsAre(start_rng_str, stop_rng_str));
+  auto int_nodes = ig->FindNodesThatMatch(MemorySource());
+  EXPECT_THAT(int_nodes, UnorderedElementsAre(src));
 
   // Shouldn't return anything when it doesn't have a type of node.
   auto string_nodes = ig->FindNodesThatMatch(String());
   EXPECT_EQ(string_nodes.size(), 0);
-}
-
-TEST(IRTest, CreateSourceSharedNodes) {
-  auto ast = MakeTestAstPtr();
-  auto ig = std::make_shared<IR>();
-  auto src = ig->CreateNode<MemorySourceIR>(ast, "table_str", std::vector<std::string>{"testCol"})
-                 .ValueOrDie();
-
-  auto time_expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
-
-  EXPECT_OK(src->SetTimeExpressions(time_expr, time_expr));
-  EXPECT_NE(src->start_time_expr()->id(), src->end_time_expr()->id());
-  CompareClone(src->start_time_expr(), src->end_time_expr(),
-               "MemorySource start/end time expression");
 }
 
 TEST(IRTest, MapSharedNodes) {

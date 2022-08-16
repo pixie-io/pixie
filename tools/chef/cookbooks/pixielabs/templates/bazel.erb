@@ -17,6 +17,11 @@
 
 # This script is use to add customizations to our Bazel command. It currently does the following:
 #    * Adds a --config=clang by default if it's missing from the command line.
+workspace_name=`basename $(/opt/pixielabs/bin/bazel_core info execution_root)`
+if [[ "$workspace_name" != "px" ]]; then
+  /opt/pixielabs/bin/bazel_core "$@"
+  exit $?
+fi;
 
 # Don't send a config value by default.
 config=

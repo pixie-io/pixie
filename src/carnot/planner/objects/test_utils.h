@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/compiler/ast_visitor.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
@@ -171,16 +172,32 @@ class QLObjectTest : public OperatorTests {
     std::vector<QLObjectPtr> converted_args;
     for (const auto& p : kwargs) {
       converted_kwargs.push_back(
-          {p.first, QLObject::FromIRNode(p.second, ast_visitor.get()).ConsumeValueOrDie()});
+          {p.first, QLObject::FromIRNode(compiler_state.get(), p.second, ast_visitor.get())
+                        .ConsumeValueOrDie()});
     }
     for (IRNode* node : args) {
-      converted_args.push_back(QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie());
+      converted_args.push_back(
+          QLObject::FromIRNode(compiler_state.get(), node, ast_visitor.get()).ConsumeValueOrDie());
     }
     return ArgMap{converted_kwargs, converted_args};
   }
 
+  QLObjectPtr FromIRNode(IRNode* node) {
+    if (Match(node, Operator())) {
+      return Dataframe::Create(compiler_state.get(), static_cast<OperatorIR*>(node),
+                               ast_visitor.get())
+          .ConsumeValueOrDie();
+    } else if (Match(node, Expression())) {
+      return ExprObject::Create(static_cast<ExpressionIR*>(node), ast_visitor.get())
+          .ConsumeValueOrDie();
+    }
+    CHECK(false) << node->CreateIRNodeError("Could not create QL object from IRNode of type $0",
+                                            node->type_string())
+                        .ToString();
+  }
+
   QLObjectPtr ToQLObject(IRNode* node) {
-    return QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie();
+    return QLObject::FromIRNode(compiler_state.get(), node, ast_visitor.get()).ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state = nullptr;

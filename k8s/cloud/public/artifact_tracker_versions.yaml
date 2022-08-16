@@ -10,8 +10,8 @@ spec:
       - name: artifact-tracker-server
         env:
         - name: PL_VIZIER_VERSION
-          value: "0.11.1"
+          value: "0.11.8"
         - name: PL_CLI_VERSION
-          value: "0.7.9"
+          value: "0.7.16"
         - name: PL_OPERATOR_VERSION
-          value: "0.0.26"
+          value: "0.0.30"

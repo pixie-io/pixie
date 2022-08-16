@@ -46,11 +46,20 @@ StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
     if (Match(child, Operator())) {
       continue;
     }
+    // We shouldn't delete nodes that are used by other nodes.
+    if (ir_graph->dag().ParentsOf(child_id).size() > 1) {
+      continue;
+    }
     // Remove a child if none of its children are Operators.
-    auto child_child_ids = ir_graph->dag().DependenciesOf(child_id);
-    if (!std::any_of(child_child_ids.begin(), child_child_ids.end(), [ir_graph](int64_t node_id) {
-          return Match(ir_graph->Get(node_id), Operator());
-        })) {
+    bool remove_child = true;
+    for (int64_t child_child_id : ir_graph->dag().DependenciesOf(child_id)) {
+      auto child_child = ir_graph->Get(child_child_id);
+      if (Match(child_child, Operator())) {
+        remove_child = false;
+        break;
+      }
+    }
+    if (remove_child) {
       nodes_to_remove.push_back(child_id);
     }
   }

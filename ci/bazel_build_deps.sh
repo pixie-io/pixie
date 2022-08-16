@@ -44,8 +44,7 @@ fi
 
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
-default_go_transition_binary="attr('goos', 'auto', //...) union attr('goarch', 'auto', //...)"
-go_xcompile_excludes="except (kind(go_transition_binary, //...) except (${default_go_transition_binary}))"
+go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
 default_excludes="except attr('tags', 'manual', //...) \
   except //third_party/... ${experimental_exclude}"
 

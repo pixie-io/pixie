@@ -22,8 +22,8 @@ pl_cc_library(
     name = "go_http_fixture",
     srcs = ["go_http_fixture.h"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client",
-        "//src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server",
+        "//src/stirling/testing/demo_apps/go_http/go_http_client",
+        "//src/stirling/testing/demo_apps/go_http/go_http_server",
     ],
     deps = ["//src/common/testing:cc_library"],
 )

@@ -59,6 +59,8 @@ if [[ "$PUBLIC" == "true" ]]; then
   bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
       --define public=True //k8s/cloud:cloud_images_push
 
+  bazel build //tools/licenses:all_licenses --action_env=GOOGLE_APPLICATION_CREDENTIALS
+
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/${image_tag}.json"
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
 

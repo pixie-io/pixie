@@ -44,22 +44,26 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
                                           MetadataType::POD_ID, MetadataType::POD_NAME});
   handler->AddObject<IdMetadataProperty>(MetadataType::POD_ID, {},
                                          {MetadataType::UPID, MetadataType::POD_NAME});
-  handler->AddObject<IdMetadataProperty>(MetadataType::DEPLOYMENT_ID, {},
-                                         {MetadataType::UPID, MetadataType::DEPLOYMENT_NAME});
+  handler->AddObject<IdMetadataProperty>(
+      MetadataType::DEPLOYMENT_ID, {},
+      {MetadataType::UPID, MetadataType::DEPLOYMENT_NAME, MetadataType::POD_ID,
+       MetadataType::POD_NAME, MetadataType::REPLICASET_ID, MetadataType::REPLICASET_NAME});
   handler->AddObject<NameMetadataProperty>(
       MetadataType::SERVICE_NAME, {"service"},
       {MetadataType::UPID, MetadataType::SERVICE_ID, MetadataType::POD_ID, MetadataType::POD_NAME});
   handler->AddObject<NameMetadataProperty>(MetadataType::POD_NAME, {"pod"},
                                            {MetadataType::UPID, MetadataType::POD_ID});
-  handler->AddObject<NameMetadataProperty>(MetadataType::DEPLOYMENT_NAME, {"deployment"},
-                                           {MetadataType::UPID, MetadataType::DEPLOYMENT_ID});
+  handler->AddObject<NameMetadataProperty>(
+      MetadataType::DEPLOYMENT_NAME, {"deployment"},
+      {MetadataType::UPID, MetadataType::DEPLOYMENT_ID, MetadataType::POD_ID,
+       MetadataType::POD_NAME, MetadataType::REPLICASET_ID, MetadataType::REPLICASET_NAME});
   handler->AddObject<NameMetadataProperty>(MetadataType::NAMESPACE, {},
                                            {MetadataType::UPID, MetadataType::POD_ID,
                                             MetadataType::POD_NAME, MetadataType::SERVICE_NAME});
-  handler->AddObject<NameMetadataProperty>(
-      MetadataType::REPLICA_SET, {},
-      {MetadataType::UPID, MetadataType::POD_ID, MetadataType::POD_NAME, MetadataType::SERVICE_NAME,
-       MetadataType::DEPLOYMENT_NAME});
+  handler->AddObject<NameMetadataProperty>(MetadataType::REPLICASET_NAME,
+                                           {"replica_set", "replicaset"},
+                                           {MetadataType::UPID, MetadataType::POD_ID,
+                                            MetadataType::POD_NAME, MetadataType::REPLICASET_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::NODE_NAME, {"node"},
                                            {MetadataType::UPID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(MetadataType::HOSTNAME, {"host"}, {MetadataType::UPID});

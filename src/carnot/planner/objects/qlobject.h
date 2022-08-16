@@ -88,7 +88,8 @@ class QLObject {
  public:
   virtual ~QLObject() = default;
 
-  static StatusOr<QLObjectPtr> FromIRNode(IRNode* node, ASTVisitor* ast_visitor);
+  static StatusOr<QLObjectPtr> FromIRNode(CompilerState* compiler_state, IRNode* node,
+                                          ASTVisitor* ast_visitor);
 
   /**
    * @brief Gets the Method with specified name.

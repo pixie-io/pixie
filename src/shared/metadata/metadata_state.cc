@@ -62,6 +62,12 @@ const ReplicaSetInfo* K8sMetadataState::ReplicaSetInfoByID(UIDView replica_set_i
   return static_cast<const ReplicaSetInfo*>(K8sMetadataObjectByID(replica_set_id, type));
 }
 
+const DeploymentInfo* K8sMetadataState::DeploymentInfoByID(UIDView deployment_id) const {
+  auto type = K8sObjectType::kDeployment;
+
+  return static_cast<const DeploymentInfo*>(K8sMetadataObjectByID(deployment_id, type));
+}
+
 const ContainerInfo* K8sMetadataState::ContainerInfoByID(CIDView id) const {
   auto it = containers_by_id_.find(id);
 
@@ -107,6 +113,11 @@ UID K8sMetadataState::ReplicaSetIDByName(K8sNameIdentView replica_set_name) cons
   return (it == replica_sets_by_name_.end()) ? "" : it->second;
 }
 
+UID K8sMetadataState::DeploymentIDByName(K8sNameIdentView deployment_name) const {
+  auto it = deployments_by_name_.find(deployment_name);
+  return (it == deployments_by_name_.end()) ? "" : it->second;
+}
+
 std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   auto other = std::make_unique<K8sMetadataState>();
 
@@ -127,6 +138,7 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->services_by_name_ = services_by_name_;
   other->namespaces_by_name_ = namespaces_by_name_;
   other->replica_sets_by_name_ = replica_sets_by_name_;
+  other->deployments_by_name_ = deployments_by_name_;
   other->containers_by_name_ = containers_by_name_;
   other->pods_by_ip_ = pods_by_ip_;
   other->services_by_cluster_ip_ = services_by_cluster_ip_;
@@ -344,10 +356,41 @@ Status K8sMetadataState::HandleReplicaSetUpdate(const ReplicaSetUpdate& update) 
   replica_set_info->set_ready_replicas(update.ready_replicas());
   replica_set_info->set_available_replicas(update.available_replicas());
   replica_set_info->set_observed_generation(update.observed_generation());
+  replica_set_info->set_requested_replicas(update.requested_replicas());
 
   VLOG(1) << "replica set update: " << update.name();
 
   replica_sets_by_name_[{ns, name}] = replica_set_uid;
+  return Status::OK();
+}
+
+Status K8sMetadataState::HandleDeploymentUpdate(const DeploymentUpdate& update) {
+  const UID& deployment_uid = update.uid();
+  const std::string& name = update.name();
+  const std::string& ns = update.namespace_();
+
+  auto it = k8s_objects_by_id_.find(deployment_uid);
+  if (it == k8s_objects_by_id_.end()) {
+    auto deployment = std::make_unique<DeploymentInfo>(update);
+    VLOG(1) << "Adding Deployment: " << deployment->DebugString();
+    it = k8s_objects_by_id_.try_emplace(deployment_uid, std::move(deployment)).first;
+  }
+  auto deployment_info = static_cast<DeploymentInfo*>(it->second.get());
+
+  deployment_info->set_start_time_ns(update.start_timestamp_ns());
+  deployment_info->set_stop_time_ns(update.stop_timestamp_ns());
+  deployment_info->set_observed_generation(update.observed_generation());
+  deployment_info->set_replicas(update.replicas());
+  deployment_info->set_updated_replicas(update.updated_replicas());
+  deployment_info->set_ready_replicas(update.ready_replicas());
+  deployment_info->set_available_replicas(update.available_replicas());
+  deployment_info->set_unavailable_replicas(update.unavailable_replicas());
+  deployment_info->set_requested_replicas(update.requested_replicas());
+  deployment_info->set_conditions(ConvertToDeploymentConditions(update.conditions()));
+
+  VLOG(1) << "deployment update: " << update.name();
+
+  deployments_by_name_[{ns, name}] = deployment_uid;
   return Status::OK();
 }
 

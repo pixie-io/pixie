@@ -62,7 +62,7 @@ def net_flow_graph(start_time: str, ns: px.Namespace, from_entity_filter: str,
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
     df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_addr)
     df.to_entity = px.select(df.is_remote_addr_localhost,
-                             'localhost:' + df.pod,
+                             df.pod,
                              px.nslookup(df.remote_addr))
 
     # Filter out entities as specified by the user.

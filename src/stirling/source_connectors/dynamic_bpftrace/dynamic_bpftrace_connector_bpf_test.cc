@@ -456,7 +456,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
 
 constexpr std::string_view kServerPath =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server_/golang_1_16_grpc_server";
+    "golang_1_16_grpc_server";
 
 TEST(DynamicBPFTraceConnectorTest, InsertUProbeObjPath) {
   std::string target_binary_path = px::testing::BazelRunfilePath(kServerPath).string();

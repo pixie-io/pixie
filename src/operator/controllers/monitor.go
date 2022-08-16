@@ -114,14 +114,12 @@ type VizierMonitor struct {
 	namespacedName types.NamespacedName
 
 	podStates *concurrentPodMap
+	nodeState *vizierState
+	pvcState  *vizierState
 
-	// States from the various state-updaters, which should be aggregated into a single status.
-	nodeState       *vizierState
-	pvcState        *vizierState
-	aggregatedState *vizierState
-
-	vzUpdate func(context.Context, client.Object, ...client.UpdateOption) error
-	vzGet    func(context.Context, types.NamespacedName, client.Object) error
+	vzUpdate     func(context.Context, client.Object, ...client.UpdateOption) error
+	vzGet        func(context.Context, types.NamespacedName, client.Object) error
+	vzSpecUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 }
 
 // InitAndStartMonitor initializes and starts the status monitor for the Vizier.
@@ -447,6 +445,14 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return vzVersionState
 	}
 
+	if !vz.Spec.UseEtcdOperator && !isOk(m.pvcState) {
+		return m.pvcState
+	}
+
+	if !isOk(m.nodeState) {
+		return m.nodeState
+	}
+
 	podState := getControlPlanePodState(m.podStates)
 	if !isOk(podState) {
 		return podState
@@ -470,10 +476,6 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 	ccState := getCloudConnState(m.httpClient, m.podStates)
 	if !isOk(ccState) {
 		return ccState
-	}
-
-	if !isOk(m.aggregatedState) {
-		return m.aggregatedState
 	}
 
 	return okState()
@@ -511,39 +513,20 @@ func (m *VizierMonitor) statusAggregator(nodeStateCh, pvcStateCh <-chan *vizierS
 			m.pvcState = u
 		}
 
-		if !isOk(m.nodeState) {
-			m.aggregatedState = m.nodeState
-			continue
-		}
-
-		// Shortcircuit, don't get vizier crd if the PVC is already in a good state.
-		if isOk(m.pvcState) {
-			m.aggregatedState = m.pvcState
-			continue
-		}
-
-		// PVC is bad or missing, check whether it's needed!
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
 		if err != nil {
 			log.WithError(err).Error("Failed to get vizier")
 			continue
 		}
-
-		if !vz.Spec.UseEtcdOperator {
-			m.aggregatedState = m.pvcState
-			continue
-		}
-
-		m.aggregatedState = okState()
 	}
 }
 
 func (m *VizierMonitor) repairVizier(state *vizierState) error {
-	// Input validation: Return if the pod to repair hasn't failed
+	// Input validation: Return if state is good
 	if state.Reason == "" {
-		err := errors.New("Trying to repair a pod that hasn't failed")
-		log.WithError(err)
+		err := errors.New("Trying to repair when state is good")
+		log.WithError(err).Error()
 		return err
 	}
 
@@ -554,7 +537,26 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 			log.WithError(err).Error("Failed to delete pod")
 			return err
 		}
+
 		log.Info("Pod was successfully deleted")
+	} else if state.Reason == status.MetadataPVCMissing || state.Reason == status.MetadataPVCStorageClassUnavailable || state.Reason == status.MetadataPVCPendingBinding {
+		log.Info("Switching to etcd backed metadata store")
+
+		vz := &pixiev1alpha1.Vizier{}
+		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			return err
+		}
+
+		vz.Spec.UseEtcdOperator = true
+		err = m.vzSpecUpdate(m.ctx, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to update spec with etcd operator usage")
+			return err
+		}
+
+		log.Info("Successfully switched to etcd backed metadata store")
 	}
 
 	return nil
@@ -580,13 +582,6 @@ func (m *VizierMonitor) runReconciler() {
 			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
 			vz.Status.VizierReason = string(vizierState.Reason)
 
-			if vizierState != okState() {
-				err := m.repairVizier(vizierState)
-				if err != nil {
-					return
-				}
-			}
-
 			vz.Status.Message = status.GetMessageFromReason(vizierState.Reason)
 			// Default to the VizierReason if the message is empty.
 			if vz.Status.Message == "" {
@@ -595,6 +590,13 @@ func (m *VizierMonitor) runReconciler() {
 			err = m.vzUpdate(context.Background(), vz)
 			if err != nil {
 				log.WithError(err).Error("Failed to update vizier status")
+			}
+
+			if vizierState != okState() {
+				err := m.repairVizier(vizierState)
+				if err != nil {
+					return
+				}
 			}
 		}
 	}

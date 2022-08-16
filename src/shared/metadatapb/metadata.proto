@@ -35,6 +35,7 @@ enum MetadataType {
   POD_ID = 1001;
   SERVICE_ID = 1002;
   DEPLOYMENT_ID = 1003;
+  REPLICASET_ID = 1004;
   // NAMES are 2000-2999
   POD_NAME = 2001;
   SERVICE_NAME = 2002;
@@ -43,7 +44,7 @@ enum MetadataType {
   NODE_NAME = 2005;
   HOSTNAME = 2006;
   CONTAINER_NAME = 2007;
-  REPLICA_SET = 2008;
+  REPLICASET_NAME = 2008;
   // Misc soup.
   CMDLINE = 3001;
 }

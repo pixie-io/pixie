@@ -57,6 +57,10 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
   // We need to send over a slice of the input data.
   int64_t remainder_records = record_limit - records_processed_;
 
+  if (remainder_records < 0) {
+    remainder_records = 0;
+  }
+
   if (limit_reached_) {
     return Status::OK();
   }

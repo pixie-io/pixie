@@ -176,6 +176,7 @@ struct Frame : public FrameBase {
 
   // sync value only known after full body parsing
   bool synchronous = false;
+
   // `consumed` is used to mark if a request packet has been matched to a
   // response in StitchFrames. This is an optimization to efficiently remove all
   // matched packets from the front of the deque.
