@@ -623,7 +623,7 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
         absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
   }
 
-  auto md5_hash_str_view = CreateStringView<char>(md5_hash);
+  std::basic_string_view<char> md5_hash_str_view {(char*)md5_hash, MD5_DIGEST_LENGTH};
   std::string hash_str =
       absl::AsciiStrToLower(BytesToString<bytes_format::HexCompact>(md5_hash_str_view));
 
