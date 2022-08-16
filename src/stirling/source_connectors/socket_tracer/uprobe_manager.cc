@@ -623,11 +623,9 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
         absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
   }
 
-  std::stringstream ss;
-  for (uint32_t i = 0; i < MD5_DIGEST_LENGTH; i++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(md5_hash[i]);
-  }
-  std::string hash_str = ss.str();
+  auto md5_hash_str_view = CreateStringView<char>(md5_hash);
+  std::string hash_str =
+      absl::AsciiStrToLower(BytesToString<bytes_format::HexCompact>(md5_hash_str_view));
 
   return hash_str;
 }
@@ -668,12 +666,12 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
                                 container_libgrpcc.string());
 
   // Find the version of the library by its MD5 hash.
-  if (kGrpcCMD5HashToVersion.find(hash_str) == kGrpcCMD5HashToVersion.end()) {
-    LOG(INFO) << absl::Substitute("Failed to map hash $0 of gRPC-C library $1 and pid $2", hash_str,
-                                  container_libgrpcc.string(), pid);
-    return error::Unimplemented("Unknown MD5 hash of library.");
+  auto iter = kGrpcCMD5HashToVersion.find(hash_str);
+  if (iter == kGrpcCMD5HashToVersion.end()) {
+    return error::Unimplemented("Unknown MD5 hash $0 of library $1 and pid $2.", hash_str,
+                                container_libgrpcc.string(), pid);
   }
-  const enum grpc_c_version_t version = kGrpcCMD5HashToVersion.at(hash_str);
+  const enum grpc_c_version_t version = iter->second;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, uint64_t>> grpc_c_versions_map = nullptr;
   grpc_c_versions_map = std::make_unique<ebpf::BPFHashTable<uint32_t, uint64_t>>(
       bcc_->GetHashTable<uint32_t, uint64_t>(UProbeManager::kGrpcCVersionsName));
