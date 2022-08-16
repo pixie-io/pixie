@@ -673,8 +673,9 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   }
   const enum grpc_c_version_t version = iter->second;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, uint64_t>> grpc_c_versions_map = nullptr;
+  static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
   grpc_c_versions_map = std::make_unique<ebpf::BPFHashTable<uint32_t, uint64_t>>(
-      bcc_->GetHashTable<uint32_t, uint64_t>(UProbeManager::kGrpcCVersionsName));
+      bcc_->GetHashTable<uint32_t, uint64_t>(kGrpcCVersionsName));
   LOG(INFO) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
   if (!grpc_c_versions_map->update_value(pid, version).ok()) {
     LOG(WARNING) << absl::Substitute("Failed to update version of pid $0 to $1", pid,

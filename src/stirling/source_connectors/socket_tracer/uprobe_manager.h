@@ -333,9 +333,6 @@ class UProbeManager {
           },
       });
 
-  // grpc-c percpu arrays.
-  static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
-
   // When the gRPC-c probes run, they need to know the library's version.
   // To tell them which version is deployed, we find the version during probe attachment.
   // No neat mechanism was found to tell the version (we can't run the library with "--version"
