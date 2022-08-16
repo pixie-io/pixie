@@ -591,32 +591,34 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
   unsigned char md5_hash[MD5_DIGEST_LENGTH] = {0};
   int file_descript = open(file.c_str(), O_RDONLY);
   if (-1 == file_descript) {
-    return error::Internal(
-        absl::Substitute("Failed to get the MD5 hash of file $0 because of open failure. errno $1.", file, errno));
+    return error::Internal(absl::Substitute(
+        "Failed to get the MD5 hash of file $0 because of open failure. errno $1.", file, errno));
   }
 
   struct stat statbuf;
   if (-1 == fstat(file_descript, &statbuf)) {
-    close(file_descript); // Ignore if close fails, we already exit the function with an error on the file.
-    return error::Internal(
-        absl::Substitute("Failed to get the MD5 hash of file $0 because of stat failure. errno $1.", file, errno));
+    close(file_descript);  // Ignore if close fails, we already exit the function with an error on
+                           // the file.
+    return error::Internal(absl::Substitute(
+        "Failed to get the MD5 hash of file $0 because of stat failure. errno $1.", file, errno));
   }
   uint64_t file_size = statbuf.st_size;
 
-  void* mapped_file_buffer = mmap(/*addr*/ 0, file_size, PROT_READ, MAP_SHARED, file_descript, /*offset*/ 0);
+  void* mapped_file_buffer =
+      mmap(/*addr*/ 0, file_size, PROT_READ, MAP_SHARED, file_descript, /*offset*/ 0);
   if (MAP_FAILED == mapped_file_buffer) {
-    return error::Internal(
-      absl::Substitute("Failed to map area to store file $0 that needs hashing. errno $1.", file, errno));
+    return error::Internal(absl::Substitute(
+        "Failed to map area to store file $0 that needs hashing. errno $1.", file, errno));
   }
   // This can't fail, it always returns the pointer to the hash value (3rd argument).
   MD5((unsigned char*)file_buffer, file_size, md5_hash);
   if (0 != munmap(file_buffer, file_size)) {
     return error::Internal(
-      absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
+        absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
   }
   if (-1 == close(file_descript)) {
     return error::Internal(
-      absl::Substitute("Failed to close file $0 that needs hashing. errno $1.", file, errno));
+        absl::Substitute("Failed to close file $0 that needs hashing. errno $1.", file, errno));
   }
 
   std::stringstream ss;
