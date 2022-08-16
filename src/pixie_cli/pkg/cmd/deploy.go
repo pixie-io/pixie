@@ -59,6 +59,7 @@ import (
 const (
 	// DefaultCloudAddr is the Community Cloud address.
 	DefaultCloudAddr = "withpixie.ai:443"
+	DeploySuccess    = "successfulDeploy"
 )
 
 // BlockListedLabels are labels that we won't allow users to specify, since these are labels that we
@@ -125,8 +126,7 @@ var DeployCmd = &cobra.Command{
 		viper.BindPFlag("datastream_buffer_spike_size", cmd.Flags().Lookup("datastream_buffer_spike_size"))
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
-		extractPath, _ := cmd.Flags().GetString("extract_yaml")
-		if extractPath != "" {
+		if cmd.Annotations["status"] != DeploySuccess {
 			return
 		}
 
@@ -495,6 +495,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	clusterID := deploy(cloudConn, clientset, vzClient, kubeConfig, yamlMap, deployOLM, olmNamespace, olmOperatorNamespace, namespace)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["status"] = DeploySuccess
 }
 
 func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, vzClient *versioned.Clientset, kubeConfig *rest.Config, yamlMap map[string]string, deployOLM bool, olmNs, olmOpNs, namespace string) uuid.UUID {
