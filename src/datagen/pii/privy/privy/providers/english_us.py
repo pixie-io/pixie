@@ -18,6 +18,7 @@ import string
 import random
 import baluhn
 from faker import Faker
+from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider
 
 
@@ -28,6 +29,7 @@ class English_US(GenericProvider):
         super().__init__()
         # initialize Faker instance with specific Faker locale
         f = Faker(["en_US"])
+        f.add_provider(AirTravelProvider)
         custom = self.CustomProviders(f)
         self.f = f
         # map custom, language/region-specific nonpii keywords to providers
@@ -49,9 +51,12 @@ class English_US(GenericProvider):
                 "shareholder": f.name,
                 "owner": f.name,
                 "first name": f.first_name,
+                "first": f.first_name,
                 "given name": f.first_name,
                 "middle name": f.first_name,
+                "middle initial": f.first_name,
                 "last name": f.last_name,
+                "last": f.last_name,
                 "family name": f.last_name,
                 "company": f.company,
                 "department": f.company,
@@ -71,6 +76,7 @@ class English_US(GenericProvider):
                 "venue": f.address,
                 "place": f.address,
                 "spot": f.address,
+                "facility": f.address,
                 "country": f.country,
                 "destination": f.country,
                 "origin": f.country,
@@ -109,6 +115,15 @@ class English_US(GenericProvider):
                 "lat": f.latitude,
                 "longitude": f.longitude,
                 "lon": f.longitude,
+                "airport": f.airport_name,
+                "airport name": f.airport_name,
+                "airport iata": f.airport_iata,
+                "airport icao": f.airport_icao,
+                "airline": f.airline,
+                "airport code": f.airport_iata,
+                "origin airport code": f.airport_iata,
+                "arrival airport code": f.airport_iata,
+                "destination airport code": f.airport_iata,
             },
             # ------ Financial ------
             "financial": {
@@ -129,9 +144,6 @@ class English_US(GenericProvider):
                 "expiration": f.credit_card_expire,
                 "expires": f.credit_card_expire,
                 "swift": f.swift,
-                "uuid": f.uuid4,
-                "signature sha1": f.sha1,
-                "serial": f.sha1,
                 "balance": f.random_number,
                 "fare": f.random_number,
                 "net fare": f.random_number,
@@ -204,6 +216,7 @@ class English_US(GenericProvider):
                 "phone": f.phone_number,
                 "contact phone": f.phone_number,
                 "phone number": f.phone_number,
+                "associate phone number": f.phone_number,
             },
             # ------ Demographic ------
             "demographic": {
@@ -221,6 +234,9 @@ class English_US(GenericProvider):
             "internet": {
                 "api key": f.sha1,
                 "app key": f.sha1,
+                "uuid": f.uuid4,
+                "signature sha1": f.sha1,
+                "serial": f.sha1,
                 "website": f.url,
                 "domain name": f.domain_name,
                 "repository": f.url,
