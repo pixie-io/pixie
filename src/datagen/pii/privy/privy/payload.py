@@ -101,6 +101,15 @@ class PayloadGenerator:
             self.logger.info(f"Failed after {round(end - start, 2)} seconds")
             self.logger.debug(traceback.format_exc())
 
+    def fuzz_label(self, label) -> str:
+        """Alter an input label, inserting a random delimiter and truncating."""
+        # insert random delimiter
+        label = label.replace(" ", random.choice(["-", "_", "__", ".", ":", "", " "]))
+        # truncate label by random length 50% of the time
+        truncate_length = random.randint(1, len(label)) if random.randint(0, 1) else len(label)
+        label = label[:truncate_length]
+        return label
+
     def generate_pii_case(self, case_attr, parameter_type):
         """insert additional pii data into a request payload or generate new payload"""
         rand = random.random()
@@ -117,16 +126,17 @@ class PayloadGenerator:
                 # sample just one pii label 50% of the time
                 label, pii, category = self.providers.pick_random_region().get_random_pii()
                 self.logger.debug(f"|Inserting additional pii type| {label} |with category| {category}")
-                case_attr[label] = pii
+                fuzzed_label = self.fuzz_label(label)
+                case_attr[fuzzed_label] = pii
                 self.hook.add_pii_type(parameter_type, label, category)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
                 percent = random.uniform(0, self.insert_label_pii_percent)
                 label_pii_tuples = self.providers.pick_random_region().sample_pii(percent)
                 for label, pii, category in label_pii_tuples:
-                    self.logger.debug(
-                        f"Inserting additional pii type: {label}")
-                    case_attr[label] = pii
+                    self.logger.debug(f"Inserting additional pii type: {label}")
+                    fuzzed_label = self.fuzz_label(label)
+                    case_attr[fuzzed_label] = pii
                     self.hook.add_pii_type(parameter_type, label, category)
         # randomize order of parameters
         case_attr = list(case_attr.items())

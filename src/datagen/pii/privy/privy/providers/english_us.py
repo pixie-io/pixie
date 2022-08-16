@@ -282,6 +282,19 @@ class English_US(GenericProvider):
     def get_category(self, category):
         return self.pii_label_to_provider[category]
 
+    def get_delimited(self, label):
+        """get a list of copies of the input label with different delimiters"""
+        label_delimited = [
+            label,
+            label.replace(" ", "-"),
+            label.replace(" ", "_"),
+            label.replace(" ", "__"),
+            label.replace(" ", "."),
+            label.replace(" ", ":"),
+            label.replace(" ", ""),
+        ]
+        return label_delimited
+
     def get_pii(self, name):
         if not name:
             return
@@ -289,13 +302,7 @@ class English_US(GenericProvider):
             for label, provider in self.pii_label_to_provider[category].items():
                 # check if name at least partially matches pii label
                 # for multiword labels, check versions of the label with different delimiters
-                label_delimited = [
-                    label,
-                    label.replace(" ", "_"),
-                    label.replace(" ", "__"),
-                    label.replace(" ", "-"),
-                    label.replace(" ", ""),
-                ]
+                label_delimited = self.get_delimited(label)
                 for lbl in label_delimited:
                     if re.match(lbl, name, re.IGNORECASE):
                         return (lbl, str(provider()), category)
@@ -306,13 +313,7 @@ class English_US(GenericProvider):
         for label, provider in self.nonpii_label_to_provider.items():
             # check if name at least partially matches nonpii label
             # for multiword labels, check versions of the label with different delimiters
-            label_delimited = [
-                label,
-                label.replace(" ", "_"),
-                label.replace(" ", "__"),
-                label.replace(" ", "-"),
-                label.replace(" ", ""),
-            ]
+            label_delimited = self.get_delimited(label)
             for lbl in label_delimited:
                 if re.match(lbl, name, re.IGNORECASE):
                     return (lbl, str(provider()))
