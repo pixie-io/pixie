@@ -623,7 +623,8 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
         absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
   }
 
-  std::basic_string_view<char> md5_hash_str_view {(char*)md5_hash, MD5_DIGEST_LENGTH};
+  std::basic_string_view<char> md5_hash_str_view{reinterpret_cast<char*>(md5_hash),
+                                                 MD5_DIGEST_LENGTH};
   std::string hash_str =
       absl::AsciiStrToLower(BytesToString<bytes_format::HexCompact>(md5_hash_str_view));
 
@@ -662,8 +663,8 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   // Calculate MD5 hash of the grpc-c library to know which version it is.
   // For further explanation see the definition of kGrpcCMD5HashToVersion.
   PL_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
-  LOG(INFO) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
-                                container_libgrpcc.string());
+  VLOG(1) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
+                              container_libgrpcc.string());
 
   // Find the version of the library by its MD5 hash.
   auto iter = kGrpcCMD5HashToVersion.find(hash_str);
@@ -676,17 +677,16 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
   grpc_c_versions_map = std::make_unique<ebpf::BPFHashTable<uint32_t, uint64_t>>(
       bcc_->GetHashTable<uint32_t, uint64_t>(kGrpcCVersionsName));
-  LOG(INFO) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
+  VLOG(1) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
   if (!grpc_c_versions_map->update_value(pid, version).ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to update version of pid $0 to $1", pid,
-                                     (uint32_t)version);
-    return error::Internal("Failed to set version of library.");
+    return error::Internal("Failed to set version of library of pid $0 to $1.", pid,
+                           (uint32_t)version);
   }
 
   // Attach the needed probes.
   // This currently works only for non-stripped versions of the shared object.
-  LOG(INFO) << absl::Substitute("Attaching GRPC-C uprobes to $0 for pid $1",
-                                container_libgrpcc.string(), pid);
+  VLOG(1) << absl::Substitute("Attaching GRPC-C uprobes to $0 for pid $1",
+                              container_libgrpcc.string(), pid);
   for (auto spec : kGrpcCUProbes) {
     spec.binary_path = container_libgrpcc.string();
     auto return_value = bcc_->AttachUProbe(spec);
@@ -709,8 +709,8 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
     return error::Internal("Failed to attach a data parser parse probe.");
   }
 
-  LOG(INFO) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
-                                kGrpcCUProbes.size(), pid);
+  VLOG(1) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
+                              kGrpcCUProbes.size(), pid);
 
   return kGrpcCUProbes.size() + 1;  // +1 for the data parser parse probe.
 }
