@@ -64,7 +64,7 @@ test-tsan: ## Run all the tests, with thread sanitizer.
 
 .PHONY: go-mod-tidy
 go-mod-tidy: ## Ensure that go are cleaned up.
-	go mod tidy -compat=1.18
+	go mod tidy -compat=1.19
 
 .PHONY: go-mod-ensure
 go-mod-ensure: ## Ensure that go dependencies exist.

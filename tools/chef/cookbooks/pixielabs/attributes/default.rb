@@ -71,9 +71,9 @@ if node[:platform] == 'ubuntu'
     'ae6944cf23baa5218fdb5f6d0ad7a7cf63c5b71eb463f47775e3f64828d340af'
 
   default['golang']['download_path'] =
-    'https://dl.google.com/go/go1.18.3.linux-amd64.tar.gz'
+    'https://dl.google.com/go/go1.19.linux-amd64.tar.gz'
   default['golang']['sha256'] =
-    '956f8507b302ab0bb747613695cdae10af99bbd39a90cae522b7c0302cc27245'
+    '464b6b66591f6cf055bc5df90a9750bf5fbc9d038722bb84a9d56a2bea974be6'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-linux-amd64'
@@ -136,9 +136,9 @@ if node[:platform] == 'ubuntu'
     '82eb998370b05d2d9c05664f7270599ddcef676c1d211274a5e04ffddf6ac024'
 
   default['golangci-lint']['download_path'] =
-    'https://github.com/golangci/golangci-lint/releases/download/v1.46.2/golangci-lint-1.46.2-linux-amd64.tar.gz'
+    'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-linux-amd64.tar.gz'
   default['golangci-lint']['sha256']        =
-    '242cd4f2d6ac0556e315192e8555784d13da5d1874e51304711570769c4f2b9b'
+    '127c5c9d47cf3a3cf4128815dea1d9623d57a83a22005e91b986b0cbceb09233'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
   default['helm']['sha256']        = '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
@@ -179,9 +179,9 @@ elsif node[:platform] == 'mac_os_x'
     'edbe4c3a5efab799208ea0bc145bbf3330ff6e30a2cef065f9e1b337fede055b'
 
   default['golang']['download_path'] =
-    'https://dl.google.com/go/go1.18.3.darwin-amd64.tar.gz'
+    'https://dl.google.com/go/go1.19.darwin-amd64.tar.gz'
   default['golang']['sha256'] =
-    'd9dcf8fc35da54c6f259be41954783a9f4984945a855d03a003a7fd6ea4c5ca1'
+    'df6509885f65f0d7a4eaf3dfbe7dda327569787e8a0a31cbf99ae3a6e23e9ea8'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-darwin-amd64'
@@ -242,9 +242,9 @@ elsif node[:platform] == 'mac_os_x'
     'a8ad2b7169763978a63605ac854473998729ba7c497dd39bed01b57a294bd32a'
 
   default['golangci-lint']['download_path'] =
-    'https://github.com/golangci/golangci-lint/releases/download/v1.46.2/golangci-lint-1.46.2-darwin-amd64.tar.gz'
+    'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-darwin-amd64.tar.gz'
   default['golangci-lint']['sha256']        =
-    '658078aaaf7608693f37c4cf1380b2af418ab8b2d23fdb33e7e2d4339328590e'
+    'ec2e1c3bb3d34268cd57baba6b631127beb185bbe8cfde8ac40ba9b4c8615784'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
   default['helm']['sha256']        = '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'

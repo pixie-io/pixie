@@ -1,6 +1,6 @@
 module px.dev/pixie
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/bigquery v1.18.0

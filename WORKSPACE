@@ -23,7 +23,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.18.3",
+    version = "1.19",
 )
 
 go_rules_dependencies()
