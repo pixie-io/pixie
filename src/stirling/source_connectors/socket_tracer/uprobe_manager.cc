@@ -268,10 +268,10 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
   return container_libs;
 }
 
-StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
+StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
     LazyLoadedFPResolver* fp_resolver) {
-  return FindHostPathForPIDPath(lib_names, pid, proc_parser, fp_resolver,
+  return FindHostPathForPIDLibs(lib_names, pid, proc_parser, fp_resolver,
                                 HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
@@ -627,7 +627,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
 
   // Find path to grpc-c shared object, if it's used (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindHostPathForPIDPath(lib_names, pid, proc_parser_.get(), &fp_resolver_,
+                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_,
                                              HostPathForPIDPathSearchType::kSearchTypeContains));
 
   std::filesystem::path container_libgrpcc = container_lib_paths[0];
