@@ -189,7 +189,7 @@ class TestClient(unittest.TestCase):
             # Init "http".
             http_table1.metadata_response(),
             # Send data for "http".
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # End "http".
             http_table1.end(),
         ])
@@ -213,7 +213,7 @@ class TestClient(unittest.TestCase):
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Send an end-of-stream for the table.
             http_table1.end(),
         ])
@@ -228,7 +228,7 @@ class TestClient(unittest.TestCase):
         async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_body"], b"foo")
                 self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
@@ -248,7 +248,7 @@ class TestClient(unittest.TestCase):
         # Create table for the first cluster.
         http_table1 = self.http_table_factory.create_table(test_utils.table_id1)
         rb_data: List[List[Any]] = [
-            ["foo", "bar", "baz", "bat"], [200, 500, 301, 404]]
+            [b"foo", b"bar", b"baz", b"bat"], [200, 500, 301, 404]]
 
         # Here we split the above data into two rowbatches.
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
@@ -298,7 +298,7 @@ class TestClient(unittest.TestCase):
             # Initialize "http" on the stream.
             http_table1.metadata_response(),
             # Send over a row-batch from "http".
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Initialize "stats" on the stream.
             stats_table1.metadata_response(),
             # Send over a row-batch from "stats".
@@ -322,7 +322,7 @@ class TestClient(unittest.TestCase):
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_body"], b"foo")
                 self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
@@ -404,7 +404,7 @@ class TestClient(unittest.TestCase):
         http_table1 = self.http_table_factory.create_table(test_utils.table_id1)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
             http_table1.metadata_response(),
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             http_table1.end(),
         ])
 
@@ -436,7 +436,7 @@ class TestClient(unittest.TestCase):
             # Init "http".
             http_table1.metadata_response(),
             # Send data for "http".
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Init "stats".
             stats_table1.metadata_response(),
             # Send data for "stats".
@@ -459,7 +459,7 @@ class TestClient(unittest.TestCase):
         def http_fn(row: pxapi.Row) -> None:
             nonlocal http_counter
             http_counter += 1
-            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_body"], b"foo")
             self.assertEqual(row["resp_status"], 200)
         script_executor.add_callback("http", http_fn)
 
@@ -491,7 +491,7 @@ class TestClient(unittest.TestCase):
         http_table1 = self.http_table_factory.create_table(test_utils.table_id1)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
             http_table1.metadata_response(),
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             http_table1.end(),
         ])
 
@@ -518,7 +518,7 @@ class TestClient(unittest.TestCase):
         stats_table1 = self.stats_table_factory.create_table(test_utils.table_id3)
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
             http_table1.metadata_response(),
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             stats_table1.metadata_response(),
             stats_table1.row_batch_response([
                 [vpb.UInt128(high=123, low=456)],
@@ -537,7 +537,7 @@ class TestClient(unittest.TestCase):
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_body"], b"foo")
                 self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
@@ -642,7 +642,7 @@ class TestClient(unittest.TestCase):
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
             # Initialize the table on the stream and send over a rowbatch.
             http_table1.metadata_response(),
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Send over an error on the stream after we've started sending data.
             # this should happen if something breaks on the Pixie side.
             # Note: the table does not send an end message over the stream.
@@ -671,7 +671,7 @@ class TestClient(unittest.TestCase):
         self.fake_vizier_service.add_fake_data(conn.cluster_id, [
             # Initialize the table on the stream and send over a rowbatch.
             http_table1.metadata_response(),
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Note: the table does not send an end message over the stream.
         ])
 
@@ -698,7 +698,7 @@ class TestClient(unittest.TestCase):
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # NOTE: don't send over the eos -> simulating error midway through
             # stream.
 
@@ -731,14 +731,14 @@ class TestClient(unittest.TestCase):
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Send an end-of-stream for the table.
             http_table1.end(),
         ])
 
         # Use the results API to run and get the data from the http table.
         for row in script_executor.results("http"):
-            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_body"], b"foo")
             self.assertEqual(row["resp_status"], 200)
 
     def test_shared_grpc_channel_for_cloud(self) -> None:
@@ -795,14 +795,14 @@ class TestClient(unittest.TestCase):
             # Initialize the table on the stream with the metadata.
             http_table1.metadata_response(),
             # Send over a single-row batch.
-            http_table1.row_batch_response([["foo"], [200]]),
+            http_table1.row_batch_response([[b"foo"], [200]]),
             # Send an end-of-stream for the table.
             http_table1.end(),
         ])
 
         # Use the results API to run and get the data from the http table.
         for row in script_executor.results("http"):
-            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_body"], b"foo")
             self.assertEqual(row["resp_status"], 200)
 
 

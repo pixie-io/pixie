@@ -43,6 +43,21 @@ export interface ScriptReference {
   args: { [arg: string]: string };
 }
 
+// u8aToStr converts an array of bytes to a string.
+// Used as a utility for managing bytes protobuf fields ie StringColumn.
+export function u8aToStr(u8a: Uint8Array): string {
+  return new TextDecoder('utf-8').decode(u8a);
+}
+
+// stringToU8a converts a string to an array of bytes.
+// Used as a utility for managing bytes protobuf fields ie StringColumn.
+export function strToU8a(s: string): Uint8Array {
+  // Why do we wrap with `Uint8Array.from`?
+  // google-protobuf checks the Uint8Array type by checking the constructor type,
+  // so we must cast to make it work.
+  return Uint8Array.from(new TextEncoder().encode(s));
+}
+
 // Parses a JSON string as a quantile, so that downstream sort and renderers don't
 // have to reparse the JSON every time they handle a quantiles value.
 function parseQuantile(val: any): Quantile {

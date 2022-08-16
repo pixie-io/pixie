@@ -536,13 +536,13 @@ func TestQueryPlanResponse(t *testing.T) {
 							{
 								ColData: &vizierpb.Column_StringData{
 									StringData: &vizierpb.StringColumn{
-										Data: []string{
+										Data: [][]byte{[]byte(
 											"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n" +
 												"\t\tcolor=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281\\n" +
 												"123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\" +
 												"nself_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"" +
 												",shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"" +
-												",shape=\"rect\"];\n\t\tn1->n2;\n\t\t\n\t}\n\t\n}",
+												",shape=\"rect\"];\n\t\tn1->n2;\n\t\t\n\t}\n\t\n}"),
 										},
 									},
 								},
@@ -573,13 +573,13 @@ func TestQueryPlanResponse(t *testing.T) {
 							{
 								ColData: &vizierpb.Column_StringData{
 									StringData: &vizierpb.StringColumn{
-										Data: []string{
+										Data: [][]byte{[]byte(
 											"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\t" +
 												"color=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281" +
 												"\\n123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\n" +
 												"self_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"," +
 												"shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"," +
-												"shape=\"rect\"];\n\t\tn1->n2;",
+												"shape=\"rect\"];\n\t\tn1->n2;"),
 										},
 									},
 								},
@@ -602,8 +602,8 @@ func TestQueryPlanResponse(t *testing.T) {
 							{
 								ColData: &vizierpb.Column_StringData{
 									StringData: &vizierpb.StringColumn{
-										Data: []string{
-											"\n\t\t\n\t}\n\t\n}",
+										Data: [][]byte{[]byte(
+											"\n\t\t\n\t}\n\t\n}"),
 										},
 									},
 								},

@@ -1835,7 +1835,7 @@ proto.px.api.vizierpb.StringColumn.prototype.toObject = function(opt_includeInst
  */
 proto.px.api.vizierpb.StringColumn.toObject = function(includeInstance, msg) {
   var f, obj = {
-    dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f
+    dataList: msg.getDataList_asB64()
   };
 
   if (includeInstance) {
@@ -1873,7 +1873,7 @@ proto.px.api.vizierpb.StringColumn.deserializeBinaryFromReader = function(msg, r
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {string} */ (reader.readString());
+      var value = /** @type {!Uint8Array} */ (reader.readBytes());
       msg.addData(value);
       break;
     default:
@@ -1905,9 +1905,9 @@ proto.px.api.vizierpb.StringColumn.prototype.serializeBinary = function() {
  */
 proto.px.api.vizierpb.StringColumn.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getDataList();
+  f = message.getDataList_asU8();
   if (f.length > 0) {
-    writer.writeRepeatedString(
+    writer.writeRepeatedBytes(
       1,
       f
     );
@@ -1916,16 +1916,40 @@ proto.px.api.vizierpb.StringColumn.serializeBinaryToWriter = function(message, w
 
 
 /**
- * repeated string data = 1;
- * @return {!Array<string>}
+ * repeated bytes data = 1;
+ * @return {!(Array<!Uint8Array>|Array<string>)}
  */
 proto.px.api.vizierpb.StringColumn.prototype.getDataList = function() {
-  return /** @type {!Array<string>} */ (jspb.Message.getRepeatedField(this, 1));
+  return /** @type {!(Array<!Uint8Array>|Array<string>)} */ (jspb.Message.getRepeatedField(this, 1));
 };
 
 
 /**
- * @param {!Array<string>} value
+ * repeated bytes data = 1;
+ * This is a type-conversion wrapper around `getDataList()`
+ * @return {!Array<string>}
+ */
+proto.px.api.vizierpb.StringColumn.prototype.getDataList_asB64 = function() {
+  return /** @type {!Array<string>} */ (jspb.Message.bytesListAsB64(
+      this.getDataList()));
+};
+
+
+/**
+ * repeated bytes data = 1;
+ * Note that Uint8Array is not supported on all browsers.
+ * @see http://caniuse.com/Uint8Array
+ * This is a type-conversion wrapper around `getDataList()`
+ * @return {!Array<!Uint8Array>}
+ */
+proto.px.api.vizierpb.StringColumn.prototype.getDataList_asU8 = function() {
+  return /** @type {!Array<!Uint8Array>} */ (jspb.Message.bytesListAsU8(
+      this.getDataList()));
+};
+
+
+/**
+ * @param {!(Array<!Uint8Array>|Array<string>)} value
  * @return {!proto.px.api.vizierpb.StringColumn} returns this
  */
 proto.px.api.vizierpb.StringColumn.prototype.setDataList = function(value) {
@@ -1934,7 +1958,7 @@ proto.px.api.vizierpb.StringColumn.prototype.setDataList = function(value) {
 
 
 /**
- * @param {string} value
+ * @param {!(string|Uint8Array)} value
  * @param {number=} opt_index
  * @return {!proto.px.api.vizierpb.StringColumn} returns this
  */

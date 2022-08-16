@@ -87,10 +87,14 @@ func makeInt64Column(data []int64) *vizierpb.Column {
 }
 
 func makeStringColumn(data []string) *vizierpb.Column {
+	b := make([][]byte, len(data))
+	for i, d := range data {
+		b[i] = []byte(d)
+	}
 	return &vizierpb.Column{
 		ColData: &vizierpb.Column_StringData{
 			StringData: &vizierpb.StringColumn{
-				Data: data,
+				Data: b,
 			},
 		},
 	}

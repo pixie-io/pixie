@@ -165,7 +165,7 @@ class Row:
     def __str__(self) -> str:
         out = OrderedDict()
         for i, c in enumerate(self._data):
-            out[self.relation.get_col_name(i)] = c
+            out[self.relation.get_col_name(i)] = c if self.relation._columns[i].column_type != vpb.STRING else str(c)
         return json.dumps(out, indent=2, cls=_CustomEncoder)
 
 

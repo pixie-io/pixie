@@ -292,14 +292,14 @@ func getNumRows(in *vizierpb.Column) int {
 func (v *StreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx int, colIdx int, data interface{}) interface{} {
 	switch u := data.(type) {
 	case *vizierpb.Column_StringData:
-		s := u.StringData.Data[rowIdx]
+		s := string(u.StringData.Data[rowIdx])
 		if f, err := strconv.ParseFloat(s, 64); err == nil {
 			return f
 		}
 		if i, err := strconv.ParseInt(s, 10, 64); err == nil {
 			return i
 		}
-		return u.StringData.Data[rowIdx]
+		return string(u.StringData.Data[rowIdx])
 	case *vizierpb.Column_Float64Data:
 		return u.Float64Data.Data[rowIdx]
 	case *vizierpb.Column_Int64Data:

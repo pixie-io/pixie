@@ -25,6 +25,7 @@ import {
   RowBatchData,
   SemanticType, Int64Column,
 } from 'app/types/generated/vizierapi_pb';
+import { strToU8a } from 'app/utils/result-data-parsers';
 
 import { ROW_RETENTION_LIMIT, VizierTable } from './vizier-table';
 
@@ -50,14 +51,16 @@ describe('VizierTable', () => {
           true, true, true, true, true,
         ])),
         new Column().setStringData(new StringColumn().setDataList(
-          Array(5).fill(null).map((_, i) => JSON.stringify({ p50: i * 5, p90: i * 5 + 1, p99: i * 5 + 2 })),
+          Array(5).fill(null).map((_, i) => strToU8a(JSON.stringify({ p50: i * 5, p90: i * 5 + 1, p99: i * 5 + 2 }))),
         )),
       ]),
     new RowBatchData()
       .setTableId(id)
       .setColsList([
         new Column().setBooleanData(new BooleanColumn().setDataList([false])),
-        new Column().setStringData(new StringColumn().setDataList([JSON.stringify({ p50: 25, p90: 26, p99: 27 })])),
+        new Column().setStringData(new StringColumn().setDataList([
+          strToU8a(JSON.stringify({ p50: 25, p90: 26, p99: 27 })),
+        ])),
       ]),
   ];
 
@@ -163,7 +166,7 @@ describe('VizierTable', () => {
         .setColsList([
           new Column().setStringData(new StringColumn().setDataList(
             Array(ROW_RETENTION_LIMIT - 1).fill(null)
-              .map((_, i) => JSON.stringify({ p50: 0, p90: 0, p99: i * 2 })),
+              .map((_, i) => strToU8a(JSON.stringify({ p50: 0, p90: 0, p99: i * 2 }))),
           )),
         ]),
     );
@@ -176,13 +179,34 @@ describe('VizierTable', () => {
         .setColsList([
           new Column().setStringData(new StringColumn().setDataList(
             Array(ROW_RETENTION_LIMIT).fill(null) // Enough to COMPLETELY empty the buffer
-              .map((_, i) => JSON.stringify({ p50: 0, p90: 0, p99: i })),
+              .map((_, i) => strToU8a(JSON.stringify({ p50: 0, p90: 0, p99: i }))),
           )),
         ]),
     );
 
     // If the old max value falls out, the next max value (which may be smaller) should be what gets kept.
     expect(table.maxQuantiles.get('quantile')).toBe(ROW_RETENTION_LIMIT - 1);
+  });
+
+  it('Handles non utf-8 strings', () => {
+    const table = new VizierTable(id, name, new Relation().setColumnsList([
+      new Relation.ColumnInfo()
+        .setColumnName('bytes')
+        .setColumnType(DataType.STRING),
+    ]));
+
+    table.appendBatch(
+      new RowBatchData()
+        .setTableId(id)
+        .setColsList([
+          // 159 is an invalid start byte for utf-8.
+          new Column().setStringData(new StringColumn().setDataList([new Uint8Array([159])])),
+        ]),
+    );
+    expect(table.rows).toEqual([
+      // Converting bytes to string should encode as the replacement character.
+      { bytes: '�' },
+    ]);
   });
 
   // Omitted test case: when a batch comes in that's bigger than ROW_RETENTION_LIMIT (intentionally ignored scenario).

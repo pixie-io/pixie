@@ -331,9 +331,9 @@ func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
 			},
 		}, nil
 	case *schemapb.Column_StringData:
-		b := make([]string, len(c.StringData.Data))
+		b := make([][]byte, len(c.StringData.Data))
 		for i, s := range c.StringData.Data {
-			b[i] = string(s)
+			b[i] = []byte(s)
 		}
 		return &vizierpb.Column{
 			ColData: &vizierpb.Column_StringData{
@@ -446,7 +446,7 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 				{
 					ColData: &vizierpb.Column_StringData{
 						StringData: &vizierpb.StringColumn{
-							Data: []string{queryPlan[i:end]},
+							Data: [][]byte{[]byte(queryPlan[i:end])},
 						},
 					},
 				},

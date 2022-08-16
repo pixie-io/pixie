@@ -36,18 +36,18 @@ class TestData(unittest.TestCase):
                                   subscribed=True)
 
         # Test __str__().
-        row = data.Row(table, ["bar", 200])
+        row = data.Row(table, [b"bar", 200])
         self.assertEqual(json.loads(str(row)), {
-            "resp_body": "bar",
+            "resp_body": "b'bar'",
             "resp_status": 200
         })
 
         # Make sure you can index the columns.
-        self.assertEqual(row[0], "bar")
+        self.assertEqual(row[0], b"bar")
         self.assertEqual(row[1], 200)
 
         # Make sure you can access the columns by name.
-        self.assertEqual(row["resp_body"], "bar")
+        self.assertEqual(row["resp_body"], b"bar")
         self.assertEqual(row["resp_status"], 200)
 
         # Grabbing a column that doesn't exist should fail.
@@ -64,6 +64,10 @@ class TestData(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Mismatch of row length 3 and relation size 2"):
             data.Row(table, ["bar", 200, "extra"])
 
+        # Row should serialize non UTF-8 bytes in a string column.
+        row = data.Row(table, [b"\x9f", 200])
+        self.assertEqual(json.loads(str(row)), {"resp_body": "b\'\\x9f\'", "resp_status": 200})
+
     def test_table_stream(self) -> None:
         # Create the table stream.
         table = data._TableStream("foo",
@@ -76,7 +80,7 @@ class TestData(unittest.TestCase):
         foo_faker = foo_factory.create_table(utils.table_id1)
 
         rb_data: List[List[Any]] = [
-            ["foo", "bar", "baz", "bat"], [200, 500, 301, 404]]
+            [b"foo", b"bar", b"baz", b"bat"], [200, 500, 301, 404]]
         # A data rowbatch.
         batch1 = foo_faker.row_batch(rb_data)
 
@@ -109,7 +113,7 @@ class TestData(unittest.TestCase):
         foo_faker = foo_factory.create_table(utils.table_id1)
 
         rb_data: List[List[Any]] = [
-            ["foo", "bar", "baz", "bat"], [200, 500, 301, 404]]
+            [b"foo", b"bar", b"baz", b"bat"], [200, 500, 301, 404]]
         # A data rowbatch.
         batch1 = foo_faker.row_batch(rb_data)
 

@@ -88,8 +88,8 @@ func buildCheckHealthSuccessResponses(queryID uuid.UUID) []*vizierpb.ExecuteScri
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{
-										"foo",
+									Data: [][]byte{
+										[]byte("foo"),
 									},
 								},
 							},
@@ -116,7 +116,7 @@ func buildCheckHealthEmptyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScript
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{},
+									Data: [][]byte{},
 								},
 							},
 						},
@@ -138,7 +138,7 @@ func buildCheckHealthEmptyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScript
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{},
+									Data: [][]byte{},
 								},
 							},
 						},
@@ -164,7 +164,7 @@ func buildCheckHealthTooManyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScri
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{"foo"},
+									Data: [][]byte{[]byte("foo")},
 								},
 							},
 						},
@@ -186,7 +186,7 @@ func buildCheckHealthTooManyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScri
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{"bar"},
+									Data: [][]byte{[]byte("bar")},
 								},
 							},
 						},
@@ -293,7 +293,7 @@ func buildExecuteScriptSuccessResponses(queryID uuid.UUID) []*vizierpb.ExecuteSc
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{"foo"},
+									Data: [][]byte{[]byte("foo")},
 								},
 							},
 						},
@@ -315,7 +315,7 @@ func buildExecuteScriptSuccessResponses(queryID uuid.UUID) []*vizierpb.ExecuteSc
 						{
 							ColData: &vizierpb.Column_StringData{
 								StringData: &vizierpb.StringColumn{
-									Data: []string{"bar"},
+									Data: [][]byte{[]byte("bar")},
 								},
 							},
 						},

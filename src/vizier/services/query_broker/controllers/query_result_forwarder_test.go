@@ -399,8 +399,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	assert.NotNil(t, results[3].GetData().Batch.Cols[0].GetStringData())
 	strData := results[3].GetData().Batch.Cols[0].GetStringData().Data
 	assert.Equal(t, 1, len(strData))
-	assert.Contains(t, strData[0], agent1ID)
-	assert.Contains(t, strData[0], agent2ID)
+	assert.Contains(t, string(strData[0]), agent1ID)
+	assert.Contains(t, string(strData[0]), agent2ID)
 
 	// Check the other results.
 	assert.Equal(t, expected0, results[0].GetData().Batch)

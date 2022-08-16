@@ -313,7 +313,7 @@ func extractDataFromCol(colData []*vizierpb.Column, rowIdx, colIdx int64, row []
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
-		dCasted.ScanString(colTyped.StringData.Data[rowIdx])
+		dCasted.ScanString(string(colTyped.StringData.Data[rowIdx]))
 	case *vizierpb.Column_Uint128Data:
 		dCasted, ok := row[colIdx].(*types.UInt128Value)
 		if !ok {

@@ -126,10 +126,11 @@ export namespace Time64NSColumn {
 }
 
 export class StringColumn extends jspb.Message {
-  getDataList(): Array<string>;
-  setDataList(value: Array<string>): StringColumn;
+  getDataList(): Array<Uint8Array | string>;
+  getDataList_asU8(): Array<Uint8Array>;
+  setDataList(value: Array<Uint8Array | string>): StringColumn;
   clearDataList(): StringColumn;
-  addData(value: string, index?: number): StringColumn;
+  addData(value: Uint8Array | string, index?: number): StringColumn;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): StringColumn.AsObject;
@@ -141,7 +142,7 @@ export class StringColumn extends jspb.Message {
 
 export namespace StringColumn {
   export type AsObject = {
-    dataList: Array<string>,
+    dataList: Array<Uint8Array | string>,
   }
 }
 
@@ -196,7 +197,7 @@ export namespace Column {
     stringData?: StringColumn.AsObject,
   }
 
-  export enum ColDataCase { 
+  export enum ColDataCase {
     COL_DATA_NOT_SET = 0,
     BOOLEAN_DATA = 1,
     INT64_DATA = 2,
@@ -341,7 +342,7 @@ export namespace ErrorDetails {
     compilerError?: CompilerError.AsObject,
   }
 
-  export enum ErrorCase { 
+  export enum ErrorCase {
     ERROR_NOT_SET = 0,
     COMPILER_ERROR = 1,
   }
@@ -420,7 +421,7 @@ export namespace ScalarValue {
     uint128Value?: UInt128.AsObject,
   }
 
-  export enum ValueCase { 
+  export enum ValueCase {
     VALUE_NOT_SET = 0,
     BOOL_VALUE = 2,
     INT64_VALUE = 3,
@@ -795,7 +796,7 @@ export namespace ExecuteScriptResponse {
     mutationInfo?: MutationInfo.AsObject,
   }
 
-  export enum ResultCase { 
+  export enum ResultCase {
     RESULT_NOT_SET = 0,
     DATA = 3,
     META_DATA = 4,
@@ -1067,7 +1068,7 @@ export namespace DebugPodsResponse {
   }
 }
 
-export enum DataType { 
+export enum DataType {
   DATA_TYPE_UNKNOWN = 0,
   BOOLEAN = 1,
   INT64 = 2,
@@ -1076,7 +1077,7 @@ export enum DataType {
   STRING = 5,
   TIME64NS = 6,
 }
-export enum SemanticType { 
+export enum SemanticType {
   ST_UNSPECIFIED = 0,
   ST_NONE = 1,
   ST_TIME_NS = 2,
@@ -1106,20 +1107,20 @@ export enum SemanticType {
   ST_HTTP_RESP_MESSAGE = 1500,
   ST_SCRIPT_REFERENCE = 3000,
 }
-export enum LifeCycleState { 
+export enum LifeCycleState {
   UNKNOWN_STATE = 0,
   PENDING_STATE = 1,
   RUNNING_STATE = 2,
   FAILED_STATE = 3,
   TERMINATED_STATE = 4,
 }
-export enum ContainerState { 
+export enum ContainerState {
   CONTAINER_STATE_UNKNOWN = 0,
   CONTAINER_STATE_RUNNING = 1,
   CONTAINER_STATE_TERMINATED = 2,
   CONTAINER_STATE_WAITING = 3,
 }
-export enum PodPhase { 
+export enum PodPhase {
   PHASE_UNKNOWN = 0,
   PENDING = 1,
   RUNNING = 2,
