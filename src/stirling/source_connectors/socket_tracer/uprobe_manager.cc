@@ -617,8 +617,8 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
         absl::Substitute("Failed to close file $0 that needs hashing. errno $1.", file, errno));
   }
   // This can't fail, it always returns the pointer to the hash value (3rd argument).
-  MD5((unsigned char*)file_buffer, file_size, md5_hash);
-  if (0 != munmap(file_buffer, file_size)) {
+  MD5((unsigned char*)mapped_file_buffer, file_size, md5_hash);
+  if (0 != munmap(mapped_file_buffer, file_size)) {
     return error::Internal(
         absl::Substitute("Failed to unmap file $0 that needs hashing. errno $1.", file, errno));
   }
