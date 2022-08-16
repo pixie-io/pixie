@@ -125,9 +125,13 @@ func (i *Index) create(ctx context.Context) error {
 	}
 	resp, err := i.es.CreateIndex(i.indexName).BodyString(string(indexBody)).Do(ctx)
 	if err != nil {
+		var cause map[string]interface{}
+		if esError, ok := err.(*elastic.Error); ok {
+			cause = esError.Details.CausedBy
+		}
 		log.WithError(err).WithField("index", i.indexName).
 			WithField("body", string(indexBody)).
-			WithField("cause", err.(*elastic.Error).Details.CausedBy).
+			WithField("cause", cause).
 			Error("failed to create index")
 		return err
 	}

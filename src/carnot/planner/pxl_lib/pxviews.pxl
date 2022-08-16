@@ -103,10 +103,11 @@ def pod_resource_stats(start_time, end_time):
     df.service = df.ctx['service_name']
     df.node = df.ctx['node_name']
     df.namespace = df.ctx['namespace']
-    df.start_time = px.pod_name_to_start_time(df.pod)
-    df.status = px.pod_name_to_status(df.pod)
-    return df[['pod_id', 'pod', 'service', 'node', 'namespace', 'container_count',
-               'start_time', 'status', 'cpu_usage', 'rss', 'vsize',
+    df.pod_start_time = px.pod_name_to_start_time(df.pod)
+    df.pod_status = px.pod_name_to_status(df.pod)
+    df.time_ = df.timestamp
+    return df[['time_', 'pod_id', 'pod', 'service', 'node', 'namespace', 'container_count',
+               'pod_start_time', 'pod_status', 'cpu_usage', 'rss', 'vsize',
                'actual_disk_read_throughput', 'actual_disk_write_throughput',
                'total_disk_read_throughput', 'total_disk_write_throughput']]
 
@@ -136,6 +137,9 @@ def _http_events(start_time, end_time, include_health_checks, include_ready_chec
 def inbound_http_summary(start_time, end_time):
     ''' Gets a summary of requests inbound to `pod`.
 
+    Equivalent to a single window of `pxviews.inbound_http_latency_timeseries`
+    if you aggregate the results of this function by pod.
+
     Args:
     @start_time Starting time of the data to examine.
     @end_time Ending time of the data to examine.
@@ -152,24 +156,29 @@ def inbound_http_summary(start_time, end_time):
     df = df[df.trace_role == 2]
 
     df = df.groupby(['pod_id', 'remote_addr']).agg(
-        latency=('latency', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
+        latency_sum=('latency', px.sum),
         num_requests=('time_', px.count),
         stop_time=('time_', px.max),
         num_errors=('failure', px.sum),
 
-        # TODO(philkuz) calculate this from the conn_stats table.
-        inbound_bytes=('req_body_size', px.sum),
-        outbound_bytes=('resp_body_size', px.sum)
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum)
     )
 
-    df.requesting_ip = df.remote_addr
-    df.requesting_pod_id = px.ip_to_pod_id(df.remote_addr)
-    df.requesting_pod = px.pod_id_to_pod_name(df.requesting_pod_id)
-    df.requesting_svc = px.pod_id_to_service_name(df.requesting_pod_id)
+    df.requestor_ip = df.remote_addr
+    df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
+    df.requestor_pod = px.pod_id_to_pod_name(df.requestor_pod_id)
+    df.requestor_service = px.pod_id_to_service_name(df.requestor_pod_id)
     df.time_ = df.stop_time
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = px.pod_name_to_namespace(df.pod)
+    df.node = df.ctx['node']
 
-    return df[['time_', 'pod_id', 'requesting_ip', 'requesting_pod', 'requesting_svc', 'latency',
-                         'num_errors', 'num_requests', 'inbound_bytes', 'outbound_bytes']]
+    return df[['time_', 'pod_id', 'pod', 'service', 'namespace', 'node',
+               'requestor_ip', 'requestor_pod', 'requestor_service',
+               'latency_quantiles', 'latency_sum', 'num_requests', 'num_errors', 'req_bytes', 'resp_bytes']]
 
 
 def http_graph(start_time, end_time):
@@ -182,7 +191,6 @@ def http_graph(start_time, end_time):
     @start_time Starting time of the data to examine.
     @end_time Ending time of the data to examine.
     '''
-    # TODO(philkuz) fix pxviews can't use False because it's not in scope.
     df = _http_events(start_time,
                      end_time,
                      include_health_checks=False,
@@ -190,17 +198,19 @@ def http_graph(start_time, end_time):
                      include_unresolved_inbound=False)
     df.pod_id = df.ctx['pod_id']
     df = df.groupby(['pod_id', 'remote_addr', 'trace_role']).agg(
-        latency=('latency', px.quantiles),
+        latency_quantiles=('latency', px.quantiles),
+        latency_sum=('latency', px.sum),
         total_request_count=('latency', px.count)
         num_requests=('time_', px.count),
         stop_time=('time_', px.max),
         num_errors=('failure', px.sum),
-        inbound_bytes=('req_body_size', px.sum),
-        outbound_bytes=('resp_body_size', px.sum)
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum)
     )
 
     df.traced_pod = df.ctx['pod']
     df.traced_ip = px.pod_name_to_pod_ip(df.traced_pod)
+    df.traced_pod_id = df.pod_id
     df.traced_service = df.ctx['service']
 
     # Get the traced and remote pod/service/IP information.
@@ -208,11 +218,15 @@ def http_graph(start_time, end_time):
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
     df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_ip)
     df.remote_pod = px.select(df.is_remote_addr_localhost,
-                              'localhost:' + df.traced_pod,
+                              df.traced_pod,
                               px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_ip)))
     df.remote_service = px.select(df.is_remote_addr_localhost,
-                                  'localhost:' + df.traced_service,
+                                  df.traced_service,
                                   px.service_id_to_service_name(px.ip_to_service_id(df.remote_ip)))
+
+    df.remote_pod_id = px.select(df.is_remote_addr_localhost,
+                                  df.traced_pod_id,
+                                  px.ip_to_pod_id(df.remote_ip))
 
     # Assign requestor and responder based on the trace_role.
     df.is_server_side_tracing = df.trace_role == 2
@@ -222,14 +236,19 @@ def http_graph(start_time, end_time):
     df.responder_pod = px.select(df.is_server_side_tracing, df.traced_pod, df.remote_pod)
     df.requestor_pod = px.select(df.is_server_side_tracing, df.remote_pod, df.traced_pod)
 
+    df.responder_pod_id = px.select(df.is_server_side_tracing, df.traced_pod_id, df.remote_pod_id)
+    df.requestor_pod_id = px.select(df.is_server_side_tracing, df.remote_pod_id, df.traced_pod_id)
+
     df.responder_service = px.select(df.is_server_side_tracing, df.traced_service, df.remote_service)
     df.requestor_service = px.select(df.is_server_side_tracing, df.remote_service, df.traced_service)
 
-    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p50')))
-    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p90')))
-    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency, 'p99')))
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
 
     df = df.groupby([
+        'responder_pod_id',
+        'requestor_pod_id',
         'responder_pod',
         'requestor_pod',
         'responder_ip',
@@ -238,27 +257,42 @@ def http_graph(start_time, end_time):
         'requestor_service'
     ]).agg(
         # TODO(philkuz) build a combine_quantiles udf that does this properly.
-        # latency=('latency', px.combine_quantiles),
+        # latency_quantiles=('latency_quantiles', px.combine_quantiles),
+        latency_quantiles=('latency_quantiles', px.any),
+        latency_sum=('latency_sum', px.sum),
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
         num_requests=('num_requests', px.sum),
         num_errors=('num_errors', px.sum),
-        inbound_bytes=('inbound_bytes', px.sum),
-        outbound_bytes=('outbound_bytes', px.sum),
+        req_bytes=('req_bytes', px.sum),
+        resp_bytes=('resp_bytes', px.sum),
         stop_time=('stop_time', px.max),
     )
 
+
     df.time_ = df.stop_time
-    return df[['time_', 'responder_pod', 'requestor_pod',
+    df.responder_node = px.pod_id_to_node_name(df.responder_pod_id)
+    df.requestor_node = px.pod_id_to_node_name(df.requestor_pod_id)
+
+    df.responder_namespace = px.pod_name_to_namespace(df.responder_pod)
+    df.requestor_namespace = px.pod_name_to_namespace(df.requestor_pod)
+    df.window_start_time = start_time
+    df.window_end_time = end_time
+    return df[['time_', 'responder_pod', 'requestor_pod', 'responder_namespace', 'requestor_namespace',
+               'responder_node', 'requestor_node',
                'responder_ip', 'requestor_ip','responder_service', 'requestor_service',
-               'latency_p50', 'latency_p90', 'latency_p99', 'num_requests',
-               'num_errors', 'inbound_bytes', 'outbound_bytes']]
+               'latency_p50', 'latency_p90', 'latency_p99', 'latency_quantiles', 'latency_sum', 'num_requests',
+               'num_errors', 'req_bytes', 'resp_bytes',
+               'window_start_time', 'window_end_time']]
 
 
 def container_process_timeseries(start_time, end_time, window_ns):
     ''' Compute the timeseries of CPU, memory, and IO usage for each container
     sourced from the `process_stats` table.
+
+    Equivalent to `pxviews.container_process_summary()` extended over multiple
+    windows.
 
     Args:
     @start_time Starting time of the data to examine.
@@ -272,7 +306,7 @@ def container_process_timeseries(start_time, end_time, window_ns):
 
     # First calculate CPU usage by process (UPID) in each k8s_object
     # over all windows.
-    df = df.groupby(['upid', 'container','pod_id', 'timestamp']).agg(
+    df = df.groupby(['upid', 'container', 'pod_id', 'timestamp']).agg(
         rss=('rss_bytes', px.mean),
         vsize=('vsize_bytes', px.mean),
         # The fields below are counters, so we take the min and the max to subtract them.
@@ -314,9 +348,87 @@ def container_process_timeseries(start_time, end_time, window_ns):
     # Finally, calculate total (kernel + user time)  percentage used over window.
     df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window_ns)
     df.time_ = df.timestamp
-    return df[['time_', 'pod_id', 'container', 'cpu_usage', 'actual_disk_read_throughput',
-            'actual_disk_write_throughput', 'total_disk_read_throughput',
-            'total_disk_write_throughput', 'rss', 'vsize']]
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = px.pod_name_to_namespace(df.pod)
+    df.node = df.ctx['node']
+
+    return df[['time_', 'pod_id', 'container', 'pod', 'service', 'namespace', 'node',
+               'cpu_usage', 'actual_disk_read_throughput',
+               'actual_disk_write_throughput', 'total_disk_read_throughput',
+               'total_disk_write_throughput', 'rss', 'vsize']]
+
+
+def container_process_summary(start_time, end_time):
+    ''' Compute the summary of CPU, memory, and IO usage for each container
+    sourced from the `process_stats` table.
+
+    Equivalent to a single window from `pxviews.container_process_timeseries()`.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    df.container = df.ctx['container_name']
+    df.pod_id = df.ctx['pod_id']
+
+    # First calculate CPU usage by process (UPID) in each k8s_object
+    # over all windows.
+    df = df.groupby(['upid', 'container', 'pod_id']).agg(
+        rss=('rss_bytes', px.mean),
+        vsize=('vsize_bytes', px.mean),
+        # The fields below are counters, so we take the min and the max to subtract them.
+        cpu_utime_ns_max=('cpu_utime_ns', px.max),
+        cpu_utime_ns_min=('cpu_utime_ns', px.min),
+        cpu_ktime_ns_max=('cpu_ktime_ns', px.max),
+        cpu_ktime_ns_min=('cpu_ktime_ns', px.min),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
+        time_=('time_', px.max),
+    )
+
+    # Next calculate cpu usage and memory stats per window.
+    df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+    df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+
+    window = end_time - start_time
+    df.actual_disk_read_throughput = (df.read_bytes_max - df.read_bytes_min) / window
+    df.actual_disk_write_throughput = (df.write_bytes_max - df.write_bytes_min) / window
+    df.total_disk_read_throughput = (df.rchar_bytes_max - df.rchar_bytes_min) / window
+    df.total_disk_write_throughput = (df.wchar_bytes_max - df.wchar_bytes_min) / window
+
+
+    # Then aggregate per container.
+    df = df.groupby(['pod_id', 'container']).agg(
+        cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+        cpu_utime_ns=('cpu_utime_ns', px.sum),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.sum),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.sum),
+        total_disk_read_throughput=('total_disk_read_throughput', px.sum),
+        total_disk_write_throughput=('total_disk_write_throughput', px.sum),
+        rss=('rss', px.sum),
+        vsize=('vsize', px.sum),
+        time_=('time_', px.max),
+    )
+
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    df.cpu_usage = px.Percent((df.cpu_ktime_ns + df.cpu_utime_ns) / window)
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = px.pod_name_to_namespace(df.pod)
+    df.node = df.ctx['node']
+
+    return df[['time_', 'pod_id', 'container', 'pod', 'service', 'namespace', 'node',
+               'cpu_usage', 'actual_disk_read_throughput',
+               'actual_disk_write_throughput', 'total_disk_read_throughput',
+               'total_disk_write_throughput', 'rss', 'vsize']]
 
 
 def pod_network_timeseries(start_time, end_time, window_ns):
@@ -324,6 +436,9 @@ def pod_network_timeseries(start_time, end_time, window_ns):
 
     Returns timeseries data summarizing the bytes, drops, and errors for
     the incoming (rx) and outgoing(tx) network connections for each pod.
+
+    This is equivalent to `pxviews.pod_network_summary()` but over several
+    time windows.
 
     Args:
     @start_time Starting time of the data to examine.
@@ -361,7 +476,281 @@ def pod_network_timeseries(start_time, end_time, window_ns):
     df.tx_errors_per_ns = (df.tx_errors_end - df.tx_errors_start) / window_ns
 
     df.time_ = df.timestamp
-    return df[['time_', 'pod_id', 'rx_bytes_per_ns', 'tx_bytes_per_ns',
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+    return df[['time_', 'pod_id', 'pod', 'service', 'namespace', 'node',
+               'rx_bytes_per_ns', 'tx_bytes_per_ns',
                'rx_drops_per_ns', 'tx_drops_per_ns', 'rx_errors_per_ns', 'tx_errors_per_ns']]
+
+
+def pod_network_summary(start_time, end_time):
+    ''' Compute the summary of network events for each pod.
+
+    Returns data summarizing the bytes, drops, and errors for
+    the incoming (rx) and outgoing(tx) network connections for each pod.
+
+    Equivalent to a single window of `pxviews.pod_network_timeseries()`.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='network_stats', start_time=start_time, end_time=end_time)
+
+    # First calculate network usage by node over all windows.
+    # Data is sharded by Pod in network_stats.
+    df = df.groupby(['pod_id']).agg(
+        rx_bytes_end=('rx_bytes', px.max),
+        rx_bytes_start=('rx_bytes', px.min),
+        tx_bytes_end=('tx_bytes', px.max),
+        tx_bytes_start=('tx_bytes', px.min),
+        tx_errors_end=('tx_errors', px.max),
+        tx_errors_start=('tx_errors', px.min),
+        rx_errors_end=('rx_errors', px.max),
+        rx_errors_start=('rx_errors', px.min),
+        tx_drops_end=('tx_drops', px.max),
+        tx_drops_start=('tx_drops', px.min),
+        rx_drops_end=('rx_drops', px.max),
+        rx_drops_start=('rx_drops', px.min),
+        time_=('time_', px.max),
+    )
+
+    window = end_time - start_time
+    # Calculate the network statistics rate over the window.
+    # We subtract the counter value at the beginning ('_start')
+    # from the value at the end ('_end').
+    df.rx_bytes_per_ns = (df.rx_bytes_end - df.rx_bytes_start) / window
+    df.tx_bytes_per_ns = (df.tx_bytes_end - df.tx_bytes_start) / window
+    df.rx_drops_per_ns = (df.rx_drops_end - df.rx_drops_start) / window
+    df.tx_drops_per_ns = (df.tx_drops_end - df.tx_drops_start) / window
+    df.rx_errors_per_ns = (df.rx_errors_end - df.rx_errors_start) / window
+    df.tx_errors_per_ns = (df.tx_errors_end - df.tx_errors_start) / window
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+    return df[['time_', 'pod_id', 'pod', 'service', 'namespace', 'node',
+               'rx_bytes_per_ns', 'tx_bytes_per_ns',
+               'rx_drops_per_ns', 'tx_drops_per_ns', 'rx_errors_per_ns', 'tx_errors_per_ns']]
+
+
+def inbound_http_throughput_timeseries(start_time, end_time, window_ns):
+    ''' Compute the timeseries statistics of inbound HTTP requests for each container
+    in the cluster.
+
+    Returns the portion of erroroneous requests and the total number of requests
+    for each container, labelled by pod.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    @window_ns The window size in nanoseconds for the timeseries.
+    '''
+    df = _http_events(start_time, end_time,
+                      include_health_checks=False,
+                      include_ready_checks=False,
+                      include_unresolved_inbound=False)
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
+    df.pod_id = df.ctx['pod_id']
+    df.container = df.ctx['container']
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['timestamp', 'container', 'pod_id']).agg(
+        num_requests=('latency', px.count),
+        num_errors=('failure', px.sum),
+    )
+    df.time_ = df.timestamp
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+
+    return df[['time_', 'pod_id', 'pod', 'service', 'namespace', 'node',
+               'container', 'num_requests', 'num_errors']]
+
+
+def inbound_http_latency_timeseries(start_time, end_time, window_ns):
+    ''' Compute the inbound HTTP request latency timeseries for each pod
+    in the cluster.
+
+    Equivalent to `pxviews.inbound_http_summary()` extended over multiple
+    time windows.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    @window_ns The window size in nanoseconds for the timeseries.
+    '''
+    df = _http_events(start_time, end_time,
+                      include_health_checks=False,
+                      include_ready_checks=False,
+                      include_unresolved_inbound=False)
+
+    # Filter only to inbound pod traffic (server-side).
+    # Don't include traffic initiated by this pod to an external location.
+    df = df[df.trace_role == 2]
+
+    df.pod_id = df.ctx['pod_id']
+    df.timestamp = px.bin(df.time_, window_ns)
+    df = df.groupby(['timestamp', 'pod_id']).agg(
+        latency_quantiles=('latency', px.quantiles),
+        latency_sum=('latency', px.sum),
+        num_requests=('latency', px.count),
+        num_errors=('failure', px.sum),
+        req_bytes=('req_body_size', px.sum),
+        resp_bytes=('resp_body_size', px.sum),
+    )
+    df.time_ = df.timestamp
+    df.pod = df.ctx['pod']
+    df.service = df.ctx['service']
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
+
+    return df[['time_', 'pod_id', 'pod', 'service', 'namespace', 'node',
+               'latency_quantiles', 'num_requests', 'num_errors', 'latency_sum', 'req_bytes', 'resp_bytes']]
+
+
+def stacktraces(start_time, end_time):
+    ''' Compute the stacktraces for the entire cluster.
+
+    Returns the stacktraces for the cluster, labelled with pod, container, cmdline, and
+    function stack names.
+
+    Args:
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='stack_traces.beta', start_time=start_time, end_time=end_time)
+
+    df.namespace = df.ctx['namespace']
+    df.pod = df.ctx['pod']
+    df.container = df.ctx['container']
+    df.cmdline = df.ctx['cmdline']
+    df.service = df.ctx['service']
+
+    # Compute node using _exec_hostname() instead of `df.ctx['node']`
+    # We do this so it works for non-k8s processes too.
+    # This is important for determining total number of stack trace samples per node,
+    # as we need to include the non-K8s processes in the computation.
+    df.node = px.Node(px._exec_hostname())
+    df.node_num_cpus = px._exec_host_num_cpus()
+
+    # Combine flamegraphs from different intervals into one larger framegraph.
+    df = df.groupby(['node', 'namespace', 'service', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
+        stack_trace=('stack_trace', px.any),
+        count=('count', px.sum),
+        time_=('time_', px.max),
+        node_num_cpus=('node_num_cpus', px.any),
+    )
+
+    return df[[
+        'namespace',
+        'node',
+        'service',
+        'pod',
+        'container',
+        'cmdline',
+        'stack_trace',
+        'time_',
+        'stack_trace_id',
+        'count',
+        'node_num_cpus',
+     ]]
+
+
+def connection_throughput_stats(start_time, end_time):
+    ''' Compute the throughput of all network connections inside each pod ofthe cluster.
+
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='conn_stats', start_time=start_time, end_time=end_time)
+
+    df.pod_id = df.ctx['pod_id']
+
+    # Find min/max bytes transferred over the selected time window per pod.
+    # Each connection is identified by the tuple: (upid, remote_addr, and remote_port, ssl, protocol).
+    df = df.groupby(['upid', 'pod_id', 'trace_role', 'remote_addr', 'remote_port', 'ssl', 'protocol']).agg(
+        bytes_recv_min=('bytes_recv', px.min),
+        bytes_recv_max=('bytes_recv', px.max),
+        bytes_sent_min=('bytes_sent', px.min),
+        bytes_sent_max=('bytes_sent', px.max),
+        time_max=('time_', px.max),
+        time_min=('time_', px.min),
+    )
+    # Calculate bytes transferred over the time window
+    df.bytes_sent = df.bytes_sent_max - df.bytes_sent_min
+    df.bytes_recv = df.bytes_recv_max - df.bytes_recv_min
+
+    df = df.groupby(['pod_id', 'trace_role', 'remote_addr']).agg(
+        bytes_recv=('bytes_recv', px.sum),
+        bytes_sent=('bytes_sent', px.sum),
+        time_max=('time_max', px.max),
+    )
+
+    # Get RX/TX stats for the server side connections.
+    server_df = df[df.trace_role == 2]
+    server_df.rx_server = server_df.bytes_recv
+    server_df.tx_server = server_df.bytes_sent
+    server_df = server_df[['time_max', 'pod_id', 'rx_server', 'tx_server', 'remote_addr']]
+
+    # Get RX/TX stats for the client side connections.
+    client_df = df[df.trace_role == 1]
+    client_df.rx_client = client_df.bytes_recv
+    client_df.tx_client = client_df.bytes_sent
+    client_df = client_df[['time_max', 'pod_id', 'rx_client', 'tx_client', 'remote_addr']]
+
+    # Create a dataframe that contains both server-side and client-side RX/TX stats.
+    df = server_df.merge(client_df,
+                         how='outer',
+                         left_on=['pod_id', 'remote_addr'],
+                         right_on=['pod_id', 'remote_addr'],
+                         suffixes=['', '_x'])
+
+    df.time_ = px.select(px.greaterThanEqual(df.time_max, df.time_max_x),  df.time_max, df.time_max_x)
+    df.pod_id = px.select(df.pod_id != '',  df.pod_id, df.pod_id_x)
+    df.remote_addr = px.select(df.remote_addr != '',  df.remote_addr, df.remote_addr_x)
+
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+    df.service = df.ctx['service']
+    df.node = df.ctx['node']
+
+    df.inbound_conn_throughput = df.rx_server + df.tx_server
+    df.outbound_conn_throughput = df.tx_client + df.rx_client
+
+    return df[['time_', 'remote_addr', 'node', 'pod_id', 'pod', 'namespace', 'service',
+               'inbound_conn_throughput', 'outbound_conn_throughput']]
+
+
+def processes(start_time, end_time):
+    ''' Collects all of the processes running on the cluster inside containers.
+
+    @start_time Starting time of the data to examine.
+    @end_time Ending time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time, end_time=end_time)
+    df.pod_id = df.ctx['pod_id']
+    df.container_name = df.ctx['container_name']
+    df.container_id = df.ctx['container_id']
+    df.cmdline = df.ctx['cmdline']
+    df.pid = df.ctx['pid']
+
+    df = df.groupby(['upid', 'pod_id', 'container_name', 'container_id', 'cmdline', 'pid']).agg(
+        time_=('time_', px.max),
+    )
+    df.pod = px.pod_id_to_pod_name(df.pod_id)
+    df.service = px.pod_id_to_service_name(df.pod_id)
+    df.namespace = px.pod_id_to_namespace(df.pod_id)
+    df.node = px.pod_id_to_node_name(df.pod_id)
+    df.container_status = px.container_id_to_status(df.container_id)
+
+    return df[['time_', 'service', 'namespace', 'node', 'upid', 'pod_id', 'pod',
+               'container_name', 'container_id', 'cmdline', 'pid', 'container_status']]
 
 )"

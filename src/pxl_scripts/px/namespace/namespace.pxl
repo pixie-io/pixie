@@ -140,10 +140,10 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
     df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_addr)
     df.remote_pod = px.select(df.is_remote_addr_localhost,
-                              'localhost:' + df.pod,
+                              df.pod,
                               px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr)))
     df.remote_service = px.select(df.is_remote_addr_localhost,
-                                  'localhost:' + df.traced_service,
+                                  df.traced_service,
                                   px.service_id_to_service_name(px.ip_to_service_id(df.remote_addr)))
 
     df.remote_ip = df.remote_addr

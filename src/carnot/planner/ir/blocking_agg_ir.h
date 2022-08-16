@@ -74,6 +74,7 @@ class BlockingAggIR : public GroupAcceptorIR {
   void SetPreSplitProto(const planpb::AggregateOperator& pre_split_proto) {
     pre_split_proto_ = pre_split_proto;
   }
+  std::string DebugString() const override;
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(

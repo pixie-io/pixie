@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -41,11 +41,32 @@ go_library(
 )
 
 go_binary(
-    name = "golang_1_16_grpc_tls_server_binary",
+    name = "server",
     embed = [":server_lib"],
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_16//:go_sdk",
+)
+
+go_cross(
+    name = "golang_1_16_grpc_tls_server_binary",
+    sdk_version = "1.16",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_17_grpc_tls_server_binary",
+    sdk_version = "1.17",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_18_grpc_tls_server_binary",
+    sdk_version = "1.18",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_19_grpc_tls_server_binary",
+    sdk_version = "1.19",
+    target = ":server",
 )
 
 container_image(
@@ -63,14 +84,6 @@ container_image(
     layers = [":certs_layer"],
 )
 
-go_binary(
-    name = "golang_1_17_grpc_tls_server_binary",
-    embed = [":server_lib"],
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_17//:go_sdk",
-)
-
 container_image(
     name = "golang_1_17_grpc_tls_server",
     base = "//:pl_go_base_image",
@@ -86,11 +99,6 @@ container_image(
     layers = [":certs_layer"],
 )
 
-go_binary(
-    name = "golang_1_18_grpc_tls_server_binary",
-    embed = [":server_lib"],
-)
-
 container_image(
     name = "golang_1_18_grpc_tls_server",
     base = "//:pl_go_base_image",
@@ -102,6 +110,21 @@ container_image(
     ],
     files = [
         ":golang_1_18_grpc_tls_server_binary",
+    ],
+    layers = [":certs_layer"],
+)
+
+container_image(
+    name = "golang_1_19_grpc_tls_server",
+    base = "//:pl_go_base_image",
+    entrypoint = [
+        "./golang_1_19_grpc_tls_server_binary",
+        "--server_tls_cert=/certs/server.crt",
+        "--server_tls_key=/certs/server.key",
+        "--tls_ca_cert=/certs/ca.crt",
+    ],
+    files = [
+        ":golang_1_19_grpc_tls_server_binary",
     ],
     layers = [":certs_layer"],
 )

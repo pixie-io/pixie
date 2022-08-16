@@ -61,13 +61,6 @@ class MemorySourceIR : public OperatorIR {
   bool streaming() const { return streaming_; }
   void set_streaming(bool streaming) { streaming_ = streaming; }
 
-  Status SetTimeExpressions(ExpressionIR* start_time_expr, ExpressionIR* end_time_expr);
-
-  // Sets the time expressions that eventually get converted
-  ExpressionIR* start_time_expr() const { return start_time_expr_; }
-  ExpressionIR* end_time_expr() const { return end_time_expr_; }
-  bool HasTimeExpressions() const { return has_time_expressions_; }
-
   void SetTimeValuesNS(int64_t time_start_ns, int64_t time_stop_ns) {
     time_start_ns_ = time_start_ns;
     time_stop_ns_ = time_stop_ns;
@@ -128,10 +121,6 @@ class MemorySourceIR : public OperatorIR {
  private:
   std::string table_name_;
   bool streaming_ = false;
-
-  bool has_time_expressions_ = false;
-  ExpressionIR* start_time_expr_ = nullptr;
-  ExpressionIR* end_time_expr_ = nullptr;
 
   bool time_set_ = false;
   int64_t time_start_ns_ = 0;

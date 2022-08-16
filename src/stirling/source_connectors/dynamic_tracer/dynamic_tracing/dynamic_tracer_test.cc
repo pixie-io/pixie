@@ -26,8 +26,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-constexpr std::string_view kBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary_/test_go_1_16_binary";
+constexpr std::string_view kBinaryPath = "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 
 namespace px {
 namespace stirling {
@@ -46,7 +45,11 @@ using ::testing::SizeIs;
 
 constexpr char kServerPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
-    "golang_1_16_grpc_server_/golang_1_16_grpc_server";
+    "golang_1_16_grpc_server";
+
+constexpr char kServerPathExpected[] =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "server_/server";
 
 constexpr char kPod0UpdateTxt[] = R"(
   uid: "pod0"
@@ -123,7 +126,7 @@ TEST_F(ResolveTargetObjPathTest, ResolveUPID) {
   deployment_spec.mutable_upid()->set_pid(s_.child_pid());
 
   ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
-  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
+  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPathExpected));
   EXPECT_TRUE(fs::Exists(deployment_spec.path()));
 }
 
@@ -138,7 +141,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessSuccess) {
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
-  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPath));
+  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPathExpected));
   EXPECT_TRUE(fs::Exists(deployment_spec.path()));
 }
 

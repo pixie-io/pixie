@@ -539,8 +539,8 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
   PL_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
                       GetArgAs<ExpressionIR>(expr_node, expr_obj, "assignment value"));
 
-  PL_ASSIGN_OR_RETURN(auto dataframe,
-                      parent_df->FromColumnAssignment(expr_node, target_column, expr_val));
+  PL_ASSIGN_OR_RETURN(auto dataframe, parent_df->FromColumnAssignment(compiler_state_, expr_node,
+                                                                      target_column, expr_val));
   var_table_->Add(assign_name_string, dataframe);
 
   return ir_graph_->DeleteNode(target_column->id());

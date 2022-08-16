@@ -140,6 +140,9 @@ inline ClassMatch<IRNodeType::kString> String() { return ClassMatch<IRNodeType::
 // Match an arbitrary Metadata value.
 inline ClassMatch<IRNodeType::kMetadata> Metadata() { return ClassMatch<IRNodeType::kMetadata>(); }
 
+// Match an arbitrary Time value.
+inline ClassMatch<IRNodeType::kTime> Time() { return ClassMatch<IRNodeType::kTime>(); }
+
 // Match an arbitrary Metadata value.
 inline ClassMatch<IRNodeType::kFunc> Func() { return ClassMatch<IRNodeType::kFunc>(); }
 

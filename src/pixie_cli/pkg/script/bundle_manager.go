@@ -162,6 +162,12 @@ func (b BundleManager) GetScripts() []*ExecutableScript {
 		s = append(s, pixieScript)
 		i++
 	}
+
+	// Sort scripts to make sure .
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].ScriptName < s[j].ScriptName
+	})
+
 	return s
 }
 

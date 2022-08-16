@@ -16,31 +16,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
-
-#include "src/carnot/planner/rules/rules.h"
+#include "src/carnot/funcs/builtins/util_ops.h"
+#include "src/carnot/udf/registry.h"
+#include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
-namespace planner {
-namespace compiler {
+namespace builtins {
 
-class SetMemorySourceTimesRule : public Rule {
-  /**
-   * @brief SetMemorySourceTimesRule is a simple rule to take the time expressions on memory
-   * sources (which should have already been evaluated to an Int by previous rules) and sets the
-   * nanosecond field that is used downstream.
-   *
-   */
- public:
-  SetMemorySourceTimesRule()
-      : Rule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
+void RegisterUtilOpsOrDie(udf::Registry* registry) {
+  CHECK(registry != nullptr);
+  registry->RegisterOrDie<GRPCStatusToStringUDF>("grpc_status_code_to_str");
+}
 
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-};
-
-}  // namespace compiler
-}  // namespace planner
+}  // namespace builtins
 }  // namespace carnot
 }  // namespace px

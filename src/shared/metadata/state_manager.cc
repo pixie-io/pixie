@@ -158,7 +158,10 @@ Status ApplyK8sUpdates(
         PL_RETURN_IF_ERROR(
             HandleReplicaSetUpdate(update->replica_set_update(), state, metadata_filter));
         break;
-
+      case ResourceUpdate::kDeploymentUpdate:
+        PL_RETURN_IF_ERROR(
+            HandleDeploymentUpdate(update->deployment_update(), state, metadata_filter));
+        break;
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
@@ -349,6 +352,12 @@ Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update, AgentMetadataState
                               AgentMetadataFilter*) {
   VLOG(2) << "Replica Set Update: " << update.DebugString();
   return state->k8s_metadata_state()->HandleReplicaSetUpdate(update);
+}
+
+Status HandleDeploymentUpdate(const DeploymentUpdate& update, AgentMetadataState* state,
+                              AgentMetadataFilter*) {
+  VLOG(2) << "Deployment Update: " << update.DebugString();
+  return state->k8s_metadata_state()->HandleDeploymentUpdate(update);
 }
 
 }  // namespace md

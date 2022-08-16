@@ -87,18 +87,6 @@ def inbound_let_summary(start_time: str, service: px.Service):
     return df.drop('responder')
 
 
-def outbound_let_summary(start_time: str, service: px.Service):
-    ''' Gets a summary of requests outbound from `service`.
-
-    Args:
-    @start_time Starting time of the data to examine.
-    @service: The service to filter on.
-    '''
-    df = let_summary_helper(start_time)
-    df = df[px.has_service_name(df.requestor, service)]
-    return df.drop(['requestor', 'remote_addr'])
-
-
 def let_summary_helper(start_time: str):
     ''' Gets a summary of request statistics. This is a helper function, filtering by
         service is done elsewhere.

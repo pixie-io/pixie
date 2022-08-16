@@ -192,12 +192,12 @@ func GetCurrentVizier(cloudAddr string) (uuid.UUID, error) {
 	if clusterID != uuid.Nil {
 		_, err := GetVizierInfo(cloudAddr, clusterID)
 		if err != nil {
-			cliUtils.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+			cliUtils.WithError(err).Error("the current cluster in the kubeconfig not found within this org")
 			clusterID = uuid.Nil
 		}
 	}
 	if clusterID == uuid.Nil {
-		return uuid.Nil, fmt.Errorf("No current Vizier exists in kubeconfig")
+		return uuid.Nil, fmt.Errorf("the current cluster in the kubeconfig does not have Pixie installed")
 	}
 	return clusterID, nil
 }

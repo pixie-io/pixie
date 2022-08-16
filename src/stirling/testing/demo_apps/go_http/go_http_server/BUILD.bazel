@@ -21,7 +21,7 @@ load("//bazel:go_image_alias.bzl", "go_image")
 go_library(
     name = "go_http_server_lib",
     srcs = ["main.go"],
-    importpath = "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_http/go_http_server",
     visibility = ["//visibility:private"],
 )
 

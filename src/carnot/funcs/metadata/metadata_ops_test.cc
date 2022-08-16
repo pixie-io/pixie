@@ -62,10 +62,12 @@ class MetadataOpsTest : public ::testing::Test {
     updates_->enqueue(px::metadatapb::testutils::CreateRunningServiceUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningServiceIPUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningReplicaSetUpdatePB());
+    updates_->enqueue(px::metadatapb::testutils::CreateRunningDeploymentUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingContainerUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingPodUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingServiceUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingReplicaSetUpdatePB());
+    updates_->enqueue(px::metadatapb::testutils::CreateTerminatingDeploymentUpdatePB());
 
     auto s = px::md::ApplyK8sUpdates(10, metadata_state_.get(), &md_filter_, updates_.get());
 
@@ -211,7 +213,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
-TEST_F(MetadataOpsTest, upid_to_replica_set_name_test) {
+TEST_F(MetadataOpsTest, upid_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToReplicaSetNameUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -227,7 +229,7 @@ TEST_F(MetadataOpsTest, upid_to_replica_set_name_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
-TEST_F(MetadataOpsTest, upid_to_replica_set_id_test) {
+TEST_F(MetadataOpsTest, upid_to_replicaset_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToReplicaSetIDUDF>(std::move(function_ctx));
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -245,6 +247,39 @@ TEST_F(MetadataOpsTest, upid_to_replica_set_id_test) {
   udf_tester.ForInput(upid2).Expect("");
 }
 
+TEST_F(MetadataOpsTest, upid_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<UPIDToDeploymentNameUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("pl/deployment1");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("pl/terminating_deployment1");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // upid2 previously was connected to pl/terminating_service.
+  udf_tester.ForInput(upid2).Expect("");
+}
+
+TEST_F(MetadataOpsTest, upid_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<UPIDToDeploymentIDUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("deployment_uid");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("terminating_deployment_uid");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+
+  // Terminate a replica set, and make sure that the upid no longer associates with that replica
+  // set.
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // upid2 previously was connected to 4_uid.
+  udf_tester.ForInput(upid2).Expect("");
+}
 TEST_F(MetadataOpsTest, upid_to_node_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<UPIDToNodeNameUDF>(std::move(function_ctx));
@@ -269,12 +304,52 @@ TEST_F(MetadataOpsTest, pod_id_to_node_name_test) {
   udf_tester.ForInput("123_uid").Expect("");
 }
 
-TEST_F(MetadataOpsTest, pod_id_to_replica_set_test) {
+TEST_F(MetadataOpsTest, pod_id_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetUDF>(std::move(function_ctx));
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl/rs0");
   // This pod is not available, should return empty.
   udf_tester.ForInput("123_uid").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_replicaset_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToReplicaSetIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("rs0_uid");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToDeploymentNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("pl/deployment1");
+  udf_tester.ForInput("2_uid").Expect("pl/terminating_deployment1");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+
+  // keep information about the owners after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("2_uid").Expect("pl/terminating_deployment1");
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodIDToDeploymentIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("1_uid").Expect("deployment_uid");
+  udf_tester.ForInput("2_uid").Expect("terminating_deployment_uid");
+  // This pod is not available, should return empty.
+  udf_tester.ForInput("123_uid").Expect("");
+
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("2_uid").Expect("terminating_deployment_uid");
 }
 
 TEST_F(MetadataOpsTest, upid_to_hostname_test) {
@@ -697,12 +772,49 @@ TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
   udf_tester.ForInput("badlyformed").Expect("");
 }
 
-TEST_F(MetadataOpsTest, pod_name_to_replica_set_test) {
+TEST_F(MetadataOpsTest, pod_name_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
-  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetUDF>(std::move(function_ctx));
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("pl/rs0");
   udf_tester.ForInput("pl/terminating_pod").Expect("pl/terminating_rs");
   udf_tester.ForInput("badlyformed").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_replicaset_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("rs0_uid");
+  udf_tester.ForInput("pl/terminating_pod").Expect("terminating_rs0_uid");
+  udf_tester.ForInput("badlyformed").Expect("");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToDeploymentNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("pl/deployment1");
+  udf_tester.ForInput("pl/terminating_pod").Expect("pl/terminating_deployment1");
+  udf_tester.ForInput("badlyformed").Expect("");
+
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("pl/terminating_pod").Expect("pl/terminating_deployment1");
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<PodNameToDeploymentIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/running_pod").Expect("deployment_uid");
+  udf_tester.ForInput("pl/terminating_pod").Expect("terminating_deployment_uid");
+  udf_tester.ForInput("badlyformed").Expect("");
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("pl/terminating_pod").Expect("terminating_deployment_uid");
 }
 
 TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
@@ -713,7 +825,7 @@ TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
   udf_tester.ForInput("").Expect("");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_replica_set_name_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_replicaset_name_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetIDToReplicaSetNameUDF>(std::move(function_ctx));
@@ -726,7 +838,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_replica_set_name_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect("pl/terminating_rs");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_start_time_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_start_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStartTimeUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect(101);
@@ -738,7 +850,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_start_time_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(101);
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_stop_time_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_stop_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStopTimeUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect(0);
@@ -750,7 +862,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_stop_time_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(150);
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_namespace_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_namespace_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("rs0_uid").Expect("pl");
@@ -762,7 +874,7 @@ TEST_F(MetadataOpsTest, replica_set_id_to_namespace_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect("pl");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_owner_references_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_owner_references_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetIDToOwnerReferencesUDF>(std::move(function_ctx));
@@ -771,24 +883,25 @@ TEST_F(MetadataOpsTest, replica_set_id_to_owner_references_test) {
       R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
   udf_tester.ForInput("terminating_rs0_uid")
       .Expect(
-          R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
+          R"(["{\"uid\":\"terminating_deployment_uid\",\"kind\":\"Deployment\",\"name\":\"terminating_deployment1\"}"])");
   udf_tester.ForInput("badformat").Expect("");
   updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
   EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
   // upid2 previously was connected to 4_uid.
   udf_tester.ForInput("terminating_rs0_uid")
       .Expect(
-          R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
+          R"(["{\"uid\":\"terminating_deployment_uid\",\"kind\":\"Deployment\",\"name\":\"terminating_deployment1\"}"])");
 }
 
-TEST_F(MetadataOpsTest, replica_set_id_to_status_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_status_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetIDToStatusUDF>(std::move(function_ctx));
 
   md::ReplicaSetConditions conditions_ready{{"ready", md::ConditionStatus::kTrue}};
   md::ReplicaSetConditions conditions_terminated{{"Terminating", md::ConditionStatus::kTrue}};
-  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, conditions_ready, 101, 0);
-  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, conditions_terminated, 101, 0);
+  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, 5, conditions_ready, 101, 0);
+  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, 0, conditions_terminated, 101,
+                                         0);
 
   udf_tester.ForInput("rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_ready));
   udf_tester.ForInput("terminating_rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
@@ -799,7 +912,35 @@ TEST_F(MetadataOpsTest, replica_set_id_to_status_test) {
   udf_tester.ForInput("terminating_rs0_uid").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_replica_set_id_test) {
+TEST_F(MetadataOpsTest, replicaset_id_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<ReplicaSetIDToDeploymentNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("rs0_uid").Expect("pl/deployment1");
+  udf_tester.ForInput("terminating_rs0_uid").Expect("pl/terminating_deployment1");
+  udf_tester.ForInput("badlyformed").Expect("");
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("terminating_rs0_uid").Expect("pl/terminating_deployment1");
+}
+
+TEST_F(MetadataOpsTest, replicaset_id_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<ReplicaSetIDToDeploymentIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("rs0_uid").Expect("deployment_uid");
+  udf_tester.ForInput("terminating_rs0_uid").Expect("terminating_deployment_uid");
+  udf_tester.ForInput("badlyformed").Expect("");
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("terminating_rs0_uid").Expect("terminating_deployment_uid");
+}
+
+TEST_F(MetadataOpsTest, replicaset_name_to_replicaset_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToReplicaSetIDUDF>(std::move(function_ctx));
@@ -812,7 +953,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_replica_set_id_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect("terminating_rs0_uid");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_start_time_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_start_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToStartTimeUDF>(std::move(function_ctx));
@@ -825,7 +966,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_start_time_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect(101);
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_stop_time_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_stop_time_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToStopTimeUDF>(std::move(function_ctx));
@@ -838,7 +979,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_stop_time_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect(150);
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_namespace_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_namespace_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToNamespaceUDF>(std::move(function_ctx));
@@ -851,7 +992,7 @@ TEST_F(MetadataOpsTest, replica_set_name_to_namespace_test) {
   udf_tester.ForInput("pl/terminating_rs").Expect("pl");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_owner_references_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_owner_references_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester =
       px::carnot::udf::UDFTester<ReplicaSetNameToOwnerReferencesUDF>(std::move(function_ctx));
@@ -862,24 +1003,25 @@ TEST_F(MetadataOpsTest, replica_set_name_to_owner_references_test) {
       R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
   udf_tester.ForInput("pl/terminating_rs")
       .Expect(
-          R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
+          R"(["{\"uid\":\"terminating_deployment_uid\",\"kind\":\"Deployment\",\"name\":\"terminating_deployment1\"}"])");
   udf_tester.ForInput("badformat").Expect("");
   updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
   // keep information about the replica set after termination
   EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
   udf_tester.ForInput("pl/terminating_rs")
       .Expect(
-          R"(["{\"uid\":\"deployment_uid\",\"kind\":\"Deployment\",\"name\":\"deployment1\"}"])");
+          R"(["{\"uid\":\"terminating_deployment_uid\",\"kind\":\"Deployment\",\"name\":\"terminating_deployment1\"}"])");
 }
 
-TEST_F(MetadataOpsTest, replica_set_name_to_status_test) {
+TEST_F(MetadataOpsTest, replicaset_name_to_status_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<ReplicaSetNameToStatusUDF>(std::move(function_ctx));
 
   md::ReplicaSetConditions conditionsReady{{"ready", md::ConditionStatus::kTrue}};
   md::ReplicaSetConditions conditionsTerminating{{"Terminating", md::ConditionStatus::kTrue}};
-  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, conditionsReady, 101, 0);
-  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, conditionsTerminating, 101, 0);
+  md::ReplicaSetInfo rs_info_ready("", "", "", 5, 5, 3, 3, 5, 5, conditionsReady, 101, 0);
+  md::ReplicaSetInfo rs_info_terminating("", "", "", 0, 0, 0, 0, 5, 0, conditionsTerminating, 101,
+                                         0);
 
   udf_tester.ForInput("pl/rs0").Expect(ReplicaSetInfoToStatus(&rs_info_ready));
   udf_tester.ForInput("pl/terminating_rs").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
@@ -888,6 +1030,195 @@ TEST_F(MetadataOpsTest, replica_set_name_to_status_test) {
   // keep information about the replica set after termination
   EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
   udf_tester.ForInput("pl/terminating_rs").Expect(ReplicaSetInfoToStatus(&rs_info_terminating));
+}
+
+TEST_F(MetadataOpsTest, replicaset_name_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<ReplicaSetNameToDeploymentNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/rs0").Expect("pl/deployment1");
+  udf_tester.ForInput("pl/terminating_rs").Expect("pl/terminating_deployment1");
+  udf_tester.ForInput("badlyformed").Expect("");
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("pl/terminating_rs").Expect("pl/terminating_deployment1");
+}
+
+TEST_F(MetadataOpsTest, replicaset_name_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<ReplicaSetNameToDeploymentIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/rs0").Expect("deployment_uid");
+  udf_tester.ForInput("pl/terminating_rs").Expect("terminating_deployment_uid");
+  udf_tester.ForInput("badlyformed").Expect("");
+  // keep information about the deployment after termination
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedReplicaSetUpdatePB());
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("pl/terminating_rs").Expect("terminating_deployment_uid");
+}
+
+TEST_F(MetadataOpsTest, deployment_id_to_deployment_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<DeploymentIDToDeploymentNameUDF>(std::move(function_ctx));
+  udf_tester.ForInput("deployment_uid").Expect("pl/deployment1");
+  udf_tester.ForInput("terminating_deployment_uid").Expect("pl/terminating_deployment1");
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // make sure that we can still find the name of terminated deployment from uid
+  udf_tester.ForInput("terminating_deployment_uid").Expect("pl/terminating_deployment1");
+}
+
+TEST_F(MetadataOpsTest, deployment_id_to_start_time_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<DeploymentIDToStartTimeUDF>(std::move(function_ctx));
+  udf_tester.ForInput("deployment_uid").Expect(101);
+  udf_tester.ForInput("terminating_deployment_uid").Expect(123);
+  udf_tester.ForInput("badformat").Expect(0);
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // start time shouldn't change after pod terminated
+  udf_tester.ForInput("terminating_deployment_uid").Expect(123);
+}
+
+TEST_F(MetadataOpsTest, deployment_id_to_stop_time_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<DeploymentIDToStopTimeUDF>(std::move(function_ctx));
+  udf_tester.ForInput("deployment_uid").Expect(0);
+  udf_tester.ForInput("terminating_deployment_uid").Expect(0);
+  udf_tester.ForInput("badformat").Expect(0);
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // deployment should change stop time on deployment termination
+  udf_tester.ForInput("terminating_deployment_uid").Expect(150);
+}
+
+TEST_F(MetadataOpsTest, deployment_id_to_namespace_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<DeploymentIDToNamespaceUDF>(std::move(function_ctx));
+  udf_tester.ForInput("deployment_uid").Expect("pl");
+  udf_tester.ForInput("terminating_deployment_uid").Expect("pl");
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // upid2 previously was connected to 4_uid.
+  udf_tester.ForInput("terminating_deployment_uid").Expect("pl");
+}
+
+TEST_F(MetadataOpsTest, deployment_id_to_status_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<DeploymentIDToStatusUDF>(std::move(function_ctx));
+
+  // can't test with more conditions since conditions are stored in unordered map
+  // with this test suite, condition order changes, so test fail if more than one
+  // condition is given
+  md::DeploymentConditions conditions_ready{
+      {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kTrue}};
+
+  md::DeploymentConditions conditions_terminating{
+      {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kFalse}};
+
+  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, 5, conditions_ready, 101, 0);
+  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, 0, conditions_terminating,
+                                          123, 0);
+  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, 0, conditions_terminating,
+                                         123, 150);
+
+  udf_tester.ForInput("deployment_uid").Expect(DeploymentInfoToStatus(&dep_info_ready));
+  udf_tester.ForInput("terminating_deployment_uid")
+      .Expect(DeploymentInfoToStatus(&dep_info_terminating));
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // check status after deployment terminated
+  udf_tester.ForInput("terminating_deployment_uid")
+      .Expect(DeploymentInfoToStatus(&dep_info_terminated));
+}
+
+TEST_F(MetadataOpsTest, deployment_name_to_deployment_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<DeploymentNameToDeploymentIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/deployment1").Expect("deployment_uid");
+  udf_tester.ForInput("pl/terminating_deployment1").Expect("terminating_deployment_uid");
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // make sure that we can still find the name of terminated deployment from uid
+  udf_tester.ForInput("pl/terminating_deployment1").Expect("terminating_deployment_uid");
+}
+
+TEST_F(MetadataOpsTest, deployment_name_to_start_time_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<DeploymentNameToStartTimeUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/deployment1").Expect(101);
+  udf_tester.ForInput("pl/terminating_deployment1").Expect(123);
+  udf_tester.ForInput("badformat").Expect(0);
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // start time shouldn't change after pod terminated
+  udf_tester.ForInput("pl/terminating_deployment1").Expect(123);
+}
+
+TEST_F(MetadataOpsTest, deployment_name_to_stop_time_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<DeploymentNameToStopTimeUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/deployment1").Expect(0);
+  udf_tester.ForInput("pl/terminating_deployment1").Expect(0);
+  udf_tester.ForInput("badformat").Expect(0);
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // deployment should change stop time on deployment termination
+  udf_tester.ForInput("pl/terminating_deployment1").Expect(150);
+}
+
+TEST_F(MetadataOpsTest, deployment_name_to_namespace_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<DeploymentNameToNamespaceUDF>(std::move(function_ctx));
+  udf_tester.ForInput("pl/deployment1").Expect("pl");
+  udf_tester.ForInput("pl/terminating_deployment1").Expect("pl");
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // upid2 previously was connected to 4_uid.
+  udf_tester.ForInput("pl/terminating_deployment1").Expect("pl");
+}
+
+TEST_F(MetadataOpsTest, deployment_name_to_status_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester = px::carnot::udf::UDFTester<DeploymentNameToStatusUDF>(std::move(function_ctx));
+
+  // can't test with more conditions since conditions are stored in unordered map
+  // with this test suite, condition order changes, so test fail if more than one
+  // condition is given
+  md::DeploymentConditions conditions_ready{
+      {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kTrue}};
+
+  md::DeploymentConditions conditions_terminating{
+      {md::DeploymentConditionType::kAvailable, md::ConditionStatus::kFalse}};
+
+  md::DeploymentInfo dep_info_ready("", "", "", 5, 5, 4, 3, 3, 2, 5, conditions_ready, 101, 0);
+  md::DeploymentInfo dep_info_terminating("", "", "", 2, 6, 5, 3, 3, 2, 0, conditions_terminating,
+                                          123, 0);
+  md::DeploymentInfo dep_info_terminated("", "", "", 2, 0, 0, 0, 0, 0, 0, conditions_terminating,
+                                         123, 150);
+
+  udf_tester.ForInput("pl/deployment1").Expect(DeploymentInfoToStatus(&dep_info_ready));
+  udf_tester.ForInput("pl/terminating_deployment1")
+      .Expect(DeploymentInfoToStatus(&dep_info_terminating));
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedDeploymentUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  // check status after deployment terminated
+  udf_tester.ForInput("pl/terminating_deployment1")
+      .Expect(DeploymentInfoToStatus(&dep_info_terminated));
 }
 
 TEST_F(MetadataOpsTest, has_service_id_test) {

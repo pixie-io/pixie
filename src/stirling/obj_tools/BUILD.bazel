@@ -79,6 +79,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
+        "//src/stirling/utils:cc_library",
     ],
 )
 
@@ -120,6 +121,20 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
     ],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "raw_fptr_manager_test",
+    srcs = ["raw_fptr_manager_test.cc"],
+    data = [
+        "//src/stirling/obj_tools/testdata/c:library",
+    ],
+    # Disable the test for now. It doesn't pass on Jenkins due to the containerized environment.
+    # A future planned version will not be subject to the same restriction.
+    tags = ["manual"],
     deps = [
         ":cc_library",
     ],

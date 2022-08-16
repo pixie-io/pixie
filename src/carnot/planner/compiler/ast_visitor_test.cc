@@ -775,10 +775,12 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
   ASSERT_EQ(mem_srcs.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
-  EXPECT_TRUE(mem_src->HasTimeExpressions());
-  EXPECT_MATCH(mem_src->start_time_expr(), String());
-  EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
-  EXPECT_MATCH(mem_src->end_time_expr(), Int(time_now));
+  EXPECT_TRUE(mem_src->IsTimeSet());
+  EXPECT_EQ(
+      mem_src->time_start_ns(),
+      time_now -
+          std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(1)).count());
+  EXPECT_EQ(mem_src->time_stop_ns(), time_now);
 }
 
 TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
@@ -790,7 +792,7 @@ TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
   ASSERT_EQ(mem_nodes.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_nodes[0]);
-  EXPECT_FALSE(mem_src->HasTimeExpressions());
+  EXPECT_FALSE(mem_src->IsTimeSet());
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
@@ -803,11 +805,9 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
   ASSERT_EQ(mem_srcs.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
-  EXPECT_TRUE(mem_src->HasTimeExpressions());
-  EXPECT_MATCH(mem_src->start_time_expr(), Int());
-  EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 12);
-  EXPECT_MATCH(mem_src->end_time_expr(), Int());
-  EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
+  EXPECT_TRUE(mem_src->IsTimeSet());
+  EXPECT_EQ(mem_src->time_start_ns(), 12);
+  EXPECT_EQ(mem_src->time_stop_ns(), 100);
 }
 
 TEST_F(ASTVisitorTest, DisplayTest) {
@@ -929,8 +929,7 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
   // Fetch the processed args for a + a
   std::vector<IRNode*> mem_srcs = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
   EXPECT_EQ(mem_srcs.size(), 1);
-  auto expr1 = static_cast<MemorySourceIR*>(mem_srcs[0])->start_time_expr();
-  ASSERT_MATCH(expr1, Int(20));
+  EXPECT_EQ(static_cast<MemorySourceIR*>(mem_srcs[0])->time_start_ns(), 20);
 
   // Fetch the processed args for b * b > 10
   std::vector<IRNode*> filters = ir_graph->FindNodesOfType(IRNodeType::kFilter);
@@ -1468,10 +1467,7 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs) {
   std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
   ASSERT_EQ(source_nodes.size(), 1);
   MemorySourceIR* source = static_cast<MemorySourceIR*>(source_nodes[0]);
-  ExpressionIR* start_expr = source->start_time_expr();
-  ASSERT_EQ(start_expr->EvaluatedDataType(), types::DataType::TIME64NS);
-  TimeIR* start_time_ir = static_cast<TimeIR*>(start_expr);
-  ASSERT_EQ(start_time_ir->val(), 1234);
+  ASSERT_EQ(source->time_start_ns(), 1234);
 
   std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
   ASSERT_EQ(map_nodes.size(), 1);

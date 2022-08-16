@@ -79,3 +79,4 @@ Vagrantfile
 
 # Ignore symlink to bazel_output_base/external
 external
+!bazel/external

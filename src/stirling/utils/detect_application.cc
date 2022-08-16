@@ -56,6 +56,12 @@ bool operator<(const SemVer& lhs, const SemVer& rhs) {
                                       rhs_vec.end());
 }
 
+bool operator==(const SemVer& lhs, const SemVer& rhs) {
+  return lhs.major == rhs.major && lhs.minor == rhs.minor && lhs.patch == rhs.patch;
+}
+
+bool operator<=(const SemVer& lhs, const SemVer& rhs) { return (lhs < rhs) || (lhs == rhs); }
+
 StatusOr<SemVer> GetSemVer(const std::string& version, const bool strict) {
   std::regex sem_ver_regex(R"([0-9]+\.[0-9]+\.[0-9]+)");
   std::smatch match;

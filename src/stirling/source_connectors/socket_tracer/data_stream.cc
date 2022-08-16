@@ -201,7 +201,8 @@ DataStream::ProcessBytesToFrames<protocols::kafka::Packet, protocols::kafka::Sta
     message_type_t type, protocols::kafka::StateWrapper* state);
 template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protocols::NoState>(
     message_type_t type, protocols::NoState* state);
-
+template void DataStream::ProcessBytesToFrames<protocols::amqp::Frame, protocols::NoState>(
+    message_type_t type, protocols::NoState* state);
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;

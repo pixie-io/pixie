@@ -146,7 +146,7 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
   return uprobe_count;
 }
 
-Status UProbeManager::UpdateOpenSSLSymAddrs(RawFptrManager* fptr_manager,
+Status UProbeManager::UpdateOpenSSLSymAddrs(obj_tools::RawFptrManager* fptr_manager,
                                             std::filesystem::path libcrypto_path, uint32_t pid) {
   PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
                       OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
@@ -206,7 +206,7 @@ enum class HostPathForPIDPathSearchType { kSearchTypeEndsWith, kSearchTypeContai
 // e.g. input: lib_names = {"libssl.so.1.1", "libcrypto.so.1.1"}
 // output: {"/usr/lib/mount/abc...def/usr/lib/libssl.so.1.1",
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
-StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDPath(
+StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
     LazyLoadedFPResolver* fp_resolver, HostPathForPIDPathSearchType search_type) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
@@ -286,7 +286,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
   // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindHostPathForPIDPath(lib_names, pid, proc_parser_.get(), &fp_resolver_));
+                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_));
 
   std::filesystem::path container_libssl = container_lib_paths[0];
   std::filesystem::path container_libcrypto = container_lib_paths[1];
@@ -310,8 +310,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   }
 
   PL_ASSIGN_OR_RETURN(auto reader, ElfReader::Create(container_libcrypto));
-  auto fptr_manager = std::unique_ptr<RawFptrManager>(
-      new RawFptrManager(reader.get(), proc_parser_.get(), container_libcrypto));
+  auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(reader.get(), proc_parser_.get(),
+                                                                  container_libcrypto);
 
   PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
 
@@ -368,7 +368,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   std::string proc_exe_str = proc_exe.string();
   PL_ASSIGN_OR_RETURN(
       const std::vector<std::filesystem::path> proc_exe_paths,
-      FindHostPathForPIDPath({proc_exe_str}, pid, proc_parser_.get(), &fp_resolver_));
+      FindHostPathForPIDLibs({proc_exe_str}, pid, proc_parser_.get(), &fp_resolver_));
 
   if (proc_exe_paths.size() != 1) {
     return error::Internal(

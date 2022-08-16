@@ -137,7 +137,7 @@ load("@python3_10//:defs.bzl", "interpreter")
 pip_parse(
     name = "vizier_api_python_deps",
     python_interpreter_target = interpreter,
-    requirements_lock = "//src/api/python:requirements.txt",
+    requirements_lock = "//src/api/python:requirements.bazel.txt",
 )
 
 load("@vizier_api_python_deps//:requirements.bzl", vizier_api_install_deps = "install_deps")
@@ -196,11 +196,37 @@ go_download_sdk(
     version = "1.17.11",
 )
 
+go_download_sdk(
+    name = "go_sdk_1_18",
+    version = "1.18.5",
+)
+
+go_download_sdk(
+    name = "go_sdk_1_19",
+    version = "1.19",
+)
+
 pip_parse(
     name = "amqp_gen_reqs",
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
 )
 
-load("@amqp_gen_reqs//:requirements.bzl", "install_deps")
+load("@amqp_gen_reqs//:requirements.bzl", amp_gen_install_deps = "install_deps")
 
-install_deps()
+amp_gen_install_deps()
+
+load(
+    "@io_bazel_rules_docker//python3:image.bzl",
+    py_image_repos = "repositories",
+)
+
+py_image_repos()
+
+pip_parse(
+    name = "amqp_bpf_test_requirements",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.txt",
+)
+
+load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
+
+ampq_bpf_test_install_deps()

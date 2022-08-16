@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -31,11 +31,32 @@ go_library(
 )
 
 go_binary(
-    name = "golang_1_16_grpc_server",
+    name = "server",
     embed = [":grpc_server_lib"],
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_16//:go_sdk",
+)
+
+go_cross(
+    name = "golang_1_16_grpc_server",
+    sdk_version = "1.16",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_17_grpc_server",
+    sdk_version = "1.17",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_18_grpc_server",
+    sdk_version = "1.18",
+    target = ":server",
+)
+
+go_cross(
+    name = "golang_1_19_grpc_server",
+    sdk_version = "1.19",
+    target = ":server",
 )
 
 filegroup(
@@ -48,14 +69,6 @@ filegroup(
     visibility = ["//src/stirling:__subpackages__"],
 )
 
-go_binary(
-    name = "golang_1_17_grpc_server",
-    embed = [":grpc_server_lib"],
-    goarch = "amd64",
-    goos = "linux",
-    gosdk = "@go_sdk_1_17//:go_sdk",
-)
-
 filegroup(
     name = "golang_1_17_grpc_server_with_certs",
     srcs = [":golang_1_17_grpc_server"],
@@ -66,14 +79,19 @@ filegroup(
     visibility = ["//src/stirling:__subpackages__"],
 )
 
-go_binary(
-    name = "golang_1_18_grpc_server",
-    embed = [":grpc_server_lib"],
-)
-
 filegroup(
     name = "golang_1_18_grpc_server_with_certs",
     srcs = [":golang_1_18_grpc_server"],
+    data = [
+        "https-server.crt",
+        "https-server.key",
+    ],
+    visibility = ["//src/stirling:__subpackages__"],
+)
+
+filegroup(
+    name = "golang_1_19_grpc_server_with_certs",
+    srcs = [":golang_1_19_grpc_server"],
     data = [
         "https-server.crt",
         "https-server.key",

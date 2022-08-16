@@ -134,7 +134,8 @@ TEST_F(DefaultArgumentsTest, PLModule) {
 }
 
 TEST_F(DefaultArgumentsTest, Dataframe) {
-  auto dataframe_or_s = Dataframe::Create(MakeMemSource(), ast_visitor_.get());
+  auto dataframe_or_s =
+      Dataframe::Create(compiler_state_.get(), MakeMemSource(), ast_visitor_.get());
   ASSERT_OK(dataframe_or_s);
   QLObjectPtr obj = dataframe_or_s.ConsumeValueOrDie();
   {

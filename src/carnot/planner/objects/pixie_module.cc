@@ -158,7 +158,8 @@ StatusOr<ExpressionIR*> EvaluateUDTFArg(IR* graph, IRNode* arg_node,
   }
 }
 
-StatusOr<QLObjectPtr> UDTFSourceHandler(IR* graph, const udfspb::UDTFSourceSpec& udtf_source_spec,
+StatusOr<QLObjectPtr> UDTFSourceHandler(CompilerState* compiler_state, IR* graph,
+                                        const udfspb::UDTFSourceSpec& udtf_source_spec,
                                         const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
   absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
@@ -170,7 +171,7 @@ StatusOr<QLObjectPtr> UDTFSourceHandler(IR* graph, const udfspb::UDTFSourceSpec&
   PL_ASSIGN_OR_RETURN(
       UDTFSourceIR * udtf_source,
       graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_map, udtf_source_spec));
-  return Dataframe::Create(udtf_source, visitor);
+  return Dataframe::Create(compiler_state, udtf_source, visitor);
 }
 
 Status PixieModule::RegisterUDTFs() {
@@ -185,14 +186,14 @@ Status PixieModule::RegisterUDTFs() {
       }
     }
 
-    PL_ASSIGN_OR_RETURN(
-        std::shared_ptr<FuncObject> fn_obj,
-        FuncObject::Create(udtf.name(), argument_names, default_values,
-                           /* has_variable_len_args */ false,
-                           /* has_variable_len_kwargs */ false,
-                           std::bind(&UDTFSourceHandler, graph_, udtf, std::placeholders::_1,
-                                     std::placeholders::_2, std::placeholders::_3),
-                           ast_visitor()));
+    PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> fn_obj,
+                        FuncObject::Create(udtf.name(), argument_names, default_values,
+                                           /* has_variable_len_args */ false,
+                                           /* has_variable_len_kwargs */ false,
+                                           std::bind(&UDTFSourceHandler, compiler_state_, graph_,
+                                                     udtf, std::placeholders::_1,
+                                                     std::placeholders::_2, std::placeholders::_3),
+                                           ast_visitor()));
 
     AddMethod(udtf.name(), fn_obj);
   }
@@ -615,7 +616,7 @@ Status PixieModule::Init() {
   PL_RETURN_IF_ERROR(debug_fn->SetDocString(kDebugOpDocstring));
   AddMethod(kDebugOpID, debug_fn);
 
-  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
+  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(compiler_state_, graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpID, base_df));
   PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kVisAttrID, viz));

@@ -73,7 +73,7 @@ var GetPEMsCmd = &cobra.Command{
 		clusterID := uuid.FromStringOrNil(selectedCluster)
 		var err error
 		if !allClusters && clusterID == uuid.Nil {
-			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
+			clusterID, err = vizier.GetCurrentVizier(cloudAddr)
 			if err != nil {
 				cliUtils.WithError(err).Fatal("Could not fetch healthy vizier")
 			}

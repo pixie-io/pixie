@@ -263,3 +263,11 @@ def stirling_test_images():
         "sha256:b0616a801a0f3c17c437c67c49e20c76c8735e205cdc165e56ae4fa867f32af1",
         "pixie-oss/pixie-dev-public/docker-deps/node",
     )
+
+    # Tag: rabbitmq:3-management
+    # Arch: linux/amd64
+    _gcr_io_image(
+        "rabbitmq_3_management",
+        "sha256:650c7e0093842739ddfaadec0d45946c052dba42941bd5c0a082cbe914451c25",
+        "pixie-oss/demo-apps/rabbitmq/rabbitmq:3-management",
+    )

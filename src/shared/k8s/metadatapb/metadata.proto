@@ -703,6 +703,7 @@ message ReplicaSetUpdate {
   int32 ready_replicas = 7;
   int32 available_replicas = 8;
   int32 observed_generation = 9;
+  int32 requested_replicas = 13;
   repeated ReplicaSetCondition conditions = 10;
   repeated OwnerReference owner_references = 11;
 }
@@ -869,6 +870,7 @@ message DeploymentUpdate {
   int32 ready_replicas = 9;
   int32 available_replicas = 10;
   int32 unavailable_replicas = 11;
+  int32 requested_replicas = 13;
   repeated DeploymentCondition conditions = 12;
 }
 

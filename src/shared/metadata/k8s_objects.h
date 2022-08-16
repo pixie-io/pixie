@@ -555,8 +555,9 @@ class ReplicaSetInfo : public K8sMetadataObject {
  public:
   ReplicaSetInfo(UID uid, std::string_view ns, std::string_view name, int32_t replicas,
                  int32_t fully_labeled_replicas, int32_t ready_replicas, int32_t available_replicas,
-                 int32_t observed_generation, ReplicaSetConditions conditions,
-                 int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
+                 int32_t observed_generation, int32_t requested_replicas,
+                 ReplicaSetConditions conditions, int64_t start_timestamp_ns = 0,
+                 int64_t stop_timestamp_ns = 0)
       : K8sMetadataObject(K8sObjectType::kReplicaSet, uid, ns, name, start_timestamp_ns,
                           stop_timestamp_ns),
         replicas_(replicas),
@@ -564,6 +565,7 @@ class ReplicaSetInfo : public K8sMetadataObject {
         ready_replicas_(ready_replicas),
         available_replicas_(available_replicas),
         observed_generation_(observed_generation),
+        requested_replicas_(requested_replicas),
         conditions_(conditions) {}
 
   explicit ReplicaSetInfo(
@@ -574,6 +576,7 @@ class ReplicaSetInfo : public K8sMetadataObject {
                        replica_set_update_info.ready_replicas(),
                        replica_set_update_info.available_replicas(),
                        replica_set_update_info.observed_generation(),
+                       replica_set_update_info.requested_replicas(),
                        ConvertToReplicaSetConditions(replica_set_update_info.conditions()),
                        replica_set_update_info.start_timestamp_ns(),
                        replica_set_update_info.stop_timestamp_ns()) {}
@@ -585,6 +588,7 @@ class ReplicaSetInfo : public K8sMetadataObject {
   int32_t ready_replicas() const { return ready_replicas_; }
   int32_t available_replicas() const { return available_replicas_; }
   int32_t observed_generation() const { return observed_generation_; }
+  int32_t requested_replicas() const { return requested_replicas_; }
 
   void set_replicas(int32_t replicas) { replicas_ = replicas; }
   void set_fully_labeled_replicas(int32_t fully_labeled_replicas) {
@@ -596,6 +600,9 @@ class ReplicaSetInfo : public K8sMetadataObject {
   }
   void set_observed_generation(int32_t observed_generation) {
     observed_generation_ = observed_generation;
+  }
+  void set_requested_replicas(int32_t requested_replicas) {
+    requested_replicas_ = requested_replicas;
   }
 
   ReplicaSetConditions conditions() const { return conditions_; }
@@ -617,6 +624,7 @@ class ReplicaSetInfo : public K8sMetadataObject {
   int32_t ready_replicas_;
   int32_t available_replicas_;
   int32_t observed_generation_;
+  int32_t requested_replicas_;
   ReplicaSetConditions conditions_;
 };
 
@@ -663,8 +671,8 @@ class DeploymentInfo : public K8sMetadataObject {
   DeploymentInfo(UID uid, std::string_view ns, std::string_view name, int32_t observed_generation,
                  int32_t replicas, int32_t updated_replicas, int32_t ready_replicas,
                  int32_t available_replicas, int32_t unavailable_replicas,
-                 DeploymentConditions conditions, int64_t start_timestamp_ns = 0,
-                 int64_t stop_timestamp_ns = 0)
+                 int32_t requested_replicas, DeploymentConditions conditions,
+                 int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
       : K8sMetadataObject(K8sObjectType::kDeployment, uid, ns, name, start_timestamp_ns,
                           stop_timestamp_ns),
         observed_generation_(observed_generation),
@@ -673,6 +681,7 @@ class DeploymentInfo : public K8sMetadataObject {
         ready_replicas_(ready_replicas),
         available_replicas_(available_replicas),
         unavailable_replicas_(unavailable_replicas),
+        requested_replicas_(requested_replicas),
         conditions_(conditions) {}
 
   explicit DeploymentInfo(
@@ -683,6 +692,7 @@ class DeploymentInfo : public K8sMetadataObject {
                        deployment_update_info.ready_replicas(),
                        deployment_update_info.available_replicas(),
                        deployment_update_info.unavailable_replicas(),
+                       deployment_update_info.requested_replicas(),
                        ConvertToDeploymentConditions(deployment_update_info.conditions()),
                        deployment_update_info.start_timestamp_ns(),
                        deployment_update_info.stop_timestamp_ns()) {}
@@ -695,6 +705,7 @@ class DeploymentInfo : public K8sMetadataObject {
   int32_t ready_replicas() const { return ready_replicas_; }
   int32_t available_replicas() const { return available_replicas_; }
   int32_t unavailable_replicas() const { return unavailable_replicas_; }
+  int32_t requested_replicas() const { return requested_replicas_; }
 
   void set_observed_generation(int32_t observed_generation) {
     observed_generation_ = observed_generation;
@@ -707,6 +718,10 @@ class DeploymentInfo : public K8sMetadataObject {
   }
   void set_unavailable_replicas(int32_t unavailable_replicas) {
     unavailable_replicas_ = unavailable_replicas;
+  }
+
+  void set_requested_replicas(int32_t requested_replicas) {
+    requested_replicas_ = requested_replicas;
   }
 
   DeploymentConditions conditions() const { return conditions_; }
@@ -729,6 +744,7 @@ class DeploymentInfo : public K8sMetadataObject {
   int32_t ready_replicas_;
   int32_t available_replicas_;
   int32_t unavailable_replicas_;
+  int32_t requested_replicas_;
   DeploymentConditions conditions_;
 };
 }  // namespace md

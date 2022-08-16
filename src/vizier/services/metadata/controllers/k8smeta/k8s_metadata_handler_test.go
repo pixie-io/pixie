@@ -1411,6 +1411,7 @@ func TestReplicaSetUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					ReadyReplicas:        1,
 					AvailableReplicas:    1,
 					ObservedGeneration:   10,
+					RequestedReplicas:    3,
 					Conditions: []*metadatapb.ReplicaSetCondition{
 						{
 							Type:   "1",
@@ -1526,6 +1527,7 @@ func TestDeploymentUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					ReadyReplicas:       2,
 					AvailableReplicas:   3,
 					UnavailableReplicas: 1,
+					RequestedReplicas:   3,
 					Conditions: []*metadatapb.DeploymentCondition{
 						{
 							Type:                 metadatapb.DEPLOYMENT_CONDITION_AVAILABLE,

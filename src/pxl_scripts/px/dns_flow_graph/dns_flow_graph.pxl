@@ -55,7 +55,7 @@ def dns_flow_graph(start_time: str, from_entity_filter: str, to_entity_filter: s
     localhost_ip_regexp = r'127\.0\.0\.[0-9]+'
     df.is_remote_addr_localhost = px.regex_match(localhost_ip_regexp, df.remote_addr)
     df.to_entity = px.select(df.is_remote_addr_localhost,
-                             'localhost:' + px.upid_to_pod_name(df.upid),
+                             px.upid_to_pod_name(df.upid),
                              px.Service(px.nslookup(df.remote_addr)))
 
     df = df.drop(['upid', 'is_remote_addr_localhost'])

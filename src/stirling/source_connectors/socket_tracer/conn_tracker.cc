@@ -652,6 +652,8 @@ auto CreateTraceRoles() {
   res.Set(kProtocolMongo, {kRoleServer});
   res.Set(kProtocolKafka, {kRoleServer});
   res.Set(kProtocolMux, {kRoleServer});
+  res.Set(kProtocolAMQP, {kRoleServer});
+
   DCHECK(res.AreAllKeysSet());
   return res;
 }
@@ -1017,10 +1019,10 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 }
 
 std::string ConnTracker::ToString() const {
-  return absl::Substitute("conn_id=$0 state=$1 remote_addr=$2:$3 role=$4 protocol=$5",
+  return absl::Substitute("conn_id=$0 state=$1 remote_addr=$2:$3 role=$4 protocol=$5 ssl=$6",
                           ::ToString(conn_id()), magic_enum::enum_name(state()),
                           remote_endpoint().AddrStr(), remote_endpoint().port(),
-                          magic_enum::enum_name(role()), magic_enum::enum_name(protocol()));
+                          magic_enum::enum_name(role()), magic_enum::enum_name(protocol()), ssl_);
 }
 
 }  // namespace stirling

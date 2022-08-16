@@ -140,6 +140,7 @@ constexpr char kUpdate3_0Pbtxt[] = R"(
     ready_replicas: 3
     available_replicas: 3
     observed_generation: 5
+  requested_replicas: 5
     conditions: {
       type: "ready"
       status: CONDITION_STATUS_TRUE
@@ -148,6 +149,31 @@ constexpr char kUpdate3_0Pbtxt[] = R"(
       kind: "Deployment"
       name: "deployment1"
       uid: "deployment_uid"
+    }
+  }
+)";
+
+constexpr char kUpdate3_1Pbtxt[] = R"(
+  deployment_update {
+    uid: "deployment_uid"
+    name: "deployment1"
+    start_timestamp_ns: 101
+    stop_timestamp_ns: 0
+    namespace: "ns0"
+    replicas: 5
+    updated_replicas: 5
+    ready_replicas: 3
+    available_replicas: 3
+    unavailable_replicas: 2
+    observed_generation: 5
+    requested_replicas: 5
+    conditions: {
+      type: 1
+      status: CONDITION_STATUS_TRUE
+    }
+    conditions: {
+      type: 2
+      status: CONDITION_STATUS_TRUE
     }
   }
 )";
@@ -189,6 +215,10 @@ void GenerateTestUpdateEvents(
   auto update3_0 = std::make_unique<ResourceUpdate>();
   CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate3_0Pbtxt, update3_0.get()));
   updates->enqueue(std::move(update3_0));
+
+  auto update3_1 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate3_1Pbtxt, update3_1.get()));
+  updates->enqueue(std::move(update3_1));
 }
 
 // Generates some test updates for entry into the AgentMetadataState.
@@ -296,9 +326,28 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ(3, rs_info->ready_replicas());
   EXPECT_EQ(3, rs_info->available_replicas());
   EXPECT_EQ(5, rs_info->observed_generation());
+  EXPECT_EQ(5, rs_info->requested_replicas());
 
   EXPECT_THAT(rs_info->owner_references(),
               UnorderedElementsAre(OwnerReference{"deployment_uid", "deployment1", "Deployment"}));
+
+  auto* dep_info = state->DeploymentInfoByID("deployment_uid");
+  ASSERT_NE(nullptr, dep_info);
+  EXPECT_EQ("deployment_uid", dep_info->uid());
+  EXPECT_EQ("deployment1", dep_info->name());
+  EXPECT_EQ("ns0", dep_info->ns());
+  EXPECT_EQ(5, dep_info->replicas());
+  EXPECT_EQ(5, dep_info->updated_replicas());
+  EXPECT_EQ(3, dep_info->ready_replicas());
+  EXPECT_EQ(3, dep_info->available_replicas());
+  EXPECT_EQ(2, dep_info->unavailable_replicas());
+  EXPECT_EQ(5, dep_info->observed_generation());
+  EXPECT_EQ(5, dep_info->requested_replicas());
+  EXPECT_EQ(101, dep_info->start_time_ns());
+  EXPECT_EQ(0, dep_info->stop_time_ns());
+  EXPECT_EQ(2, dep_info->conditions().size());
+  EXPECT_EQ(ConditionStatus::kTrue, dep_info->conditions()[DeploymentConditionType::kAvailable]);
+  EXPECT_EQ(ConditionStatus::kTrue, dep_info->conditions()[DeploymentConditionType::kProgressing]);
 }
 
 TEST_F(AgentMetadataStateTest, pid_created) {
