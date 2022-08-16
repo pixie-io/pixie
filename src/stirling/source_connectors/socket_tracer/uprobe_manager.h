@@ -429,6 +429,8 @@ class UProbeManager {
   });
 
   int DeployGrpcCUProbes(const absl::flat_hash_set<md::UPID>& pids);
+  // We hash grpc-c libraries to know its version.
+  // For further explanation see the definition of kGrpcCMD5HashToVersion.
   StatusOr<std::string> MD5onFile(const std::string& file);
   StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
   // grpc-c libraries that are used by python normally have this prefix,

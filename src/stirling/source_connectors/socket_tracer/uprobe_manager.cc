@@ -588,6 +588,8 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 }
 
 StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
+  // Implementation based on
+  // https://stackoverflow.com/questions/1220046/how-to-get-the-md5-hash-of-a-file-in-c
   unsigned char md5_hash[MD5_DIGEST_LENGTH] = {0};
   int file_descript = open(file.c_str(), O_RDONLY);
   if (-1 == file_descript) {
@@ -660,7 +662,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   }
 
   // Calculate MD5 hash of the grpc-c library to know which version it is.
-  // Based on https://stackoverflow.com/questions/1220046/how-to-get-the-md5-hash-of-a-file-in-c
+  // For further explanation see the definition of kGrpcCMD5HashToVersion.
   PL_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
   LOG(INFO) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
                                 container_libgrpcc.string());
