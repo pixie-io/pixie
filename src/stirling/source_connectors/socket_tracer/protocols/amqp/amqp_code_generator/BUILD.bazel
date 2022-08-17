@@ -21,7 +21,13 @@ load("@rules_python//python:python.bzl", "py_test")
 py_library(
     name = "amqp_code_gen",
     srcs = ["amqp_code_gen.py"],
-    data = ["amqp0-9-1.stripped.xml"],
+    data = [
+        "amqp0-9-1.stripped.xml",
+        "gen_templates/amqp_pxl_function.h.jinja_template",
+        "gen_templates/decode.cc.jinja_template",
+        "gen_templates/decode.h.jinja_template",
+        "gen_templates/types_gen.h.jinja_template",
+    ],
     deps = [
         "@rules_python//python/runfiles",
         requirement("fire"),
@@ -41,7 +47,6 @@ py_test(
 py_binary(
     name = "amqp_code_gen_main",
     srcs = ["amqp_code_gen_main.py"],
-    data = ["amqp0-9-1.stripped.xml"],
     deps = [
         ":amqp_code_gen",
         "@rules_python//python/runfiles",

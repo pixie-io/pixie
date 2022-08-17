@@ -433,12 +433,10 @@ class CodeGenerator:
     """
 
     def __init__(self, xml_file=None):
-        if xml_file is None:
+        if not xml_file:
+            bzl_base_path = "px/src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator/"
             r = runfiles.Create()
-            xml_file = r.Rlocation(
-                "px/src/stirling/source_connectors/socket_tracer/"
-                + "protocols/amqp/amqp_code_generator/amqp0-9-1.stripped.xml"
-            )
+            xml_file = r.Rlocation(bzl_base_path + "amqp0-9-1.stripped.xml")
         with open(xml_file, "r") as f:
             amqp_xml = ET.fromstring(f.read())
 
@@ -744,6 +742,57 @@ class CodeGenerator:
         }}
         """
 
+    def gen_class_id_to_class_name(self):
+        """
+        Mapping from class_id to class_name for the Px script
+        """
+        amqp_class_id_class_name = []
+        for amqp_class in self.amqp_classes:
+            amqp_class_id_class_name.append(
+                f"""
+                    case {amqp_class.class_id}:
+                        return "{amqp_class.class_name}";
+                """
+            )
+        amqp_class_id_class_name_str = "\n".join(amqp_class_id_class_name)
+        return f"""
+        std::string ClassIdToClassName(uint16_t class_id) {{
+            switch(class_id) {{
+                {amqp_class_id_class_name_str}
+                default:
+                    return "Unknown";
+            }}
+        }}
+        """
+
+    def gen_method_id_to_method_name(self):
+        """
+        Mapping from class_id and method_id to name.
+        ex. Class: Connection, Method: Start => ConnectionStart
+        """
+        amqp_class_id_method_name = []
+        for amqp_class in self.amqp_classes:
+            for method in amqp_class.methods:
+                amqp_class_name = amqp_class.class_name.capitalize()
+                amqp_method_name = method.method_name.capitalize()
+                amqp_class_id_method_name.append(
+                    f"""
+                        if(method_id == {method.method_id} && class_id == {amqp_class.class_id}) {{
+                            return "{amqp_class_name}{amqp_method_name}";
+                        }}
+                    """
+                )
+        amqp_class_id_method_name_str = "\n".join(amqp_class_id_method_name)
+        return f"""
+        std::string ClassIdMethodIdToMethodName(uint16_t class_id, uint16_t method_id) {{
+            if(class_id != 0 && method_id == 0) {{
+                return ClassIdToClassName(class_id);
+            }}
+            {amqp_class_id_method_name_str}
+            return "Unknown";
+        }}
+        """
+
 
 class CodeGeneratorWriter:
     """
@@ -762,16 +811,24 @@ class CodeGeneratorWriter:
         generation_dir="generated_files",
         gen_template_dir="gen_templates",
     ):
-        self.generation_dir = generation_dir
-        self.template_dir = Path(gen_template_dir)
+        bzl_base_path = "px/src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator/"
+        r = runfiles.Create()
+        xml_file = r.Rlocation(bzl_base_path + xml_file)
+        full_base_path = os.path.dirname(xml_file)
+
+        self.generation_dir = os.path.join(full_base_path, generation_dir)
+        self.template_dir = Path(os.path.join(full_base_path, gen_template_dir))
+        os.makedirs(self.generation_dir, exist_ok=True)
         #  In order to prevent long strings like licenses, Jinja2 is used to render the files.
         #  Jinja2 is a template rendering engine(https://pypi.org/project/Jinja2/)
         self.env = Environment(loader=FileSystemLoader(self.template_dir))
-        os.makedirs(self.generation_dir, exist_ok=True)
         self.generator = CodeGenerator(xml_file)
         self.types_gen_header_path = Path(self.generation_dir) / Path("types_gen.h")
         self.struct_gen_header_path = Path(self.generation_dir) / Path("decode.h")
         self.decode_gen_path = Path(self.generation_dir) / Path("decode.cc")
+        self.amqp_pxl_function_gen_path = Path(self.generation_dir) / Path(
+            "amqp_pxl_function.h"
+        )
 
     def write_type_gen_header(self):
         """
@@ -842,6 +899,19 @@ class CodeGeneratorWriter:
                 )
             )
 
+    def write_px_script_functions(self):
+        class_id_class_name = self.generator.gen_class_id_to_class_name()
+        method_id_method_name = self.generator.gen_method_id_to_method_name()
+        template = self.env.get_template("amqp_pxl_function.h.jinja_template")
+
+        with self.amqp_pxl_function_gen_path.open("w") as f:
+            f.write(
+                template.render(
+                    class_id_class_name=class_id_class_name,
+                    method_id_method_name=method_id_method_name,
+                )
+            )
+
     def run(self):
         """
         Runs code generation for AMQP.
@@ -851,6 +921,7 @@ class CodeGeneratorWriter:
         self.write_type_gen_header()
         self.write_struct_declr()
         self.write_buffer_decode()
+        self.write_px_script_functions()
         self.format_all()
 
     def format_all(self):
@@ -868,6 +939,7 @@ class CodeGeneratorWriter:
                 str(self.struct_gen_header_path),
                 str(self.decode_gen_path),
                 str(self.types_gen_header_path),
+                str(self.amqp_pxl_function_gen_path),
             ]
         )
         p.wait()
