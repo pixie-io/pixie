@@ -16,15 +16,15 @@
 
 import unittest
 from hypothesis import strategies as st, given
-from privy.chosen_providers import Providers
+from privy.providers.english_us import English_US
 
 
 class TestProviders(unittest.TestCase):
     def setUp(self):
-        self.providers = Providers()
+        self.providers = [English_US()]
 
     def test_get_pii(self):
-        for region in self.providers.regions:
+        for region in self.providers:
             for category in region.get_pii_categories():
                 for label in region.get_category(category).keys():
                     label, provider, _ = region.get_pii(label)
@@ -34,7 +34,7 @@ class TestProviders(unittest.TestCase):
                     )
 
     def test_get_nonpii(self):
-        for region in self.providers.regions:
+        for region in self.providers:
             for label in region.nonpii_label_to_provider.keys():
                 label, provider = region.get_nonpii(label)
                 self.assertTrue(
@@ -43,7 +43,7 @@ class TestProviders(unittest.TestCase):
                 )
 
     def test_get_random_pii(self):
-        for region in self.providers.regions:
+        for region in self.providers:
             random_pii_label = region.get_random_pii().label
             categories = region.get_pii_categories()
             self.assertTrue(
@@ -53,7 +53,7 @@ class TestProviders(unittest.TestCase):
 
     @given(decimal=st.decimals(min_value=0, max_value=1))
     def test_sample_pii_labels(self, decimal):
-        for region in self.providers.regions:
+        for region in self.providers:
             num_samples = len(region.sample_pii(decimal))
             categories = region.get_pii_categories()
             self.assertTrue(
@@ -63,7 +63,7 @@ class TestProviders(unittest.TestCase):
             )
 
     def test_custom_providers(self):
-        for region in self.providers.regions:
+        for region in self.providers:
             alphanumeric_check = [c.isalnum() for c in region.get_nonpii("alphanumeric")]
             self.assertTrue(
                 all(alphanumeric_check)

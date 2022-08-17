@@ -48,7 +48,7 @@ class PayloadGenerator:
         self.api_specs_folder = api_specs_folder
         self.log = logging.getLogger("privy")
         self.route = PayloadRoute(file_writers)
-        self.hook = SchemaHooks().schema_analyzer
+        self.hook = SchemaHooks(args).schema_analyzer
         self.providers = self.hook.providers
         self.api_specs = []
         self.http_types = ["get", "head", "post", "put",
@@ -125,12 +125,12 @@ class PayloadGenerator:
                 self.hook.clear_pii_types(parameter_type)
             if random.randint(0, 1):
                 # sample just one pii label 50% of the time
-                pii = self.providers.pick_random_region().get_random_pii()
+                pii = self.providers.get_random_pii()
                 self.insert_pii(pii, case_attr, parameter_type)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
                 percent = random.uniform(0, self.args.insert_label_pii_percentage)
-                pii_list = self.providers.pick_random_region().sample_pii(percent)
+                pii_list = self.providers.sample_pii(percent)
                 for pii in pii_list:
                     self.insert_pii(pii, case_attr, parameter_type)
         # randomize order of parameters

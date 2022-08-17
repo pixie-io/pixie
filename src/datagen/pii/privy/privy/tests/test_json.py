@@ -23,7 +23,7 @@ import io
 from collections import namedtuple
 import pandas as pd
 import numpy as np
-from privy.chosen_providers import Providers
+from privy.providers.english_us import English_US
 from privy.payload import PayloadGenerator
 
 
@@ -36,13 +36,13 @@ class PrivyArgs:
 
 class TestPayloadGenerator(unittest.TestCase):
     def setUp(self):
-        self.providers = Providers()
+        self.providers = [English_US()]
         lufthansa_openapi = os.path.join("openapi.json")
         self.api_specs_folder = pathlib.Path(lufthansa_openapi).parents[0]
 
     def test_parse_http_methods(self):
         for multi_threaded in [False, True]:
-            for region in self.providers.get_regions():
+            for region in self.providers:
                 # in-memory file-like object
                 file = io.StringIO()
                 args = {

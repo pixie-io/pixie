@@ -22,6 +22,7 @@ import requests
 import tarfile
 from collections import namedtuple
 from privy.payload import PayloadGenerator
+from privy.providers.english_us import English_US
 
 
 def parse_args():
@@ -44,6 +45,17 @@ def parse_args():
         nargs='+',
         default="json",
         help="Which dataset to generate. Can select multiple e.g. json sql proto xml",
+    )
+
+    parser.add_argument(
+        "--region",
+        "-r",
+        required=False,
+        choices=[
+            "english_us",
+        ],
+        default="english_us",
+        help="""Which language/region specific providers to use for PII generation.""",
     )
 
     parser.add_argument(
@@ -152,6 +164,11 @@ def main(args):
         openapi_directory_link = f"https://github.com/APIs-guru/openapi-directory/archive/{commit_hash}.tar.gz"
         with requests.get(openapi_directory_link, stream=True) as rx, tarfile.open(fileobj=rx.raw, mode="r:gz") as tar:
             tar.extractall(api_specs_folder.parent)
+
+    # ------- Choose Providers --------
+    args.region = {
+        "english_us": English_US(),
+    }.get(args.region)
 
     # ------ Initialize File Handles --------
     out_files = {}
