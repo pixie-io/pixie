@@ -49,7 +49,7 @@ class PayloadGenerator:
         self.api_specs_folder = api_specs_folder
         self.log = logging.getLogger("privy")
         self.analyzer = DatasetAnalyzer(args.region)
-        self.route = PayloadRoute(file_writers, self.analyzer)
+        self.route = PayloadRoute(file_writers, self.analyzer, args)
         self.hook = SchemaHooks(args).schema_analyzer
         self.providers = args.region
         self.api_specs = []
@@ -103,19 +103,16 @@ class PayloadGenerator:
             self.log.warning(traceback.format_exc())
 
     def fuzz_label(self, label) -> str:
-        """Alter an input label, inserting a random delimiter and truncating."""
-        # insert random delimiter
-        label = label.replace(" ", random.choice(["-", "_", "__", ".", ":", "", " "]))
-        # truncate label by random length 50% of the time
-        truncate_length = random.randint(1, len(label)) if random.randint(0, 1) else len(label)
-        label = label[:truncate_length]
-        return label
+        """Alter an input label, inserting a random delimiter."""
+        return label.replace(" ", random.choice(["-", "_", "__", ".", ":", "", " "]))
 
     def insert_pii(self, pii, case_attr, parameter_type):
         """Assign a pii value to a parameter for the input case attribute (e.g. case.path_parameters)."""
         self.log.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
-        fuzzed_label = self.fuzz_label(pii.label)
-        case_attr[fuzzed_label] = pii.value
+        if self.args.fuzz_payload:
+            fuzzed_label = self.fuzz_label(pii.label)
+            case_attr[fuzzed_label] = pii.value
+        case_attr[pii.label] = pii.value
         self.hook.add_pii_type(parameter_type, pii.label, pii.category)
 
     def generate_pii_case(self, case_attr, parameter_type):

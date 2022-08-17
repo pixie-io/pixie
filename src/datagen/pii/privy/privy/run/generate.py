@@ -111,7 +111,6 @@ def parse_args():
         "--equalize_pii_distribution_to_percentage",
         "-e",
         required=False,
-        type=check_percentage,
         default=50,
         help="""Equalize distribution of PII in the dataset to the given percentage by generating additional
         PII payloads for pii types with the lowest count. To disable, set to 0.""",
@@ -135,15 +134,16 @@ def parse_args():
         help="PII categories to match and generate. If not specified, all available PII categories will be matched.",
     )
 
+    parser.add_argument(
+        "--fuzz_payloads",
+        "-f",
+        action="store_true",
+        required=False,
+        default=True,
+        help="""Fuzz payloads by removing characters.""",
+    )
+
     return parser.parse_args()
-
-
-def check_percentage(arg):
-    iarg = int(arg)
-    if iarg < 0 or iarg > 99:
-        raise argparse.ArgumentTypeError(
-            f"{arg} must be a valid percentage between 0 and 99")
-    return iarg
 
 
 def generate(args, out_files, api_specs_folder):

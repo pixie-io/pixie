@@ -54,6 +54,7 @@ class TestPayloadGenerator(unittest.TestCase):
                     "num_additional_pii_types": 6,
                     "equalize_pii_distribution_to_percentage": 50,
                     "timeout": 400,
+                    "fuzz": True,
                 }
                 args = PrivyArgs(args)
 

@@ -18,7 +18,7 @@ from dicttoxml import dicttoxml
 
 
 class PayloadRoute:
-    def __init__(self, file_writers, analyzer):
+    def __init__(self, file_writers, analyzer, args):
         self.file_writers = file_writers
         self.conversions = {
             "json": (json.dumps, {"default": "str"}),
@@ -26,7 +26,9 @@ class PayloadRoute:
             # todo @benkilimnik protobuf conversion
             # todo @benkilimnik sql conversion
         }
+        self.args = args
         self.analyzer = analyzer
+        self.fuzzer = PayloadFuzzer()
 
     def write_payload_to_csv(self, payload, has_pii, pii_types):
         if not payload or "null" in payload.values():
@@ -45,4 +47,37 @@ class PayloadRoute:
             converted_payload = converter(payload, **kwargs)
             row = [converted_payload, has_pii, pii_types, categories]
             writer.csv_writer.writerow(row)
+            if self.args.fuzz_payloads:
+                self.write_fuzzed_payloads(row, writer)
         self.analyzer.update_payload_counts()
+
+    def write_fuzzed_payloads(self, row, writer):
+        for fuzzed_payload in self.fuzzer.fuzz_payload(row[0], writer.generate_type):
+            row[0] = fuzzed_payload
+            writer.csv_writer.writerow(row)
+
+
+class PayloadFuzzer:
+    def __init__(self):
+        self.fuzzers = {
+            "json": self.fuzz_json_payload,
+            "xml": self.fuzz_xml_payload,
+        }
+
+    def fuzz_payload(self, payload, payload_type):
+        fuzzer = self.fuzzers.get(payload_type)
+        if fuzzer:
+            return fuzzer(payload)
+        return []
+
+    def fuzz_json_payload(self, payload):
+        """Fuzz JSON payload for greater data coverage, returning list of fuzzed versions of the input payload"""
+        fuzzes = [payload.replace("{", "").replace("}", ""), payload.replace(
+            '"', ''), payload.replace('"', '').replace("{", "").replace("}", "")]
+        return fuzzes
+
+    def fuzz_xml_payload(self, payload):
+        """Fuzz XML payload for greater data coverage, returning list of fuzzed versions of the input payload"""
+        fuzzes = [payload.replace("<", "").replace(">", ""), payload.replace(
+            '/', ''), payload.replace('<', '').replace(">", "").replace("/", "")]
+        return fuzzes
