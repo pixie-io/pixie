@@ -37,6 +37,7 @@ from hypothesis import (
 )
 from privy.hooks import SchemaHooks, ParamType
 from privy.route import PayloadRoute
+from privy.analyze import DatasetAnalyzer
 # todo @benkilimnik add fine grained warning filter for schemathesis
 warnings.filterwarnings("ignore")
 
@@ -47,9 +48,10 @@ class PayloadGenerator:
         self.args = args
         self.api_specs_folder = api_specs_folder
         self.log = logging.getLogger("privy")
-        self.route = PayloadRoute(file_writers)
+        self.analyzer = DatasetAnalyzer(args.region)
+        self.route = PayloadRoute(file_writers, self.analyzer)
         self.hook = SchemaHooks(args).schema_analyzer
-        self.providers = self.hook.providers
+        self.providers = args.region
         self.api_specs = []
         self.http_types = ["get", "head", "post", "put",
                            "delete", "connect", "options", "trace", "patch"]
@@ -88,13 +90,17 @@ class PayloadGenerator:
                 file, data_generation_methods=[DataGenerationMethod.positive]
             )
             self.parse_http_methods(schema=schema, start=time.time(), timeout=timeout)
+            self.analyzer.print_metrics()
+            self.analyzer.reset_spec_specific_metrics()
             end = time.time()
             self.log.info(f"Success in {round(end - start, 2)} seconds")
         except Exception:
             end = time.time()
-            self.log.info(f"Failed to generate {file}")
-            self.log.info(f"Failed after {round(end - start, 2)} seconds")
-            self.log.debug(traceback.format_exc())
+            self.log.warning(f"Failed to generate {file}")
+            self.log.warning(f"Failed after {round(end - start, 2)} seconds")
+            self.analyzer.print_metrics()
+            self.analyzer.reset_spec_specific_metrics()
+            self.log.warning(traceback.format_exc())
 
     def fuzz_label(self, label) -> str:
         """Alter an input label, inserting a random delimiter and truncating."""

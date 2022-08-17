@@ -35,6 +35,14 @@ class GenericProvider(ABC):
         """Return list of pii labels in a category"""
         return self.pii_label_to_provider[category]
 
+    def get_pii_types(self):
+        """Return all pii types in the pii_label_to_provider dict"""
+        pii_types = []
+        for category in self.get_pii_categories():
+            pii_types_this_category = [pii_type for pii_type in self.get_category(category).keys()]
+            pii_types += pii_types_this_category
+        return pii_types
+
     def get_delimited(self, label):
         """Return list of versions of input label with different delimiters"""
         label_delimited = [
