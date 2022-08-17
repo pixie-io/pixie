@@ -99,20 +99,22 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--insert_pii_percentage",
-        "-i",
+        "--num_additional_pii_types",
+        "-n",
         required=False,
-        default=0.60,
-        help="Percentage of PII payloads to insert additional PII into. E.g. 0.50",
+        default=6,
+        help="""Upper bound for the number of PII types to generate
+        when inserting additional PII into sensitive payloads. E.g. 6""",
     )
 
     parser.add_argument(
-        "--insert_label_pii_percentage",
-        "-il",
+        "--equalize_pii_distribution_to_percentage",
+        "-e",
         required=False,
-        default=0.05,
-        help="""Upper bound for the percentage of PII labels to sample from
-        when inserting additional PII into sensitive payloads. E.g. 0.03""",
+        type=check_percentage,
+        default=50,
+        help="""Equalize distribution of PII in the dataset to the given percentage by generating additional
+        PII payloads for pii types with the lowest count. To disable, set to 0.""",
     )
 
     parser.add_argument(
@@ -134,6 +136,14 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+
+def check_percentage(arg):
+    iarg = int(arg)
+    if iarg < 0 or iarg > 99:
+        raise argparse.ArgumentTypeError(
+            f"{arg} must be a valid percentage between 0 and 99")
+    return iarg
 
 
 def generate(args, out_files, api_specs_folder):

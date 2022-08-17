@@ -17,6 +17,7 @@ import ast
 import logging
 import random
 from enum import Enum
+from copy import deepcopy
 import schemathesis
 from hypothesis import given
 from hypothesis import strategies as st
@@ -88,6 +89,14 @@ class SchemaHooks:
             }
             self.providers = args.region
             self.log = logging.getLogger("privy")
+
+        def deepcopy_pii_types(self, parameter_type):
+            """deepcopy pii_types list for a given parameter_type"""
+            return deepcopy(self.pii_types[parameter_type])
+
+        def overwrite_pii_types(self, parameter_type, pii_types):
+            """overwrite pii_types list for a given parameter_type"""
+            self.pii_types[parameter_type] = pii_types
 
         def has_pii(self, parameter_type):
             return len(self.pii_types[parameter_type]) > 0

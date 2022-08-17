@@ -51,8 +51,8 @@ class TestPayloadGenerator(unittest.TestCase):
                     "region": region,
                     "logging": "debug",
                     "multi_threaded": multi_threaded,
-                    "insert_pii_percentage": 0.6,
-                    "insert_label_pii_percentage": 0.05,
+                    "num_additional_pii_types": 6,
+                    "equalize_pii_distribution_to_percentage": 50,
                     "timeout": 400,
                 }
                 args = PrivyArgs(args)
