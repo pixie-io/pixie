@@ -47,7 +47,7 @@ class PayloadGenerator:
                  insert_pii_percentage, insert_label_pii_percentage, timeout):
         self.folder = folder
         self.generate_type = generate_type
-        self.logger = logging.getLogger("privy")
+        self.log = logging.getLogger("privy")
         self.route = PayloadRoute(csvwriter, generate_type)
         self.hook = SchemaHooks().schema_analyzer
         self.providers = self.hook.providers
@@ -62,7 +62,7 @@ class PayloadGenerator:
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
         num_files = sum(len(files) for _, _, files in os.walk(self.folder))
-        self.logger.info(
+        self.log.info(
             f"Generating synthetic request payloads from {num_files} files in {self.folder}")
         # Retrieve openapi descriptor files
         for dirpath, _, files in os.walk(self.folder):
@@ -86,7 +86,7 @@ class PayloadGenerator:
                     progress_bar()
 
     def parse_openapi_descriptor(self, file, timeout):
-        self.logger.info(f"Generating {file}...")
+        self.log.info(f"Generating {file}...")
         start = time.time()
         try:
             schema = schemathesis.from_path(
@@ -94,12 +94,12 @@ class PayloadGenerator:
             )
             self.parse_http_methods(schema=schema, start=time.time(), timeout=timeout)
             end = time.time()
-            self.logger.info(f"Success in {round(end - start, 2)} seconds")
+            self.log.info(f"Success in {round(end - start, 2)} seconds")
         except Exception:
             end = time.time()
-            self.logger.info(f"Failed to generate {file}")
-            self.logger.info(f"Failed after {round(end - start, 2)} seconds")
-            self.logger.debug(traceback.format_exc())
+            self.log.info(f"Failed to generate {file}")
+            self.log.info(f"Failed after {round(end - start, 2)} seconds")
+            self.log.debug(traceback.format_exc())
 
     def fuzz_label(self, label) -> str:
         """Alter an input label, inserting a random delimiter and truncating."""
@@ -110,10 +110,16 @@ class PayloadGenerator:
         label = label[:truncate_length]
         return label
 
+    def insert_pii(self, pii, case_attr, parameter_type):
+        """Assign a pii value to a parameter for the input case attribute (e.g. case.path_parameters)."""
+        self.log.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
+        fuzzed_label = self.fuzz_label(pii.label)
+        case_attr[fuzzed_label] = pii.value
+        self.hook.add_pii_type(parameter_type, pii.label, pii.category)
+
     def generate_pii_case(self, case_attr, parameter_type):
         """insert additional pii data into a request payload or generate new payload"""
-        rand = random.random()
-        if rand > self.insert_pii_percent:
+        if random.random() > self.insert_pii_percent:
             # insert additional payload {insert_pii_percent}% of the time
             return
         else:
@@ -125,19 +131,13 @@ class PayloadGenerator:
             if random.randint(0, 1):
                 # sample just one pii label 50% of the time
                 pii = self.providers.pick_random_region().get_random_pii()
-                self.logger.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
-                fuzzed_label = self.fuzz_label(pii.label)
-                case_attr[fuzzed_label] = pii.value
-                self.hook.add_pii_type(parameter_type, pii.label, pii.category)
+                self.insert_pii(pii, case_attr, parameter_type)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
                 percent = random.uniform(0, self.insert_label_pii_percent)
                 pii_list = self.providers.pick_random_region().sample_pii(percent)
                 for pii in pii_list:
-                    self.logger.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
-                    fuzzed_label = self.fuzz_label(pii.label)
-                    case_attr[fuzzed_label] = pii.value
-                    self.hook.add_pii_type(parameter_type, pii.label, pii.category)
+                    self.insert_pii(pii, case_attr, parameter_type)
         # randomize order of parameters
         case_attr = list(case_attr.items())
         random.shuffle(case_attr)
@@ -148,7 +148,7 @@ class PayloadGenerator:
         verbosity=Verbosity.quiet,
         deadline=timedelta(milliseconds=5000),
         max_examples=1,
-        suppress_health_check=(HealthCheck.too_slow,)
+        suppress_health_check=(HealthCheck.too_slow, HealthCheck.data_too_large, HealthCheck.filter_too_much),
     )
     @given(data=st.data())
     def parse_http_methods(self, data, schema, start, timeout):
@@ -187,5 +187,5 @@ class PayloadGenerator:
                 self.hook.clear_pii_types(ParamType.QUERY)
 
             if time.time() - start > timeout:
-                self.logger.warning(f"OpenAPI spec took too long to parse. Timeout of {timeout} reached.")
+                self.log.warning(f"OpenAPI spec took too long to parse. Timeout of {timeout} reached.")
                 return
