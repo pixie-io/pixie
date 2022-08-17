@@ -23,7 +23,7 @@ from privy.providers.generic import GenericProvider
 
 # English United States - inherits standard, region-agnostic methods
 class English_US(GenericProvider):
-    def __init__(self, locale="en_US"):
+    def __init__(self, categories=None, locale="en_US"):
         # initialize standard, region-agnostic methods
         super().__init__()
         # initialize Faker instance with specific Faker locale
@@ -274,6 +274,7 @@ class English_US(GenericProvider):
             "int": f.random_number,
             "integer": f.random_number,
         }
+        self.filter_categories(categories)
 
     class CustomProviders:
         def __init__(self, faker):

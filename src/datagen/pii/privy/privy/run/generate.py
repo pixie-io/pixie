@@ -125,6 +125,14 @@ def parse_args():
         so we apply a uniform timeout to each."""
     )
 
+    parser.add_argument(
+        "--pii_categories",
+        "-p",
+        nargs='+',
+        required=False,
+        help="PII categories to match and generate. If not specified, all available PII categories will be matched.",
+    )
+
     return parser.parse_args()
 
 
@@ -169,8 +177,8 @@ def main(args):
 
     # ------- Choose Providers --------
     args.region = {
-        "english_us": English_US(),
-        "german_de": German_DE(),
+        "english_us": English_US(categories=args.pii_categories),
+        "german_de": German_DE(categories=args.pii_categories),
     }.get(args.region)
 
     # ------ Initialize File Handles --------

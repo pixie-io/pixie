@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import random
 from abc import ABC
 from collections import namedtuple
@@ -91,3 +92,17 @@ class GenericProvider(ABC):
                 len(self.get_category(category).keys()) * percent),
         )
         return [self.get_pii(label) for label in labels]
+
+    def filter_categories(self, categories):
+        """Filter out PII categories not in the given list of categories, flagging them as non-PII"""
+        if not categories:
+            categories = self.get_pii_categories()
+        to_delete = []
+        for category in self.get_pii_categories():
+            if category not in categories:
+                to_delete.append(category)
+                # append to non-pii
+                self.nonpii_label_to_provider.update(self.pii_label_to_provider[category])
+        for category in to_delete:
+            logging.getLogger("privy").info(f"Category moved to non-pii: {category}")
+            del self.pii_label_to_provider[category]

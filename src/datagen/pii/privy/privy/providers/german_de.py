@@ -20,9 +20,9 @@ from privy.providers.english_us import English_US
 
 # German Germany - inherits methods from English_US
 class German_DE(English_US):
-    def __init__(self):
+    def __init__(self, categories=None):
         # initialize English_US methods and providers, changing faker locale to de_DE
-        super().__init__(locale="de_DE")
+        super().__init__(categories, locale="de_DE")
 
     class CustomProviders(English_US.CustomProviders):
         def __init__(self, faker):
