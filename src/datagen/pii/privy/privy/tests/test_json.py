@@ -48,7 +48,7 @@ class TestPayloadGenerator(unittest.TestCase):
                 # no header added to data in test since that occurs in run / generate.py
                 df = pd.read_csv(file, engine="python", quotechar="|", header=None)
                 df.rename(
-                    columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True
+                    columns={0: "payload", 1: "has_pii", 2: "pii_types", 3: "categories"}, inplace=True
                 )
                 # check that pii_type column values match pii_types present in the request payload
                 payload_params = [
@@ -57,15 +57,15 @@ class TestPayloadGenerator(unittest.TestCase):
                 pii_types_per_payload = [
                     p.split(",") if p is not np.nan else [] for p in df["pii_types"]
                 ]
-                for params, pii_types in zip(payload_params, pii_types_per_payload):
+                categories_per_payload = [
+                    c.split(",") if c is not np.nan else [] for c in df["categories"]
+                ]
+                for params, pii_types, categories in zip(payload_params, pii_types_per_payload, categories_per_payload):
                     for param in params:
-                        label_pii_tuple = region.get_pii(param)
-                        if label_pii_tuple:
-                            pii_label, _, _ = label_pii_tuple
-                            if pii_label:
-                                self.assertTrue(pii_label in pii_types)
-                            else:
-                                self.assertTrue(pii_label not in pii_types)
+                        pii = region.get_pii(param)
+                        if pii:
+                            self.assertTrue(pii.label in pii_types)
+                            self.assertTrue(pii.category in categories)
                 file.close()
 
 

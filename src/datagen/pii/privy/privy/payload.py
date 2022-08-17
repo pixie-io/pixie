@@ -124,20 +124,20 @@ class PayloadGenerator:
                 self.hook.clear_pii_types(parameter_type)
             if random.randint(0, 1):
                 # sample just one pii label 50% of the time
-                label, pii, category = self.providers.pick_random_region().get_random_pii()
-                self.logger.debug(f"|Inserting additional pii type| {label} |with category| {category}")
-                fuzzed_label = self.fuzz_label(label)
-                case_attr[fuzzed_label] = pii
-                self.hook.add_pii_type(parameter_type, label, category)
+                pii = self.providers.pick_random_region().get_random_pii()
+                self.logger.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
+                fuzzed_label = self.fuzz_label(pii.label)
+                case_attr[fuzzed_label] = pii.value
+                self.hook.add_pii_type(parameter_type, pii.label, pii.category)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
                 percent = random.uniform(0, self.insert_label_pii_percent)
-                label_pii_tuples = self.providers.pick_random_region().sample_pii(percent)
-                for label, pii, category in label_pii_tuples:
-                    self.logger.debug(f"Inserting additional pii type: {label}")
-                    fuzzed_label = self.fuzz_label(label)
-                    case_attr[fuzzed_label] = pii
-                    self.hook.add_pii_type(parameter_type, label, category)
+                pii_list = self.providers.pick_random_region().sample_pii(percent)
+                for pii in pii_list:
+                    self.logger.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
+                    fuzzed_label = self.fuzz_label(pii.label)
+                    case_attr[fuzzed_label] = pii.value
+                    self.hook.add_pii_type(parameter_type, pii.label, pii.category)
         # randomize order of parameters
         case_attr = list(case_attr.items())
         random.shuffle(case_attr)

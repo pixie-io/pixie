@@ -197,30 +197,28 @@ class SchemaHooks:
             """lookup pii provider for a given keyword and, if a match is found, assign pii for this parameter_name
             and add this pii type to the pii_types list for this parameter_type"""
             for region in self.providers.get_regions():
-                label_pii_tuple = region.get_pii(keyword)
-                if label_pii_tuple:
-                    label, pii, category = label_pii_tuple
+                pii = region.get_pii(keyword)
+                if pii:
                     self.logger.debug(
-                        f"{parameter_name} |matched this pii provider| {label} |and this category| {category}"
+                        f"{parameter_name} |matched this pii provider| {pii.label} |and this category| {pii.category}"
                     )
                     # assign generated pii value to this parameter
-                    case_attr[parameter_name] = pii
-                    self.add_pii_type(parameter_type, label, category)
-                    return (label, pii)
+                    case_attr[parameter_name] = pii.value
+                    self.add_pii_type(parameter_type, pii.label, pii.category)
+                    return (pii.label, pii.value)
 
         def lookup_nonpii_provider(self, keyword, parameter_name, case_attr):
             """lookup nonpii provider for a given keyword and, if a match is found,
             assign nonpii for this parameter_name"""
             for region in self.providers.get_regions():
-                label_nonpii_tuple = region.get_nonpii(keyword)
-                if label_nonpii_tuple:
-                    label, nonpii = label_nonpii_tuple
+                nonpii = region.get_nonpii(keyword)
+                if nonpii:
                     self.logger.debug(
-                        f"{parameter_name} |matched this nonpii provider| {label}"
+                        f"{parameter_name} |matched this nonpii provider| {nonpii.label}"
                     )
                     # assign generated nonpii value to this parameter
-                    case_attr[parameter_name] = nonpii
-                    return (label, nonpii)
+                    case_attr[parameter_name] = nonpii.value
+                    return (nonpii.label, nonpii.value)
 
         def check_for_regex_pattern(self, name, schema, case_attr):
             """check if a given parameter name or schema contains a regex pattern and, if so, assign pii"""

@@ -17,6 +17,7 @@ import re
 import string
 import random
 import baluhn
+from collections import namedtuple
 from faker import Faker
 from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider
@@ -32,6 +33,9 @@ class English_US(GenericProvider):
         f.add_provider(AirTravelProvider)
         custom = self.CustomProviders(f)
         self.f = f
+        # initialize named tuple to hold matched pii provider data for a given pii label
+        self.PII = namedtuple("PII", ["category", "label", "value"])
+        self.NonPII = namedtuple("NonPII", ["label", "value"])
         # map custom, language/region-specific nonpii keywords to providers
         # labels matched with case insensitive regex and space separated
         # (different delimiters are inserted at runtime)
@@ -305,7 +309,7 @@ class English_US(GenericProvider):
                 label_delimited = self.get_delimited(label)
                 for lbl in label_delimited:
                     if re.match(lbl, name, re.IGNORECASE):
-                        return (lbl, str(provider()), category)
+                        return self.PII(category, label, str(provider()))
 
     def get_nonpii(self, name):
         if not name:
@@ -316,7 +320,7 @@ class English_US(GenericProvider):
             label_delimited = self.get_delimited(label)
             for lbl in label_delimited:
                 if re.match(lbl, name, re.IGNORECASE):
-                    return (lbl, str(provider()))
+                    return self.NonPII(label, str(provider()))
 
     def get_random_pii(self):
         category = random.choice(list(self.get_pii_categories()))
@@ -325,7 +329,7 @@ class English_US(GenericProvider):
         return self.get_pii(label)
 
     def sample_pii(self, percent):
-        # randomly a category
+        # randomly select a category
         category = random.choice(list(self.get_pii_categories()))
         labels = random.sample(
             list(self.get_category(category).keys()),
