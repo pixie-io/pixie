@@ -24,6 +24,7 @@ from collections import namedtuple
 import pandas as pd
 import numpy as np
 from privy.providers.english_us import English_US
+from privy.providers.german_de import German_DE
 from privy.payload import PayloadGenerator
 
 
@@ -36,7 +37,7 @@ class PrivyArgs:
 
 class TestPayloadGenerator(unittest.TestCase):
     def setUp(self):
-        self.providers = [English_US()]
+        self.providers = [English_US(), German_DE()]
         lufthansa_openapi = os.path.join("openapi.json")
         self.api_specs_folder = pathlib.Path(lufthansa_openapi).parents[0]
 

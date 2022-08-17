@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import re
 import string
 import random
 import baluhn
@@ -25,11 +24,11 @@ from privy.providers.generic import GenericProvider
 
 # English United States - inherits standard, region-agnostic methods
 class English_US(GenericProvider):
-    def __init__(self):
+    def __init__(self, locale="en_US"):
         # initialize standard, region-agnostic methods
         super().__init__()
         # initialize Faker instance with specific Faker locale
-        f = Faker(["en_US"])
+        f = Faker([locale])
         f.add_provider(AirTravelProvider)
         custom = self.CustomProviders(f)
         self.f = f
@@ -201,13 +200,13 @@ class English_US(GenericProvider):
                 "social security number": f.ssn,
                 "id number": f.ssn,
                 "id card": f.ssn,
-                "passport": custom.us_passport,
-                "document number": custom.us_passport,
-                "identity document": custom.us_passport,
-                "national identity": custom.us_passport,
-                "driving license": custom.us_drivers_license,
-                "drivers license": custom.us_drivers_license,
-                "driver's license": custom.us_drivers_license,
+                "passport": custom.passport,
+                "document number": custom.passport,
+                "identity document": custom.passport,
+                "national identity": custom.passport,
+                "driving license": custom.drivers_license,
+                "drivers license": custom.drivers_license,
+                "driver's license": custom.drivers_license,
                 "license plate": f.license_plate,
                 "lic plate": f.license_plate,
                 "taxId": custom.alphanum,
@@ -308,7 +307,7 @@ class English_US(GenericProvider):
                 # for multiword labels, check versions of the label with different delimiters
                 label_delimited = self.get_delimited(label)
                 for lbl in label_delimited:
-                    if re.match(lbl, name, re.IGNORECASE):
+                    if lbl.lower() == name.lower():
                         return self.PII(category, label, str(provider()))
 
     def get_nonpii(self, name):
@@ -319,7 +318,7 @@ class English_US(GenericProvider):
             # for multiword labels, check versions of the label with different delimiters
             label_delimited = self.get_delimited(label)
             for lbl in label_delimited:
-                if re.match(lbl, name, re.IGNORECASE):
+                if lbl.lower() == name.lower():
                     return self.NonPII(label, str(provider()))
 
     def get_random_pii(self):
@@ -364,11 +363,11 @@ class English_US(GenericProvider):
         def gender(self):
             return random.choice(["Male", "Female", "Other"])
 
-        def us_passport(self):
+        def passport(self):
             # US Passports consist of 1 letter or digit followed by 8-digits
             return self.f.bothify(text=random.choice(["?", "#"]) + "########")
 
-        def us_drivers_license(self):
+        def drivers_license(self):
             # US driver's licenses consist of 9 digits (patterns vary by state)
             return self.f.numerify(text="### ### ###")
 

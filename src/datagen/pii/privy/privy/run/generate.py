@@ -23,6 +23,7 @@ import tarfile
 from collections import namedtuple
 from privy.payload import PayloadGenerator
 from privy.providers.english_us import English_US
+from privy.providers.german_de import German_DE
 
 
 def parse_args():
@@ -53,6 +54,7 @@ def parse_args():
         required=False,
         choices=[
             "english_us",
+            "german_de",
         ],
         default="english_us",
         help="""Which language/region specific providers to use for PII generation.""",
@@ -168,6 +170,7 @@ def main(args):
     # ------- Choose Providers --------
     args.region = {
         "english_us": English_US(),
+        "german_de": German_DE(),
     }.get(args.region)
 
     # ------ Initialize File Handles --------
