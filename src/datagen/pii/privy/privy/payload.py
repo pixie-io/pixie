@@ -109,7 +109,7 @@ class PayloadGenerator:
     def insert_pii(self, pii, case_attr, parameter_type):
         """Assign a pii value to a parameter for the input case attribute (e.g. case.path_parameters)."""
         self.log.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
-        if self.args.fuzz_payload:
+        if self.args.fuzz_payloads:
             fuzzed_label = self.fuzz_label(pii.label)
             case_attr[fuzzed_label] = pii.value
         case_attr[pii.label] = pii.value

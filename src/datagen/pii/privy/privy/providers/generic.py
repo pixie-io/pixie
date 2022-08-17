@@ -114,3 +114,7 @@ class GenericProvider(ABC):
         for category in to_delete:
             logging.getLogger("privy").info(f"Category moved to non-pii: {category}")
             del self.pii_label_to_provider[category]
+
+    def get_faker(self, faker_provider):
+        faker_generator = getattr(self.f, faker_provider)
+        return faker_generator

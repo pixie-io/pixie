@@ -46,5 +46,6 @@ py_library(
         requirement("faker_education"),
         requirement("faker-credit-score"),
         "//privy/providers:privy_providers",
+        "//privy/tests:privy_tests",
     ],
 )

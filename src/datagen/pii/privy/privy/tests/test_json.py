@@ -14,25 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import unittest
 import os
 import pathlib
-import csv
-import io
-from collections import namedtuple
-import pandas as pd
-import numpy as np
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
-from privy.payload import PayloadGenerator
-
-
-class PrivyArgs:
-    def __init__(self, args):
-        # deconstruct args into dict, setting each as instance attribute
-        for key in args:
-            setattr(self, key, args[key])
+from privy.tests.utils import generate_one_api_spec
+from privy.tests.utils import read_generated_csv
 
 
 class TestPayloadGenerator(unittest.TestCase):
@@ -44,43 +32,9 @@ class TestPayloadGenerator(unittest.TestCase):
     def test_parse_http_methods(self):
         for multi_threaded in [False, True]:
             for region in self.providers:
-                # in-memory file-like object
-                file = io.StringIO()
-                args = {
-                    "generate_types": "json",
-                    "region": region,
-                    "logging": "debug",
-                    "multi_threaded": multi_threaded,
-                    "num_additional_pii_types": 6,
-                    "equalize_pii_distribution_to_percentage": 50,
-                    "timeout": 400,
-                    "fuzz": True,
-                }
-                args = PrivyArgs(args)
-
-                PrivyWriter = namedtuple("PrivyWriter", ["generate_type", "open_file", "csv_writer"])
-                file_writers = []
-                csv_writer = csv.writer(file, quotechar="|")
-                file_writers.append(PrivyWriter(args.generate_types, file, csv_writer))
-                payload_generator = PayloadGenerator(self.api_specs_folder, file_writers, args)
-                payload_generator.generate_payloads()
-                file.seek(0)
-
-                # no header added to data in test since that occurs in run / generate.py
-                df = pd.read_csv(file, engine="python", quotechar="|", header=None)
-                df.rename(
-                    columns={0: "payload", 1: "has_pii", 2: "pii_types", 3: "categories"}, inplace=True
-                )
+                file = generate_one_api_spec(self.api_specs_folder, region, multi_threaded, "json")
+                payload_params, pii_types_per_payload, categories_per_payload = read_generated_csv(file)
                 # check that pii_type column values match pii_types present in the request payload
-                payload_params = [
-                    json.loads(r).keys() if r is not np.nan else {} for r in df["payload"]
-                ]
-                pii_types_per_payload = [
-                    p.split(",") if p is not np.nan else [] for p in df["pii_types"]
-                ]
-                categories_per_payload = [
-                    c.split(",") if c is not np.nan else [] for c in df["categories"]
-                ]
                 for params, pii_types, categories in zip(payload_params, pii_types_per_payload, categories_per_payload):
                     for param in params:
                         pii = region.get_pii(param)

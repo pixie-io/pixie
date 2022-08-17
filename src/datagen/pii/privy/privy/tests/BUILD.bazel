@@ -14,7 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+package(default_visibility = ["//privy:__subpackages__"])
 
 py_test(
     name = "test_providers",
@@ -36,4 +38,27 @@ py_test(
     deps = [
         "//privy:privy_library",
     ],
+)
+
+py_test(
+    name = "test_sql",
+    srcs = ["test_sql.py"],
+    data = [
+        "openapi.json",
+        "openapi2.json",
+    ],
+    srcs_version = "PY3",
+    deps = [
+        "//privy:privy_library",
+    ],
+)
+
+py_library(
+    name = "privy_tests",
+    testonly = True,
+    srcs = glob([
+        "*.py",
+        "**/*.py",
+    ]),
+    srcs_version = "PY3",
 )

@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import json
 from dicttoxml import dicttoxml
+from privy.sql import SQLQueryBuilder
 
 
 class PayloadRoute:
@@ -23,8 +24,8 @@ class PayloadRoute:
         self.conversions = {
             "json": (json.dumps, {"default": "str"}),
             "xml": (dicttoxml, {}),
+            "sql": (SQLQueryBuilder(args.region).build_query, {}),
             # todo @benkilimnik protobuf conversion
-            # todo @benkilimnik sql conversion
         }
         self.args = args
         self.analyzer = analyzer
@@ -52,7 +53,7 @@ class PayloadRoute:
         self.analyzer.update_payload_counts()
 
     def write_fuzzed_payloads(self, row, writer):
-        for fuzzed_payload in self.fuzzer.fuzz_payload(row[0], writer.generate_type):
+        for fuzzed_payload in self.fuzzer.fuzz_payload(str(row[0]), writer.generate_type):
             row[0] = fuzzed_payload
             writer.csv_writer.writerow(row)
 
