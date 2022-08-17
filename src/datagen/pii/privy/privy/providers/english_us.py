@@ -16,7 +16,6 @@
 import string
 import random
 import baluhn
-from collections import namedtuple
 from faker import Faker
 from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider
@@ -32,9 +31,6 @@ class English_US(GenericProvider):
         f.add_provider(AirTravelProvider)
         custom = self.CustomProviders(f)
         self.f = f
-        # initialize named tuple to hold matched pii provider data for a given pii label
-        self.PII = namedtuple("PII", ["category", "label", "value"])
-        self.NonPII = namedtuple("NonPII", ["label", "value"])
         # map custom, language/region-specific nonpii keywords to providers
         # labels matched with case insensitive regex and space separated
         # (different delimiters are inserted at runtime)
@@ -278,64 +274,6 @@ class English_US(GenericProvider):
             "int": f.random_number,
             "integer": f.random_number,
         }
-
-    def get_pii_categories(self):
-        return self.pii_label_to_provider.keys()
-
-    def get_category(self, category):
-        return self.pii_label_to_provider[category]
-
-    def get_delimited(self, label):
-        """get a list of copies of the input label with different delimiters"""
-        label_delimited = [
-            label,
-            label.replace(" ", "-"),
-            label.replace(" ", "_"),
-            label.replace(" ", "__"),
-            label.replace(" ", "."),
-            label.replace(" ", ":"),
-            label.replace(" ", ""),
-        ]
-        return label_delimited
-
-    def get_pii(self, name):
-        if not name:
-            return
-        for category in self.get_pii_categories():
-            for label, provider in self.pii_label_to_provider[category].items():
-                # check if name at least partially matches pii label
-                # for multiword labels, check versions of the label with different delimiters
-                label_delimited = self.get_delimited(label)
-                for lbl in label_delimited:
-                    if lbl.lower() == name.lower():
-                        return self.PII(category, label, str(provider()))
-
-    def get_nonpii(self, name):
-        if not name:
-            return
-        for label, provider in self.nonpii_label_to_provider.items():
-            # check if name at least partially matches nonpii label
-            # for multiword labels, check versions of the label with different delimiters
-            label_delimited = self.get_delimited(label)
-            for lbl in label_delimited:
-                if lbl.lower() == name.lower():
-                    return self.NonPII(label, str(provider()))
-
-    def get_random_pii(self):
-        category = random.choice(list(self.get_pii_categories()))
-        label = random.choice(
-            list(self.get_category(category).keys()))
-        return self.get_pii(label)
-
-    def sample_pii(self, percent):
-        # randomly select a category
-        category = random.choice(list(self.get_pii_categories()))
-        labels = random.sample(
-            list(self.get_category(category).keys()),
-            round(
-                len(self.get_category(category).keys()) * percent),
-        )
-        return [self.get_pii(label) for label in labels]
 
     class CustomProviders:
         def __init__(self, faker):
