@@ -43,46 +43,41 @@ warnings.filterwarnings("ignore")
 
 class PayloadGenerator:
 
-    def __init__(self, folder, csvwriter, generate_type, multi_threaded,
-                 insert_pii_percentage, insert_label_pii_percentage, timeout):
-        self.folder = folder
-        self.generate_type = generate_type
+    def __init__(self, api_specs_folder, file_writers, args):
+        self.args = args
+        self.api_specs_folder = api_specs_folder
         self.log = logging.getLogger("privy")
-        self.route = PayloadRoute(csvwriter, generate_type)
+        self.route = PayloadRoute(file_writers)
         self.hook = SchemaHooks().schema_analyzer
         self.providers = self.hook.providers
-        self.files = []
+        self.api_specs = []
         self.http_types = ["get", "head", "post", "put",
                            "delete", "connect", "options", "trace", "patch"]
-        self.insert_pii_percent = insert_pii_percentage
-        self.insert_label_pii_percent = insert_label_pii_percentage
-        self.multi_threaded = multi_threaded
-        self.timeout = timeout
 
     def generate_payloads(self):
         """Generate synthetic API request payloads from openAPI specs."""
-        num_files = sum(len(files) for _, _, files in os.walk(self.folder))
+        num_files = sum(len(files) for _, _, files in os.walk(self.api_specs_folder))
         self.log.info(
-            f"Generating synthetic request payloads from {num_files} files in {self.folder}")
+            f"Generating synthetic request payloads from {num_files} files in {self.api_specs_folder}")
         # Retrieve openapi descriptor files
-        for dirpath, _, files in os.walk(self.folder):
+        for dirpath, _, files in os.walk(self.api_specs_folder):
             descriptors = filter(lambda f: f in [
                                  "openapi.json", "swagger.json", "openapi.yaml", "swagger.yaml"], files)
             for desc in descriptors:
                 file = pathlib.Path(dirpath) / desc
-                self.files.append(file)
+                self.api_specs.append(file)
         # multi-threaded
-        if self.multi_threaded:
+        if self.args.multi_threaded:
             with tqdm_joblib(tqdm(total=num_files, position=0, leave=True)) as progress_bar:
                 Parallel(n_jobs=10, prefer='threads')(
-                    delayed(self.parse_openapi_descriptor)(file, self.timeout) for file in self.files
+                    delayed(self.parse_openapi_descriptor)(file, self.args.timeout) for file in self.api_specs
                 )
                 progress_bar.update()
         # single-threaded
         else:
             with alive_bar(num_files) as progress_bar:
-                for file in self.files:
-                    self.parse_openapi_descriptor(file, self.timeout)
+                for file in self.api_specs:
+                    self.parse_openapi_descriptor(file, self.args.timeout)
                     progress_bar()
 
     def parse_openapi_descriptor(self, file, timeout):
@@ -119,8 +114,8 @@ class PayloadGenerator:
 
     def generate_pii_case(self, case_attr, parameter_type):
         """insert additional pii data into a request payload or generate new payload"""
-        if random.random() > self.insert_pii_percent:
-            # insert additional payload {insert_pii_percent}% of the time
+        if random.random() > self.args.insert_pii_percentage:
+            # insert additional payload {insert_pii_percentage}% of the time
             return
         else:
             # insert additional PII payload
@@ -134,7 +129,7 @@ class PayloadGenerator:
                 self.insert_pii(pii, case_attr, parameter_type)
             else:
                 # choose 0 to {insert_label_pii_percent}% of labels
-                percent = random.uniform(0, self.insert_label_pii_percent)
+                percent = random.uniform(0, self.args.insert_label_pii_percentage)
                 pii_list = self.providers.pick_random_region().sample_pii(percent)
                 for pii in pii_list:
                     self.insert_pii(pii, case_attr, parameter_type)

@@ -20,29 +20,48 @@ import os
 import pathlib
 import csv
 import io
+from collections import namedtuple
 import pandas as pd
 import numpy as np
 from privy.chosen_providers import Providers
 from privy.payload import PayloadGenerator
-from privy.hooks import SchemaHooks
+
+
+class PrivyArgs:
+    def __init__(self, args):
+        # deconstruct args into dict, setting each as instance attribute
+        for key in args:
+            setattr(self, key, args[key])
 
 
 class TestPayloadGenerator(unittest.TestCase):
     def setUp(self):
         self.providers = Providers()
-        self.hook = SchemaHooks()
-        self.lufthansa_openapi = os.path.join(os.path.dirname(__file__), "openapi.json")
+        lufthansa_openapi = os.path.join("openapi.json")
+        self.api_specs_folder = pathlib.Path(lufthansa_openapi).parents[0]
 
     def test_parse_http_methods(self):
         for multi_threaded in [False, True]:
             for region in self.providers.get_regions():
                 # in-memory file-like object
                 file = io.StringIO()
-                csvwriter = csv.writer(file, quotechar="|")
-                self.payload_generator = PayloadGenerator(
-                    pathlib.Path(self.lufthansa_openapi).parents[0], csvwriter, "json", multi_threaded, 0.25, 0.03, 400
-                )
-                self.payload_generator.generate_payloads()
+                args = {
+                    "generate_types": "json",
+                    "region": region,
+                    "logging": "debug",
+                    "multi_threaded": multi_threaded,
+                    "insert_pii_percentage": 0.6,
+                    "insert_label_pii_percentage": 0.05,
+                    "timeout": 400,
+                }
+                args = PrivyArgs(args)
+
+                PrivyWriter = namedtuple("PrivyWriter", ["generate_type", "open_file", "csv_writer"])
+                file_writers = []
+                csv_writer = csv.writer(file, quotechar="|")
+                file_writers.append(PrivyWriter(args.generate_types, file, csv_writer))
+                payload_generator = PayloadGenerator(self.api_specs_folder, file_writers, args)
+                payload_generator.generate_payloads()
                 file.seek(0)
 
                 # no header added to data in test since that occurs in run / generate.py

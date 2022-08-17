@@ -44,7 +44,7 @@ class TestProviders(unittest.TestCase):
 
     def test_get_random_pii(self):
         for region in self.providers.regions:
-            random_pii_label = region.get_random_pii()[0]
+            random_pii_label = region.get_random_pii().label
             categories = region.get_pii_categories()
             self.assertTrue(
                 any([random_pii_label in region.get_category(category).keys(

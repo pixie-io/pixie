@@ -20,6 +20,7 @@ import pathlib
 import argparse
 import requests
 import tarfile
+from collections import namedtuple
 from privy.payload import PayloadGenerator
 
 
@@ -31,7 +32,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--generate",
+        "--generate_types",
         "-g",
         required=False,
         choices=[
@@ -40,8 +41,9 @@ def parse_args():
             "proto",
             "xml",
         ],
+        nargs='+',
         default="json",
-        help="""Which dataset to generate.""",
+        help="Which dataset to generate. Can select multiple e.g. json sql proto xml",
     )
 
     parser.add_argument(
@@ -74,7 +76,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--multi-threaded",
+        "--multi_threaded",
         "-m",
         action="store_true",
         required=False,
@@ -112,42 +114,52 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate(api_specs_folder, output_csv, generate_type, multi_threaded,
-             insert_pii_percentage, insert_label_pii_percentage, timeout):
-    """Generate dataset from OpenAPI descriptors"""
-    pathlib.Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
+def generate(args, out_files, api_specs_folder):
     headers = ["payload", "has_pii", "pii_types", "categories"]
-    with open(output_csv, "w") as csvfile:
-        csvwriter = csv.writer(csvfile, quotechar="|")
-        csvwriter.writerow(headers)
-        request_payload_generator = PayloadGenerator(
-            api_specs_folder, csvwriter, generate_type, multi_threaded,
-            insert_pii_percentage, insert_label_pii_percentage, timeout)
-        request_payload_generator.generate_payloads()
+    PrivyWriter = namedtuple("PrivyWriter", ["generate_type", "open_file", "csv_writer"])
+    file_writers = []
+    try:
+        for generate_type, out_file in out_files.items():
+            pathlib.Path(out_file).parent.mkdir(parents=True, exist_ok=True)
+            open_file = open(out_file, 'w')
+            csv_writer = csv.writer(open_file, quotechar="|")
+            csv_writer.writerow(headers)
+            file_writers.append(PrivyWriter(generate_type, open_file, csv_writer))
+        api_specs_folder = api_specs_folder / "APIs"
+        payload_generator = PayloadGenerator(api_specs_folder, file_writers, args)
+        payload_generator.generate_payloads()
+    # ------ Close File Handles --------
+    finally:
+        for writer in file_writers:
+            writer.open_file.close()
 
 
 def main(args):
-    # ------ Logging Level --------
+    # ------ Logging --------
     numeric_level = getattr(logging, args.logging.upper(), None)
     # set root logging level
     logging.basicConfig(level=logging.WARNING)
     logger = logging.getLogger("privy")
     logger.setLevel(numeric_level)
 
-    # ------ Data Generation / Loading -------
+    # ------ Load OpenAPI directory -------
     logger.info(f"Checking if openapi-directory exists in {args.api_specs}")
-    api_specs_folder = pathlib.Path(args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
+    api_specs_folder = pathlib.Path(
+        args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
     if not api_specs_folder.exists():
         logger.info("Not found. Downloading...")
         commit_hash = "ea4a924b870ca4f6d687809fa7891cccc0d19085"
         openapi_directory_link = f"https://github.com/APIs-guru/openapi-directory/archive/{commit_hash}.tar.gz"
         with requests.get(openapi_directory_link, stream=True) as rx, tarfile.open(fileobj=rx.raw, mode="r:gz") as tar:
             tar.extractall(api_specs_folder.parent)
-    output_csv = pathlib.Path(args.out_folder) / \
-        "data" / f"{args.generate.lower()}.csv"
-    api_specs_folder = api_specs_folder / "APIs"
-    generate(api_specs_folder, output_csv, args.generate.lower(),
-             args.multi_threaded, args.insert_pii_percentage, args.insert_label_pii_percentage, args.timeout)
+
+    # ------ Initialize File Handles --------
+    out_files = {}
+    for generate_type in args.generate_types:
+        logger.info(f"Generating {generate_type.upper()} dataset")
+        out_file = pathlib.Path(args.out_folder) / "data" / f"{generate_type.lower()}.csv"
+        out_files[generate_type] = out_file
+    generate(args, out_files, api_specs_folder)
 
 
 if __name__ == "__main__":

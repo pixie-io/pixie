@@ -18,9 +18,8 @@ from dicttoxml import dicttoxml
 
 
 class PayloadRoute:
-    def __init__(self, csvwriter, generate_type):
-        self.csvwriter = csvwriter
-        self.generate_type = generate_type
+    def __init__(self, file_writers):
+        self.file_writers = file_writers
         self.conversions = {
             "json": (json.dumps, {"default": "str"}),
             "xml": (dicttoxml, {}),
@@ -31,11 +30,16 @@ class PayloadRoute:
     def write_payload_to_csv(self, payload, has_pii, pii_types):
         if not payload or "null" in payload.values():
             return
-        converter, kwargs = self.conversions.get(self.generate_type, None)
-        payload = converter(payload, **kwargs)
         if pii_types:
             pii_types, categories = zip(*pii_types)
         else:
             pii_types, categories = [], []
-        payload = [payload, str(int(has_pii)), ",".join(set(pii_types)), ",".join(set(categories))]
-        self.csvwriter.writerow(payload)
+        has_pii = str(int(has_pii))
+        pii_types = ",".join(set(pii_types))
+        categories = ",".join(set(categories))
+        for writer in self.file_writers:
+            converter, kwargs = self.conversions.get(
+                writer.generate_type, None)
+            converted_payload = converter(payload, **kwargs)
+            row = [converted_payload, has_pii, pii_types, categories]
+            writer.csv_writer.writerow(row)
