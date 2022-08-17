@@ -19,7 +19,8 @@ import argparse
 import sys
 from collections import Counter
 import pandas as pd
-import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 
 def parse_args():
@@ -41,7 +42,7 @@ def parse_args():
 def visualize(input_csv):
     csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(input_csv, engine="python", quotechar="|", header=None)
-    df.rename(columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True)
+    df.rename(columns={0: "payload", 1: "has_pii", 2: "pii_types", 3: "categories"}, inplace=True)
 
     # count pii types
     count_pii_types = Counter()
@@ -51,30 +52,39 @@ def visualize(input_csv):
             count_pii_types.update(pii_types.split(","))
     print(count_pii_types)
 
+    # count categories
+    count_categories = Counter()
+    for categories in df["categories"]:
+        if not pd.isna(categories):
+            # split pii_types on comma
+            count_categories.update(categories.split(","))
+    print(count_categories)
+
     # compute percentage of payloads that have PII
     num_rows = df.shape[0]
     num_has_pii = df.groupby(['has_pii']).count()['payload'][1]
-
-    # what percentage of overall dataset (total rows) each pii type are in
-    percentages_pii = Counter()
-    for k, v in count_pii_types.items():
-        percentages_pii[k] = round(v / num_rows * 100, 2)
-    percentages_pii = {k: v for k, v in sorted(percentages_pii.items(), key=lambda item: -item[1])}
-    print(percentages_pii)
+    percent_pii = round((num_has_pii / num_rows) * 100, 2)
+    print(f"payloads (rows) that have PII: {percent_pii}%")
 
     # count pii types per payload
-    avg_num_pii_types_per_payload = round(sum(count_pii_types.values()) / num_has_pii, 2)
+    avg_num_pii_types_per_payload = round(
+        sum(count_pii_types.values()) / num_has_pii, 2)
     print(
         f"Average number of pii types per payload that contains PII: {avg_num_pii_types_per_payload}"
     )
 
-    # graph percentages
-    df2 = pd.DataFrame(percentages_pii.items(), columns=['PII type', 'percentage of dataset'])
-    fig = px.bar(df2, x='PII type', y='percentage of dataset')
-    fig.show()
+    # graph counts of pii types and categories
+    pii_types_df = pd.DataFrame(sorted(count_pii_types.items(
+    ), key=lambda item: -item[1]), columns=['PII_type', 'examples_in_dataset'])
+    categories_df = pd.DataFrame(sorted(count_categories.items(
+    ), key=lambda item: -item[1]), columns=['PII_category', 'examples_in_dataset'])
 
-    percent_pii = round(num_has_pii / num_rows * 100, 2)
-    print(f"payloads (rows) that have PII: {percent_pii}%")
+    fig = make_subplots(y_title="Distribution of PII in Synthetic Protocol Traces", rows=2, cols=1)
+    fig.add_trace(go.Bar(name="PII type examples in dataset",
+                  x=pii_types_df.PII_type, y=pii_types_df.examples_in_dataset), row=1, col=1)
+    fig.add_trace(go.Bar(name="PII category examples in dataset",
+                  x=categories_df.PII_category, y=categories_df.examples_in_dataset), row=2, col=1)
+    fig.show()
 
 
 def main(args):
