@@ -5,4 +5,4 @@ metadata:
   name: pl-scriptmgr-config
 data:
   PL_BUNDLE_BUCKET: pixie-prod-artifacts
-  PL_BUNDLE_PATH: script-bundles/bundle-staging.json
+  PL_BUNDLE_PATH: script-bundles/bundle-oss.json
