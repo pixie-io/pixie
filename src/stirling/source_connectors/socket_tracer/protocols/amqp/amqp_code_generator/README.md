@@ -6,6 +6,18 @@ Install the requirements via pip install and run
 ```
 
 The function takes in the `amqp-0-9-1.stripped.xml` from the AMQP specification and generates header and c files for pixie.
+The stripped version of xml from https://www.amqp.org/specification/0-9-1/amqp-org-download
+
+Bazel cmds:
+```
+  wget "https://www.rabbitmq.com/resources/specs/amqp0-9-1.xml"
+  bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_code_gen_main -- run
+  cp generated_files/decode.cc ../
+  cp generated_files/decode.h ../
+  cp generated_files/types_gen.h ../
+  cp generated_files/amqp_pxl_function.h src/carnot/funcs/protocols/amqp.h
+```
+
 
 The code generation process involves 3 steps:
 1. Converting the xml to python objects
