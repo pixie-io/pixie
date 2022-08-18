@@ -55,6 +55,18 @@ TEST(ProtocolOps, MySQLCommandNameUDF) {
   udf_tester.ForInput(9999).Expect("9999");
 }
 
+TEST(ProtocolOps, AMQPFrameTypeUDF) {
+  auto udf_tester = udf::UDFTester<AMQPFrameTypeUDF>();
+  udf_tester.ForInput(1).Expect("Frame method");
+  udf_tester.ForInput(2).Expect("Content Header");
+  udf_tester.ForInput(8).Expect("Heartbeat");
+}
+
+TEST(ProtocolOps, AMQPMethodTypeUDF) {
+  auto udf_tester = udf::UDFTester<AMQPMethodTypeUDF>();
+  udf_tester.ForInput(60, 40).Expect("BasicPublish");
+}
+
 }  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot

@@ -18,6 +18,7 @@
 
 #include "src/carnot/funcs/protocols/protocol_ops.h"
 
+#include "src/carnot/funcs/protocols/amqp.h"
 #include "src/carnot/funcs/protocols/http.h"
 #include "src/carnot/funcs/protocols/kafka.h"
 #include "src/carnot/funcs/protocols/mysql.h"
@@ -39,6 +40,8 @@ void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<HTTPRespMessageUDF>("http_resp_message");
   registry->RegisterOrDie<KafkaAPIKeyNameUDF>("kafka_api_key_name");
   registry->RegisterOrDie<MySQLCommandNameUDF>("mysql_command_name");
+  registry->RegisterOrDie<AMQPFrameTypeUDF>("amqp_frame_type_name");
+  registry->RegisterOrDie<AMQPMethodTypeUDF>("amqp_method_name");
 }
 
 types::StringValue ProtocolNameUDF::Exec(FunctionContext*, Int64Value protocol) {
@@ -51,6 +54,15 @@ types::StringValue HTTPRespMessageUDF::Exec(FunctionContext*, Int64Value resp_co
 
 types::StringValue KafkaAPIKeyNameUDF::Exec(FunctionContext*, Int64Value api_key) {
   return kafka::APIKeyName(api_key.val);
+}
+
+types::StringValue AMQPFrameTypeUDF::Exec(FunctionContext*, Int64Value frame_type) {
+  return amqp::FrameTypeName(frame_type.val);
+}
+
+types::StringValue AMQPMethodTypeUDF::Exec(FunctionContext*, Int64Value class_id,
+                                           Int64Value method_id) {
+  return amqp::ClassIdMethodIdToMethodName(class_id.val, method_id.val);
 }
 
 types::StringValue MySQLCommandNameUDF::Exec(FunctionContext*, Int64Value api_key) {

@@ -51,6 +51,8 @@ inline std::string ProtocolName(int protocol) {
       return "Mongo";
     case px::protocols::Protocol::kKafka:
       return "Kafka";
+    case px::protocols::Protocol::kAMQP:
+      return "AMQP";
     default:
       return absl::StrCat("Invalid (", protocol, ")");
   }

@@ -80,6 +80,33 @@ class MySQLCommandNameUDF : public px::carnot::udf::ScalarUDF {
   }
 };
 
+class AMQPFrameTypeUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value frame_type);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a AMQP frame type to its name.")
+        .Details("UDF to convert AMQP frame type into their corresponding human-readable names.")
+        .Arg("frame_type", "An AMQP frame_type in numeric value")
+        .Example("df.frame_type_name = px.amqp_frame_type_name(df.req_cmd)")
+        .Returns("The AMQP Frame Type name.");
+  }
+};
+
+class AMQPMethodTypeUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value class_id, Int64Value method_id);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a AMQP method id to its name.")
+        .Details("UDF to convert AMQP method id into their corresponding human-readable names.")
+        .Arg("class_id", "An AMQP class_id in numeric value")
+        .Arg("method_id", "An AMQP method_id in numeric value")
+        .Example("df.method_name = px.amqp_method_name(df.class_id, df.method_id)")
+        .Returns("The AMQP Method name.");
+  }
+};
+
 void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace protocols
