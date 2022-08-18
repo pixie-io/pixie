@@ -42,6 +42,8 @@
 DEFINE_bool(stirling_rescan_for_dlopen, false,
             "If enabled, Stirling will use mmap tracing information to rescan binaries for delay "
             "loaded libraries like OpenSSL");
+DEFINE_bool(stirling_enable_grpc_c_tracing, false,
+            "If true, enable gRPC tracing for C dynamic libraries used for python");
 DEFINE_double(stirling_rescan_exp_backoff_factor, 2.0,
               "Exponential backoff factor used in decided how often to rescan binaries for "
               "dynamically loaded libraries");
@@ -903,12 +905,16 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
+  if (FLAGS_stirling_enable_grpc_c_tracing) {
+    uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
+  }
 
   if (FLAGS_stirling_rescan_for_dlopen) {
     auto pids_to_rescan_for_uprobes = PIDsToRescanForUProbes();
     uprobe_count += DeployOpenSSLUProbes(pids_to_rescan_for_uprobes);
-    uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
+    if (FLAGS_stirling_enable_grpc_c_tracing) {
+      uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
+    }
   }
 
   uprobe_count += DeployGoUProbes(proc_tracker_.new_upids());
