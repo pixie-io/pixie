@@ -634,6 +634,9 @@ StatusOr<std::string> UProbeManager::MD5onFile(const std::string& file) {
 }
 
 StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) {
+  // grpc-c libraries that are used by python normally have this prefix,
+  // I have not seen a case where it's not used.
+  static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
   const std::vector<std::string_view> lib_names = {kGrpcCPythonLibPrefix};
 
   const system::Config& sysconfig = system::Config::GetInstance();

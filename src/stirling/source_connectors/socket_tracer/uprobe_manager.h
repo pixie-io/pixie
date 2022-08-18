@@ -430,9 +430,6 @@ class UProbeManager {
   // For further explanation see the definition of kGrpcCMD5HashToVersion.
   StatusOr<std::string> MD5onFile(const std::string& file);
   StatusOr<int> AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid);
-  // grpc-c libraries that are used by python normally have this prefix,
-  // I have not seen a case where it's not used.
-  static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
 
   static StatusOr<std::array<UProbeTmpl, 6>> GetNodeOpensslUProbeTmpls(const SemVer& ver);
 
