@@ -88,7 +88,7 @@ func SetupElastic() (*elastic.Client, func(), error) {
 			},
 		}
 		config.CPUCount = 1
-		config.Memory = 512 * 1024 * 1024
+		config.Memory = 1024 * 1024 * 1024
 		config.MemorySwap = 0
 		config.MemorySwappiness = 0
 	})
