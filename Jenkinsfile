@@ -145,6 +145,7 @@ isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
+isStirlingPerfEval = (env.JOB_NAME == 'pixie-main/stirling-perf-eval')
 
 // Build tags are used to modify the behavior of the build.
 // Note: Tags only work for code-review builds.
@@ -152,7 +153,6 @@ isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 buildTagBPFBuild = false
 // Enable BPF build across all tested kernels.
 buildTagBPFBuildAllKernels = false
-
 
 def WithGCloud(Closure body) {
   if (env.KUBERNETES_SERVICE_HOST) {
@@ -337,10 +337,10 @@ def RetryOnK8sDownscale(Closure body, int times=5) {
   }
 }
 
-def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Closure body) {
+def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
   warnError('Script failed') {
     DefaultBuildPodTemplate(suffix) {
-      timeout(time: 90, unit: 'MINUTES') {
+      timeout(time: timeoutMinutes, unit: 'MINUTES') {
         container('pxbuild') {
           sh '''
             git config --global --add safe.directory `pwd`
@@ -524,6 +524,22 @@ def postBuildActions = {
 def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   sh './ci/save_version_info.sh'
   sh './ci/save_diff_info.sh'
+
+  if(isStirlingPerfEval) {
+    perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
+    perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
+    withCredentials([
+      usernamePassword(
+        credentialsId: 'stirling-perf-postgres',
+        usernameVariable: 'STIRLING_PERF_DB_USERNAME',
+        passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
+      )
+    ]) {
+      sh 'mkdir -p logs'
+      sh "pip3 install -r ${perf_reqs}"
+      sh "python3 ${perf_eval} save-perf-record-repo-info-to-disk --jenkins"
+    }
+  }
   writeBazelRCFile()
 
   // Get docker image tag.
@@ -1076,6 +1092,175 @@ regressionBuilders['Test (TSAN)'] = {
  * END REGRESSION_BUILDERS
  *****************************************************************************/
 
+/*****************************************************************************
+ * STIRLING PERF BUILDERS: Create & deploy, wait, then measure CPU use.
+ *****************************************************************************/
+
+def clusterNames = (params.CLUSTER_NAMES != null) ? params.CLUSTER_NAMES.split(',') : ['']
+int numPerfEvals = (params.NUM_EVAL_RUNS != null) ? Integer.parseInt(params.NUM_EVAL_RUNS) : 5
+int warmupMinutes = (params.WARMUP_MINUTES != null) ? Integer.parseInt(params.WARMUP_MINUTES) : 30
+int evalMinutes = (params.EVAL_MINUTES != null) ? Integer.parseInt(params.EVAL_MINUTES) : 60
+int profilerMinutes = (params.PROFILER_MINUTES != null) ? Integer.parseInt(params.PROFILER_MINUTES) : 5
+String groupName = (params.GROUP_NAME != null) ? params.GROUP_NAME : 'none'
+String experimentTag = (params.EXPERIMENT_TAG != null) ? params.EXPERIMENT_TAG : 'none'
+
+def stirlingPerfBuilders = [:]
+
+String getClusterNameDateString() {
+  date = new Date()
+  return date.format('yyyy-MM-dd--HHmm-ss')
+}
+
+useCluster = { String clusterName ->
+  sh 'hostname'
+  sh 'gcloud --version'
+  sh "gcloud container clusters get-credentials ${clusterName} --project pl-pixies --zone us-west1-a"
+}
+
+createCluster = { String clusterName ->
+  numRetries = 3
+  createClusterScript = "scripts/create_gke_cluster.sh"
+  sh 'hostname'
+  sh 'gcloud components update'
+  sh 'gcloud --version'
+  retry(numRetries) {
+    sh "${createClusterScript} -S -f -n 1 -c ${clusterName}"
+  }
+}
+
+deleteCluster = { String clusterName ->
+  sh "gcloud container --project pl-pixies clusters delete ${clusterName} --zone us-west1-a --quiet"
+}
+
+pxDeployForStirlingPerfEval = {
+  withCredentials([
+    string(
+      credentialsId: 'px-staging-user-api-key',
+      variable: 'THE_PIXIE_CLI_API_KEY'
+    )
+  ]) {
+    withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
+      sh 'hostname'
+      sh 'curl -fsSL https://storage.googleapis.com/pixie-dev-public/cli/latest/cli_linux_amd64 -o /usr/local/bin/px'
+      sh 'chmod +x /usr/local/bin/px'
+      sh 'px auth login --use_api_key --api_key ${THE_PIXIE_CLI_API_KEY}'
+      sh 'px demo deploy px-kafka -y'
+      sh 'px demo deploy px-sock-shop -y'
+      sh 'px demo deploy px-online-boutique -y'
+      sh 'px deploy -y -q'
+    }
+  }
+}
+
+pxCollectPerfInfo = {
+  withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
+    sh "px run pixielabs.ai/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
+    sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
+  }
+}
+
+insertRecordsToPerfDB = { int evalIdx ->
+  perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
+  perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
+  withCredentials([
+    usernamePassword(
+      credentialsId: 'stirling-perf-postgres',
+      usernameVariable: 'STIRLING_PERF_DB_USERNAME',
+      passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
+    )
+  ]) {
+    sh "pip3 install -r ${perf_reqs}"
+    numRetries = 3
+    retry(numRetries) {
+      // Our google cloud database can complain & fail if it gets hit w/ too many requests at once.
+      sh "python3 ${perf_eval} insert-perf-records --jenkins --group-name ${groupName} --tag ${experimentTag} --idx ${evalIdx}"
+    }
+  }
+}
+
+oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
+  int margin = 2
+  int clusterCreationMinutes = 10
+  int pixieDeployMinutes = 10
+  int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
+
+  return {
+    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes, {
+    container('pxbuild', {
+      dockerStep(dockerArgsForBPFTest, {
+        if (newClusterNeeded) {
+          // Default behavior: create a new cluster for this perf eval.
+          stage("Create cluster.") {
+            createCluster(clusterName)
+          }
+        } else {
+          // A pre-existing cluster name was supplied to the build.
+          stage("Use cluster.") {
+            echo "clusterName: ${clusterName}."
+            useCluster(clusterName)
+          }
+        }
+        stage('Deploy pixie.') {
+          pxDeployForStirlingPerfEval()
+        }
+        stage('Warmup.') {
+          sh "sleep ${60 * warmupMinutes}"
+        }
+        stage('Evaluate.') {
+          sh "sleep ${60 * evalMinutes}"
+        }
+        stage('Collect.') {
+          pxCollectPerfInfo()
+        }
+        stage('Insert records to perf db.') {
+          insertRecordsToPerfDB(evalIdx)
+        }
+        if (newClusterNeeded) {
+          // Earlier, we had created a new cluster for this perf eval.
+          // Here, we clean up.
+          stage("Delete cluster.") {
+            deleteCluster(clusterName)
+          }
+        }
+      })
+    })
+    })
+  }
+}
+
+if(clusterNames[0].size()) {
+  // Useful for:
+  // ... debugging
+  // ... faster runs or iterations
+  // ... other special cases or special setups.
+  // This branch allows a user to specify which cluster(s) to run the perf eval on.
+  // (It will *not* create new clusters.)
+  // To enable, specify the cluster name(s) as a build param. For more than one cluster,
+  // use a comma separated list:
+  // my-dev-cluster-00,my-dev-cluster-01
+  boolean newClusterNeeded = false
+  clusterNames.eachWithIndex { clusterName, i ->
+    title = "Eval ${i}."
+    perfEvaluator = oneEval.curry(i).curry(clusterName).curry(newClusterNeeded)
+    stirlingPerfBuilders[title] = perfEvaluator()
+  }
+} else {
+  // Default path: no cluster names supplied to the build.
+  // The perf evals will create clusters.
+  boolean newClusterNeeded = true
+  for( int i=0; i < numPerfEvals; i++ ) {
+    clusterName = 'stirling-perf-' + getClusterNameDateString() + '-' + String.format('%02d', i)
+    title = "Eval ${i}."
+    perfEvaluator = oneEval.curry(i).curry(clusterName).curry(newClusterNeeded)
+    stirlingPerfBuilders[title] = perfEvaluator()
+  }
+}
+
+/*****************************************************************************
+ * END STIRLING PERF BUILDERS
+ *****************************************************************************/
+
+
 def buildScriptForNightlyTestRegression = { testjobs ->
   try {
     stage('Checkout code') {
@@ -1487,6 +1672,15 @@ def buildScriptForCopybaraPxAPI() {
   }
 }
 
+def buildScriptForStirlingPerfEval = {
+  stage('Checkout code.') {
+    checkoutAndInitialize()
+  }
+  stage('Stirling perf eval.') {
+    parallel(stirlingPerfBuilders)
+  }
+}
+
 if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression(regressionBuilders)
 } else if (isNightlyBPFTestRegressionRun) {
@@ -1507,6 +1701,8 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCopybaraPublic()
 } else if (isCopybaraPxAPI) {
   buildScriptForCopybaraPxAPI()
+} else if (isStirlingPerfEval) {
+  buildScriptForStirlingPerfEval()
 } else {
   buildScriptForCommits()
 }
