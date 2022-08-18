@@ -1,0 +1,252 @@
+{
+  "variables": [
+      {
+          "name": "start_time",
+          "type": "PX_STRING",
+          "description": "The relative start time of the window. Current time is assumed to be now.",
+          "defaultValue": "-5m"
+      },
+      {
+          "name": "source_filter",
+          "type": "PX_STRING",
+          "description": "The partial string to match the 'source' column.",
+          "defaultValue": ""
+      },
+      {
+          "name": "destination_filter",
+          "type": "PX_STRING",
+          "description": "The partial string to match the 'destination' column.",
+          "defaultValue": ""
+      },
+      {
+          "name": "max_num_records",
+          "type": "PX_INT64",
+          "description": "Max number of records to show.",
+          "defaultValue": "1000"
+      },
+      {
+          "name": "namespace",
+          "type": "PX_NAMESPACE",
+          "description": "The namespace to filter on.",
+          "defaultValue": ""
+      },
+      {
+        "name": "routing_key",
+        "type": "PX_STRING",
+        "description": "The routing key to filter on",
+        "defaultValue": ""
+      }
+  ],
+  "globalFuncs": [
+      {
+          "outputName": "amqp_data",
+          "func": {
+              "name": "amqp_data",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "amqp_msg_stats",
+          "func": {
+              "name": "amqp_msg_stats",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "amqp_average_stats",
+          "func": {
+              "name": "amqp_average_stats",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "amqp_producer_pod_list",
+          "func": {
+              "name": "amqp_producer_pod_list",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "amqp_consumer_pod_list",
+          "func": {
+              "name": "amqp_consumer_pod_list",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "amqp_flow_graph",
+          "func": {
+              "name": "amqp_flow_graph",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "ns",
+                      "variable": "namespace"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      }
+  ],
+  "widgets": [
+      {
+          "name": "AMQP Raw Data",
+          "position": {
+              "x": 0,
+              "y": 0,
+              "w": 12,
+              "h": 4
+          },
+          "globalFuncOutputName": "amqp_data",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      },
+      {
+          "name": "AMQP Raw Packet stats",
+          "position": {
+              "x": 0,
+              "y": 4,
+              "w": 6,
+              "h": 2
+          },
+          "globalFuncOutputName": "amqp_msg_stats",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      },
+      {
+          "name": "AMQP AVG Packet stats",
+          "position": {
+              "x": 6,
+              "y": 4,
+              "w": 6,
+              "h": 2
+          },
+          "globalFuncOutputName": "amqp_average_stats",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      },
+      {
+          "name": "AMQP Producer List",
+          "position": {
+              "x": 0,
+              "y": 6,
+              "w": 12,
+              "h": 2
+          },
+          "globalFuncOutputName": "amqp_producer_pod_list",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      },
+      {
+          "name": "AMQP Consumer List",
+          "position": {
+              "x": 0,
+              "y": 6,
+              "w": 12,
+              "h": 2
+          },
+          "globalFuncOutputName": "amqp_consumer_pod_list",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      },
+      {
+          "name": "AMQP Flow Graph",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 3
+          },
+          "globalFuncOutputName": "amqp_flow_graph",
+          "displaySpec": {
+            "@type": "types.px.dev/px.vispb.Graph",
+            "adjacencyList": {
+              "fromColumn": "src",
+              "toColumn": "dest"
+            },
+            "enableDefaultHierarchy": true,
+            "edgeLength": 300
+          }
+        }
+  ]
+}

@@ -1,0 +1,194 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+""" AMQP Data Tracer
+
+This script traces all AMQP (Rabbitmq) data on the cluster.
+"""
+import px
+
+
+def amqp_data(start_time: str, source_filter: str, destination_filter: str):
+    """
+    Returns the raw AMQP data
+    """
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+    df = sanitize_filter(df, source_filter, destination_filter)
+    df = df[
+        "time_",
+        "upid",
+        "frame_name",
+        "req_name",
+        "resp_name",
+        "req_msg",
+        "resp_msg",
+        "source",
+        "destination",
+    ]
+    return df
+
+
+def amqp_msg_stats(start_time: str, source_filter: str, destination_filter: str):
+    """
+    Returns the number of messages for each AMQP message type
+    """
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+    df = sanitize_filter(df, source_filter, destination_filter)
+    df = df[
+        "time_", "upid", "frame_name", "req_name", "resp_name", "req_msg", "resp_msg"
+    ]
+    df_stats_per_req = df.groupby(["frame_name", "req_name"]).agg(
+        stats=("req_name", px.count)
+    )
+    return df_stats_per_req
+
+
+def amqp_average_stats(start_time: str, source_filter: str, destination_filter: str):
+    """
+    Returns the average AMQP body size
+    """
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+    df = sanitize_filter(df, source_filter, destination_filter)
+    df = df[df["frame_name"] == "Content Header"]
+    df.body_size = px.pluck_int64(df.req_msg, "body_size")
+    body_size_stats = df.groupby("frame_name").agg(
+        avg_body_size=("body_size", px.mean),
+        max_body_size=("body_size", px.max),
+        min_body_size=("body_size", px.min),
+    )
+
+    return body_size_stats
+
+
+def amqp_producer_pod_list(
+    start_time: str, source_filter: str, destination_filter: str
+):
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+    df = sanitize_filter(df, source_filter, destination_filter)
+    df = df[df["req_name"] == "BasicPublish"]
+    df.routing_key = px.pluck(df.req_msg, "routing_key")
+    df = df.groupby(["routing_key", "pod", "namespace", "source", "destination"]).agg(
+        count=("pod", px.count)
+    )
+    df = df["routing_key", "namespace", "pod", "source", "destination"]
+    return df
+
+
+def amqp_consumer_pod_list(
+    start_time: str, source_filter: str, destination_filter: str
+):
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+    df = sanitize_filter(df, source_filter, destination_filter)
+
+    df = df[df["resp_name"] == "BasicDeliver"][
+        "resp_msg", "namespace", "pod", "source", "destination"
+    ]
+    df.routing_key = px.pluck(df.resp_msg, "routing_key")
+    df.consumer_tag = px.pluck(df.resp_msg, "consumer_tag")
+
+    df = df.groupby(
+        ["routing_key", "pod", "namespace", "source", "destination", "consumer_tag"]
+    ).agg(count=("pod", px.count))
+
+    df = df["routing_key", "namespace", "pod", "source", "destination", "consumer_tag"]
+    return df
+
+
+def amqp_flow_graph(
+    start_time: str, ns: px.Namespace, source_filter: str, destination_filter: str
+):
+    """
+    Adds flow graph from producers to consumers
+    """
+    df = px.DataFrame(table="amqp_events", start_time=start_time)
+
+    # Get produce and consumer records
+    producer_df = amqp_producer_pod_list(start_time, source_filter, destination_filter)
+    consumer_df = amqp_consumer_pod_list(start_time, source_filter, destination_filter)
+
+    producer_df = filter_if_not_empty(producer_df, "namespace", ns)
+    consumer_df = filter_if_not_empty(consumer_df, "namespace", ns)
+
+    producer_df.src = producer_df.source
+    producer_df.dest = (
+        producer_df.destination + "/routing_key/" + producer_df.routing_key
+    )
+
+    consumer_df.src = (
+        consumer_df.destination + "/routing_key/" + consumer_df.routing_key
+    )
+    consumer_df.dest = consumer_df.source
+
+    producer_df = producer_df["src", "dest"]
+    consumer_df = consumer_df["src", "dest"]
+
+    df = producer_df.append(consumer_df)
+
+    return df
+
+
+def sanitize_filter(df, source_filter, destination_filter):
+    """
+    Converts class id & method id to readable req_name & resp_name
+    """
+    df = add_source_dest_columns(df)
+    df = df[px.contains(df.source, source_filter)]
+    df = df[px.contains(df.destination, destination_filter)]
+
+    df.frame_name = px.amqp_frame_type_name(df.frame_type)
+    df.req_name = px.amqp_method_name(df.req_class_id, df.req_method_id)
+    df.resp_name = px.amqp_method_name(
+        df.resp_class_id, df.resp_method_id
+    )
+    return df
+
+
+def add_source_dest_columns(df):
+    """Add source and destination columns for the AMQP request.
+    """
+    df.pod = df.ctx["pod"]
+    df.namespace = df.ctx["namespace"]
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ""
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    df.is_server_tracing = df.trace_role == 2
+    df.is_source_pod_type = px.select(df.is_server_tracing, df.is_ra_pod, True)
+    df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
+
+    # Set source and destination based on trace_role.
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != ""]
+    df = df[df.destination != ""]
+
+    df = df.drop(["ra_pod", "is_ra_pod", "ra_name", "is_server_tracing"])
+
+    return df
+
+
+def filter_if_not_empty(df, column: str, val: str):
+    """
+    Filters for rows where column is equal to val. If val is "", all rows are retained.
+    """
+    df.criterion = px.select(df[column] == val, True, val == "")
+    df = df[df.criterion]
+    df = df.drop("criterion")
+    return df
