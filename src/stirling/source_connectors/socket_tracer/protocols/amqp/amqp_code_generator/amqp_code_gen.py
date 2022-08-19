@@ -827,7 +827,7 @@ class CodeGeneratorWriter:
         self.struct_gen_header_path = Path(self.generation_dir) / Path("decode.h")
         self.decode_gen_path = Path(self.generation_dir) / Path("decode.cc")
         self.amqp_pxl_function_gen_path = Path(self.generation_dir) / Path(
-            "amqp_pxl_function.h"
+            "amqp.h"
         )
 
     def write_type_gen_header(self):

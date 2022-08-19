@@ -15,7 +15,7 @@ Bazel cmds:
   cp generated_files/decode.cc ../
   cp generated_files/decode.h ../
   cp generated_files/types_gen.h ../
-  cp generated_files/amqp_pxl_function.h src/carnot/funcs/protocols/amqp.h
+  cp generated_files/amqp.h src/carnot/funcs/protocols/amqp.h
 ```
 
 
