@@ -108,20 +108,21 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
   PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
   PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-  PL_ASSIGN_OR_RETURN(auto start_time_ns,
-                      ParseAllTimeFormats(compiler_state->time_now().val, start_time));
-  PL_ASSIGN_OR_RETURN(auto end_time_ns,
-                      ParseAllTimeFormats(compiler_state->time_now().val, end_time));
-
   std::string table_name = table->str();
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
                       graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
-  // If both start_time and end_time are default arguments, then we don't substitute them.
-  if (!(args.default_subbed_args().contains("start_time") &&
-        args.default_subbed_args().contains("end_time"))) {
-    mem_source_op->SetTimeValuesNS(start_time_ns, end_time_ns);
+
+  if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
+    PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
+    PL_ASSIGN_OR_RETURN(auto start_time_ns,
+                        ParseAllTimeFormats(compiler_state->time_now().val, start_time));
+    mem_source_op->SetTimeStartNS(start_time_ns);
+  }
+  if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
+    PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+    PL_ASSIGN_OR_RETURN(auto end_time_ns,
+                        ParseAllTimeFormats(compiler_state->time_now().val, end_time));
+    mem_source_op->SetTimeStopNS(end_time_ns);
   }
   return Dataframe::Create(compiler_state, mem_source_op, visitor);
 }
@@ -423,10 +424,7 @@ Status Dataframe::Init() {
       std::shared_ptr<FuncObject> constructor_fn,
       FuncObject::Create(
           name(), {"table", "select", "start_time", "end_time"},
-          {{"select", "[]"},
-           {"start_time", "0"},
-           {"end_time",
-            absl::Substitute("$0.$1()", PixieModule::kPixieModuleObjName, PixieModule::kNowOpID)}},
+          {{"select", "[]"}, {"start_time", "None"}, {"end_time", "None"}},
           /* has_variable_len_args */ false,
           /* has_variable_len_kwargs */ false,
           std::bind(&DataFrameConstructor, compiler_state_, graph(), std::placeholders::_1,

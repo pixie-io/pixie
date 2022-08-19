@@ -1388,9 +1388,12 @@ template <>
 void CompareCloneNode(MemorySourceIR* new_ir, MemorySourceIR* old_ir,
                       const std::string& err_string) {
   EXPECT_EQ(new_ir->table_name(), old_ir->table_name()) << err_string;
-  EXPECT_EQ(new_ir->IsTimeSet(), old_ir->IsTimeSet()) << err_string;
-  if (new_ir->IsTimeSet()) {
+  EXPECT_EQ(new_ir->IsTimeStartSet(), old_ir->IsTimeStartSet()) << err_string;
+  if (new_ir->IsTimeStartSet()) {
     EXPECT_EQ(new_ir->time_start_ns(), old_ir->time_start_ns()) << err_string;
+  }
+  EXPECT_EQ(new_ir->IsTimeStopSet(), old_ir->IsTimeStopSet()) << err_string;
+  if (new_ir->IsTimeStopSet()) {
     EXPECT_EQ(new_ir->time_stop_ns(), old_ir->time_stop_ns()) << err_string;
   }
   EXPECT_EQ(new_ir->column_names(), old_ir->column_names()) << err_string;

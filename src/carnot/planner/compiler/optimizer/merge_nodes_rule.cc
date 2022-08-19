@@ -117,34 +117,25 @@ bool CompareExpressionLists(const ColExpressionVector& exprs_a,
 }
 
 bool DoTimeIntervalsMerge(MemorySourceIR* src_a, MemorySourceIR* src_b) {
-  if (src_a->IsTimeSet() != src_b->IsTimeSet()) {
+  if (src_a->IsTimeStartSet() != src_b->IsTimeStartSet()) {
     return false;
   }
-  auto time_start_a = src_a->time_start_ns();
-  auto time_start_b = src_b->time_start_ns();
-  auto time_stop_a = src_a->time_stop_ns();
-  auto time_stop_b = src_b->time_stop_ns();
+  if (src_a->IsTimeStopSet() != src_b->IsTimeStopSet()) {
+    return false;
+  }
+  bool can_merge = true;
+  if (src_a->IsTimeStartSet()) {
+    auto time_start_a = src_a->time_start_ns();
+    auto time_start_b = src_b->time_start_ns();
+    can_merge &= (time_start_a == time_start_b);
+  }
+  if (src_a->IsTimeStopSet()) {
+    auto time_stop_a = src_a->time_stop_ns();
+    auto time_stop_b = src_b->time_stop_ns();
+    can_merge &= (time_stop_a == time_stop_b);
+  }
 
-  return time_start_a == time_start_b && time_stop_a == time_stop_b;
-
-  // TODO(philkuz) (PP-1812) Enable the following when we have better management of undoing a merge.
-
-  // // Check whether intervals (if set) overlap.
-  // if (src_a->IsTimeSet() && src_b->IsTimeSet()) {
-  //   auto time_start_a = src_a->time_start_ns();
-  //   auto time_start_b = src_b->time_start_ns();
-  //   auto time_stop_a = src_a->time_stop_ns();
-  //   auto time_stop_b = src_b->time_stop_ns();
-  //   // If a starts first, then b only overlaps if b starts before the end of the a interval.
-  //   if (time_start_a <= time_start_b && !(time_start_b < time_stop_a)) {
-  //     return false;
-  //   }
-
-  //   // If b starts first, then a only overlaps if a ctarts before the end of the b interval.
-  //   if (time_start_b <= time_start_a && !(time_start_a < time_stop_b)) {
-  //     return false;
-  //   }
-  // }
+  return can_merge;
 }
 
 bool MergeNodesRule::CanMerge(OperatorIR* a, OperatorIR* b) {
@@ -303,16 +294,6 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     auto columns = new_src->column_names();
     auto column_idx_map = new_src->column_index_map();
 
-    // Memory sources need special handling for time.
-    bool time_not_set = !base_src->IsTimeSet();
-    int64_t start_time = 0;
-    int64_t stop_time = 0;
-
-    if (!time_not_set) {
-      start_time = base_src->time_start_ns();
-      stop_time = base_src->time_stop_ns();
-    }
-
     absl::flat_hash_set<std::string> column_names(columns.begin(), columns.end());
     for (OperatorIR* other_op : operators_to_merge) {
       MemorySourceIR* other_src = static_cast<MemorySourceIR*>(other_op);
@@ -325,25 +306,12 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
         columns.push_back(col);
         column_idx_map.push_back(other_src->column_index_map()[idx]);
       }
-      time_not_set |= !base_src->IsTimeSet();
-
-      if (!time_not_set) {
-        start_time = std::min(other_src->time_start_ns(), start_time);
-        stop_time = std::max(other_src->time_stop_ns(), stop_time);
-      }
     }
     new_src->SetColumnNames(columns);
     new_src->SetColumnIndexMap(column_idx_map);
-    if (time_not_set) {
-      new_src->ClearTimeNS();
-    } else {
-      new_src->SetTimeValuesNS(start_time, stop_time);
-    }
-
-    new_src->ClearResolvedType();
-    ResolveTypesRule rule(compiler_state_);
-    PL_RETURN_IF_ERROR(rule.Apply(new_src));
-    return new_src;
+    // Memory sources are only merged if their start and end times are identical.
+    // So the start and end times from the copied base src are already correct.
+    merged_op = new_src;
 
   } else if (Match(base_op, Map())) {
     // TODO(philkuz) support Map operators where out_column_names conflict.

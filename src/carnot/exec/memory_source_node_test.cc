@@ -29,12 +29,14 @@
 #include <sole.hpp>
 
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
+#include "src/shared/types/typespb/types.pb.h"
 namespace px {
 namespace carnot {
 namespace exec {
@@ -344,10 +346,10 @@ TEST_F(MemorySourceNodeTabletDeathTest, missing_tablet_fails) {
   EXPECT_DEBUG_DEATH(EXPECT_NOT_OK(exec_node_->Open(exec_state_.get())), "");
 }
 
-TEST_F(MemorySourceNodeTest, infinite_stream) {
+TEST_F(MemorySourceNodeTest, streaming) {
   auto op_proto = planpb::testutils::CreateTestStreamingSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  EXPECT_TRUE(static_cast<plan::MemorySourceOperator*>(plan_node.get())->infinite_stream());
+  EXPECT_TRUE(static_cast<plan::MemorySourceOperator*>(plan_node.get())->streaming());
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
@@ -413,6 +415,772 @@ TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
 }
+
+struct MemorySourceTestCase {
+  std::string name;
+  std::vector<std::vector<int64_t>> initial_time_batches;
+  std::optional<int64_t> start_time;
+  std::optional<int64_t> stop_time;
+  bool streaming;
+
+  struct Action {
+    enum ActionType {
+      ExpectBatch,
+      AddBatchToTable,
+      CompactTable,
+    } type;
+    std::vector<int64_t> times = {};
+    bool eow = false;
+    bool eos = false;
+  };
+  std::vector<Action> actions;
+
+  size_t expect_n_rows;
+  bool expect_batches_remaining;
+};
+using ActionType = MemorySourceTestCase::Action::ActionType;
+
+class ParamMemorySourceNodeTest : public ::testing::Test,
+                                  public ::testing::WithParamInterface<MemorySourceTestCase> {
+  using Tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>;
+
+ protected:
+  void SetUp() override {
+    ::testing::Test::SetUp();
+    test_case_ = GetParam();
+    func_registry_ = std::make_unique<udf::Registry>("test_registry");
+    auto table_store = std::make_shared<table_store::TableStore>();
+    exec_state_ = std::make_unique<ExecState>(func_registry_.get(), table_store,
+                                              MockResultSinkStubGenerator, MockMetricsStubGenerator,
+                                              MockTraceStubGenerator, sole::uuid4(), nullptr);
+
+    rel_ = std::make_unique<table_store::schema::Relation>(
+        std::vector<types::DataType>{types::DataType::TIME64NS}, std::vector<std::string>{"time_"});
+
+    int64_t compaction_size = 2 * sizeof(int64_t);
+    cpu_table_ = std::make_shared<Table>("cpu", *rel_, 128 * 1024, compaction_size);
+    exec_state_->table_store()->AddTable("cpu", cpu_table_);
+
+    planpb::Operator op;
+    op.set_op_type(planpb::OperatorType::MEMORY_SOURCE_OPERATOR);
+    auto* mem_src_op = op.mutable_mem_source_op();
+    mem_src_op->set_name("cpu");
+    mem_src_op->add_column_idxs(0);
+    mem_src_op->add_column_types(types::DataType::TIME64NS);
+    mem_src_op->add_column_names("time_");
+    mem_src_op->set_streaming(test_case_.streaming);
+    if (test_case_.start_time.has_value()) {
+      auto* start_time = mem_src_op->mutable_start_time();
+      start_time->set_value(test_case_.start_time.value());
+    }
+    if (test_case_.stop_time.has_value()) {
+      auto* stop_time = mem_src_op->mutable_stop_time();
+      stop_time->set_value(test_case_.stop_time.value());
+    }
+    plan_node_ = plan::MemorySourceOperator::FromProto(op, 1);
+
+    for (const auto& batch : test_case_.initial_time_batches) {
+      WriteBatch(batch);
+    }
+
+    output_rd_ =
+        std::make_unique<RowDescriptor>(std::vector<types::DataType>{types::DataType::TIME64NS});
+    tester_ = std::make_unique<Tester>(*plan_node_, *output_rd_, std::vector<RowDescriptor>({}),
+                                       exec_state_.get());
+  }
+
+  void WriteBatch(const std::vector<int64_t>& times) {
+    auto rb = RowBatch(RowDescriptor(rel_->col_types()), static_cast<int64_t>(times.size()));
+    std::vector<types::Time64NSValue> col(times.begin(), times.end());
+    EXPECT_OK(rb.AddColumn(types::ToArrow(col, arrow::default_memory_pool())));
+    EXPECT_OK(cpu_table_->WriteRowBatch(rb));
+  }
+
+  void ExpectBatch(const std::vector<int64_t>& times, bool eow, bool eos) {
+    tester_->GenerateNextResult().ExpectRowBatch(
+        RowBatchBuilder(*output_rd_, times.size(), eow, eos)
+            .AddColumn<types::Time64NSValue>(
+                std::vector<types::Time64NSValue>{times.begin(), times.end()})
+            .get());
+  }
+
+  MemorySourceTestCase test_case_;
+  std::unique_ptr<table_store::schema::Relation> rel_;
+  std::shared_ptr<Table> cpu_table_;
+  std::unique_ptr<ExecState> exec_state_;
+  std::unique_ptr<udf::Registry> func_registry_;
+  std::unique_ptr<Tester> tester_;
+  std::unique_ptr<plan::Operator> plan_node_;
+  std::unique_ptr<RowDescriptor> output_rd_;
+};
+
+TEST_P(ParamMemorySourceNodeTest, param_test) {
+  for (const auto& [idx, action] : Enumerate(test_case_.actions)) {
+    switch (action.type) {
+      case ActionType::AddBatchToTable: {
+        WriteBatch(action.times);
+        break;
+      }
+      case ActionType::ExpectBatch: {
+        EXPECT_TRUE(tester_->node()->HasBatchesRemaining());
+        ExpectBatch(action.times, action.eow, action.eos);
+        break;
+      }
+      case ActionType::CompactTable: {
+        EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
+        break;
+      }
+    }
+  }
+
+  EXPECT_EQ(test_case_.expect_batches_remaining, tester_->node()->HasBatchesRemaining());
+  EXPECT_EQ(test_case_.expect_n_rows, tester_->node()->RowsProcessed());
+  EXPECT_EQ(sizeof(int64_t) * test_case_.expect_n_rows, tester_->node()->BytesProcessed());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    MemorySourceNodeTestSuite, ParamMemorySourceNodeTest,
+    ::testing::ValuesIn(std::vector<MemorySourceTestCase>{
+        {
+            "empty_table",
+            {},
+            std::nullopt,
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                    true,
+                    true,
+                },
+            },
+            0,
+            false,
+        },
+        {
+            "full_table",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                    true,
+                    true,
+                },
+            },
+            5,
+            false,
+        },
+        {
+            "start_time_basic",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {3},
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                    true,
+                    true,
+                },
+            },
+            3,
+            false,
+        },
+        {
+            "start_time_add_batch",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {5},
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                    true,
+                    true,
+                },
+            },
+            2,
+            false,
+        },
+        {
+            "start_time_future",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {7},
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                    true,
+                    true,
+                },
+            },
+            0,
+            false,
+        },
+        {
+            "start_time_compaction",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {3},
+            std::nullopt,
+            false,
+            {
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {3, 5},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {6},
+                    true,
+                    true,
+                },
+            },
+            3,
+            false,
+        },
+        {
+            "start_time_basic_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {3},
+            std::nullopt,
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                },
+            },
+            3,
+            true,
+        },
+        {
+            "start_time_add_batch_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {5},
+            std::nullopt,
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7, 8},
+                },
+            },
+            4,
+            true,
+        },
+        {
+            "start_time_future_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {7},
+            std::nullopt,
+            true,
+            {
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7, 8},
+                },
+            },
+            2,
+            true,
+        },
+        {
+            "start_time_compaction_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {3},
+            std::nullopt,
+            true,
+            {
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {3, 5},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {6},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {8},
+                },
+            },
+            5,
+            true,
+        },
+        {
+            "stop_time_basic",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {5},
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5},
+                    true,
+                    true,
+                },
+            },
+            4,
+            false,
+        },
+        {
+            "stop_time_add_batch",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {6},
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {6, 6},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                    true,
+                    true,
+                },
+                // When a stop time is specified without streaming, it will only consider batches in
+                // the table at on Open() of the MemorySourceNode.
+            },
+            5,
+            false,
+        },
+        {
+            "stop_time_future",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {7},
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                    true,
+                    true,
+                },
+            },
+            5,
+            false,
+        },
+        {
+            "stop_time_compaction",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {5},
+            false,
+            {
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {3, 5},
+                    true,
+                    true,
+                },
+            },
+            4,
+            false,
+        },
+        {
+            "stop_time_basic_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {5},
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5},
+                    true,
+                    true,
+                },
+            },
+            4,
+            false,
+        },
+        {
+            "stop_time_add_batch_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {5},
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5},
+                    true,
+                    true,
+                },
+            },
+            4,
+            false,
+        },
+        {
+            "stop_time_future_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {7},
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2, 3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5, 6},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 7, 8},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7, 7},
+                    true,
+                    true,
+                },
+            },
+            7,
+            false,
+        },
+        {
+            "stop_time_compaction_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            std::nullopt,
+            {7},
+            true,
+            {
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {1, 2},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {3, 5},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {6},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 7},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {8, 9},
+                },
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                    true,
+                    true,
+                },
+            },
+            7,
+            false,
+        },
+        {
+            "start_and_stop_time_basic",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {3},
+            {5},
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {3},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {5},
+                    true,
+                    true,
+                },
+            },
+            2,
+            false,
+        },
+        {
+            "start_and_stop_time_future",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {7},
+            {10},
+            false,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                    true,
+                    true,
+                },
+            },
+            0,
+            false,
+        },
+        {
+            "start_and_stop_time_compaction",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {2},
+            {6},
+            false,
+            {
+                {
+                    ActionType::CompactTable,
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {2},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {3, 5},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 7},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {6},
+                    true,
+                    true,
+                },
+            },
+            4,
+            false,
+        },
+        {
+            "start_and_stop_time_future_streaming",
+            {
+                {1, 2, 3},
+                {5, 6},
+            },
+            {7},
+            {10},
+            true,
+            {
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {7, 8, 9, 10},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {10, 10},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {7, 8, 9, 10},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {10, 10},
+                },
+                {
+                    ActionType::AddBatchToTable,
+                    {11, 12},
+                },
+                {
+                    ActionType::ExpectBatch,
+                    {},
+                    true,
+                    true,
+                },
+            },
+            6,
+            false,
+        },
+    }),
+    [](const ::testing::TestParamInfo<ParamMemorySourceNodeTest::ParamType>& info) {
+      return info.param.name;
+    });
 
 }  // namespace exec
 }  // namespace carnot

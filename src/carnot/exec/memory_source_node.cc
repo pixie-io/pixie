@@ -55,7 +55,7 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName(), plan_node_->Tablet());
   DCHECK(table_ != nullptr);
 
-  infinite_stream_ = plan_node_->infinite_stream();
+  streaming_ = plan_node_->streaming();
 
   if (table_ == nullptr) {
     return error::NotFound("Table '$0' not found", plan_node_->TableName());
@@ -70,14 +70,20 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   }
 
   StopSpec stop_spec;
-  if (plan_node_->HasStopTime()) {
-    stop_spec.type = StopSpec::StopType::StopAtTimeOrEndOfTable;
-    stop_spec.stop_time = plan_node_->stop_time();
-  } else if (infinite_stream_) {
-    stop_spec.type = StopSpec::StopType::Infinite;
+  if (streaming_) {
+    if (plan_node_->HasStopTime()) {
+      stop_spec.type = StopSpec::StopType::StopAtTime;
+      stop_spec.stop_time = plan_node_->stop_time();
+    } else {
+      stop_spec.type = StopSpec::StopType::Infinite;
+    }
   } else {
-    // Determine table_end at Open() time because Stirling may be pushing to the table
-    stop_spec.type = StopSpec::StopType::CurrentEndOfTable;
+    if (plan_node_->HasStopTime()) {
+      stop_spec.type = StopSpec::StopType::StopAtTimeOrEndOfTable;
+      stop_spec.stop_time = plan_node_->stop_time();
+    } else {
+      stop_spec.type = StopSpec::StopType::CurrentEndOfTable;
+    }
   }
   cursor_ = std::make_unique<Table::Cursor>(table_, start_spec, stop_spec);
 
@@ -85,7 +91,7 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
 }
 
 Status MemorySourceNode::CloseImpl(ExecState*) {
-  stats()->AddExtraInfo("infinite_stream", infinite_stream_ ? "true" : "false");
+  stats()->AddExtraInfo("streaming", streaming_ ? "true" : "false");
   return Status::OK();
 }
 
@@ -110,7 +116,7 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
   // If infinite stream is set, we don't send Eow or Eos. Infinite streams therefore never cause
   // HasBatchesRemaining to be false. Instead the outer loop that calls GenerateNext() is
   // responsible for managing whether we continue the stream or end it.
-  if (cursor_->Done() && !infinite_stream_) {
+  if (cursor_->Done()) {
     row_batch->set_eow(true);
     row_batch->set_eos(true);
   }
@@ -128,7 +134,7 @@ bool MemorySourceNode::InfiniteStreamNextBatchReady() { return cursor_->NextBatc
 bool MemorySourceNode::NextBatchReady() {
   // Next batch is ready if we haven't seen an eow and if it's an infinite_stream that has batches
   // to push.
-  return HasBatchesRemaining() && (!infinite_stream_ || InfiniteStreamNextBatchReady());
+  return HasBatchesRemaining() && (!streaming_ || InfiniteStreamNextBatchReady());
 }
 
 }  // namespace exec

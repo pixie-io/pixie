@@ -61,23 +61,15 @@ class MemorySourceIR : public OperatorIR {
   bool streaming() const { return streaming_; }
   void set_streaming(bool streaming) { streaming_ = streaming; }
 
-  void SetTimeValuesNS(int64_t time_start_ns, int64_t time_stop_ns) {
-    time_start_ns_ = time_start_ns;
-    time_stop_ns_ = time_stop_ns;
-    time_set_ = true;
-  }
-  /**
-   * @brief Removes the marker that says time is set. Used to make a memory
-   * source look at all data.
-   *
-   */
-  void ClearTimeNS() { time_set_ = false; }
-  bool IsTimeSet() const { return time_set_; }
+  void SetTimeStartNS(int64_t time_start_ns) { time_start_ns_ = time_start_ns; }
+  void SetTimeStopNS(int64_t time_stop_ns) { time_stop_ns_ = time_stop_ns; }
+  bool IsTimeStartSet() const { return time_start_ns_.has_value(); }
+  bool IsTimeStopSet() const { return time_stop_ns_.has_value(); }
 
   std::string DebugString() const override;
 
-  int64_t time_start_ns() const { return time_start_ns_; }
-  int64_t time_stop_ns() const { return time_stop_ns_; }
+  int64_t time_start_ns() const { return time_start_ns_.value(); }
+  int64_t time_stop_ns() const { return time_stop_ns_.value(); }
 
   const std::vector<int64_t>& column_index_map() const { return column_index_map_; }
   bool column_index_map_set() const { return column_index_map_set_; }
@@ -122,9 +114,8 @@ class MemorySourceIR : public OperatorIR {
   std::string table_name_;
   bool streaming_ = false;
 
-  bool time_set_ = false;
-  int64_t time_start_ns_ = 0;
-  int64_t time_stop_ns_ = 0;
+  std::optional<int64_t> time_start_ns_;
+  std::optional<int64_t> time_stop_ns_;
 
   // Hold of columns in the order that they are selected.
   std::vector<std::string> column_names_;

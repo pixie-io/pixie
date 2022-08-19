@@ -96,7 +96,7 @@ class MemorySourceOperator : public Operator {
   int64_t stop_time() const { return pb_.stop_time().value(); }
   std::vector<int64_t> Columns() const { return column_idxs_; }
   const types::TabletID& Tablet() const { return pb_.tablet(); }
-  bool infinite_stream() const { return pb_.streaming(); }
+  bool streaming() const { return pb_.streaming(); }
 
  private:
   planpb::MemorySourceOperator pb_;

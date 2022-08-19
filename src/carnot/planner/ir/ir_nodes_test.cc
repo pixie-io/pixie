@@ -123,7 +123,8 @@ TEST_F(ToProtoTest, memory_source_ir) {
   compiler_state_->relation_map()->emplace("test_table", relation);
 
   mem_src->SetColumnIndexMap({0, 1});
-  mem_src->SetTimeValuesNS(10, 20);
+  mem_src->SetTimeStartNS(10);
+  mem_src->SetTimeStopNS(20);
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -186,7 +187,8 @@ TEST_F(ToProtoTest, memory_source_ir_with_tablet) {
   auto rel = Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"});
   compiler_state_->relation_map()->emplace("test_table", rel);
 
-  mem_src->SetTimeValuesNS(10, 20);
+  mem_src->SetTimeStartNS(10);
+  mem_src->SetTimeStopNS(20);
 
   types::TabletID tablet_value = "abcd";
 

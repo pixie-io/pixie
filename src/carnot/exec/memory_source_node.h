@@ -57,9 +57,8 @@ class MemorySourceNode : public SourceNode {
  private:
   StatusOr<std::unique_ptr<RowBatch>> GetNextRowBatch(ExecState* exec_state);
   bool InfiniteStreamNextBatchReady();
-  // Whether this memory source will stream infinitely. Can be stopped by the
-  // exec_state_->keep_running() call in exec_graph.
-  bool infinite_stream_ = false;
+  // Whether this memory source will stream future results.
+  bool streaming_ = false;
 
   std::unique_ptr<Table::Cursor> cursor_;
 

@@ -117,7 +117,7 @@ TEST_F(OperatorTest, from_proto_mem_src) {
   EXPECT_EQ(planpb::OperatorType::MEMORY_SOURCE_OPERATOR, src_op->op_type());
 
   const auto* src_plan_node = static_cast<const plan::MemorySourceOperator*>(src_op.get());
-  EXPECT_FALSE(src_plan_node->infinite_stream());
+  EXPECT_FALSE(src_plan_node->streaming());
 }
 
 TEST_F(OperatorTest, from_proto_streaming_source) {
@@ -128,7 +128,7 @@ TEST_F(OperatorTest, from_proto_streaming_source) {
   EXPECT_EQ(planpb::OperatorType::MEMORY_SOURCE_OPERATOR, src_op->op_type());
 
   const auto* src_plan_node = static_cast<const plan::MemorySourceOperator*>(src_op.get());
-  EXPECT_TRUE(src_plan_node->infinite_stream());
+  EXPECT_TRUE(src_plan_node->streaming());
 }
 
 TEST_F(OperatorTest, from_proto_mem_sink) {

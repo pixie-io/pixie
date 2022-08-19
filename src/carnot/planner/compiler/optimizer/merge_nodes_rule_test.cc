@@ -158,14 +158,16 @@ TEST_F(MergeNodesTest, memory_sources_with_different_ranges_fails) {
   std::vector<OperatorIR*> srcs;
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
-    mem_src->SetTimeValuesNS(10, 100);
+    mem_src->SetTimeStartNS(10);
+    mem_src->SetTimeStopNS(100);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
 
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "agent_id"});
-    mem_src->SetTimeValuesNS(50, 150);
+    mem_src->SetTimeStartNS(50);
+    mem_src->SetTimeStopNS(150);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
@@ -182,14 +184,16 @@ TEST_F(MergeNodesTest, DISABLED_merge_memory_sources_intersecting_time_ranges) {
   std::vector<OperatorIR*> srcs;
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
-    mem_src->SetTimeValuesNS(10, 100);
+    mem_src->SetTimeStartNS(10);
+    mem_src->SetTimeStopNS(100);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
 
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "agent_id"});
-    mem_src->SetTimeValuesNS(50, 150);
+    mem_src->SetTimeStartNS(50);
+    mem_src->SetTimeStopNS(150);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
@@ -217,14 +221,16 @@ TEST_F(MergeNodesTest, memory_sources_with_non_intersecting_time_ranges) {
   std::vector<OperatorIR*> srcs;
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
-    mem_src->SetTimeValuesNS(10, 50);
+    mem_src->SetTimeStartNS(10);
+    mem_src->SetTimeStopNS(50);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
 
   {
     auto mem_src = MakeMemSource("cpu", {"upid", "agent_id"});
-    mem_src->SetTimeValuesNS(100, 150);
+    mem_src->SetTimeStartNS(100);
+    mem_src->SetTimeStopNS(150);
     MakeMemSink(mem_src, "");
     srcs.push_back(mem_src);
   }
@@ -236,7 +242,8 @@ TEST_F(MergeNodesTest, memory_sources_with_non_intersecting_time_ranges) {
 
 TEST_F(MergeNodesTest, limit_merge) {
   auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
-  mem_src->SetTimeValuesNS(10, 100);
+  mem_src->SetTimeStartNS(10);
+  mem_src->SetTimeStopNS(100);
   auto map = MakeMap(mem_src, {{"cpu0_mo", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(2))}});
   auto limit1 = MakeLimit(map, 100);
   auto limit2 = MakeLimit(map, 100);
@@ -254,7 +261,8 @@ TEST_F(MergeNodesTest, limit_merge) {
 
 TEST_F(MergeNodesTest, limit_merge_different_relations_shouldnt_merge) {
   auto mem_src = MakeMemSource("cpu", {"upid", "cpu0", "cpu1"});
-  mem_src->SetTimeValuesNS(10, 100);
+  mem_src->SetTimeStartNS(10);
+  mem_src->SetTimeStopNS(100);
   auto map1 = MakeMap(mem_src, {{"cpu0_mo", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(2))}});
   auto map2 = MakeMap(mem_src, {{"cpu1_mo", MakeAddFunc(MakeColumn("cpu1", 0), MakeInt(2))}});
   auto limit1 = MakeLimit(map1, 100);

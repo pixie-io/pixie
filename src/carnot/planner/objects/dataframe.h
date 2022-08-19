@@ -101,10 +101,14 @@ class Dataframe : public QLObject {
       want to select all.
     start_time (px.Time): The earliest timestamp of data to load. The format can be one of the following:
       (1) relative time with format "-5m" or "-3h", (2) absolute time with format "2020-07-13 18:02:5.00 +0000",
-      or (3) absolute time in nanoseconds.
+      (3) absolute time in nanoseconds, or (4) `None`. Defaults to `None`. If `start_time` is `None`, then
+      it begins with the first record in the table.
     end_time (px.Time): The last timestamp of data to load. The format can be one of the following:
       (1) relative time with format "-5m" or "-3h", (2) absolute time with format "2020-07-13 18:02:5.00 +0000",
-      or (3) absolute time in nanoseconds.
+      (3) absolute time in nanoseconds, or (4) `None`. Defaults to `None`. If `end_time` is `None` and `df.stream()`
+      was not called on this DataFrame, then this DataFrame will process data until the last record that was in the table
+      at the beginning of query execution. If `end_time` is `None` and `df.stream()` was called on this DataFrame,
+      then this DataFrame will process data indefinitely.
 
   Returns:
     px.DataFrame: DataFrame loaded from the table with the specified columns and time period.

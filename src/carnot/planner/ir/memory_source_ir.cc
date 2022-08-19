@@ -47,12 +47,15 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
     pb->add_column_types(val_type->data_type());
   }
 
-  if (IsTimeSet()) {
+  if (IsTimeStartSet()) {
     auto start_time = new ::google::protobuf::Int64Value();
-    start_time->set_value(time_start_ns_);
+    start_time->set_value(time_start_ns());
     pb->set_allocated_start_time(start_time);
+  }
+
+  if (IsTimeStopSet()) {
     auto stop_time = new ::google::protobuf::Int64Value();
-    stop_time->set_value(time_stop_ns_);
+    stop_time->set_value(time_stop_ns());
     pb->set_allocated_stop_time(stop_time);
   }
 
@@ -97,7 +100,6 @@ Status MemorySourceIR::CopyFromNodeImpl(const IRNode* node,
   const MemorySourceIR* source_ir = static_cast<const MemorySourceIR*>(node);
 
   table_name_ = source_ir->table_name_;
-  time_set_ = source_ir->time_set_;
   time_start_ns_ = source_ir->time_start_ns_;
   time_stop_ns_ = source_ir->time_stop_ns_;
   column_names_ = source_ir->column_names_;

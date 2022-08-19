@@ -775,12 +775,12 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
   ASSERT_EQ(mem_srcs.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
-  EXPECT_TRUE(mem_src->IsTimeSet());
+  EXPECT_TRUE(mem_src->IsTimeStartSet());
+  EXPECT_FALSE(mem_src->IsTimeStopSet());
   EXPECT_EQ(
       mem_src->time_start_ns(),
       time_now -
           std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(1)).count());
-  EXPECT_EQ(mem_src->time_stop_ns(), time_now);
 }
 
 TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
@@ -792,7 +792,8 @@ TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
   ASSERT_EQ(mem_nodes.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_nodes[0]);
-  EXPECT_FALSE(mem_src->IsTimeSet());
+  EXPECT_FALSE(mem_src->IsTimeStartSet());
+  EXPECT_FALSE(mem_src->IsTimeStopSet());
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
@@ -805,7 +806,8 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
   ASSERT_EQ(mem_srcs.size(), 1);
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
-  EXPECT_TRUE(mem_src->IsTimeSet());
+  EXPECT_TRUE(mem_src->IsTimeStartSet());
+  EXPECT_TRUE(mem_src->IsTimeStopSet());
   EXPECT_EQ(mem_src->time_start_ns(), 12);
   EXPECT_EQ(mem_src->time_stop_ns(), 100);
 }
