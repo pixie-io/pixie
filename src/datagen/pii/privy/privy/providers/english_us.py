@@ -13,13 +13,12 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import string
 import random
-import baluhn
 from decimal import Decimal
 from faker import Faker
 from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider, Provider
+from privy.providers.generic import MacAddress, IMEI, Gender, Passport, DriversLicense, String
 
 
 # English United States - inherits standard, region-agnostic methods
@@ -29,8 +28,14 @@ class English_US(GenericProvider):
         super().__init__()
         # initialize Faker instance with specific Faker locale
         f = Faker([locale])
+        # extend faker providers
         f.add_provider(AirTravelProvider)
-        custom = self.CustomProviders(f)
+        f.add_provider(MacAddress)
+        f.add_provider(IMEI)
+        f.add_provider(Gender)
+        f.add_provider(Passport)
+        f.add_provider(DriversLicense)
+        f.add_provider(String)
         self.f = f
         # define language/region-specific providers
         self.pii_providers = [
@@ -407,7 +412,7 @@ class English_US(GenericProvider):
                     "identity document",
                     "national identity",
                 ]),
-                custom.passport),
+                f.passport),
             Provider(
                 "drivers_license",
                 set([
@@ -415,7 +420,7 @@ class English_US(GenericProvider):
                     "driver's license",
                     "driver license",
                 ]),
-                custom.drivers_license),
+                f.drivers_license),
             Provider(
                 "license_plate",
                 set([
@@ -446,7 +451,7 @@ class English_US(GenericProvider):
                     "sexuality",
                     "sex",
                 ]),
-                custom.gender
+                f.gender
             ),
             Provider(
                 "job",
@@ -492,14 +497,14 @@ class English_US(GenericProvider):
                     "device mac",
                     "mac_address__nie",
                 ]),
-                custom.mac_address,
+                f.mac_address,
             ),
             Provider(
                 "imei",
                 set([
                     "international mobile equipment identity"
                 ]),
-                custom.imei,
+                f.imei,
             ),
             Provider(
                 "password",
@@ -515,7 +520,7 @@ class English_US(GenericProvider):
             Provider(
                 name="string",
                 aliases=set(["string", "text", "message"]),
-                generator=custom.string,
+                generator=f.string,
                 type_=str,
             ),
             Provider(
@@ -543,50 +548,3 @@ class English_US(GenericProvider):
         ]
         # filter providers, marking providers matching given pii_types as pii
         self.filter_providers(pii_types)
-
-    class CustomProviders:
-        def __init__(self, faker):
-            self.f = faker
-
-        def mac_address(self) -> str:
-            pattern = random.choice(
-                [
-                    "^^:^^:^^:^^:^^:^^",
-                    "^^-^^-^^-^^-^^-^^",
-                    "^^ ^^ ^^ ^^ ^^ ^^",
-                ]
-            )
-            return self.f.hexify(pattern)
-
-        def imei(self) -> str:
-            imei = self.f.numerify(text="##-######-######-#")
-            while baluhn.verify(imei.replace("-", "")) is False:
-                imei = self.f.numerify(text="##-######-######-#")
-            return imei
-
-        def boolean(self) -> str:
-            return random.choice(["True", "False"])
-
-        def gender(self) -> str:
-            return random.choice(["Male", "Female", "Other"])
-
-        def passport(self) -> str:
-            # US Passports consist of 1 letter or digit followed by 8-digits
-            return self.f.bothify(text=random.choice(["?", "#"]) + "########")
-
-        def drivers_license(self) -> str:
-            # US driver's licenses consist of 9 digits (patterns vary by state)
-            return self.f.numerify(text="### ### ###")
-
-        def string(self) -> str:
-            """generate a random string of characters, words, and numbers"""
-            def sample(text, low, high, space=False):
-                """sample randomly from input text with a minimum length of low and maximum length of high"""
-                space = " " if space else ""
-                return space.join(random.sample(text, random.randint(low, high)))
-
-            characters = sample(string.ascii_letters, 1, 10)
-            numbers = sample(string.digits, 1, 10)
-            characters_and_numbers = sample(string.ascii_letters + string.digits, 1, 10)
-            combined = self.f.words(nb=3) + [characters, numbers, characters_and_numbers]
-            return sample(combined, 0, 6, True)

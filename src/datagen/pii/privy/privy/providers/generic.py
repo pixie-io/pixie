@@ -16,6 +16,10 @@
 
 import dataclasses
 import random
+import string
+import baluhn
+from faker.providers import BaseProvider
+from faker.providers.lorem.en_US import Provider as LoremProvider
 from abc import ABC
 from typing import Union, Optional, Type, Callable, Set
 from decimal import Decimal
@@ -89,3 +93,66 @@ class GenericProvider(ABC):
     def get_faker(self, faker_provider: str):
         faker_generator = getattr(self.f, faker_provider)
         return faker_generator
+
+
+class MacAddress(BaseProvider):
+    def mac_address(self) -> str:
+        pattern = random.choice(
+            [
+                "^^:^^:^^:^^:^^:^^",
+                "^^-^^-^^-^^-^^-^^",
+                "^^ ^^ ^^ ^^ ^^ ^^",
+            ]
+        )
+        return self.hexify(pattern)
+
+
+class IMEI(BaseProvider):
+    def imei(self) -> str:
+        imei = self.numerify(text="##-######-######-#")
+        while baluhn.verify(imei.replace("-", "")) is False:
+            imei = self.numerify(text="##-######-######-#")
+        return imei
+
+
+class Gender(BaseProvider):
+    def gender(self) -> str:
+        return random.choice(["Male", "Female", "Other"])
+
+
+class Passport(BaseProvider):
+    def passport(self) -> str:
+        # US Passports consist of 1 letter or digit followed by 8-digits
+        return self.bothify(text=random.choice(["?", "#"]) + "########")
+
+
+class DriversLicense(BaseProvider):
+    def drivers_license(self) -> str:
+        # US driver's licenses consist of 9 digits (patterns vary by state)
+        return self.numerify(text="### ### ###")
+
+
+class Alphanum(BaseProvider):
+    def alphanum(self) -> str:
+        alphanumeric_string = "".join(
+            [random.choice(["?", "#"])
+                for _ in range(random.randint(1, 15))]
+        )
+        return self.bothify(text=alphanumeric_string)
+
+
+class String(LoremProvider):
+    def string(self) -> str:
+        """generate a random string of characters, words, and numbers"""
+        def sample(text, low, high, space=False):
+            """sample randomly from input text with a minimum length of low and maximum length of high"""
+            space = " " if space else ""
+            return space.join(random.sample(text, random.randint(low, high)))
+
+        characters = sample(string.ascii_letters, 1, 10)
+        numbers = sample(string.digits, 1, 10)
+        characters_and_numbers = sample(
+            string.ascii_letters + string.digits, 1, 10)
+        combined = self.words(
+            nb=3) + [characters, numbers, characters_and_numbers]
+        return sample(combined, 0, 6, True)
