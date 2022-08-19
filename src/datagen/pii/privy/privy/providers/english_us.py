@@ -16,7 +16,6 @@
 import random
 import datetime
 from decimal import Decimal
-from faker import Faker
 from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider, Provider
 from privy.providers.generic import MacAddress, IMEI, Gender, Passport, DriversLicense, String
@@ -29,7 +28,6 @@ class English_US(GenericProvider):
         # initialize standard, region-agnostic methods
         super().__init__()
         # initialize Faker instance with specific Faker locale
-        f = Faker([locale])
         f = SpanGenerator(locale=locale)
         # extend faker providers
         f.add_provider(AirTravelProvider)

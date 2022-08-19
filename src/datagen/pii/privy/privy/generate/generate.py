@@ -144,7 +144,7 @@ def parse_args():
         "-f",
         action="store_true",
         required=False,
-        default=True,
+        default=False,
         help="""Fuzz payloads by removing characters.""",
     )
 
@@ -214,9 +214,9 @@ def main(args):
 
     # ------- Choose Providers --------
     args.region = {
-        "english_us": English_US(pii_types=args.pii_types),
-        "german_de": German_DE(pii_types=args.pii_types),
-    }.get(args.region)
+        "english_us": English_US,
+        "german_de": German_DE,
+    }.get(args.region)(pii_types=args.pii_types)
 
     # ------ Initialize File Handles --------
     out_files = {}
