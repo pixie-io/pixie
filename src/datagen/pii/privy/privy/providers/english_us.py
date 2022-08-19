@@ -553,5 +553,8 @@ class English_US(GenericProvider):
         ]
         # filter providers, marking providers matching given pii_types as pii
         self.filter_providers(pii_types)
+        # insert versions of aliases with different delimiters
+        self.add_delimited_aliases(self.pii_providers)
+        self.add_delimited_aliases(self.nonpii_providers)
         # add aliases for all providers
         self.set_provider_aliases()

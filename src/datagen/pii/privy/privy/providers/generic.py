@@ -65,6 +65,16 @@ class GenericProvider(ABC):
         ]
         return label_delimited
 
+    def add_delimited_aliases(self, providers: list[Provider]) -> None:
+        """Add copies of existing aliases for each provider with different delimiters"""
+        for prov in providers:
+            prov.aliases.add(prov.template_name)
+            aliases_to_add = set()
+            for alias in prov.aliases:
+                for delimited_alias in self.get_delimited(alias):
+                    aliases_to_add.add(delimited_alias)
+            prov.aliases = prov.aliases.union(aliases_to_add)
+
     def get_pii_provider(self, name: str) -> Optional[Provider]:
         """Find PII provider that matches input name. Returns None if no match is found."""
         if not name:
