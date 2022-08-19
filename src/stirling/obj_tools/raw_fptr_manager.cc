@@ -40,7 +40,7 @@ RawFptrManager::RawFptrManager(ElfReader* elf_reader, system::ProcParser* proc_p
 Status RawFptrManager::Init() {
   dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
   if (dlopen_handle_ == nullptr) {
-    return error::Internal("Failed to dlopen OpenSSL so file: $0, $1", lib_path_, dlerror());
+    return error::Internal("Failed to dlopen so file: $0, $1", lib_path_, dlerror());
   }
 
   PL_ASSIGN_OR_RETURN(text_segment_offset_, elf_reader_->FindSegmentOffsetOfSection(".text"));
