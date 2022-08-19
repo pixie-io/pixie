@@ -647,7 +647,11 @@ static inline u32 get_slices_from_grpc_slice_buffer_and_fire_perf_event_per_slic
   }
 
   // If there are too many slices, only read the amount we're allowed to.
-#pragma unroll
+  //
+  // TODO(yzhao): # pragma unroll is not required on 4.14 kernel. Mysteriously, adding that
+  // directive causes BCC Clang compilation to output a confusing warning. Investigate BCC's
+  // compilation process and determine how to reliably force unrolling of loops, so that we might be
+  // able to remove all #pragma unroll directives in the BCC C files.
   for (u32 i = 0; i < SIZE_OF_DATA_SLICE_ARRAY && i < amount_of_slices; i++) {
     if (0 != get_data_ptr_from_slice(slice, &slice_length, &slice_bytes)) {
       return -1;
