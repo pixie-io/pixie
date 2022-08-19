@@ -46,6 +46,7 @@ def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_typ
         "fuzz_payloads": fuzz,
         "file_type": file_type,
         "spans_per_template": 10,
+        "ignore_spec": ["stripe.com"],
     }
     args = PrivyArgs(args)
     file_writers = defaultdict(list)

@@ -90,6 +90,11 @@ class PayloadGenerator:
 
     def parse_openapi_descriptor(self, file: Path, timeout: int):
         self.log.info(f"Generating {file}...")
+        # If descriptor is in ignore list, skip it
+        for ignore in self.args.ignore_spec:
+            if ignore in str(file):
+                self.log.info(f"Ignoring {file}")
+                return
         start = time.time()
         try:
             schema = schemathesis.from_path(

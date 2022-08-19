@@ -158,6 +158,15 @@ def parse_args():
         to generate per unique payload template.""",
     )
 
+    parser.add_argument(
+        "--ignore_spec",
+        "-ig",
+        nargs='+',
+        default=["stripe.com"],
+        required=False,
+        help="OpenAPI specs to ignore. If not specified, all specs will be matched.",
+    )
+
     return parser.parse_args()
 
 
