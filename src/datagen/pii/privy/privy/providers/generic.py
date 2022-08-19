@@ -30,7 +30,7 @@ class Provider:
     """Provider holds information related to a specific (non-)PII provider.
     each provider has a name, a set of aliases, and a faker generator."""
 
-    name: str
+    template_name: str
     aliases: Set[str]
     generator: Callable
     type_: Union[Type[str], Type[int], Type[float],
@@ -48,7 +48,7 @@ class GenericProvider(ABC):
 
     def get_pii_types(self) -> list[str]:
         """Return all pii types in the pii_label_to_provider dict"""
-        return [provider.name for provider in self.pii_providers]
+        return [provider.template_name for provider in self.pii_providers]
 
     def get_delimited(self, label: str) -> list[str]:
         """Return list of versions of input label with different delimiters"""
@@ -68,7 +68,7 @@ class GenericProvider(ABC):
         if not name:
             return
         for provider in self.pii_providers:
-            if name.lower() == provider.name or name.lower() in provider.aliases:
+            if name.lower() == provider.template_name or name.lower() in provider.aliases:
                 return provider
 
     def get_nonpii_provider(self, name: str) -> Optional[Provider]:
@@ -76,7 +76,7 @@ class GenericProvider(ABC):
         if not name:
             return
         for provider in self.nonpii_providers:
-            if name.lower() == provider.name or name.lower() in provider.aliases:
+            if name.lower() == provider.template_name or name.lower() in provider.aliases:
                 return provider
 
     def get_random_pii_provider(self) -> Provider:

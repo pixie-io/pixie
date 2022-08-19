@@ -42,7 +42,7 @@ class English_US(GenericProvider):
         self.pii_providers = [
             # ------ Names ------
             Provider(
-                name="person",
+                template_name="person",
                 aliases=set([
                     "full name",
                     "account name",
@@ -520,7 +520,7 @@ class English_US(GenericProvider):
         ]
         self.nonpii_providers = [
             Provider(
-                name="string",
+                template_name="string",
                 aliases=set(["string", "text", "message"]),
                 generator=f.string,
                 type_=str,

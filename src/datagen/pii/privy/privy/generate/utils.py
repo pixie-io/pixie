@@ -14,18 +14,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from dataclasses import dataclass
 import argparse
-from typing import NamedTuple, TextIO, Any
+from enum import Enum
+from typing import TextIO, Any
 
 
-def check_positive(arg):
+def check_positive(arg) -> int:
     iarg = int(arg)
     if iarg <= 0:
         raise argparse.ArgumentTypeError(f"{arg} must be a positive int")
     return iarg
 
 
-def check_percentage(arg):
+def check_percentage(arg) -> int:
     iarg = int(arg)
     if iarg < 0 or iarg > 99:
         raise argparse.ArgumentTypeError(
@@ -33,7 +35,17 @@ def check_percentage(arg):
     return iarg
 
 
-class PrivyWriter(NamedTuple):
-    generate_type: str
+class PrivyFileType(Enum):
+    """Enum for the different types of http parameters that can be generated.
+    Used to keep track of the pii types generated for each payload."""
+    PAYLOADS = 1
+    TEMPLATES = 2
+    SPANS = 3
+
+
+@dataclass()
+class PrivyWriter:
+    """PrivyWriter holds the open file and csv writer for output data files."""
+    file_type: PrivyFileType
     open_file: TextIO
     csv_writer: Any

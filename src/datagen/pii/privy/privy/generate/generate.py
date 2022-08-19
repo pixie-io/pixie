@@ -20,7 +20,9 @@ import argparse
 import requests
 import tarfile
 from pathlib import Path
-from privy.generate.utils import check_positive, check_percentage, PrivyWriter
+from typing import Tuple, Any
+from collections import defaultdict
+from privy.generate.utils import check_positive, check_percentage, PrivyWriter, PrivyFileType
 from privy.payload import PayloadGenerator
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
@@ -149,23 +151,27 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate(args: argparse.Namespace, out_files: dict[str, Path], api_specs_folder: Path) -> None:
+def generate(args: argparse.Namespace, out_files: dict[str, Tuple[Any]], api_specs_folder: Path) -> None:
     headers = ["payload", "has_pii", "pii_types"]
-    file_writers = []
+    file_writers = defaultdict(list)
     try:
-        for generate_type, out_file in out_files.items():
-            Path(out_file).parent.mkdir(parents=True, exist_ok=True)
-            open_file = open(out_file, 'w')
-            csv_writer = csv.writer(open_file, quotechar="|")
-            csv_writer.writerow(headers)
-            file_writers.append(PrivyWriter(generate_type, open_file, csv_writer))
+        for generate_type, out_files in out_files.items():
+            for file in out_files:
+                file_type, file_path = file[0], file[1]
+                Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+                open_file = open(file_path, 'w')
+                csv_writer = csv.writer(open_file, quotechar="|")
+                if file_type == PrivyFileType.PAYLOADS:
+                    csv_writer.writerow(headers)
+                file_writers[generate_type].append(PrivyWriter(file_type, open_file, csv_writer))
         api_specs_folder = api_specs_folder / "APIs"
         payload_generator = PayloadGenerator(api_specs_folder, file_writers, args)
         payload_generator.generate_payloads()
     # ------ Close File Handles --------
     finally:
-        for writer in file_writers:
-            writer.open_file.close()
+        for writers in file_writers.values():
+            for privy_writer in writers:
+                privy_writer.open_file.close()
 
 
 def main(args):
@@ -173,15 +179,15 @@ def main(args):
     numeric_level = getattr(logging, args.logging.upper(), None)
     # set root logging level
     logging.basicConfig(level=logging.WARNING)
-    logger = logging.getLogger("privy")
-    logger.setLevel(numeric_level)
+    log = logging.getLogger("privy")
+    log.setLevel(numeric_level)
 
     # ------ Load OpenAPI directory -------
-    logger.info(f"Checking if openapi-directory exists in {args.api_specs}")
+    log.info(f"Checking if openapi-directory exists in {args.api_specs}")
     api_specs_folder = Path(
         args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
     if not api_specs_folder.exists():
-        logger.info("Not found. Downloading...")
+        log.info("Not found. Downloading...")
         commit_hash = "ea4a924b870ca4f6d687809fa7891cccc0d19085"
         openapi_directory_link = f"https://github.com/APIs-guru/openapi-directory/archive/{commit_hash}.tar.gz"
         with requests.get(openapi_directory_link, stream=True) as rx, tarfile.open(fileobj=rx.raw, mode="r:gz") as tar:
@@ -196,10 +202,12 @@ def main(args):
     # ------ Initialize File Handles --------
     out_files = {}
     for generate_type in args.generate_types:
-        logger.info(f"Generating {generate_type.upper()} dataset")
-        out_file = Path(args.out_folder) / "data" / \
-            f"{generate_type.lower()}.csv"
-        out_files[generate_type] = out_file
+        log.info(f"Generating {generate_type.upper()} dataset")
+        payloads_file = Path(args.out_folder) / "data" / \
+            f"{generate_type.lower()}-payloads.csv"
+        templates_file = Path(args.out_folder) / "data" / \
+            f"{generate_type.lower()}-templates.txt"
+        out_files[generate_type] = [(PrivyFileType.PAYLOADS, payloads_file), (PrivyFileType.TEMPLATES, templates_file)]
     generate(args, out_files, api_specs_folder)
 
 

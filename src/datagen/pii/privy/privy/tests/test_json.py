@@ -21,6 +21,7 @@ from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
 from privy.tests.utils import generate_one_api_spec
 from privy.tests.utils import read_generated_csv
+from privy.generate.utils import PrivyFileType
 
 
 class TestPayloadGenerator(unittest.TestCase):
@@ -32,14 +33,16 @@ class TestPayloadGenerator(unittest.TestCase):
     def test_parse_http_methods(self):
         for multi_threaded in [False, True]:
             for region in self.regions:
-                file = generate_one_api_spec(self.api_specs_folder, region, multi_threaded, "json")
-                payload_params, pii_types_per_payload = read_generated_csv(file)
+                file = generate_one_api_spec(self.api_specs_folder, region, multi_threaded, "json",
+                                             PrivyFileType.PAYLOADS)
+                payload_params, pii_types_per_payload = read_generated_csv(
+                    file)
                 # check that pii_type column values match pii_types present in the request payload
                 for params, pii_types in zip(payload_params, pii_types_per_payload):
                     for param in params:
                         pii = region.get_pii_provider(param)
                         if pii:
-                            self.assertTrue(pii.name in pii_types)
+                            self.assertTrue(pii.template_name in pii_types)
                 file.close()
 
 

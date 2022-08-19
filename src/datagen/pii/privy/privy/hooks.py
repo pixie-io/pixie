@@ -129,10 +129,9 @@ class SchemaHooks:
                 return case_attr[name]
             # last resort, assign string value
             if name:
-                self.log.debug(
-                    f"{name} |could not be matched. Assigning string...| ")
+                self.log.debug(f"{name} |could not be matched. Assigning string...| ")
                 nonpii = self.providers.get_nonpii_provider("string")
-                case_attr[name] = nonpii.generator()
+                case_attr[name] = nonpii.template_name
 
         def check_for_pii_keywords(self, name: str, schema: Optional[dict], type_: Optional[Union[str, bool]],
                                    case_attr: dict, parameter_type: ParamType) -> Optional[bool]:
@@ -209,13 +208,12 @@ class SchemaHooks:
             pii = self.providers.get_pii_provider(keyword)
             if pii:
                 self.log.debug(
-                    f"{parameter_name} |matched this pii provider| {pii.name}"
+                    f"{parameter_name} |matched this pii provider| {pii.template_name}"
                 )
-                # assign generated pii value to this parameter
-                pii_value = pii.generator()
-                case_attr[parameter_name] = pii_value
-                self.add_pii_type(parameter_type, pii.name)
-                return (parameter_name, pii_value)
+                # assign string "{{template_name}}"" of matched PII provider to this parameter
+                case_attr[parameter_name] = f"{{{{{pii.template_name}}}}}"
+                self.add_pii_type(parameter_type, pii.template_name)
+                return (parameter_name, pii.template_name)
 
         def lookup_nonpii_provider(self, keyword: str, parameter_name: str,
                                    case_attr: dict) -> Optional[Tuple[str, str]]:
@@ -224,12 +222,11 @@ class SchemaHooks:
             nonpii = self.providers.get_nonpii_provider(keyword)
             if nonpii:
                 self.log.debug(
-                    f"{parameter_name} |matched this nonpii provider| {nonpii.name}"
+                    f"{parameter_name} |matched this nonpii provider| {nonpii.template_name}"
                 )
                 # assign generated nonpii value to this parameter
-                nonpii_value = nonpii.generator()
-                case_attr[parameter_name] = nonpii_value
-                return (parameter_name, nonpii_value)
+                case_attr[parameter_name] = f"{{{{{nonpii.template_name}}}}}"
+                return (parameter_name, nonpii.template_name)
 
         def check_for_regex_pattern(self, name: str, schema: Optional[dict], case_attr: dict) -> Optional[bool]:
             """check if a given parameter name or schema contains a regex pattern and, if so, assign pii"""

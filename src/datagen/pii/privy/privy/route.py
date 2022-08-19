@@ -14,8 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import json
+import logging
 from dicttoxml import dicttoxml
 from privy.sql import SQLQueryBuilder
+from privy.generate.utils import PrivyFileType
 
 
 class PayloadRoute:
@@ -29,28 +31,46 @@ class PayloadRoute:
         }
         self.args = args
         self.analyzer = analyzer
+        self.unique_payloads = set()
         self.fuzzer = PayloadFuzzer()
 
-    def write_payload_to_csv(self, payload, has_pii, pii_types):
-        if not payload or "null" in payload.values():
+    def is_duplicate(self, case_attr):
+        """check if payload template with given arrangement of parameters already exists"""
+        payload_params = json.dumps(case_attr, default=str)
+        if payload_params in self.unique_payloads:
+            logging.getLogger("privy").debug(
+                f"Skipping duplicate case: {payload_params}")
+            return True
+        self.unique_payloads.add(payload_params)
+
+    def write_fuzzed_payloads(self, row, generate_type, writer):
+        for fuzzed_payload in self.fuzzer.fuzz_payload(row[0], generate_type):
+            row[0] = fuzzed_payload
+            writer.csv_writer.writerow(row)
+
+    def write_payload_to_csv(self, payload_template, has_pii, pii_types):
+        if not payload_template or "null" in payload_template.values() or self.is_duplicate(payload_template):
             return
         if pii_types:
             self.analyzer.update_pii_counters(pii_types)
         has_pii = str(int(has_pii))
         pii_types = ",".join(set(pii_types))
-        for writer in self.file_writers:
-            converter, kwargs = self.conversions.get(writer.generate_type)
-            converted_payload = str(converter(payload, **kwargs))
-            row = [converted_payload, has_pii, pii_types]
-            writer.csv_writer.writerow(row)
-            if self.args.fuzz_payloads:
-                self.write_fuzzed_payloads(row, writer)
+        for generate_type, privy_writers in self.file_writers.items():
+            # convert case template (dict) to other types (json, sql, xml), and then to str for template parsing
+            converter, kwargs = self.conversions.get(generate_type, None)
+            converted_payload_template = str(
+                converter(payload_template, **kwargs))
+            for writer in privy_writers:
+                if writer.file_type == PrivyFileType.PAYLOADS:
+                    # todo @benkilimnik: generate specific instance for this template (next diff)
+                    if self.args.fuzz_payloads:
+                        self.write_fuzzed_payloads([converted_payload_template, has_pii, pii_types],
+                                                   generate_type, writer)
+                    writer.csv_writer.writerow(
+                        [converted_payload_template, has_pii, pii_types])
+                if writer.file_type == PrivyFileType.TEMPLATES:
+                    writer.open_file.write(f"{converted_payload_template}\n")
         self.analyzer.update_payload_counts()
-
-    def write_fuzzed_payloads(self, row, writer):
-        for fuzzed_payload in self.fuzzer.fuzz_payload(str(row[0]), writer.generate_type):
-            row[0] = fuzzed_payload
-            writer.csv_writer.writerow(row)
 
 
 class PayloadFuzzer:

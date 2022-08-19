@@ -30,7 +30,7 @@ class TestProviders(unittest.TestCase):
                 value = provider.generator()
                 self.assertTrue(
                     isinstance(value, provider.type_),
-                    f"Provider {provider.name} should generate {provider.type_}, not {type(value)}",
+                    f"Provider {provider.template_name} should generate {provider.type_}, not {type(value)}",
                 )
 
     def test_get_nonpii_provider(self):
@@ -39,14 +39,14 @@ class TestProviders(unittest.TestCase):
                 value = provider.generator()
                 self.assertTrue(
                     isinstance(value, provider.type_),
-                    f"Provider {provider.name} should generate {provider.type_}, not {type(value)}",
+                    f"Provider {provider.template_name} should generate {provider.type_}, not {type(value)}",
                 )
 
     def test_get_random_pii(self):
         for region in self.provider_regions:
             random_provider = region.get_random_pii_provider()
             pii_types = region.get_pii_types()
-            self.assertTrue(random_provider.name in pii_types)
+            self.assertTrue(random_provider.template_name in pii_types)
 
     @given(decimal=st.decimals(min_value=0, max_value=1))
     def test_sample_pii_providers(self, decimal):
@@ -60,7 +60,7 @@ class TestProviders(unittest.TestCase):
             )
             self.assertTrue(
                 # check that sampled providers are present in pii_types
-                all([provider.name in pii_types for provider in sampled_providers])
+                all([provider.template_name in pii_types for provider in sampled_providers])
             )
 
 

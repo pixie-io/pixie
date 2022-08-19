@@ -17,9 +17,10 @@
 import io
 import csv
 import json
+from collections import defaultdict
 import pandas as pd
 import numpy as np
-from privy.generate.utils import PrivyWriter
+from privy.generate.utils import PrivyWriter, PrivyFileType
 from privy.payload import PayloadGenerator
 
 
@@ -30,8 +31,8 @@ class PrivyArgs:
             setattr(self, key, args[key])
 
 
-def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_type, logging="debug",
-                          num_additional_pii_types=6, equalize_pii_distribution_to_percentage=50,
+def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_type, file_type=PrivyFileType.PAYLOADS,
+                          logging="debug", num_additional_pii_types=6, equalize_pii_distribution_to_percentage=50,
                           timeout=400, fuzz=False) -> io.StringIO:
     file = io.StringIO()
     args = {
@@ -43,11 +44,13 @@ def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_typ
         "equalize_pii_distribution_to_percentage": equalize_pii_distribution_to_percentage,
         "timeout": timeout,
         "fuzz_payloads": fuzz,
+        "file_type": file_type
     }
     args = PrivyArgs(args)
-    file_writers = []
+    file_writers = defaultdict(list)
     csv_writer = csv.writer(file, quotechar="|")
-    file_writers.append(PrivyWriter(args.generate_types, file, csv_writer))
+    file_writers[args.generate_types] = [
+        PrivyWriter(args.file_type, file, csv_writer)]
     payload_generator = PayloadGenerator(api_specs_folder, file_writers, args)
     payload_generator.generate_payloads()
     file.seek(0)
