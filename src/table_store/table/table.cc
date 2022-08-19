@@ -71,6 +71,20 @@ void Table::Cursor::AdvanceToStart(const StartSpec& start) {
   }
 }
 
+void Table::Cursor::UpdateStopStateForStopAtTime() {
+  if (stop_.stop_row_id_final) {
+    // Once stop_row_id is set, we know the stop time is already within the table so we don't have
+    // to update it anymore.
+    return;
+  }
+  if (stop_.spec.stop_time < table_->MaxTime()) {
+    stop_.stop_row_id = table_->FindRowIDFromTimeFirstGreaterThan(stop_.spec.stop_time);
+    stop_.stop_row_id_final = true;
+  } else {
+    stop_.stop_row_id = table_->LastRowID() + 1;
+  }
+}
+
 void Table::Cursor::StopStateFromSpec(StopSpec&& stop) {
   stop_.spec = std::move(stop);
   switch (stop_.spec.type) {
@@ -83,8 +97,10 @@ void Table::Cursor::StopStateFromSpec(StopSpec&& stop) {
       break;
     }
     case StopSpec::StopType::StopAtTime: {
-      // TODO(james): this needs to be changed to support stopping at the provided time regardless
-      // of what's currently in the table.
+      UpdateStopStateForStopAtTime();
+      break;
+    }
+    case StopSpec::StopType::StopAtTimeOrEndOfTable: {
       stop_.stop_row_id = table_->FindRowIDFromTimeFirstGreaterThan(stop_.spec.stop_time);
       break;
     }
@@ -95,20 +111,42 @@ void Table::Cursor::StopStateFromSpec(StopSpec&& stop) {
 }
 
 bool Table::Cursor::NextBatchReady() {
-  // TODO(james): this needs to be changed to support stopping at the provided time regardless
-  // of what's currently in the table.
-  if (stop_.spec.type != StopSpec::StopType::Infinite) {
-    return !Done();
+  switch (stop_.spec.type) {
+    case StopSpec::StopType::StopAtTimeOrEndOfTable:
+    case StopSpec::StopType::CurrentEndOfTable: {
+      return !Done();
+    }
+    case StopSpec::StopType::Infinite: {
+      return last_read_row_id_ < table_->LastRowID();
+    }
+    case StopSpec::StopType::StopAtTime: {
+      return !Done() && last_read_row_id_ < table_->LastRowID();
+    }
   }
-  return table_->LastRowID() > last_read_row_id_;
+  // This return is not necessary but GCC complains without it.
+  return false;
 }
 
 bool Table::Cursor::Done() {
-  if (stop_.spec.type == StopSpec::StopType::Infinite) {
-    return false;
-  }
   auto next_row_id = last_read_row_id_ + 1;
-  return next_row_id >= stop_.stop_row_id;
+  switch (stop_.spec.type) {
+    case StopSpec::StopType::StopAtTimeOrEndOfTable:
+    case StopSpec::StopType::CurrentEndOfTable: {
+      return next_row_id >= stop_.stop_row_id;
+    }
+    case StopSpec::StopType::Infinite: {
+      return false;
+    }
+    case StopSpec::StopType::StopAtTime: {
+      UpdateStopStateForStopAtTime();
+      if (!stop_.stop_row_id_final) {
+        return false;
+      }
+      return next_row_id >= stop_.stop_row_id;
+    }
+  }
+  // This return is not necessary but GCC complains without it.
+  return false;
 }
 
 void Table::Cursor::UpdateStopSpec(Cursor::StopSpec stop) { StopStateFromSpec(std::move(stop)); }
@@ -303,6 +341,18 @@ Table::RowID Table::LastRowID() const {
   }
   if (cold_store_->Size() > 0) {
     return cold_store_->LastRowID();
+  }
+  return -1;
+}
+
+Table::Time Table::MaxTime() const {
+  absl::base_internal::SpinLockHolder cold_lock(&cold_lock_);
+  absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
+  if (hot_store_->Size() > 0) {
+    return hot_store_->MaxTime();
+  }
+  if (cold_store_->Size() > 0) {
+    return cold_store_->MaxTime();
   }
   return -1;
 }

@@ -150,15 +150,26 @@ class Table : public NotCopyable {
      */
     struct StopSpec {
       enum StopType {
-        // Currently, StopAtTime will stop at either the time provided or the current end of the
-        // table, whichever comes first.
-        // TODO(james): make StopAtTime stop at the provided time, regardless of whether there is
-        // currently data for it.
+        // Iterating a StopAtTime cursor will return all records with `timestamp <= stop_time`.
+        // The cursor will not be considered `Done()` until a record with `timestamp > stop_time` is
+        // added to the table.
+        // Note that StopAtTime is the most expensive of the StopTypes because it requires holding a
+        // table lock very briefly on each call to `Done()` or `NextBatchReady()`
         StopAtTime,
+        // Iterating a StopAtTimeOrEndOfTable cursor will return all records with `timestamp <=
+        // stop_time` that existed in the table at the time of cursor creation. The cursor will be
+        // considered `Done()` once all records with `timestamp <= stop_time` have been consumed or
+        // when the end of the table is reached (end of the table is determined at cursor creation
+        // time).
+        StopAtTimeOrEndOfTable,
+        // Iterating a CurrentEndOfTable cursor will return all records in the table at cursor
+        // creation time.
         CurrentEndOfTable,
+        // An Infinite cursor will never be considered `Done()`.
         Infinite,
       };
       StopType type = CurrentEndOfTable;
+      // Only valid for StopAtTime or StopAtTimeOrEndOfTable types.
       Time stop_time = -1;
     };
 
@@ -181,6 +192,7 @@ class Table : public NotCopyable {
    private:
     void AdvanceToStart(const StartSpec& start);
     void StopStateFromSpec(StopSpec&& stop);
+    void UpdateStopStateForStopAtTime();
 
     // The following methods are made private so that they are only accessible from Table.
     internal::RowID* LastReadRowID();
@@ -190,6 +202,9 @@ class Table : public NotCopyable {
     struct StopState {
       StopSpec spec;
       RowID stop_row_id;
+      // If StopSpec.type is StopAtTime, then stop_row_id doesn't become finalized until the time is
+      // within the table. This bool keeps track of when that happens.
+      bool stop_row_id_final = false;
     };
     const Table* table_;
     internal::BatchHints hints_;
@@ -321,6 +336,8 @@ class Table : public NotCopyable {
   Status CompactSingleBatchUnlocked(arrow::MemoryPool* mem_pool)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_lock_) ABSL_EXCLUSIVE_LOCKS_REQUIRED(hot_lock_);
   Status UpdateTableMetricGauges();
+
+  Time MaxTime() const;
 
   std::unique_ptr<internal::BatchSizeAccountant> batch_size_accountant_ ABSL_GUARDED_BY(hot_lock_);
 

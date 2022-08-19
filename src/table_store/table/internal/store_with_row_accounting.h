@@ -283,6 +283,18 @@ class StoreWithRowTimeAccounting {
     }
     return times_.front().first;
   }
+  /**
+   * MaxTime returns the maximum time in the store. Since the store is assumed to be time-sorted,
+   * this is equivalent to returning the time of the last row in the store.
+   * @return maximum time in the store, or -1 if there are no rows in the store or there is no time
+   * column.
+   */
+  int64_t MaxTime() const {
+    if (time_col_idx_ == -1 || times_.empty()) {
+      return -1;
+    }
+    return times_.back().second;
+  }
 
  private:
   BatchID LastBatchID() const { return first_batch_id_ + batches_.size() - 1; }

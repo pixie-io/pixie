@@ -25,6 +25,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/typespb/types.pb.h"
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/schemapb/schema.pb.h"
 #include "src/table_store/table/table.h"
@@ -937,5 +938,541 @@ TEST(TableTest, GetNextRowBatch_after_expiry) {
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
+
+struct CursorTestCase {
+  std::string name;
+  std::vector<std::vector<int64_t>> initial_time_batches;
+  Table::Cursor::StartSpec start_spec;
+  Table::Cursor::StopSpec stop_spec;
+  struct Action {
+    enum ActionType {
+      ExpectBatch,
+      AddBatchToTable,
+    } type;
+    std::vector<int64_t> times;
+  };
+  std::vector<Action> actions;
+  bool expect_cursor_exhausted_after_actions;
+};
+using CursorTestActionType = CursorTestCase::Action::ActionType;
+
+class CursorTableTest : public ::testing::Test,
+                        public ::testing::WithParamInterface<CursorTestCase> {
+ protected:
+  void SetUp() override {
+    ::testing::Test::SetUp();
+    test_case_ = GetParam();
+
+    rel_ = std::make_unique<schema::Relation>(std::vector<types::DataType>{types::TIME64NS},
+                                              std::vector<std::string>{"time_"});
+    table_ptr_ = Table::Create("test_table", *rel_);
+
+    for (const auto& batch : test_case_.initial_time_batches) {
+      WriteBatch(batch);
+    }
+
+    cursor_ = std::make_unique<Table::Cursor>(table_ptr_.get(), test_case_.start_spec,
+                                              test_case_.stop_spec);
+  }
+
+  void WriteBatch(const std::vector<int64_t>& times) {
+    auto rb = schema::RowBatch(schema::RowDescriptor(rel_->col_types()),
+                               static_cast<int64_t>(times.size()));
+    std::vector<types::Time64NSValue> col(times.begin(), times.end());
+    EXPECT_OK(rb.AddColumn(types::ToArrow(col, arrow::default_memory_pool())));
+    EXPECT_OK(table_ptr_->WriteRowBatch(rb));
+  }
+
+  void ExpectBatch(const std::vector<int64_t>& times) {
+    auto actual_batch_or_s = cursor_->GetNextRowBatch(std::vector<int64_t>{0});
+    ASSERT_OK(actual_batch_or_s);
+    auto actual_batch = actual_batch_or_s.ConsumeValueOrDie();
+
+    auto actual_iterator =
+        types::ArrowArrayIterator<types::TIME64NS>(actual_batch->ColumnAt(0).get());
+    auto actual_vec = std::vector<int64_t>{actual_iterator.begin(), actual_iterator.end()};
+
+    EXPECT_TRUE(actual_batch->ColumnAt(0)->Equals(
+        types::ToArrow(std::vector<types::Time64NSValue>{times.begin(), times.end()},
+                       arrow::default_memory_pool())))
+        << "expected " << ::testing::PrintToString(times) << " received "
+        << ::testing::PrintToString(actual_vec);
+  }
+
+  CursorTestCase test_case_;
+  std::unique_ptr<schema::Relation> rel_;
+  std::shared_ptr<Table> table_ptr_;
+  std::unique_ptr<Table::Cursor> cursor_;
+};
+
+TEST_P(CursorTableTest, cursor_test) {
+  for (const auto& action : test_case_.actions) {
+    if (action.type == CursorTestActionType::ExpectBatch) {
+      EXPECT_FALSE(cursor_->Done());
+      EXPECT_TRUE(cursor_->NextBatchReady());
+      ExpectBatch(action.times);
+    }
+    if (action.type == CursorTestActionType::AddBatchToTable) {
+      WriteBatch(action.times);
+    }
+  }
+  if (test_case_.expect_cursor_exhausted_after_actions) {
+    EXPECT_TRUE(cursor_->Done());
+  }
+}
+
+using StartType = Table::Cursor::StartSpec::StartType;
+using StopType = Table::Cursor::StopSpec::StopType;
+
+INSTANTIATE_TEST_SUITE_P(CursorTableTestSuite, CursorTableTest,
+                         ::testing::ValuesIn(std::vector<CursorTestCase>{
+                             {
+                                 "CurrentStartOfTable_CurrentEndOfTable",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::CurrentEndOfTable,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     // This batch should never be returned by the cursor, since it
+                                     // was added after cursor creation.
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                 },
+                                 // Check that the cursor is exhausted to make sure that the {7, 8}
+                                 // batch is not included.
+                                 true,
+                             },
+                             {
+                                 "CurrentStartOfTable_Infinite",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::Infinite,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {20, 22},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {20, 22},
+                                     },
+                                 },
+                                 // Infinite cursor shouldn't ever be exhausted.
+                                 false,
+                             },
+                             {
+                                 "CurrentStartOfTable_StopAtTimeOrEndOfTable",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::StopAtTimeOrEndOfTable,
+                                     5,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5},
+                                     },
+                                 },
+                                 // Cursor should be exhausted.
+                                 true,
+                             },
+                             {
+                                 "CurrentStartOfTable_StopAtTimeOrEndOfTable_future_time",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::StopAtTimeOrEndOfTable,
+                                     7,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                 },
+                                 true,
+                             },
+                             {
+                                 "CurrentStartOfTable_StopAtTime",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::StopAtTime,
+                                     5,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5},
+                                     },
+                                 },
+                                 // Cursor should be exhausted.
+                                 true,
+                             },
+                             {
+                                 "CurrentStartOfTable_StopAtTime_future_time",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::CurrentStartOfTable,
+                                 },
+                                 {
+                                     StopType::StopAtTime,
+                                     10,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 10, 10},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {10, 10, 10},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {10, 10},
+                                     },
+                                 },
+                                 // Cursor should be exhausted after seeing the 11 record.
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_CurrentEndOfTable",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     3,
+                                 },
+                                 {
+                                     StopType::CurrentEndOfTable,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {3},
+                                     },
+                                     // This batch should never be returned by the cursor, since it
+                                     // was added after cursor creation.
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                 },
+                                 // Check that the cursor is exhausted to make sure that the {7, 8}
+                                 // batch is not included.
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_CurrentEndOfTable_future_start_time",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     7,
+                                 },
+                                 {
+                                     StopType::CurrentEndOfTable,
+                                 },
+                                 {
+                                     // This batch should never be returned by the cursor, since it
+                                     // was added after cursor creation.
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                 },
+                                 // Check that the cursor is exhausted to make sure that the {7, 8}
+                                 // batch is not included.
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_Infinite",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     5,
+                                 },
+                                 {
+                                     StopType::Infinite,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {20, 22},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {20, 22},
+                                     },
+                                 },
+                                 // Infinite cursor shouldn't ever be exhausted.
+                                 false,
+                             },
+                             {
+                                 "StartAtTime_StopAtTimeOrEndOfTable",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     2,
+                                 },
+                                 {
+                                     StopType::StopAtTimeOrEndOfTable,
+                                     5,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5},
+                                     },
+                                 },
+                                 // Cursor should be exhausted.
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_StopAtTimeOrEndOfTable_future_time",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     1,
+                                 },
+                                 {
+                                     StopType::StopAtTimeOrEndOfTable,
+                                     7,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {1, 2, 3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5, 6},
+                                     },
+                                 },
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_StopAtTime",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     3,
+                                 },
+                                 {
+                                     StopType::StopAtTime,
+                                     5,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {3},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {5},
+                                     },
+                                 },
+                                 // Cursor should be exhausted.
+                                 true,
+                             },
+                             {
+                                 "StartAtTime_StopAtTime_future_time",
+                                 {
+                                     {1, 2, 3},
+                                     {5, 6},
+                                 },
+                                 {
+                                     StartType::StartAtTime,
+                                     7,
+                                 },
+                                 {
+                                     StopType::StopAtTime,
+                                     10,
+                                 },
+                                 {
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {7, 8},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 10, 10},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {10, 10, 10},
+                                     },
+                                     {
+                                         CursorTestActionType::AddBatchToTable,
+                                         {10, 10, 11},
+                                     },
+                                     {
+                                         CursorTestActionType::ExpectBatch,
+                                         {10, 10},
+                                     },
+                                 },
+                                 // Cursor should be exhausted after seeing the 11 record.
+                                 true,
+                             },
+                         }),
+                         [](const ::testing::TestParamInfo<CursorTableTest::ParamType>& info) {
+                           return info.param.name;
+                         });
+
 }  // namespace table_store
 }  // namespace px

@@ -71,7 +71,7 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
 
   StopSpec stop_spec;
   if (plan_node_->HasStopTime()) {
-    stop_spec.type = StopSpec::StopType::StopAtTime;
+    stop_spec.type = StopSpec::StopType::StopAtTimeOrEndOfTable;
     stop_spec.stop_time = plan_node_->stop_time();
   } else if (infinite_stream_) {
     stop_spec.type = StopSpec::StopType::Infinite;
