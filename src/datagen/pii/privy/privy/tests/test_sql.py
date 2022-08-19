@@ -26,15 +26,15 @@ from privy.tests.utils import get_delimited
 
 class TestSQLGenerator(unittest.TestCase):
     def setUp(self):
-        self.providers = [English_US(), German_DE()]
+        self.provider_regions = [English_US(), German_DE()]
         lufthansa_openapi = os.path.join(os.path.dirname(__file__), "openapi.json")
         self.api_specs_folder = pathlib.Path(lufthansa_openapi).parents[0]
 
     def test_query_builder(self):
         for multi_threaded in [False, True]:
-            for region in self.providers:
+            for region in self.provider_regions:
                 file = generate_one_api_spec(self.api_specs_folder, region, multi_threaded, "sql")
-                payloads, pii_types_per_payload, categories_per_payload = read_generated_csv(file, generate_type="sql")
+                payloads, pii_types_per_payload = read_generated_csv(file, generate_type="sql")
                 # check that pii_type column values match pii_types present in the request payload
                 query_types = {
                     "select": ["ORDER BY", "WHERE", "LIMIT", "GROUP BY", "CASE"],
@@ -42,7 +42,7 @@ class TestSQLGenerator(unittest.TestCase):
                     "update": ["where"],
                 }
                 # test that query types are correctly generated
-                for payload, pii_types, categories in zip(payloads, pii_types_per_payload, categories_per_payload):
+                for payload, pii_types in zip(payloads, pii_types_per_payload):
                     # check that a valid query was generated
                     if payload.startswith("SELECT"):
                         # check that select has at least one valid subtype
@@ -55,15 +55,9 @@ class TestSQLGenerator(unittest.TestCase):
                         if pii_types:
                             for pii_type in pii_types:
                                 delimited = get_delimited(pii_type)
-                                print([(delim_pii_type, pii_type) for delim_pii_type in delimited])
                                 self.assertTrue(
                                     any([delim_pii_type.lower() == pii_type.lower() for delim_pii_type in delimited])
                                 )
-                    # check if categories are correct
-                    for pii_type in pii_types:
-                        pii = region.get_pii(pii_type)
-                        if pii:
-                            self.assertTrue(pii.category in categories)
                 file.close()
 
 

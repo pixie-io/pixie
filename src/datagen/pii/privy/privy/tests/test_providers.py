@@ -17,61 +17,50 @@
 import unittest
 from hypothesis import strategies as st, given
 from privy.providers.english_us import English_US
+from privy.providers.german_de import German_DE
 
 
 class TestProviders(unittest.TestCase):
     def setUp(self):
-        self.providers = [English_US()]
+        self.provider_regions = [English_US(), German_DE()]
 
-    def test_get_pii(self):
-        for region in self.providers:
-            for category in region.get_pii_categories():
-                for label in region.get_category(category).keys():
-                    label, provider, _ = region.get_pii(label)
-                    self.assertTrue(
-                        isinstance(provider, str),
-                        f"Provider {label} should be str, not {type(provider)}",
-                    )
-
-    def test_get_nonpii(self):
-        for region in self.providers:
-            for label in region.nonpii_label_to_provider.keys():
-                label, provider = region.get_nonpii(label)
+    def test_get_pii_provider(self):
+        for region in self.provider_regions:
+            for provider in region.pii_providers:
+                value = provider.generator()
                 self.assertTrue(
-                    isinstance(provider, str),
-                    f"Provider {label} should be str, not {type(provider)}",
+                    isinstance(value, provider.type_),
+                    f"Provider {provider.name} should generate {provider.type_}, not {type(value)}",
+                )
+
+    def test_get_nonpii_provider(self):
+        for region in self.provider_regions:
+            for provider in region.nonpii_providers:
+                value = provider.generator()
+                self.assertTrue(
+                    isinstance(value, provider.type_),
+                    f"Provider {provider.name} should generate {provider.type_}, not {type(value)}",
                 )
 
     def test_get_random_pii(self):
-        for region in self.providers:
-            random_pii_label = region.get_random_pii().label
-            categories = region.get_pii_categories()
-            self.assertTrue(
-                any([random_pii_label in region.get_category(category).keys(
-                ) for category in categories])
-            )
+        for region in self.provider_regions:
+            random_provider = region.get_random_pii_provider()
+            pii_types = region.get_pii_types()
+            self.assertTrue(random_provider.name in pii_types)
 
     @given(decimal=st.decimals(min_value=0, max_value=1))
-    def test_sample_pii_labels(self, decimal):
-        for region in self.providers:
-            num_samples = len(region.sample_pii(decimal))
-            categories = region.get_pii_categories()
+    def test_sample_pii_providers(self, decimal):
+        for region in self.provider_regions:
+            sampled_providers = region.sample_pii_providers(decimal)
+            num_samples = len(sampled_providers)
+            pii_types = region.get_pii_types()
             self.assertTrue(
-                # check that number of samples matches given percentage for labels in one of the categories
-                any([num_samples == round(len(region.get_category(category)) * decimal)
-                    for category in categories])
+                # check that number of samples matches given percentage
+                num_samples == round(len(pii_types) * decimal)
             )
-
-    def test_custom_providers(self):
-        for region in self.providers:
-            alphanumeric_check = [c.isalnum() for c in region.get_nonpii("alphanumeric")]
             self.assertTrue(
-                all(alphanumeric_check)
-            )
-            string = region.get_nonpii("string")[1]
-            string_check = [c.isalnum() or c == " " for c in string]
-            self.assertTrue(
-                all(string_check)
+                # check that sampled providers are present in pii_types
+                all([provider.name in pii_types for provider in sampled_providers])
             )
 
 

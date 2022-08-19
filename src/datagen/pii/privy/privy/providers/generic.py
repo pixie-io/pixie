@@ -33,7 +33,8 @@ class Provider:
     name: str
     aliases: Set[str]
     generator: Callable
-    type_: Union[Type[str], Type[int], Type[float], Type[Decimal]] = str
+    type_: Union[Type[str], Type[int], Type[float],
+                 Type[Decimal], Type[bool]] = str
 
     def __repr__(self):
         return str(vars(self))
@@ -41,6 +42,7 @@ class Provider:
 
 class GenericProvider(ABC):
     """Parent class containing common methods shared by region specific providers"""
+
     def __init__(self):
         pass
 

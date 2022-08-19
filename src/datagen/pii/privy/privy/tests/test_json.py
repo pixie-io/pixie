@@ -25,22 +25,21 @@ from privy.tests.utils import read_generated_csv
 
 class TestPayloadGenerator(unittest.TestCase):
     def setUp(self):
-        self.providers = [English_US(), German_DE()]
+        self.regions = [English_US(), German_DE()]
         lufthansa_openapi = os.path.join("openapi.json")
         self.api_specs_folder = pathlib.Path(lufthansa_openapi).parents[0]
 
     def test_parse_http_methods(self):
         for multi_threaded in [False, True]:
-            for region in self.providers:
+            for region in self.regions:
                 file = generate_one_api_spec(self.api_specs_folder, region, multi_threaded, "json")
-                payload_params, pii_types_per_payload, categories_per_payload = read_generated_csv(file)
+                payload_params, pii_types_per_payload = read_generated_csv(file)
                 # check that pii_type column values match pii_types present in the request payload
-                for params, pii_types, categories in zip(payload_params, pii_types_per_payload, categories_per_payload):
+                for params, pii_types in zip(payload_params, pii_types_per_payload):
                     for param in params:
-                        pii = region.get_pii(param)
+                        pii = region.get_pii_provider(param)
                         if pii:
-                            self.assertTrue(pii.label in pii_types)
-                            self.assertTrue(pii.category in categories)
+                            self.assertTrue(pii.name in pii_types)
                 file.close()
 
 

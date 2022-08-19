@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import random
+import datetime
 from decimal import Decimal
 from faker import Faker
 from faker_airtravel import AirTravelProvider
@@ -340,7 +341,8 @@ class English_US(GenericProvider):
                     "birth day",
                     "birth date",
                 ]),
-                f.date_of_birth),
+                f.date_of_birth,
+                datetime.date),
             Provider(
                 "date",
                 set([
@@ -527,6 +529,7 @@ class English_US(GenericProvider):
                 "boolean",
                 set(["bool"]),
                 f.boolean,
+                bool,
             ),
             Provider(
                 "color",

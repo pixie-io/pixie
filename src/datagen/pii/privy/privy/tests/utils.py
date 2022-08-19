@@ -57,24 +57,21 @@ def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_typ
 def read_generated_csv(file, generate_type="json"):
     df = pd.read_csv(file, engine="python", quotechar="|", header=None)
     df.rename(
-        columns={0: "payload", 1: "has_pii", 2: "pii_types", 3: "categories"}, inplace=True
+        columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True
     )
     pii_types_per_payload = [
         p.split(",") if p is not np.nan else [] for p in df["pii_types"]
-    ]
-    categories_per_payload = [
-        c.split(",") if c is not np.nan else [] for c in df["categories"]
     ]
     if generate_type == "json":
         payload_params = [
             json.loads(r).keys() if r is not np.nan else {} for r in df["payload"]
         ]
-        return payload_params, pii_types_per_payload, categories_per_payload
+        return payload_params, pii_types_per_payload
     elif generate_type == "sql":
         payloads = [
             r if r is not np.nan else {} for r in df["payload"]
         ]
-        return payloads, pii_types_per_payload, categories_per_payload
+        return payloads, pii_types_per_payload
 
 
 def get_delimited(label):
