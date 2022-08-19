@@ -81,12 +81,11 @@ class SchemaHooks:
         """Analyze an openapi schema and assign pii values to the corresponding parameter_name in the case_attr"""
 
         def __init__(self, args):
-            # store tuples of (pii_type, category)
             self.pii_types = {
-                ParamType.PATH: [],
-                ParamType.QUERY: [],
-                ParamType.HEADER: [],
-                ParamType.COOKIE: [],
+                ParamType.PATH: set(),
+                ParamType.QUERY: set(),
+                ParamType.HEADER: set(),
+                ParamType.COOKIE: set(),
             }
             self.providers = args.region
             self.log = logging.getLogger("privy")
@@ -105,8 +104,8 @@ class SchemaHooks:
         def get_pii_types(self, parameter_type: ParamType) -> list[str]:
             return self.pii_types[parameter_type]
 
-        def add_pii_type(self, parameter_type: ParamType, pii_type: str, category: str) -> None:
-            self.pii_types[parameter_type].append((pii_type, category))
+        def add_pii_type(self, parameter_type: ParamType, pii_type: str) -> None:
+            self.pii_types[parameter_type].add(pii_type)
 
         def clear_pii_types(self, parameter_type: ParamType) -> None:
             self.pii_types[parameter_type].clear()
@@ -132,8 +131,8 @@ class SchemaHooks:
             if name:
                 self.log.debug(
                     f"{name} |could not be matched. Assigning string...| ")
-                _, pii = self.providers.get_nonpii("string")
-                case_attr[name] = pii
+                nonpii = self.providers.get_nonpii_provider("string")
+                case_attr[name] = nonpii.generator()
 
         def check_for_pii_keywords(self, name: str, schema: Optional[dict], type_: Optional[Union[str, bool]],
                                    case_attr: dict, parameter_type: ParamType) -> Optional[bool]:
@@ -207,28 +206,30 @@ class SchemaHooks:
                                 parameter_type: ParamType) -> Optional[Tuple[str, str]]:
             """lookup pii provider for a given keyword and, if a match is found, assign pii for this parameter_name
             and add this pii type to the pii_types list for this parameter_type"""
-            pii = self.providers.get_pii(keyword)
+            pii = self.providers.get_pii_provider(keyword)
             if pii:
                 self.log.debug(
-                    f"{parameter_name} |matched this pii provider| {pii.label} |and this category| {pii.category}"
+                    f"{parameter_name} |matched this pii provider| {pii.name}"
                 )
                 # assign generated pii value to this parameter
-                case_attr[parameter_name] = pii.value
-                self.add_pii_type(parameter_type, pii.label, pii.category)
-                return (pii.label, pii.value)
+                pii_value = pii.generator()
+                case_attr[parameter_name] = pii_value
+                self.add_pii_type(parameter_type, pii.name)
+                return (parameter_name, pii_value)
 
         def lookup_nonpii_provider(self, keyword: str, parameter_name: str,
                                    case_attr: dict) -> Optional[Tuple[str, str]]:
             """lookup nonpii provider for a given keyword and, if a match is found,
             assign nonpii for this parameter_name"""
-            nonpii = self.providers.get_nonpii(keyword)
+            nonpii = self.providers.get_nonpii_provider(keyword)
             if nonpii:
                 self.log.debug(
-                    f"{parameter_name} |matched this nonpii provider| {nonpii.label}"
+                    f"{parameter_name} |matched this nonpii provider| {nonpii.name}"
                 )
                 # assign generated nonpii value to this parameter
-                case_attr[parameter_name] = nonpii.value
-                return (nonpii.label, nonpii.value)
+                nonpii_value = nonpii.generator()
+                case_attr[parameter_name] = nonpii_value
+                return (parameter_name, nonpii_value)
 
         def check_for_regex_pattern(self, name: str, schema: Optional[dict], case_attr: dict) -> Optional[bool]:
             """check if a given parameter name or schema contains a regex pattern and, if so, assign pii"""

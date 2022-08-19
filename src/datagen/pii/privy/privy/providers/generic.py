@@ -14,45 +14,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import dataclasses
 import random
-import logging
 from abc import ABC
-from typing import NamedTuple, Union, Optional
+from typing import Union, Optional, Type, Callable, Set
+from decimal import Decimal
 
 
-class PII(NamedTuple):
-    category: str
-    label: str
-    value: Union[str, int, float]
+@dataclasses.dataclass()
+class Provider:
+    """Provider holds information related to a specific (non-)PII provider.
+    each provider has a name, a set of aliases, and a faker generator."""
 
+    name: str
+    aliases: Set[str]
+    generator: Callable
+    type_: Union[Type[str], Type[int], Type[float], Type[Decimal]] = str
 
-class NonPII(NamedTuple):
-    label: str
-    value: Union[str, int, float]
+    def __repr__(self):
+        return str(vars(self))
 
 
 class GenericProvider(ABC):
     """Parent class containing common methods shared by region specific providers"""
     def __init__(self):
-        # initialize named tuple to hold matched pii provider data for a given pii label
-        self.PII = PII
-        self.NonPII = NonPII
-
-    def get_pii_categories(self):
-        """Return list of pii categories"""
-        return self.pii_label_to_provider.keys()
-
-    def get_category(self, category: str) -> dict:
-        """Return dict of pii labels in a category"""
-        return self.pii_label_to_provider[category]
+        pass
 
     def get_pii_types(self) -> list[str]:
         """Return all pii types in the pii_label_to_provider dict"""
-        pii_types = []
-        for category in self.get_pii_categories():
-            pii_types_this_category = [pii_type for pii_type in self.get_category(category).keys()]
-            pii_types += pii_types_this_category
-        return pii_types
+        return [provider.name for provider in self.pii_providers]
 
     def get_delimited(self, label: str) -> list[str]:
         """Return list of versions of input label with different delimiters"""
@@ -67,64 +57,34 @@ class GenericProvider(ABC):
         ]
         return label_delimited
 
-    def get_pii(self, name: str) -> Optional[PII]:
-        """Find label that matches input name, and return generated pii value using matched provider
-        Returns None if no match is found."""
+    def get_pii_provider(self, name: str) -> Optional[Provider]:
+        """Find PII provider that matches input name. Returns None if no match is found."""
         if not name:
             return
-        for category in self.get_pii_categories():
-            for label, provider in self.pii_label_to_provider[category].items():
-                # check if name at least partially matches pii label
-                # for multiword labels, check versions of the label with different delimiters
-                label_delimited = self.get_delimited(label)
-                for lbl in label_delimited:
-                    if lbl.lower() == name.lower():
-                        return self.PII(category, label, str(provider()))
+        for provider in self.pii_providers:
+            if name.lower() == provider.name or name.lower() in provider.aliases:
+                return provider
 
-    def get_nonpii(self, name: str) -> Optional[NonPII]:
-        """Find label that matches input name, and return generated pii value using matched provider.
-        Returns None if no match is found."""
+    def get_nonpii_provider(self, name: str) -> Optional[Provider]:
+        """Find non-PII provider that matches input name. Returns None if no match is found."""
         if not name:
             return
-        for label, provider in self.nonpii_label_to_provider.items():
-            # check if name at least partially matches nonpii label
-            # for multiword labels, check versions of the label with different delimiters
-            label_delimited = self.get_delimited(label)
-            for lbl in label_delimited:
-                if lbl.lower() == name.lower():
-                    return self.NonPII(label, str(provider()))
+        for provider in self.nonpii_providers:
+            if name.lower() == provider.name or name.lower() in provider.aliases:
+                return provider
 
-    def get_random_pii(self) -> PII:
-        """choose random label and generate a pii value"""
-        category = random.choice(list(self.get_pii_categories()))
-        label = random.choice(
-            list(self.get_category(category).keys()))
-        return self.get_pii(label)
+    def get_random_pii_provider(self) -> Provider:
+        """choose random PII provider and generate a value"""
+        return random.choice(list(self.pii_providers))
 
-    def sample_pii(self, percent: float) -> list[PII]:
-        """Sample a random percentage of pii labels and associated pii values"""
-        # randomly select a category
-        category = random.choice(list(self.get_pii_categories()))
-        labels = random.sample(
-            list(self.get_category(category).keys()),
-            round(
-                len(self.get_category(category).keys()) * percent),
-        )
-        return [self.get_pii(label) for label in labels]
+    def sample_pii_providers(self, percent: float) -> list[Provider]:
+        """Sample a random percentage of PII providers and associated values"""
+        return random.sample(list(self.pii_providers), round(len(self.pii_providers) * percent))
 
-    def filter_categories(self, categories: list[str]) -> None:
-        """Filter out PII categories not in the given list of categories, flagging them as non-PII"""
-        if not categories:
-            categories = self.get_pii_categories()
-        to_delete = []
-        for category in self.get_pii_categories():
-            if category not in categories:
-                to_delete.append(category)
-                # append to non-pii
-                self.nonpii_label_to_provider.update(self.pii_label_to_provider[category])
-        for category in to_delete:
-            logging.getLogger("privy").info(f"Category moved to non-pii: {category}")
-            del self.pii_label_to_provider[category]
+    def filter_providers(self, pii_types: list[str]) -> None:
+        """Filter out PII types not in the given list, marking them as non-PII"""
+        if not pii_types:
+            pii_types = self.get_pii_types()
 
     def get_faker(self, faker_provider: str):
         faker_generator = getattr(self.f, faker_provider)

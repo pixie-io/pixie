@@ -44,7 +44,7 @@ def parse_args():
             "xml",
         ],
         nargs='+',
-        default="json",
+        default=["json"],
         help="Which dataset to generate. Can select multiple e.g. json sql proto xml",
     )
 
@@ -130,11 +130,11 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--pii_categories",
+        "--pii_types",
         "-p",
         nargs='+',
         required=False,
-        help="PII categories to match and generate. If not specified, all available PII categories will be matched.",
+        help="PII types to match and generate. If not specified, all available PII types will be matched.",
     )
 
     parser.add_argument(
@@ -150,7 +150,7 @@ def parse_args():
 
 
 def generate(args: argparse.Namespace, out_files: dict[str, Path], api_specs_folder: Path) -> None:
-    headers = ["payload", "has_pii", "pii_types", "categories"]
+    headers = ["payload", "has_pii", "pii_types"]
     file_writers = []
     try:
         for generate_type, out_file in out_files.items():
@@ -189,8 +189,8 @@ def main(args):
 
     # ------- Choose Providers --------
     args.region = {
-        "english_us": English_US(categories=args.pii_categories),
-        "german_de": German_DE(categories=args.pii_categories),
+        "english_us": English_US(pii_types=args.pii_types),
+        "german_de": German_DE(pii_types=args.pii_types),
     }.get(args.region)
 
     # ------ Initialize File Handles --------

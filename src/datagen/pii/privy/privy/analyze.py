@@ -21,10 +21,8 @@ import logging
 
 class DatasetAnalyzer:
     def __init__(self, providers: GenericProvider) -> None:
-        # initialize counter of PII types/categories in the generated dataset
-        # initialize all categories and pii type counts to 0
-        self.count_categories = Counter(
-            {k: 0 for k in providers.get_pii_categories()})
+        # initialize counter of PII types in the generated dataset
+        # initialize all pii type counts to 0
         self.count_pii_types = Counter(
             {k: 0 for k in providers.get_pii_types()})
         self.num_payloads = 0
@@ -35,10 +33,6 @@ class DatasetAnalyzer:
         self.num_pii_types_per_pii_payload = 0
         self.log = logging.getLogger("privy")
 
-    def get_lowest_count_category(self) -> Tuple[str, int]:
-        """Get category with lowest count in the generated dataset"""
-        return min(self.count_categories.items(), key=lambda x: x[1])
-
     def get_lowest_count_pii_type(self) -> Tuple[str, int]:
         """Get pii type with lowest count in the generated dataset"""
         return min(self.count_pii_types.items(), key=lambda x: x[1])
@@ -47,9 +41,8 @@ class DatasetAnalyzer:
         """Get k pii types with lowest count in the generated dataset"""
         return self.count_pii_types.most_common()[:-k - 1:-1]
 
-    def update_pii_counters(self, pii_types, categories) -> None:
+    def update_pii_counters(self, pii_types) -> None:
         self.count_pii_types.update(pii_types)
-        self.count_categories.update(categories)
         self.num_pii_payloads += 1
         self.num_pii_payloads_this_spec += 1
 
@@ -66,8 +59,6 @@ class DatasetAnalyzer:
             self.num_pii_types_per_pii_payload = num_pii_types / self.num_pii_payloads
 
     def print_metrics(self) -> None:
-        self.log.info(
-            f"Dataset has these category counts: {self.count_categories}")
         self.log.info(
             f"Dataset has these pii_type counts: {self.count_pii_types}")
         self.log.info(

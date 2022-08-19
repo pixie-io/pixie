@@ -16,14 +16,15 @@
 import string
 import random
 import baluhn
+from decimal import Decimal
 from faker import Faker
 from faker_airtravel import AirTravelProvider
-from privy.providers.generic import GenericProvider
+from privy.providers.generic import GenericProvider, Provider
 
 
 # English United States - inherits standard, region-agnostic methods
 class English_US(GenericProvider):
-    def __init__(self, categories=None, locale="en_US"):
+    def __init__(self, pii_types=None, locale="en_US"):
         # initialize standard, region-agnostic methods
         super().__init__()
         # initialize Faker instance with specific Faker locale
@@ -31,250 +32,517 @@ class English_US(GenericProvider):
         f.add_provider(AirTravelProvider)
         custom = self.CustomProviders(f)
         self.f = f
-        # map custom, language/region-specific nonpii keywords to providers
-        # labels matched with case insensitive regex and space separated
-        # (different delimiters are inserted at runtime)
-        self.pii_label_to_provider = {
+        # define language/region-specific providers
+        self.pii_providers = [
             # ------ Names ------
-            "names": {
-                "account name": f.name,
-                "artist name": f.name,
-                "contact name": f.name,
-                "login name": f.name,
-                "user name": f.name,
-                "customer": f.name,
-                "user": f.name,
-                "target user name": f.name,
-                "buyer user name": f.name,
-                "full name": f.name,
-                "shareholder": f.name,
-                "owner": f.name,
-                "first name": f.first_name,
-                "first": f.first_name,
-                "given name": f.first_name,
-                "middle name": f.first_name,
-                "middle initial": f.first_name,
-                "last name": f.last_name,
-                "last": f.last_name,
-                "family name": f.last_name,
-                "company": f.company,
-                "department": f.company,
-                "manufacturer": f.company,
-                "client": f.company,
-                "organization": f.company,
-                "dba": f.company,
-                "doing business as": f.company,
-                "business name": f.company,
-                "business": f.company,
-            },
+            Provider(
+                name="person",
+                aliases=set([
+                    "full name",
+                    "account name",
+                    "artist name",
+                    "contact name",
+                    "login name",
+                    "user name",
+                    "customer",
+                    "user",
+                    "target user name",
+                    "buyer user name",
+                    "shareholder",
+                    "owner",
+                ]),
+                generator=f.name),
+            Provider(
+                "name_male",
+                set([
+                    "full name male",
+                ]),
+                f.name_male),
+            Provider(
+                "name_female",
+                set([
+                    "full name female",
+                ]),
+                f.name_female),
+            Provider(
+                "first_name",
+                set([
+                    "given name",
+                    "middle name",
+                ]),
+                f.first_name),
+            Provider(
+                "first_name_nonbinary",
+                set([
+                    "given name nonbinary",
+                ]),
+                f.first_name_nonbinary),
+            Provider(
+                "first_name_male",
+                set([
+                    "given name male",
+                ]),
+                f.first_name_male),
+            Provider(
+                "first_name_female",
+                set([
+                    "given name female",
+                ]),
+                f.first_name_male),
+            Provider(
+                "last_name",
+                set([
+                    "family name",
+                ]),
+                f.last_name),
+            Provider(
+                "last_name_male",
+                set([
+                    "family name male",
+                ]),
+                f.last_name_male),
+            Provider(
+                "last_name_female",
+                set([
+                    "family fename",
+                ]),
+                f.last_name_female),
+            Provider(
+                "prefix",
+                set(),
+                f.prefix),
+            Provider(
+                "prefix_male",
+                set(),
+                f.prefix_male),
+            Provider(
+                "prefix_female",
+                set(),
+                f.prefix_female),
+            Provider(
+                "company",
+                set([
+                    "organization",
+                    "company name",
+                    "department",
+                    "manufacturer",
+                    "client",
+                    "dba",
+                    "doing business as",
+                    "business name",
+                    "business",
+                ]),
+                f.company),
+            Provider(
+                "nationality",
+                set(),
+                f.country),
+            Provider(
+                "nation_woman",
+                set(),
+                f.country),
+            Provider(
+                "nation_man",
+                set(),
+                f.country),
+            Provider(
+                "nation_plural",
+                set(),
+                f.country),
             # ------ Location ------
-            "location": {
-                "address": f.address,
-                "home": f.address,
-                "work": f.address,
-                "venue": f.address,
-                "place": f.address,
-                "spot": f.address,
-                "facility": f.address,
-                "country": f.country,
-                "destination": f.country,
-                "origin": f.country,
-                "nationality": f.country,
-                "country code": f.country_code,
-                "to country code": f.country_code,
-                "from country code": f.country_code,
-                "phone country code": f.country_code,
-                "state": f.state,
-                "province": f.state,
-                "region": f.state,
-                "federal state": f.state,
-                "city": f.city,
-                "bank city": f.city,
-                "municipality": f.city,
-                "urban area": f.city,
-                "post code": f.postcode,
-                "zip code": f.postcode,
-                "area code": f.postcode,
-                "zip": f.postcode,
-                "building number": f.building_number,
-                "house": f.building_number,
-                "building": f.building_number,
-                "apartment": f.building_number,
-                "street": f.street_address,
-                "road": f.street_name,
-                "street address": f.street_address,
-                "lane": f.street_name,
-                "drive": f.street_name,
-                "avenue": f.street_address,
-                "alley": f.street_address,
-                "location": f.coordinate,
-                "coordinate": f.coordinate,
-                "position": f.coordinate,
-                "latitude": f.latitude,
-                "lat": f.latitude,
-                "longitude": f.longitude,
-                "lon": f.longitude,
-                "airport": f.airport_name,
-                "airport name": f.airport_name,
-                "airport iata": f.airport_iata,
-                "airport icao": f.airport_icao,
-                "airline": f.airline,
-                "airport code": f.airport_iata,
-                "origin airport code": f.airport_iata,
-                "arrival airport code": f.airport_iata,
-                "destination airport code": f.airport_iata,
-            },
+            Provider(
+                "address",
+                set([
+                    "home",
+                    "work",
+                    "venue",
+                    "place",
+                    "spot",
+                    "facility",
+                ]),
+                f.address),
+            Provider(
+                "street_address",
+                set([
+                    "street",
+                    "avenue",
+                    "alley",
+                ]),
+                f.street_address),
+            Provider(
+                "country",
+                set([
+                    "destination",
+                    "origin",
+                ]),
+                f.country),
+            Provider(
+                "country_code",
+                set([
+                    "to country code",
+                    "from country code",
+                    "phone country code",
+                ]),
+                f.country_code),
+            Provider(
+                "state",
+                set([
+                    "province",
+                    "region",
+                    "federal state",
+                ]),
+                f.state),
+            Provider(
+                "city",
+                set([
+                    "bank city",
+                    "municipality",
+                    "urban area",
+                ]),
+                f.city),
+            Provider(
+                "postcode",
+                set([
+                    "post code",
+                    "postal code",
+                ]),
+                f.postcode),
+            Provider(
+                "building_number",
+                set([
+                    "house",
+                    "building",
+                    "apartment",
+                ]),
+                f.building_number),
+            Provider(
+                "street_name",
+                set([
+                    "road",
+                    "lane",
+                    "drive",
+                ]),
+                f.street_name),
+            Provider(
+                "coordinate",
+                set([
+                    "location",
+                    "position",
+                ]),
+                f.coordinate,
+                Decimal),
+            Provider(
+                "latitude",
+                set([
+                    "lat",
+                ]),
+                f.latitude,
+                Decimal),
+            Provider(
+                "longitude",
+                set([
+                    "lon",
+                ]),
+                f.longitude,
+                Decimal),
+            Provider(
+                "airport_name",
+                set([
+                    "airport",
+                ]),
+                f.airport_name),
+            Provider(
+                "airport_iata",
+                set([
+                    "airport code",
+                    "origin airport code",
+                    "arrival airport code",
+                    "destination airport code",
+                ]),
+                f.airport_iata),
+            Provider(
+                "airport_icao",
+                set(),
+                f.airport_icao),
+            Provider(
+                "airline",
+                set(["arline name"]),
+                f.airline),
             # ------ Financial ------
-            "financial": {
-                "bank account": f.bban,
-                "bban": f.bban,
-                "bic": f.bban,
-                "aba": f.aba,
-                "routing transit number": f.aba,
-                "routing number": f.aba,
-                "iban": f.iban,
-                "international bank acccount number": f.iban,
-                "credit card": f.credit_card_number,
-                "debit card": f.credit_card_number,
-                "master card": f.credit_card_number,
-                "visa": f.credit_card_number,
-                "american express": f.credit_card_number,
-                "expiration date": f.credit_card_expire,
-                "expiration": f.credit_card_expire,
-                "expires": f.credit_card_expire,
-                "swift": f.swift,
-                "balance": f.random_number,
-                "fare": f.random_number,
-                "net fare": f.random_number,
-                "amount": f.random_number,
-                "credit": f.random_number,
-                "currency": f.currency_code,
-                "fare-currency": f.currency_code,
-            },
+            Provider(
+                "bban",
+                set([
+                    "bank_account_number",
+                    "bank account",
+                    "bic",
+                ]),
+                f.bban),
+            Provider(
+                "aba",
+                set([
+                    "routing_transit_number",
+                    "routing number",
+                ]),
+                f.aba),
+            Provider(
+                "iban",
+                set([
+                    "international_bank_account_number",
+                ]),
+                f.iban),
+            Provider(
+                "credit_card_number",
+                set([
+                    "credit card",
+                    "debit card",
+                    "master card",
+                    "visa",
+                    "american express",
+                ]),
+                f.credit_card_number),
+            Provider(
+                "credit_card_expire",
+                set([
+                    "credit_card_expiration_date",
+                    "expiration date",
+                    "expiration",
+                    "expires",
+                ]),
+                f.credit_card_expire),
+            Provider(
+                "swift",
+                set([
+                    "swift code",
+                ]),
+                f.swift),
+            Provider(
+                "currency_code",
+                set([
+                    "fare currency",
+                    "currency",
+                ]),
+                f.currency_code),
             # ------ Time ------
-            "time": {
-                "date": f.date,
-                "modified date": f.date,
-                "from booking date": f.date,
-                "to booking date": f.date,
-                "open date": f.date,
-                "to date": f.date,
-                "published": f.date,
-                "day": f.date,
-                "departure date": f.date,
-                "return date": f.date,
-                "start date": f.date,
-                "end date": f.date,
-                "travel date": f.date,
-                "from date": f.date,
-                "from statement date time": f.iso8601,
-                "to statement date time": f.iso8601,
-                "install date": f.date,
-                "birth day": f.date,
-                "birth date": f.date,
-                "year": f.year,
-                "birth year": f.year,
-                "month": f.month,
-                "birth month": f.month,
-                "time stamp": f.iso8601,
-                "last timestamp": f.iso8601,
-                "last modified": f.iso8601,
-                "modified after": f.iso8601,
-                "modified before": f.iso8601,
-                "from timestamp": f.iso8601,
-                "to timestamp": f.iso8601,
-                "end time": f.iso8601,
-                "start time": f.iso8601,
-                "last updated": f.iso8601,
-                "created": f.iso8601,
-                "unix time": f.iso8601,
-                "start": f.iso8601,
-                "end": f.iso8601,
-            },
+            Provider(
+                "day_of_week",
+                set([
+                    "week day",
+                ]),
+                f.day_of_week),
+            Provider(
+                "date_of_birth",
+                set([
+                    "birth day",
+                    "birth date",
+                ]),
+                f.date_of_birth),
+            Provider(
+                "date",
+                set([
+                    "modified date",
+                    "from booking date",
+                    "to booking date",
+                    "open date",
+                    "to date",
+                    "published",
+                    "day",
+                    "departure date",
+                    "return date",
+                    "start date",
+                    "end date",
+                    "travel date",
+                    "from date",
+                    "install date",
+                ]),
+                f.date),
+            Provider(
+                "year",
+                set([
+                    "birth year",
+                ]),
+                f.year),
+            Provider(
+                "month",
+                set([
+                    "birth month",
+                ]),
+                f.month,
+            ),
+            Provider(
+                "date_time",
+                set([
+                    "from statement date time",
+                    "to statement date time",
+                    "time stamp",
+                    "last timestamp",
+                    "last modified",
+                    "modified after",
+                    "modified before",
+                    "from timestamp",
+                    "to timestamp",
+                    "end time",
+                    "start time",
+                    "last updated",
+                    "created",
+                    "unix time",
+                    "start",
+                    "end",
+                ]),
+                f.iso8601),
             # ------ Identification ------
-            "identification": {
-                "social security number": f.ssn,
-                "id number": f.ssn,
-                "id card": f.ssn,
-                "passport": custom.passport,
-                "document number": custom.passport,
-                "identity document": custom.passport,
-                "national identity": custom.passport,
-                "driving license": custom.drivers_license,
-                "drivers license": custom.drivers_license,
-                "driver's license": custom.drivers_license,
-                "license plate": f.license_plate,
-                "lic plate": f.license_plate,
-                "taxId": custom.alphanum,
-            },
+            Provider(
+                "ssn",
+                set([
+                    "social_security_number",
+                    "id number",
+                    "id card",
+                ]),
+                f.ssn),
+            Provider(
+                "passport",
+                set([
+                    "passport",
+                    "passport number",
+                    "document number",
+                    "identity document",
+                    "national identity",
+                ]),
+                custom.passport),
+            Provider(
+                "drivers_license",
+                set([
+                    "driving license",
+                    "driver's license",
+                    "driver license",
+                ]),
+                custom.drivers_license),
+            Provider(
+                "license_plate",
+                set([
+                    "lic plate",
+                ]),
+                f.license_plate),
             # ------ Contact Info ------
-            "contact": {
-                "email": f.email,
-                "contact email": f.email,
-                "to contact": f.email,
-                "phone": f.phone_number,
-                "contact phone": f.phone_number,
-                "phone number": f.phone_number,
-                "associate phone number": f.phone_number,
-            },
+            Provider(
+                "email",
+                set([
+                    "email address",
+                    "contact email",
+                    "to contact",
+                ]),
+                f.email),
+            Provider(
+                "phone_number",
+                set([
+                    "phone",
+                    "contact phone",
+                    "associate phone number",
+                ]),
+                f.phone_number),
             # ------ Demographic ------
-            "demographic": {
-                "gender": custom.gender,
-                "sexuality": custom.gender,
-                "sex": custom.gender,
-                "occupation": f.job,
-                "job": f.job,
-                "profession": f.job,
-                "employment": f.job,
-                "vocation": f.job,
-                "career": f.job,
-            },
+            Provider(
+                "gender",
+                set([
+                    "sexuality",
+                    "sex",
+                ]),
+                custom.gender
+            ),
+            Provider(
+                "job",
+                set([
+                    "occupation",
+                    "profession",
+                    "employment",
+                    "vocation",
+                    "career",
+                ]),
+                f.job,
+            ),
             # ------ Internet / Devices ------
-            "internet": {
-                "api key": f.sha1,
-                "app key": f.sha1,
-                "uuid": f.uuid4,
-                "signature sha1": f.sha1,
-                "serial": f.sha1,
-                "website": f.url,
-                "domain name": f.domain_name,
-                "repository": f.url,
-                "url": f.url,
-                "site": f.url,
-                "host name": f.url,
-                "ipv4": f.ipv4,
-                "ipv6": f.ipv6,
-                "ip address": random.choice([f.ipv6, f.ipv4]),
-                "mac address": custom.mac_address,
-                "device mac": custom.mac_address,
-                "imei": custom.imei,
-                "uri path": f.uri_path,
-                "password": f.password,
-                "key password": f.password,
-                "current password": f.password,
-                "key store password": f.password,
-                "file": f.file_name,
-                "path": f.file_path,
-                "file path": f.file_path,
-            },
-        }
-        self.nonpii_label_to_provider = {
-            "alphanumeric": custom.alphanum,
-            "id": custom.alphanum,
-            "org id": custom.alphanum,
-            "statement id": custom.alphanum,
-            "string": custom.string,
-            "bool": custom.boolean,
-            "boolean": custom.boolean,
-            "text": f.text,
-            "message": f.text,
-            "number": f.random_number,
-            "from number": f.random_number,
-            "to number": f.random_number,
-            "int": f.random_number,
-            "integer": f.random_number,
-        }
-        self.filter_categories(categories)
+            Provider(
+                "domain_name",
+                set([
+                    "domain",
+                ]),
+                f.domain_name
+            ),
+            Provider(
+                "url",
+                set([
+                    "website",
+                    "repository",
+                    "url",
+                    "site",
+                    "host name",
+                ]),
+                f.url
+            ),
+            Provider(
+                "ip_address",
+                set([
+                    "ipv4",
+                    "ipv6",
+                ]),
+                random.choice([f.ipv6, f.ipv4])
+            ),
+            Provider(
+                "mac_address",
+                set([
+                    "device mac",
+                    "mac_address__nie",
+                ]),
+                custom.mac_address,
+            ),
+            Provider(
+                "imei",
+                set([
+                    "international mobile equipment identity"
+                ]),
+                custom.imei,
+            ),
+            Provider(
+                "password",
+                set([
+                    "key password",
+                    "key store password",
+                    "current password",
+                ]),
+                f.password,
+            ),
+        ]
+        self.nonpii_providers = [
+            Provider(
+                name="string",
+                aliases=set(["string", "text", "message"]),
+                generator=custom.string,
+                type_=str,
+            ),
+            Provider(
+                "boolean",
+                set(["bool"]),
+                f.boolean,
+            ),
+            Provider(
+                "color",
+                set(["hue", "colour"]),
+                f.color,
+            ),
+            Provider(
+                "random_number",
+                set(["integer", "int", "number", "to number", "from number"]),
+                f.random_number,
+                int,
+            ),
+            Provider(
+                "sha1",
+                set(["signature sha1", "serial", "app key",
+                    "id", "org id", "statement id", "device id"]),
+                f.sha1,
+            ),
+        ]
+        # filter providers, marking providers matching given pii_types as pii
+        self.filter_providers(pii_types)
 
     class CustomProviders:
         def __init__(self, faker):
@@ -309,13 +577,6 @@ class English_US(GenericProvider):
         def drivers_license(self) -> str:
             # US driver's licenses consist of 9 digits (patterns vary by state)
             return self.f.numerify(text="### ### ###")
-
-        def alphanum(self) -> str:
-            alphanumeric_string = "".join(
-                [random.choice(["?", "#"])
-                 for _ in range(random.randint(1, 15))]
-            )
-            return self.f.bothify(text=alphanumeric_string)
 
         def string(self) -> str:
             """generate a random string of characters, words, and numbers"""

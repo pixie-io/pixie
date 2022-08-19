@@ -36,7 +36,7 @@ from hypothesis import (
     strategies as st,
 )
 from privy.generate.utils import PrivyWriter
-from privy.providers.generic import PII
+from privy.providers.generic import Provider
 from privy.hooks import SchemaHooks, ParamType
 from privy.route import PayloadRoute
 from privy.analyze import DatasetAnalyzer
@@ -53,7 +53,6 @@ class PayloadGenerator:
         self.analyzer = DatasetAnalyzer(args.region)
         self.route = PayloadRoute(file_writers, self.analyzer, args)
         self.hook = SchemaHooks(args).schema_analyzer
-        self.providers = args.region
         self.api_specs = []
         self.http_types = ["get", "head", "post", "put",
                            "delete", "connect", "options", "trace", "patch"]
@@ -108,14 +107,15 @@ class PayloadGenerator:
         """Alter an input label, inserting a random delimiter."""
         return label.replace(" ", random.choice(["-", "_", "__", ".", ":", "", " "]))
 
-    def insert_pii(self, pii: PII, case_attr: dict, parameter_type: ParamType) -> None:
+    def insert_pii(self, pii: Provider, case_attr: dict, parameter_type: ParamType) -> None:
         """Assign a pii value to a parameter for the input case attribute (e.g. case.path_parameters)."""
-        self.log.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
+        self.log.debug(f"|Inserting additional pii type| {pii.name}")
         if self.args.fuzz_payloads:
-            fuzzed_label = self.fuzz_label(pii.label)
-            case_attr[fuzzed_label] = pii.value
-        case_attr[pii.label] = pii.value
-        self.hook.add_pii_type(parameter_type, pii.label, pii.category)
+            fuzzed_label = self.fuzz_label(pii.name)
+            case_attr[fuzzed_label] = str(pii.generator())
+        else:
+            case_attr[pii.name] = str(pii.generator())
+        self.hook.add_pii_type(parameter_type, pii.name)
 
     def generate_pii_case(self, case_attr: dict, parameter_type: ParamType) -> dict:
         """insert additional PII data into a request payload or generate new PII payload"""
@@ -125,14 +125,14 @@ class PayloadGenerator:
                 # sample just one pii label (with the lowest count) 50% of the time
                 min_pii_type, count = self.analyzer.get_lowest_count_pii_type()
                 self.log.debug(f"Inserting PII type |{min_pii_type}| with count |{count}|")
-                pii = self.providers.get_pii(min_pii_type)
+                pii = self.args.region.get_pii_provider(min_pii_type)
                 self.insert_pii(pii, case_attr, parameter_type)
             else:
                 # choose between 1-{num_additional_pii_types} pii types with the lowest count
                 num_pii_types = random.randint(1, self.args.num_additional_pii_types)
                 for pii_type, count in self.analyzer.k_lowest_pii_types(num_pii_types):
                     self.log.debug(f"Inserting PII type: |{pii_type}| with count |{count}|")
-                    pii = self.providers.get_pii(pii_type)
+                    pii = self.args.region.get_pii_provider(pii_type)
                     self.insert_pii(pii, case_attr, parameter_type)
         # randomize order of parameters
         case_attr = list(case_attr.items())

@@ -35,18 +35,13 @@ class PayloadRoute:
         if not payload or "null" in payload.values():
             return
         if pii_types:
-            pii_types, categories = zip(*pii_types)
-            self.analyzer.update_pii_counters(pii_types, categories)
-        else:
-            pii_types, categories = [], []
+            self.analyzer.update_pii_counters(pii_types)
         has_pii = str(int(has_pii))
         pii_types = ",".join(set(pii_types))
-        categories = ",".join(set(categories))
         for writer in self.file_writers:
-            converter, kwargs = self.conversions.get(
-                writer.generate_type, None)
-            converted_payload = converter(payload, **kwargs)
-            row = [converted_payload, has_pii, pii_types, categories]
+            converter, kwargs = self.conversions.get(writer.generate_type)
+            converted_payload = str(converter(payload, **kwargs))
+            row = [converted_payload, has_pii, pii_types]
             writer.csv_writer.writerow(row)
             if self.args.fuzz_payloads:
                 self.write_fuzzed_payloads(row, writer)
