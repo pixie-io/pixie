@@ -14,15 +14,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import dataclasses
 import random
 import string
-import baluhn
-from faker.providers import BaseProvider
-from faker.providers.lorem.en_US import Provider as LoremProvider
 from abc import ABC
 from typing import Union, Optional, Type, Callable, Set
 from decimal import Decimal
+import baluhn
+from faker.providers import BaseProvider
+from faker.providers.lorem.en_US import Provider as LoremProvider
+from privy.providers.spans import PayloadSpans
 
 
 @dataclasses.dataclass()
@@ -95,6 +97,24 @@ class GenericProvider(ABC):
     def get_faker(self, faker_provider: str):
         faker_generator = getattr(self.f, faker_provider)
         return faker_generator
+
+    def parse(self, template: str, template_id: int) -> PayloadSpans:
+        """Parse payload template into a span, using data providers that match the template_names e.g. {{full_name}}"""
+        return self.f.parse(template=template, template_id=template_id)
+
+    def add_provider_alias(self, provider: Callable, alias: str) -> None:
+        """Add copy of an existing provider, but under a different name"""
+        logging.getLogger("privy").debug(f"Adding alias {alias} for provider {provider}")
+        new_provider = BaseProvider(self.f)
+        setattr(new_provider, alias, provider)
+        self.f.add_provider(new_provider)
+
+    def set_provider_aliases(self):
+        """Set faker generator aliases for all providers to reduce mismatch between template_names and generators"""
+        for pii in self.pii_providers:
+            self.add_provider_alias(provider=pii.generator, alias=pii.template_name)
+        for nonpii in self.nonpii_providers:
+            self.add_provider_alias(provider=nonpii.generator, alias=nonpii.template_name)
 
 
 class MacAddress(BaseProvider):

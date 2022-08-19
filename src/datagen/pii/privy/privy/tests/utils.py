@@ -44,7 +44,8 @@ def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_typ
         "equalize_pii_distribution_to_percentage": equalize_pii_distribution_to_percentage,
         "timeout": timeout,
         "fuzz_payloads": fuzz,
-        "file_type": file_type
+        "file_type": file_type,
+        "spans_per_template": 10,
     }
     args = PrivyArgs(args)
     file_writers = defaultdict(list)

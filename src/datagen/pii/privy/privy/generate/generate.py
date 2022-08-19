@@ -148,6 +148,16 @@ def parse_args():
         help="""Fuzz payloads by removing characters.""",
     )
 
+    parser.add_argument(
+        "--spans_per_template",
+        "-s",
+        required=False,
+        type=check_positive,
+        default=10,
+        help="""Number of (non-)PII spans (NER-compatible, token-wise labeled samples)
+        to generate per unique payload template.""",
+    )
+
     return parser.parse_args()
 
 
@@ -207,7 +217,10 @@ def main(args):
             f"{generate_type.lower()}-payloads.csv"
         templates_file = Path(args.out_folder) / "data" / \
             f"{generate_type.lower()}-templates.txt"
-        out_files[generate_type] = [(PrivyFileType.PAYLOADS, payloads_file), (PrivyFileType.TEMPLATES, templates_file)]
+        spans_file = Path(args.out_folder) / "data" / \
+            f"{generate_type.lower()}-spans.json"
+        out_files[generate_type] = [(PrivyFileType.PAYLOADS, payloads_file), (PrivyFileType.TEMPLATES, templates_file),
+                                    (PrivyFileType.SPANS, spans_file)]
     generate(args, out_files, api_specs_folder)
 
 

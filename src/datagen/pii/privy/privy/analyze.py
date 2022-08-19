@@ -67,5 +67,4 @@ class DatasetAnalyzer:
         self.log.info(
             f"{self.percent_pii:.2f}% of payloads contain PII")
         self.log.info(
-            f"Each PII payload has {self.num_pii_types_per_pii_payload:.2f} \
-                PII types on average")
+            f"Each PII payload has {self.num_pii_types_per_pii_payload:.2f} PII types on average")

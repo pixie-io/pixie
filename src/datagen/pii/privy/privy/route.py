@@ -31,17 +31,17 @@ class PayloadRoute:
         }
         self.args = args
         self.analyzer = analyzer
-        self.unique_payloads = set()
+        self.unique_payload_templates = set()
         self.fuzzer = PayloadFuzzer()
 
     def is_duplicate(self, case_attr):
         """check if payload template with given arrangement of parameters already exists"""
-        payload_params = json.dumps(case_attr, default=str)
-        if payload_params in self.unique_payloads:
+        payload_template = json.dumps(case_attr, default=str)
+        if payload_template in self.unique_payload_templates:
             logging.getLogger("privy").debug(
-                f"Skipping duplicate case: {payload_params}")
+                f"Skipping duplicate case: {payload_template}")
             return True
-        self.unique_payloads.add(payload_params)
+        self.unique_payload_templates.add(payload_template)
 
     def write_fuzzed_payloads(self, row, generate_type, writer):
         for fuzzed_payload in self.fuzzer.fuzz_payload(row[0], generate_type):
@@ -51,26 +51,34 @@ class PayloadRoute:
     def write_payload_to_csv(self, payload_template, has_pii, pii_types):
         if not payload_template or "null" in payload_template.values() or self.is_duplicate(payload_template):
             return
-        if pii_types:
-            self.analyzer.update_pii_counters(pii_types)
-        has_pii = str(int(has_pii))
-        pii_types = ",".join(set(pii_types))
+        has_pii_str = str(int(has_pii))
+        pii_types_str = ",".join(set(pii_types))
         for generate_type, privy_writers in self.file_writers.items():
             # convert case template (dict) to other types (json, sql, xml), and then to str for template parsing
             converter, kwargs = self.conversions.get(generate_type, None)
             converted_payload_template = str(
                 converter(payload_template, **kwargs))
+            payload_spans = []
+            for i in range(self.args.spans_per_template):
+                payload_span = self.args.region.parse(template=converted_payload_template,
+                                                      template_id=self.analyzer.num_payloads)
+                if pii_types:
+                    self.analyzer.update_pii_counters(pii_types)
+                self.analyzer.update_payload_counts()
+                payload_spans.append(payload_span)
+            logging.getLogger("privy").debug(
+                f"Generated span: {payload_span.spans}")
             for writer in privy_writers:
                 if writer.file_type == PrivyFileType.PAYLOADS:
-                    # todo @benkilimnik: generate specific instance for this template (next diff)
+                    row = [payload_span.fake, has_pii_str, pii_types_str]
                     if self.args.fuzz_payloads:
-                        self.write_fuzzed_payloads([converted_payload_template, has_pii, pii_types],
-                                                   generate_type, writer)
-                    writer.csv_writer.writerow(
-                        [converted_payload_template, has_pii, pii_types])
+                        self.write_fuzzed_payloads(row, generate_type, writer)
+                    writer.csv_writer.writerow(row)
                 if writer.file_type == PrivyFileType.TEMPLATES:
                     writer.open_file.write(f"{converted_payload_template}\n")
-        self.analyzer.update_payload_counts()
+                if writer.file_type == PrivyFileType.SPANS:
+                    for span in payload_spans:
+                        writer.open_file.write(f"{span.to_json()}\n")
 
 
 class PayloadFuzzer:

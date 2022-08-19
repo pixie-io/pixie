@@ -20,6 +20,7 @@ from faker import Faker
 from faker_airtravel import AirTravelProvider
 from privy.providers.generic import GenericProvider, Provider
 from privy.providers.generic import MacAddress, IMEI, Gender, Passport, DriversLicense, String
+from privy.providers.spans import SpanGenerator
 
 
 # English United States - inherits standard, region-agnostic methods
@@ -29,6 +30,7 @@ class English_US(GenericProvider):
         super().__init__()
         # initialize Faker instance with specific Faker locale
         f = Faker([locale])
+        f = SpanGenerator(locale=locale)
         # extend faker providers
         f.add_provider(AirTravelProvider)
         f.add_provider(MacAddress)
@@ -551,3 +553,5 @@ class English_US(GenericProvider):
         ]
         # filter providers, marking providers matching given pii_types as pii
         self.filter_providers(pii_types)
+        # add aliases for all providers
+        self.set_provider_aliases()

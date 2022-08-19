@@ -85,7 +85,7 @@ class PayloadGenerator:
                     self.analyzer.print_metrics()
                     self.analyzer.reset_spec_specific_metrics()
                     self.log.info(
-                        f"{len(self.route.unique_payloads)} total unique payloads generated so far.")
+                        f"{len(self.route.unique_payload_templates)} unique payload templates generated so far.")
                     progress_bar()
 
     def parse_openapi_descriptor(self, file: Path, timeout: int):
