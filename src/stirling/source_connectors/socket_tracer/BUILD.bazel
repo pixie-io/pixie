@@ -490,7 +490,7 @@ pl_cc_test(
 pl_cc_test(
     name = "amqp_trace_bpf_test",
     timeout = "moderate",
-    srcs = ["amqp_bpf_test.cc"],
+    srcs = ["amqp_trace_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
