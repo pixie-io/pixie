@@ -19,8 +19,7 @@ import argparse
 import sys
 from collections import Counter
 import pandas as pd
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import plotly.express as px
 
 
 def parse_args():
@@ -42,8 +41,8 @@ def parse_args():
 def visualize(input_csv):
     csv.field_size_limit(sys.maxsize)
     df = pd.read_csv(input_csv, engine="python", quotechar="|", header=None)
-    df.rename(columns={0: "payload", 1: "has_pii", 2: "pii_types", 3: "categories"}, inplace=True)
-
+    df.rename(columns={0: "payload", 1: "has_pii",
+              2: "pii_types"}, inplace=True)
     # count pii types
     count_pii_types = Counter()
     for pii_types in df["pii_types"]:
@@ -51,15 +50,6 @@ def visualize(input_csv):
             # split pii_types on comma
             count_pii_types.update(pii_types.split(","))
     print(count_pii_types)
-
-    # count categories
-    count_categories = Counter()
-    for categories in df["categories"]:
-        if not pd.isna(categories):
-            # split pii_types on comma
-            count_categories.update(categories.split(","))
-    print(count_categories)
-
     # compute percentage of payloads that have PII
     num_rows = df.shape[0]
     num_has_pii = df.groupby(['has_pii']).count()['payload'][1]
@@ -72,18 +62,11 @@ def visualize(input_csv):
     print(
         f"Average number of pii types per payload that contains PII: {avg_num_pii_types_per_payload}"
     )
-
     # graph counts of pii types and categories
     pii_types_df = pd.DataFrame(sorted(count_pii_types.items(
     ), key=lambda item: -item[1]), columns=['PII_type', 'examples_in_dataset'])
-    categories_df = pd.DataFrame(sorted(count_categories.items(
-    ), key=lambda item: -item[1]), columns=['PII_category', 'examples_in_dataset'])
-
-    fig = make_subplots(y_title="Distribution of PII in Synthetic Protocol Traces", rows=2, cols=1)
-    fig.add_trace(go.Bar(name="PII type examples in dataset",
-                  x=pii_types_df.PII_type, y=pii_types_df.examples_in_dataset), row=1, col=1)
-    fig.add_trace(go.Bar(name="PII category examples in dataset",
-                  x=categories_df.PII_category, y=categories_df.examples_in_dataset), row=2, col=1)
+    fig = px.bar(pii_types_df, x='PII_type', y='examples_in_dataset',
+                 title='Distribution of PII in Synthetic Protocol Trace Dataset')
     fig.show()
 
 

@@ -31,8 +31,7 @@ class Dataset:
     def __init__(self, input_file):
         input_file = pathlib.Path(input_file)
         df = pd.read_csv(input_file, quotechar="|")
-        df.rename(columns={0: "payload", 1: "has_pii",
-                  2: "pii_types", 3: "categories"}, inplace=True)
+        df.rename(columns={0: "payload", 1: "has_pii", 2: "pii_types"}, inplace=True)
         self.df = df
 
     def train_test_split(self, test_size=0.2):
