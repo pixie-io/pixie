@@ -16,11 +16,11 @@
 
 import csv
 import logging
-import pathlib
 import argparse
 import requests
 import tarfile
-from collections import namedtuple
+from pathlib import Path
+from privy.generate.utils import check_positive, check_percentage, PrivyWriter
 from privy.payload import PayloadGenerator
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
@@ -78,7 +78,7 @@ def parse_args():
         "--out_folder",
         "-o",
         required=False,
-        default=pathlib.Path(__file__).parent,
+        default=Path(__file__).parent,
         help="Absolute path to output folder. By default, saves to bazel cache for this runtime.",
     )
 
@@ -103,6 +103,7 @@ def parse_args():
         "-n",
         required=False,
         default=6,
+        type=check_positive,
         help="""Upper bound for the number of PII types to generate
         when inserting additional PII into sensitive payloads. E.g. 6""",
     )
@@ -112,6 +113,7 @@ def parse_args():
         "-e",
         required=False,
         default=50,
+        type=check_percentage,
         help="""Equalize distribution of PII in the dataset to the given percentage by generating additional
         PII payloads for pii types with the lowest count. To disable, set to 0.""",
     )
@@ -121,6 +123,7 @@ def parse_args():
         "-t",
         required=False,
         default=400,
+        type=check_positive,
         help="""Timeout (in seconds) after which data generation for the current openAPI descriptor will
         be halted. Very large descriptors tend to slow down data generation and skew the output dataset,
         so we apply a uniform timeout to each."""
@@ -146,13 +149,12 @@ def parse_args():
     return parser.parse_args()
 
 
-def generate(args, out_files, api_specs_folder):
+def generate(args: argparse.Namespace, out_files: dict[str, Path], api_specs_folder: Path) -> None:
     headers = ["payload", "has_pii", "pii_types", "categories"]
-    PrivyWriter = namedtuple("PrivyWriter", ["generate_type", "open_file", "csv_writer"])
     file_writers = []
     try:
         for generate_type, out_file in out_files.items():
-            pathlib.Path(out_file).parent.mkdir(parents=True, exist_ok=True)
+            Path(out_file).parent.mkdir(parents=True, exist_ok=True)
             open_file = open(out_file, 'w')
             csv_writer = csv.writer(open_file, quotechar="|")
             csv_writer.writerow(headers)
@@ -176,7 +178,7 @@ def main(args):
 
     # ------ Load OpenAPI directory -------
     logger.info(f"Checking if openapi-directory exists in {args.api_specs}")
-    api_specs_folder = pathlib.Path(
+    api_specs_folder = Path(
         args.api_specs) / "openapi-directory-ea4a924b870ca4f6d687809fa7891cccc0d19085"
     if not api_specs_folder.exists():
         logger.info("Not found. Downloading...")
@@ -195,7 +197,8 @@ def main(args):
     out_files = {}
     for generate_type in args.generate_types:
         logger.info(f"Generating {generate_type.upper()} dataset")
-        out_file = pathlib.Path(args.out_folder) / "data" / f"{generate_type.lower()}.csv"
+        out_file = Path(args.out_folder) / "data" / \
+            f"{generate_type.lower()}.csv"
         out_files[generate_type] = out_file
     generate(args, out_files, api_specs_folder)
 

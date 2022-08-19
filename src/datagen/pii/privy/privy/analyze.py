@@ -13,12 +13,14 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+from privy.providers.generic import GenericProvider
 from collections import Counter
+from typing import Tuple
 import logging
 
 
 class DatasetAnalyzer:
-    def __init__(self, providers):
+    def __init__(self, providers: GenericProvider) -> None:
         # initialize counter of PII types/categories in the generated dataset
         # initialize all categories and pii type counts to 0
         self.count_categories = Counter(
@@ -33,29 +35,29 @@ class DatasetAnalyzer:
         self.num_pii_types_per_pii_payload = 0
         self.log = logging.getLogger("privy")
 
-    def get_lowest_count_category(self):
+    def get_lowest_count_category(self) -> Tuple[str, int]:
         """Get category with lowest count in the generated dataset"""
         return min(self.count_categories.items(), key=lambda x: x[1])
 
-    def get_lowest_count_pii_type(self):
+    def get_lowest_count_pii_type(self) -> Tuple[str, int]:
         """Get pii type with lowest count in the generated dataset"""
         return min(self.count_pii_types.items(), key=lambda x: x[1])
 
-    def k_lowest_pii_types(self, k):
+    def k_lowest_pii_types(self, k) -> list[Tuple[str, int]]:
         """Get k pii types with lowest count in the generated dataset"""
         return self.count_pii_types.most_common()[:-k - 1:-1]
 
-    def update_pii_counters(self, pii_types, categories):
+    def update_pii_counters(self, pii_types, categories) -> None:
         self.count_pii_types.update(pii_types)
         self.count_categories.update(categories)
         self.num_pii_payloads += 1
         self.num_pii_payloads_this_spec += 1
 
-    def reset_spec_specific_metrics(self):
+    def reset_spec_specific_metrics(self) -> None:
         self.num_payloads_this_spec = 0
         self.num_pii_payloads_this_spec = 0
 
-    def update_payload_counts(self):
+    def update_payload_counts(self) -> None:
         self.num_payloads += 1
         self.num_payloads_this_spec += 1
         if self.num_pii_payloads > 0:
@@ -63,7 +65,7 @@ class DatasetAnalyzer:
             num_pii_types = sum(self.count_pii_types.values())
             self.num_pii_types_per_pii_payload = num_pii_types / self.num_pii_payloads
 
-    def print_metrics(self):
+    def print_metrics(self) -> None:
         self.log.info(
             f"Dataset has these category counts: {self.count_categories}")
         self.log.info(

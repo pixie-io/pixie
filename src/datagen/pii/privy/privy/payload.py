@@ -15,10 +15,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import os
 import time
-import pathlib
 import warnings
 import logging
 import random
+from pathlib import Path
 from datetime import timedelta
 from copy import deepcopy
 import traceback
@@ -35,6 +35,8 @@ from hypothesis import (
     settings,
     strategies as st,
 )
+from privy.generate.utils import PrivyWriter
+from privy.providers.generic import PII
 from privy.hooks import SchemaHooks, ParamType
 from privy.route import PayloadRoute
 from privy.analyze import DatasetAnalyzer
@@ -44,7 +46,7 @@ warnings.filterwarnings("ignore")
 
 class PayloadGenerator:
 
-    def __init__(self, api_specs_folder, file_writers, args):
+    def __init__(self, api_specs_folder: Path, file_writers: list[PrivyWriter], args):
         self.args = args
         self.api_specs_folder = api_specs_folder
         self.log = logging.getLogger("privy")
@@ -66,7 +68,7 @@ class PayloadGenerator:
             descriptors = filter(lambda f: f in [
                                  "openapi.json", "swagger.json", "openapi.yaml", "swagger.yaml"], files)
             for desc in descriptors:
-                file = pathlib.Path(dirpath) / desc
+                file = Path(dirpath) / desc
                 self.api_specs.append(file)
         # multi-threaded
         if self.args.multi_threaded:
@@ -82,7 +84,7 @@ class PayloadGenerator:
                     self.parse_openapi_descriptor(file, self.args.timeout)
                     progress_bar()
 
-    def parse_openapi_descriptor(self, file, timeout):
+    def parse_openapi_descriptor(self, file: Path, timeout: int):
         self.log.info(f"Generating {file}...")
         start = time.time()
         try:
@@ -102,11 +104,11 @@ class PayloadGenerator:
             self.analyzer.reset_spec_specific_metrics()
             self.log.warning(traceback.format_exc())
 
-    def fuzz_label(self, label) -> str:
+    def fuzz_label(self, label: str) -> str:
         """Alter an input label, inserting a random delimiter."""
         return label.replace(" ", random.choice(["-", "_", "__", ".", ":", "", " "]))
 
-    def insert_pii(self, pii, case_attr, parameter_type):
+    def insert_pii(self, pii: PII, case_attr: dict, parameter_type: ParamType) -> None:
         """Assign a pii value to a parameter for the input case attribute (e.g. case.path_parameters)."""
         self.log.debug(f"|Inserting additional pii type| {pii.label} |with category| {pii.category}")
         if self.args.fuzz_payloads:
@@ -115,8 +117,7 @@ class PayloadGenerator:
         case_attr[pii.label] = pii.value
         self.hook.add_pii_type(parameter_type, pii.label, pii.category)
 
-    def generate_pii_case(self, case_attr, parameter_type):
-        """insert additional pii data into a request payload or generate new payload"""
+    def generate_pii_case(self, case_attr: dict, parameter_type: ParamType) -> dict:
         """insert additional PII data into a request payload or generate new PII payload"""
         if self.args.equalize_pii_distribution_to_percentage:
             self.log.debug("Inserting additional random PII to equalize distribution of PII types")
@@ -146,7 +147,7 @@ class PayloadGenerator:
         suppress_health_check=(HealthCheck.too_slow, HealthCheck.data_too_large, HealthCheck.filter_too_much),
     )
     @given(data=st.data())
-    def parse_http_methods(self, data, schema, start, timeout):
+    def parse_http_methods(self, data, schema, start: float, timeout: int):
         """instantiate synthetic request payload and choose data providers for a given openapi spec"""
         for path in schema.keys():
             for http_type in self.http_types:

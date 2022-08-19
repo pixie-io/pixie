@@ -60,6 +60,7 @@ py_library(
         requirement("matplotlib"),
         requirement("h5py"),
         requirement("tensorflow-estimator"),
+        "//privy/generate:privy_generate_lib",
         "//privy/providers:privy_providers",
         "//privy/tests:privy_tests",
         "//privy/train:privy_train",

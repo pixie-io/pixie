@@ -17,9 +17,9 @@
 import io
 import csv
 import json
-from collections import namedtuple
 import pandas as pd
 import numpy as np
+from privy.generate.utils import PrivyWriter
 from privy.payload import PayloadGenerator
 
 
@@ -32,7 +32,7 @@ class PrivyArgs:
 
 def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_type, logging="debug",
                           num_additional_pii_types=6, equalize_pii_distribution_to_percentage=50,
-                          timeout=400, fuzz=False):
+                          timeout=400, fuzz=False) -> io.StringIO:
     file = io.StringIO()
     args = {
         "generate_types": generate_type,
@@ -45,8 +45,6 @@ def generate_one_api_spec(api_specs_folder, region, multi_threaded, generate_typ
         "fuzz_payloads": fuzz,
     }
     args = PrivyArgs(args)
-    PrivyWriter = namedtuple(
-        "PrivyWriter", ["generate_type", "open_file", "csv_writer"])
     file_writers = []
     csv_writer = csv.writer(file, quotechar="|")
     file_writers.append(PrivyWriter(args.generate_types, file, csv_writer))

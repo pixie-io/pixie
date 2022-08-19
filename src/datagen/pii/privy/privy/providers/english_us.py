@@ -280,7 +280,7 @@ class English_US(GenericProvider):
         def __init__(self, faker):
             self.f = faker
 
-        def mac_address(self):
+        def mac_address(self) -> str:
             pattern = random.choice(
                 [
                     "^^:^^:^^:^^:^^:^^",
@@ -290,34 +290,34 @@ class English_US(GenericProvider):
             )
             return self.f.hexify(pattern)
 
-        def imei(self):
+        def imei(self) -> str:
             imei = self.f.numerify(text="##-######-######-#")
             while baluhn.verify(imei.replace("-", "")) is False:
                 imei = self.f.numerify(text="##-######-######-#")
             return imei
 
-        def boolean(self):
+        def boolean(self) -> str:
             return random.choice(["True", "False"])
 
-        def gender(self):
+        def gender(self) -> str:
             return random.choice(["Male", "Female", "Other"])
 
-        def passport(self):
+        def passport(self) -> str:
             # US Passports consist of 1 letter or digit followed by 8-digits
             return self.f.bothify(text=random.choice(["?", "#"]) + "########")
 
-        def drivers_license(self):
+        def drivers_license(self) -> str:
             # US driver's licenses consist of 9 digits (patterns vary by state)
             return self.f.numerify(text="### ### ###")
 
-        def alphanum(self):
+        def alphanum(self) -> str:
             alphanumeric_string = "".join(
                 [random.choice(["?", "#"])
                  for _ in range(random.randint(1, 15))]
             )
             return self.f.bothify(text=alphanumeric_string)
 
-        def string(self):
+        def string(self) -> str:
             """generate a random string of characters, words, and numbers"""
             def sample(text, low, high, space=False):
                 """sample randomly from input text with a minimum length of low and maximum length of high"""

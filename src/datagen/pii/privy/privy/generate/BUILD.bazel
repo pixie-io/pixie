@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 package(default_visibility = ["//privy:__subpackages__"])
 
@@ -57,4 +57,14 @@ py_binary(
         "//privy:privy_library",
         "@rules_python//python/runfiles",
     ],
+)
+
+py_library(
+    name = "privy_generate_lib",
+    testonly = True,
+    srcs = glob([
+        "*.py",
+        "**/*.py",
+    ]),
+    srcs_version = "PY3",
 )
