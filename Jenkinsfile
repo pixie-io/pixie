@@ -525,21 +525,6 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   sh './ci/save_version_info.sh'
   sh './ci/save_diff_info.sh'
 
-  if(isStirlingPerfEval) {
-    perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
-    perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
-    withCredentials([
-      usernamePassword(
-        credentialsId: 'stirling-perf-postgres',
-        usernameVariable: 'STIRLING_PERF_DB_USERNAME',
-        passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
-      )
-    ]) {
-      sh 'mkdir -p logs'
-      sh "pip3 install -r ${perf_reqs}"
-      sh "python3 ${perf_eval} save-perf-record-repo-info-to-disk --jenkins"
-    }
-  }
   writeBazelRCFile()
 
   // Get docker image tag.
@@ -1103,6 +1088,8 @@ int evalMinutes = (params.EVAL_MINUTES != null) ? Integer.parseInt(params.EVAL_M
 int profilerMinutes = (params.PROFILER_MINUTES != null) ? Integer.parseInt(params.PROFILER_MINUTES) : 5
 String groupName = (params.GROUP_NAME != null) ? params.GROUP_NAME : 'none'
 String experimentTag = (params.EXPERIMENT_TAG != null) ? params.EXPERIMENT_TAG : 'none'
+String gitHashForPerfEval = (params.GIT_HASH_FOR_PERF_EVAL != null) ? params.GIT_HASH_FOR_PERF_EVAL : 'HEAD'
+String imageTagForPerfEval = 'none'
 
 def stirlingPerfBuilders = [:]
 
@@ -1140,7 +1127,12 @@ pxDeployForStirlingPerfEval = {
     )
   ]) {
     withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
+      // Useful if one wants to ssh in for debugging "Jenkins only" issues.
       sh 'hostname'
+
+      // Download the latest px binary.
+      // Deploy demo apps.
+      // Deploy pixie.
       sh 'curl -fsSL https://storage.googleapis.com/pixie-dev-public/cli/latest/cli_linux_amd64 -o /usr/local/bin/px'
       sh 'chmod +x /usr/local/bin/px'
       sh 'px auth login --use_api_key --api_key ${THE_PIXIE_CLI_API_KEY}'
@@ -1148,12 +1140,22 @@ pxDeployForStirlingPerfEval = {
       sh 'px demo deploy px-sock-shop -y'
       sh 'px demo deploy px-online-boutique -y'
       sh 'px deploy -y -q'
+
+      // Ensure skaffold is configured with the dev. image registry.
+      sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
+      // Regenerate the json list of artifacts targeting the images built for this eval.
+      sh "skaffold build -t ${imageTagForPerfEval} --dry-run -q -f skaffold/skaffold_vizier.yaml > artifacts.json"
+      // Useful for local debug, or to verify the image tags.
+      sh 'cat artifacts.json'
+      // Skaffold deploy using perf-eval images generated in the build & push step.
+      sh 'cat artifacts.json | skaffold deploy -f skaffold/skaffold_vizier.yaml --build-artifacts -'
     }
   }
 }
 
 pxCollectPerfInfo = {
   withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
+    sh 'mkdir -p logs'
     sh "px run pixielabs.ai/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
     sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
   }
@@ -1169,10 +1171,21 @@ insertRecordsToPerfDB = { int evalIdx ->
       passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
     )
   ]) {
+    // perf-eval.py will read the git repo to find the commit hash & date/time.
+    // Here, we just fail fast in case the git repo is missing.
+    assert fileExists('.git')
+
+    // Ensure git is configured correctly, and show repo state.
+    sh 'git config --global --add safe.directory $(pwd)'
+    sh 'git rev-parse HEAD'
+
+    // Ensure requirements setup for perf-eval.py.
     sh "pip3 install -r ${perf_reqs}"
+
+    // Insert the perf records into the perf db.
+    // Retries exist because in rare cases, the perf db complains about too many API requests.
     numRetries = 3
     retry(numRetries) {
-      // Our google cloud database can complain & fail if it gets hit w/ too many requests at once.
       sh "python3 ${perf_eval} insert-perf-records --jenkins --group-name ${groupName} --tag ${experimentTag} --idx ${evalIdx}"
     }
   }
@@ -1225,6 +1238,46 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
       })
     })
     })
+  }
+}
+
+buildAndPushPemImagesForPerfEval = {
+  WithSourceCodeK8s('pem-build-push') {
+    container('pxbuild') {
+      dockerStep(dockerArgsForBPFTest) {
+        // We will need the repo, fail fast here if it is not available.
+        assert fileExists('.git')
+
+        // Ensure repo is configured for use.
+        sh 'git config --global --add safe.directory $(pwd)'
+
+        // Log out beginning, target, and final repo state.
+        sh 'echo "Starting repo state:" && git rev-parse HEAD'
+        sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
+
+        // The user can give a hash like "HEAD~3" or "some-branch".
+        // Here, we turn that into a sha and then construct the resulting image tag.
+        gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
+        imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
+        sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
+        sh "git checkout ${gitHashForPerfEval}"
+        sh 'echo "Repo state:" && git rev-parse HEAD'
+
+        // Ensure skaffold is configured for dev. image registry.
+        sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
+
+        // Remote caching setup does not work correctly at this time:
+        // disable remote caching by removing this bazelrc file.
+        sh 'rm bes.bazelrc'
+
+        // Log out the json file listing the image artifacts we will soon build.
+        // Useful if one wants to cross check vs. the artifacts that we deploy later.
+        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run"
+
+        // Build and push pem images (based on the target repo state), but do not deploy.
+        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
+      }
+    }
   }
 }
 
@@ -1676,8 +1729,16 @@ def buildScriptForStirlingPerfEval = {
   stage('Checkout code.') {
     checkoutAndInitialize()
   }
-  stage('Stirling perf eval.') {
-    parallel(stirlingPerfBuilders)
+  stage('Build & push.') {
+    buildAndPushPemImagesForPerfEval()
+  }
+  if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
+    stage('Stirling perf eval.') {
+      parallel(stirlingPerfBuilders)
+    }
+  }
+  else {
+    currentBuild.result = 'FAILURE'
   }
 }
 
