@@ -16,6 +16,7 @@
 import json
 import logging
 from dicttoxml import dicttoxml
+from json2html import json2html
 from privy.sql import SQLQueryBuilder
 from privy.generate.utils import PrivyFileType
 
@@ -27,6 +28,7 @@ class PayloadRoute:
             "json": (json.dumps, {"default": "str"}),
             "xml": (dicttoxml, {}),
             "sql": (SQLQueryBuilder(args.region).build_query, {}),
+            "html": (json2html.convert, {}),
             # todo @benkilimnik protobuf conversion
         }
         self.args = args

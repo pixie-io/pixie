@@ -53,6 +53,7 @@ fake-http-header==0.1.2
 faker_airtravel==0.4
 faker_education==1.2
 faker-credit-score==0.3.0
+# tensorflow
 wheel==0.37.1
 astunparse==1.6.3
 wrapt==1.14.1
@@ -101,3 +102,4 @@ fonttools==4.34.4
 kiwisolver==1.4.4
 matplotlib==3.5.2
 pillow==9.2.0
+json2html==1.3.0

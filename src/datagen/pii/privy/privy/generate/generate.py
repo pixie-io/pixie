@@ -44,6 +44,7 @@ def parse_args():
             "sql",
             "proto",
             "xml",
+            "html",
         ],
         nargs='+',
         default=["json"],
