@@ -185,6 +185,5 @@ class String(LoremProvider):
         numbers = sample(string.digits, 1, 10)
         characters_and_numbers = sample(
             string.ascii_letters + string.digits, 1, 10)
-        combined = self.words(
-            nb=3) + [characters, numbers, characters_and_numbers]
-        return sample(combined, 0, 6, True)
+        combined = [characters, numbers, characters_and_numbers]
+        return sample(combined, 0, 3, True)
