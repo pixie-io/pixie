@@ -140,15 +140,29 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	defer zf.Close()
 
 	vls := VizierLabelSelector()
-	labelSelector := metav1.FormatLabelSelector(&vls)
+	vizierLabelSelector := metav1.FormatLabelSelector(&vls)
 
 	// We check across all namespaces for the matching pixie pods.
-	pods, err := c.k8sClientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+	vizierPodList, err := c.k8sClientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: vizierLabelSelector})
 	if err != nil {
 		return err
 	}
 
-	for _, pod := range pods.Items {
+	// We also need to get the operator logs.
+	// As the LabelSelectors are ANDed, we need to make a new query and merge
+	// the results.
+	ols := OperatorLabelSelector()
+	operatorLabelSelector := metav1.FormatLabelSelector(&ols)
+
+	operatorPodList, err := c.k8sClientSet.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{LabelSelector: operatorLabelSelector})
+	if err != nil {
+		return err
+	}
+
+	// Merge the two pod lists
+	pods := append(vizierPodList.Items, operatorPodList.Items...)
+
+	for _, pod := range pods {
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			// Ignore prev logs, they might not exist.
 			_ = c.logPodInfoToZipFile(zf, pod, containerStatus.Name, true)
@@ -169,7 +183,7 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 		log.WithError(err).Warn("failed to log node info")
 	}
 
-	err = c.logKubeCmd(zf, "services.log", "describe", "services", "--all-namespaces", "-l", labelSelector)
+	err = c.logKubeCmd(zf, "services.log", "describe", "services", "--all-namespaces", "-l", vizierLabelSelector)
 	if err != nil {
 		log.WithError(err).Warnf("failed to log services")
 	}
