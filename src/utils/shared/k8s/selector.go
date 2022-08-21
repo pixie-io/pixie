@@ -35,3 +35,18 @@ func VizierLabelSelector() metav1.LabelSelector {
 		},
 	}
 }
+
+// OperatorLabelSelector returns a K8s selector that matches the label of the
+// Pixie Operator.
+func OperatorLabelSelector() metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: make(map[string]string),
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "olm.catalogSource",
+				Operator: metav1.LabelSelectorOpIn,
+				Values:   []string{"pixie-operator-index"},
+			},
+		},
+	}
+}
