@@ -624,7 +624,6 @@ func (c *HydraKratosClient) GetUserIDFromToken(ctx context.Context, token string
 // KratosUserInfo contains the user information format as stored in Kratos.
 type KratosUserInfo struct {
 	Email    string `json:"email,omitempty"`
-	PLOrgID  string `json:"plOrgID,omitempty"`
 	PLUserID string `json:"plUserID,omitempty"`
 	// KratosID is the ID assigned to the user by Kratos.
 	KratosID string `json:"-"`
@@ -746,7 +745,6 @@ func (c *HydraKratosClient) SetPLMetadata(userID, plOrgID, plUserID string) erro
 	if err != nil {
 		return err
 	}
-	kratosInfo.PLOrgID = plOrgID
 	kratosInfo.PLUserID = plUserID
 	_, err = c.UpdateUserInfo(context.Background(), userID, kratosInfo)
 	return err

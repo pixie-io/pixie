@@ -324,7 +324,7 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 		defer r.Body.Close()
 
 		assert.JSONEq(t,
-			`{"app_metadata":{"foo":{"pl_org_id":"test_pl_org_id", "pl_user_id":"test_pl_user_id"}}}`, string(body))
+			`{"app_metadata":{"foo":{"pl_user_id":"test_pl_user_id"}}}`, string(body))
 		_, err = w.Write([]byte(`OK`))
 		require.NoError(t, err)
 	}))

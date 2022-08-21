@@ -224,18 +224,13 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user 
 }
 
 func (s *Server) kratosLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
-	orgID := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
-	if user != nil {
-		orgID = user.OrgID
-	}
-
-	if utils.IsNilUUIDProto(orgID) {
-		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support")
-	}
-
-	orgInfo, err := s.env.OrgClient().GetOrg(ctx, orgID)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+	var orgInfo *profilepb.OrgInfo
+	var err error
+	if user != nil && !utils.IsNilUUIDProto(user.OrgID) {
+		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
+		if err != nil {
+			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
+		}
 	}
 
 	newUser := user == nil
@@ -297,9 +292,6 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	var orgID string
 	if orgInfo != nil {
 		orgID = utils.ProtoToUUIDStr(orgInfo.ID)
-	}
-	if orgID != userInfo.PLOrgID {
-		_, _ = s.updateAuthProviderUser(userInfo.AuthProviderID, orgID, userInfo.PLUserID)
 	}
 
 	if !userInfo.EmailVerified {

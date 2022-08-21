@@ -91,7 +91,6 @@ func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, err
 // auth0UserMetadata is a part of the Auth0 response.
 type auth0UserMetadata struct {
 	PLUserID string `json:"pl_user_id,omitempty"`
-	PLOrgID  string `json:"pl_org_id,omitempty"`
 }
 
 type auth0Identity struct {
@@ -322,7 +321,6 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 	clientID := a.cfg.Auth0ClientID
 	if userInfo.AppMetadata != nil && userInfo.AppMetadata[clientID] != nil {
 		u.PLUserID = userInfo.AppMetadata[clientID].PLUserID
-		u.PLOrgID = userInfo.AppMetadata[clientID].PLOrgID
 	}
 	return u, nil
 }
@@ -332,7 +330,6 @@ func (a *Auth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
 	appMetadata := make(map[string]*auth0UserMetadata)
 	appMetadata[a.cfg.Auth0ClientID] = &auth0UserMetadata{
 		PLUserID: plUserID,
-		PLOrgID:  plOrgID,
 	}
 
 	userInfo := &auth0UserInfo{

@@ -32,7 +32,6 @@ func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*
 		// Stop gap while email server has not been added to the deploy scheme.
 		EmailVerified:    true,
 		PLUserID:         kratosUser.PLUserID,
-		PLOrgID:          kratosUser.PLOrgID,
 		IdentityProvider: kratosIdentityProvider,
 		AuthProviderID:   kratosUser.KratosID,
 	}
@@ -84,7 +83,6 @@ func (a *HydraKratosConnector) SetPLMetadata(userID, plOrgID, plUserID string) e
 	if err != nil {
 		return err
 	}
-	kratosInfo.PLOrgID = plOrgID
 	kratosInfo.PLUserID = plUserID
 	_, err = a.Client.UpdateUserInfo(context.Background(), userID, kratosInfo)
 	return err

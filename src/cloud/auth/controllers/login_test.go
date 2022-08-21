@@ -90,7 +90,6 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -142,7 +141,6 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	assert.Equal(t, resp.OrgInfo.OrgID, "")
 	assert.Equal(t, resp.OrgInfo.OrgName, "")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
@@ -235,7 +233,6 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -299,7 +296,6 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.Email, "abc@test.com")
 	assert.Equal(t, resp.OrgInfo.OrgID, orgID)
 	assert.Equal(t, resp.OrgInfo.OrgName, "testOrg")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Login_ExistingOrgWithHostedDomain(t *testing.T) {
@@ -333,21 +329,6 @@ func TestServer_Login_ExistingOrgWithHostedDomain(t *testing.T) {
 		OrgName: "testOrg",
 	}
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
-
-	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:          "abc@test.com",
-		EmailVerified:  true,
-		FirstName:      "first",
-		LastName:       "last",
-		Picture:        "something",
-		AuthProviderID: authProviderID,
-		HostedDomain:   "test.com",
-	}
-	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
-	}).Return(nil)
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -421,7 +402,6 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 		Email:            "abc@randomorg.com",
 		EmailVerified:    true,
 		PLUserID:         userID,
-		PLOrgID:          orgID,
 		IdentityProvider: googleIdentityProvider,
 		HostedDomain:     "",
 		AuthProviderID:   authProviderID,
@@ -479,7 +459,6 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 		Email:            "abc@randomorg.com",
 		EmailVerified:    true,
 		PLUserID:         userID,
-		PLOrgID:          orgID,
 		IdentityProvider: googleIdentityProvider,
 		HostedDomain:     "randomorg.com",
 		AuthProviderID:   authProviderID,
@@ -547,7 +526,6 @@ func TestServer_Login_GoogleUser_ManualOrgNoHostedDomain(t *testing.T) {
 		Email:            "abc@randomorg.com",
 		EmailVerified:    true,
 		PLUserID:         userID,
-		PLOrgID:          orgID,
 		IdentityProvider: googleIdentityProvider,
 		HostedDomain:     "",
 		AuthProviderID:   authProviderID,
@@ -801,7 +779,6 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 		Email:            "abc@gmail.com",
 		EmailVerified:    true,
 		PLUserID:         userID,
-		PLOrgID:          orgID,
 		AuthProviderID:   authProviderID,
 		IdentityProvider: auth0IdentityProvider,
 	}
@@ -854,107 +831,6 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.False(t, resp.UserCreated)
-	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
-}
-
-func TestServer_LoginNewUser_JoinOrgByPLOrgID(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
-	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := utils.ProtoFromUUIDStrOrNil(userID)
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
-
-	fakeUserInfo1 := &controllers.UserInfo{
-		Email:            "abc@gmail.com",
-		EmailVerified:    true,
-		FirstName:        "first",
-		LastName:         "last",
-		PLUserID:         userID,
-		PLOrgID:          orgID,
-		AuthProviderID:   authProviderID,
-		IdentityProvider: kratosIdentityProvider,
-	}
-
-	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
-
-	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:          "abc@gmail.com",
-		EmailVerified:  true,
-		FirstName:      "first",
-		LastName:       "last",
-		AuthProviderID: authProviderID,
-	}
-
-	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
-	}).Return(nil)
-	a.EXPECT().GetUserInfo(fakeUserInfoSecondRequest.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
-	mockProfile.EXPECT().
-		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
-			AuthProviderID: authProviderID,
-		}).
-		Return(nil, status.Error(codes.NotFound, "user not found"))
-
-	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
-	}
-
-	mockOrg.EXPECT().
-		GetOrg(gomock.Any(), orgPb).
-		Return(fakeOrgInfo, nil)
-
-	mockProfile.EXPECT().
-		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			AuthProviderID:   authProviderID,
-			OrgID:            orgPb,
-			FirstName:        "first",
-			LastName:         "last",
-			Email:            "abc@gmail.com",
-			IdentityProvider: kratosIdentityProvider,
-		}).
-		Return(userPb, nil)
-
-	mockProfile.EXPECT().
-		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             userPb,
-			DisplayPicture: &types.StringValue{Value: ""},
-		}).
-		Return(nil, nil)
-	mockOrg.EXPECT().
-		UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
-			ID:         orgPb,
-			DomainName: &types.StringValue{Value: ""},
-		}).
-		Return(nil, nil)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile, mockOrg)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	resp, err := doLoginRequest(getTestContext(), t, s)
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-
-	// Make sure expiry time is in the future.
-	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-
 	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
 
@@ -1392,7 +1268,6 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -1448,7 +1323,6 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@abcorg.com")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T) {
@@ -1488,7 +1362,6 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfoSecondRequest.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -1549,7 +1422,6 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@abcorg.com")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
@@ -1589,7 +1461,6 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfoSecondRequest.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -1645,7 +1516,6 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 	assert.Equal(t, "first", resp.UserInfo.FirstName)
 	assert.Equal(t, "last", resp.UserInfo.LastName)
 	assert.Equal(t, "asdf@asdf.com", resp.UserInfo.Email)
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_DoNotCreateOrgForEmptyHostedDomain(t *testing.T) {
@@ -1681,7 +1551,6 @@ func TestServer_Signup_DoNotCreateOrgForEmptyHostedDomain(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfoSecondRequest.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -1728,7 +1597,6 @@ func TestServer_Signup_DoNotCreateOrgForEmptyHostedDomain(t *testing.T) {
 	assert.Equal(t, "first", resp.UserInfo.FirstName)
 	assert.Equal(t, "last", resp.UserInfo.LastName)
 	assert.Equal(t, "abc@gmail.com", resp.UserInfo.Email)
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
@@ -1904,7 +1772,6 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -1935,7 +1802,6 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 		FirstName:        "first",
 		LastName:         "last",
 		PLUserID:         testingutils.TestUserID,
-		PLOrgID:          testingutils.TestOrgID,
 		AuthProviderID:   authProviderID,
 		IdentityProvider: auth0IdentityProvider,
 	}
@@ -2272,7 +2138,6 @@ func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -2349,7 +2214,6 @@ func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -2403,7 +2267,6 @@ func TestServer_Signup_WithInviteToken(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -2471,7 +2334,6 @@ func TestServer_Signup_WithInviteToken(t *testing.T) {
 	assert.Equal(t, "first", resp.UserInfo.FirstName)
 	assert.Equal(t, "last", resp.UserInfo.LastName)
 	assert.Equal(t, "abc@abcorg.com", resp.UserInfo.Email)
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Login_WithInviteToken(t *testing.T) {
@@ -2512,7 +2374,6 @@ func TestServer_Login_WithInviteToken(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -2680,7 +2541,6 @@ func TestServer_Login_InviteErrorsIfUserAlreadyBelongsToOrg(t *testing.T) {
 		LastName:         "last",
 		Picture:          "something",
 		PLUserID:         userID,
-		PLOrgID:          orgID,
 		AuthProviderID:   authProviderID,
 		IdentityProvider: auth0IdentityProvider,
 	}
@@ -2860,7 +2720,6 @@ func TestServer_Login_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -2958,7 +2817,6 @@ func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 	}
 	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
-		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -3036,11 +2894,6 @@ func TestServer_Login_ExistingOrglessUserWithInviteToken(t *testing.T) {
 		PLUserID:         userID,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
-	a.EXPECT().SetPLMetadata(authProviderID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfo.PLUserID = plid
-		fakeUserInfo.PLOrgID = plorgid
-	}).Return(nil)
 	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)

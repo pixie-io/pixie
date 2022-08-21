@@ -41,8 +41,6 @@ type UserInfo struct {
 	Picture       string
 	// PLUserID is the ID assigned to the user by Pixie.
 	PLUserID string
-	// PLOrgID is the ID of the Pixie Org that the user belongs to.
-	PLOrgID string
 	// IdentityProvider is the name of the provider that the User used to Login. This is distinct
 	// from AuthProviders - there might be many IdentityProviders that a single AuthProvider implements. Ie
 	// google-oauth and github might both be IdentityProviders for Auth0.
