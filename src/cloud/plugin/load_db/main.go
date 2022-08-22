@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -71,7 +72,20 @@ func loadPlugins(db *sqlx.DB) {
 		log.Fatal("Must specify --plugin_repo")
 	}
 
-	resp, err := http.Get(fmt.Sprintf(githubArchiveTmpl, pluginRepo))
+	client := http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf(githubArchiveTmpl, pluginRepo), nil)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create req")
+	}
+
+	apiKey := os.Getenv("GH_API_KEY")
+	if apiKey != "" {
+		req.Header = http.Header{
+			"Authorization": {fmt.Sprintf("token %s", apiKey)},
+		}
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fetch plugin repo")
 	}
