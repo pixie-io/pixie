@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -70,7 +70,7 @@ func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, err
 		return "", errors.New("bad response from google")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -186,7 +186,7 @@ func (a *Auth0Connector) GetUserIDFromToken(token string) (string, error) {
 		return "", errors.New("bad response from auth0")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -222,7 +222,7 @@ func (a *Auth0Connector) getManagementToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -276,7 +276,7 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		return nil, fmt.Errorf("bad response when getting user app metadata: %d", resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
 	if err != nil {

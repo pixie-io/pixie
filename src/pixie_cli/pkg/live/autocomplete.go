@@ -21,7 +21,7 @@ package live
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"regexp"
 	"strings"
 
@@ -142,7 +142,7 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 		return es, nil
 	}
 
-	fs.SetOutput(ioutil.Discard)
+	fs.SetOutput(io.Discard)
 	err = fs.Parse(tokens[1:])
 	if err != nil {
 		return nil, err

@@ -19,7 +19,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -789,7 +788,7 @@ func main() {
 	}
 	if readScriptFromDir {
 		visPath := path.Join(scriptDir, "vis.json")
-		visRaw, err := ioutil.ReadFile(visPath)
+		visRaw, err := os.ReadFile(visPath)
 		if err != nil {
 			log.WithError(err).Fatalf("Loading vis.json failed")
 		}
@@ -802,7 +801,7 @@ func main() {
 			log.Fatalf("Expected 1 pxl file, found %d in %s", len(matches), scriptDir)
 		}
 
-		query, err := ioutil.ReadFile(matches[0])
+		query, err := os.ReadFile(matches[0])
 		if err != nil {
 			log.WithError(err).Fatalf("Loading pxl failed")
 		}

@@ -25,7 +25,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -191,7 +191,7 @@ func CreateDockerConfigJSONSecret(namespace, name, credsData string) (*v1.Secret
 
 // readFile just reads a file into a byte array.
 func readFile(file string) ([]byte, error) {
-	b, err := ioutil.ReadFile(file)
+	b, err := os.ReadFile(file)
 	if err != nil {
 		return []byte{}, fmt.Errorf("Cannot read file %v, %v", file, err)
 	}
@@ -209,7 +209,7 @@ func handleFromFileSources(secret *v1.Secret, fromFiles map[string]string) error
 }
 
 func addKeyFromFileToSecret(secret *v1.Secret, keyName, filePath string) error {
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

@@ -20,9 +20,9 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 
 	"cloud.google.com/go/storage"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -57,7 +57,7 @@ func init() {
 
 func loadServiceAccountConfig() *jwt.Config {
 	saKeyFile := viper.GetString("sa_key_path")
-	saKey, err := ioutil.ReadFile(saKeyFile)
+	saKey, err := os.ReadFile(saKeyFile)
 
 	if err != nil {
 		return nil

@@ -21,7 +21,7 @@ package planner_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -181,7 +181,7 @@ func scriptToQueryRequest(s *script) (*plannerpb.QueryRequest, error) {
 	defer pxlFile.Close()
 
 	req := &plannerpb.QueryRequest{}
-	b, err := ioutil.ReadAll(pxlFile)
+	b, err := io.ReadAll(pxlFile)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func loadSchemas() (*schemapb.Schema, error) {
 		return nil, err
 	}
 
-	b, err := ioutil.ReadAll(schemaFile)
+	b, err := io.ReadAll(schemaFile)
 	if err != nil {
 		return nil, err
 	}

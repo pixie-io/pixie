@@ -20,7 +20,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -60,7 +59,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	pxlB, err := ioutil.ReadFile(internalPxlDocsPath)
+	pxlB, err := os.ReadFile(internalPxlDocsPath)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -83,7 +82,7 @@ func main() {
 
 	// Read in the python api doc file.
 	var pyAPI json.RawMessage
-	pyB, err := ioutil.ReadFile(pyAPIDocsPath)
+	pyB, err := os.ReadFile(pyAPIDocsPath)
 	if err != nil {
 		logrus.Fatal(err)
 	}

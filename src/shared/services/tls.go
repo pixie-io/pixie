@@ -22,7 +22,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -46,7 +46,7 @@ func DefaultServerTLSConfig() (*tls.Config, error) {
 	}
 
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(tlsCACert)
+	ca, err := os.ReadFile(tlsCACert)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert: %s", err.Error())
 	}

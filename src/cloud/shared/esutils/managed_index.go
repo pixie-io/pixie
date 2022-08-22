@@ -37,20 +37,22 @@ import (
 // after the conditions have been met.
 //
 // Example usage:
-// 	err := NewManagedIndex(es, "my_managed_index").
-// 		IndexFromJSONString(`
-// 			{
+//
+//	err := NewManagedIndex(es, "my_managed_index").
+//		IndexFromJSONString(`
+//			{
 //				"mappings": {
-// 					"properties": {
-// 						"my_text_field": {
-// 							"type": "text"
+//					"properties": {
+//						"my_text_field": {
+//							"type": "text"
 //						}
 //					}
-// 				}
-// 			}`).
-// 		MaxIndexSize("1gb").
+//				}
+//			}`).
+//		MaxIndexSize("1gb").
 //		TimeBeforeDelete("1d").
 //		Migrate(ctx)
+//
 // This example will create a new elastic index called "my_managed_index-000000". This index will have an index alias
 // called "my_managed_index". It will also create an ILMPolicy that specifies that the index should be rolled over
 // once it reaches 1gb in size. When that happens elastic will create a new index "my_managed_index-000001". Then 1 day
@@ -98,14 +100,16 @@ func (m *ManagedIndex) TimeBeforeDelete(timeBeforeDelete string) *ManagedIndex {
 
 // IndexFromJSONString sets the index config to be the json string provided.
 // Example usage:
-// 	err := NewManagedIndex(es, "my_managed_index").IndexFromJSONString(
-// 	`
-// 	{
+//
+//	err := NewManagedIndex(es, "my_managed_index").IndexFromJSONString(
+//	`
+//	{
 //			"mappings": <INSERT_MAPPINGS_HERE>,
 //			"setings": <INSERT_SETTINGS_HERE>,
-// 	}
-// 	`
-// 	).Migrate(ctx)
+//	}
+//	`
+//	).Migrate(ctx)
+//
 // Note that as opposed to ILMPolicy(), creating the index
 // config from json is likely to be done for every ManagedIndex so its a top level API.
 // This will also add the mappings from the JSON string to the IndexTemplate.
@@ -128,9 +132,10 @@ func (m *ManagedIndex) IndexFromJSONString(j string) *ManagedIndex {
 // over the index template used by the ManagedIndex.
 // This API shouldn't be necessary for most simple use cases.
 // Example usage:
-// 	myManagedInd := NewManagedIndex(es, "my_managed_ind")
-// 	myManagedInd.IndexTemplate().FromJSONString(`{<INSERT_JSON_HERE>}`)
-// 	err := myManagedInd.Migrate(ctx)
+//
+//	myManagedInd := NewManagedIndex(es, "my_managed_ind")
+//	myManagedInd.IndexTemplate().FromJSONString(`{<INSERT_JSON_HERE>}`)
+//	err := myManagedInd.Migrate(ctx)
 func (m *ManagedIndex) IndexTemplate() *IndexTemplate {
 	return m.template
 }
@@ -140,9 +145,10 @@ func (m *ManagedIndex) IndexTemplate() *IndexTemplate {
 // over the ilm policy used by the ManagedIndex.
 // Most simple use cases should be able to use the TimeBeforeDelete or MaxIndexSize APIs.
 // Example usage:
-// 	myManagedInd := NewManagedIndex(es, "my_managed_ind")
-// 	myManagedInd.ILMPolicy().FromJSONString(`{<INSERT_JSON_HERE>}`)
-// 	err := myManagedInd.Migrate(ctx)
+//
+//	myManagedInd := NewManagedIndex(es, "my_managed_ind")
+//	myManagedInd.ILMPolicy().FromJSONString(`{<INSERT_JSON_HERE>}`)
+//	err := myManagedInd.Migrate(ctx)
 func (m *ManagedIndex) ILMPolicy() *ILMPolicy {
 	return m.policy
 }

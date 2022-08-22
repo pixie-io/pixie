@@ -21,7 +21,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 
@@ -94,7 +94,7 @@ func loadScriptFromStdin() (*script.ExecutableScript, error) {
 	s := baseScript()
 	s.IsLocal = true
 	// Read from STDIN.
-	query, err := ioutil.ReadAll(os.Stdin)
+	query, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
 	}
 	visFile := path.Join(scriptPath, "vis.json")
 	if fileExists(visFile) {
-		vis, err := ioutil.ReadFile(visFile)
+		vis, err := os.ReadFile(visFile)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func loadScriptFromFile(scriptPath string) (*script.ExecutableScript, error) {
 
 	s := baseScript()
 	s.IsLocal = true
-	query, err := ioutil.ReadAll(r)
+	query, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}

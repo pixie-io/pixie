@@ -27,9 +27,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/go-openapi/runtime"
@@ -138,7 +138,7 @@ type HydraKratosClient struct {
 func loadRootCA() (*x509.CertPool, error) {
 	tlsCACert := viper.GetString("tls_ca_cert")
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(tlsCACert)
+	ca, err := os.ReadFile(tlsCACert)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read CA cert: %s", err.Error())
 	}

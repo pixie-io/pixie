@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync"
 
@@ -165,7 +164,7 @@ func GetGRPCClientDialOpts() ([]grpc.DialOption, error) {
 	}
 
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(tlsCACert)
+	ca, err := os.ReadFile(tlsCACert)
 	if err != nil {
 		return nil, err
 	}

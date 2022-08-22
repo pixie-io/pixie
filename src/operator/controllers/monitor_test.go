@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -59,14 +59,14 @@ func (f *FakeHTTPClient) Get(url string) (*http.Response, error) {
 		return &http.Response{
 			Status:     status,
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewBufferString(resp)),
+			Body:       io.NopCloser(bytes.NewBufferString(resp)),
 		}, nil
 	}
 
 	return &http.Response{
 		Status:     "404",
 		StatusCode: 404,
-		Body:       ioutil.NopCloser(bytes.NewBufferString("")),
+		Body:       io.NopCloser(bytes.NewBufferString("")),
 	}, nil
 }
 

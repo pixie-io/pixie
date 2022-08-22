@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sort"
 	"time"
@@ -201,11 +200,11 @@ func compareCmd(cmd *cobra.Command) {
 	changeJSONPath, _ := cmd.Flags().GetString("change")
 	columnsToShow, _ := cmd.Flags().GetStringSlice("columns")
 
-	baselineContent, err := ioutil.ReadFile(baselineJSONPath)
+	baselineContent, err := os.ReadFile(baselineJSONPath)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read baseline json file")
 	}
-	changeContent, err := ioutil.ReadFile(changeJSONPath)
+	changeContent, err := os.ReadFile(changeJSONPath)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read change json file")
 	}

@@ -21,7 +21,6 @@ package tar
 import (
 	"archive/tar"
 	"io"
-	"io/ioutil"
 )
 
 // ReadTarFileFromReader writes the file contents to a map where the key is the name
@@ -50,7 +49,7 @@ func ReadTarFileFromReader(r io.Reader) (map[string]string, error) {
 }
 
 func readFileToString(tr *tar.Reader) (string, error) {
-	buf, err := ioutil.ReadAll(tr)
+	buf, err := io.ReadAll(tr)
 	if err != nil && err != io.EOF {
 		return "", err
 	}

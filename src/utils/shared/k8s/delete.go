@@ -20,7 +20,7 @@ package k8s
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -226,8 +226,8 @@ func (o *ObjectDeleter) runDelete(r *resource.Result) (int, error) {
 		Printer:     printers.NewDiscardingPrinter(),
 		ConditionFn: cmdwait.IsDeleted,
 		IOStreams: genericclioptions.IOStreams{
-			Out:    ioutil.Discard,
-			ErrOut: ioutil.Discard,
+			Out:    io.Discard,
+			ErrOut: io.Discard,
 		},
 	}
 	return found, waitOptions.RunWait()

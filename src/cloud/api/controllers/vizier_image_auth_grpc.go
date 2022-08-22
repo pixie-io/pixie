@@ -20,7 +20,7 @@ package controllers
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/pflag"
@@ -50,7 +50,7 @@ func (v VizierImageAuthServer) GetImageCredentials(context.Context, *cloudpb.Get
 		return nil, status.Error(codes.Internal, "failed to parse creds paths")
 	}
 	credsFile := filepath.Join(absP, f)
-	b, err := ioutil.ReadFile(credsFile)
+	b, err := os.ReadFile(credsFile)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to read creds file")
 	}

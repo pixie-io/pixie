@@ -21,7 +21,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"runtime"
@@ -67,7 +67,7 @@ func main() {
 				fmt.Println(err)
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Fatalln(err)
 			} else {

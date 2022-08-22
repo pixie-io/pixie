@@ -21,7 +21,7 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path"
 	"strings"
 	"time"
@@ -314,7 +314,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 	}
 	defer r.Close()
 
-	sha256bytes, err := ioutil.ReadAll(r)
+	sha256bytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to read sha256 file")
 	}

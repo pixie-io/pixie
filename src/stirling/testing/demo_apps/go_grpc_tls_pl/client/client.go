@@ -23,7 +23,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(viper.GetString("tls_ca_cert"))
+	ca, err := os.ReadFile(viper.GetString("tls_ca_cert"))
 	if err != nil {
 		log.WithError(err).Fatal("failed to read CA cert")
 	}

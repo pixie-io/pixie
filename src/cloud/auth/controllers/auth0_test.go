@@ -20,7 +20,7 @@ package controllers_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -319,7 +319,7 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 		assert.Equal(t, "PATCH", r.Method)
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		defer r.Body.Close()
 

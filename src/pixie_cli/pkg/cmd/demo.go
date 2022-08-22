@@ -27,7 +27,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -365,7 +364,7 @@ func downloadGCSFileFromHTTP(dirURL, filename string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 func downloadManifest(artifacts string) (manifest, error) {
@@ -446,7 +445,7 @@ func downloadDemoAppYAMLs(appName, artifacts string) (map[string][]byte, error) 
 			continue
 		}
 
-		contents, err := ioutil.ReadAll(tarReader)
+		contents, err := io.ReadAll(tarReader)
 		if err != nil {
 			return nil, err
 		}

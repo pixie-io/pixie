@@ -25,7 +25,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -75,7 +75,7 @@ func main() {
 				panic(err)
 			}
 
-			body, readErr := ioutil.ReadAll(resp.Body)
+			body, readErr := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			if readErr != nil {
 				log.Fatal(readErr)

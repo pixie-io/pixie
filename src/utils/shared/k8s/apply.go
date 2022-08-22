@@ -26,7 +26,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -62,7 +61,7 @@ func init() {
 	}
 
 	// Suppress k8s log output.
-	klog.SetOutput(ioutil.Discard)
+	klog.SetOutput(io.Discard)
 }
 
 // ConvertResourceToYAML converts the given object to a YAML which can be applied.

@@ -22,9 +22,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -40,7 +40,7 @@ type Config struct {
 }
 
 func getESHTTPSClient(config *Config) (*http.Client, error) {
-	caCert, err := ioutil.ReadFile(config.CaCertFile)
+	caCert, err := os.ReadFile(config.CaCertFile)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,6 @@ func getESHTTPSClient(config *Config) (*http.Client, error) {
 	tlsConfig := &tls.Config{
 		RootCAs: caCertPool,
 	}
-	tlsConfig.BuildNameToCertificate()
 
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = tlsConfig

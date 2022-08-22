@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
@@ -171,7 +170,7 @@ func (c *CLIUpdater) UpdateSelf(version string) error {
 		return err
 	}
 
-	tempFile, err := ioutil.TempFile("", "cli_download")
+	tempFile, err := os.CreateTemp("", "cli_download")
 	if err != nil {
 		return err
 	}

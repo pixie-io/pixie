@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -75,7 +74,7 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 	}
 
 	ps := &pixieScript{}
-	data, err := ioutil.ReadFile(pxlFiles[0])
+	data, err := os.ReadFile(pxlFiles[0])
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +92,7 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 	}
 
 	if visFileExists {
-		data, err := ioutil.ReadFile(visFile)
+		data, err := os.ReadFile(visFile)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +101,7 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 	}
 
 	if placementFileExists {
-		data, err = ioutil.ReadFile(placementFile)
+		data, err = os.ReadFile(placementFile)
 		if err != nil {
 			return nil, err
 		}

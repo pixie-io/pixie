@@ -23,8 +23,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -67,7 +68,7 @@ type scraperImpl struct {
 func NewScraper(namespace string, period time.Duration) Scraper {
 	tlsCACert := viper.GetString("tls_ca_cert")
 	certPool := x509.NewCertPool()
-	ca, err := ioutil.ReadFile(tlsCACert)
+	ca, err := os.ReadFile(tlsCACert)
 	if err != nil {
 		log.WithError(err).Fatal("failed to read CA cert.")
 	}
@@ -144,7 +145,7 @@ func (s *scraperImpl) scrapeMetrics() {
 			continue
 		}
 		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.WithError(err).WithField("endpoint", e).Error("failed to read metrics body")
 			continue
