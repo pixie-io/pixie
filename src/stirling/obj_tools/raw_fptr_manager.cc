@@ -34,37 +34,44 @@ namespace obj_tools {
 
 RawFptrManager::RawFptrManager(std::string lib_path) : lib_path_(std::move(lib_path)) {}
 
-Status RawFptrManager::Init() {
-  PL_ASSIGN_OR_RETURN(elf_reader_, ElfReader::Create(lib_path_));
-
-  dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
-  if (dlopen_handle_ == nullptr) {
-    return error::Internal("Failed to dlopen so file: $0, $1", lib_path_, dlerror());
+Status RawFptrManager::LazyInit() {
+  if (elf_reader_ == nullptr) {
+    PL_ASSIGN_OR_RETURN(elf_reader_, ElfReader::Create(lib_path_));
   }
 
-  struct link_map* dl_link_map = nullptr;
-  int retval = dlinfo(dlopen_handle_, RTLD_DI_LINKMAP, &dl_link_map);
+  if (dl_vmem_start_ == 0) {
+    dlopen_handle_ = dlopen(lib_path_.c_str(), RTLD_LAZY);
+    if (dlopen_handle_ == nullptr) {
+      return error::Internal("Failed to dlopen so file: $0, $1", lib_path_, dlerror());
+    }
 
-  if (retval != 0) {
-    return error::Internal("dlinfo() failed to return info [dlerror=$0].", dlerror());
+    struct link_map* dl_link_map = nullptr;
+    int retval = dlinfo(dlopen_handle_, RTLD_DI_LINKMAP, &dl_link_map);
+
+    if (retval != 0) {
+      return error::Internal("dlinfo() failed to return info [dlerror=$0].", dlerror());
+    }
+
+    if (dl_link_map == nullptr) {
+      return error::Internal("dlinfo() returned nullptr.");
+    }
+
+    // The link_map is a linked list, but the last element, and the one that is returned by dinfo()
+    // should be the library that we just loaded.
+    // Because containerized environments can interfere with the paths, just check the filenames.
+    DCHECK_EQ(std::filesystem::path(dl_link_map->l_name).filename(),
+              std::filesystem::path(lib_path_).filename());
+
+    dl_vmem_start_ = dl_link_map->l_addr;
   }
-
-  if (dl_link_map == nullptr) {
-    return error::Internal("dlinfo() returned nullptr.");
-  }
-
-  // The link_map is a linked list, but the last element, and the one that is returned by dinfo()
-  // should be the library that we just loaded.
-  // Because containerized environments can interfere with the paths, just check the filenames.
-  DCHECK_EQ(std::filesystem::path(dl_link_map->l_name).filename(),
-            std::filesystem::path(lib_path_).filename());
-
-  dl_vmem_start_ = dl_link_map->l_addr;
 
   return Status::OK();
 }
 
 StatusOr<void*> RawFptrManager::RawSymbolToFptrImpl(const std::string& symbol_name) {
+  // Doesn't do anything if it has been called before.
+  PL_RETURN_IF_ERROR(LazyInit());
+
   auto sym_addr = elf_reader_->SymbolAddress(symbol_name).value();
   if (!sym_addr) {
     return error::NotFound("Could not find symbol '$0'", symbol_name);

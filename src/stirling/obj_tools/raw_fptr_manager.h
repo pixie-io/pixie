@@ -42,10 +42,11 @@ class RawFptrManager : NotCopyMoveable {
     return reinterpret_cast<T*>(fptr);
   }
 
-  // Required before calling RawSymbolToFptr. Returns error if shared object cannot be loaded.
-  Status Init();
-
  private:
+  // Runs the the first time RawSymbolToFptr() is called.
+  // Returns error if shared object cannot be loaded.
+  Status LazyInit();
+
   StatusOr<void*> RawSymbolToFptrImpl(const std::string& symbol_name);
 
   std::string lib_path_;

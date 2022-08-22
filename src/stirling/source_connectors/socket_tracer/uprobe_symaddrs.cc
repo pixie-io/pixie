@@ -583,7 +583,6 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
 }
 
 StatusOr<uint64_t> GetOpenSSLVersionNumUsingFptr(RawFptrManager* fptr_manager) {
-  PL_RETURN_IF_ERROR(fptr_manager->Init());
   const std::string symbol = "OpenSSL_version_num";
   // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
   PL_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>(symbol));
