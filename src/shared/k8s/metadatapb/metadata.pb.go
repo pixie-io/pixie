@@ -4089,6 +4089,7 @@ func (m *DeploymentUpdate) GetConditions() []*DeploymentCondition {
 
 type ResourceUpdate struct {
 	// Types that are valid to be assigned to Update:
+	//
 	//	*ResourceUpdate_PodUpdate
 	//	*ResourceUpdate_ContainerUpdate
 	//	*ResourceUpdate_ServiceUpdate

@@ -566,6 +566,7 @@ func (m *StringColumn) GetData() []string {
 
 type Column struct {
 	// Types that are valid to be assigned to ColData:
+	//
 	//	*Column_BooleanData
 	//	*Column_Int64Data
 	//	*Column_Uint128Data
@@ -947,6 +948,7 @@ func (m *CompilerError) GetMessage() string {
 
 type ErrorDetails struct {
 	// Types that are valid to be assigned to Error:
+	//
 	//	*ErrorDetails_CompilerError
 	Error isErrorDetails_Error `protobuf_oneof:"error"`
 }
@@ -1079,6 +1081,7 @@ func (m *Status) GetErrorDetails() []*ErrorDetails {
 type ScalarValue struct {
 	DataType DataType `protobuf:"varint,1,opt,name=data_type,json=dataType,proto3,enum=px.api.vizierpb.DataType" json:"data_type,omitempty"`
 	// Types that are valid to be assigned to Value:
+	//
 	//	*ScalarValue_BoolValue
 	//	*ScalarValue_Int64Value
 	//	*ScalarValue_Float64Value
@@ -1894,6 +1897,7 @@ type ExecuteScriptResponse struct {
 	Status  *Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	QueryID string  `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
 	// Types that are valid to be assigned to Result:
+	//
 	//	*ExecuteScriptResponse_Data
 	//	*ExecuteScriptResponse_MetaData
 	Result       isExecuteScriptResponse_Result `protobuf_oneof:"result"`

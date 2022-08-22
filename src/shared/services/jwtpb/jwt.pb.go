@@ -35,6 +35,7 @@ type JWTClaims struct {
 	Subject   string   `protobuf:"bytes,7,opt,name=subject,proto3" json:"sub"`
 	Scopes    []string `protobuf:"bytes,8,rep,name=scopes,proto3" json:"scopes,omitempty"`
 	// Types that are valid to be assigned to CustomClaims:
+	//
 	//	*JWTClaims_UserClaims
 	//	*JWTClaims_ServiceClaims
 	//	*JWTClaims_ClusterClaims

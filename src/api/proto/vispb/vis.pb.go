@@ -295,6 +295,7 @@ type Widget struct {
 	Name     string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Position *Widget_Position `protobuf:"bytes,2,opt,name=position,proto3" json:"position,omitempty"`
 	// Types that are valid to be assigned to FuncOrRef:
+	//
 	//	*Widget_Func_
 	//	*Widget_GlobalFuncOutputName
 	FuncOrRef   isWidget_FuncOrRef `protobuf_oneof:"func_or_ref"`
@@ -521,6 +522,7 @@ func (m *Widget_Func) GetArgs() []*Widget_Func_FuncArg {
 type Widget_Func_FuncArg struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are valid to be assigned to Input:
+	//
 	//	*Widget_Func_FuncArg_Value
 	//	*Widget_Func_FuncArg_Variable
 	Input isWidget_Func_FuncArg_Input `protobuf_oneof:"input"`
@@ -1160,6 +1162,7 @@ func (m *Table) GetGutterColumn() string {
 
 type Graph struct {
 	// Types that are valid to be assigned to Input:
+	//
 	//	*Graph_DotColumn
 	//	*Graph_AdjacencyList_
 	Input                  isGraph_Input         `protobuf_oneof:"input"`

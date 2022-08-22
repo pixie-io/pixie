@@ -322,6 +322,7 @@ type Probe struct {
 	Args       []*Argument    `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
 	RetVals    []*ReturnValue `protobuf:"bytes,4,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
 	// Types that are valid to be assigned to FunctionLatencyOneof:
+	//
 	//	*Probe_FunctionLatency
 	FunctionLatencyOneof isProbe_FunctionLatencyOneof `protobuf_oneof:"function_latency_oneof"`
 	OutputActions        []*OutputAction              `protobuf:"bytes,6,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
@@ -583,6 +584,7 @@ func (m *UPID) GetTsNs() uint64 {
 
 type DeploymentSpec struct {
 	// Types that are valid to be assigned to TargetOneof:
+	//
 	//	*DeploymentSpec_Upid
 	//	*DeploymentSpec_SharedObject_
 	//	*DeploymentSpec_PodProcess_

@@ -512,6 +512,7 @@ func (m *PlanNode) GetOp() *Operator {
 type Operator struct {
 	OpType OperatorType `protobuf:"varint,1,opt,name=op_type,json=opType,proto3,enum=px.carnot.planpb.OperatorType" json:"op_type,omitempty"`
 	// Types that are valid to be assigned to Op:
+	//
 	//	*Operator_MemSourceOp
 	//	*Operator_MapOp
 	//	*Operator_AggOp
@@ -965,6 +966,7 @@ func (m *GRPCSourceOperator) GetColumnNames() []string {
 type GRPCSinkOperator struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Types that are valid to be assigned to Destination:
+	//
 	//	*GRPCSinkOperator_GRPCSourceID
 	//	*GRPCSinkOperator_OutputTable
 	Destination       isGRPCSinkOperator_Destination          `protobuf_oneof:"destination"`
@@ -1810,6 +1812,7 @@ func (m *EmptySourceOperator) GetColumnTypes() []typespb.DataType {
 
 type OTelSpan struct {
 	// Types that are valid to be assigned to Name:
+	//
 	//	*OTelSpan_NameString
 	//	*OTelSpan_NameColumnIndex
 	Name                 isOTelSpan_Name  `protobuf_oneof:"name"`
@@ -1951,6 +1954,7 @@ func (*OTelSpan) XXX_OneofWrappers() []interface{} {
 
 type OTelMetricGauge struct {
 	// Types that are valid to be assigned to ValueColumn:
+	//
 	//	*OTelMetricGauge_FloatColumnIndex
 	//	*OTelMetricGauge_IntColumnIndex
 	ValueColumn isOTelMetricGauge_ValueColumn `protobuf_oneof:"value_column"`
@@ -2147,6 +2151,7 @@ func (m *OTelMetricSummary_ValueAtQuantile) GetValueColumnIndex() int64 {
 type OTelAttribute struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are valid to be assigned to Value:
+	//
 	//	*OTelAttribute_Column_
 	//	*OTelAttribute_StringValue
 	Value isOTelAttribute_Value `protobuf_oneof:"value"`
@@ -2303,6 +2308,7 @@ type OTelMetric struct {
 	Attributes      []*OTelAttribute `protobuf:"bytes,4,rep,name=attributes,proto3" json:"attributes,omitempty"`
 	TimeColumnIndex int64            `protobuf:"varint,5,opt,name=time_column_index,json=timeColumnIndex,proto3" json:"time_column_index,omitempty"`
 	// Types that are valid to be assigned to Data:
+	//
 	//	*OTelMetric_Gauge
 	//	*OTelMetric_Summary
 	Data isOTelMetric_Data `protobuf_oneof:"data"`
@@ -2592,6 +2598,7 @@ func (m *OTelExportSinkOperator) GetSpans() []*OTelSpan {
 
 type ScalarExpression struct {
 	// Types that are valid to be assigned to Value:
+	//
 	//	*ScalarExpression_Constant
 	//	*ScalarExpression_Column
 	//	*ScalarExpression_Func
@@ -2691,6 +2698,7 @@ func (*ScalarExpression) XXX_OneofWrappers() []interface{} {
 type ScalarValue struct {
 	DataType typespb.DataType `protobuf:"varint,1,opt,name=data_type,json=dataType,proto3,enum=px.types.DataType" json:"data_type,omitempty"`
 	// Types that are valid to be assigned to Value:
+	//
 	//	*ScalarValue_BoolValue
 	//	*ScalarValue_Int64Value
 	//	*ScalarValue_Float64Value
@@ -2985,6 +2993,7 @@ func (m *AggregateExpression) GetArgsDataTypes() []typespb.DataType {
 
 type AggregateExpression_Arg struct {
 	// Types that are valid to be assigned to Value:
+	//
 	//	*AggregateExpression_Arg_Constant
 	//	*AggregateExpression_Arg_Column
 	Value isAggregateExpression_Arg_Value `protobuf_oneof:"value"`

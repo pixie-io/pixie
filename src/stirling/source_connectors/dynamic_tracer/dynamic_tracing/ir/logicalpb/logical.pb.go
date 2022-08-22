@@ -475,6 +475,7 @@ type Probe struct {
 	RetVals    []*ReturnValue       `protobuf:"bytes,5,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
 	MapVals    []*MapValue          `protobuf:"bytes,6,rep,name=map_vals,json=mapVals,proto3" json:"map_vals,omitempty"`
 	// Types that are valid to be assigned to FunctionLatencyOneof:
+	//
 	//	*Probe_FunctionLatency
 	FunctionLatencyOneof isProbe_FunctionLatencyOneof `protobuf_oneof:"function_latency_oneof"`
 	MapStashActions      []*MapStashAction            `protobuf:"bytes,8,rep,name=map_stash_actions,json=mapStashActions,proto3" json:"map_stash_actions,omitempty"`

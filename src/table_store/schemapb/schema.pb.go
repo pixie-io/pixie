@@ -282,6 +282,7 @@ var xxx_messageInfo_StringColumn proto.InternalMessageInfo
 
 type Column struct {
 	// Types that are valid to be assigned to ColData:
+	//
 	//	*Column_BooleanData
 	//	*Column_Int64Data
 	//	*Column_Uint128Data

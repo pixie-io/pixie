@@ -521,6 +521,7 @@ func (m *ConfigUpdate) GetAgentPodName() string {
 
 type CompileMutation struct {
 	// Types that are valid to be assigned to Mutation:
+	//
 	//	*CompileMutation_Trace
 	//	*CompileMutation_DeleteTracepoint
 	//	*CompileMutation_ConfigUpdate

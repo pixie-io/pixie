@@ -391,6 +391,7 @@ func (m *UPID) GetTsNs() uint64 {
 
 type DeploymentSpec struct {
 	// Types that are valid to be assigned to TargetOneof:
+	//
 	//	*DeploymentSpec_Path
 	//	*DeploymentSpec_Upid
 	//	*DeploymentSpec_SharedObject_
@@ -612,6 +613,7 @@ func (m *DeploymentSpec_PodProcess) GetProcess() string {
 
 type VariableType struct {
 	// Types that are valid to be assigned to TypeOneof:
+	//
 	//	*VariableType_Scalar
 	//	*VariableType_StructType
 	TypeOneof isVariableType_TypeOneof `protobuf_oneof:"type_oneof"`
@@ -807,6 +809,7 @@ func (m *Condition) GetVars() []string {
 
 type Printk struct {
 	// Types that are valid to be assigned to ContentOneof:
+	//
 	//	*Printk_Text
 	//	*Printk_Scalar
 	ContentOneof isPrintk_ContentOneof `protobuf_oneof:"content_oneof"`
