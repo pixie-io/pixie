@@ -1,0 +1,74 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package px.perf_tool;
+
+option go_package = "experimentpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+// ExperimentSpec fully specifies how to run a single perf experiment.
+// An Experiment is fully specified by specifying all of the following:
+//  - version of the Pixie repo (commit) to use to build the components of the experiment (see
+//  VizierSpec).
+//  - parameters to use when building/running Vizier.
+//  - specifications for other workloads to run on the same cluster during the experiment (see
+//  WorkloadSpec).
+//  - specifications for metrics to record during the experiment (see MetricSpec).
+//  - specifications for the cluster that the experiment runs on (see ClusterSpec).
+message ExperimentSpec {
+  // VersionSpec specifies what version of the pixie repo to use to build the various components of
+  // the experiment.
+  VersionSpec version_spec = 1;
+  // vizier_spec specifies parameters around building and deploying the vizier workload for the
+  // experiment.
+  WorkloadSpec vizier_spec = 2;
+  // Each workload spec specifies parameters for building and deploying a workload for the
+  // experiment.
+  repeated WorkloadSpec workload_specs = 3;
+  // Each metric spec specifies parameters for building and recording a metric during the
+  // experiment.
+  repeated MetricSpec metric_specs = 4;
+  // ClusterSpec specifies what type of cluster to run the experiment on.
+  ClusterSpec cluster_spec = 5;
+}
+
+// VersionSpec specifies the version of the Pixie repo to use for running the Experiment.
+// It specifies the base commit via a commit SHA, and allows specifying patches on top of that
+// commit.
+message VersionSpec {}
+
+// WorkloadSpec specifies how to build, deploy and teardown a particular workload.
+// Example workloads include: Vizier, Sock shop, or an HTTP protocol loadtest (see
+// src/e2e_test/protocol_loadtest). Workloads can be made up of multiple components (such as a
+// client and a server), or can be specified without splitting things into components (eg. sock
+// shop).
+message WorkloadSpec {}
+
+// MetricSpec specifies how to record a set of metrics for an experiment.
+// Currently, PxL scripts are the only supported way of recording metrics.
+message MetricSpec {}
+
+// ClusterSpec specifies the type and size of cluster an experiment should run on.
+// Cluster parameters currently include things like machine type, and number of nodes in the
+// cluster.
+message ClusterSpec {}
+
+message Empty {}

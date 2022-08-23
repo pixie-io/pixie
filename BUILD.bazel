@@ -93,6 +93,9 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/vizier/services/shared/agentpb //src/vizier/services/shared/agentpb:agent_pl_go_proto
 #
 # gazelle:resolve go px.dev/pixie/experimental/stirling/proto_data_model/proto //experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/e2e_test/perf_tool/backend/sharedpb //src/e2e_test/perf_tool/backend/sharedpb:shared_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/coordinatorpb //src/e2e_test/perf_tool/backend/coordinator/coordinatorpb:service_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/e2e_test/perf_tool/experimentpb //src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto
 #
 # Make gazelle resolve CGO libraries correctly.
 # gazelle:resolve go px.dev/pixie/src/carnot/goplanner //src/carnot/goplanner:go_default_library

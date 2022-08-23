@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coordinator-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 50000
+    protocol: TCP
+    targetPort: 50000
+    name: tcp-http2
+  selector:
+    name: coordinator-server
