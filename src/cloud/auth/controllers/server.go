@@ -69,8 +69,6 @@ type AuthProvider interface {
 	GetUserIDFromToken(token string) (string, error)
 	// GetUserInfo returns the UserInfo for the userID.
 	GetUserInfo(userID string) (*UserInfo, error)
-	// SetPLMetadata sets the pixielabs related metadata in the auth provider.
-	SetPLMetadata(userID, plOrgID, plUserID string) error
 	// CreateInviteLinkForIdentity creates an invite link for the specific user, identified by the AuthProviderID.
 	CreateInviteLink(authProviderID string) (*CreateInviteLinkResponse, error)
 	// CreateIdentity will create an identity for the corresponding email.

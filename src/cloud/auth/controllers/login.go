@@ -72,22 +72,6 @@ func (s *Server) getUser(ctx context.Context, userInfo *UserInfo) (*profilepb.Us
 	return s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 }
 
-func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID string) (*UserInfo, error) {
-	// Write user and org info to the AuthProvider.
-	err := s.a.SetPLMetadata(authUserID, orgID, userID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to set user ID")
-	}
-
-	// Read updated user info.
-	userInfo, err := s.a.GetUserInfo(authUserID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to read updated user info")
-	}
-
-	return userInfo, nil
-}
-
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
@@ -514,13 +498,8 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgNam
 		return nil, nil, status.Error(codes.Internal, fmt.Sprintf("failed to create user/org: %v", err))
 	}
 	orgIDpb := resp.OrgID
-	userIDpb := resp.UserID
 
-	updatedUserInfo, err := s.updateAuthProviderUser(userInfo.AuthProviderID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
-	if err != nil {
-		return nil, nil, err
-	}
-	return updatedUserInfo, orgIDpb, nil
+	return userInfo, orgIDpb, nil
 }
 
 // Creates a user for the orgID.
@@ -538,17 +517,12 @@ func (s *Server) createUser(ctx context.Context, userInfo *UserInfo, orgID *uuid
 		AuthProviderID:   userInfo.AuthProviderID,
 	}
 
-	userIDpb, err := s.env.ProfileClient().CreateUser(ctx, userCreateReq)
+	_, err := s.env.ProfileClient().CreateUser(ctx, userCreateReq)
 	if err != nil {
 		return nil, err
 	}
 
-	var orgIDStr string
-	if orgID != nil {
-		orgIDStr = utils.UUIDFromProtoOrNil(orgID).String()
-	}
-
-	return s.updateAuthProviderUser(userInfo.AuthProviderID, orgIDStr, utils.UUIDFromProtoOrNil(userIDpb).String())
+	return userInfo, nil
 }
 
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.

@@ -88,10 +88,6 @@ func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, err
 	return userInfo.HostedDomain, nil
 }
 
-// auth0UserMetadata is a part of the Auth0 response.
-type auth0UserMetadata struct {
-}
-
 type auth0Identity struct {
 	Provider    string `json:"provider,omitempty"`
 	AccessToken string `json:"access_token,omitempty"`
@@ -99,16 +95,15 @@ type auth0Identity struct {
 
 // auth0UserInfo tracks the returned auth0 info.
 type auth0UserInfo struct {
-	Email         string                        `json:",omitempty"`
-	EmailVerified bool                          `json:"email_verified,omitempty"`
-	FirstName     string                        `json:"given_name,omitempty"`
-	LastName      string                        `json:"family_name,omitempty"`
-	UserID        string                        `json:"user_id,omitempty"`
-	Name          string                        `json:",omitempty"`
-	Picture       string                        `json:",omitempty"`
-	Sub           string                        `json:"sub,omitempty"`
-	AppMetadata   map[string]*auth0UserMetadata `json:"app_metadata,omitempty"`
-	Identities    []*auth0Identity              `json:"identities,omitempty"`
+	Email         string           `json:",omitempty"`
+	EmailVerified bool             `json:"email_verified,omitempty"`
+	FirstName     string           `json:"given_name,omitempty"`
+	LastName      string           `json:"family_name,omitempty"`
+	UserID        string           `json:"user_id,omitempty"`
+	Name          string           `json:",omitempty"`
+	Picture       string           `json:",omitempty"`
+	Sub           string           `json:"sub,omitempty"`
+	Identities    []*auth0Identity `json:"identities,omitempty"`
 }
 
 // Auth0Config is the config data required for Auth0.
@@ -318,44 +313,6 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 		HostedDomain:     hostedDomain,
 	}
 	return u, nil
-}
-
-// SetPLMetadata sets the pixielabs related metadata in the auth0 client.
-func (a *Auth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
-	appMetadata := make(map[string]*auth0UserMetadata)
-	appMetadata[a.cfg.Auth0ClientID] = &auth0UserMetadata{}
-
-	userInfo := &auth0UserInfo{
-		AppMetadata: appMetadata,
-	}
-
-	jsonStr, err := json.Marshal(userInfo)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
-	patchPath := fmt.Sprintf("%s/users/%s", a.cfg.Auth0MgmtAPI, userID)
-	req, err := http.NewRequest("PATCH", patchPath, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		return err
-	}
-
-	managementToken, err := a.getManagementToken()
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", managementToken))
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad response from auth0: %d", resp.StatusCode)
-	}
-	return nil
 }
 
 // CreateInviteLink implements the AuthProvider interface, but we don't support this functionatlity with Auth0 at the time.

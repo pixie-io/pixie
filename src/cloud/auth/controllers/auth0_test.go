@@ -20,7 +20,6 @@ package controllers_test
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -300,42 +299,4 @@ func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 	_, err = c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
 	assert.NotNil(t, err)
-}
-
-func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
-	callCount := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount++
-		// Return valid management token.
-		if r.URL.String() == "/oauth/token" {
-			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
-			require.NoError(t, err)
-			return
-		}
-
-		assert.Equal(t, "/api/v2/users/abcd", r.URL.String())
-		assert.Equal(t, "PATCH", r.Method)
-		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
-
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		defer r.Body.Close()
-
-		assert.JSONEq(t,
-			`{"app_metadata":{"foo":{}}}`, string(body))
-		_, err = w.Write([]byte(`OK`))
-		require.NoError(t, err)
-	}))
-	defer server.Close()
-
-	cleanup := SetupViperEnvironment(t, server.URL)
-	defer cleanup()
-
-	cfg := controllers.NewAuth0Config()
-	c, err := controllers.NewAuth0Connector(cfg)
-	require.NoError(t, err)
-
-	err = c.SetPLMetadata("abcd", "test_pl_org_id", "test_pl_user_id")
-	assert.Equal(t, 2, callCount)
-	require.NoError(t, err)
 }

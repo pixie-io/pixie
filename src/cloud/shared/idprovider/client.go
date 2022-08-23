@@ -736,14 +736,3 @@ func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req
 		InviteLink: *recovery.Payload.RecoveryLink,
 	}, nil
 }
-
-// SetPLMetadata will update the client with the related info.
-func (c *HydraKratosClient) SetPLMetadata(userID, plOrgID, plUserID string) error {
-	// TODO(philkuz,PC-1073) get rid of this in favor of not duplicating hydra_kratos_auth.go.
-	kratosInfo, err := c.GetUserInfo(context.Background(), userID)
-	if err != nil {
-		return err
-	}
-	_, err = c.UpdateUserInfo(context.Background(), userID, kratosInfo)
-	return err
-}
