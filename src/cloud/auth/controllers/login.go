@@ -90,8 +90,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		return nil, status.Error(codes.PermissionDenied, "This email is managed by Google Workspace and can only be used to join its associated Google Workspace managed org. Please retry the invite link using another email.")
 	}
 
-	user, err := s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
-
+	user, err := s.getUser(ctx, userInfo)
 	// If we can't find the user and aren't in auto create mode.
 	if (err != nil || user == nil) && !in.CreateUserIfNotExists {
 		return nil, status.Error(codes.NotFound, "user not found, please register.")
@@ -251,17 +250,13 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 	if err != nil {
 		return nil, err
 	}
-	user, err := s.getUser(ctx, userInfo)
-	if err != nil {
-		return nil, err
-	}
 
 	return &authpb.LoginReply{
 		Token:       tkn.token,
 		ExpiresAt:   tkn.expiresAt.Unix(),
 		UserCreated: newUser,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    user.ID,
+			UserID:    tkn.id,
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -275,6 +270,7 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 }
 
 type tokenData struct {
+	id        *uuidpb.UUID
 	token     string
 	expiresAt time.Time
 }
@@ -319,6 +315,7 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 	return &tokenData{
+		id:        user.ID,
 		token:     tkn,
 		expiresAt: expiresAt,
 	}, nil
@@ -335,17 +332,13 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 		orgID = orgInfo.ID
 		orgName = orgInfo.OrgName
 	}
-	user, err := s.getUser(ctx, userInfo)
-	if err != nil {
-		return nil, err
-	}
 
 	return &authpb.SignupReply{
 		Token:      tkn.token,
 		ExpiresAt:  tkn.expiresAt.Unix(),
 		OrgCreated: newOrg,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    user.ID,
+			UserID:    tkn.id,
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -415,9 +408,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	pc := s.env.ProfileClient()
-
-	_, err = pc.GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
+	_, err = s.getUser(ctx, userInfo)
 	if err == nil {
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}
