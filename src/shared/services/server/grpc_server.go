@@ -47,9 +47,10 @@ func init() {
 
 // GRPCServerOptions are configuration options that are passed to the GRPC server.
 type GRPCServerOptions struct {
-	DisableAuth    map[string]bool
-	AuthMiddleware func(context.Context, env.Env) (string, error) // Currently only used by cloud api-server.
-	GRPCServerOpts []grpc.ServerOption
+	DisableAuth       map[string]bool
+	AuthMiddleware    func(context.Context, env.Env) (string, error) // Currently only used by cloud api-server.
+	GRPCServerOpts    []grpc.ServerOption
+	DisableMiddleware bool
 }
 
 func grpcUnaryInjectSession() grpc.UnaryServerInterceptor {
@@ -112,19 +113,22 @@ func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
 		}),
 		grpc_logrus.WithLevels(grpc_logrus.DefaultClientCodeToLevel),
 	}
-	opts := []grpc.ServerOption{
-		grpc_middleware.WithUnaryServerChain(
-			grpc_ctxtags.UnaryServerInterceptor(),
-			grpcUnaryInjectSession(),
-			grpc_logrus.UnaryServerInterceptor(logrusEntry, logrusOpts...),
-			grpc_auth.UnaryServerInterceptor(createGRPCAuthFunc(env, serverOpts)),
-		),
-		grpc_middleware.WithStreamServerChain(
-			grpc_ctxtags.StreamServerInterceptor(),
-			grpcStreamInjectSession(),
-			grpc_logrus.StreamServerInterceptor(logrusEntry, logrusOpts...),
-			grpc_auth.StreamServerInterceptor(createGRPCAuthFunc(env, serverOpts)),
-		),
+	opts := []grpc.ServerOption{}
+	if !serverOpts.DisableMiddleware {
+		opts = append(opts,
+			grpc_middleware.WithUnaryServerChain(
+				grpc_ctxtags.UnaryServerInterceptor(),
+				grpcUnaryInjectSession(),
+				grpc_logrus.UnaryServerInterceptor(logrusEntry, logrusOpts...),
+				grpc_auth.UnaryServerInterceptor(createGRPCAuthFunc(env, serverOpts)),
+			),
+			grpc_middleware.WithStreamServerChain(
+				grpc_ctxtags.StreamServerInterceptor(),
+				grpcStreamInjectSession(),
+				grpc_logrus.StreamServerInterceptor(logrusEntry, logrusOpts...),
+				grpc_auth.StreamServerInterceptor(createGRPCAuthFunc(env, serverOpts)),
+			),
+		)
 	}
 
 	opts = append(opts, serverOpts.GRPCServerOpts...)
