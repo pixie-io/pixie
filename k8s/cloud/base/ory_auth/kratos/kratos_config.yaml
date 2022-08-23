@@ -70,11 +70,6 @@ data:
                   "via": "email"
                 }
               }
-            },
-            "plUserID": {
-              "type": "string",
-              "title": "Pixie User ID",
-              "minLength": 1
             }
           },
           "required": [

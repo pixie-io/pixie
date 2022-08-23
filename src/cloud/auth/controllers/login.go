@@ -68,6 +68,10 @@ func (s *Server) getUserInfoFromToken(accessToken string) (*UserInfo, error) {
 	return userInfo, nil
 }
 
+func (s *Server) getUser(ctx context.Context, userInfo *UserInfo) (*profilepb.UserInfo, error) {
+	return s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
+}
+
 func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID string) (*UserInfo, error) {
 	// Write user and org info to the AuthProvider.
 	err := s.a.SetPLMetadata(authUserID, orgID, userID)
@@ -263,12 +267,17 @@ func (s *Server) loginUser(ctx context.Context, userInfo *UserInfo, orgInfo *pro
 	if err != nil {
 		return nil, err
 	}
+	user, err := s.getUser(ctx, userInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	return &authpb.LoginReply{
 		Token:       tkn.token,
 		ExpiresAt:   tkn.expiresAt.Unix(),
 		UserCreated: newUser,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+			UserID:    user.ID,
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -297,21 +306,22 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	if !userInfo.EmailVerified {
 		return nil, status.Error(codes.PermissionDenied, "please verify your email before proceeding")
 	}
+	user, err := s.getUser(ctx, userInfo)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
 	// Check to make sure the user is approved to login. They are default approved
 	// if the org does not EnableApprovals.
 	if orgInfo != nil && orgInfo.EnableApprovals {
-		user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID))
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
 		if !user.IsApproved {
 			return nil, status.Error(codes.PermissionDenied, "You are not approved to log in to the org. Please request approval from your org admin")
 		}
 	}
+
 	// Update user's profile photo.
-	_, err := pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID:             utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:             user.ID,
 		DisplayPicture: &types.StringValue{Value: userInfo.Picture},
 	})
 	if err != nil {
@@ -319,7 +329,7 @@ func (s *Server) completeUserLogin(ctx context.Context, userInfo *UserInfo, orgI
 	}
 
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, orgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	claims := srvutils.GenerateJWTForUser(utils.ProtoToUUIDStr(user.ID), orgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
 	tkn, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
@@ -341,12 +351,17 @@ func (s *Server) signupUser(ctx context.Context, userInfo *UserInfo, orgInfo *pr
 		orgID = orgInfo.ID
 		orgName = orgInfo.OrgName
 	}
+	user, err := s.getUser(ctx, userInfo)
+	if err != nil {
+		return nil, err
+	}
+
 	return &authpb.SignupReply{
 		Token:      tkn.token,
 		ExpiresAt:  tkn.expiresAt.Unix(),
 		OrgCreated: newOrg,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+			UserID:    user.ID,
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -645,7 +660,7 @@ func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRe
 	}
 
 	// Create the user inside of Pixie.
-	user, err := s.createUser(ctx, &UserInfo{
+	userInfo, err := s.createUser(ctx, &UserInfo{
 		Email:            req.Email,
 		FirstName:        req.FirstName,
 		LastName:         req.LastName,
@@ -656,10 +671,14 @@ func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRe
 	if err != nil {
 		return nil, err
 	}
+	user, err := s.getUser(ctx, userInfo)
+	if err != nil {
+		return nil, err
+	}
 
 	// Auto-approve user.
 	_, err = s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(user.PLUserID),
+		ID: user.ID,
 		IsApproved: &types.BoolValue{
 			Value: true,
 		},
@@ -667,7 +686,7 @@ func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRe
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return userInfo, nil
 }
 
 var noSuchUserMatcher = regexp.MustCompile("no such user")
