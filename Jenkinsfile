@@ -1162,9 +1162,9 @@ pxDeployForStirlingPerfEval = {
       sh 'curl -fsSL https://storage.googleapis.com/pixie-dev-public/cli/latest/cli_linux_amd64 -o /usr/local/bin/px'
       sh 'chmod +x /usr/local/bin/px'
       sh 'px auth login --use_api_key --api_key ${THE_PIXIE_CLI_API_KEY}'
-      sh 'px demo deploy px-kafka -y'
-      sh 'px demo deploy px-sock-shop -y'
-      sh 'px demo deploy px-online-boutique -y'
+      sh 'px demo deploy px-kafka -y -q'
+      sh 'px demo deploy px-sock-shop -y -q'
+      sh 'px demo deploy px-online-boutique -y -q'
       sh 'px deploy -y -q'
 
       // Ensure skaffold is configured with the dev. image registry.
