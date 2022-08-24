@@ -1104,19 +1104,45 @@ useCluster = { String clusterName ->
   sh "gcloud container clusters get-credentials ${clusterName} --project pl-pixies --zone us-west1-a"
 }
 
+deleteCluster = { String clusterName ->
+  // We use 'delete || true' so that failure does not cause the entire pipeline to fail or go unstable.
+  // In particular, deleteCluster is invoked when createCluster fails; this has two scenarios:
+  // 1. The cluster was created, but the gcloud command failed anyway.
+  // 2. The cluster was not created.
+  // ... For (1) above, we expect cluster deletion to succeed.
+  // ... For (2) above, we invoke deleteCluster (because it is hard to know we are in this scenario),
+  // ... and we expect the command to fail, but we don't want the entire build/perf-eval to stop.
+  // In general, if clusters leak through, they are eventually cleaned up by the perf eval cluster
+  // cleanup cron job.
+  sh "gcloud container --project pl-pixies clusters delete ${clusterName} --zone us-west1-a --quiet || true"
+}
+
 createCluster = { String clusterName ->
+  retryIdx = 0
   numRetries = 3
+
+  // We will uniquify the cluster name based on the retry count because there is some chance
+  // that gcloud will refuse to create a cluster (on retry) based on a name being in use.
+  // Here we create a local variable 'retryUniqueClusterName' that is distinct from 'clusterName'
+  // because 'clusterName' is curried into 'oneEval'. If we clobber 'clusterName' here,
+  // the currying becomes wrong and different evals will wrongly all pick up the same cluster name.
+  retryUniqueClusterName = null
+
   createClusterScript = "scripts/create_gke_cluster.sh"
   sh 'hostname'
   sh 'gcloud components update'
   sh 'gcloud --version'
   retry(numRetries) {
-    sh "${createClusterScript} -S -f -n 1 -c ${clusterName}"
+    if (retryIdx > 0) {
+      // Prevent leaking clusters from previous attempts.
+      deleteCluster(retryUniqueClusterName)
+    }
+    // Uniquify the cluster name based on the retryIdx because retry attempts
+    // may fail based on the pre-existing cluster name.
+    retryUniqueClusterName = clusterName  + '-' + String.format('%d', retryIdx)
+    sh "${createClusterScript} -S -f -n 1 -c ${retryUniqueClusterName}"
+    ++retryIdx
   }
-}
-
-deleteCluster = { String clusterName ->
-  sh "gcloud container --project pl-pixies clusters delete ${clusterName} --zone us-west1-a --quiet"
 }
 
 pxDeployForStirlingPerfEval = {
@@ -1155,7 +1181,13 @@ pxDeployForStirlingPerfEval = {
 
 pxCollectPerfInfo = {
   withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
-    sh 'mkdir -p logs'
+    // The subdirectory 'logs' should have been created when un-stashing the repo info.
+    assert fileExists('logs')
+
+    // Show the cluster name (useful if results are strange and we suspect the wrong
+    // cluster was used for recording perf info).
+    sh 'kubectl config current-context'
+
     sh "px run pixielabs.ai/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
     sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
   }
@@ -1191,16 +1223,41 @@ insertRecordsToPerfDB = { int evalIdx ->
   }
 }
 
+def getCurrentClusterName(String clusterName) {
+  def currentClusterName = sh(
+    script: 'kubectl config current-context',
+    returnStdout: true,
+    returnStatus: false
+  ).trim()
+
+  // currentClusterName will look something like this:
+  // gke_pl-pixies_us-west1-a_stirling-perf-2022-08-24--0648-09-00-0
+  // However, fro a GKE perspective the name is stirling-perf-2022-08-24--0648-09-00-0.
+  def tokens = currentClusterName.split('_')
+  currentClusterName = tokens.last()
+  return currentClusterName
+}
+
 oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   int margin = 2
-  int clusterCreationMinutes = 10
+  int clusterCreationMinutes = 15
   int pixieDeployMinutes = 10
   int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
 
   return {
-    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes, {
-    container('pxbuild', {
-      dockerStep(dockerArgsForBPFTest, {
+    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes) {
+      container('pxbuild') {
+
+        // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
+        // In more detail, here, we start with a fresh fully up-to-date source tree. The "as built" repo
+        // state will often be different (e.g. a particular diff or local experiment).
+        // That state is only known inside of buildAndPushPemImagesForPerfEval. Because we need that
+        // information, buildAndPushPemImagesForPerfEval is responsible for stashing the info on GCS,
+        // and here, we recover the saved state (in file 'logs/perf_eval_repo_info.bin').
+        // The stash on GCS is needed because file system state is volatile in these build stages.
+        unstashFromGCS('perf-eval-repo-info')
+        assert fileExists('logs/perf_eval_repo_info.bin')
+
         if (newClusterNeeded) {
           // Default behavior: create a new cluster for this perf eval.
           stage("Create cluster.") {
@@ -1232,12 +1289,11 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
           // Earlier, we had created a new cluster for this perf eval.
           // Here, we clean up.
           stage("Delete cluster.") {
-            deleteCluster(clusterName)
+            deleteCluster(getCurrentClusterName(clusterName))
           }
         }
-      })
-    })
-    })
+      }
+    }
   }
 }
 
