@@ -1314,6 +1314,47 @@ def saveRepoInfo() {
   }
 }
 
+def checkIfRequiredImagesExist() {
+  numImages = Integer.parseInt(
+    sh(
+      script: "cat artifacts.json | jq '.builds[].imageName' | wc -l",
+      returnStdout: true,
+      returnStatus: false
+    ).trim()
+  )
+
+  // Use the artifacts.json file and jq to build a list of all required images.
+  def requiredImages = []
+
+  for( int i=0; i < numImages; i++ ) {
+    imageNameAndTag = sh(script: "cat artifacts.json | jq '.builds[${i}].tag'", returnStdout: true, returnStatus: false).trim()
+    requiredImages.add(imageNameAndTag)
+  }
+
+  // allRequiredImagesExist will be set to false if we cannot find any one of the required images.
+  boolean allRequiredImagesExist = true
+
+  for (imageNameAndTag in requiredImages) {
+    echo "Checking if image: ${imageNameAndTag} exists."
+    describeStatusCode = sh(script: "gcloud container images describe ${imageNameAndTag}", returnStdout: false, returnStatus: true)
+
+    if (describeStatusCode != 0) {
+      echo "Image: ${imageNameAndTag} does not exist."
+      allRequiredImagesExist = false
+      break
+    }
+    else {
+      echo "Image: ${imageNameAndTag} exists."
+    }
+  }
+
+  if (allRequiredImagesExist) {
+    sep = "\n... "
+    echo "All images found:${sep}${requiredImages.join(sep)}"
+  }
+  return allRequiredImagesExist
+}
+
 buildAndPushPemImagesForPerfEval = {
   WithSourceCodeK8s('pem-build-push') {
     container('pxbuild') {
@@ -1343,12 +1384,16 @@ buildAndPushPemImagesForPerfEval = {
         // disable remote caching by removing this bazelrc file.
         sh 'rm bes.bazelrc'
 
-        // Log out the json file listing the image artifacts we will soon build.
+        // Save the image names & tags into artiacts.json, and log out the same info.
         // Useful if one wants to cross check vs. the artifacts that we deploy later.
-        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run"
+        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
 
-        // Build and push pem images (based on the target repo state), but do not deploy.
-        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
+        allRequiredImagesExist = checkIfRequiredImagesExist()
+
+        if (!allRequiredImagesExist) {
+          echo "Building all images."
+          sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
+        }
       }
     }
   }
