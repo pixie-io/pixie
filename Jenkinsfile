@@ -1358,42 +1358,41 @@ def checkIfRequiredImagesExist() {
 buildAndPushPemImagesForPerfEval = {
   WithSourceCodeK8s('pem-build-push') {
     container('pxbuild') {
-      dockerStep(dockerArgsForBPFTest) {
-        // We will need the repo, fail fast here if it is not available.
-        assert fileExists('.git')
+      // We will need the repo, fail fast here if it is not available.
+      assert fileExists('.git')
 
-        // Ensure repo is configured for use.
-        sh 'git config --global --add safe.directory $(pwd)'
+      // Ensure repo is configured for use.
+      sh 'git config --global --add safe.directory $(pwd)'
 
-        // Log out beginning, target, and final repo state.
-        sh 'echo "Starting repo state:" && git rev-parse HEAD'
-        sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
+      // Log out beginning, target, and final repo state.
+      sh 'echo "Starting repo state:" && git rev-parse HEAD'
+      sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
 
-        // The user can give a hash like "HEAD~3" or "some-branch".
-        // Here, we turn that into a sha and then construct the resulting image tag.
-        gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
-        imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
-        sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
-        sh "git checkout ${gitHashForPerfEval}"
-        sh 'echo "Repo state:" && git rev-parse HEAD'
+      // The user can give a hash like "HEAD~3" or "some-branch".
+      // Here, we turn that into a sha and then construct the resulting image tag.
+      gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
+      imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
+      sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
+      sh "git checkout ${gitHashForPerfEval}"
+      sh 'echo "Repo state:" && git rev-parse HEAD'
+      saveRepoInfo()
 
-        // Ensure skaffold is configured for dev. image registry.
-        sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
+      // Ensure skaffold is configured for dev. image registry.
+      sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
 
-        // Remote caching setup does not work correctly at this time:
-        // disable remote caching by removing this bazelrc file.
-        sh 'rm bes.bazelrc'
+      // Remote caching setup does not work correctly at this time:
+      // disable remote caching by removing this bazelrc file.
+      sh 'rm bes.bazelrc'
 
-        // Save the image names & tags into artiacts.json, and log out the same info.
-        // Useful if one wants to cross check vs. the artifacts that we deploy later.
-        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
+      // Save the image names & tags into artiacts.json, and log out the same info.
+      // Useful if one wants to cross check vs. the artifacts that we deploy later.
+      sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
 
-        allRequiredImagesExist = checkIfRequiredImagesExist()
+      allRequiredImagesExist = checkIfRequiredImagesExist()
 
-        if (!allRequiredImagesExist) {
-          echo "Building all images."
-          sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
-        }
+      if (!allRequiredImagesExist) {
+        echo "Building all images."
+        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
       }
     }
   }
