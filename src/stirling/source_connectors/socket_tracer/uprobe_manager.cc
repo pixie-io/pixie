@@ -654,7 +654,8 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   // Convert to host path, in case we're running inside a container ourselves.
   container_libgrpcc = sysconfig.ToHostPath(container_libgrpcc);
   if (!fs::Exists(container_libgrpcc)) {
-    return error::Internal("grpc-c library not found [path = $0]", container_libgrpcc.string());
+    return error::Internal("grpc-c library not found [path=$0 pid=$1]", container_libgrpcc.string(),
+                           pid);
   }
 
   // Only try probing .so files that we haven't already set probes on.
@@ -666,13 +667,13 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   // Calculate MD5 hash of the grpc-c library to know which version it is.
   // For further explanation see the definition of kGrpcCMD5HashToVersion.
   PL_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
-  VLOG(1) << absl::Substitute("Found MD5 hash $0 of library $1", hash_str,
-                              container_libgrpcc.string());
+  VLOG(1) << absl::Substitute("Found MD5 hash $0 of library $1 for pid=$2", hash_str,
+                              container_libgrpcc.string(), pid);
 
   // Find the version of the library by its MD5 hash.
   auto iter = kGrpcCMD5HashToVersion.find(hash_str);
   if (iter == kGrpcCMD5HashToVersion.end()) {
-    return error::Unimplemented("Unknown MD5 hash $0 of library $1 and pid $2.", hash_str,
+    return error::Unimplemented("Unknown MD5 hash $0 of library $1 and pid=$2.", hash_str,
                                 container_libgrpcc.string(), pid);
   }
   const enum grpc_c_version_t version = iter->second;
@@ -709,7 +710,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
     }
   }
   if (!attached_data_parser_parse_probe) {
-    return error::Internal("Failed to attach a data parser parse probe.");
+    return error::Internal("Failed to attach a data parser parse probe, pid=$0.", pid);
   }
 
   VLOG(1) << absl::Substitute("Successfully attached $0 gRPC-C probes to pid $1",
