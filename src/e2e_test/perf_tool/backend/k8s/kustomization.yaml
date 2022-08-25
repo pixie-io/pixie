@@ -12,6 +12,8 @@ resources:
 - db_reader.yaml
 - coordinator_deployment.yaml
 - coordinator_service.yaml
+- clustermgr_deployment.yaml
+- clustermgr_service.yaml
 patches:
 - path: db_sidecar.yaml
   target:
