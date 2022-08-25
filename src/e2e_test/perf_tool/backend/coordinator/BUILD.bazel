@@ -28,6 +28,7 @@ go_library(
     deps = [
         "//src/cloud/shared/pgmigrate",
         "//src/e2e_test/perf_tool/backend/coordinator/controllers",
+        "//src/e2e_test/perf_tool/backend/coordinator/coordinatorenv",
         "//src/e2e_test/perf_tool/backend/coordinator/coordinatorpb:service_pl_go_proto",
         "//src/e2e_test/perf_tool/backend/coordinator/datastore",
         "//src/e2e_test/perf_tool/backend/coordinator/schema",

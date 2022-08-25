@@ -28,6 +28,7 @@ import (
 
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/controllers"
+	"px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/coordinatorenv"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/coordinatorpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/datastore"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/coordinator/schema"
@@ -53,6 +54,23 @@ func main() {
 	}
 
 	datastore := datastore.NewDatastore(db)
+
+	clusterMgrClient, err := coordinatorenv.NewClusterManagerServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to connect to clustermgr service")
+	}
+	runnerClient, err := coordinatorenv.NewRunnerServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to connect to runner service")
+	}
+	builderClient, err := coordinatorenv.NewBuilderServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to connect to builder service")
+	}
+
+	_ = clusterMgrClient
+	_ = runnerClient
+	_ = builderClient
 
 	svr := controllers.NewServer(datastore)
 	s := server.NewPLServerWithOptions(nil, mux, &server.GRPCServerOptions{
