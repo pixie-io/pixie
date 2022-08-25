@@ -69,11 +69,10 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 	tests := []struct {
 		name            string
 		updates         []*metadatapb.ResourceUpdate
-		updateKind      string
 		expectedResults []*md.EsMDEntity
 	}{
 		{
-			name: "node update",
+			name: "node-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_NodeUpdate{
@@ -98,12 +97,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 0,
 				},
 			},
-			updateKind: "node",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "node-update",
 					UID:                "400",
 					NS:                 "",
 					Name:               "test-node",
@@ -117,7 +115,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "pending node update",
+			name: "pending-node-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_NodeUpdate{
@@ -142,12 +140,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 1,
 				},
 			},
-			updateKind: "node",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "pending-node-update",
 					UID:                "400",
 					NS:                 "",
 					Name:               "test-node",
@@ -161,7 +158,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "namespace update",
+			name: "namespace-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
@@ -175,12 +172,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					UpdateVersion: 0,
 				},
 			},
-			updateKind: "namespace",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "namespace-update",
 					UID:                "100",
 					NS:                 "",
 					Name:               "testns",
@@ -194,7 +190,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "pod update",
+			name: "pod-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -211,12 +207,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 1,
 				},
 			},
-			updateKind: "pod",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "pod-update",
 					UID:                "300",
 					NS:                 "",
 					Name:               "pl/test-pod",
@@ -230,7 +225,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "svc update",
+			name: "svc-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -245,12 +240,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 0,
 				},
 			},
-			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "svc-update",
 					UID:                "200",
 					NS:                 "",
 					Name:               "test-service",
@@ -264,7 +258,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "out of order svc update",
+			name: "out-of-order-svc-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -291,12 +285,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					UpdateVersion: 0,
 				},
 			},
-			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "out-of-order-svc-update",
 					UID:                "200",
 					NS:                 "",
 					Name:               "test-service",
@@ -310,7 +303,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 		},
 		{
-			name: "in order svc update",
+			name: "in-order-svc-update",
 			updates: []*metadatapb.ResourceUpdate{
 				{
 					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -351,12 +344,11 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 3,
 				},
 			},
-			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
 				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
-					ClusterUID:         "test",
+					ClusterUID:         "in-order-svc-update",
 					UID:                "200",
 					NS:                 "",
 					Name:               "test-service",
@@ -372,24 +364,55 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			indexer := md.NewVizierIndexerWithBulkSettings(vzID, orgID, "test", indexName, nil, elasticClient, 1, time.Second*1)
+			indexer := md.NewVizierIndexerWithBulkSettings(vzID, orgID, test.name, indexName, nil, elasticClient, 100*time.Microsecond)
+			go indexer.FlushRoutine()
 
 			for _, u := range test.updates {
 				err := indexer.HandleResourceUpdate(u)
 				require.NoError(t, err)
 			}
 
-			// Refresh the data since we are using "wait_for" on the indexer.
-			elasticClient.Refresh()
-			resp, err := elasticClient.Search().
-				Index(indexName).
-				Query(elastic.NewTermQuery("kind", test.updateKind)).
-				Do(context.Background())
-			require.NoError(t, err)
+			var resp *elastic.SearchResult
+			// We have to wait for the indexer to flush the bulk request.
+			// The indexer flushes on a timer, so we check the elastic state to gauge if the index is ready.
+			// After 10 tries, if the index doesn't seem ready, we give up and run the rest of the test.
+
+			for i := 0; i < 10; i++ {
+				// Call a refresh on the index to ensure that it's up to date.
+				_, err := elasticClient.Refresh().Do(context.Background())
+				require.NoError(t, err)
+
+				resp, err = elasticClient.Search().
+					Index(indexName).
+					Query(elastic.NewTermQuery("clusterUID", test.name)).
+					Do(context.Background())
+				require.NoError(t, err)
+				if resp.TotalHits() != int64(len(test.expectedResults)) {
+					// Sleep to give more time for flushing to occur.
+					time.Sleep(100 * time.Millisecond)
+					continue
+				}
+				resultsMatch := true
+				for i, r := range test.expectedResults {
+					res := &md.EsMDEntity{}
+					err = json.Unmarshal(resp.Hits.Hits[i].Source, res)
+					require.NoError(t, err)
+					if !assert.ObjectsAreEqual(r, res) {
+						resultsMatch = false
+						break
+					}
+				}
+				if resultsMatch {
+					break
+				}
+				// Sleep to give more time for flushing to occur.
+				time.Sleep(100 * time.Millisecond)
+			}
+
 			require.Equal(t, int64(len(test.expectedResults)), resp.TotalHits())
 			for i, r := range test.expectedResults {
 				res := &md.EsMDEntity{}
-				err = json.Unmarshal(resp.Hits.Hits[i].Source, res)
+				err := json.Unmarshal(resp.Hits.Hits[i].Source, res)
 				require.NoError(t, err)
 				assert.Equal(t, r, res)
 			}
