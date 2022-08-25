@@ -110,8 +110,9 @@ type VizierMonitor struct {
 	cancel      func()
 	cloudClient *grpc.ClientConn
 
-	namespace      string
-	namespacedName types.NamespacedName
+	namespace         string
+	namespacedName    types.NamespacedName
+	devCloudNamespace string
 
 	podStates *concurrentPodMap
 	nodeState *vizierState

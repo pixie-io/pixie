@@ -146,7 +146,7 @@ func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, er
 
 // Reconcile updates the Vizier running in the cluster to match the expected state.
 func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log.WithField("req", req).Info("Reconciling...")
+	log.WithField("req", req).Info("Reconciling Vizier...")
 
 	// Fetch vizier CRD to determine what operation should be performed.
 	var vizier v1alpha1.Vizier
@@ -164,6 +164,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// Check if vizier already exists, if not create a new vizier.
 	if vizier.Status.VizierPhase == v1alpha1.VizierPhaseNone && vizier.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseNone {
 		// We are creating a new vizier instance.
 		err := r.createVizier(ctx, req, &vizier)
@@ -179,23 +180,24 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if we are already monitoring this Vizier.
-	if r.monitor == nil || r.monitor.namespace != req.Namespace {
+	if r.monitor == nil || r.monitor.namespace != req.Namespace || r.monitor.devCloudNamespace != vizier.Spec.DevCloudNamespace {
 		if r.monitor != nil {
 			r.monitor.Quit()
 			r.monitor = nil
 		}
 
 		r.monitor = &VizierMonitor{
-			namespace:      req.Namespace,
-			namespacedName: req.NamespacedName,
-			vzUpdate:       r.Status().Update,
-			vzGet:          r.Get,
-			clientset:      r.Clientset,
-			vzSpecUpdate:   r.Update,
+			namespace:         req.Namespace,
+			namespacedName:    req.NamespacedName,
+			devCloudNamespace: vizier.Spec.DevCloudNamespace,
+			vzUpdate:          r.Status().Update,
+			vzGet:             r.Get,
+			clientset:         r.Clientset,
+			vzSpecUpdate:      r.Update,
 		}
 		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to initialize vizier monitor")
+			log.WithError(err).Fatal("Failed to connect to cloud client")
 		}
 		err = r.monitor.InitAndStartMonitor(cloudClient)
 		if err != nil {
@@ -207,9 +209,9 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, err
 }
 
-// updateVizier updates the vizier instance according to the spec. As of the current moment, we only support updates to the Vizier version.
-// Other updates to the Vizier spec will be ignored.
+// updateVizier updates the vizier instance according to the spec.
 func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier) error {
+	log.Info("Updating Vizier...")
 	checksum, err := getSpecChecksum(vz)
 	if err != nil {
 		return err
