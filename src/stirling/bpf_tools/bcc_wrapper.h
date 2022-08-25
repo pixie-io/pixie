@@ -194,6 +194,11 @@ struct PerfBufferSpec {
   // We specify a maximum total size per PerfBufferSizeCategory, this specifies which size category
   // to count this buffer's size against.
   PerfBufferSizeCategory size_category = PerfBufferSizeCategory::kUncategorized;
+
+  std::string ToString() const {
+    return absl::Substitute("name=$0 size_bytes=$1 size_category=$2", name, size_bytes,
+                            magic_enum::enum_name(size_category));
+  }
 };
 
 /**
