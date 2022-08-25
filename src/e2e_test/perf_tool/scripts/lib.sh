@@ -174,3 +174,71 @@ EOF
 
   rm "${sa_key_path}"
 }
+
+create_bq_dataset_service_account() {
+  echo "Creating service account for bigquery"
+
+  service_account_name="${resource_name}-bq-access"
+  service_account_email="${service_account_name}@${gcloud_project}.iam.gserviceaccount.com"
+  sa_key_path="$(mktemp)"
+  dataset_name="${resource_name_underscores}"
+  secrets_name="${resource_name}-bq-secrets"
+
+  gcloud iam service-accounts create \
+    --project="${gcloud_project}" \
+    "${service_account_name}" \
+    --display-name="${service_account_name}"
+
+  gcloud iam service-accounts keys create \
+    --project="${gcloud_project}" \
+    "${sa_key_path}" \
+    --iam-account="${service_account_email}"
+
+  echo "Creating bigquery dataset"
+
+  bq --location="${gcloud_region}" mk \
+    --dataset \
+    --description="Dataset to store perf experiment results" \
+    "${gcloud_project}:${dataset_name}"
+
+  # Add service account as an OWNER for the dataset.
+  tmppath="$(mktemp)"
+  bq --location="${gcloud_region}" show \
+    --format=json \
+    "${gcloud_project}:${dataset_name}" \
+    | jq '.access += [{"role": "OWNER","userByEmail": "'"${service_account_email}"'"}]' \
+    > "${tmppath}"
+
+  bq --location="${gcloud_region}" update \
+    --source "${tmppath}" \
+    "${gcloud_project}:${dataset_name}"
+
+  rm "${tmppath}"
+
+  secret_path="${credentials_path}/bq_secrets.yaml"
+  kubectl create secret generic \
+    -n "${namespace}" \
+    --dry-run="client" \
+    --output="yaml" \
+    "${secrets_name}" \
+    --from-file="bq.client.default.credentials_file=${sa_key_path}" \
+    > "${secret_path}"
+
+  encrypt "${secret_path}"
+
+  rm "${sa_key_path}"
+
+  cat << EOF > "${k8s_path}/bq_config.yaml"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: px-perf-bq-config
+data:
+  PL_BQ_PROJECT: ${gcloud_project}
+  PL_BQ_DATASET: ${dataset_name}
+  PL_BQ_SA_KEY_PATH: "/creds/bq.client.default.credentials_file"
+  PL_BQ_RESULTS_TABLE: "results"
+  PL_BQ_SPECS_TABLE: "specs"
+EOF
+}

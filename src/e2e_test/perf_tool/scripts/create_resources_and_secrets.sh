@@ -34,3 +34,4 @@ source "${workspace}/src/e2e_test/perf_tool/scripts/lib.sh"
 
 create_service_tls_certs
 create_postgres_instance
+create_bq_dataset_service_account

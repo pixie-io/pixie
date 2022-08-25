@@ -6,6 +6,7 @@ commonLabels:
 namespace: px-perf
 resources:
 - db_config.yaml
+- bq_config.yaml
 - tls_config.yaml
 - kuberesolver_role.yaml
 - db_reader_role.yaml
@@ -16,6 +17,8 @@ resources:
 - clustermgr_service.yaml
 - builder_deployment.yaml
 - builder_service.yaml
+- runner_deployment.yaml
+- runner_service.yaml
 patches:
 - path: db_sidecar.yaml
   target:
