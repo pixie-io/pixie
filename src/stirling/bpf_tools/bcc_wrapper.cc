@@ -28,6 +28,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/perf/scoped_timer.h"
 #include "src/common/system/config.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -165,9 +166,13 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
 
   PL_RETURN_IF_ERROR(MountDebugFS());
 
-  auto init_res = bpf_.init(std::string(bpf_program), cflags);
-  if (!init_res.ok()) {
-    return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
+  {
+    LOG(INFO) << "Initializing BPF program ...";
+    ScopedTimer timer("init_bpf_program");
+    auto init_res = bpf_.init(std::string(bpf_program), cflags);
+    if (!init_res.ok()) {
+      return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
+    }
   }
   return Status::OK();
 }
