@@ -800,6 +800,10 @@ func (vs *fakeVizierServiceClient) HealthCheck(ctx context.Context, in *vizierpb
 	return nil, errors.New("Not implemented")
 }
 
+func (vs *fakeVizierServiceClient) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest, opts ...grpc.CallOption) (*vizierpb.GenerateOTelScriptResponse, error) {
+	return nil, errors.New("Not implemented")
+}
+
 func TestScriptRunner_StoreResults(t *testing.T) {
 	marshalMust := func(a *types.Any, _ error) *types.Any {
 		return a

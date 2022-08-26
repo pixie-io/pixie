@@ -893,6 +893,52 @@ export namespace HealthCheckResponse {
   }
 }
 
+export class GenerateOTelScriptRequest extends jspb.Message {
+  getClusterId(): string;
+  setClusterId(value: string): GenerateOTelScriptRequest;
+
+  getPxlScript(): string;
+  setPxlScript(value: string): GenerateOTelScriptRequest;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GenerateOTelScriptRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: GenerateOTelScriptRequest): GenerateOTelScriptRequest.AsObject;
+  static serializeBinaryToWriter(message: GenerateOTelScriptRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GenerateOTelScriptRequest;
+  static deserializeBinaryFromReader(message: GenerateOTelScriptRequest, reader: jspb.BinaryReader): GenerateOTelScriptRequest;
+}
+
+export namespace GenerateOTelScriptRequest {
+  export type AsObject = {
+    clusterId: string,
+    pxlScript: string,
+  }
+}
+
+export class GenerateOTelScriptResponse extends jspb.Message {
+  getStatus(): Status | undefined;
+  setStatus(value?: Status): GenerateOTelScriptResponse;
+  hasStatus(): boolean;
+  clearStatus(): GenerateOTelScriptResponse;
+
+  getOtelScript(): string;
+  setOtelScript(value: string): GenerateOTelScriptResponse;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): GenerateOTelScriptResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: GenerateOTelScriptResponse): GenerateOTelScriptResponse.AsObject;
+  static serializeBinaryToWriter(message: GenerateOTelScriptResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): GenerateOTelScriptResponse;
+  static deserializeBinaryFromReader(message: GenerateOTelScriptResponse, reader: jspb.BinaryReader): GenerateOTelScriptResponse;
+}
+
+export namespace GenerateOTelScriptResponse {
+  export type AsObject = {
+    status?: Status.AsObject,
+    otelScript: string,
+  }
+}
+
 export class DebugLogRequest extends jspb.Message {
   getClusterId(): string;
   setClusterId(value: string): DebugLogRequest;

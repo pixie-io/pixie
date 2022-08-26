@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -326,6 +327,11 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	log.Infof("Launched query: %s", queryExec.QueryID())
 
 	return queryExec.Wait()
+}
+
+// GenerateOTelScript generates an OTel script for the given DataFrame script.
+func (s *Server) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // TransferResultChunk implements the API that allows the query broker receive streamed results

@@ -73,6 +73,46 @@ export class VizierServiceClient {
       this.methodInfoHealthCheck);
   }
 
+  methodInfoGenerateOTelScript = new grpcWeb.AbstractClientBase.MethodInfo(
+    src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse,
+    (request: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptRequest) => {
+      return request.serializeBinary();
+    },
+    src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse.deserializeBinary
+  );
+
+  generateOTelScript(
+    request: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptRequest,
+    metadata: grpcWeb.Metadata | null): Promise<src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse>;
+
+  generateOTelScript(
+    request: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptRequest,
+    metadata: grpcWeb.Metadata | null,
+    callback: (err: grpcWeb.Error,
+               response: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse) => void): grpcWeb.ClientReadableStream<src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse>;
+
+  generateOTelScript(
+    request: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptRequest,
+    metadata: grpcWeb.Metadata | null,
+    callback?: (err: grpcWeb.Error,
+               response: src_api_proto_vizierpb_vizierapi_pb.GenerateOTelScriptResponse) => void) {
+    if (callback !== undefined) {
+      return this.client_.rpcCall(
+        this.hostname_ +
+          '/px.api.vizierpb.VizierService/GenerateOTelScript',
+        request,
+        metadata || {},
+        this.methodInfoGenerateOTelScript,
+        callback);
+    }
+    return this.client_.unaryCall(
+    this.hostname_ +
+      '/px.api.vizierpb.VizierService/GenerateOTelScript',
+    request,
+    metadata || {},
+    this.methodInfoGenerateOTelScript);
+  }
+
 }
 
 export class VizierDebugServiceClient {

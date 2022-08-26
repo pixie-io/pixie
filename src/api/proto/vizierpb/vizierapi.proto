@@ -430,6 +430,18 @@ message HealthCheckResponse {
   Status status = 1;
 }
 
+message GenerateOTelScriptRequest {
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
+  string pxl_script = 2;
+}
+
+message GenerateOTelScriptResponse {
+  // The Status of the request. Empty status implies that execution was successful
+  // An non-empty status may indicate a compiler error, error while generating the otel script.
+  Status status = 1;
+  string otel_script = 2 [ (gogoproto.customname) = "OTelScript" ];
+}
+
 // The API that manages all communication with a particular Vizier cluster.
 service VizierService {
   // Execute a script on the Vizier cluster and stream the results of that execution.
@@ -437,6 +449,11 @@ service VizierService {
   // Start a stream to receive health updates from the Vizier service. For most practical
   // purposes, users should only need `ExecuteScript()` and can safely ignore this call.
   rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse);
+  // GenerateScript takes in a script that returns DataFrames and generates an OTel Export script
+  // that sends the DataFrames over to an OpenTelemetry collector. If the input script does
+  // not return a DataFrame, an error is returned.
+  // If the generator is unable to export columns from any DataFrames, an error is returned.
+  rpc GenerateOTelScript(GenerateOTelScriptRequest) returns (GenerateOTelScriptResponse);
 }
 
 message DebugLogRequest {

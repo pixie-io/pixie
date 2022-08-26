@@ -90,6 +90,10 @@ func (m *MockVzServer) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierp
 	return nil
 }
 
+func (m *MockVzServer) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 type testState struct {
 	t        *testing.T
 	lis      *bufconn.Listener

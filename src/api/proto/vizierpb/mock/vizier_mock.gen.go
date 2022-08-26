@@ -369,6 +369,26 @@ func (mr *MockVizierServiceClientMockRecorder) ExecuteScript(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteScript", reflect.TypeOf((*MockVizierServiceClient)(nil).ExecuteScript), varargs...)
 }
 
+// GenerateOTelScript mocks base method.
+func (m *MockVizierServiceClient) GenerateOTelScript(ctx context.Context, in *vizierpb.GenerateOTelScriptRequest, opts ...grpc.CallOption) (*vizierpb.GenerateOTelScriptResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GenerateOTelScript", varargs...)
+	ret0, _ := ret[0].(*vizierpb.GenerateOTelScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateOTelScript indicates an expected call of GenerateOTelScript.
+func (mr *MockVizierServiceClientMockRecorder) GenerateOTelScript(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateOTelScript", reflect.TypeOf((*MockVizierServiceClient)(nil).GenerateOTelScript), varargs...)
+}
+
 // HealthCheck mocks base method.
 func (m *MockVizierServiceClient) HealthCheck(ctx context.Context, in *vizierpb.HealthCheckRequest, opts ...grpc.CallOption) (vizierpb.VizierService_HealthCheckClient, error) {
 	m.ctrl.T.Helper()
@@ -670,6 +690,21 @@ func (m *MockVizierServiceServer) ExecuteScript(arg0 *vizierpb.ExecuteScriptRequ
 func (mr *MockVizierServiceServerMockRecorder) ExecuteScript(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteScript", reflect.TypeOf((*MockVizierServiceServer)(nil).ExecuteScript), arg0, arg1)
+}
+
+// GenerateOTelScript mocks base method.
+func (m *MockVizierServiceServer) GenerateOTelScript(arg0 context.Context, arg1 *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateOTelScript", arg0, arg1)
+	ret0, _ := ret[0].(*vizierpb.GenerateOTelScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateOTelScript indicates an expected call of GenerateOTelScript.
+func (mr *MockVizierServiceServerMockRecorder) GenerateOTelScript(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateOTelScript", reflect.TypeOf((*MockVizierServiceServer)(nil).GenerateOTelScript), arg0, arg1)
 }
 
 // HealthCheck mocks base method.

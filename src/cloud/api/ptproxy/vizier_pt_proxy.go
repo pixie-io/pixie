@@ -20,6 +20,7 @@ package ptproxy
 
 import (
 	"context"
+	"errors"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
@@ -95,6 +96,11 @@ func (v *VizierPassThroughProxy) DebugLog(req *vizierpb.DebugLogRequest, srv viz
 	}
 
 	return rp.Run()
+}
+
+// GenerateOTelScript is the GRPC method to generate an OTel script from a DataFrame script.
+func (v *VizierPassThroughProxy) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.
