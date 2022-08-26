@@ -26,42 +26,43 @@ namespace md {
 
 std::string PodInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute("$0<Pod:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(), name(),
-                          uid(), state);
+  return absl::Substitute("$0<Pod:ns=$1:name=$2:uid=$3:state=$4:start=$5:stop=$6>", Indent(indent),
+                          ns(), name(), uid(), state, start_time_ns(), stop_time_ns());
 }
 
 std::string ContainerInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute("$0<Container:cid=$1:name=$2:pod_id=$3:state=$4>", Indent(indent), cid(),
-                          name(), pod_id(), state);
+  return absl::Substitute("$0<Container:cid=$1:name=$2:pod_id=$3:state=$4:start=$5:stop=$6>",
+                          Indent(indent), cid(), name(), pod_id(), state, start_time_ns(),
+                          stop_time_ns());
 }
 
 std::string ServiceInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute("$0<Service:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(), name(),
-                          uid(), state);
+  return absl::Substitute("$0<Service:ns=$1:name=$2:uid=$3:state=$4:start=$5:stop=$6>",
+                          Indent(indent), ns(), name(), uid(), state, start_time_ns(),
+                          stop_time_ns());
 }
 
 std::string NamespaceInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute("$0<Namespace:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(),
-                          name(), uid(), state);
+  return absl::Substitute("$0<Namespace:ns=$1:name=$2:uid=$3:state=$4:start=$5:stop=$6>",
+                          Indent(indent), ns(), name(), uid(), state, start_time_ns(),
+                          stop_time_ns());
 }
 
 std::string ReplicaSetInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute(
-      "$0<ReplicaSet:ns=$1:name=$2:uid=$3:state=$4:requested=$5:replicas=$6:ready_replicas:$7>",
-      Indent(indent), ns(), name(), uid(), state, requested_replicas(), replicas(),
-      ready_replicas());
+  return absl::Substitute("$0<ReplicaSet:ns=$1:name=$2:uid=$3:state=$4:start=$5:stop=$6>",
+                          Indent(indent), ns(), name(), uid(), state, start_time_ns(),
+                          stop_time_ns());
 }
 
 std::string DeploymentInfo::DebugString(int indent) const {
   std::string state = stop_time_ns() != 0 ? "S" : "R";
-  return absl::Substitute(
-      "$0<Deployment:ns=$1:name=$2:uid=$3:state=$4:requested=$5:replicas=$6:ready_replicas:$7>",
-      Indent(indent), ns(), name(), uid(), state, requested_replicas(), replicas(),
-      ready_replicas());
+  return absl::Substitute("$0<Deployment:ns=$1:name=$2:uid=$3:state=$4:start=$5:stop=$6>",
+                          Indent(indent), ns(), name(), uid(), state, start_time_ns(),
+                          stop_time_ns());
 }
 
 }  // namespace md

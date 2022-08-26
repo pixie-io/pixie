@@ -53,12 +53,12 @@ TEST(PodInfo, debug_string) {
                    {{PodConditionType::kReady, ConditionStatus::kTrue}}, "pod phase message",
                    "pod phase reason", "testnode", "testhost", "1.1.1.1");
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R>", Indent(i)),
+    EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R:start=0:stop=0>", Indent(i)),
               pod_info.DebugString(i));
   }
 
   pod_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<Pod:ns=pl:name=pod1:uid=123:state=S>", pod_info.DebugString());
+  EXPECT_EQ("<Pod:ns=pl:name=pod1:uid=123:state=S:start=0:stop=1000>", pod_info.DebugString());
 }
 
 TEST(PodInfo, add_delete_containers) {
@@ -140,13 +140,16 @@ TEST(ContainerInfo, debug_string) {
                       ContainerType::kDocker, "container state message", "container state reason",
                       128);
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:name=containername:pod_id=:state=R>",
-                               Indent(i)),
-              cinfo.DebugString(i));
+    EXPECT_EQ(
+        absl::Substitute(
+            "$0<Container:cid=container1:name=containername:pod_id=:state=R:start=128:stop=0>",
+            Indent(i)),
+        cinfo.DebugString(i));
   }
 
   cinfo.set_stop_time_ns(1000);
-  EXPECT_EQ("<Container:cid=container1:name=containername:pod_id=:state=S>", cinfo.DebugString());
+  EXPECT_EQ("<Container:cid=container1:name=containername:pod_id=:state=S:start=128:stop=1000>",
+            cinfo.DebugString());
 }
 
 TEST(ContainerInfo, pids_are_time_sorted) {
@@ -219,12 +222,14 @@ TEST(ServiceInfo, basic_accessors) {
 TEST(ServiceInfo, debug_string) {
   ServiceInfo service_info("123", "pl", "service1");
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute("$0<Service:ns=pl:name=service1:uid=123:state=R>", Indent(i)),
+    EXPECT_EQ(absl::Substitute("$0<Service:ns=pl:name=service1:uid=123:state=R:start=0:stop=0>",
+                               Indent(i)),
               service_info.DebugString(i));
   }
 
   service_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<Service:ns=pl:name=service1:uid=123:state=S>", service_info.DebugString());
+  EXPECT_EQ("<Service:ns=pl:name=service1:uid=123:state=S:start=0:stop=1000>",
+            service_info.DebugString());
 }
 
 TEST(ServiceInfo, clone) {
@@ -274,15 +279,12 @@ TEST(ReplicaSetInfo, debug_string) {
   ReplicaSetInfo rs_info("123", "pl", "rs1", 4, 3, 2, 2, 1, 4, {{"ready", ConditionStatus::kTrue}});
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(
-        absl::Substitute(
-            "$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R:requested=4:replicas=4:ready_replicas:2>",
-            Indent(i)),
+        absl::Substitute("$0<ReplicaSet:ns=pl:name=rs1:uid=123:state=R:start=0:stop=0>", Indent(i)),
         rs_info.DebugString(i));
   }
 
   rs_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S:requested=4:replicas=4:ready_replicas:2>",
-            rs_info.DebugString());
+  EXPECT_EQ("<ReplicaSet:ns=pl:name=rs1:uid=123:state=S:start=0:stop=1000>", rs_info.DebugString());
 }
 
 TEST(ReplicaSetInfo, add_delete_owners) {
@@ -358,14 +360,13 @@ TEST(DeploymentInfo, debug_string) {
                            {DeploymentConditionType::kProgressing, ConditionStatus::kTrue}});
 
   for (int i = 0; i < 5; ++i) {
-    EXPECT_EQ(absl::Substitute("$0<Deployment:ns=pl:name=dep1:uid=123:state=R:requested=4:replicas="
-                               "4:ready_replicas:3>",
+    EXPECT_EQ(absl::Substitute("$0<Deployment:ns=pl:name=dep1:uid=123:state=R:start=0:stop=0>",
                                Indent(i)),
               dep_info.DebugString(i));
   }
 
   dep_info.set_stop_time_ns(1000);
-  EXPECT_EQ("<Deployment:ns=pl:name=dep1:uid=123:state=S:requested=4:replicas=4:ready_replicas:3>",
+  EXPECT_EQ("<Deployment:ns=pl:name=dep1:uid=123:state=S:start=0:stop=1000>",
             dep_info.DebugString());
 }
 

@@ -70,7 +70,7 @@ class K8sMetadataObject {
         start_time_ns_(start_time_ns),
         stop_time_ns_(stop_time_ns) {}
 
-  K8sObjectType type() { return type_; }
+  K8sObjectType type() const { return type_; }
 
   const UID& uid() const { return uid_; }
 

@@ -160,6 +160,26 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
     str += absl::Substitute("$0\n", it.second->DebugString(indent_level + 1));
   }
   str += "\n";
+  str += prefix + "Name Based Maps:\n";
+  for (const auto& [k, v] : namespaces_by_name_) {
+    str += absl::Substitute("namespace_id: $0, ns: $1, name: $2\n", v, k.first, k.second);
+  }
+  for (const auto& [k, v] : pods_by_name_) {
+    str += absl::Substitute("pod_id: $0, ns: $1, name: $2\n", v, k.first, k.second);
+  }
+  for (const auto& [k, v] : services_by_name_) {
+    str += absl::Substitute("service_id: $0, ns: $1, name: $2\n", v, k.first, k.second);
+  }
+  for (const auto& [k, v] : replica_sets_by_name_) {
+    str += absl::Substitute("replicaset_id: $0, ns: $1, name: $2\n", v, k.first, k.second);
+  }
+  for (const auto& [k, v] : deployments_by_name_) {
+    str += absl::Substitute("deployment_id: $0, ns: $1, name: $2\n", v, k.first, k.second);
+  }
+  for (const auto& [k, v] : containers_by_name_) {
+    str += absl::Substitute("cid: $0, name: $1\n", v, k);
+  }
+  str += "\n";
   str += prefix + "IPs:\n";
   for (const auto& [k, v] : pods_by_ip_) {
     str += absl::Substitute("pod_id: $0, ip: $1\n", v, k);
@@ -167,7 +187,6 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   for (const auto& [k, v] : services_by_cluster_ip_) {
     str += absl::Substitute("service_id: $0, cluster_ip: $1\n", v, k);
   }
-
   str += prefix + absl::Substitute("PodCIDRs($0): ", pod_cidrs_.size());
   for (const auto& cidr : pod_cidrs_) {
     str += absl::Substitute("$0,", ToString(cidr));
