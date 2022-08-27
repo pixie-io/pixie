@@ -28,11 +28,13 @@ linters:
   - nonamedreturns
   - predeclared
   - staticcheck
-  - structcheck
+  # https://github.com/golangci/golangci-lint/issues/2649
+  # - structcheck
   - typecheck
   - unused
   - varcheck
-  - wastedassign
+  # https://github.com/golangci/golangci-lint/issues/2649
+  # - wastedassign
   - whitespace
   disable:
   # We run goimports which includes gofmt.

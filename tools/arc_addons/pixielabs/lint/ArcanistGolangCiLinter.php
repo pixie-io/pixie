@@ -81,6 +81,20 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
 
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $report_dom = new DOMDocument();
+
+    if (!$stdout) {
+      // Lack of a XML output usually means that the linter failed to even run and
+      // there some larger underlying error. This output ends up in stderr, so just
+      // print it.
+      $message = id(new ArcanistLintMessage())
+          ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
+          ->setPath($path)
+          ->setCode('E000')
+          ->setName('golangci-lint')
+          ->setDescription($stderr);
+      return [$message];
+    }
+
     $ok = @$report_dom->loadXML($stdout);
 
     if (!$ok) {
