@@ -108,7 +108,8 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, this->server_.process_pid());
 
-    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+    std::vector<http::Record> records =
+        ToRecordVector<http::Record>(record_batch, target_record_indices);
 
     // TODO(oazizi): Add headers checking too.
     http::Record expected_record = {};
@@ -144,7 +145,8 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, this->server_.process_pid());
 
-    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+    std::vector<http::Record> records =
+        ToRecordVector<http::Record>(record_batch, target_record_indices);
 
     // TODO(oazizi): Add headers checking too.
     http::Record expected_record = {};

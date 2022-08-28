@@ -33,6 +33,7 @@
 #include "src/stirling/source_connectors/socket_tracer/mux_table.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -42,8 +43,10 @@ namespace stirling {
 
 namespace mux = protocols::mux;
 
+using ::px::stirling::testing::EqMuxRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::testing::AllOf;
 using ::testing::UnorderedElementsAre;
@@ -132,19 +135,6 @@ mux::Record RecordWithType(mux::Type req_type) {
   return r;
 }
 
-std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
-                                          int32_t pid) {
-  std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPID(record_batch, kMuxUPIDIdx, pid);
-  return ToRecordVector(record_batch, target_record_indices);
-}
-
-inline auto EqMux(const mux::Frame& x) { return Field(&mux::Frame::type, ::testing::Eq(x.type)); }
-
-inline auto EqMuxRecord(const mux::Record& x) {
-  return AllOf(Field(&mux::Record::req, EqMux(x.req)), Field(&mux::Record::resp, EqMux(x.resp)));
-}
-
 //-----------------------------------------------------------------------------
 // Test Scenarios
 //-----------------------------------------------------------------------------
@@ -169,7 +159,8 @@ TEST_F(MuxTraceTest, Capture) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMuxTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  std::vector<mux::Record> server_records = GetTargetRecords(record_batch, server_.process_pid());
+  std::vector<mux::Record> server_records =
+      GetTargetRecords<mux::Record>(record_batch, server_.process_pid());
 
   mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
   mux::Record tinit = RecordWithType(mux::Type::kTinit);

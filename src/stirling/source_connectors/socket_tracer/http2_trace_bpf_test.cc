@@ -120,7 +120,7 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
                                   resp_status, resp_message, resp_body);
     }
 
-    std::vector<http::Record> records = ToRecordVector(rb, target_record_indices);
+    std::vector<http::Record> records = ToRecordVector<http::Record>(rb, target_record_indices);
 
     // TODO(oazizi): Add headers checking too.
     http::Record expected_record = {};
@@ -186,7 +186,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   EXPECT_THAT(resp_body_sizes, UnorderedElementsAre(147, 150, 1439));
 
   {
-    std::vector<http::Record> records = ToRecordVector(rb, target_record_indices);
+    std::vector<http::Record> records = ToRecordVector<http::Record>(rb, target_record_indices);
 
     EXPECT_THAT(records, SizeIs(3));
 
