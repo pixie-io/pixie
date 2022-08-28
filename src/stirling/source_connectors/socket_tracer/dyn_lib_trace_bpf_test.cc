@@ -183,7 +183,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
-      std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
+      std::vector<http::Record> records = GetTargetRecords<http::Record>(record_batch, worker_pid);
 
       EXPECT_THAT(records,
                   UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
@@ -192,7 +192,8 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 
     // Check client-side tracing results.
     {
-      std::vector<http::Record> records = GetTargetRecords(record_batch, client.process_pid());
+      std::vector<http::Record> records =
+          GetTargetRecords<http::Record>(record_batch, client.process_pid());
 
       EXPECT_THAT(records,
                   UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),

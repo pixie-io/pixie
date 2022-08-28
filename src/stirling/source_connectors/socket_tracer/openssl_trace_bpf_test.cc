@@ -107,7 +107,8 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
     std::vector<size_t> server_record_indices =
         FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
-    std::vector<http::Record> http_records = ToRecordVector(record_batch, server_record_indices);
+    std::vector<http::Record> http_records =
+        ToRecordVector<http::Record>(record_batch, server_record_indices);
     std::vector<std::string> remote_addresses =
         testing::GetRemoteAddrs(record_batch, server_record_indices);
     return {std::move(http_records), std::move(remote_addresses)};
