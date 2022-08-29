@@ -20,10 +20,13 @@ package httpclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -110,12 +113,37 @@ func (c *HTTPSeqClient) PrintStats() error {
 func (c *HTTPSeqClient) worker(wg *sync.WaitGroup, jobs <-chan int, results chan<- error) {
 	defer wg.Done()
 
+	d := net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	u, err := url.Parse(c.addr)
+	if err != nil {
+		results <- err
+		return
+	}
+	conn, err := d.DialContext(context.Background(), "tcp", u.Host)
+	if err != nil {
+		results <- err
+		return
+	}
+	defer conn.Close()
+
+	t := &http.Transport{
+		DialContext: func(context.Context, string, string) (net.Conn, error) {
+			return conn, nil
+		},
+	}
+	client := &http.Client{
+		Transport: t,
+	}
+
 	for j := range jobs {
-		results <- makeSingleRequest(c.addr, j, c.reqSize, c.respSize)
+		results <- makeSingleRequest(client, c.addr, j, c.reqSize, c.respSize)
 	}
 }
 
-func makeSingleRequest(addr string, seqID, reqSize, respSize int) error {
+func makeSingleRequest(client *http.Client, addr string, seqID, reqSize, respSize int) error {
 	body := struct {
 		SeqID          int    `json:"seq_id"`
 		RespSize       int    `json:"resp_size"`
@@ -132,7 +160,6 @@ func makeSingleRequest(addr string, seqID, reqSize, respSize int) error {
 		return err
 	}
 
-	client := &http.Client{}
 	req, err := http.NewRequest("POST", addr, &buf)
 	if err != nil {
 		return err
