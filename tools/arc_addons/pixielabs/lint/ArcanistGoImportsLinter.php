@@ -86,30 +86,20 @@ final class ArcanistGoImportsLinter extends ArcanistExternalLinter {
 
     $messages = array();
     if ($stdout !== $data) {
-      $lines = explode("\n", $data);
-      $formatted_lines = explode("\n", $stdout);
-      foreach ($lines as $line_idx => $line) {
-        if ($line != $formatted_lines[$line_idx]) {
-          $lines = array_slice($lines, $line_idx);
-          $formatted_lines = array_slice($formatted_lines, $line_idx);
-          break;
-        }
-      }
-
       $desc = sprintf(
           '%s was not formatted correctly. Please setup your '.
           'editor to run goimports on save', $path);
 
       $message = id(new ArcanistLintMessage())
         ->setPath($path)
-        ->setLine($line_idx + 1)
+        ->setLine(1)
         ->setChar(1)
         ->setCode('E00')
         ->setName('goimports')
         ->setDescription($desc)
         ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
-        ->setOriginalText(implode("\n", $lines))
-        ->setReplacementText(implode("\n", $formatted_lines));
+        ->setOriginalText($data)
+        ->setReplacementText($stdout);
 
       $messages[] = $message;
     }
