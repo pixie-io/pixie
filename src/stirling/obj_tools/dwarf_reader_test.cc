@@ -123,11 +123,12 @@ TEST_P(GolangDwarfReaderTest, SourceLanguage) {
     EXPECT_EQ(dwarf_reader->source_language(), llvm::dwarf::DW_LANG_Go);
     EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("go"));
 
-    DwarfReaderTestParam p = GetParam();
-    if (absl::StrContains(p.binary_path, "16")) {
-      EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
-    } else {
+    ASSERT_OK_AND_ASSIGN(const bool uses_regabi, UsesRegABI());
+
+    if (uses_regabi) {
       EXPECT_THAT(dwarf_reader->compiler(), ::testing::HasSubstr("regabi"));
+    } else {
+      EXPECT_THAT(dwarf_reader->compiler(), ::testing::Not(::testing::HasSubstr("regabi")));
     }
   }
 }
