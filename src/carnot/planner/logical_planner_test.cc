@@ -769,6 +769,85 @@ attributes {
 })proto"));
 }
 
+struct ComputeOutputSchemasTestCase {
+  std::string name;
+  std::string pxl;
+  absl::flat_hash_map<std::string, std::string> expected_name_to_output_schema;
+};
+class ComputeOutputSchemasTest
+    : public LogicalPlannerTest,
+      public ::testing::WithParamInterface<ComputeOutputSchemasTestCase> {};
+
+TEST_P(ComputeOutputSchemasTest, test_schemas) {
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  planner::RegistryInfo registry_info;
+  ASSERT_OK(registry_info.Init(info_));
+  ASSERT_OK_AND_ASSIGN(auto compiler_state, CreateCompilerState(state, &registry_info,
+                                                                /* max_output_rows_per_table*/ 0));
+
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+
+  ASSERT_OK_AND_ASSIGN(auto resp, planner->CalculateOutputSchemas(state, GetParam().pxl));
+  for (const auto& [name, expected_schema] : GetParam().expected_name_to_output_schema) {
+    EXPECT_THAT(resp, ::testing::Contains(::testing::Pair(name, EqualsProto(expected_schema))));
+  }
+  EXPECT_EQ(resp.size(), GetParam().expected_name_to_output_schema.size());
+}
+INSTANTIATE_TEST_SUITE_P(ComputeOutputSchemasTestSuite, ComputeOutputSchemasTest,
+                         ::testing::ValuesIn(std::vector<ComputeOutputSchemasTestCase>{
+                             {
+                                 "two_tables",
+                                 R"pxl(import px
+df = px.DataFrame(table='http_events', start_time='-6m')
+df.service = df.ctx['service']
+px.display(df[['service', 'resp_latency_ns']], 'latencies')
+px.display(df[['service', 'req_body']], 'req_body'))pxl",
+                                 {{"latencies", R"proto(
+      columns {
+        column_name: "service"
+        column_type: STRING
+        column_semantic_type: ST_SERVICE_NAME
+      }
+      columns {
+        column_name: "resp_latency_ns"
+        column_type: INT64
+        column_semantic_type: ST_NONE
+      })proto"},
+                                  {"req_body", R"proto(
+      columns {
+        column_name: "service"
+        column_type: STRING
+        column_semantic_type: ST_SERVICE_NAME
+      }
+      columns {
+        column_name: "req_body"
+        column_type: STRING
+        column_semantic_type: ST_NONE
+      })proto"}},
+                             },
+                             {
+                                 "default_output_name",
+                                 R"pxl(import px
+df = px.DataFrame(table='http_events', start_time='-6m')
+df.service = df.ctx['service']
+px.display(df[['service', 'req_body']]))pxl",
+                                 {{"output", R"proto(
+      columns {
+        column_name: "service"
+        column_type: STRING
+        column_semantic_type: ST_SERVICE_NAME
+      }
+      columns {
+        column_name: "req_body"
+        column_type: STRING
+        column_semantic_type: ST_NONE
+      })proto"}},
+                             },
+                         }),
+                         [](const ::testing::TestParamInfo<ComputeOutputSchemasTestCase>& info) {
+                           return info.param.name;
+                         });
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

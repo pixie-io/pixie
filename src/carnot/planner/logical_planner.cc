@@ -157,6 +157,26 @@ StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
   return compiler_.CompileTrace(mutations_req.query_str(), compiler_state.get(), exec_funcs);
 }
 
+StatusOr<absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation>>
+LogicalPlanner::CalculateOutputSchemas(const distributedpb::LogicalPlannerState& logical_state,
+                                       const std::string& pxl_script) {
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<CompilerState> compiler_state,
+      CreateCompilerState(logical_state, registry_info_.get(), /* max_output_rows */ 0));
+
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
+                      compiler_.CompileToIR(pxl_script, compiler_state.get(), {}));
+
+  absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation> output_schemas;
+  for (const auto& n : single_node_plan->FindNodesThatMatch(ExternalGRPCSink())) {
+    auto gsink = static_cast<GRPCSinkIR*>(n);
+    PL_ASSIGN_OR_RETURN(auto relation, gsink->resolved_table_type()->ToRelation());
+    table_store::schemapb::Relation* relation_pb = &output_schemas[gsink->name()];
+    PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
+  }
+  return output_schemas;
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

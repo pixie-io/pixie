@@ -62,6 +62,10 @@ class LogicalPlanner : public NotCopyable {
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::CompileMutationsRequest& mutations_req);
 
+  StatusOr<absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation>>
+  CalculateOutputSchemas(const distributedpb::LogicalPlannerState& logical_state,
+                         const std::string& pxl);
+
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
 
