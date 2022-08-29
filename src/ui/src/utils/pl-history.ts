@@ -23,8 +23,11 @@ import pixieAnalytics from 'app/utils/analytics';
 
 const history = createBrowserHistory();
 
-function showIntercom(path: string): boolean {
-  return path === '/auth/login' || path === '/auth/signup';
+function allowIntercomDefaultLauncher(path: string): boolean {
+  const isEmbedded = isPixieEmbedded();
+  const allowedPaths = ['/auth/login', '/auth/signup'];
+
+  return !isEmbedded && allowedPaths.includes(path);
 }
 
 function sendPageEvent(path: string, search: string) {
@@ -35,7 +38,7 @@ function sendPageEvent(path: string, search: string) {
     {}, // properties
     {
       integrations: {
-        Intercom: { hideDefaultLauncher: !showIntercom(path) },
+        Intercom: { hideDefaultLauncher: !allowIntercomDefaultLauncher(path) },
       },
     }, // options
   );
