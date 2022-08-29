@@ -36,6 +36,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v2"
 
@@ -550,7 +551,10 @@ func (r *runner) start() {
 							},
 						})
 						if err != nil {
-							log.WithError(err).Error("Error while recording cron script execution error")
+							grpcStatus, ok := status.FromError(err)
+							if !ok || grpcStatus.Code() != codes.Unavailable {
+								log.WithError(err).Error("Error while recording cron script execution error")
+							}
 						}
 						break
 					}
@@ -560,7 +564,7 @@ func (r *runner) start() {
 						if err != nil {
 							log.WithError(err).Error("Error while creating timestamp proto")
 						}
-						status, err := VizierStatusToStatus(vzStatus)
+						st, err := VizierStatusToStatus(vzStatus)
 						if err != nil {
 							log.WithError(err).Error("Error converting status")
 						}
@@ -569,11 +573,14 @@ func (r *runner) start() {
 							ScriptID:  utils.ProtoFromUUID(r.scriptID),
 							Timestamp: tsPb,
 							Result: &metadatapb.RecordExecutionResultRequest_Error{
-								Error: status,
+								Error: st,
 							},
 						})
 						if err != nil {
-							log.WithError(err).Error("Error while recording cron script execution error")
+							grpcStatus, ok := status.FromError(err)
+							if !ok || grpcStatus.Code() != codes.Unavailable {
+								log.WithError(err).Error("Error while recording cron script execution error")
+							}
 						}
 						break
 					}
@@ -599,7 +606,10 @@ func (r *runner) start() {
 							},
 						})
 						if err != nil {
-							log.WithError(err).Error("Error recording execution stats")
+							grpcStatus, ok := status.FromError(err)
+							if !ok || grpcStatus.Code() != codes.Unavailable {
+								log.WithError(err).Error("Error recording execution stats")
+							}
 						}
 						break
 					}
