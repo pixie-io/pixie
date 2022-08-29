@@ -462,14 +462,10 @@ StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
   return AttachUProbeTmpl(kGoTLSUProbeTmpls, binary, elf_reader);
 }
 
-// TODO(oazizi/yzhao): Should HTTP uprobes use a different set of perf buffers than the kprobes?
-// That allows the BPF code and companion user-space code for uprobe & kprobe be separated
-// cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
-// because of the mixed & duplicate data events from these 2 sources.
-StatusOr<int> UProbeManager::AttachGoHTTP2Probes(const std::string& binary,
-                                                 obj_tools::ElfReader* elf_reader,
-                                                 obj_tools::DwarfReader* dwarf_reader,
-                                                 const std::vector<int32_t>& pids) {
+StatusOr<int> UProbeManager::AttachGoHTTP2UProbes(const std::string& binary,
+                                                  obj_tools::ElfReader* elf_reader,
+                                                  obj_tools::DwarfReader* dwarf_reader,
+                                                  const std::vector<int32_t>& pids) {
   // Step 1: Update BPF symaddrs for this binary.
   Status s = UpdateGoHTTP2SymAddrs(elf_reader, dwarf_reader, pids);
   if (!s.ok()) {
@@ -832,10 +828,10 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     // Go HTTP2 Probes.
     if (cfg_enable_http2_tracing_) {
       StatusOr<int> attach_status =
-          AttachGoHTTP2Probes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
+          AttachGoHTTP2UProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {
         monitor_.AppendSourceStatusRecord("socket_tracer", attach_status.status(),
-                                          "AttachGoHTTP2Probes");
+                                          "AttachGoHTTP2UProbes");
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());
       } else {

@@ -514,7 +514,7 @@ class UProbeManager {
                                        const std::vector<int32_t>& new_pids);
 
   /**
-   * Attaches the required probes for Go HTTP2 tracing to the specified binary, if it is a
+   * Attaches the required uprobes for Go HTTP2 tracing to the specified binary, if it is a
    * compatible Go binary.
    *
    * @param binary The path to the binary on which to deploy Go HTTP2 probes.
@@ -526,9 +526,9 @@ class UProbeManager {
    *         is not a Go binary or doesn't use a Go HTTP2 library; instead the return value will be
    *         zero.
    */
-  StatusOr<int> AttachGoHTTP2Probes(const std::string& binary, obj_tools::ElfReader* elf_reader,
-                                    obj_tools::DwarfReader* dwarf_reader,
-                                    const std::vector<int32_t>& pids);
+  StatusOr<int> AttachGoHTTP2UProbes(const std::string& binary, obj_tools::ElfReader* elf_reader,
+                                     obj_tools::DwarfReader* dwarf_reader,
+                                     const std::vector<int32_t>& pids);
 
   /**
    * Attaches the required probes for GoTLS tracing to the specified binary, if it is a compatible
