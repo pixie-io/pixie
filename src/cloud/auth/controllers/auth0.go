@@ -33,13 +33,11 @@ import (
 )
 
 const (
-	googleIdentityProvider = "google-oauth2"
-	auth0IdentityProvider  = "auth0"
+	auth0IdentityProvider = "auth0"
 )
 
 func init() {
 	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
-	pflag.String("google_oauth_userinfo_url", "https://www.googleapis.com/oauth2/v2/userinfo", "Google OAuth2 URL for userinfo.")
 	pflag.String("auth0_client_id", "", "Auth0 client ID")
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
@@ -51,41 +49,7 @@ func (a *Auth0Connector) retrieveHostedDomain(ident *auth0Identity) (string, err
 	if ident.Provider != googleIdentityProvider {
 		return "", nil
 	}
-	token := ident.AccessToken
-	client := &http.Client{}
-
-	req, err := http.NewRequest("GET", a.cfg.GoogleOAuth2UserInfoURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization",
-		fmt.Sprintf("Bearer %s", token))
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.New("bad response from google")
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
-
-	if err != nil {
-		return "", err
-	}
-
-	var userInfo struct {
-		// HostedDomain is the hosted G Suite domain of the user. Provided only if the user belongs to a hosted domain.
-		// see https://developers.google.com/identity/protocols/oauth2/openid-connect#an-id-tokens-payload for more info.
-		HostedDomain string `json:"hd,omitempty"`
-	}
-	if err = json.Unmarshal(body, &userInfo); err != nil {
-		return "", err
-	}
-	return userInfo.HostedDomain, nil
+	return retrieveGoogleHostedDomain(ident.AccessToken)
 }
 
 type auth0Identity struct {
@@ -114,7 +78,6 @@ type Auth0Config struct {
 	Auth0UserInfoEndpoint   string
 	Auth0ClientID           string
 	Auth0ClientSecret       string
-	GoogleOAuth2UserInfoURL string
 }
 
 // NewAuth0Config generates and Auth0Config based on env vars and flags.
@@ -127,7 +90,6 @@ func NewAuth0Config() Auth0Config {
 		Auth0UserInfoEndpoint:   auth0Host + "/userinfo",
 		Auth0ClientID:           viper.GetString("auth0_client_id"),
 		Auth0ClientSecret:       viper.GetString("auth0_client_secret"),
-		GoogleOAuth2UserInfoURL: viper.GetString("google_oauth_userinfo_url"),
 	}
 	return cfg
 }

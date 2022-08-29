@@ -20,7 +20,7 @@ go_library(
     name = "controllers",
     srcs = [
         "auth0.go",
-        "domain.go",
+        "hosted_domain.go",
         "hydra_kratos_auth.go",
         "login.go",
         "server.go",
@@ -34,7 +34,6 @@ go_library(
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/shared/idprovider",
         "//src/shared/services/authcontext",
-        "//src/shared/services/handler",
         "//src/shared/services/utils",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
