@@ -42,7 +42,8 @@
 DEFINE_bool(stirling_rescan_for_dlopen, false,
             "If enabled, Stirling will use mmap tracing information to rescan binaries for delay "
             "loaded libraries like OpenSSL");
-DEFINE_bool(stirling_enable_grpc_c_tracing, false,
+DEFINE_bool(stirling_enable_grpc_c_tracing,
+            gflags::BoolFromEnv("STIRLING_ENABLE_GRPC_C_TRACING", false),
             "If true, enable gRPC tracing for C dynamic libraries used for python");
 DEFINE_double(stirling_rescan_exp_backoff_factor, 2.0,
               "Exponential backoff factor used in decided how often to rescan binaries for "
