@@ -437,7 +437,7 @@ func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 		return nil
 	}
 
-	strQuery := `DELETE FROM plugin_retention_scripts WHERE script_id IN (?)`
+	strQuery := `UPDATE plugin_retention_scripts set is_preset=false WHERE script_id IN (?)`
 
 	query, args, err := sqlx.In(strQuery, oldIDs)
 	if err != nil {
@@ -449,14 +449,6 @@ func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 		return err
 	}
 	rows.Close()
-	for _, v := range existingScripts {
-		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
-			ID: utils.ProtoFromUUID(v),
-		})
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }

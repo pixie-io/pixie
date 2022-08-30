@@ -929,11 +929,6 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 				},
 			},
-			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
-				&cronscriptpb.DeleteScriptRequest{
-					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
-				},
-			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script",
@@ -1015,17 +1010,42 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					},
 				},
 			},
-			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
-				&cronscriptpb.DeleteScriptRequest{
-					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440006"),
-				},
-			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script 2",
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig4),
 					FrequencyS: 20,
+				},
+			},
+			expectedPluginScripts: []*controllers.RetentionScript{
+				&controllers.RetentionScript{
+					ScriptName:  "testScript",
+					Description: "This is a script",
+					IsPreset:    false,
+					PluginID:    "test-plugin",
+					ExportURL:   "https://localhost:8080",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data",
+					Description: "This is a script to get dns data",
+					IsPreset:    true,
+					PluginID:    "test-plugin",
+					ExportURL:   "https://url",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "dns data 2",
+					Description: "This is a script to get dns data 2",
+					IsPreset:    true,
+					PluginID:    "test-plugin",
+					ExportURL:   "",
+				},
+				&controllers.RetentionScript{
+					ScriptName:  "old dns data",
+					Description: "This is another script",
+					IsPreset:    false,
+					PluginID:    "test-plugin",
+					ExportURL:   "https://url",
 				},
 			},
 		},
