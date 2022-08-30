@@ -109,7 +109,6 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	rpcReq := &authpb.SignupRequest{
 		AccessToken: params.AccessToken,
-		IdToken:     params.IDToken,
 		InviteToken: params.InviteToken,
 	}
 
@@ -231,7 +230,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		rpcReq := &authpb.LoginRequest{
 			AccessToken:           params.AccessToken,
 			CreateUserIfNotExists: true,
-			IdToken:               params.IDToken,
 			InviteToken:           params.InviteToken,
 		}
 
@@ -343,7 +341,6 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		rpcReq := &authpb.LoginRequest{
 			AccessToken:           params.AccessToken,
 			CreateUserIfNotExists: false,
-			IdToken:               params.IDToken,
 		}
 
 		resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)

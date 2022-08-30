@@ -130,7 +130,6 @@ func TestAuthSignupHandler_IDToken(t *testing.T) {
 
 	expectedAuthServiceReq := &authpb.SignupRequest{
 		AccessToken: "the-token",
-		IdToken:     "the-id-token",
 	}
 
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
@@ -268,7 +267,6 @@ func TestAuthLoginHandler_WithIDToken(t *testing.T) {
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		CreateUserIfNotExists: true,
-		IdToken:               "the-id-token",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()

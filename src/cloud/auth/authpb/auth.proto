@@ -59,16 +59,13 @@ service AuthService {
 message LoginRequest {
   // The OAuth access token.
   string access_token = 1;
-  // The OIDC id_token if the auth provider sends it. If the auth provider doesn't, should be empty string.
-  // Used to propagate the claims of the user from the OAuth provider in a non-fungible manner.
-  string id_token = 5;
   // Automatically create the user if they don't exist.
   bool create_user_if_not_exists = 3;
   // The token containing information about which org the user was invited to join.
   // Must contain info about the org the user is invited to join and be valid for that org.
   string invite_token = 6;
   // Reserved after support accounts were removed.
-  reserved 4;
+  reserved 4, 5;
 }
 
 message LoginReply {
@@ -97,14 +94,11 @@ message LoginReply {
 message SignupRequest {
   // The OAuth access token.
   string access_token = 1;
-  // The OIDC id_token if the auth provider sends it. If the auth provider doesn't, should be empty string.
-  // Used to propagate the claims of the user from the OAuth provider in a non-fungible manner.
-  string id_token = 3;
 
   // The token containing information about which org the user was invited to join.
   // Must contain info about the org the user is invited to join and be valid for that org.
   string invite_token = 4;
-  reserved 2;
+  reserved 2, 3;
 }
 
 message SignupReply {
