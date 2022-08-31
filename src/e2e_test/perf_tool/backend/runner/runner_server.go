@@ -31,6 +31,7 @@ import (
 	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/runner/controllers"
+	"px.dev/pixie/src/e2e_test/perf_tool/backend/runner/runnerenv"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/runner/runnerpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -144,6 +145,23 @@ func main() {
 	bqDataset := mustSetupBigQuery()
 	bqResults := mustCreateResultsTable(bqDataset)
 	bqSpecs := mustCreateSpecsTable(bqDataset)
+
+	notifyClient, err := runnerenv.NewRunnerNotificationServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to create runner service client")
+	}
+	clustermgrClient, err := runnerenv.NewClusterManagerServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to create clustermgr service client")
+	}
+	builderClient, err := runnerenv.NewBuilderServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to create builder service client")
+	}
+
+	_ = notifyClient
+	_ = clustermgrClient
+	_ = builderClient
 
 	svr := controllers.NewServer(bqResults, bqSpecs)
 	s := server.NewPLServerWithOptions(nil, mux, &server.GRPCServerOptions{

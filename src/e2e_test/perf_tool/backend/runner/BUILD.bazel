@@ -25,6 +25,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/e2e_test/perf_tool/backend/runner/controllers",
+        "//src/e2e_test/perf_tool/backend/runner/runnerenv",
         "//src/e2e_test/perf_tool/backend/runner/runnerpb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/healthz",

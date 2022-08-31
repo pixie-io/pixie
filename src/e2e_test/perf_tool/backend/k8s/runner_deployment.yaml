@@ -36,6 +36,8 @@ spec:
             name: px-perf-bq-config
         - configMapRef:
             name: px-perf-tls-config
+        - configMapRef:
+            name: px-perf-service-config
         volumeMounts:
         - name: certs
           mountPath: /certs
