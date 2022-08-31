@@ -53,6 +53,7 @@ void LogSystemInfo() {
       LogFileContents(p);
     }
   }
+  LogFileContents(sysconfig.proc_path() / "cpuinfo");
 }
 
 }  // namespace system
