@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/e2e_test/perf_tool/backend/builder/builderenv"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/builder/builderpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/builder/controllers"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/builder/datastore"
@@ -51,6 +52,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 	d := datastore.NewDatastore(db)
+
+	notifyClient, err := builderenv.NewBuildNotificationServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("failed to connect to coordinator service")
+	}
+
+	_ = notifyClient
 
 	svr := controllers.NewServer(d)
 	s := server.NewPLServerWithOptions(nil, mux, &server.GRPCServerOptions{

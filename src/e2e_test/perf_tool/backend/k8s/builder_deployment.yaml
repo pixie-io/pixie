@@ -38,6 +38,8 @@ spec:
             name: px-perf-db-config
         - configMapRef:
             name: px-perf-tls-config
+        - configMapRef:
+            name: px-perf-service-config
         env:
         - name: PL_POSTGRES_USERNAME
           valueFrom:

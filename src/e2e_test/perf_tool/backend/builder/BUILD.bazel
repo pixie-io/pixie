@@ -25,6 +25,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/shared/pgmigrate",
+        "//src/e2e_test/perf_tool/backend/builder/builderenv",
         "//src/e2e_test/perf_tool/backend/builder/builderpb:service_pl_go_proto",
         "//src/e2e_test/perf_tool/backend/builder/controllers",
         "//src/e2e_test/perf_tool/backend/builder/datastore",
