@@ -654,6 +654,9 @@ class UProbeManager {
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>>
       node_tlswrap_symaddrs_map_;
+  // Key is python gRPC module's md5 hash, value is the corresponding version enum's numeric value.
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, uint64_t>> grpc_c_versions_map_;
+
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>>
       go_goid_map_;
 

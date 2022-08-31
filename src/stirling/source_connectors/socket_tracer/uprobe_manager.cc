@@ -74,6 +74,8 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   node_tlswrap_symaddrs_map_ =
       UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>::Create(
           bcc_, "node_tlswrap_symaddrs_map");
+  grpc_c_versions_map_ =
+      UserSpaceManagedBPFMap<uint32_t, uint64_t>::Create(bcc_, "grpc_c_versions");
   go_goid_map_ = UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>::Create(
       bcc_, "tgid_goid_map");
 }
@@ -674,15 +676,10 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
                                 container_libgrpcc.string(), pid);
   }
   const enum grpc_c_version_t version = iter->second;
-  std::unique_ptr<ebpf::BPFHashTable<uint32_t, uint64_t>> grpc_c_versions_map = nullptr;
-  static constexpr char kGrpcCVersionsName[] = "grpc_c_versions";
-  grpc_c_versions_map = std::make_unique<ebpf::BPFHashTable<uint32_t, uint64_t>>(
-      bcc_->GetHashTable<uint32_t, uint64_t>(kGrpcCVersionsName));
-  VLOG(1) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid, (uint32_t)version);
-  if (!grpc_c_versions_map->update_value(pid, version).ok()) {
-    return error::Internal("Failed to set version of library of pid $0 to $1.", pid,
-                           (uint32_t)version);
-  }
+  VLOG(1) << absl::Substitute("Updating gRPC-C version of pid $0 to $1", pid,
+                              magic_enum::enum_name(version));
+
+  grpc_c_versions_map_->UpdateValue(pid, version);
 
   // Attach the needed probes.
   // This currently works only for non-stripped versions of the shared object.
