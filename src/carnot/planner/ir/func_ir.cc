@@ -88,7 +88,7 @@ Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
       }
       init_args_[idx] = static_cast<DataIR*>(arg);
     } else {
-      args_[idx] = arg;
+      args_[idx - init_args_.size()] = arg;
     }
   }
   PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));

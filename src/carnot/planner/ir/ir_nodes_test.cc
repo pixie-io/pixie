@@ -2163,6 +2163,24 @@ TEST_F(SplitFuncTest, SplitInitArgs) {
   EXPECT_EQ(col, func->args()[0]);
 }
 
+TEST_F(SplitFuncTest, UpdateArgWorksWithSplit) {
+  auto constant = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+  auto col = graph->CreateNode<ColumnIR>(ast, "col4", /*parent_op_idx*/ 0).ValueOrDie();
+  EXPECT_OK(col->SetResolvedType(ValueType::Create(types::INT64, types::ST_NONE)));
+  auto func = graph
+                  ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::add, "+", "add"},
+                                       std::vector<ExpressionIR*>({constant, col}))
+                  .ValueOrDie();
+
+  ASSERT_OK(AddUDFToRegistry("add", types::INT64, {types::INT64}, {types::INT64}));
+  ASSERT_OK(ResolveExpressionType(func, compiler_state_.get(), {}));
+
+  ASSERT_OK(func->UpdateArg(constant, graph->CreateNode<IntIR>(ast, 20).ConsumeValueOrDie()));
+  ASSERT_OK(func->UpdateArg(col, graph->CreateNode<IntIR>(ast, 400).ConsumeValueOrDie()));
+  EXPECT_MATCH(func->init_args()[0], Int(20));
+  EXPECT_MATCH(func->args()[0], Int(400));
+}
+
 }  // namespace planner
 
 }  // namespace carnot
