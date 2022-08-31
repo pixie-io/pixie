@@ -65,7 +65,6 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -77,7 +76,7 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -144,7 +143,6 @@ func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -156,7 +154,7 @@ func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
 		IdentityProvider: googleIdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -196,7 +194,6 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
@@ -213,7 +210,7 @@ func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 		ID:      orgPb,
 		OrgName: "testOrg",
 	}
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -296,7 +293,6 @@ func TestServer_Login_ExistingOrgWithHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
@@ -313,7 +309,7 @@ func TestServer_Login_ExistingOrgWithHostedDomain(t *testing.T) {
 		ID:      orgPb,
 		OrgName: "testOrg",
 	}
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -381,7 +377,6 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@randomorg.com",
@@ -391,7 +386,7 @@ func TestServer_Login_GoogleUser_ImproperHostedDomain(t *testing.T) {
 		AuthProviderID:   authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -437,7 +432,6 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@randomorg.com",
@@ -447,7 +441,7 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 		AuthProviderID:   authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -503,7 +497,6 @@ func TestServer_Login_GoogleUser_ManualOrgNoHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@randomorg.com",
@@ -513,7 +506,7 @@ func TestServer_Login_GoogleUser_ManualOrgNoHostedDomain(t *testing.T) {
 		AuthProviderID:   authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -566,7 +559,6 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
@@ -576,7 +568,7 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 		AuthProviderID: authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
@@ -609,7 +601,6 @@ func TestServer_LoginNewUser_OrgLookupThrowsError(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
@@ -622,7 +613,7 @@ func TestServer_LoginNewUser_OrgLookupThrowsError(t *testing.T) {
 		HostedDomain:     "test.com",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -660,7 +651,6 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@test.com",
@@ -677,7 +667,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 		ID:      orgPb,
 		OrgName: "testOrg",
 	}
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -721,7 +711,7 @@ func TestServer_Login_BadToken(t *testing.T) {
 	defer ctrl.Finish()
 
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(nil, errors.New("bad token"))
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -755,7 +745,6 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -764,7 +753,7 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo1.AuthProviderID).Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1225,7 +1214,6 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 	authProviderID := "github|abcdefg"
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
@@ -1237,7 +1225,7 @@ func TestServer_Signup_LookupHostedDomain(t *testing.T) {
 		HostedDomain:   "abcorg",
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1313,7 +1301,6 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
@@ -1325,7 +1312,7 @@ func TestServer_Signup_FallbackToEmailDomainLookupAfterHostedDomain(t *testing.T
 		HostedDomain:   "abcorg",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1406,7 +1393,6 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "asdf@asdf.com",
@@ -1418,7 +1404,7 @@ func TestServer_Signup_ExistingOrgWithHostedDomain(t *testing.T) {
 		HostedDomain:   "asdf.com",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1491,7 +1477,6 @@ func TestServer_Signup_DoNotCreateOrgForEmptyHostedDomain(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
@@ -1502,7 +1487,7 @@ func TestServer_Signup_DoNotCreateOrgForEmptyHostedDomain(t *testing.T) {
 		Picture:        "something",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1563,7 +1548,6 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
@@ -1573,7 +1557,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 		AuthProviderID: authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1609,7 +1593,6 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@gmail.com",
@@ -1619,7 +1602,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 		AuthProviderID: authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1671,7 +1654,6 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "asdf@asdf.com",
@@ -1682,7 +1664,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 		HostedDomain:   "asdf.com",
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -1740,7 +1722,6 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -1751,7 +1732,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2038,7 +2019,6 @@ func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2050,7 +2030,7 @@ func TestServer_Login_UnverifiedUser_FailsLogin(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
@@ -2088,7 +2068,6 @@ func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2100,7 +2079,7 @@ func TestServer_Signup_UnverifiedUser_FailsLogin(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
@@ -2143,7 +2122,6 @@ func TestServer_Signup_WithInviteToken(t *testing.T) {
 	authProviderID := "github|abcdefg"
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
@@ -2154,7 +2132,7 @@ func TestServer_Signup_WithInviteToken(t *testing.T) {
 		AuthProviderID: authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2244,7 +2222,6 @@ func TestServer_Login_WithInviteToken(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2256,7 +2233,7 @@ func TestServer_Login_WithInviteToken(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2421,7 +2398,6 @@ func TestServer_Login_InviteErrorsIfUserAlreadyBelongsToOrg(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2433,7 +2409,7 @@ func TestServer_Login_InviteErrorsIfUserAlreadyBelongsToOrg(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2480,7 +2456,6 @@ func TestServer_Login_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T) 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@abcorg.com",
@@ -2493,7 +2468,7 @@ func TestServer_Login_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T) 
 		HostedDomain:     "abcorg.com",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2529,7 +2504,6 @@ func TestServer_Signup_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T)
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@abcorg.com",
@@ -2542,7 +2516,7 @@ func TestServer_Signup_PreventFollowingInviteIfUserHasHostedDomain(t *testing.T)
 		HostedDomain:     "abcorg.com",
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2583,7 +2557,6 @@ func TestServer_Login_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2595,7 +2568,7 @@ func TestServer_Login_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2669,7 +2642,6 @@ func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 	authProviderID := "github|abcdefg"
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:          "abc@abcorg.com",
@@ -2679,7 +2651,7 @@ func TestServer_Signup_UnverifiedUserWithInviteLink_CreatesUser(t *testing.T) {
 		AuthProviderID: authProviderID,
 	}
 
-	a.EXPECT().GetUserInfo(authProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
@@ -2742,7 +2714,6 @@ func TestServer_Login_ExistingOrglessUserWithInviteToken(t *testing.T) {
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
 	authProviderID := "github|abc123"
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return(authProviderID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:            "abc@gmail.com",
@@ -2754,7 +2725,7 @@ func TestServer_Login_ExistingOrglessUserWithInviteToken(t *testing.T) {
 		IdentityProvider: auth0IdentityProvider,
 	}
 
-	a.EXPECT().GetUserInfo(fakeUserInfo.AuthProviderID).Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)

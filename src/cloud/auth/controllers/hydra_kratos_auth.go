@@ -75,6 +75,15 @@ func (a *HydraKratosConnector) GetUserInfo(userID string) (*UserInfo, error) {
 	return transformKratosUserInfoToUserInfo(kratosInfo)
 }
 
+// GetUserInfoFromAccessToken fetches and returns the UserInfo for the given access token.
+func (a *HydraKratosConnector) GetUserInfoFromAccessToken(accessToken string) (*UserInfo, error) {
+	userID, err := a.GetUserIDFromToken(accessToken)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetUserInfo(userID)
+}
+
 // CreateIdentity creates an identity for the passed in email.
 func (a *HydraKratosConnector) CreateIdentity(email string) (*CreateIdentityResponse, error) {
 	resp, err := a.Client.CreateIdentity(context.Background(), email)

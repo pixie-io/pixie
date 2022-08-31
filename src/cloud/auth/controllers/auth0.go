@@ -277,6 +277,15 @@ func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 	return u, nil
 }
 
+// GetUserInfoFromAccessToken fetches and returns the UserInfo for the given access token.
+func (a *Auth0Connector) GetUserInfoFromAccessToken(accessToken string) (*UserInfo, error) {
+	userID, err := a.GetUserIDFromToken(accessToken)
+	if err != nil {
+		return nil, err
+	}
+	return a.GetUserInfo(userID)
+}
+
 // CreateInviteLink implements the AuthProvider interface, but we don't support this functionatlity with Auth0 at the time.
 func (a *Auth0Connector) CreateInviteLink(authProviderID string) (*CreateInviteLinkResponse, error) {
 	return nil, errors.New("pixie's Auth0 implementation does not support inviting users with InviteLinks")

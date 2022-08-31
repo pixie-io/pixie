@@ -54,15 +54,10 @@ func (s *Server) getUserInfoFromToken(accessToken string) (*UserInfo, error) {
 		return nil, status.Error(codes.Unauthenticated, "missing access token")
 	}
 
-	userID, err := s.a.GetUserIDFromToken(accessToken)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "failed to get user ID")
-	}
-
 	// Make request to get user info.
-	userInfo, err := s.a.GetUserInfo(userID)
+	userInfo, err := s.a.GetUserInfoFromAccessToken(accessToken)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to get user info")
+		return nil, status.Error(codes.Unauthenticated, "failed to get user info")
 	}
 
 	return userInfo, nil

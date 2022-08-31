@@ -65,10 +65,8 @@ type CreateIdentityResponse struct {
 
 // AuthProvider interfaces the service we use for auth.
 type AuthProvider interface {
-	// GetUserIDFromToken returns the UserID for the particular auth token.
-	GetUserIDFromToken(token string) (string, error)
-	// GetUserInfo returns the UserInfo for the userID.
-	GetUserInfo(userID string) (*UserInfo, error)
+	// GetUserInfoFromAccessToken fetches and returns the UserInfo for the given access token.
+	GetUserInfoFromAccessToken(accessToken string) (*UserInfo, error)
 	// CreateInviteLinkForIdentity creates an invite link for the specific user, identified by the AuthProviderID.
 	CreateInviteLink(authProviderID string) (*CreateInviteLinkResponse, error)
 	// CreateIdentity will create an identity for the corresponding email.
