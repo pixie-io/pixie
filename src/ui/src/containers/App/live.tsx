@@ -27,6 +27,7 @@ import { generatePath } from 'react-router';
 import { Redirect, Route, Switch } from 'react-router-dom';
 
 import { ClusterContextProvider } from 'app/common/cluster-context';
+import { isPixieEmbedded } from 'app/common/embed-context';
 import OrgContext from 'app/common/org-context';
 import UserContext from 'app/common/user-context';
 import { useSnackbar } from 'app/components';
@@ -94,6 +95,23 @@ const ClusterIDShortcut = ({ match, location }) => {
     { pollInterval: 2500, variables: { id: match.params?.clusterID } },
   );
   const cluster = data?.cluster.clusterName;
+
+  React.useEffect(() => {
+    const cid = match.params?.clusterID;
+    if (cid && !loading && error) {
+      if (isPixieEmbedded()) {
+        window.top.postMessage({
+          error: {
+            message: error.message,
+            context: `Failed to find a name for cluster ID "${cid}", from the URL`,
+          },
+        }, '*');
+      }
+      // Dump to the crash screen
+      throw new Error(`Failed to find a name for clusterID "${cid}"!\nMessage: ${error.message}\n`);
+    }
+  }, [match, loading, error]);
+
   if (cluster == null || loading || error) return null; // Wait for things to be ready
 
   // eslint-disable-next-line react-memo/require-usememo
