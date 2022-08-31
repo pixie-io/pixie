@@ -19,6 +19,7 @@
 package k8smeta
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -35,6 +36,8 @@ const (
 	fullResourceUpdatePrefix  = "/fullResourceUpdate"
 	topicResourceUpdatePrefix = "/resourceUpdate"
 	topicVersionPrefix        = "/topicVersion"
+	labelPodUpdatePrefix      = "/labelPodUpdate" // labelPodUpdatePrefix/<namespace>/<labelKey>/<podName> -> <labelValue>
+	podLabelUpdatePrefix      = "/podLabelUpdate" // podLabelUpdatePrefix/<namespace>/<podName> -> [<labelKeys>]
 	// The topic for partial resource updates, which are not specific to a particular node.
 	unscopedTopic = "unscoped"
 )
@@ -59,6 +62,26 @@ func getTopicResourceUpdateKey(topic string, version int64) string {
 
 func getTopicVersionKey(topic string) string {
 	return path.Join(topicVersionPrefix, topic)
+}
+
+// prefix/<namespace>/<labelKey>/<podName>
+func getNSLabelPodUpdateKey(namespace string, labelKey string, podName string) string {
+	return path.Join(labelPodUpdatePrefix, namespace, labelKey, podName)
+}
+
+// prefix/<namespace>/<labelKey>
+func getNSLabelPrefixKey(namespace string, labelKey string) string {
+	return path.Join(labelPodUpdatePrefix, namespace, labelKey)
+}
+
+// prefix/<namespace>/<podName>
+func getNSPodUpdateKey(namespace string, podName string) string {
+	return path.Join(podLabelUpdatePrefix, namespace, podName)
+}
+
+func labelPodUpdateKeyToPodName(updateKey string) string {
+	keys := strings.Split(updateKey, "/")
+	return keys[len(keys)-1]
 }
 
 func resourceUpdateKeyToUpdateVersion(key string) (int64, error) {
@@ -207,4 +230,132 @@ func (m *Datastore) SetUpdateVersion(topic string, uv int64) error {
 	s := strconv.FormatInt(uv, 10)
 
 	return m.ds.Set(getTopicVersionKey(topic), s)
+}
+
+// SetPodLabels stores the pod labels information. `<namespace>/<labelKey>/<podName>` is the key and
+// `<labelValue>` is the value. The current implementation assumes that the pod resource update contains
+// the ground truth for all the labels on this pod (verified by playing around with the k8s api). If an
+// old label no longer shows up in the current update, it will be deleted from the PodLabelStore.
+func (m *Datastore) SetPodLabels(namespace string, podName string, labels map[string]string) error {
+	nsPodKey := getNSPodUpdateKey(namespace, podName)
+
+	// Get existing labelKeys of this pod.
+	existingKeys := make(map[string]bool)
+	b, err := m.ds.Get(nsPodKey)
+	if err != nil {
+		return err
+	}
+	if b != nil {
+		err = json.Unmarshal(b, &existingKeys)
+		if err != nil {
+			return err
+		}
+	}
+
+	// For each new labelKey, update the nsLabelPod and record the new keys.
+	keys := make(map[string]bool, len(labels))
+	for k, v := range labels {
+		err := m.ds.SetWithTTL(getNSLabelPodUpdateKey(namespace, k, podName), v, resourceUpdateTTL)
+		if err != nil {
+			return err
+		}
+		keys[k] = true
+	}
+
+	// For each existingKey not in the new labelKeys, record nsLabelPod update key and delete all.
+	keysToDelete := make([]string, 0)
+	for k := range existingKeys {
+		if keys[k] {
+			continue
+		}
+		keysToDelete = append(keysToDelete, getNSLabelPodUpdateKey(namespace, k, podName))
+	}
+	if len(keysToDelete) > 0 {
+		err = m.ds.DeleteAll(keysToDelete)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set the nsPodKey with new labelKeys.
+	b, err = json.Marshal(keys)
+	if err != nil {
+		return err
+	}
+	err = m.ds.SetWithTTL(nsPodKey, string(b), resourceUpdateTTL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeletePodLabels deletes the labels information associated with a pod.
+func (m *Datastore) DeletePodLabels(namespace string, podName string) error {
+	nsPodKey := getNSPodUpdateKey(namespace, podName)
+	b, err := m.ds.Get(nsPodKey)
+	if err != nil {
+		return err
+	}
+	// If nsPodKey doesn't exist, we are done.
+	if b == nil {
+		return nil
+	}
+
+	labelKeys := make(map[string]bool)
+	err = json.Unmarshal([]byte(b), &labelKeys)
+	if err != nil {
+		return err
+	}
+
+	// Delete all keys matching podName in the namespace.
+	var keysToDelete []string
+	for labelKey := range labelKeys {
+		keysToDelete = append(keysToDelete, getNSLabelPodUpdateKey(namespace, labelKey, podName))
+	}
+	keysToDelete = append(keysToDelete, nsPodKey)
+	return m.ds.DeleteAll(keysToDelete)
+}
+
+// FetchPodsWithLabelKey gets the names of all the pods that has a certain label key.
+func (m *Datastore) FetchPodsWithLabelKey(namespace string, key string) ([]string, error) {
+	ks, _, err := m.ds.GetWithPrefix(getNSLabelPrefixKey(namespace, key))
+	if err != nil {
+		return nil, err
+	}
+
+	pods := make([]string, 0, len(ks))
+	for _, k := range ks {
+		pods = append(pods, labelPodUpdateKeyToPodName(k))
+	}
+	return pods, nil
+}
+
+// FetchPodsWithLabels gets the names of all the pods whose labels match exactly all the labels provided.
+func (m *Datastore) FetchPodsWithLabels(namespace string, labels map[string]string) ([]string, error) {
+	// pods records the number of label matches for all the pods with keys in labels.
+	pods := make(map[string]int)
+	var result []string
+
+	for lk, lv := range labels {
+		updateKeys, labelValues, err := m.ds.GetWithPrefix(getNSLabelPrefixKey(namespace, lk))
+		if err != nil {
+			return nil, err
+		}
+		for i, v := range labelValues {
+			if lv != string(v) {
+				continue
+			}
+			podName := labelPodUpdateKeyToPodName(updateKeys[i])
+			pods[podName]++
+		}
+	}
+
+	// Filter for pods that matched all the labels.
+	for p := range pods {
+		if pods[p] == len(labels) {
+			result = append(result, p)
+		}
+	}
+
+	return result, nil
 }

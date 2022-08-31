@@ -19,9 +19,11 @@
 package k8smeta
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -335,4 +337,112 @@ func TestDatastore_SetUpdateVersion(t *testing.T) {
 	i, err := strconv.ParseInt(string(savedVersion), 10, 64)
 	require.NoError(t, err)
 	assert.Equal(t, int64(123), i)
+}
+
+func TestDatastore_SetPodLabels(t *testing.T) {
+	db, mds, cleanup := setupMDSTest(t)
+	defer cleanup()
+
+	err := mds.SetPodLabels("namespace1", "my_pod", map[string]string{"app": "my_app", "api/version": "v1"})
+	require.NoError(t, err)
+
+	val, err := db.Get(getNSLabelPodUpdateKey("namespace1", "app", "my_pod"))
+	require.NoError(t, err)
+	assert.Equal(t, "my_app", string(val))
+
+	val, err = db.Get(getNSLabelPodUpdateKey("namespace1", "api/version", "my_pod"))
+	require.NoError(t, err)
+	assert.Equal(t, "v1", string(val))
+
+	val, err = db.Get(getNSPodUpdateKey("namespace1", "my_pod"))
+	require.NoError(t, err)
+	labelKeys := make(map[string]bool)
+	err = json.Unmarshal(val, &labelKeys)
+	require.NoError(t, err)
+	assert.True(t, reflect.DeepEqual(map[string]bool{"app": true, "api/version": true}, labelKeys))
+
+	// Update labels for the pod.
+	err = mds.SetPodLabels("namespace1", "my_pod", map[string]string{"api/version": "v2"})
+	require.NoError(t, err)
+
+	// Check that old label key `app` has been removed.
+	val, err = db.Get(getNSLabelPodUpdateKey("namespace1", "app", "my_pod"))
+	require.NoError(t, err)
+	assert.Nil(t, val)
+
+	// Check that label key `version` has been updated.
+	val, err = db.Get(getNSLabelPodUpdateKey("namespace1", "api/version", "my_pod"))
+	require.NoError(t, err)
+	assert.Equal(t, "v2", string(val))
+}
+
+func TestDatastore_DeletePodLabels(t *testing.T) {
+	db, mds, cleanup := setupMDSTest(t)
+	defer cleanup()
+
+	err := mds.SetPodLabels("namespace1", "my_pod", map[string]string{"app": "my_app", "api/version": "v1"})
+	require.NoError(t, err)
+
+	// Attempt to delete a pod with no labels.
+	err = mds.DeletePodLabels("namespace1", "another_pod")
+	require.NoError(t, err)
+	val, err := db.Get(getNSLabelPodUpdateKey("namespace1", "app", "my_pod"))
+	require.NoError(t, err)
+	assert.Equal(t, "my_app", string(val))
+
+	// Delete a pod with labels.
+	err = mds.DeletePodLabels("namespace1", "my_pod")
+	require.NoError(t, err)
+
+	val, err = db.Get(getNSLabelPodUpdateKey("namespace1", "app", "my_pod"))
+	require.NoError(t, err)
+	assert.Nil(t, val)
+	val, err = db.Get(getNSLabelPodUpdateKey("namespace1", "api/version", "my_pod"))
+	require.NoError(t, err)
+	assert.Nil(t, val)
+	val, err = db.Get(getNSPodUpdateKey("namespace1", "my_pod"))
+	require.NoError(t, err)
+	assert.Nil(t, val)
+}
+
+func TestDataStore_FetchPodsWithLabelKey(t *testing.T) {
+	_, mds, cleanup := setupMDSTest(t)
+	defer cleanup()
+
+	err := mds.SetPodLabels("namespace1", "pod1", map[string]string{"app": "my_app", "version": "v1"})
+	require.NoError(t, err)
+	err = mds.SetPodLabels("namespace1", "pod2", map[string]string{"app": "my_app", "version": "v2", "env": "prod"})
+	require.NoError(t, err)
+
+	pods, err := mds.FetchPodsWithLabelKey("namespace1", "app")
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod1", "pod2"}, pods)
+
+	pods, err = mds.FetchPodsWithLabelKey("namespace1", "env")
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod2"}, pods)
+}
+
+func TestDataStore_FetchPodsWithLabels(t *testing.T) {
+	_, mds, cleanup := setupMDSTest(t)
+	defer cleanup()
+
+	err := mds.SetPodLabels("namespace1", "pod1", map[string]string{"app": "my_app", "version": "v1"})
+	require.NoError(t, err)
+	err = mds.SetPodLabels("namespace1", "pod2", map[string]string{"app": "my_app", "version": "v2", "env": "prod"})
+	require.NoError(t, err)
+	err = mds.SetPodLabels("namespace1", "pod3", map[string]string{"app": "my_app", "version": "v1", "env": "staging"})
+	require.NoError(t, err)
+
+	pods, err := mds.FetchPodsWithLabels("namespace1", map[string]string{"app": "my_app", "version": "v1"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod1", "pod3"}, pods)
+
+	pods, err = mds.FetchPodsWithLabels("namespace1", map[string]string{"env": "prod"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod2"}, pods)
+
+	pods, err = mds.FetchPodsWithLabels("namespace1", map[string]string{"app": "my_app"})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pod1", "pod2", "pod3"}, pods)
 }

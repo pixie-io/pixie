@@ -104,6 +104,19 @@ type Store interface {
 	SetUpdateVersion(topic string, uv int64) error
 }
 
+// PodLabelStore handles storing and fetching data of pods and their associated labels.
+type PodLabelStore interface {
+	// SetPodLabels stores the pod labels information. `<namespace>/<labelKey>/<podName>` is the key and
+	// `<labelValue>` is the value.
+	SetPodLabels(namespace string, podName string, labels map[string]string) error
+	// DeletePodLabels deletes the labels information associated with a pod.
+	DeletePodLabels(namespace string, podName string) error
+	// FetchPodsWithLabelKey gets the names of all the pods that has a certain label key.
+	FetchPodsWithLabelKey(namespace string, key string) ([]string, error)
+	// FetchPodsWithLabels gets the names of all the pods whose labels match exactly all the labels provided.
+	FetchPodsWithLabels(namespace string, labels map[string]string) ([]string, error)
+}
+
 // An UpdateProcessor is responsible for processing an incoming update, such as determining what
 // updates should be persisted and sent to NATS.
 type UpdateProcessor interface {
