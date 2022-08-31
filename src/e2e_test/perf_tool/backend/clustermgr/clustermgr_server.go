@@ -27,6 +27,7 @@ import (
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/e2e_test/perf_tool/backend/clustermgr/clustermgrenv"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/clustermgr/clustermgrpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/clustermgr/controllers"
 	"px.dev/pixie/src/e2e_test/perf_tool/backend/clustermgr/datastore"
@@ -51,6 +52,13 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}
+
+	notifyClient, err := clustermgrenv.NewClusterNotificationServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create coordinator client")
+	}
+
+	_ = notifyClient
 
 	datastore := datastore.NewDatastore(db)
 
