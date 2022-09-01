@@ -81,6 +81,11 @@ StatusOr<std::string> AstToString(const pypa::AstExpr& ast) {
       for (const auto& [i, arg] : Enumerate(call->arguments)) {
         PL_ASSIGN_OR_RETURN(args[i], AstToString(arg));
       }
+      for (const auto& kwarg : call->keywords) {
+        PL_ASSIGN_OR_RETURN(auto value, AstToString(kwarg->value));
+        PL_ASSIGN_OR_RETURN(auto name, AstToString(kwarg->name));
+        args.push_back(absl::Substitute("$0=$1", name, value));
+      }
       return absl::StrCat(function, "(", absl::StrJoin(args, ", "), ")");
     }
     case pypa::AstType::Dict: {

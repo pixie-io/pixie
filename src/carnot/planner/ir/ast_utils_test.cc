@@ -40,7 +40,8 @@ class AstToStringTest : public ::testing::Test,
 
 TEST_P(AstToStringTest, GetPxDisplayLines) {
   Parser parser;
-  // Disable docstrings for the test, otherwise a string as an expression would be considered a docstring.
+  // Disable docstrings for the test, otherwise a string as an expression would be considered a
+  // docstring.
   ASSERT_OK_AND_ASSIGN(auto ast, parser.Parse(GetParam().pxl, /* parse_doc_strings */ false));
   ASSERT_EQ(ast->body->items.size(), 1);
   auto stmt = ast->body->items[0];
@@ -48,21 +49,24 @@ TEST_P(AstToStringTest, GetPxDisplayLines) {
   ASSERT_OK_AND_EQ(AstToString(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr), GetParam().pxl);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    AstToStringTestSuite, AstToStringTest,
-    ::testing::ValuesIn(std::vector<AstToStringTestCase>{{"bin_op", "b + c"},
-                                                         {"bool_op", "b and c"},
-                                                         {"unary_op", "-1"},
-                                                         {"attribute", "px.display"},
-                                                         {"attribute_call", "px.display(blah)"},
-                                                         {"dict", "{'a': 1, 'b': 2}"},
-                                                         {"list", "[1, 2, 3]"},
-                                                         {"tuple", "('a', 'b', 'c')"},
-                                                         {"int", "1"},
-                                                         {"float", "1.1"},
-                                                         {"str", "'a'"},
-                                                         {"subscript", "df['subscript']"}}),
-    [](const ::testing::TestParamInfo<AstToStringTestCase>& info) { return info.param.name; });
+INSTANTIATE_TEST_SUITE_P(AstToStringTestSuite, AstToStringTest,
+                         ::testing::ValuesIn(std::vector<AstToStringTestCase>{
+                             {"bin_op", "b + c"},
+                             {"bool_op", "b and c"},
+                             {"unary_op", "-1"},
+                             {"attribute", "px.display"},
+                             {"attribute_call", "px.display(blah)"},
+                             {"call_kwargs", "display(blah=('ya', ha), jah=1)"},
+                             {"dict", "{'a': 1, 'b': 2}"},
+                             {"list", "[1, 2, 3]"},
+                             {"tuple", "('a', 'b', 'c')"},
+                             {"int", "1"},
+                             {"float", "1.1"},
+                             {"str", "'a'"},
+                             {"subscript", "df['subscript']"}}),
+                         [](const ::testing::TestParamInfo<AstToStringTestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace planner
 }  // namespace carnot
