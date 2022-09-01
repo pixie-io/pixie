@@ -848,6 +848,118 @@ px.display(df[['service', 'req_body']]))pxl",
                            return info.param.name;
                          });
 
+struct PxDisplayParserTestCase {
+  std::string name;
+  std::string pxl;
+  std::string error;
+  std::vector<LogicalPlanner::DisplayLine> expected;
+};
+class PxDisplayParserTest : public LogicalPlannerTest,
+                            public ::testing::WithParamInterface<PxDisplayParserTestCase> {};
+
+TEST_P(PxDisplayParserTest, GetPxDisplayLines) {
+  if (GetParam().error != "") {
+    EXPECT_COMPILER_ERROR(LogicalPlanner::GetPxDisplayLines(GetParam().pxl).status(),
+                          GetParam().error);
+    return;
+  }
+  ASSERT_OK_AND_ASSIGN(auto display_lines, LogicalPlanner::GetPxDisplayLines(GetParam().pxl));
+  ASSERT_EQ(display_lines.size(), GetParam().expected.size());
+
+  for (size_t i = 0; i < display_lines.size(); ++i) {
+    // Compare line, table_name, table_argument, line_number_start, line_number_end.
+    EXPECT_EQ(display_lines[i].line, GetParam().expected[i].line);
+    EXPECT_EQ(display_lines[i].table_name, GetParam().expected[i].table_name);
+    EXPECT_EQ(display_lines[i].table_argument, GetParam().expected[i].table_argument);
+    EXPECT_EQ(display_lines[i].line_number_start, GetParam().expected[i].line_number_start);
+    EXPECT_EQ(display_lines[i].line_number_end, GetParam().expected[i].line_number_end);
+  }
+}
+INSTANTIATE_TEST_SUITE_P(
+    PxDisplayParserTestSuite, PxDisplayParserTest,
+    ::testing::ValuesIn(std::vector<PxDisplayParserTestCase>{
+        {"simple",
+         R"pxl(
+import px
+ndf = px.DataFrame('http_events', start_time='-5m')
+px.display(ndf[['time_', 'service', 'latency_ns']], "http_graph"))pxl",
+         "",
+         {
+             {
+                 R"pxl(px.display(ndf[['time_', 'service', 'latency_ns']], "http_graph"))pxl",
+                 "http_graph",
+                 "ndf[['time_', 'service', 'latency_ns']]",
+                 3,
+                 3,
+             },
+         }},
+        {"multi_line_call",
+         R"pxl(
+import px
+ndf = px.DataFrame('http_events', start_time='-5m')
+px.display(df.groupby(['time_', 'service', 'latency_ns']).agg(
+    {'latency_ns': 'mean'},
+), "http_graph"))pxl",
+         "",
+         {
+             {
+                 R"pxl(px.display(df.groupby(['time_', 'service', 'latency_ns']).agg(
+    {'latency_ns': 'mean'},
+), "http_graph"))pxl",
+                 "http_graph",
+                 R"pxl(df.groupby(['time_', 'service', 'latency_ns']).agg({'latency_ns': 'mean'}))pxl",
+                 3,
+                 5,
+             },
+         }},
+        {"many_display_call",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m')
+px.display(df[['time_', 'service', 'latency_ns']], "http_latency")
+px.display(df[['time_', 'service', 'num_errors']], "http_num_errors")
+px.display(df.head(1), "limited"))pxl",
+         "",
+         {
+             {
+                 R"pxl(px.display(df[['time_', 'service', 'latency_ns']], "http_latency"))pxl",
+                 "http_latency",
+                 "df[['time_', 'service', 'latency_ns']]",
+                 3,
+                 3,
+             },
+             {
+                 R"pxl(px.display(df[['time_', 'service', 'num_errors']], "http_num_errors"))pxl",
+                 "http_num_errors",
+                 "df[['time_', 'service', 'num_errors']]",
+                 4,
+                 4,
+             },
+             {
+                 R"pxl(px.display(df.head(1), "limited"))pxl",
+                 "limited",
+                 "df.head(1)",
+                 5,
+                 5,
+             },
+         }},
+        {"wrong_table_type",
+         R"pxl(
+import px
+ndf = px.DataFrame('http_events', start_time='-5m')
+px.display(ndf[['time_', 'service', 'latency_ns']], "a" + "b"))pxl",
+         "expected second argument to px.display to be a string, received a",
+         {}},
+        {"missing_table_name",
+         R"pxl(
+import px
+ndf = px.DataFrame('http_events', start_time='-5m')
+px.display(ndf[['time_', 'service', 'latency_ns']]))pxl",
+         "expected two arguments to px.display",
+         {}},
+    }),
+    [](const ::testing::TestParamInfo<PxDisplayParserTestCase>& info) { return info.param.name; });
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

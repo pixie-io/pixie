@@ -21,6 +21,8 @@
 #include <utility>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/ir/ast_utils.h"
+#include "src/carnot/planner/parser/parser.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace px {
@@ -175,6 +177,99 @@ LogicalPlanner::CalculateOutputSchemas(const distributedpb::LogicalPlannerState&
     PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
   }
   return output_schemas;
+}
+
+StatusOr<std::vector<LogicalPlanner::DisplayLine>> LogicalPlanner::GetPxDisplayLines(
+    const std::string& script) {
+  // Parse the script into an ast.
+  // Check for any calls to px.display().
+  // Make sure the arguments are expected and valid.
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+  std::vector<LogicalPlanner::DisplayLine> display_lines;
+
+  std::vector<std::string> all_script_lines = absl::StrSplit(script, '\n');
+
+  // We are strictly looking for px.display calls here.
+  for (const auto& [i, stmt] : Enumerate(ast->body->items)) {
+    if (stmt->type != pypa::AstType::ExpressionStatement) {
+      continue;
+    }
+    auto expr = PYPA_PTR_CAST(ExpressionStatement, stmt)->expr;
+    if (expr->type != pypa::AstType::Call) {
+      continue;
+    }
+    auto call = PYPA_PTR_CAST(Call, expr);
+    // We check if the function is an attribute px.display.
+    if (call->function->type != pypa::AstType::Attribute) {
+      continue;
+    }
+    auto function = PYPA_PTR_CAST(Attribute, call->function);
+    if (function->value->type != pypa::AstType::Name) {
+      continue;
+    }
+
+    auto fn_value = PYPA_PTR_CAST(Name, function->value);
+    if (fn_value->id != "px") {
+      continue;
+    }
+
+    if (function->attribute->type != pypa::AstType::Name) {
+      continue;
+    }
+
+    auto fn_attribute = PYPA_PTR_CAST(Name, function->attribute);
+    if (fn_attribute->id != "display") {
+      continue;
+    }
+    // Everything after this will set expectations for the arguments for px.display.
+    // If anything is not as expected, we will return an error instead of skipping.
+
+    // We expect two arguments, the first being a dataframe expression, and the second being a
+    // string.
+
+    if (call->arguments.size() != 2) {
+      return CreateAstError(call, "expected two arguments to px.display, got $0",
+                            call->arguments.size());
+    }
+
+    if (call->arguments[1]->type != pypa::AstType::Str) {
+      return CreateAstError(call->arguments[1],
+                            "expected second argument to px.display to be a string, received a $0",
+                            GetAstTypeName(call->arguments[1]->type));
+    }
+
+    auto first_line = stmt->line - 1;
+    int64_t last_line;
+    if (i == ast->body->items.size() - 1) {
+      last_line = static_cast<int64_t>(all_script_lines.size()) - 1;
+    } else {
+      // Here we assign the last line to be the line before the next statement.
+      // We subtract 2 from the line number of the next statement for the following reasons:
+      // Ast line numbers are 1-indexed (first line is 1), but GetPxDisplayLines is 0-indexed.
+      // So we first have to subtract 1 to convert 1-index to 0-index, then we
+      // subtract 1 again to get the line before the next statement.
+      last_line = ast->body->items[i + 1]->line - 2;
+    }
+
+    auto table_name = PYPA_PTR_CAST(Str, call->arguments[1])->value;
+
+    // Somehow parse this from the string.
+    PL_ASSIGN_OR_RETURN(auto dataframe_argument, AstToString(call->arguments[0]));
+
+    auto statement_str = absl::StrJoin(all_script_lines.begin() + first_line,
+                                       all_script_lines.begin() + last_line + 1, "\n");
+
+    display_lines.push_back(LogicalPlanner::DisplayLine{
+        statement_str,
+        table_name,
+        dataframe_argument,
+        first_line,
+        last_line,
+    });
+  }
+
+  return display_lines;
 }
 
 }  // namespace planner

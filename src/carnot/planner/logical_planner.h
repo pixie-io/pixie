@@ -66,6 +66,25 @@ class LogicalPlanner : public NotCopyable {
   CalculateOutputSchemas(const distributedpb::LogicalPlannerState& logical_state,
                          const std::string& pxl);
 
+  StatusOr<std::string> UniqueVarName(const std::string& script,
+                                      const std::string& base_name) const;
+
+  struct DisplayLine {
+    std::string line;
+    std::string table_name;
+    std::string table_argument;
+    // The zero-indexed line number in the script where the px.display() call starts.
+    int64_t line_number_start;
+    // The zero-indexed line number in the script where the px.display() call ends.
+    // If the call is on a single line, then the end line number is the same as the start line
+    // number.
+    int64_t line_number_end;
+  };
+
+  static StatusOr<std::vector<DisplayLine>> GetPxDisplayLines(const std::string& script);
+
+  StatusOr<std::string> UniqueVarName(const std::string& base_name) const;
+
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
 
