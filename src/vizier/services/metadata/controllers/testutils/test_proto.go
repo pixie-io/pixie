@@ -664,6 +664,48 @@ spec {
 }
 `
 
+// TerminatedPodPb is a protobuf for a terminated pod.
+const TerminatedPodPb = `
+metadata {
+  name: "object_md"
+  uid: "ijkl"
+  resource_version: "1",
+  cluster_name: "a_cluster",
+  owner_references {
+    kind: "pod"
+    name: "test"
+    uid: "abcd"
+  }
+  creation_timestamp_ns: 4
+  deletion_timestamp_ns: 6
+}
+status {
+  message: "this is message"
+  reason: "this is reason"
+  phase: 5
+  conditions {
+    type: 2
+    status: 2
+  }
+  container_statuses {
+    name: "container1"
+    container_state: 0
+    container_id: ""
+  }
+  container_statuses {
+    name: "container2"
+    container_state: 0
+    container_id: ""
+  }
+  qos_class: QOS_CLASS_BURSTABLE
+}
+spec {
+  node_name: "test"
+  hostname: "hostname"
+  dns_policy: 2
+}
+`
+
 // ReplicaSetPb is a protobuf for a replicaset object
 const ReplicaSetPb = `
 metadata {

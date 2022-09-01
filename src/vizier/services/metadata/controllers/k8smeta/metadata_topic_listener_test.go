@@ -79,6 +79,22 @@ func (s *FakeStore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K
 	return nil, nil
 }
 
+func (s *FakeStore) SetPodLabels(namespace string, podName string, labels map[string]string) error {
+	return nil
+}
+
+func (s *FakeStore) DeletePodLabels(namespace string, podName string) error {
+	return nil
+}
+
+func (s *FakeStore) FetchPodsWithLabelKey(namespace string, key string) ([]string, error) {
+	return nil, nil
+}
+
+func (s *FakeStore) FetchPodsWithLabels(namespace string, labels map[string]string) ([]string, error) {
+	return nil, nil
+}
+
 func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -116,7 +132,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mds := &FakeStore{}
 			updateCh := make(chan *K8sResourceMessage)
-			mdh := NewHandler(updateCh, mds, nil)
+			mdh := NewHandler(updateCh, mds, mds, nil)
 			mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 				return nil
 			})
@@ -156,7 +172,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	mds := &FakeStore{}
 	updateCh := make(chan *K8sResourceMessage)
-	mdh := NewHandler(updateCh, mds, nil)
+	mdh := NewHandler(updateCh, mds, mds, nil)
 
 	sentUpdates := make([]*messagespb.VizierMessage, 0)
 	mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {

@@ -155,6 +155,8 @@ type Handler struct {
 	updateCh <-chan *K8sResourceMessage
 	// The store where k8s resources are stored.
 	mds Store
+	// The store where pod label information is stored.
+	pls PodLabelStore
 	// The NATS connection on which to send messages on.
 	conn *nats.Conn
 	// Done channel, to stop processing metadata updates.
@@ -168,12 +170,12 @@ type Handler struct {
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, conn *nats.Conn) *Handler {
+func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, pls PodLabelStore, conn *nats.Conn) *Handler {
 	done := make(chan struct{})
 	leaderMsgs := make(map[string]*metadatapb.Endpoints)
 	handlerMap := make(map[string]UpdateProcessor)
 	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0), NodeToIP: make(map[string]string), PodToIP: make(map[string]string)}
-	mh := &Handler{updateCh: updateCh, mds: mds, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
+	mh := &Handler{updateCh: updateCh, mds: mds, pls: pls, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
 
 	// Register update processors.
 	mh.processHandlerMap["endpoints"] = &EndpointsUpdateProcessor{}
@@ -235,6 +237,14 @@ func (m *Handler) processUpdates() {
 			if !valid {
 				continue
 			}
+
+			if msg.ObjectType == "pods" {
+				err := UpdatePodLabelStore(update, m.pls)
+				if err != nil {
+					log.WithError(err).Error("Failed to update pod labels state")
+				}
+			}
+
 			// Persist the update in the data store.
 			updates := processor.GetStoredProtos(update)
 			if updates == nil {
@@ -731,6 +741,31 @@ func (p *PodUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate, sta
 	}
 
 	return updates
+}
+
+// UpdatePodLabelStore reads the pod resource update. If the pod is running, we update the store with new labels. If the pod has finished, we delete its labels in the store.
+func UpdatePodLabelStore(update *storepb.K8SResource, pls PodLabelStore) error {
+	p := update.GetPod()
+	namespace := p.GetMetadata().GetNamespace()
+	if namespace == "" {
+		namespace = "default"
+	}
+	podName := p.GetMetadata().GetName()
+
+	switch phase := p.GetStatus().GetPhase(); phase {
+	case metadatapb.RUNNING:
+		labels := p.GetMetadata().GetLabels()
+		err := pls.SetPodLabels(namespace, podName, labels)
+		if err != nil {
+			return err
+		}
+	case metadatapb.PHASE_UNKNOWN, metadatapb.SUCCEEDED, metadatapb.FAILED, metadatapb.TERMINATED:
+		err := pls.DeletePodLabels(namespace, podName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NodeUpdateProcessor is a processor for nodes.

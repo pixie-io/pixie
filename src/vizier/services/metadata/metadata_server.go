@@ -230,7 +230,7 @@ func main() {
 	k8sMds := k8smeta.NewDatastore(dataStore)
 	// Listen for K8s metadata updates.
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	mdh := k8smeta.NewHandler(updateCh, k8sMds, nc)
+	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
 
 	k8sMc, err := k8smeta.NewController(updateCh)
 	defer k8sMc.Stop()

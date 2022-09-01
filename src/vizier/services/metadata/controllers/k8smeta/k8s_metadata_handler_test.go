@@ -65,9 +65,20 @@ func createServiceObject() *storepb.K8SResource {
 	}
 }
 
-func createPodObject() *storepb.K8SResource {
+func createPodObject(state metadatapb.PodPhase) *storepb.K8SResource {
 	pb := &metadatapb.Pod{}
-	err := proto.UnmarshalText(testutils.PodPbWithContainers, pb)
+	var pbText string
+
+	switch state {
+	case metadatapb.TERMINATED:
+		pbText = testutils.TerminatedPodPb
+	case metadatapb.PENDING:
+		pbText = testutils.PendingPodPb
+	default:
+		pbText = testutils.PodPbWithContainers
+	}
+
+	err := proto.UnmarshalText(pbText, pb)
 	if err != nil {
 		return &storepb.K8SResource{}
 	}
@@ -243,6 +254,10 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 		RVStore:              map[string]int64{},
 	}
 
+	lps := &testutils.InMemoryPodLabelStore{
+		Store: make(map[string]string),
+	}
+
 	// Populate resource store.
 	mds.RVStore[k8smeta.KelvinUpdateTopic] = 6
 
@@ -384,7 +399,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 	require.NoError(t, err)
 
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	mdh := k8smeta.NewHandler(updateCh, mds, nil)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
 	require.NoError(t, err)
@@ -423,13 +438,17 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		RVStore:              map[string]int64{},
 		FullResourceStore:    make(map[int64]*storepb.K8SResource),
 	}
+	lps := &testutils.InMemoryPodLabelStore{
+		Store: make(map[string]string),
+	}
+
 	mds.RVStore[k8smeta.KelvinUpdateTopic] = 3
 	mds.RVStore["127.0.0.1"] = 3
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
 
-	mdh := k8smeta.NewHandler(updateCh, mds, nc)
+	mdh := k8smeta.NewHandler(updateCh, mds, lps, nc)
 	defer mdh.Stop()
 
 	expectedNSMsg := &messagespb.VizierMessage{
@@ -877,7 +896,7 @@ func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 
 func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct pod object.
-	o := createPodObject()
+	o := createPodObject(metadatapb.RUNNING)
 
 	p := k8smeta.PodUpdateProcessor{}
 	p.SetDeleted(o)
@@ -893,7 +912,7 @@ func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 
 func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct pod object.
-	o := createPodObject()
+	o := createPodObject(metadatapb.RUNNING)
 	o.GetPod().Status.PodIP = "127.0.0.1"
 
 	state := &k8smeta.ProcessorState{PodToIP: make(map[string]string)}
@@ -915,7 +934,7 @@ func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 
 func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct pod object.
-	o := createPodObject()
+	o := createPodObject(metadatapb.RUNNING)
 
 	p := k8smeta.PodUpdateProcessor{}
 
@@ -1041,6 +1060,32 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.5"},
 	}
 	assert.Contains(t, updates, pu)
+}
+
+func TestPodUpdateProcessor_UpdatePodLabelStore(t *testing.T) {
+	runningPod := createPodObject(metadatapb.RUNNING)
+	terminatedPod := createPodObject(metadatapb.TERMINATED)
+
+	pls := &testutils.InMemoryPodLabelStore{
+		Store: make(map[string]string),
+	}
+
+	err := k8smeta.UpdatePodLabelStore(runningPod, pls)
+	require.NoError(t, err)
+
+	pods, err := pls.FetchPodsWithLabelKey("default", "env")
+	require.NoError(t, err)
+	assert.Empty(t, pods)
+	pods, err = pls.FetchPodsWithLabelKey("default", "project")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"object_md"}, pods)
+
+	err = k8smeta.UpdatePodLabelStore(terminatedPod, pls)
+	require.NoError(t, err)
+
+	pods, err = pls.FetchPodsWithLabelKey("default", "project")
+	require.NoError(t, err)
+	assert.Empty(t, pods)
 }
 
 func TestNodeUpdateProcessor_SetDeleted(t *testing.T) {
