@@ -51,6 +51,105 @@ Status WrapAstError(const pypa::AstPtr& ast, Status status) {
   return CreateAstError(ast, status.msg());
 }
 
+StatusOr<std::string> AstToString(const pypa::AstExpr& ast) {
+  switch (ast->type) {
+    case pypa::AstType::Attribute: {
+      auto attr = PYPA_PTR_CAST(Attribute, ast);
+      PL_ASSIGN_OR_RETURN(auto value, AstToString(attr->value));
+      PL_ASSIGN_OR_RETURN(auto attribute, AstToString(attr->attribute));
+      return absl::Substitute("$0.$1", value, attribute);
+    }
+    case pypa::AstType::BinOp: {
+      auto binop = PYPA_PTR_CAST(BinOp, ast);
+      PL_ASSIGN_OR_RETURN(auto left, AstToString(binop->left));
+      PL_ASSIGN_OR_RETURN(auto right, AstToString(binop->right));
+      return absl::Substitute("$0 $1 $2", left, pypa::to_string(binop->op), right);
+    }
+    case pypa::AstType::BoolOp: {
+      auto boolop = PYPA_PTR_CAST(BoolOp, ast);
+      if (boolop->values.size() != 2) {
+        return CreateAstError(ast, "Expected two arguments to '$0'.", pypa::to_string(boolop->op));
+      }
+      PL_ASSIGN_OR_RETURN(auto left, AstToString(boolop->values[0]));
+      PL_ASSIGN_OR_RETURN(auto right, AstToString(boolop->values[1]));
+      return absl::Substitute("$0 $1 $2", left, pypa::to_string(boolop->op), right);
+    }
+    case pypa::AstType::Call: {
+      auto call = PYPA_PTR_CAST(Call, ast);
+      PL_ASSIGN_OR_RETURN(auto function, AstToString(call->function));
+      std::vector<std::string> args(call->arguments.size());
+      for (const auto& [i, arg] : Enumerate(call->arguments)) {
+        PL_ASSIGN_OR_RETURN(args[i], AstToString(arg));
+      }
+      return absl::StrCat(function, "(", absl::StrJoin(args, ", "), ")");
+    }
+    case pypa::AstType::Dict: {
+      auto dict = PYPA_PTR_CAST(Dict, ast);
+      std::vector<std::string> args(dict->keys.size());
+      for (const auto& [i, key] : Enumerate(dict->keys)) {
+        PL_ASSIGN_OR_RETURN(auto k, AstToString(key));
+        PL_ASSIGN_OR_RETURN(auto v, AstToString(dict->values[i]));
+        args[i] = absl::Substitute("$0: $1", k, v);
+      }
+      return absl::StrCat("{", absl::StrJoin(args, ", "), "}");
+    }
+    case pypa::AstType::List: {
+      auto list = PYPA_PTR_CAST(List, ast);
+      std::vector<std::string> elms(list->elements.size());
+      for (const auto& [i, elm] : Enumerate(list->elements)) {
+        PL_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
+      }
+      return absl::StrCat("[", absl::StrJoin(elms, ", "), "]");
+    }
+    case pypa::AstType::Name: {
+      return PYPA_PTR_CAST(Name, ast)->id;
+    }
+    case pypa::AstType::Number: {
+      auto num = PYPA_PTR_CAST(Number, ast);
+      switch (num->num_type) {
+        case pypa::AstNumber::Type::Float: {
+          return absl::Substitute("$0", num->floating);
+        }
+        case pypa::AstNumber::Type::Integer:
+        case pypa::AstNumber::Type::Long: {
+          return absl::Substitute("$0", num->integer);
+        }
+      }
+      break;
+    }
+    case pypa::AstType::Str: {
+      auto str = PYPA_PTR_CAST(Str, ast);
+      return absl::Substitute("'$0'", str->value);
+    }
+    case pypa::AstType::Subscript: {
+      auto subscript = PYPA_PTR_CAST(Subscript, ast);
+      PL_ASSIGN_OR_RETURN(auto value, AstToString(subscript->value));
+      if (subscript->slice->type != pypa::AstType::Index) {
+        return CreateAstError(ast, "Only index slices are supported");
+      }
+      PL_ASSIGN_OR_RETURN(auto index, AstToString(PYPA_PTR_CAST(Index, subscript->slice)->value));
+      return absl::StrCat(value, "[", index, "]");
+    }
+    case pypa::AstType::Tuple: {
+      auto list = PYPA_PTR_CAST(Tuple, ast);
+      std::vector<std::string> elms(list->elements.size());
+      for (const auto& [i, elm] : Enumerate(list->elements)) {
+        PL_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
+      }
+      return absl::StrCat("(", absl::StrJoin(elms, ", "), ")");
+    }
+    case pypa::AstType::UnaryOp: {
+      auto unaryop = PYPA_PTR_CAST(UnaryOp, ast);
+      PL_ASSIGN_OR_RETURN(auto operand, AstToString(unaryop->operand));
+      return absl::Substitute("$0$1", pypa::to_string(unaryop->op), operand);
+    }
+    default:
+      break;
+  }
+  return CreateAstError(ast, "Can't stringify AST, unsupported AST type: $0",
+                        GetAstTypeName(ast->type));
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

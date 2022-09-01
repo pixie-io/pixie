@@ -77,6 +77,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "ast_utils_test",
+    srcs = ["ast_utils_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "type_resolution_test",
     srcs = ["type_resolution_test.cc"],
     deps = [
