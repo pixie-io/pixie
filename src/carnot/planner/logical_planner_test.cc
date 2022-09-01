@@ -989,6 +989,347 @@ INSTANTIATE_TEST_SUITE_P(GetUnusedVarNameTestSuite, GetUnusedVarNameTest,
                            return info.param.name;
                          });
 
+struct GenerateOTelScriptTestCase {
+  std::string name;
+  std::string input_script;
+  std::string expected_script;
+  std::string error;
+};
+class GenerateOTelScriptTest : public LogicalPlannerTest,
+                               public ::testing::WithParamInterface<GenerateOTelScriptTestCase> {};
+TEST_P(GenerateOTelScriptTest, GenerateOTelScript) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  plannerpb::GenerateOTelScriptRequest req;
+  *req.mutable_logical_planner_state() = state;
+  req.set_pxl_script(GetParam().input_script);
+
+  if (GetParam().error != "") {
+    EXPECT_THAT(planner->GenerateOTelScript(req).status().ToString(),
+                ::testing::MatchesRegex(".*?" + GetParam().error + ".*?"));
+  } else {
+    ASSERT_OK_AND_ASSIGN(auto resp, planner->GenerateOTelScript(req));
+    EXPECT_EQ(resp->otel_script(), GetParam().expected_script);
+  }
+}
+
+// The test suite for GenerateOTelScriptTest.
+INSTANTIATE_TEST_SUITE_P(
+    GenerateOTelScriptTestSuite, GenerateOTelScriptTest,
+    ::testing::ValuesIn(std::vector<GenerateOTelScriptTestCase>{
+        {"multi_metric",
+         R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df.is_error = df.resp_status >= 400
+df = df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+  num_errors=('is_error', px.sum),
+)
+px.display(df[['time_', 'service', 'resp_latency_ns', 'num_errors']], 'http_graph'))pxl",
+         R"otel(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df.is_error = df.resp_status >= 400
+df = df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+  num_errors=('is_error', px.sum),
+)
+px.display(df[['time_', 'service', 'resp_latency_ns', 'num_errors']], 'http_graph')
+
+otel_df = df[['time_', 'service', 'resp_latency_ns', 'num_errors']]
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    ),
+    px.otel.metric.Gauge(
+      name='http_graph.num_errors',
+      description='',
+      value=otel_df.num_errors,
+    )
+  ]
+)))otel",
+         ""},
+        {"assigns_to_unique_varname",
+         R"pxl(import px
+otel_df = 'placeholder'
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph'))pxl",
+         R"otel(import px
+otel_df = 'placeholder'
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph')
+
+otel_df_0 = df[['time_', 'service', 'resp_latency_ns']]
+px.export(otel_df_0, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df_0.service,
+    'service.name': otel_df_0.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df_0.resp_latency_ns,
+    )
+  ]
+)))otel",
+         ""},
+        {"multiple_display_calls",
+         R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df.is_error = df.resp_status >= 400
+df = df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+  num_errors=('is_error', px.sum),
+)
+px.display(df[['time_', 'service', 'resp_latency_ns']], "http_latency")
+px.display(df[['time_', 'service', 'num_errors']], "http_num_errors"))pxl",
+         R"otel(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df.is_error = df.resp_status >= 400
+df = df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+  num_errors=('is_error', px.sum),
+)
+px.display(df[['time_', 'service', 'resp_latency_ns']], "http_latency")
+
+otel_df = df[['time_', 'service', 'resp_latency_ns']]
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_latency.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_latency.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    )
+  ]
+))
+
+px.display(df[['time_', 'service', 'num_errors']], "http_num_errors")
+
+otel_df = df[['time_', 'service', 'num_errors']]
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_num_errors.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_num_errors.num_errors',
+      description='',
+      value=otel_df.num_errors,
+    )
+  ]
+)))otel",
+         ""},
+        {"always_creates_alias_to_otel_df",
+         R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df[['time_', 'service', 'resp_latency_ns']]
+px.display(df, 'http_graph'))pxl",
+         R"otel(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df[['time_', 'service', 'resp_latency_ns']]
+px.display(df, 'http_graph')
+
+otel_df = df
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    )
+  ]
+)))otel",
+         ""},
+
+        {"preserve_the_remaining_lines",
+         R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df[['time_', 'service', 'resp_latency_ns']]
+px.display(df, 'http_graph')
+px.export(df, px.otel.Data(
+  endpoint=px.otel.Endpoint(
+    url='http://otel-collector:4317',
+  ),
+  resource={
+    'service.name': df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='my_other_export_is_also_preserved',
+      description='',
+      value=df.resp_latency_ns,
+    )
+  ]
+)))pxl",
+         R"otel(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df[['time_', 'service', 'resp_latency_ns']]
+px.display(df, 'http_graph')
+
+otel_df = df
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    )
+  ]
+))
+
+px.export(df, px.otel.Data(
+  endpoint=px.otel.Endpoint(
+    url='http://otel-collector:4317',
+  ),
+  resource={
+    'service.name': df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='my_other_export_is_also_preserved',
+      description='',
+      value=df.resp_latency_ns,
+    )
+  ]
+)))otel",
+         ""},
+        {"multi_line_df_argument_is_handled",
+         R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+), 'http_graph'))pxl",
+         R"otel(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df.groupby(['time_', 'service']).agg(
+  resp_latency_ns=('resp_latency_ns', px.mean),
+), 'http_graph')
+
+otel_df = df.groupby(['time_', 'service']).agg(resp_latency_ns=('resp_latency_ns', px.mean))
+px.export(otel_df, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    )
+  ]
+)))otel",
+         ""},
+        {
+            "missing_time_column",
+            R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['service', 'resp_latency_ns']], 'http_graph'))pxl",
+            "",
+            "time_ column must be present for auto-generated otel export",
+        },
+        {
+            "missing_service_column",
+            R"pxl(import px
+ndf = px.DataFrame('http_events', start_time='-5m')
+px.display(ndf[['time_', 'resp_latency_ns']], "http_graph"))pxl",
+            "",
+            "service column must be present for auto-generated otel export",
+        },
+        {
+            "duration_quantiles_not_supported",
+            R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df.groupby(['time_', 'service']).agg(latency=('resp_latency_ns', px.quantiles))
+px.display(df, "http_graph"))pxl",
+            "",
+            "quantiles are not supported yet for generation of OTel export scripts",
+        },
+        {
+            "normal_quantiles_not_supported",
+            R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+df = df.groupby(['time_', 'service']).agg(resp_status=('resp_status', px.quantiles))
+px.display(df, "http_graph"))pxl",
+            "",
+            "quantiles are not supported yet for generation of OTel export scripts",
+        },
+        {
+            "no_returned_tables",
+            R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+otel_df = df[['time_', 'service', 'resp_latency_ns']]
+px.export(otel_df, px.otel.Data(
+  endpoint=px.otel.Endpoint(
+    url='http://otel-collector:4317',
+  ),
+  resource={
+    'http_graph.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df.resp_latency_ns,
+    )
+  ]
+)))pxl",
+            "",
+            "script does not have any output tables",
+        },
+        {
+            "duplicate_table_name",
+            R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'resp_latency_ns']], "table")
+px.display(df[['time_', 'service', 'resp_status']], "table"))pxl",
+            "",
+            "duplicate table name. 'table' already in use",
+        },
+    }),
+    [](const ::testing::TestParamInfo<GenerateOTelScriptTestCase>& info) {
+      return info.param.name;
+    });
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

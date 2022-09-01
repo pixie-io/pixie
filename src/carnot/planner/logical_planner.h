@@ -70,6 +70,9 @@ class LogicalPlanner : public NotCopyable {
                                          const std::string& script,
                                          const std::string& base_name) const;
 
+  StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> GenerateOTelScript(
+      const plannerpb::GenerateOTelScriptRequest& generate_req);
+
   struct DisplayLine {
     std::string line;
     std::string table_name;

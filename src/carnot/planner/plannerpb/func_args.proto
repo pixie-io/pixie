@@ -25,6 +25,7 @@ option go_package = "plannerpb";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/planner/distributedpb/distributed_plan.proto";
 
 // FuncToExecute specifies the name and arguments of a function to execute.
 message FuncToExecute {
@@ -138,4 +139,17 @@ message CompileMutationsResponse {
   px.statuspb.Status status = 1;
   // The set of mutations to run on the Vizier.
   repeated CompileMutation mutations = 2;
+}
+
+message GenerateOTelScriptRequest {
+  px.carnot.planner.distributedpb.LogicalPlannerState logical_planner_state = 1;
+  string pxl_script = 2;
+}
+
+message GenerateOTelScriptResponse {
+  // The Status of GenerateOTelScript. Holds an error with debug
+  // information if the originating request had a bug, otherwise will be set to
+  // OK.
+  px.statuspb.Status status = 1;
+  string otel_script = 2 [ (gogoproto.customname) = "OTelScript" ];
 }
