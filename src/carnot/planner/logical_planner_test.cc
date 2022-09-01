@@ -811,7 +811,7 @@ px.display(df[['service', 'req_body']], 'req_body'))pxl",
       columns {
         column_name: "resp_latency_ns"
         column_type: INT64
-        column_semantic_type: ST_NONE
+        column_semantic_type: ST_DURATION_NS
       })proto"},
                                   {"req_body", R"proto(
       columns {
@@ -959,6 +959,35 @@ px.display(ndf[['time_', 'service', 'latency_ns']]))pxl",
          {}},
     }),
     [](const ::testing::TestParamInfo<PxDisplayParserTestCase>& info) { return info.param.name; });
+
+struct GetUnusedVarNameTestCase {
+  std::string name;
+  std::string base_name;
+  std::string expected_name;
+};
+class GetUnusedVarNameTest : public LogicalPlannerTest,
+                             public ::testing::WithParamInterface<GetUnusedVarNameTestCase> {};
+
+TEST_P(GetUnusedVarNameTest, GetUnusedVarName) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  ASSERT_OK_AND_ASSIGN(auto unique_name, planner->GetUnusedVarName(state, R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m')
+px.display(df)
+)pxl",
+                                                                   GetParam().base_name));
+  EXPECT_EQ(unique_name, GetParam().expected_name);
+}
+INSTANTIATE_TEST_SUITE_P(GetUnusedVarNameTestSuite, GetUnusedVarNameTest,
+                         ::testing::ValuesIn(std::vector<GetUnusedVarNameTestCase>{
+                             {"match_user_defined", "df", "df_0"},
+                             {"match_imported", "px", "px_0"},
+                             {"no_match", "aaa", "aaa"},
+                         }),
+                         [](const ::testing::TestParamInfo<GetUnusedVarNameTestCase>& info) {
+                           return info.param.name;
+                         });
 
 }  // namespace planner
 }  // namespace carnot

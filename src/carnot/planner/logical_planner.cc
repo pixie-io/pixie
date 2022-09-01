@@ -179,6 +179,41 @@ LogicalPlanner::CalculateOutputSchemas(const distributedpb::LogicalPlannerState&
   return output_schemas;
 }
 
+StatusOr<std::string> LogicalPlanner::GetUnusedVarName(
+    const distributedpb::LogicalPlannerState& logical_state, const std::string& script,
+    const std::string& base_name) const {
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+
+  bool func_based_exec = false;
+  absl::flat_hash_set<std::string> reserved_names;
+  compiler::ModuleHandler module_handler;
+  compiler::MutationsIR mutations_ir;
+  std::shared_ptr<IR> ir = std::make_shared<IR>();
+  auto var_table = compiler::VarTable::Create();
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<CompilerState> compiler_state,
+      CreateCompilerState(logical_state, registry_info_.get(), /* max_output_rows */ 0));
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      compiler::ASTVisitorImpl::Create(
+                          ir.get(), var_table, &mutations_ir, compiler_state.get(), &module_handler,
+                          func_based_exec, absl::flat_hash_set<std::string>{}));
+
+  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  auto cur_name = base_name;
+  int64_t counter = 0;
+  while (var_table->HasVariable(cur_name)) {
+    if (counter > 1000) {
+      return error::InvalidArgument("Gave up searching for an unused variable name with base: $0",
+                                    base_name);
+    }
+    cur_name = absl::Substitute("$0_$1", base_name, counter);
+    ++counter;
+  }
+
+  return cur_name;
+}
+
 StatusOr<std::vector<LogicalPlanner::DisplayLine>> LogicalPlanner::GetPxDisplayLines(
     const std::string& script) {
   // Parse the script into an ast.

@@ -170,7 +170,7 @@ relation_map {
     columns {
       column_name: "resp_latency_ns"
       column_type: INT64
-      column_semantic_type: ST_NONE
+      column_semantic_type: ST_DURATION_NS
     }
   }
 }
