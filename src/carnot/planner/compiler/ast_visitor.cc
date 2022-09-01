@@ -549,25 +549,8 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
 StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
                                               const OperatorContext& op_context) {
   switch (node->type) {
-    case AstType::Call:
-      return ProcessCallNode(PYPA_PTR_CAST(Call, node), op_context);
-    case AstType::Subscript:
-      return ProcessSubscriptCall(PYPA_PTR_CAST(Subscript, node), op_context);
-    case AstType::Name:
-      return LookupVariable(PYPA_PTR_CAST(Name, node));
-    case AstType::Attribute:
+    case AstType::Attribute: {
       return ProcessAttribute(PYPA_PTR_CAST(Attribute, node), op_context);
-    case AstType::Str: {
-      return ProcessStr(PYPA_PTR_CAST(Str, node));
-    }
-    case AstType::Number: {
-      return ProcessNumber(PYPA_PTR_CAST(Number, node));
-    }
-    case AstType::List: {
-      return ProcessList(PYPA_PTR_CAST(List, node), op_context);
-    }
-    case AstType::Tuple: {
-      return ProcessTuple(PYPA_PTR_CAST(Tuple, node), op_context);
     }
     case AstType::BinOp: {
       return ProcessDataBinOp(PYPA_PTR_CAST(BinOp, node), op_context);
@@ -575,14 +558,34 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
     case AstType::BoolOp: {
       return ProcessDataBoolOp(PYPA_PTR_CAST(BoolOp, node), op_context);
     }
+    case AstType::Call:
+      return ProcessCallNode(PYPA_PTR_CAST(Call, node), op_context);
     case AstType::Compare: {
       return ProcessDataCompare(PYPA_PTR_CAST(Compare, node), op_context);
     }
-    case AstType::UnaryOp: {
-      return ProcessDataUnaryOp(PYPA_PTR_CAST(UnaryOp, node), op_context);
-    }
     case AstType::Dict: {
       return ProcessDict(PYPA_PTR_CAST(Dict, node), op_context);
+    }
+    case AstType::List: {
+      return ProcessList(PYPA_PTR_CAST(List, node), op_context);
+    }
+    case AstType::Name: {
+      return LookupVariable(PYPA_PTR_CAST(Name, node));
+    }
+    case AstType::Number: {
+      return ProcessNumber(PYPA_PTR_CAST(Number, node));
+    }
+    case AstType::Str: {
+      return ProcessStr(PYPA_PTR_CAST(Str, node));
+    }
+    case AstType::Subscript: {
+      return ProcessSubscriptCall(PYPA_PTR_CAST(Subscript, node), op_context);
+    }
+    case AstType::Tuple: {
+      return ProcessTuple(PYPA_PTR_CAST(Tuple, node), op_context);
+    }
+    case AstType::UnaryOp: {
+      return ProcessDataUnaryOp(PYPA_PTR_CAST(UnaryOp, node), op_context);
     }
     default:
       return CreateAstError(node, "Expression node '$0' not defined", GetAstTypeName(node->type));
@@ -779,7 +782,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
 
   auto slice = node->slice;
   if (slice->type != AstType::Index) {
-    return CreateAstError(slice, "'$0' object cannot be an index", GetAstTypeName(slice->type));
+    return CreateAstError(slice, "'$0' object must be an index", GetAstTypeName(slice->type));
   }
 
   std::vector<std::string> dfs = op_context.referenceable_dataframes;
@@ -930,9 +933,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& no
       PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
       return ExprObject::Create(ir_node, this);
     }
-    default:
-      return CreateAstError(node, "Couldn't find number type $0", node->num_type);
   }
+  return error::Internal("unreachable");
 }
 
 StatusOr<udf::ScalarUDFDefinition*> GetUDFDefinition(const std::shared_ptr<udf::Registry>& registry,
