@@ -23,6 +23,7 @@ go_library(
         "hosted_domain.go",
         "hydra_kratos_auth.go",
         "login.go",
+        "oidc.go",
         "server.go",
     ],
     importpath = "px.dev/pixie/src/cloud/auth/controllers",
@@ -53,6 +54,7 @@ go_test(
         "auth0_test.go",
         "hydra_kratos_auth_test.go",
         "login_test.go",
+        "oidc_test.go",
     ],
     deps = [
         ":controllers",
