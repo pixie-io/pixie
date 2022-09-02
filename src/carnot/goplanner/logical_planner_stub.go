@@ -51,6 +51,11 @@ func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerStat
 	return nil, errorUnimplemented
 }
 
+// GenerateOTelScript generates an OTel script from the query.
+func (cm GoPlanner) GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error) {
+	return nil, errorUnimplemented
+}
+
 // Free the memory used by the planner.
 func (cm GoPlanner) Free() {
 }

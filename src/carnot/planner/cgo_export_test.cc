@@ -295,6 +295,73 @@ TEST_F(PlannerExportTest, compile_delete_tracepoint) {
   EXPECT_THAT(mutations_response_pb, EqualsProto(kExpectedDeleteTracepointsMutationPb));
 }
 
+constexpr char kExportPxL[] = R"pxl(import px
+otel_df = 'placeholder'
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph'))pxl";
+constexpr char kGeneratedPxL[] = R"otel(import px
+otel_df = 'placeholder'
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph')
+
+otel_df_0 = df[['time_', 'service', 'resp_latency_ns']]
+px.export(otel_df_0, px.otel.Data(
+  resource={
+    'http_graph.service': otel_df_0.service,
+    'service.name': otel_df_0.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='http_graph.resp_latency_ns',
+      description='',
+      value=otel_df_0.resp_latency_ns,
+    )
+  ]
+)))otel";
+
+TEST_F(PlannerExportTest, GenerateOTelScript) {
+  planner_ = MakePlanner();
+  int result_len;
+  std::string request_str;
+  plannerpb::GenerateOTelScriptRequest request;
+  request.set_pxl_script(kExportPxL);
+  *(request.mutable_logical_planner_state()) =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  ASSERT_TRUE(request.SerializeToString(&request_str));
+  auto interface_result =
+      PlannerGenerateOTelScript(planner_, request_str.c_str(), request_str.length(), &result_len);
+
+  ASSERT_GT(result_len, 0);
+  plannerpb::GenerateOTelScriptResponse response;
+  ASSERT_TRUE(
+      response.ParseFromString(std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
+  ASSERT_OK(response.status());
+  EXPECT_THAT(response.otel_script(), kGeneratedPxL);
+}
+
+TEST_F(PlannerExportTest, GenerateOTelScript_with_status) {
+  planner_ = MakePlanner();
+  int result_len;
+  std::string request_str;
+  plannerpb::GenerateOTelScriptRequest request;
+  request.set_pxl_script("im a broken script");
+  *(request.mutable_logical_planner_state()) =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  ASSERT_TRUE(request.SerializeToString(&request_str));
+  auto interface_result =
+      PlannerGenerateOTelScript(planner_, request_str.c_str(), request_str.length(), &result_len);
+
+  ASSERT_GT(result_len, 0);
+  plannerpb::GenerateOTelScriptResponse response;
+  ASSERT_TRUE(
+      response.ParseFromString(std::string(interface_result, interface_result + result_len)));
+  delete[] interface_result;
+  ASSERT_NOT_OK(response.status());
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

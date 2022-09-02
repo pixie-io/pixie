@@ -38,6 +38,7 @@
 
 using px::carnot::planner::distributedpb::LogicalPlannerResult;
 using px::carnot::planner::plannerpb::CompileMutationsResponse;
+using px::carnot::planner::plannerpb::GenerateOTelScriptResponse;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_pb_str(udf_info_data, udf_info_data + udf_info_len);
@@ -161,6 +162,36 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
 
   // Serialize the tracing program into bytes.
   return PrepareResult(&mutations_response_pb, resultLen);
+}
+
+char* PlannerGenerateOTelScript(PlannerPtr planner_ptr,
+                                const char* generate_otel_script_request_str_c,
+                                int generate_otel_script_request_str_len, int* resultLen) {
+  std::string generate_otel_script_request_pb_str(
+      generate_otel_script_request_str_c,
+      generate_otel_script_request_str_c + generate_otel_script_request_str_len);
+
+  // Load in the mutation request protobuf.
+  px::carnot::planner::plannerpb::GenerateOTelScriptRequest generate_otel_script_request_pb;
+  PLANNER_RETURN_IF_ERROR(
+      GenerateOTelScriptResponse, resultLen,
+      LoadProto(generate_otel_script_request_pb_str, &generate_otel_script_request_pb,
+                "Failed to parse the mutation request"));
+
+  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
+
+  auto response_or_s = planner->GenerateOTelScript(generate_otel_script_request_pb);
+  if (!response_or_s.ok()) {
+    return ExitEarly<GenerateOTelScriptResponse>(response_or_s.status(), resultLen);
+  }
+
+  // If the response is ok, then we can go ahead and set this up.
+  std::unique_ptr<GenerateOTelScriptResponse> generate_otel_script_response_pb =
+      response_or_s.ConsumeValueOrDie();
+  WrapStatus(generate_otel_script_response_pb.get(), response_or_s.status());
+
+  // Serialize the tracing program into bytes.
+  return PrepareResult(generate_otel_script_response_pb.get(), resultLen);
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {

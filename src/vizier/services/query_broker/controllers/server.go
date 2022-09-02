@@ -20,7 +20,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -62,6 +61,7 @@ const (
 type Planner interface {
 	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
 	CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
+	GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error)
 	Free()
 }
 
@@ -331,7 +331,26 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 // GenerateOTelScript generates an OTel script for the given DataFrame script.
 func (s *Server) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
-	return nil, errors.New("not implemented")
+	info := s.agentsTracker.GetAgentInfo()
+	if info == nil {
+		return nil, status.Error(codes.Unavailable, "not ready yet")
+	}
+
+	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
+	plannerState := &distributedpb.LogicalPlannerState{
+		DistributedState: &distributedState,
+	}
+	resp, err := s.planner.GenerateOTelScript(&plannerpb.GenerateOTelScriptRequest{
+		LogicalPlannerState: plannerState,
+		PxlScript:           req.GetPxlScript(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &vizierpb.GenerateOTelScriptResponse{
+		Status:     StatusToVizierStatus(resp.Status),
+		OTelScript: resp.GetOTelScript(),
+	}, nil
 }
 
 // TransferResultChunk implements the API that allows the query broker receive streamed results

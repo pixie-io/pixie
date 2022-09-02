@@ -63,6 +63,21 @@ func (mr *MockPlannerMockRecorder) Free() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Free", reflect.TypeOf((*MockPlanner)(nil).Free))
 }
 
+// GenerateOTelScript mocks base method.
+func (m *MockPlanner) GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateOTelScript", request)
+	ret0, _ := ret[0].(*plannerpb.GenerateOTelScriptResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateOTelScript indicates an expected call of GenerateOTelScript.
+func (mr *MockPlannerMockRecorder) GenerateOTelScript(request interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateOTelScript", reflect.TypeOf((*MockPlanner)(nil).GenerateOTelScript), request)
+}
+
 // Plan mocks base method.
 func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	m.ctrl.T.Helper()

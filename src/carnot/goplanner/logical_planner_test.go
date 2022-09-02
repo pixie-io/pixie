@@ -341,3 +341,52 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	assert.Equal(t, 1, len(compileMutationResponse.Mutations))
 	assert.Equal(t, &expectedDynamicTracePb, compileMutationResponse.Mutations[0].GetTrace())
 }
+
+func TestPlanner_GenerateOTelScriptPropagates(t *testing.T) {
+	// Create the compiler.
+	var udfInfoPb udfspb.UDFInfo
+	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
+	require.NoError(t, err)
+
+	err = proto.Unmarshal(b, &udfInfoPb)
+	require.NoError(t, err)
+
+	c, err := goplanner.New(&udfInfoPb)
+	require.NoError(t, err)
+	defer c.Free()
+
+	// Pass the relation proto, table and query to the compilation.
+	query := `import px
+df = px.DataFrame(table='table1')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'cpu_cycles']], 'out')`
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	err = proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	require.NoError(t, err)
+
+	otelResponse, err := c.GenerateOTelScript(&plannerpb.GenerateOTelScriptRequest{
+		PxlScript:           query,
+		LogicalPlannerState: plannerStatePB,
+	})
+	require.NoError(t, err)
+	require.Equal(t, statuspb.OK, otelResponse.Status.ErrCode)
+	require.Equal(t, `import px
+df = px.DataFrame(table='table1')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service', 'cpu_cycles']], 'out')
+
+otel_df = df[['time_', 'service', 'cpu_cycles']]
+px.export(otel_df, px.otel.Data(
+  resource={
+    'out.service': otel_df.service,
+    'service.name': otel_df.service
+  },
+  data=[
+    px.otel.metric.Gauge(
+      name='out.cpu_cycles',
+      description='',
+      value=otel_df.cpu_cycles,
+    )
+  ]
+))`, otelResponse.OTelScript)
+}

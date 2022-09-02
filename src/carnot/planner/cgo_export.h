@@ -58,11 +58,30 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
  * @param resultLen Variable to store the length of the return value
  * @return char* The serialized px.carnot.planner.plannerpb.CompileMutationsResponse, where the
  * length of the message is `resultLen`. If the request contains an erroneous format, the response
- * stores the error information in the Message status field.
+ * stores the error information in the status field.
  */
 char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_str_c,
                               int planner_state_str_len, const char* mutation_request_str_c,
                               int mutation_request_str_len, int* resultLen);
+
+/**
+ * @brief Generates an OTel export script based on the script passed in.
+ *
+ * The planner determines which data to export by reading all the schemas of DataFrames
+ * sent through px.display.
+ * @param planner Pointer to the Planner object
+ * @param generate_otel_script_grequest_str_c The serialized
+ * px.carnot.planner.plannerpb.GenerateOtelScriptRequest message.
+ * @param generate_otel_script_grequest_str_len  The length of the serialized
+ * GenerateOtelScriptRequest.
+ * @param resultLen Variable to store the length of the return value
+ * @return char* The serialized px.carnot.planner.plannerpb.GenerateOtelScriptResponse, where the
+ * length of the message is `resultLen`. If the request contains an erroneous format, the response
+ * stores the error information in the status field.
+ */
+char* PlannerGenerateOTelScript(PlannerPtr planner_ptr,
+                                const char* generate_otel_script_request_str_c,
+                                int generate_otel_script_request_str_len, int* resultLen);
 /**
  * @brief Frees up the memory handled by the planner.
  *

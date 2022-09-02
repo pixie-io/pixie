@@ -126,6 +126,32 @@ func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerStat
 	return resultPB, nil
 }
 
+// GenerateOTelScript generates an OTel export script based on the script passed in.
+func (cm GoPlanner) GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error) {
+	var resultLen C.int
+
+	requestBytes, err := proto.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	requestData := C.CBytes(requestBytes)
+	defer C.free(requestData)
+
+	res := C.PlannerGenerateOTelScript(cm.planner, (*C.char)(requestData), C.int(len(requestBytes)), &resultLen)
+	defer C.StrFree(res)
+	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
+	if resultLen == 0 {
+		return nil, errors.New("no result returned")
+	}
+
+	resultPB := &plannerpb.GenerateOTelScriptResponse{}
+	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
+		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	}
+
+	return resultPB, nil
+}
+
 // Free the memory used by the planner.
 func (cm GoPlanner) Free() {
 	C.PlannerFree(cm.planner)
