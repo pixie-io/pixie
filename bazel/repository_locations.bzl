@@ -54,9 +54,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/buildtools/archive/refs/tags/4.2.5.tar.gz"],
     ),
     com_google_benchmark = dict(
-        sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",
-        strip_prefix = "benchmark-1.5.2",
-        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.5.2.tar.gz"],
+        sha256 = "3aff99169fa8bdee356eaa1f691e835a6e57b1efeadb8a0f9f228531158246ac",
+        strip_prefix = "benchmark-1.7.0",
+        urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.7.0.tar.gz"],
     ),
     com_github_packetzero_dnsparser = dict(
         sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
