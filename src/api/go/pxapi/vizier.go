@@ -21,6 +21,8 @@ package pxapi
 import (
 	"context"
 
+	"px.dev/pixie/src/api/go/pxapi/errdefs"
+
 	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
@@ -54,4 +56,23 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 	sr.decOpts = v.decOpts
 
 	return sr, nil
+}
+
+// GenerateOTelScript generates an otel export script for a given pxl script that has px.display calls.
+func (v *VizierClient) GenerateOTelScript(ctx context.Context, pxl string) (string, error) {
+	req := &vizierpb.GenerateOTelScriptRequest{
+		ClusterID: v.vizierID,
+		PxlScript: pxl,
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	res, err := v.vzClient.GenerateOTelScript(v.cloud.cloudCtxWithMD(ctx), req)
+	if err != nil {
+		return "", err
+	}
+	if err := errdefs.ParseStatus(res.Status); err != nil {
+		return "", err
+	}
+
+	return res.OTelScript, nil
 }
