@@ -284,6 +284,7 @@ message C2VAPIStreamRequest {
     C2VAPIStreamCancel cancel_req = 5;
     px.api.vizierpb.DebugLogRequest debug_log_req = 8;
     px.api.vizierpb.DebugPodsRequest debug_pods_req = 9;
+    px.api.vizierpb.GenerateOTelScriptRequest generate_otel_script_req = 10 [(gogoproto.customname) = "GenerateOTelScriptReq"];
   }
   reserved 6, 7;
 }
@@ -300,6 +301,7 @@ message V2CAPIStreamResponse {
     px.api.vizierpb.Status status = 4;
     px.api.vizierpb.DebugLogResponse debug_log_resp = 7;
     px.api.vizierpb.DebugPodsResponse debug_pods_resp = 8;
+    px.api.vizierpb.GenerateOTelScriptResponse generate_otel_script_resp = 9 [(gogoproto.customname) = "GenerateOTelScriptResp"];
   }
   reserved 5, 6;
 }

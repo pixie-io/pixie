@@ -91,7 +91,22 @@ func (m *MockVzServer) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierp
 }
 
 func (m *MockVzServer) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
-	return nil, errors.New("not implemented")
+	if req.PxlScript == "status_error" {
+		return &vizierpb.GenerateOTelScriptResponse{
+			Status: &vizierpb.Status{
+				Code:    int32(codes.InvalidArgument),
+				Message: "invalid argument",
+			},
+		}, nil
+	}
+	if req.PxlScript == "error" {
+		return nil, errors.New("Failed")
+	}
+	// Default to success.
+	return &vizierpb.GenerateOTelScriptResponse{
+		Status:     &vizierpb.Status{},
+		OTelScript: req.PxlScript,
+	}, nil
 }
 
 type testState struct {
@@ -147,19 +162,32 @@ func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (
 	}
 }
 
+// unknownC2VMsg is used to test that unknown messages throw errors.
+type unknownC2VMsg struct {
+	cvmsgspb.C2VAPIStreamRequest_ExecReq
+}
+
+func (u *unknownC2VMsg) Equal(interface{}) bool        { return false }
+func (u *unknownC2VMsg) MarshalTo([]byte) (int, error) { return 0, nil }
+func (u *unknownC2VMsg) Size() int                     { return 0 }
+
 func TestPassThroughProxy(t *testing.T) {
 	tests := []struct {
 		name          string
 		requestID     string
-		request       *vizierpb.ExecuteScriptRequest
+		request       *cvmsgspb.C2VAPIStreamRequest
 		expectedResps []*cvmsgspb.V2CAPIStreamResponse
 		sendCancel    bool
 	}{
 		{
 			name:      "complete",
 			requestID: "1",
-			request: &vizierpb.ExecuteScriptRequest{
-				QueryStr: "should pass",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_ExecReq{
+					ExecReq: &vizierpb.ExecuteScriptRequest{
+						QueryStr: "should pass",
+					},
+				},
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				{
@@ -183,8 +211,12 @@ func TestPassThroughProxy(t *testing.T) {
 		{
 			name:      "error",
 			requestID: "2",
-			request: &vizierpb.ExecuteScriptRequest{
-				QueryStr: "error",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_ExecReq{
+					ExecReq: &vizierpb.ExecuteScriptRequest{
+						QueryStr: "error",
+					},
+				},
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				{
@@ -210,8 +242,12 @@ func TestPassThroughProxy(t *testing.T) {
 			name:       "cancel",
 			requestID:  "3",
 			sendCancel: true,
-			request: &vizierpb.ExecuteScriptRequest{
-				QueryStr: "cancel",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_ExecReq{
+					ExecReq: &vizierpb.ExecuteScriptRequest{
+						QueryStr: "cancel",
+					},
+				},
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
 				{
@@ -219,6 +255,102 @@ func TestPassThroughProxy(t *testing.T) {
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
 						ExecResp: &vizierpb.ExecuteScriptResponse{
 							QueryID: "3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "otel script: success",
+			requestID: "1",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_GenerateOTelScriptReq{
+					GenerateOTelScriptReq: &vizierpb.GenerateOTelScriptRequest{
+						PxlScript: "import px",
+					},
+				},
+			},
+			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					RequestID: "1",
+					Msg: &cvmsgspb.V2CAPIStreamResponse_GenerateOTelScriptResp{
+						GenerateOTelScriptResp: &vizierpb.GenerateOTelScriptResponse{
+							Status: &vizierpb.Status{
+								Code: int32(codes.OK),
+							},
+							OTelScript: "import px",
+						},
+					},
+				},
+				{
+					RequestID: "1",
+					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
+						Status: &vizierpb.Status{
+							Code: int32(codes.OK),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "otel script: status error",
+			requestID: "1",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_GenerateOTelScriptReq{
+					GenerateOTelScriptReq: &vizierpb.GenerateOTelScriptRequest{
+						PxlScript: "status_error",
+					},
+				},
+			},
+			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					RequestID: "1",
+					Msg: &cvmsgspb.V2CAPIStreamResponse_GenerateOTelScriptResp{
+						GenerateOTelScriptResp: &vizierpb.GenerateOTelScriptResponse{
+							Status: &vizierpb.Status{
+								Code:    int32(codes.InvalidArgument),
+								Message: "invalid argument",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "otel script: grpc error",
+			requestID: "1",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &cvmsgspb.C2VAPIStreamRequest_GenerateOTelScriptReq{
+					GenerateOTelScriptReq: &vizierpb.GenerateOTelScriptRequest{
+						PxlScript: "error",
+					},
+				},
+			},
+			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					RequestID: "1",
+					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
+						Status: &vizierpb.Status{
+							Code:    int32(codes.Unknown),
+							Message: "rpc error: code = Unknown desc = Failed",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:      "unknown message type",
+			requestID: "1",
+			request: &cvmsgspb.C2VAPIStreamRequest{
+				Msg: &unknownC2VMsg{},
+			},
+			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					RequestID: "1",
+					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
+						Status: &vizierpb.Status{
+							Code:    int32(codes.InvalidArgument),
+							Message: "Unknown request type %!s(<nil>)",
 						},
 					},
 				},
@@ -249,14 +381,12 @@ func TestPassThroughProxy(t *testing.T) {
 				require.NoError(t, err)
 			}()
 
+			sr := test.request
+			sr.RequestID = test.requestID
+			sr.Token = "abcd"
+
 			// Publish execute script request.
-			sr := &cvmsgspb.C2VAPIStreamRequest{
-				RequestID: test.requestID,
-				Token:     "abcd",
-				Msg: &cvmsgspb.C2VAPIStreamRequest_ExecReq{
-					ExecReq: test.request,
-				},
-			}
+
 			reqAnyMsg, err := types.MarshalAny(sr)
 			require.NoError(t, err)
 			c2vMsg := &cvmsgspb.C2VMessage{

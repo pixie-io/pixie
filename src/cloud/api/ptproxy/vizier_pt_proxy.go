@@ -20,7 +20,6 @@ package ptproxy
 
 import (
 	"context"
-	"errors"
 
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
@@ -98,9 +97,39 @@ func (v *VizierPassThroughProxy) DebugLog(req *vizierpb.DebugLogRequest, srv viz
 	return rp.Run()
 }
 
+// generateOTelScriptStream is a stream fake that fits into the request proxyer interface.
+type generateOTelScriptStream struct {
+	resp *vizierpb.GenerateOTelScriptResponse
+	ctx  context.Context
+}
+
+func (gs *generateOTelScriptStream) Context() context.Context {
+	return gs.ctx
+}
+
+func (gs *generateOTelScriptStream) SendMsg(data interface{}) error {
+	gs.resp = data.(*vizierpb.GenerateOTelScriptResponse)
+	return nil
+}
+
 // GenerateOTelScript is the GRPC method to generate an OTel script from a DataFrame script.
 func (v *VizierPassThroughProxy) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest) (*vizierpb.GenerateOTelScriptResponse, error) {
-	return nil, errors.New("not implemented")
+	srv := &generateOTelScriptStream{ctx: ctx}
+	rp, err := newRequestProxyer(v.vc, v.nc, true, req, srv)
+	if err != nil {
+		return nil, err
+	}
+	defer rp.Finish()
+	vizReq := rp.prepareVizierRequest()
+	vizReq.Msg = &cvmsgspb.C2VAPIStreamRequest_GenerateOTelScriptReq{GenerateOTelScriptReq: req}
+	if err := rp.sendMessageToVizier(vizReq); err != nil {
+		return nil, err
+	}
+	err = rp.Run()
+	if err != nil {
+		return nil, err
+	}
+	return srv.resp, nil
 }
 
 // DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.

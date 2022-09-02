@@ -181,7 +181,24 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 		stream = NewExecuteScriptStream(s.vzClient)
 	case *cvmsgspb.C2VAPIStreamRequest_HcReq:
 		stream = NewHealthCheckStream(s.vzClient)
+	case *cvmsgspb.C2VAPIStreamRequest_GenerateOTelScriptReq:
+		resp, err := s.vzClient.GenerateOTelScript(reqState.ctx, msg.GetGenerateOTelScriptReq())
+		if err != nil {
+			v2cResp := formatStatusMessage(reqState.requestID, status.Code(err), err.Error())
+			s.sendMessage(reqState.requestID, v2cResp)
+			return
+		}
+		// Wrap message in V2CAPIStreamResponse.
+		s.sendMessage(reqState.requestID, &cvmsgspb.V2CAPIStreamResponse{
+			RequestID: reqState.requestID,
+			Msg: &cvmsgspb.V2CAPIStreamResponse_GenerateOTelScriptResp{
+				GenerateOTelScriptResp: resp,
+			},
+		})
+		s.sendMessage(reqState.requestID, formatStatusMessage(reqState.requestID, codes.OK, ""))
+		return
 	default:
+		s.sendMessage(reqState.requestID, formatStatusMessage(reqState.requestID, codes.InvalidArgument, fmt.Sprintf("Unknown request type %s", reflect.TypeOf(msg.Msg))))
 		log.Error("Unhandled message type")
 		return
 	}

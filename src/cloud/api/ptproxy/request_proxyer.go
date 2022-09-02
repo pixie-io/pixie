@@ -288,6 +288,12 @@ func (p *requestProxyer) processNatsMsg(msg *nats.Msg) error {
 			log.WithError(err).Error("Failed to send message")
 			return err
 		}
+	case *cvmsgspb.V2CAPIStreamResponse_GenerateOTelScriptResp:
+		err = p.srv.SendMsg(parsed.GenerateOTelScriptResp)
+		if err != nil {
+			log.WithError(err).Error("Failed to send message")
+			return err
+		}
 	case *cvmsgspb.V2CAPIStreamResponse_DebugLogResp:
 		err = p.srv.SendMsg(parsed.DebugLogResp)
 		if err != nil {
