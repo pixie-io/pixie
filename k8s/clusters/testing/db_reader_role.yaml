@@ -1,0 +1,36 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: db-reader-role
+  namespace: testing-ro
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - namespaces
+  - jobs
+  - deployments
+  - containers
+  - secrets
+  verbs:
+  - "*"
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: db-reader-binding
+  namespace: testing-ro
+subjects:
+- kind: Group
+  name: eng@pixielabs.ai
+roleRef:
+  kind: Role
+  name: db-reader-role
+  apiGroup: rbac.authorization.k8s.io

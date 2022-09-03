@@ -20,6 +20,7 @@ usage() {
   echo "Usage: $0 [-p] [-s] [-w]"
   echo " -p : Log into the prod db"
   echo " -s : Log into the staging db"
+  echo " -t : Log into the testing db"
   echo " -w : Log into the db with write access"
   exit 1
 }
@@ -36,7 +37,7 @@ parse_args() {
   set_default_values
 
   local OPTIND
-  while getopts "psw" opt; do
+  while getopts "pstw" opt; do
     case ${opt} in
       p)
         ;;
@@ -45,6 +46,12 @@ parse_args() {
         READER_NS=staging-ro
         SECRET_NS=staging-ro
         NS=plc-staging
+        ;;
+      t)
+        DB=pl_testing
+        READER_NS=testing-ro
+        SECRET_NS=testing-ro
+        NS=plc-testing
         ;;
       w)
         WRITE=true
