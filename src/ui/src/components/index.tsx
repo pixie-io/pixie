@@ -18,7 +18,7 @@
 
 export { AuthBox } from './auth/auth-box';
 export { GoogleButton } from './auth/google-button';
-export { UsernamePasswordButton } from './auth/username-password-button';
+export { LoginButton } from './auth/login-button';
 export { Form, PixienautForm } from './form/form';
 export type { FormField, FormStructure } from './form/form';
 export { AuthMessageBox } from './auth/message';

@@ -24,6 +24,7 @@ import { Auth0Client } from './auth0-oauth-provider';
 import { getRedirectURL } from './callback-url';
 import { HydraClient } from './hydra-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
+import { OIDCClient } from './oidc-oauth-provider';
 
 const CSRF_COOKIE_NAME = 'csrf-cookie';
 
@@ -31,13 +32,16 @@ const cookies = new Cookies();
 
 // eslint-disable-next-line react-memo/require-memo
 export const GetOAuthProvider = (): OAuthProviderClient => {
-  if (OAUTH_PROVIDER === 'auth0') {
-    return new Auth0Client(getRedirectURL);
+  switch (OAUTH_PROVIDER) {
+    case 'auth0':
+      return new Auth0Client(getRedirectURL);
+    case 'hydra':
+      return new HydraClient(getRedirectURL);
+    case 'oidc':
+      return new OIDCClient(getRedirectURL);
+    default:
+      throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra, oidc or auth0.`);
   }
-  if (OAUTH_PROVIDER === 'hydra') {
-    return new HydraClient(getRedirectURL);
-  }
-  throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
 };
 
 // eslint-disable-next-line react-memo/require-memo

@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import { Box } from '@mui/material';
 
-import { UsernamePasswordButton } from 'app/components';
+import { LoginButton } from 'app/components';
 
 export interface HydraButtonsProps {
   usernamePasswordText: string;
@@ -29,7 +29,7 @@ export interface HydraButtonsProps {
 
 // eslint-disable-next-line react-memo/require-memo
 export const HydraButtons: React.FC<HydraButtonsProps> = ({ usernamePasswordText, onUsernamePasswordButtonClick }) => (
-  <UsernamePasswordButton
+  <LoginButton
     text={usernamePasswordText}
     onClick={onUsernamePasswordButtonClick}
   />

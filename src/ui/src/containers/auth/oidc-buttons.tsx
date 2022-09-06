@@ -18,20 +18,21 @@
 
 import * as React from 'react';
 
-import { Button } from '@mui/material';
+import { LoginButton } from 'app/components';
 
-export const UsernamePasswordButton = React.memo<{ text: string; onClick: () => void }>(({
-  text,
-  onClick,
+export interface OIDCButtonsProps {
+  loginButtonText: string;
+  onLoginButtonClick: () => void;
+}
+
+// eslint-disable-next-line react-memo/require-memo
+export const OIDCButtons: React.FC<OIDCButtonsProps> = ({
+  loginButtonText,
+  onLoginButtonClick,
 }) => (
-  <Button
-    variant='contained'
-    color='primary'
-    onClick={onClick}
-    // eslint-disable-next-line react-memo/require-usememo
-    sx={{ pt: 1, pb: 1, textTransform: 'capitalize' }}
-  >
-    {text}
-  </Button>
-));
-UsernamePasswordButton.displayName = 'UsernamePasswordButton';
+  <LoginButton
+    text={loginButtonText}
+    onClick={onLoginButtonClick}
+  />
+);
+OIDCButtons.displayName = 'OIDCButtons';

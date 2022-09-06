@@ -210,7 +210,7 @@ export const UserRow = React.memo<UserRowProps>(({ user, numUsers, domainName })
               </Button>
             </div>
           </AdminTooltip>
-          {OAUTH_PROVIDER === 'auth0' && (
+          {OAUTH_PROVIDER !== 'hydra' && (
             <AdminTooltip title={removeTooltip}>
               <div>
                 <RemoveUserButton user={user} numUsers={numUsers} domainName={domainName} />

@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { GoogleButton, UsernamePasswordButton } from 'app/components';
+import { GoogleButton, LoginButton } from 'app/components';
 
 export interface Auth0ButtonsProps {
   enableEmailPassword: boolean;
@@ -41,7 +41,7 @@ export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({
       text={googleButtonText}
       onClick={onGoogleButtonClick}
     />
-    {enableEmailPassword && <UsernamePasswordButton
+    {enableEmailPassword && <LoginButton
       text={emailPasswordButtonText}
       onClick={onEmailPasswordButtonClick}
     />}

@@ -17,7 +17,7 @@
  */
 
 declare global {
-  type OAuthProvider = 'hydra' | 'auth0';
+  type OAuthProvider = 'hydra' | 'auth0' | 'oidc';
   interface Window {
     __PIXIE_FLAGS__: {
       OAUTH_PROVIDER: OAuthProvider;
