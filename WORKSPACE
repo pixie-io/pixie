@@ -163,7 +163,9 @@ load("//bazel:netty.bzl", "fetch_netty_tcnative_jars")
 # by installing the netty jars manually and then overriding maven to use them. See
 # https://github.com/bazelbuild/rules_jvm_external/issues/704 for more details.
 netty_tcnative_version = "2.0.53.Final"
+
 fetch_netty_tcnative_jars(netty_tcnative_version)
+
 thrift_deps(scala_version = scala_version)
 
 # twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
