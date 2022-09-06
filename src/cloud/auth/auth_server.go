@@ -82,6 +82,11 @@ func main() {
 	authProvider := viper.GetString("oauth_provider")
 
 	switch authProvider {
+	case "oidc":
+		a, err = controllers.NewOIDCConnector()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to initialize OIDC connector")
+		}
 	case "auth0":
 		a, err = controllers.NewAuth0Connector(controllers.NewAuth0Config())
 		if err != nil {
@@ -93,7 +98,7 @@ func main() {
 			log.WithError(err).Fatal("Failed to initialize hydraKratosConnector")
 		}
 	default:
-		log.Fatalf("Cannot initialize authProvider '%s'. Only 'auth0' and 'hydra' are supported.", authProvider)
+		log.Fatalf("Cannot initialize authProvider '%s'. Only 'auth0', 'oidc', and 'hydra' are supported.", authProvider)
 	}
 
 	env, err := authenv.NewWithDefaults()
