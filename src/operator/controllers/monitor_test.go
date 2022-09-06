@@ -198,7 +198,7 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 
 			state := getCloudConnState(httpClient, pods)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }
@@ -385,7 +385,7 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 
 	state := getCloudConnState(httpClient, pods)
 	assert.Equal(t, status.CloudConnectorPodPending, state.Reason)
-	assert.Equal(t, v1alpha1.VizierPhaseUnhealthy, translateReasonToPhase(state.Reason))
+	assert.Equal(t, v1alpha1.VizierPhaseUnhealthy, v1alpha1.ReasonToPhase(state.Reason))
 }
 
 func TestMonitor_NATSPods(t *testing.T) {
@@ -477,7 +477,7 @@ func TestMonitor_NATSPods(t *testing.T) {
 
 			state := getNATSState(httpClient, pods)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }
@@ -668,7 +668,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 
 			state := getControlPlanePodState(pods)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }
@@ -808,7 +808,7 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 
 			state := getPEMResourceLimitsState(pems)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }
@@ -906,7 +906,7 @@ func TestMonitor_getVizierVersionState(t *testing.T) {
 			})
 
 			assert.Equal(t, test.expectedReason, versionState.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(versionState.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(versionState.Reason))
 		})
 	}
 }
@@ -1068,7 +1068,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 
 			state := getPEMCrashingState(pems)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }

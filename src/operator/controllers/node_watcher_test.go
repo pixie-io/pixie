@@ -121,7 +121,7 @@ func TestMonitor_nodeWatcherHandleNode(t *testing.T) {
 			state := n.state()
 
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 			if test.delete {
 				assert.Equal(t, initialCount-1, n.kernelVersionDist[test.nodeKernel])
 			} else {

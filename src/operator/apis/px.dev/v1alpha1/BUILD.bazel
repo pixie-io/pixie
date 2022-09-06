@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/operator/apis/px.dev/v1alpha1",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/shared/status",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/runtime",

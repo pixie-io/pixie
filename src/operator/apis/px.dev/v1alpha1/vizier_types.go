@@ -28,6 +28,8 @@ package v1alpha1
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"px.dev/pixie/src/shared/status"
 )
 
 // VizierSpec defines the desired state of Vizier
@@ -232,6 +234,34 @@ type Vizier struct {
 
 	Spec   VizierSpec   `json:"spec,omitempty"`
 	Status VizierStatus `json:"status,omitempty"`
+}
+
+// SetReconciliationPhase updates the Vizier status with the given ReconciliationPhase.
+func (vz *Vizier) SetReconciliationPhase(rp ReconciliationPhase) {
+	vz.Status.ReconciliationPhase = rp
+	timeNow := metav1.Now()
+	vz.Status.LastReconciliationPhaseTime = &timeNow
+}
+
+// SetStatus updates the Vizier status with the given Reason.
+func (vz *Vizier) SetStatus(reason status.VizierReason) {
+	vz.Status.VizierPhase = ReasonToPhase(reason)
+	vz.Status.VizierReason = string(reason)
+	vz.Status.Message = reason.GetMessage()
+}
+
+// ReasonToPhase converts the Reason into the relevant Phase.
+func ReasonToPhase(reason status.VizierReason) VizierPhase {
+	switch reason {
+	case "":
+		return VizierPhaseHealthy
+	case status.CloudConnectorMissing:
+		return VizierPhaseDisconnected
+	case status.PEMsSomeInsufficientMemory, status.KernelVersionsIncompatible, status.PEMsHighFailureRate:
+		return VizierPhaseDegraded
+	default:
+		return VizierPhaseUnhealthy
+	}
 }
 
 // VizierList contains a list of Vizier

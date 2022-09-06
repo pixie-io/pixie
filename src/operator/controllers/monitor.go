@@ -44,7 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
@@ -488,27 +487,6 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 	return okState()
 }
 
-// translateReasonToPhase maps a specific VizierReason into a more general VizierPhase.
-// Empty reasons are considered healthy and unmatched reasons are by default unhealthy.
-func translateReasonToPhase(reason status.VizierReason) pixiev1alpha1.VizierPhase {
-	if reason == "" {
-		return pixiev1alpha1.VizierPhaseHealthy
-	}
-	if reason == status.CloudConnectorMissing {
-		return pixiev1alpha1.VizierPhaseDisconnected
-	}
-	if reason == status.PEMsSomeInsufficientMemory {
-		return pixiev1alpha1.VizierPhaseDegraded
-	}
-	if reason == status.KernelVersionsIncompatible {
-		return pixiev1alpha1.VizierPhaseDegraded
-	}
-	if reason == status.PEMsHighFailureRate {
-		return pixiev1alpha1.VizierPhaseDegraded
-	}
-	return pixiev1alpha1.VizierPhaseUnhealthy
-}
-
 func (m *VizierMonitor) statusAggregator(nodeStateCh, pvcStateCh <-chan *vizierState) {
 	for {
 		select {
@@ -586,7 +564,7 @@ func (m *VizierMonitor) runReconciler() {
 			}
 
 			vizierState := m.getVizierState(vz)
-			updateVizierReason(vz, vizierState.Reason)
+			vz.SetStatus(vizierState.Reason)
 
 			err = m.vzUpdate(context.Background(), vz)
 			if err != nil {
@@ -600,17 +578,6 @@ func (m *VizierMonitor) runReconciler() {
 				}
 			}
 		}
-	}
-}
-
-// updateVizierReason updates the Vizier status with the requested reason and corresponding message.
-func updateVizierReason(vz *v1alpha1.Vizier, reason status.VizierReason) {
-	vz.Status.VizierPhase = translateReasonToPhase(reason)
-	vz.Status.VizierReason = string(reason)
-	vz.Status.Message = status.GetMessageFromReason(reason)
-	// Default to the VizierReason if the message is empty.
-	if vz.Status.Message == "" {
-		vz.Status.Message = vz.Status.VizierReason
 	}
 }
 

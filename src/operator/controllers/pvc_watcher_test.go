@@ -87,7 +87,7 @@ func TestMonitor_getPVCState(t *testing.T) {
 
 			state := metadataPVCState(clientset, pvc)
 			assert.Equal(t, test.expectedReason, state.Reason)
-			assert.Equal(t, test.expectedVizierPhase, translateReasonToPhase(state.Reason))
+			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
 		})
 	}
 }

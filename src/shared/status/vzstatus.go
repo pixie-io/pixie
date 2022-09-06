@@ -57,17 +57,18 @@ var reasonToMessageMap = map[VizierReason]string{
 	PEMsAllFailing:      "PEMs are all crashing. If PEMs are getting OOMKilled, increase your PEM memory limits using the `pemMemoryLimit` flag. Otherwise, consider filing a bug so someone can address your problem: https://github.com/pixie-io/pixie",
 }
 
-// GetMessageFromReason gets the human-readable message for a Vizier status reason.
-func GetMessageFromReason(reason VizierReason) string {
-	if msg, ok := reasonToMessageMap[reason]; ok {
-		return msg
-	}
-	return ""
-}
-
 // VizierReason is the reason that Vizier is in its current state.
 // All VizierReason values should be included in this file.
 type VizierReason string
+
+// GetMessage gets the human-readable message for a Vizier status reason.
+func (reason VizierReason) GetMessage() string {
+	msg := reasonToMessageMap[reason]
+	if msg == "" {
+		msg = string(reason)
+	}
+	return msg
+}
 
 const (
 	// VizierVersionTooOld occurs when the running Vizier version is more than one major version too old.
