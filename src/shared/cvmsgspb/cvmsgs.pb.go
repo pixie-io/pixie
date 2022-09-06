@@ -6,21 +6,19 @@ package cvmsgspb
 import (
 	bytes "bytes"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	reflect "reflect"
-	strconv "strconv"
-	strings "strings"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
-
+	io "io"
+	math "math"
+	math_bits "math/bits"
 	uuidpb "px.dev/pixie/src/api/proto/uuidpb"
 	vizierpb "px.dev/pixie/src/api/proto/vizierpb"
 	metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
+	reflect "reflect"
+	strconv "strconv"
+	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1254,7 +1252,6 @@ func (*C2VAPIStreamRequest) ProtoMessage() {}
 func (*C2VAPIStreamRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_5a48c2306678667b, []int{17}
 }
-
 func (m *C2VAPIStreamRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
