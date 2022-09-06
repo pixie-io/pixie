@@ -389,6 +389,66 @@ class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
 #endif
 };
 
+class HeapStatsNumericUDTF final : public carnot::udf::UDTF<HeapStatsNumericUDTF> {
+ public:
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                "The short ID of the agent"),
+        ColInfo("current_allocated_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "Number of bytes currently allocated by agent", types::SemanticType::ST_BYTES),
+        ColInfo("heap_size_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "Size of the agent's heap in bytes. Includes allocated, free, and unmapped bytes",
+                types::SemanticType::ST_BYTES),
+        ColInfo("central_cache_free_bytes", types::DataType::INT64,
+                types::PatternType::METRIC_GAUGE,
+                "Number of free bytes in tcmalloc's central cache", types::SemanticType::ST_BYTES),
+        ColInfo("transfer_cache_free_bytes", types::DataType::INT64,
+                types::PatternType::METRIC_GAUGE,
+                "Number of free bytes in tcmalloc's transfer cache", types::SemanticType::ST_BYTES),
+        ColInfo("thread_cache_free_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "Number of free bytes in tcmalloc's thread cache", types::SemanticType::ST_BYTES),
+        ColInfo("pageheap_free_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "Number of free bytes in tcmalloc's pageheap", types::SemanticType::ST_BYTES),
+        ColInfo("pageheap_unmapped_bytes", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+                "Number of unmapped bytes in tcmalloc's pageheap", types::SemanticType::ST_BYTES));
+  }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+#ifdef TCMALLOC
+    size_t current_allocated_bytes, heap_size, central_cache_free, transfer_cache_free,
+        thread_cache_free, pageheap_free, pageheap_unmapped;
+    MallocExtension::instance()->GetNumericProperty("generic.current_allocated_bytes",
+                                                    &current_allocated_bytes);
+    MallocExtension::instance()->GetNumericProperty("generic.heap_size", &heap_size);
+    MallocExtension::instance()->GetNumericProperty("tcmalloc.central_cache_free_bytes",
+                                                    &central_cache_free);
+    MallocExtension::instance()->GetNumericProperty("tcmalloc.transfer_cache_free_bytes",
+                                                    &transfer_cache_free);
+    MallocExtension::instance()->GetNumericProperty("tcmalloc.thread_cache_free_bytes",
+                                                    &thread_cache_free);
+    MallocExtension::instance()->GetNumericProperty("tcmalloc.pageheap_free_bytes", &pageheap_free);
+    MallocExtension::instance()->GetNumericProperty("tcmalloc.pageheap_unmapped_bytes",
+                                                    &pageheap_unmapped);
+
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("current_allocated_bytes")>(current_allocated_bytes);
+    rw->Append<IndexOf("heap_size_bytes")>(heap_size);
+    rw->Append<IndexOf("central_cache_free_bytes")>(central_cache_free);
+    rw->Append<IndexOf("transfer_cache_free_bytes")>(transfer_cache_free);
+    rw->Append<IndexOf("thread_cache_free_bytes")>(thread_cache_free);
+    rw->Append<IndexOf("pageheap_free_bytes")>(pageheap_free);
+    rw->Append<IndexOf("pageheap_unmapped_bytes")>(pageheap_unmapped);
+#else
+    PL_UNUSED(ctx);
+    PL_UNUSED(rw);
+#endif
+    return false;
+  }
+};
+
 }  // namespace funcs
 }  // namespace vizier
 }  // namespace px
