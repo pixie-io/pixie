@@ -49,6 +49,7 @@
     "build-linter": {
       "type": "script-and-regex",
       "include": [
+        "(^WORKSPACE$)",
         "(^third_party/BUILD\\.bazel$)",
         "(\\.BUILD$)",
         "(BUILD\\.bazel$)",
