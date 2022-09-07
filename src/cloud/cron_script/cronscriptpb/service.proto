@@ -66,6 +66,7 @@ message CronScript {
 message GetScriptRequest {
     // ID is the ID of the cron script to fetch.
     uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 // GetScriptResponse is the response to a GetScriptRequest.
@@ -78,6 +79,7 @@ message GetScriptResponse {
 message GetScriptsRequest {
     // IDs of the scripts to fetch.
     repeated uuidpb.UUID ids = 1 [(gogoproto.customname) = "IDs"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 // GetScriptsResponse is the response to a GetScriptsRequest.
@@ -102,6 +104,8 @@ message CreateScriptRequest {
     int64 frequency_s = 6;
     // Whether the script should be disabled at creation.
     bool disabled = 7;
+    // The org which the script should be created for.
+    uuidpb.UUID org_id = 8 [(gogoproto.customname) = "OrgID"];
 }
 
 // CreateScriptResponse is a response to a CreateScriptRequest.
@@ -124,6 +128,7 @@ message UpdateScriptRequest {
     // How frequently a script should be run, if not specified via cron.
     google.protobuf.Int64Value frequency_s = 6;
     uuidpb.UUID script_id = 7;
+    uuidpb.UUID org_id = 8 [(gogoproto.customname) = "OrgID"];
 }
 
 // ClusterIDs is a wrapper around cluster IDs.
@@ -139,6 +144,7 @@ message UpdateScriptResponse {}
 message DeleteScriptRequest {
     // ID is the ID of the cron script to delete.
     uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 // DeleteScriptResponse is a response to a DeleteScriptRequest.
