@@ -38,7 +38,7 @@ import {
 } from '@mui/material';
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { useHistory } from 'react-router';
+import { useHistory, useLocation } from 'react-router';
 
 import { CodeEditor, EDITOR_THEME_MAP, StatusCell, StatusGroup, useSnackbar } from 'app/components';
 import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
@@ -221,6 +221,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const { plugins } = useRetentionPlugins();
   const { scripts: existingScripts } = useRetentionScripts();
   const { script } = useRetentionScript(scriptId);
+  const { state } = useLocation();
 
   const takenScriptNames = React.useMemo(() => existingScripts.map(s => s.name), [existingScripts]);
 
@@ -238,7 +239,7 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
     name: '',
     description: '',
     clusters: [],
-    contents: (isCreate ? DEFAULT_RETENTION_PXL : ''),
+    contents: (isCreate ? (state as any)?.contents || DEFAULT_RETENTION_PXL : ''),
     frequencyS: 10,
     pluginID: '',
     exportPath: '',
