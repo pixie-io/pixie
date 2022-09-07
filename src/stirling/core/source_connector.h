@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -27,6 +28,7 @@
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/frequency_manager.h"
+#include "src/stirling/core/info_class_manager.h"
 
 /**
  * These are the steps to follow to add a new data source connector.
@@ -39,6 +41,12 @@
 
 namespace px {
 namespace stirling {
+
+// Holds InfoClassManager and DataTable.
+struct SourceOutput {
+  std::vector<InfoClassManager*> info_class_mgrs;
+  std::vector<DataTable*> data_tables;
+};
 
 class SourceConnector : public NotCopyable {
  public:
@@ -116,6 +124,9 @@ class SourceConnector : public NotCopyable {
 
   const FrequencyManager& sampling_freq_mgr() const { return sampling_freq_mgr_; }
   const FrequencyManager& push_freq_mgr() const { return push_freq_mgr_; }
+  const SourceOutput& output() const { return output_; }
+
+  void set_output(SourceOutput output) { output_ = std::move(output); }
 
  protected:
   explicit SourceConnector(std::string_view source_name,
@@ -158,6 +169,7 @@ class SourceConnector : public NotCopyable {
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
+  SourceOutput output_;
 };
 
 }  // namespace stirling

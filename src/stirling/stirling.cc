@@ -177,12 +177,6 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistryFromFlag() {
   return CreateSourceRegistry(GetSourceNamesFromFlag()).ConsumeValueOrDie();
 }
 
-// Holds InfoClassManager and DataTable.
-struct SourceOutput {
-  std::vector<InfoClassManager*> info_class_mgrs;
-  std::vector<DataTable*> data_tables;
-};
-
 class StirlingImpl final : public Stirling {
  public:
   explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
@@ -240,6 +234,9 @@ class StirlingImpl final : public Stirling {
   // Main run implementation.
   void RunCore();
 
+  // Computes the amount of time to sleep based on the next source connector that needs to wakeup.
+  std::chrono::milliseconds TimeUntilNextTick();
+
   // Wait for Stirling to stop its main loop.
   void WaitForStop();
 
@@ -249,10 +246,6 @@ class StirlingImpl final : public Stirling {
   std::atomic<bool> run_enable_ = false;
   std::atomic<bool> running_ = false;
   std::vector<std::unique_ptr<SourceConnector>> sources_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
-
-  // TODO(yzhao): Move InfoClassManager objects into SourceConnector, and remove this map.
-  absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map_
-      ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
   InfoClassManagerVec info_class_mgrs_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
@@ -436,7 +429,6 @@ std::vector<DataTable*> GetDataTables(const std::vector<InfoClassManager*>& info
 }  // namespace
 
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
-  // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
@@ -454,9 +446,7 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 
   std::vector<DataTable*> data_tables = GetDataTables(mgrs);
 
-  source_output_map_[source.get()] = {std::move(mgrs),
-                                      // DataTable objects are created after subscribing.
-                                      std::move(data_tables)};
+  source->set_output({std::move(mgrs), std::move(data_tables)});
   sources_.push_back(std::move(source));
 
   return Status::OK();
@@ -484,7 +474,6 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 
   // Now perform the removal.
   PL_RETURN_IF_ERROR(source->Stop());
-  source_output_map_.erase(source.get());
   sources_.erase(source_iter);
 
   return Status::OK();
@@ -747,11 +736,8 @@ void StirlingImpl::Run() {
   RunCore();
 }
 
-namespace {
-
-// Helper function: Figure out when to wake up next.
-std::chrono::milliseconds TimeUntilNextTick(
-    const absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map) {
+std::chrono::milliseconds StirlingImpl::TimeUntilNextTick()
+    ABSL_SHARED_LOCKS_REQUIRED(info_class_mgrs_lock_) {
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
   auto now = px::chrono::coarse_steady_clock::now();
@@ -760,13 +746,15 @@ std::chrono::milliseconds TimeUntilNextTick(
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.
   constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
   auto wakeup_time = now + kMaxSleepDuration;
-  for (const auto& [source, output] : source_output_map) {
+  for (const auto& source : sources_) {
     wakeup_time = std::min(wakeup_time, source->sampling_freq_mgr().next());
     wakeup_time = std::min(wakeup_time, source->push_freq_mgr().next());
   }
 
   return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
 }
+
+namespace {
 
 void SleepForDuration(std::chrono::milliseconds sleep_duration) {
   constexpr std::chrono::milliseconds kMinSleepDuration{1};
@@ -831,19 +819,20 @@ void StirlingImpl::RunCore() {
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
       // Run through every SourceConnector and InfoClassManager being managed.
-      for (auto& [source, output] : source_output_map_) {
+      for (auto& source : sources_) {
         // Phase 1: Probe each source for its data.
         if (source->sampling_freq_mgr().Expired()) {
-          source->TransferData(ctx.get(), output.data_tables);
+          source->TransferData(ctx.get(), source->output().data_tables);
         }
         // Phase 2: Push Data upstream.
-        if (source->push_freq_mgr().Expired() || DataExceedsThreshold(output.data_tables)) {
-          source->PushData(data_push_callback_, output.data_tables);
+        if (source->push_freq_mgr().Expired() ||
+            DataExceedsThreshold(source->output().data_tables)) {
+          source->PushData(data_push_callback_, source->output().data_tables);
         }
       }
 
       // Figure out how long to sleep.
-      sleep_duration = TimeUntilNextTick(source_output_map_);
+      sleep_duration = TimeUntilNextTick();
     }
 
     SleepForDuration(sleep_duration);
