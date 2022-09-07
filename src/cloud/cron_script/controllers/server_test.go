@@ -115,7 +115,8 @@ func TestServer_GetScript(t *testing.T) {
 
 	s := controllers.New(db, "test", nil, nil)
 	resp, err := s.GetScript(createTestContext(), &cronscriptpb.GetScriptRequest{
-		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -145,6 +146,7 @@ func TestServer_GetScripts(t *testing.T) {
 			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -281,6 +283,7 @@ func TestServer_CreateScript(t *testing.T) {
 		Configs:    "testYAML",
 		FrequencyS: 11,
 		ClusterIDs: clusterIDs,
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	wg.Wait()
 	require.NoError(t, err)
@@ -336,6 +339,7 @@ func TestServer_CreateScriptDisabled(t *testing.T) {
 		FrequencyS: 11,
 		ClusterIDs: clusterIDs,
 		Disabled:   true,
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -467,6 +471,7 @@ func TestServer_UpdateScript(t *testing.T) {
 		ClusterIDs: &cronscriptpb.ClusterIDs{Value: clusterIDs},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 		Enabled:    &types.BoolValue{Value: true},
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	wg.Wait()
 	require.NoError(t, err)
@@ -542,7 +547,8 @@ func TestServer_DeleteScript(t *testing.T) {
 	}()
 
 	resp, err := s.DeleteScript(createTestContext(), &cronscriptpb.DeleteScriptRequest{
-		ID: scriptIDpb,
+		ID:    scriptIDpb,
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp)

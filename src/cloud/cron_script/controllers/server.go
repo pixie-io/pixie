@@ -289,11 +289,14 @@ func (s *Server) GetScript(ctx context.Context, req *cronscriptpb.GetScriptReque
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
 	}
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.OrgID == nil {
+		orgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	}
 	scriptID := utils.UUIDFromProtoOrNil(req.ID)
 
 	query := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id=$2 AND id=$3`
-	rows, err := s.db.Queryx(query, s.dbKey, claimsOrgID, scriptID)
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, scriptID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
 	}
@@ -316,7 +319,7 @@ func (s *Server) GetScript(ctx context.Context, req *cronscriptpb.GetScriptReque
 	return &cronscriptpb.GetScriptResponse{
 		Script: &cronscriptpb.CronScript{
 			ID:         req.ID,
-			OrgID:      utils.ProtoFromUUID(claimsOrgID),
+			OrgID:      utils.ProtoFromUUID(orgID),
 			Script:     script.Script,
 			ClusterIDs: clusterIDs,
 			Configs:    script.ConfigStr,
@@ -333,13 +336,18 @@ func (s *Server) GetScripts(ctx context.Context, req *cronscriptpb.GetScriptsReq
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
 	}
 
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.OrgID == nil {
+		orgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	}
+
 	ids := make([]uuid.UUID, len(req.IDs))
 	for i, id := range req.IDs {
 		ids[i] = utils.UUIDFromProtoOrNil(id)
 	}
 
 	strQuery := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, '%s'::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id='%s' AND id IN (?)`
-	strQuery = fmt.Sprintf(strQuery, s.dbKey, sCtx.Claims.GetUserClaims().OrgID)
+	strQuery = fmt.Sprintf(strQuery, s.dbKey, orgID)
 
 	query, args, err := sqlx.In(strQuery, ids)
 	if err != nil {
@@ -388,7 +396,10 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
 	}
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.OrgID == nil {
+		orgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	}
 
 	clusterIDs := make([]uuid.UUID, len(req.ClusterIDs))
 	for i, c := range req.ClusterIDs {
@@ -396,7 +407,7 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 	}
 
 	query := `INSERT INTO cron_scripts(org_id, script, cluster_ids, configs, enabled, frequency_s) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), $6, $7) RETURNING id`
-	rows, err := s.db.Queryx(query, claimsOrgID, req.Script, ClusterIDs(clusterIDs), req.Configs, s.dbKey, !req.Disabled, req.FrequencyS)
+	rows, err := s.db.Queryx(query, orgID, req.Script, ClusterIDs(clusterIDs), req.Configs, s.dbKey, !req.Disabled, req.FrequencyS)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create cron script")
 	}
@@ -425,7 +436,7 @@ func (s *Server) CreateScript(ctx context.Context, req *cronscriptpb.CreateScrip
 					},
 				},
 			},
-		}, claimsOrgID, req.ClusterIDs)
+		}, orgID, req.ClusterIDs)
 	}
 
 	return &cronscriptpb.CreateScriptResponse{ID: idPb}, nil
@@ -437,11 +448,14 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
 	}
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.OrgID == nil {
+		orgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	}
 	scriptID := utils.UUIDFromProtoOrNil(req.ScriptId)
 
 	query := `SELECT id, org_id, script, cluster_ids, PGP_SYM_DECRYPT(configs, $1::text) as configs, enabled, frequency_s FROM cron_scripts WHERE org_id=$2 AND id=$3`
-	rows, err := s.db.Queryx(query, s.dbKey, claimsOrgID, scriptID)
+	rows, err := s.db.Queryx(query, s.dbKey, orgID, scriptID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
 	}
@@ -507,7 +521,7 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 				ScriptID: req.ScriptId,
 			},
 		},
-	}, claimsOrgID, prevClusterIDs)
+	}, orgID, prevClusterIDs)
 
 	if enabled {
 		s.sendCronScriptUpdateToViziers(&cvmsgspb.CronScriptUpdate{
@@ -521,7 +535,7 @@ func (s *Server) UpdateScript(ctx context.Context, req *cronscriptpb.UpdateScrip
 					},
 				},
 			},
-		}, claimsOrgID, newClusterIDs)
+		}, orgID, newClusterIDs)
 	}
 
 	return &cronscriptpb.UpdateScriptResponse{}, nil
@@ -533,11 +547,14 @@ func (s *Server) DeleteScript(ctx context.Context, req *cronscriptpb.DeleteScrip
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Unauthenticated")
 	}
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	if req.OrgID == nil {
+		orgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	}
 	scriptID := utils.UUIDFromProtoOrNil(req.ID)
 
 	query := `SELECT cluster_ids FROM cron_scripts WHERE org_id=$1 AND id=$2`
-	rows, err := s.db.Queryx(query, claimsOrgID, scriptID)
+	rows, err := s.db.Queryx(query, orgID, scriptID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
 	}
@@ -556,7 +573,7 @@ func (s *Server) DeleteScript(ctx context.Context, req *cronscriptpb.DeleteScrip
 	}
 
 	query = `DELETE FROM cron_scripts WHERE id=$1 AND org_id=$2`
-	_, err = s.db.Exec(query, scriptID, claimsOrgID)
+	_, err = s.db.Exec(query, scriptID, orgID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete")
 	}
@@ -567,7 +584,7 @@ func (s *Server) DeleteScript(ctx context.Context, req *cronscriptpb.DeleteScrip
 				ScriptID: req.ID,
 			},
 		},
-	}, claimsOrgID, clusterIDProtos)
+	}, orgID, clusterIDProtos)
 
 	return &cronscriptpb.DeleteScriptResponse{}, nil
 }
