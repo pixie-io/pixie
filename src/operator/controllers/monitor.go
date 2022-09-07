@@ -124,7 +124,7 @@ type VizierMonitor struct {
 }
 
 // InitAndStartMonitor initializes and starts the status monitor for the Vizier.
-func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error {
+func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) {
 	// Initialize current state.
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -163,8 +163,6 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) error 
 	// reconciling the Vizier status.
 	go m.statusAggregator(nodeStateCh, pvcStateCh)
 	go m.runReconciler()
-
-	return nil
 }
 
 func (m *VizierMonitor) onAddPod(obj interface{}) {

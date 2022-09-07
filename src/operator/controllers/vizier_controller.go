@@ -199,10 +199,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err != nil {
 			log.WithError(err).Fatal("Failed to connect to cloud client")
 		}
-		err = r.monitor.InitAndStartMonitor(cloudClient)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to initialize vizier monitor")
-		}
+		r.monitor.InitAndStartMonitor(cloudClient)
 	}
 
 	// Vizier CRD has been updated, and we should update the running vizier accordingly.
