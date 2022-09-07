@@ -454,12 +454,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig3),
 					FrequencyS: 10,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script 2",
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig3),
 					FrequencyS: 20,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
 			expectedPluginScripts: []*controllers.RetentionScript{
@@ -536,6 +538,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs:    string(mConfig3),
 					FrequencyS: 10,
 					Disabled:   true,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script 2",
@@ -543,6 +546,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs:    string(mConfig3),
 					FrequencyS: 20,
 					Disabled:   true,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
 			expectedPluginScripts: []*controllers.RetentionScript{
@@ -620,12 +624,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig4),
 					FrequencyS: 10,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script 2",
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig4),
 					FrequencyS: 20,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
 			expectedPluginScripts: []*controllers.RetentionScript{
@@ -674,12 +680,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 			},
 			expectedCSDeleteRequests: []*cronscriptpb.DeleteScriptRequest{
 				&cronscriptpb.DeleteScriptRequest{
-					ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 			},
 			expectedCSUpdateRequests: []*cronscriptpb.UpdateScriptRequest{
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+					OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Enabled: &types.BoolValue{
 						Value: false,
 					},
@@ -731,12 +739,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs: &types.StringValue{
 						Value: string(mConfig1),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 					Configs: &types.StringValue{
 						Value: string(mConfig2),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 			},
 		},
@@ -828,12 +838,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs: &types.StringValue{
 						Value: string(mConfig1),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 					Configs: &types.StringValue{
 						Value: string(mConfig2),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 			},
 		},
@@ -921,12 +933,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs: &types.StringValue{
 						Value: string(mConfig1),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 					Configs: &types.StringValue{
 						Value: string(mConfig2),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
@@ -935,12 +949,14 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig5),
 					FrequencyS: 10,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 				&cronscriptpb.CreateScriptRequest{
 					Script:     "dns script 2",
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig5),
 					FrequencyS: 20,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				},
 			},
 		},
@@ -990,24 +1006,28 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs: &types.StringValue{
 						Value: string(mConfig4),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440005"),
 					Configs: &types.StringValue{
 						Value: string(mConfig2TLSFalse),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440006"),
 					Configs: &types.StringValue{
 						Value: string(mConfig2TLSFalse),
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 				},
 				&cronscriptpb.UpdateScriptRequest{
 					ScriptId: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440005"),
 					Script: &types.StringValue{
 						Value: "dns script",
 					},
+					OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 				},
 			},
 			expectedCSCreateRequests: []*cronscriptpb.CreateScriptRequest{
@@ -1016,6 +1036,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig4),
 					FrequencyS: 20,
+					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 				},
 			},
 			expectedPluginScripts: []*controllers.RetentionScript{
@@ -1151,6 +1172,7 @@ func TestServer_GetRetentionScripts(t *testing.T) {
 			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 			utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	}).Return(&cronscriptpb.GetScriptsResponse{
 		Scripts: []*cronscriptpb.CronScript{
 			&cronscriptpb.CronScript{
@@ -1220,7 +1242,8 @@ func TestServer_GetRetentionScript(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	mockCSClient.EXPECT().GetScript(gomock.Any(), &cronscriptpb.GetScriptRequest{
-		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	}).Return(&cronscriptpb.GetScriptResponse{
 		Script: &cronscriptpb.CronScript{
 			ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
@@ -1291,6 +1314,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 		},
 		Configs:    string(mConfig),
 		FrequencyS: 20,
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	}).Return(&cronscriptpb.CreateScriptResponse{
 		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 	}, nil)
@@ -1367,6 +1391,7 @@ func TestServer_UpdateRetentionScript(t *testing.T) {
 		FrequencyS: &types.Int64Value{Value: 2},
 		ScriptId:   utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 		Configs:    &types.StringValue{Value: string(mConfig)},
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
 
 	s := controllers.New(db, "test", mockCSClient)
@@ -1409,7 +1434,8 @@ func TestServer_DeleteRetentionScript(t *testing.T) {
 	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
 
 	mockCSClient.EXPECT().DeleteScript(gomock.Any(), &cronscriptpb.DeleteScriptRequest{
-		ID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		ID:    utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	}).Return(&cronscriptpb.DeleteScriptResponse{}, nil)
 
 	s := controllers.New(db, "test", mockCSClient)

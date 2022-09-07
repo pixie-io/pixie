@@ -321,7 +321,8 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 			continue
 		}
 		_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
-			ID: utils.ProtoFromUUID(id),
+			ID:    utils.ProtoFromUUID(id),
+			OrgID: utils.ProtoFromUUID(orgID),
 		})
 		if err != nil {
 			return status.Errorf(codes.Internal, "Failed to disable script")
@@ -344,6 +345,7 @@ func (s *Server) disableOrgRetention(ctx context.Context, txn *sqlx.Tx, orgID uu
 		}
 		_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
 			ScriptId: utils.ProtoFromUUID(id),
+			OrgID:    utils.ProtoFromUUID(orgID),
 			Enabled: &types.BoolValue{
 				Value: false,
 			},
@@ -403,6 +405,7 @@ func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 			_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
 				ScriptId: utils.ProtoFromUUID(i),
 				Script:   &types.StringValue{Value: j.Script},
+				OrgID:    utils.ProtoFromUUID(orgID),
 			})
 			if err != nil {
 				return status.Errorf(codes.Internal, "Failed to update preset script")
@@ -525,6 +528,7 @@ func (s *Server) propagateConfigChangesToScripts(ctx context.Context, txn *sqlx.
 		_, err = s.cronScriptClient.UpdateScript(ctx, &cronscriptpb.UpdateScriptRequest{
 			ScriptId: utils.ProtoFromUUID(sc.ScriptID),
 			Configs:  &types.StringValue{Value: string(mConfig)},
+			OrgID:    utils.ProtoFromUUID(orgID),
 		})
 		if err != nil {
 			log.WithError(err).Error("Failed to update cron script")
@@ -739,7 +743,7 @@ func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetReten
 	if err != nil {
 		return nil, err
 	}
-	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs})
+	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs, OrgID: utils.ProtoFromUUID(orgID)})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron scripts")
 	}
@@ -786,7 +790,7 @@ func (s *Server) GetRetentionScript(ctx context.Context, req *pluginpb.GetRetent
 		return nil, err
 	}
 
-	cronScriptResp, err := s.cronScriptClient.GetScript(ctx, &cronscriptpb.GetScriptRequest{ID: req.ScriptID})
+	cronScriptResp, err := s.cronScriptClient.GetScript(ctx, &cronscriptpb.GetScriptRequest{ID: req.ScriptID, OrgID: utils.ProtoFromUUID(orgID)})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron script")
 	}
@@ -825,13 +829,13 @@ func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID 
 	if err != nil {
 		return nil, err
 	}
-
 	cronScriptResp, err := s.cronScriptClient.CreateScript(ctx, &cronscriptpb.CreateScriptRequest{
 		Script:     contents,
 		ClusterIDs: clusterIDs,
 		Configs:    configYAML,
 		FrequencyS: frequencyS,
 		Disabled:   disabled,
+		OrgID:      utils.ProtoFromUUID(orgID),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to create cron script")
@@ -1032,6 +1036,7 @@ func (s *Server) UpdateRetentionScript(ctx context.Context, req *pluginpb.Update
 		FrequencyS: req.FrequencyS,
 		ScriptId:   req.ScriptID,
 		Configs:    &types.StringValue{Value: configYAML},
+		OrgID:      utils.ProtoFromUUIDStrOrNil(claimsOrgIDstr),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to update cron script")
@@ -1126,7 +1131,8 @@ func (s *Server) DeleteRetentionScript(ctx context.Context, req *pluginpb.Delete
 	}
 
 	_, err = s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
-		ID: req.ID,
+		ID:    req.ID,
+		OrgID: utils.ProtoFromUUID(orgID),
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to delete cron script")
