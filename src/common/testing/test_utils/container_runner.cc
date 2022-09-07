@@ -55,7 +55,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
 ContainerRunner::~ContainerRunner() {
   Stop();
 
-  std::string docker_rm_cmd = absl::StrCat("docker rm -f ", container_name_);
+  std::string docker_rm_cmd = absl::Substitute("docker rm -f $0 &>/dev/null", container_name_);
   LOG(INFO) << docker_rm_cmd;
   StatusOr<std::string> s = px::Exec(docker_rm_cmd);
   LOG_IF(ERROR, !s.ok()) << absl::Substitute(
@@ -123,7 +123,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
   // If the process receives a SIGKILL, then the docker run command above would leak.
   // As a safety net for such cases, we spawn off a delayed docker kill command to clean-up.
-  std::string docker_kill_cmd = absl::Substitute("(sleep $0 && docker rm -f $1) 2>&1 >/dev/null",
+  std::string docker_kill_cmd = absl::Substitute("(sleep $0 && docker rm -f $1 &>/dev/null)",
                                                  timeout.count(), container_name_);
   FILE* pipe = popen(docker_kill_cmd.c_str(), "r");
   // We deliberately don't ever call pclose() -- even in the destructor -- otherwise, we'd block.
@@ -181,12 +181,12 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   }
 
   // Get the PID of process within the container.
-  // Note that this like won't work for short-lived containers.
+  // Note that this likely won't work for short-lived containers.
   process_pid_ = ContainerPID(container_name_).ValueOr(-1);
 
   if (process_pid_ == -1) {
-    LOG(WARNING) << absl::Substitute(
-        "Container $0 may have terminated before PID could be sampled.", container_name_);
+    LOG(INFO) << absl::Substitute("Container $0 may have terminated before PID could be sampled.",
+                                  container_name_);
   }
   LOG(INFO) << absl::Substitute("Container $0 process PID: $1", container_name_, process_pid_);
 
@@ -244,7 +244,9 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
 
 void ContainerRunner::Stop() {
   // Clean-up the container.
-  docker_.Signal(SIGKILL);
+  if (docker_.IsRunning()) {
+    docker_.Signal(SIGKILL);
+  }
   docker_.Wait();
 }
 
