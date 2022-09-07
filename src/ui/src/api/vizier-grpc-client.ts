@@ -27,6 +27,7 @@ import {
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
+  GenerateOTelScriptRequest, GenerateOTelScriptResponse,
 } from 'app/types/generated/vizierapi_pb';
 import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
 
@@ -295,6 +296,33 @@ export class VizierGRPCClient {
       finalize((() => { call.cancel(); })),
       timeout(HEALTH_CHECK_TIMEOUT),
     );
+  }
+
+  generateOTelExportScript(script: string): Promise<string | VizierQueryError> {
+    const headers = {
+      ...(this.token ? { Authorization: `bearer ${this.token}` } : {}),
+      // Add a short deadline to the request to account for Viziers that don't
+      // have this message implemented. Without this, the user will be stuck
+      // waiting for a response and believe the request didn't work.
+      deadline: (new Date(Date.now() + 5000)).getTime().toString(),
+    };
+    const req = new GenerateOTelScriptRequest();
+    req.setClusterId(this.clusterID);
+    req.setPxlScript(script);
+
+    return this.client.generateOTelScript(req, headers).then(
+      (resp: GenerateOTelScriptResponse) => {
+        const status = resp.getStatus();
+        const errList = status.getErrorDetailsList();
+        if (errList.length > 0) {
+          return new VizierQueryError('execution', getExecutionErrors(errList), status);
+        }
+        const errMsg = status.getMessage();
+        if (errMsg) {
+          return new VizierQueryError('execution', errMsg, status);
+        }
+        return resp.getOtelScript();
+      }).catch((err) => new VizierQueryError('execution', err.message));
   }
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
