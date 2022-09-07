@@ -180,6 +180,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    * @param script The source code of the script to be compiled and executed; whitespace and all.
    * @param opts Any extra options, such as encryption.
    * @param funcs Descriptions of which functions in the script to run, and what to do with their output.
+   * @param scriptName The name of the script, if any. This is used to identify scripts in the backend.
    */
   executeScript(
     cluster: ClusterConfig,
