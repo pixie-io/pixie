@@ -24,7 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { CodeRenderer, Spinner } from 'app/components';
 import NavBars from 'app/containers/App/nav-bars';
-import * as logoImage from 'assets/images/pixie-logo.svg';
+import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   dialog: {
@@ -98,7 +98,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     float: 'right',
     marginRight: theme.spacing(2),
     marginBottom: theme.spacing(2),
-    width: theme.spacing(6.875), // 55px
+    height: theme.spacing(2),
   },
   centered: {
     display: 'flex',
@@ -173,7 +173,7 @@ export const DeployInstructions = React.memo(() => {
               </Button>
             </div>
           </div>
-          <img alt='logo' className={classes.logo} src={logoImage} />
+          <div className={classes.logo}><Logo color='white' /></div>
         </Paper>
       </div>
     </div>
@@ -197,7 +197,7 @@ export const ClusterInstructions = React.memo<ClusterInstructionsProps>(({ messa
             <Spinner />
           </div>
         </div>
-        <img alt='logo' className={classes.logo} src={logoImage} />
+        <div className={classes.logo}><Logo color='white' /></div>
       </Paper>
     </div>
   );

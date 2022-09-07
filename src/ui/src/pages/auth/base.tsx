@@ -26,8 +26,8 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { Footer } from 'app/components';
 import { WithChildren } from 'app/utils/react-boilerplate';
-import * as pixieLogo from 'assets/images/pixie-logo.svg';
 import { Copyright } from 'configurable/copyright';
+import { Logo } from 'configurable/logo';
 
 import StarsPNG from './stars.png';
 
@@ -77,7 +77,7 @@ export const BasePage: React.FC<WithChildren> = React.memo(({ children }) => {
   return (
     <div className={classes.root}>
       <div className={classes.logo}>
-        <img src={pixieLogo} alt='Pixie Logo' />
+        <Logo />
       </div>
       <div className={classes.content}>
         {children}

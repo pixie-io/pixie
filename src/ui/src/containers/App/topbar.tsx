@@ -74,6 +74,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   clickable: {
     cursor: 'pointer',
   },
+  logoContainer: {
+    height: theme.spacing(3),
+  },
   managedDomainBanner: {
     background: theme.palette.background.one,
     fontSize: theme.typography.caption.fontSize,
@@ -321,7 +324,9 @@ export const TopBar: React.FC<WithChildren<TopBarProps>> = React.memo(({
         <IconButton edge='start' size='large' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
-        <Link to='/'><Logo /></Link>
+        <div className={classes.logoContainer}>
+          <Link to='/'><Logo /></Link>
+        </div>
         <div className={classes.contents}>
           { children }
         </div>

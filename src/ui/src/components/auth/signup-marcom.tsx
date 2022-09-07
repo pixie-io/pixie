@@ -27,11 +27,11 @@ import {
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { PixieLogo } from 'app/components/icons/pixie-logo';
 import { CPPIcon } from 'app/components/logos/cpp';
 import { GolangIcon } from 'app/components/logos/golang';
 import { HeartIcon } from 'app/components/logos/heart';
 import { RustIcon } from 'app/components/logos/rust';
+import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   heading: {
@@ -44,6 +44,8 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   },
   pixieLove: {
     display: 'flex',
+    flexFlow: 'row nowrap',
+    gap: spacing(2),
     marginTop: spacing(5),
     alignItems: 'center',
     background: `linear-gradient(180deg, ${alpha(
@@ -54,11 +56,16 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
     boxShadow: `2px 2px 2px 0px ${palette.background.default}`,
     paddingLeft: spacing(2),
     paddingRight: spacing(2),
+    height: spacing(4),
   },
   pixieLoveItem: {
+    height: spacing(3),
     display: 'flex',
-    paddingLeft: spacing(1),
-    paddingRight: spacing(1),
+    alignItems: 'center',
+  },
+  logoItem: {
+    height: spacing(1.25),
+    marginRight: spacing(-1.5), // Offset gap between this item and the heart
   },
 }), { name: 'SignupMarcom' });
 
@@ -85,7 +92,9 @@ export const SignupMarcom = React.memo(() => {
         </Grid>
         <Grid item>
           <div className={classes.pixieLove}>
-            <PixieLogo fontSize='large' />
+            <div className={classes.logoItem}>
+              <Logo color='white' />
+            </div>
             <div className={classes.pixieLoveItem}>
               <HeartIcon />
             </div>

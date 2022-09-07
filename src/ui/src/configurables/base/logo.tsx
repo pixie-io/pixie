@@ -20,21 +20,33 @@ import * as React from 'react';
 
 import { createStyles, makeStyles } from '@mui/styles';
 
-import * as logo from 'assets/images/pixie-oss.svg';
+import * as logoPlain from 'assets/images/pixie-oss-white.svg';
+import * as logoGradient from 'assets/images/pixie-oss.svg';
 
 const useStyles = makeStyles(() => createStyles({
   logo: {
+    height: '100%',
+    width: 'auto',
+  },
+  logoContainer: {
     height: '100%',
     display: 'flex',
   },
 }), { name: 'Logo' });
 
-export const Logo = React.memo(() => {
+export const Logo = React.memo<{ color?: string }>(({ color }) => {
   const classes = useStyles();
 
   return (
-    <div className={classes.logo}>
-      <img src={logo} alt='Logo' />
+    <div className={classes.logoContainer}>
+      <img
+        className={classes.logo}
+        src={color ? logoPlain : logoGradient}
+        style={{
+          color,
+          fill: color,
+        }}
+      />
     </div>
   );
 });

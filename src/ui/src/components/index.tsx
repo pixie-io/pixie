@@ -114,7 +114,6 @@ export { SettingsIcon } from './icons/settings';
 
 export { PixieCommandIcon } from './icons/pixie-command';
 export { PixieCommandHint } from './icons/pixie-command-hint';
-export { PixieLogo } from './icons/pixie-logo';
 
 export {
   scrollbarStyles,
