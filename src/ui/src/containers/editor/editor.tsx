@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-import { ChevronRight } from '@mui/icons-material';
-import { Tab, Tabs } from '@mui/material';
+import { ChevronRight, Upload } from '@mui/icons-material';
+import { Button, Divider, Tab, Tabs } from '@mui/material';
 import { Theme, useTheme, styled } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
@@ -29,6 +29,7 @@ import {
   LazyPanel,
   ResizableDrawer,
 } from 'app/components';
+import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { getKeyMap } from 'app/containers/live/shortcuts';
 import { EditorContext } from 'app/context/editor-context';
 import { LayoutContext } from 'app/context/layout-context';
@@ -52,6 +53,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'row',
     backgroundColor: theme.palette.background.three,
+    alignItems: 'center',
   },
   panel: {
     flex: 1,
@@ -171,7 +173,9 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen } = React.useContext(LayoutContext);
   const closeEditor = () => setEditorPanelOpen(false);
+  const { script } = React.useContext(ScriptContext);
 
+  /* eslint-disable react-memo/require-usememo */
   return (
     <div className={classes.root}>
       <LazyPanel show={visible} className={classes.rootPanel}>
@@ -184,6 +188,19 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
             <StyledTab value='pixie' label='PxL Script' />
             <StyledTab value='vis' label='Vis Spec' />
           </StyledTabs>
+          {script?.id === SCRATCH_SCRIPT.id && (
+            <>
+              <Button
+                variant='text'
+                color='primary'
+                size='small'
+                startIcon={<Upload />}
+              >
+                Export to Plugin
+              </Button>
+              <Divider variant='middle' orientation='vertical' sx={{ ml: 1, mr: 1, borderColor: 'divider' }} />
+            </>
+          )}
           <div className={classes.closer} onClick={closeEditor}>
             <ChevronRight />
           </div>
