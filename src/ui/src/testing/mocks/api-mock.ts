@@ -24,7 +24,7 @@ import { Observable, of as observableOf } from 'rxjs';
 
 import {
   ClusterConfig, PixieAPIClient, PixieAPIClientAbstract, PixieAPIClientOptions,
-  ExecutionStateUpdate, VizierQueryFunc, ExecuteScriptOptions,
+  ExecutionStateUpdate, VizierQueryFunc, ExecuteScriptOptions, VizierQueryError,
 } from 'app/api';
 import { Status } from 'app/types/generated/vizierapi_pb';
 
@@ -45,6 +45,10 @@ export class MockPixieAPIClient implements PixieAPIClientAbstract {
   // eslint-disable-next-line class-methods-use-this
   health(cluster: ClusterConfig): Observable<Status> {
     return observableOf(new Status().setCode(0));
+  }
+
+  generateOTelExportScript(cluster: ClusterConfig, script: string): Promise<string | VizierQueryError> {
+    return new Promise<string | VizierQueryError>((resolve) => { resolve('') });
   }
 
   // Using the same implementation as the real class here, so that mocking the network requests works.

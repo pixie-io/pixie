@@ -172,8 +172,13 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen } = React.useContext(LayoutContext);
+  const { generateOTelExportScript } = React.useContext(ScriptContext);
   const closeEditor = () => setEditorPanelOpen(false);
   const { script } = React.useContext(ScriptContext);
+  const { pxlEditorText } = React.useContext(EditorContext);
+
+  const generateOTelExportScriptMemo = React.useCallback(() => generateOTelExportScript(pxlEditorText),
+    [generateOTelExportScript, pxlEditorText]);
 
   /* eslint-disable react-memo/require-usememo */
   return (
@@ -194,6 +199,7 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
                 variant='text'
                 color='primary'
                 size='small'
+                onClick={generateOTelExportScriptMemo}
                 startIcon={<Upload />}
               >
                 Export to Plugin

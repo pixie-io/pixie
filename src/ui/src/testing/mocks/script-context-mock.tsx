@@ -38,6 +38,7 @@ export const SCRIPT_CONTEXT_DEFUALTS: ScriptContextProps = {
   manual: false,
   execute: jest.fn(),
   cancelExecution: jest.fn(),
+  generateOTelExportScript: jest.fn(),
 };
 
 export const MockScriptContextProvider: React.FC<WithChildren> = ({ children }) => (

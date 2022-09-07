@@ -28,6 +28,7 @@ import { containsMutation } from 'app/utils/pxl';
 import { GetCSRFCookie } from '../pages/auth/utils';
 import { PixieAPIClientOptions } from './api-options';
 import { CloudClient } from './cloud-gql-client';
+import { VizierQueryError } from './vizier';
 import {
   ExecutionStateUpdate,
   VizierGRPCClient,
@@ -62,6 +63,11 @@ export abstract class PixieAPIClientAbstract {
     funcs?: VizierQueryFunc[],
     scriptName?: string,
   ): Observable<ExecutionStateUpdate>;
+
+  abstract generateOTelExportScript(
+    cluster: ClusterConfig,
+    script: string,
+  ): Promise<string | VizierQueryError>;
 
   abstract isAuthenticated(): Promise<boolean>;
 }
@@ -192,6 +198,20 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     const hasMutation = containsMutation(script);
     return from(this.getClusterClient(cluster))
       .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation, opts, scriptName)));
+  }
+
+  /**
+ * generateOTelExportScript generates a script that can be used to collect OpenTelemetry data.
+ *
+ * @param cluster Which cluster to use. Either just its ID, or a full config. If that cluster has previously been
+ *        connected in this session, that connection will be reused without changing its configuration.
+ * @param script The script that should be transformed into an OpenTelemetry script.
+ */
+  generateOTelExportScript(
+    cluster: ClusterConfig,
+    script: string,
+  ): Promise<string | VizierQueryError> {
+    return this.getClusterClient(cluster).then((client) => client.generateOTelExportScript(script));
   }
 
   /**

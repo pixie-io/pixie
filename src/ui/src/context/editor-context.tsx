@@ -31,6 +31,7 @@ import { ScriptContext } from './script-context';
 export interface EditorContextProps {
   setVisEditorText: SetStateFunc<string>;
   setPxlEditorText: SetStateFunc<string>;
+  pxlEditorText: string;
   saveEditor: () => void;
 }
 
@@ -97,8 +98,8 @@ export const EditorContextProvider: React.FC<WithChildren> = React.memo(({ child
   }, [script?.code, script?.vis]);
 
   const value = React.useMemo(() => ({
-    setPxlEditorText, setVisEditorText, saveEditor,
-  }), [setPxlEditorText, setVisEditorText, saveEditor]);
+    setPxlEditorText, setVisEditorText, saveEditor, pxlEditorText,
+  }), [setPxlEditorText, setVisEditorText, saveEditor, pxlEditorText]);
 
   return (
     <EditorContext.Provider value={value}>
