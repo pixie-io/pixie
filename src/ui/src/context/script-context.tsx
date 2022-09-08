@@ -369,9 +369,14 @@ export const ScriptContextProvider: React.FC<WithChildren> = React.memo(({ child
       pxl,
     ).then((res: string | VizierQueryError) => {
       if (typeof res !== 'string') {
+        const error = res as VizierQueryError;
+        if (error?.details === 'context deadline exceeded') {
+          error.details = 'Context deadline exceeded. ' +
+            'Generate OTel script is not supported on this cluster, please upgrade your installation';
+        }
         // Then it's an error.
         resultsContext.clearResults();
-        resultsContext.setResults({ error: res as VizierQueryError, tables: new Map() });
+        resultsContext.setResults({ error, tables: new Map() });
         return;
       }
       // Navigate to the Plugin creation page.
