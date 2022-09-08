@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 import { ChevronRight, Upload } from '@mui/icons-material';
-import { Button, Divider, Tab, Tabs } from '@mui/material';
+import { Button, Divider, Tab, Tabs, Tooltip } from '@mui/material';
 import { Theme, useTheme, styled } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
@@ -195,15 +195,17 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
           </StyledTabs>
           {script?.id === SCRATCH_SCRIPT.id && (
             <>
-              <Button
-                variant='text'
-                color='primary'
-                size='small'
-                onClick={generateOTelExportScriptMemo}
-                startIcon={<Upload />}
-              >
-                Export to Plugin
-              </Button>
+              <Tooltip title='Set this script to regularly export its data to a plugin'>
+                <Button
+                  variant='text'
+                  color='primary'
+                  size='small'
+                  onClick={generateOTelExportScriptMemo}
+                  startIcon={<Upload />}
+                >
+                  Export to Plugin
+                </Button>
+              </Tooltip>
               <Divider variant='middle' orientation='vertical' sx={{ ml: 1, mr: 1, borderColor: 'divider' }} />
             </>
           )}
