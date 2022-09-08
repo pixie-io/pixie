@@ -65,6 +65,7 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void SetUp() override {
     connector_ = JVMStatsConnector::Create("jvm_stats_connector");
     ASSERT_OK(connector_->Init());
+    connector_->set_data_tables(data_tables_.tables());
   }
 
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
@@ -93,7 +94,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   {
     absl::flat_hash_set<md::UPID> upids = {PIDToUPID(hello_world1.child_pid())};
     auto ctx = std::make_unique<StandaloneContext>(upids);
-    connector_->TransferData(ctx.get(), data_tables_.tables());
+    connector_->TransferData(ctx.get());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
@@ -113,7 +114,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
 
   {
     auto ctx = std::make_unique<StandaloneContext>(upids);
-    connector_->TransferData(ctx.get(), data_tables_.tables());
+    connector_->TransferData(ctx.get());
     std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);

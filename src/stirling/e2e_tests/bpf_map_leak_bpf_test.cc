@@ -108,20 +108,20 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   std::vector<std::pair<uint64_t, struct conn_info_t>> entries;
 
   // Confirm that the leaked BPF map entry exists.
-  source_->TransferData(ctx_.get(), data_tables.tables());
+  source_->TransferData(ctx_.get());
   entries = conn_info_map.get_table_offline();
   EXPECT_THAT(entries, Contains(Key(server_bpf_map_key)));
 
   sleep(kInactivitySeconds);
 
   // This TransferData should cause the connection tracker to be marked for death.
-  source_->TransferData(ctx_.get(), data_tables.tables());
+  source_->TransferData(ctx_.get());
 
   // One iteration for ConnStats to approve the death.
-  source_->TransferData(ctx_.get(), data_tables.tables());
+  source_->TransferData(ctx_.get());
 
   // One more iteration for the tracker to be destroyed and to release the BPF map entry.
-  source_->TransferData(ctx_.get(), data_tables.tables());
+  source_->TransferData(ctx_.get());
 
   // Check that the leaked BPF map entry is removed.
   entries = conn_info_map.get_table_offline();

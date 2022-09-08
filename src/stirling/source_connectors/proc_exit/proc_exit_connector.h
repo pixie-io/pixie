@@ -57,7 +57,7 @@ class ProcExitConnector : public SourceConnector, public bpf_tools::BCCWrapper {
   explicit ProcExitConnector(std::string_view name);
 
   Status InitImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
   Status StopImpl() override { return Status::OK(); }
 
  private:

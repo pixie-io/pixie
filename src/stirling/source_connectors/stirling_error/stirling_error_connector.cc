@@ -38,16 +38,15 @@ Status StirlingErrorConnector::InitImpl() {
 
 Status StirlingErrorConnector::StopImpl() { return Status::OK(); }
 
-void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx,
-                                              const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 2) << "StirlingErrorConnector has two data tables.";
+void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK_EQ(data_tables_.size(), 2) << "StirlingErrorConnector has two data tables.";
 
-  if (data_tables[kStirlingErrorTableNum] != nullptr) {
-    TransferStirlingErrorTable(ctx, data_tables[kStirlingErrorTableNum]);
+  if (data_tables_[kStirlingErrorTableNum] != nullptr) {
+    TransferStirlingErrorTable(ctx, data_tables_[kStirlingErrorTableNum]);
   }
 
-  if (data_tables[kProbeStatusTableNum] != nullptr) {
-    TransferProbeStatusTable(ctx, data_tables[kProbeStatusTableNum]);
+  if (data_tables_[kProbeStatusTableNum] != nullptr) {
+    TransferProbeStatusTable(ctx, data_tables_[kProbeStatusTableNum]);
   }
 }
 

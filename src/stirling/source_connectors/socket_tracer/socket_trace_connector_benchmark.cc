@@ -130,6 +130,7 @@ static void BM_SocketTraceConnector(benchmark::State& state, BenchmarkDataGenera
           static_cast<SocketTraceConnectorFriend*>(source_connector.get());
 
       DataTables tables(SocketTraceConnector::kTables);
+      source_connector->set_data_tables({tables.tables()});
       // Send control events to start all the connections. Control events are out of the scope of
       // this benchmark so we handle them before starting the timer.
       for (size_t i = 0; i < generated_data.control_events.size(); ++i) {
@@ -138,7 +139,7 @@ static void BM_SocketTraceConnector(benchmark::State& state, BenchmarkDataGenera
       }
       // Run TransferData to make sure all the ConnTracker's have done at least an iteration before
       // we run the benchmark.
-      source_connector->TransferData(&ctx, tables.tables());
+      source_connector->TransferData(&ctx);
 
       MemoryTracker mem_tracker(is_first_iter);
       if (is_first_iter) {
@@ -153,7 +154,7 @@ static void BM_SocketTraceConnector(benchmark::State& state, BenchmarkDataGenera
           socket_trace_connector->HandleDataEvent(
               &event, sizeof(socket_data_event_t::attr) + event.attr.msg_size);
         }
-        source_connector->TransferData(&ctx, tables.tables());
+        source_connector->TransferData(&ctx);
       }
 
       // END timed part of benchmark.

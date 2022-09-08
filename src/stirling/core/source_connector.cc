@@ -44,18 +44,16 @@ Status SourceConnector::Init() {
 
 void SourceConnector::InitContext(ConnectorContext* ctx) { InitContextImpl(ctx); }
 
-void SourceConnector::TransferData(ConnectorContext* ctx,
-                                   const std::vector<DataTable*>& data_tables) {
+void SourceConnector::TransferData(ConnectorContext* ctx) {
   DCHECK(ctx != nullptr);
-  DCHECK_EQ(data_tables.size(), table_schemas().size())
+  DCHECK_EQ(data_tables_.size(), table_schemas().size())
       << "DataTable objects must all be specified.";
-  TransferDataImpl(ctx, data_tables);
+  TransferDataImpl(ctx);
   sampling_freq_mgr_.Reset();
 }
 
-void SourceConnector::PushData(DataPushCallback agent_callback,
-                               const std::vector<DataTable*>& data_tables) {
-  for (auto* data_table : data_tables) {
+void SourceConnector::PushData(DataPushCallback agent_callback) {
+  for (auto* data_table : data_tables_) {
     auto record_batches = data_table->ConsumeRecords();
     for (auto& record_batch : record_batches) {
       if (record_batch.records.empty()) {

@@ -52,6 +52,8 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
     source_.reset(dynamic_cast<SocketTraceConnector*>(source_connector.release()));
     ASSERT_OK(source_->Init());
 
+    source_->set_data_tables(data_tables_.tables());
+
     // Cause Uprobes to deploy in a blocking manner.
     // We don't return until the first set of uprobes has successfully deployed.
     RefreshContext(/* blocking_deploy_uprobes */ true);
@@ -91,7 +93,7 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
         {
           absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
           RefreshContextCore();
-          source_->TransferData(ctx_.get(), data_tables_.tables());
+          source_->TransferData(ctx_.get());
         }
         std::this_thread::sleep_for(kTransferDataPeriod);
       }
@@ -116,7 +118,7 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
   }
 
   std::vector<TaggedRecordBatch> ConsumeRecords(int table_num) {
-    return data_tables_[table_num]->ConsumeRecords();
+    return source_->data_tables()[table_num]->ConsumeRecords();
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;

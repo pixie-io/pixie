@@ -41,10 +41,9 @@ Status PIDRuntimeConnector::StopImpl() {
   return Status::OK();
 }
 
-void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */,
-                                           const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1);
-  DataTable* data_table = data_tables[0];
+void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
+  DCHECK_EQ(data_tables_.size(), 1);
+  DataTable* data_table = data_tables_[0];
 
   if (data_table == nullptr) {
     return;

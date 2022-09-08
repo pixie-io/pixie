@@ -27,20 +27,19 @@ Status SeqGenConnector::InitImpl() {
   return Status::OK();
 }
 
-void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */,
-                                       const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 2);
+void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
+  DCHECK_EQ(data_tables_.size(), 2);
 
   std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
 
-  if (data_tables[kSeq0TableNum] != nullptr) {
+  if (data_tables_[kSeq0TableNum] != nullptr) {
     uint32_t num_records = num_rows_dist(rng_);
-    TransferDataTable0(num_records, data_tables[kSeq0TableNum]);
+    TransferDataTable0(num_records, data_tables_[kSeq0TableNum]);
   }
 
-  if (data_tables[kSeq1TableNum] != nullptr) {
+  if (data_tables_[kSeq1TableNum] != nullptr) {
     uint32_t num_records = num_rows_dist(rng_);
-    TransferDataTable1(num_records, data_tables[kSeq1TableNum]);
+    TransferDataTable1(num_records, data_tables_[kSeq1TableNum]);
   }
 }
 

@@ -911,7 +911,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
 
   sleep(1);
-  source_->TransferData(ctx_.get(), data_tables_.tables());
+  source_->TransferData(ctx_.get());
 
   ASSERT_OK_AND_ASSIGN(const ConnTracker* client_side_tracker,
                        socket_trace_connector->GetConnTracker(getpid(), client.sockfd()));
@@ -942,7 +942,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
   sleep(1);
 
-  source_->TransferData(ctx_.get(), data_tables_.tables());
+  source_->TransferData(ctx_.get());
 
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent), kHTTPReqMsg1.size());
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size())

@@ -78,7 +78,7 @@ class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPF
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
  private:
   explicit PIDCPUUseBPFTraceConnector(std::string_view name) : SourceConnector(name, kTables) {}

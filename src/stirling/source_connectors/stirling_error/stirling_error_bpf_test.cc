@@ -153,8 +153,7 @@ class FaultyConnector : public SourceConnector {
     return error::Internal("Initialization failed on purpose.");
   };
 
-  void TransferDataImpl(ConnectorContext* /* ctx */,
-                        const std::vector<DataTable*>& /* data_tables */) override{};
+  void TransferDataImpl(ConnectorContext* /* ctx */) override{};
 
   Status StopImpl() override { return Status::OK(); }
 };

@@ -51,7 +51,7 @@ class StirlingErrorConnector : public SourceConnector {
   Status InitImpl() override;
   Status StopImpl() override;
 
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
  private:
   explicit StirlingErrorConnector(std::string_view source_name)

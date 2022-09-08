@@ -58,7 +58,8 @@ TEST_F(BPFTraceConnectorBPFTest, Basic) {
   sleep(5);
 
   DataTable data_table(/*id*/ 0, kTable);
-  source_->TransferData(ctx_.get(), {&data_table});
+  source_->set_data_tables({&data_table});
+  source_->TransferData(ctx_.get());
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
 }

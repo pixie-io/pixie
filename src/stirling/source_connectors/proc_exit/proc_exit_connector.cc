@@ -111,13 +111,12 @@ uint8_t GetExitSignal(uint32_t exit_code) { return exit_code & 0x7F; }
 
 }  // namespace
 
-void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx,
-                                         const std::vector<DataTable*>& data_tables) {
-  DCHECK(data_tables.size() == 1) << "Expect only one data table for proc_exit tracer";
+void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK(data_tables_.size() == 1) << "Expect only one data table for proc_exit tracer";
 
   PollPerfBuffers();
 
-  DataTable* data_table = data_tables[0];
+  DataTable* data_table = data_tables_[0];
   for (auto& event : events_) {
     event.timestamp_ns = ConvertToRealTime(event.timestamp_ns);
     DataTable::RecordBuilder<&kProcExitEventsTable> r(data_table, event.timestamp_ns);

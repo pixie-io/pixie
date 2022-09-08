@@ -49,11 +49,10 @@ Status CPUStatBPFTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
-                                                const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1) << "CPUStatBPFTraceConnector only has one data table.";
+void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
+  DCHECK_EQ(data_tables_.size(), 1) << "CPUStatBPFTraceConnector only has one data table.";
 
-  auto* data_table = data_tables[0];
+  auto* data_table = data_tables_[0];
 
   if (data_table == nullptr) {
     return;

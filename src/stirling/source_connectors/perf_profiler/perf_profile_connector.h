@@ -57,7 +57,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
   std::chrono::milliseconds SamplingPeriod() const { return sampling_period_; }
   std::chrono::milliseconds StackTraceSamplingPeriod() const {

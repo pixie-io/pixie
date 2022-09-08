@@ -485,12 +485,11 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
   return Status::OK();
 }
 
-void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx,
-                                             const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1)
+void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK_EQ(data_tables_.size(), 1)
       << "Now only support having exactly one table per DynamicTraceConnector";
 
-  auto* data_table = data_tables[0];
+  auto* data_table = data_tables_[0];
   if (data_table == nullptr) {
     return;
   }

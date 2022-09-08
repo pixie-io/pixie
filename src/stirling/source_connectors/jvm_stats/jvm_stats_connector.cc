@@ -98,11 +98,10 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
   return Status::OK();
 }
 
-void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx,
-                                         const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1) << "JVMStats only has one data table.";
+void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK_EQ(data_tables_.size(), 1) << "JVMStats only has one data table.";
 
-  DataTable* data_table = data_tables[0];
+  DataTable* data_table = data_tables_[0];
 
   if (data_table == nullptr) {
     return;

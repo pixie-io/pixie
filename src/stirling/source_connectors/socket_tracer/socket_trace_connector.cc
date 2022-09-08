@@ -613,13 +613,12 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   }
 }
 
-void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
-                                            const std::vector<DataTable*>& data_tables) {
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   set_iteration_time(now_fn_());
 
   UpdateCommonState(ctx);
 
-  DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
+  DataTable* conn_stats_table = data_tables_[kConnStatsTableNum];
   if (conn_stats_table != nullptr &&
       sampling_freq_mgr_.count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
     TransferConnStats(ctx, conn_stats_table);
@@ -641,8 +640,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
 
-  for (size_t i = 0; i < data_tables.size(); ++i) {
-    DataTable* data_table = data_tables[i];
+  for (size_t i = 0; i < data_tables_.size(); ++i) {
+    DataTable* data_table = data_tables_[i];
 
     // Ensure records are within the time window, in order to ensure the order between record
     // batches. Exception: conn_stats table does not need cutoff time, because its timestamps
@@ -657,7 +656,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
     DataTable* data_table = nullptr;
     if (transfer_spec.enabled) {
-      data_table = data_tables[transfer_spec.table_num];
+      data_table = data_tables_[transfer_spec.table_num];
     }
 
     UpdateTrackerTraceLevel(conn_tracker);

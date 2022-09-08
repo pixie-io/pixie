@@ -95,7 +95,8 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
   // Read the data.
   SystemWideStandaloneContext ctx;
   DataTable data_table(/*id*/ 0, table_schema);
-  connector->TransferData(&ctx, {&data_table});
+  connector->set_data_tables({&data_table});
+  connector->TransferData(&ctx);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -176,7 +177,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
   // Read the data.
   SystemWideStandaloneContext ctx;
   DataTable data_table(/*id*/ 0, table_schema);
-  connector->TransferData(&ctx, {&data_table});
+  connector->set_data_tables({&data_table});
+  connector->TransferData(&ctx);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -286,7 +288,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
   // Read the data.
   SystemWideStandaloneContext ctx;
   DataTable data_table(/*id*/ 0, table_schema);
-  connector->TransferData(&ctx, {&data_table});
+  connector->set_data_tables({&data_table});
+  connector->TransferData(&ctx);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -355,7 +358,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   // Read the data.
   SystemWideStandaloneContext ctx;
   DataTable data_table(/*id*/ 0, table_schema);
-  connector->TransferData(&ctx, {&data_table});
+  connector->set_data_tables({&data_table});
+  connector->TransferData(&ctx);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -501,7 +505,8 @@ class CPPDynamicBPFTraceTest : public ::testing::Test {
     constexpr int kTableNum = 0;
     auto ctx = std::make_unique<SystemWideStandaloneContext>();
     auto data_table = std::make_unique<DataTable>(/*id*/ 0, connector_->table_schemas()[kTableNum]);
-    connector_->TransferData(ctx.get(), {data_table.get()});
+    connector_->set_data_tables({data_table.get()});
+    connector_->TransferData(ctx.get());
     return data_table->ConsumeRecords();
   }
 

@@ -116,7 +116,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status InitImpl() override;
   Status StopImpl() override;
   void InitContextImpl(ConnectorContext* ctx) override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
   // Perform actions that are not specifically targeting a table.
   // For example, drain perf buffers, deploy new uprobes, and update socket info manager.

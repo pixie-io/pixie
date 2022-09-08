@@ -53,7 +53,7 @@ class NetworkStatsConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
  protected:
   explicit NetworkStatsConnector(std::string_view source_name)

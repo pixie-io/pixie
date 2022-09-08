@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <utility>
 
 #include <sys/sysinfo.h>
 
@@ -200,6 +201,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
+    source_->set_data_tables({&data_table_});
 
     // Immediately start the transfer data thread to continue draining perf buffers,
     // i.e. to prevent dropping perf buffer entries.
@@ -340,7 +342,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
       while (transfer_enable_) {
         {
           absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
-          source_->TransferData(ctx_.get(), data_tables_);
+          source_->TransferData(ctx_.get());
         }
         std::this_thread::sleep_for(sampling_period_);
       }
@@ -351,7 +353,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     CHECK(transfer_data_thread_.joinable());
     transfer_enable_ = false;
     transfer_data_thread_.join();
-    source_->TransferData(ctx_.get(), data_tables_);
+    source_->TransferData(ctx_.get());
   }
 
   std::chrono::duration<double> RunTest() {
@@ -376,7 +378,6 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
   std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_;
-  const std::vector<DataTable*> data_tables_{&data_table_};
 
   bool column_ptrs_populated_ = false;
   std::shared_ptr<types::ColumnWrapper> trace_ids_column_;
@@ -522,7 +523,7 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
   // The deleted upids list that is inferred will match our original upid list.
-  source_->TransferData(ctx_.get(), data_tables_);
+  source_->TransferData(ctx_.get());
 
   // Expect that that the artifacts paths have been removed.
   EXPECT_THAT(artifacts_paths, Each(Not(PathExists())));

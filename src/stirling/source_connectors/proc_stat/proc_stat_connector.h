@@ -58,7 +58,7 @@ class ProcStatConnector : public SourceConnector {
  protected:
   explicit ProcStatConnector(std::string_view name) : SourceConnector(name, kTables) {}
   Status InitImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
   Status StopImpl() override { return Status::OK(); }
 

@@ -49,8 +49,9 @@ class SourceToTableTest : public ::testing::Test {
 TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(source_->Init());
   std::vector<DataTable*> data_tables{table_.get(), nullptr};
+  source_->set_data_tables(std::move(data_tables));
   SystemWideStandaloneContext ctx;
-  source_->TransferData(&ctx, data_tables);
+  source_->TransferData(&ctx);
   auto record_batches = table_->ConsumeRecords();
   for (const auto& record_batch : record_batches) {
     auto& columns = record_batch.records;

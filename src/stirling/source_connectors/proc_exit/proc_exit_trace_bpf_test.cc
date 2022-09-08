@@ -42,6 +42,8 @@ TEST(ProcExitConnectorTest, TransferData) {
   testing::DataTables data_tables{ProcExitConnector::kTables};
   DataTable* data_table = data_tables.tables().front();
 
+  connector->set_data_tables(data_tables.tables());
+
   const std::filesystem::path sleep_path =
       BazelRunfilePath("src/stirling/source_connectors/proc_exit/testing/sleep");
   SubProcess proc;
@@ -50,7 +52,7 @@ TEST(ProcExitConnectorTest, TransferData) {
   proc.Kill();
   int retval = proc.Wait();
   EXPECT_EQ(retval, 9) << "Exit should not be 0 when killed";
-  connector->TransferData(&context, data_tables.tables());
+  connector->TransferData(&context);
 
   types::ColumnWrapperRecordBatch result = testing::ExtractRecordsMatchingPID(
       data_table, kProcExitEventsTable.ColIndex("upid"), proc.child_pid());

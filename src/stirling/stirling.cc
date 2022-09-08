@@ -415,38 +415,22 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   return std::unique_ptr<ConnectorContext>(new SystemWideStandaloneContext());
 }
 
-namespace {
-
-std::vector<DataTable*> GetDataTables(const std::vector<InfoClassManager*>& info_class_mgrs) {
-  std::vector<DataTable*> data_tables;
-  data_tables.reserve(info_class_mgrs.size());
-  for (InfoClassManager* mgr : info_class_mgrs) {
-    data_tables.push_back(mgr->data_table());
-  }
-  return data_tables;
-}
-
-}  // namespace
-
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   PL_RETURN_IF_ERROR(source->Init());
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
-  std::vector<InfoClassManager*> mgrs;
-  mgrs.reserve(source->table_schemas().size());
+  std::vector<DataTable*> data_tables;
 
   for (const DataTableSchema& schema : source->table_schemas()) {
     LOG(INFO) << absl::Substitute("Adding info class: [$0/$1]", source->name(), schema.name());
     auto mgr = std::make_unique<InfoClassManager>(schema);
     mgr->SetSourceConnector(source.get());
-    mgrs.push_back(mgr.get());
+    data_tables.push_back(mgr->data_table());
     info_class_mgrs_.push_back(std::move(mgr));
   }
 
-  std::vector<DataTable*> data_tables = GetDataTables(mgrs);
-
-  source->set_output({std::move(mgrs), std::move(data_tables)});
+  source->set_data_tables(std::move(data_tables));
   sources_.push_back(std::move(source));
 
   return Status::OK();
@@ -822,12 +806,11 @@ void StirlingImpl::RunCore() {
       for (auto& source : sources_) {
         // Phase 1: Probe each source for its data.
         if (source->sampling_freq_mgr().Expired()) {
-          source->TransferData(ctx.get(), source->output().data_tables);
+          source->TransferData(ctx.get());
         }
         // Phase 2: Push Data upstream.
-        if (source->push_freq_mgr().Expired() ||
-            DataExceedsThreshold(source->output().data_tables)) {
-          source->PushData(data_push_callback_, source->output().data_tables);
+        if (source->push_freq_mgr().Expired() || DataExceedsThreshold(source->data_tables())) {
+          source->PushData(data_push_callback_);
         }
       }
 

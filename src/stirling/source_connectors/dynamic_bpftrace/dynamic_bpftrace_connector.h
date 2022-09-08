@@ -47,7 +47,7 @@ class DynamicBPFTraceConnector : public SourceConnector {
                                     std::unique_ptr<bpf_tools::BPFTraceWrapper> bpftrace);
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
  private:
   void HandleEvent(uint8_t* data);

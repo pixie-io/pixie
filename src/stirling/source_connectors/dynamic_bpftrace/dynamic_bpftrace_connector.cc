@@ -233,10 +233,9 @@ Status DynamicBPFTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
-                                                const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1) << "Only one table is allowed per DynamicBPFTraceConnector.";
-  data_table_ = data_tables[0];
+void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
+  DCHECK_EQ(data_tables_.size(), 1) << "Only one table is allowed per DynamicBPFTraceConnector.";
+  data_table_ = data_tables_[0];
   if (data_table_ == nullptr) {
     return;
   }

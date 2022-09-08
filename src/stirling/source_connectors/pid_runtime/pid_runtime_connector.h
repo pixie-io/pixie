@@ -63,7 +63,7 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
  protected:
   explicit PIDRuntimeConnector(std::string_view name)

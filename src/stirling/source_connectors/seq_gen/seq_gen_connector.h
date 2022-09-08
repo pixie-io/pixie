@@ -130,7 +130,7 @@ class SeqGenConnector : public SourceConnector {
 
   Status InitImpl() override;
 
-  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  void TransferDataImpl(ConnectorContext* ctx) override;
 
   Status StopImpl() override { return Status::OK(); }
 

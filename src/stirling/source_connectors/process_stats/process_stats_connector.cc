@@ -94,11 +94,10 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
   }
 }
 
-void ProcessStatsConnector::TransferDataImpl(ConnectorContext* ctx,
-                                             const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1);
+void ProcessStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK_EQ(data_tables_.size(), 1);
 
-  auto* data_table = data_tables[0];
+  auto* data_table = data_tables_[0];
 
   if (data_table == nullptr) {
     return;
