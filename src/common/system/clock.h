@@ -27,8 +27,8 @@ namespace chrono {
 template <int TClockType>
 class basic_clock {
  public:
-  typedef std::chrono::nanoseconds duration;
-  typedef std::chrono::time_point<basic_clock<TClockType>, duration> time_point;
+  using duration = std::chrono::nanoseconds;
+  using time_point = std::chrono::time_point<basic_clock<TClockType>, duration>;
 
   static inline time_point now() {
     timespec ts;
