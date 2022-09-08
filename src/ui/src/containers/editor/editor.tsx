@@ -28,6 +28,7 @@ import {
   EDITOR_THEME_MAP,
   LazyPanel,
   ResizableDrawer,
+  Spinner,
 } from 'app/components';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { getKeyMap } from 'app/containers/live/shortcuts';
@@ -177,8 +178,12 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const { script } = React.useContext(ScriptContext);
   const { pxlEditorText } = React.useContext(EditorContext);
 
-  const generateOTelExportScriptMemo = React.useCallback(() => generateOTelExportScript(pxlEditorText),
-    [generateOTelExportScript, pxlEditorText]);
+  const [isRunningExportScript, setIsRunningExportScript] = React.useState(false);
+  const generateOTelExportScriptMemo = React.useCallback(() => {
+    setIsRunningExportScript(true);
+    generateOTelExportScript(pxlEditorText).then(() => setIsRunningExportScript(false));
+  }, [generateOTelExportScript, pxlEditorText]);
+
 
   /* eslint-disable react-memo/require-usememo */
   return (
@@ -200,8 +205,12 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
                   variant='text'
                   color='primary'
                   size='small'
+                  disabled={isRunningExportScript}
                   onClick={generateOTelExportScriptMemo}
-                  startIcon={<Upload />}
+                  // The spinner is only necessary while we support clusters that
+                  // might not have generateOTelExportScript. After November 8th,
+                  // we should probably remove the spinner.
+                  startIcon={!isRunningExportScript ? <Upload /> : <Spinner />}
                 >
                   Export to Plugin
                 </Button>

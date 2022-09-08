@@ -71,7 +71,7 @@ export interface ScriptContextProps {
   manual: boolean;
 
   /** Generates an export script from the current script and args. */
-  generateOTelExportScript: (script: string) => void;
+  generateOTelExportScript: (script: string) => Promise<void>;
 }
 
 export const ScriptContext = React.createContext<ScriptContextProps>({
@@ -358,13 +358,13 @@ export const ScriptContextProvider: React.FC<WithChildren> = React.memo(({ child
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serializedArgs, embedState, push, selectedClusterName]);
 
-  const generateOTelExportScript: (pxl: string) => void = React.useCallback((pxl: string) => {
+  const generateOTelExportScript: (pxl: string) => Promise<void> = React.useCallback((pxl: string) => {
     if (!apiClient) throw new Error('Tried to execute a script before PixieAPIClient was ready!');
     if (!clusterConfig) {
       throw new Error('Tried to execute before script, cluster connection, and/or args were ready!');
     }
 
-    apiClient.generateOTelExportScript(
+    return apiClient.generateOTelExportScript(
       clusterConfig,
       pxl,
     ).then((res: string | VizierQueryError) => {
