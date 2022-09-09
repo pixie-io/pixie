@@ -1262,6 +1262,15 @@ px.display(df[['service', 'resp_latency_ns']], 'http_graph'))pxl",
             "time_ column must be present for auto-generated otel export",
         },
         {
+            "missing_data_column",
+            R"pxl(import px
+df = px.DataFrame('http_events', start_time='-5m')
+df.service = df.ctx['service']
+px.display(df[['time_', 'service']], 'http_graph'))pxl",
+            "",
+            "does not have any INT64 or FLOAT64 that can be converted to OTel metrics",
+        },
+        {
             "missing_service_column",
             R"pxl(import px
 ndf = px.DataFrame('http_events', start_time='-5m')

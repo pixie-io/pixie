@@ -381,6 +381,12 @@ StatusOr<std::string> RelationToOTelExport(const std::string& table_name,
     return error::InvalidArgument("service column must be present for auto-generated otel export");
   }
 
+  if (data_exports.empty()) {
+    return error::InvalidArgument(
+        "Table '$0' does not have any INT64 or FLOAT64 that can be converted to OTel metrics",
+        table_name);
+  }
+
   resource_fields.push_back(absl::Substitute("'service.name': $0", service_col));
 
   std::string body = absl::Substitute("resource={\n$0\n},\ndata=[\n$1\n]",
