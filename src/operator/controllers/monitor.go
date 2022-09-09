@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 )
@@ -578,14 +579,8 @@ func (m *VizierMonitor) runReconciler() {
 			}
 
 			vizierState := m.getVizierState(vz)
-			vz.Status.VizierPhase = translateReasonToPhase(vizierState.Reason)
-			vz.Status.VizierReason = string(vizierState.Reason)
+			updateVizierReason(vz, vizierState.Reason)
 
-			vz.Status.Message = status.GetMessageFromReason(vizierState.Reason)
-			// Default to the VizierReason if the message is empty.
-			if vz.Status.Message == "" {
-				vz.Status.Message = vz.Status.VizierReason
-			}
 			err = m.vzUpdate(context.Background(), vz)
 			if err != nil {
 				log.WithError(err).Error("Failed to update vizier status")
@@ -598,6 +593,17 @@ func (m *VizierMonitor) runReconciler() {
 				}
 			}
 		}
+	}
+}
+
+// updateVizierReason updates the Vizier status with the requested reason and corresponding message.
+func updateVizierReason(vz *v1alpha1.Vizier, reason status.VizierReason) {
+	vz.Status.VizierPhase = translateReasonToPhase(reason)
+	vz.Status.VizierReason = string(reason)
+	vz.Status.Message = status.GetMessageFromReason(reason)
+	// Default to the VizierReason if the message is empty.
+	if vz.Status.Message == "" {
+		vz.Status.Message = vz.Status.VizierReason
 	}
 }
 

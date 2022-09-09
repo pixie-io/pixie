@@ -46,6 +46,7 @@ import (
 	"px.dev/pixie/src/api/proto/vizierconfigpb"
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -80,7 +81,7 @@ type VizierReconciler struct {
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers/status,verbs=get;update;patch
 
-func getCloudClientConnection(cloudAddr string, devCloudNS string) (*grpc.ClientConn, error) {
+func getCloudClientConnection(cloudAddr string, devCloudNS string, extraDialOpts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	isInternal := false
 
 	if devCloudNS != "" {
@@ -89,6 +90,7 @@ func getCloudClientConnection(cloudAddr string, devCloudNS string) (*grpc.Client
 	}
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
+	dialOpts = append(dialOpts, extraDialOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +197,16 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			clientset:         r.Clientset,
 			vzSpecUpdate:      r.Update,
 		}
-		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace)
+
+		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace, grpc.FailOnNonTempDialError(true), grpc.WithBlock())
 		if err != nil {
-			log.WithError(err).Fatal("Failed to connect to cloud client")
+			updateVizierReason(&vizier, status.UnableToConnectToCloud)
+			err := r.Status().Update(ctx, &vizier)
+			if err != nil {
+				log.WithError(err).Error("Failed to update vizier status")
+			}
+			log.WithError(err).Error("Failed to connect to Pixie cloud")
+			return ctrl.Result{}, err
 		}
 		r.monitor.InitAndStartMonitor(cloudClient)
 	}
@@ -254,7 +263,12 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	log.Info("Creating a new vizier instance")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
-		log.WithError(err).Error("Failed to connect to cloud client")
+		updateVizierReason(vz, status.UnableToConnectToCloud)
+		err := r.Status().Update(ctx, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to update vizier status")
+		}
+		log.WithError(err).Error("Failed to connect to Pixie cloud")
 		return err
 	}
 
@@ -291,7 +305,12 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	log.Info("Starting a vizier deploy")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
-		log.WithError(err).Error("Failed to connect to cloud client")
+		updateVizierReason(vz, status.UnableToConnectToCloud)
+		err := r.Status().Update(ctx, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to update vizier status")
+		}
+		log.WithError(err).Error("Failed to connect to Pixie cloud")
 		return err
 	}
 
