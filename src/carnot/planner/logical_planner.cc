@@ -374,11 +374,15 @@ StatusOr<std::string> RelationToOTelExport(const std::string& table_name,
     }
   }
   if (!has_time_column) {
-    return error::InvalidArgument("time_ column must be present for auto-generated otel export");
+    return error::InvalidArgument("Table '$0' does not have a time_ column of TIME64NS type",
+                                  table_name);
   }
 
   if (service_col == "") {
-    return error::InvalidArgument("service column must be present for auto-generated otel export");
+    return error::InvalidArgument(
+        "Table '$0' does not have a service column. Make sure you create a service column ie "
+        "`df.ctx['service']` and include it in any groupbys and joins",
+        table_name);
   }
 
   if (data_exports.empty()) {

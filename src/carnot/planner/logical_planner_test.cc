@@ -1259,7 +1259,7 @@ df = px.DataFrame('http_events', start_time='-5m')
 df.service = df.ctx['service']
 px.display(df[['service', 'resp_latency_ns']], 'http_graph'))pxl",
             "",
-            "time_ column must be present for auto-generated otel export",
+            "does not have a time_ column",
         },
         {
             "missing_data_column",
@@ -1276,7 +1276,7 @@ px.display(df[['time_', 'service']], 'http_graph'))pxl",
 ndf = px.DataFrame('http_events', start_time='-5m')
 px.display(ndf[['time_', 'resp_latency_ns']], "http_graph"))pxl",
             "",
-            "service column must be present for auto-generated otel export",
+            "does not have a service column",
         },
         {
             "duration_quantiles_not_supported",
