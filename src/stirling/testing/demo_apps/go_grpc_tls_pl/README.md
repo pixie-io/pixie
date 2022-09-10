@@ -1,4 +1,11 @@
-# HTTP2/GRPC client-server using Pixie Services Framework (golang)
+# Golang GRPC client-server using Pixie Services Framework (golang)
+
+Pixie's own services framework mixes the use of Golang's HTTP & HTTP2 APIs, which represent
+a widely used library usage pattern that should be supported by Pixie. Therefore this directory has
+a `_pl` suffix.
+
+These client and server rules are built against different versions of Golang releases as well,
+in order for tests to verify Stirling against different Golang versions.
 
 To run, first build everything:
 ```
