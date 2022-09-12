@@ -21,9 +21,11 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/cockroachdb/pebble"
@@ -115,9 +117,10 @@ func cleanupOldPebbleData() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read the metadata dir. Is the PVC correctly provisioned and running?")
 	}
+	pebblePath := strings.TrimPrefix(pebbleOpenDir, fmt.Sprintf("%s/", metadataBaseMount))
 
 	for _, file := range files {
-		if file.IsDir() && file.Name() == pebbleOpenDir {
+		if file.IsDir() && strings.HasPrefix(file.Name(), pebblePath) {
 			// This is the current pebble dir, skip.
 			continue
 		}
