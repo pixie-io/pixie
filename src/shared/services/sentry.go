@@ -74,7 +74,7 @@ func getSentryVal(envNamespaceStr string) (string, error) {
 func InitDefaultSentry() func() {
 	dsn := viper.GetString("sentry_dsn")
 
-	return initSentryWithDSN("", dsn)
+	return InitSentryWithDSN("", dsn)
 }
 
 // InitSentryFromCRD attempts to initialize sentry using the sentry DSN value from the Vizier CRD.
@@ -85,11 +85,11 @@ func InitSentryFromCRD(id, crdNamespace string) func() {
 		log.WithError(err).Trace("Cannot initialize sentry value from Vizier CRD.")
 	}
 
-	return initSentryWithDSN(id, dsn)
+	return InitSentryWithDSN(id, dsn)
 }
 
 // InitSentryWithDSN initializes sentry with the given DSN.
-func initSentryWithDSN(id, dsn string) func() {
+func InitSentryWithDSN(id, dsn string) func() {
 	podName := viper.GetString("pod_name")
 	executable, _ := os.Executable()
 
