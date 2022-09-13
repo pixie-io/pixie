@@ -35,7 +35,6 @@ core.workflow(
         exclude = [
             "**/private/**",
             "*_private.*",
-            "credentials/**",
             "experimental/**",
             "private/**",
         ],
