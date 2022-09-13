@@ -130,7 +130,7 @@ StatusOr<T> WrapError(const pypa::AstPtr& ast, StatusOr<T> status_or) {
   return CreateAstError(ast, status_or.msg());
 }
 
-StatusOr<std::string> AstToString(const pypa::AstExpr& ast);
+StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast);
 
 }  // namespace planner
 }  // namespace carnot

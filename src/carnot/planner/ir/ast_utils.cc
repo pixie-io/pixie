@@ -51,8 +51,28 @@ Status WrapAstError(const pypa::AstPtr& ast, Status status) {
   return CreateAstError(ast, status.msg());
 }
 
-StatusOr<std::string> AstToString(const pypa::AstExpr& ast) {
+StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
   switch (ast->type) {
+    case pypa::AstType::ExpressionStatement: {
+      return AstToString(PYPA_PTR_CAST(ExpressionStatement, ast)->expr);
+    }
+    case pypa::AstType::Assign: {
+      auto assign = PYPA_PTR_CAST(Assign, ast);
+      std::string assign_str;
+      for (const auto& target : assign->targets) {
+        PL_ASSIGN_OR_RETURN(auto target_str, AstToString(target));
+        assign_str += target_str + ", ";
+      }
+      assign_str.pop_back();
+      assign_str.pop_back();
+      PL_ASSIGN_OR_RETURN(auto value_str, AstToString(assign->value));
+      return absl::Substitute("$0 = $1", assign_str, value_str);
+    }
+    case pypa::AstType::Return: {
+      auto ret = PYPA_PTR_CAST(Return, ast);
+      PL_ASSIGN_OR_RETURN(auto value_str, AstToString(ret->value));
+      return absl::Substitute("return $0", value_str);
+    }
     case pypa::AstType::Attribute: {
       auto attr = PYPA_PTR_CAST(Attribute, ast);
       PL_ASSIGN_OR_RETURN(auto value, AstToString(attr->value));

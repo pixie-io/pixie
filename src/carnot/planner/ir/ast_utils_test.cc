@@ -44,9 +44,7 @@ TEST_P(AstToStringTest, GetPxDisplayLines) {
   // docstring.
   ASSERT_OK_AND_ASSIGN(auto ast, parser.Parse(GetParam().pxl, /* parse_doc_strings */ false));
   ASSERT_EQ(ast->body->items.size(), 1);
-  auto stmt = ast->body->items[0];
-  ASSERT_EQ(stmt->type, pypa::AstType::ExpressionStatement) << GetAstTypeName(stmt->type);
-  ASSERT_OK_AND_EQ(AstToString(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr), GetParam().pxl);
+  ASSERT_OK_AND_EQ(AstToString(ast->body->items[0]), GetParam().pxl);
 }
 
 INSTANTIATE_TEST_SUITE_P(AstToStringTestSuite, AstToStringTest,
@@ -63,6 +61,8 @@ INSTANTIATE_TEST_SUITE_P(AstToStringTestSuite, AstToStringTest,
                              {"int", "1"},
                              {"float", "1.1"},
                              {"str", "'a'"},
+                             {"return", "return blah"},
+                             {"assign", "a = b"},
                              {"subscript", "df['subscript']"}}),
                          [](const ::testing::TestParamInfo<AstToStringTestCase>& info) {
                            return info.param.name;
