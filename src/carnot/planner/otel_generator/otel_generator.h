@@ -40,6 +40,19 @@ struct DisplayLine {
   int64_t line_number_end;
 };
 
+struct DataFrameCall {
+  // The original lines of the px.DataFrame call.
+  std::string original_call;
+  // The updated line after the px.DataFrame call has been rewritten.
+  std::string updated_line;
+  // The zero-indexed line number in the script where the px.DataFrame() call starts.
+  int64_t line_number_start;
+  // The zero-indexed line number in the script where the px.DataFrame() call ends.
+  // If the call is on a single line, then the end line number is the same as the start line
+  // number.
+  int64_t line_number_end;
+};
+
 class OTelGenerator {
  public:
   static StatusOr<std::string> GenerateOTelScript(compiler::Compiler* compiler,
@@ -56,6 +69,8 @@ class OTelGenerator {
   static StatusOr<std::string> RelationToOTelExport(
       const std::string& table_name, const std::string& unique_df_name,
       const px::table_store::schemapb::Relation& relation);
+
+  static StatusOr<std::vector<DataFrameCall>> ReplaceDataFrameTimes(const std::string& script);
 };
 
 }  // namespace planner

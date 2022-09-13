@@ -627,6 +627,231 @@ px.display(df[['time_', 'service', 'resp_status']], "table"))pxl",
     [](const ::testing::TestParamInfo<GenerateOTelScriptTestCase>& info) {
       return info.param.name;
     });
+
+struct ReplacePluginTimeTestCase {
+  std::string name;
+  std::string pxl;
+  std::vector<DataFrameCall> expected;
+};
+class ReplacePluginTimeTest : public OTelGeneratorTest,
+                              public ::testing::WithParamInterface<ReplacePluginTimeTestCase> {};
+
+TEST_P(ReplacePluginTimeTest, replace_plugin_time) {
+  ASSERT_OK_AND_ASSIGN(auto dataframe_calls, OTelGenerator::ReplaceDataFrameTimes(GetParam().pxl));
+  ASSERT_EQ(dataframe_calls.size(), GetParam().expected.size());
+
+  for (size_t i = 0; i < dataframe_calls.size(); ++i) {
+    EXPECT_EQ(dataframe_calls[i].original_call, GetParam().expected[i].original_call);
+    EXPECT_EQ(dataframe_calls[i].updated_line, GetParam().expected[i].updated_line);
+    EXPECT_EQ(dataframe_calls[i].line_number_start, GetParam().expected[i].line_number_start);
+    EXPECT_EQ(dataframe_calls[i].line_number_end, GetParam().expected[i].line_number_end);
+  }
+}
+INSTANTIATE_TEST_SUITE_P(
+    ReplacePluginTimeTestSuite, ReplacePluginTimeTest,
+    ::testing::ValuesIn(std::vector<ReplacePluginTimeTestCase>{
+        {"simple",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m', end_time='-1m')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 "df = px.DataFrame('http_events', start_time='-5m', end_time='-1m')",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+         }},
+        {"multi_line_call",
+         R"pxl(
+import px
+df = px.DataFrame('http_events',
+  start_time='-5m',
+  end_time='-1m')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(df = px.DataFrame('http_events',
+  start_time='-5m',
+  end_time='-1m'))pxl",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 4,
+             },
+         }},
+        {"in_function_body",
+         R"pxl(
+import px
+def foo(start_time):
+  df = px.DataFrame('http_events', start_time=start_time, end_time='-1m')
+  return df
+px.display(foo('-5m'), 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(  df = px.DataFrame('http_events', start_time=start_time, end_time='-1m'))pxl",
+                 R"pxl(  df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 3,
+                 3,
+             },
+         }},
+        {"in_function_return",
+         R"pxl(
+import px
+def foo(start_time):
+  return px.DataFrame('http_events', start_time=start_time, end_time='-1m')
+px.display(foo('-5m'), 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(  return px.DataFrame('http_events', start_time=start_time, end_time='-1m'))pxl",
+                 R"pxl(  return px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 3,
+                 3,
+             },
+         }},
+        {"multi_function",
+         R"pxl(
+import px
+def foo(start_time):
+  df = px.DataFrame('http_events', start_time=start_time, end_time='-1m')
+  return px.DataFrame('http_events', start_time=start_time, end_time='-1m')
+px.display(foo('-5m'), 'http_graph')
+df)pxl",
+         {
+             {
+                 R"pxl(  df = px.DataFrame('http_events', start_time=start_time, end_time='-1m'))pxl",
+                 R"pxl(  df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 3,
+                 3,
+             },
+             {
+                 R"pxl(  return px.DataFrame('http_events', start_time=start_time, end_time='-1m'))pxl",
+                 R"pxl(  return px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 4,
+                 4,
+             },
+         }},
+        {"multiple_calls",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m')
+px.display(df, 'http_graph')
+df = px.DataFrame('process_stats', start_time='-5m')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 "df = px.DataFrame('http_events', start_time='-5m')",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+             {
+                 "df = px.DataFrame('process_stats', start_time='-5m')",
+                 R"pxl(df = px.DataFrame('process_stats', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 4,
+                 4,
+             },
+         }},
+        {"default_end_time_argument",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 "df = px.DataFrame('http_events', start_time='-5m')",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+         }},
+        {"all_optional_arguments_not_specified",
+         R"pxl(
+import px
+df = px.DataFrame('http_events')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 "df = px.DataFrame('http_events')",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+         }},
+        {"all_positional_arguments",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', ['time_', 'upid', 'resp_body'], '-5m', '-1m')
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 "df = px.DataFrame('http_events', ['time_', 'upid', 'resp_body'], '-5m', '-1m')",
+                 R"pxl(df = px.DataFrame('http_events', select=['time_', 'upid', 'resp_body'], start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+         }},
+        {"order_kwargs_differently",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', end_time='-1m', start_time='-5m', select=['time_', 'upid', 'resp_body'])
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(df = px.DataFrame('http_events', end_time='-1m', start_time='-5m', select=['time_', 'upid', 'resp_body']))pxl",
+                 R"pxl(df = px.DataFrame('http_events', select=['time_', 'upid', 'resp_body'], start_time=px.plugin.start_time, end_time=px.plugin.end_time))pxl",
+                 2,
+                 2,
+             },
+         }},
+
+        {"attribute_call_on_df",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m', end_time='-1m').groupby(['upid']).agg(
+  latency=('latency_ns', px.mean),
+)
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(df = px.DataFrame('http_events', start_time='-5m', end_time='-1m').groupby(['upid']).agg(
+  latency=('latency_ns', px.mean),
+))pxl",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time).groupby(['upid']).agg(latency=('latency_ns', px.mean)))pxl",
+                 2,
+                 4,
+             },
+         }},
+        {"subscript_call_on_df",
+         R"pxl(
+import px
+df = px.DataFrame('http_events', start_time='-5m', end_time='-1m')[['time_', 'upid', 'resp_body']]
+px.display(df, 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(df = px.DataFrame('http_events', start_time='-5m', end_time='-1m')[['time_', 'upid', 'resp_body']])pxl",
+                 R"pxl(df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)[['time_', 'upid', 'resp_body']])pxl",
+                 2,
+                 2,
+             },
+         }},
+
+        {"dataframe_as_function_argument",
+         R"pxl(
+import px
+px.display(px.DataFrame('http_events', start_time='-5m', end_time='-1m'), 'http_graph'))pxl",
+         {
+             {
+                 R"pxl(px.display(px.DataFrame('http_events', start_time='-5m', end_time='-1m'), 'http_graph'))pxl",
+                 R"pxl(px.display(px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time), 'http_graph'))pxl",
+                 2,
+                 2,
+             },
+         }},
+    }),
+    [](const ::testing::TestParamInfo<ReplacePluginTimeTestCase>& info) {
+      return info.param.name;
+    });
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px
