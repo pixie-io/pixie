@@ -82,7 +82,7 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
   setScriptAndArgsManually: () => {},
   execute: () => {},
   cancelExecution: () => {},
-  generateOTelExportScript: () => {},
+  generateOTelExportScript: async () => {},
 });
 ScriptContext.displayName = 'ScriptContext';
 
