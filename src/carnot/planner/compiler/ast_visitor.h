@@ -143,7 +143,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @brief Processes a single expression into an IRNode. If the parameter has more than one
    * line or contains a module we can't process, then it will error out.
    *
-   * @param m the poitner to the parsed ast module.
+   * @param m the pointer to the parsed ast module.
    * @param op_context the operator context to operate with.
    * @return StatusOr<QLObjectPtr> the QL object representation of the expression, or an error if
    * the operator fails.
@@ -374,7 +374,7 @@ class ASTVisitorImpl : public ASTVisitor {
                                          const OperatorContext& op_context);
 
   /**
-   * @brief Gets the string name of the attribute in an attribute struvct.
+   * @brief Gets the string name of the attribute in an attribute struct.
    * (AstAttribute := <value>.<attribute>; `abc.blah()` -> `blah` is the attribute of `abc.blah`)
    *
    * @param attr the attribute struct to grab the attribute field from as a string.
@@ -406,7 +406,7 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ast
    * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<IRNode*> the IR representation of the liset.
+   * @return StatusOr<IRNode*> the IR representation of the tuple.
    */
   StatusOr<QLObjectPtr> ProcessTuple(const pypa::AstTuplePtr& ast,
                                      const OperatorContext& op_context);
@@ -558,7 +558,7 @@ class ASTVisitorImpl : public ASTVisitor {
   /**
    * @brief Processes FuncToExecute_ArgValues into an ArgMap
    *
-   * @param func the function to check types againts.
+   * @param func the function to check types against.
    * @param arg_values the list of FuncToExecute_ArgValues to process.
    * @return StatusOr<ArgMap> the arg map after processing.
    */

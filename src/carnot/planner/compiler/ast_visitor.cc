@@ -308,10 +308,10 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
 
     // Process arguments.
     ArgValues arg_values(func.arg_values().begin(), func.arg_values().end());
-    PL_ASSIGN_OR_RETURN(auto argmap, ProcessExecFuncArgs(ast, func_obj, arg_values));
+    PL_ASSIGN_OR_RETURN(auto arg_map, ProcessExecFuncArgs(ast, func_obj, arg_values));
 
     // Call function.
-    PL_ASSIGN_OR_RETURN(auto return_obj, func_obj->Call(argmap, ast));
+    PL_ASSIGN_OR_RETURN(auto return_obj, func_obj->Call(arg_map, ast));
 
     // Process returns.
     if (!CollectionObject::IsCollection(return_obj)) {
@@ -413,7 +413,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
   PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this,
                                                    func_based_exec_, reserved_names_));
-  // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(as_name, px);
   return Status::OK();
 }
@@ -664,7 +663,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
 Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node) {
   // Create the func object.
   // Use the new function defintion body as the function object.
-  // Every time the function is evaluated we should evlauate the body with the values for the
+  // Every time the function is evaluated we should evaluate the body with the values for the
   // args passed into the scope.
   // Parse the args to create the necessary
   auto function_name_node = node->name;
