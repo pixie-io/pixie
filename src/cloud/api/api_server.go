@@ -176,12 +176,13 @@ func main() {
 			return controllers.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 		DisableAuth: map[string]bool{
-			"/px.cloudapi.ArtifactTracker/GetArtifactList":  true,
-			"/px.cloudapi.ArtifactTracker/GetDownloadLink":  true,
-			"/pl.cloudapi.ArtifactTracker/GetArtifactList":  true,
-			"/pl.cloudapi.ArtifactTracker/GetDownloadLink":  true,
-			"/px.cloudapi.ConfigService/GetConfigForVizier": true,
-			"/px.cloudapi.AuthService/Login":                true,
+			"/px.cloudapi.ArtifactTracker/GetArtifactList":    true,
+			"/px.cloudapi.ArtifactTracker/GetDownloadLink":    true,
+			"/pl.cloudapi.ArtifactTracker/GetArtifactList":    true,
+			"/pl.cloudapi.ArtifactTracker/GetDownloadLink":    true,
+			"/px.cloudapi.ConfigService/GetConfigForVizier":   true,
+			"/px.cloudapi.ConfigService/GetConfigForOperator": true,
+			"/px.cloudapi.AuthService/Login":                  true,
 		},
 	}
 

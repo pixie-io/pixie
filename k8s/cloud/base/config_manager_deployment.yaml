@@ -62,6 +62,12 @@ spec:
             configMapKeyRef:
               name: pl-sentry-dsn-config
               key: PL_DEV_SENTRY
+        - name: PL_OPERATOR_SENTRY
+          valueFrom:
+            configMapKeyRef:
+              name: pl-sentry-dsn-config
+              key: PL_OPERATOR_SENTRY
+              optional: true
         - name: PL_LD_SDK_KEY
           valueFrom:
             configMapKeyRef:

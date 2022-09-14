@@ -44,6 +44,7 @@ func init() {
 	pflag.String("vzmgr_service", "vzmgr-service.plc.svc.cluster.local:51800", "The vzmgr service url (load balancer/list is ok)")
 	pflag.String("prod_sentry", "", "Key for prod Viziers that is used to send errors and stacktraces to Sentry.")
 	pflag.String("dev_sentry", "", "Key for dev Viziers that is used to send errors and stacktraces to Sentry.")
+	pflag.String("operator_sentry", "", "Key for prod Operators that is used to send errors and stacktraces to Sentry.")
 	pflag.String("ld_sdk_key", "", "LaunchDarkly SDK key for feature flags.")
 }
 
@@ -111,7 +112,8 @@ func main() {
 	svr := controllers.NewServer(atClient, deployKeyClient, viper.GetString("ld_sdk_key"), clientset, rm)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
-			"/px.services.ConfigManagerService/GetConfigForVizier": true,
+			"/px.services.ConfigManagerService/GetConfigForVizier":   true,
+			"/px.services.ConfigManagerService/GetConfigForOperator": true,
 		},
 	}
 	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)

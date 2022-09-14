@@ -2003,6 +2003,26 @@ func (m *MockConfigServiceClient) EXPECT() *MockConfigServiceClientMockRecorder 
 	return m.recorder
 }
 
+// GetConfigForOperator mocks base method.
+func (m *MockConfigServiceClient) GetConfigForOperator(ctx context.Context, in *cloudpb.ConfigForOperatorRequest, opts ...grpc.CallOption) (*cloudpb.ConfigForOperatorResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetConfigForOperator", varargs...)
+	ret0, _ := ret[0].(*cloudpb.ConfigForOperatorResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForOperator indicates an expected call of GetConfigForOperator.
+func (mr *MockConfigServiceClientMockRecorder) GetConfigForOperator(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForOperator", reflect.TypeOf((*MockConfigServiceClient)(nil).GetConfigForOperator), varargs...)
+}
+
 // GetConfigForVizier mocks base method.
 func (m *MockConfigServiceClient) GetConfigForVizier(ctx context.Context, in *cloudpb.ConfigForVizierRequest, opts ...grpc.CallOption) (*cloudpb.ConfigForVizierResponse, error) {
 	m.ctrl.T.Helper()
@@ -2044,6 +2064,21 @@ func NewMockConfigServiceServer(ctrl *gomock.Controller) *MockConfigServiceServe
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConfigServiceServer) EXPECT() *MockConfigServiceServerMockRecorder {
 	return m.recorder
+}
+
+// GetConfigForOperator mocks base method.
+func (m *MockConfigServiceServer) GetConfigForOperator(arg0 context.Context, arg1 *cloudpb.ConfigForOperatorRequest) (*cloudpb.ConfigForOperatorResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigForOperator", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.ConfigForOperatorResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForOperator indicates an expected call of GetConfigForOperator.
+func (mr *MockConfigServiceServerMockRecorder) GetConfigForOperator(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForOperator", reflect.TypeOf((*MockConfigServiceServer)(nil).GetConfigForOperator), arg0, arg1)
 }
 
 // GetConfigForVizier mocks base method.

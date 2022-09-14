@@ -901,6 +901,8 @@ message UserInfo {
 service ConfigService {
   //  GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
   rpc GetConfigForVizier(ConfigForVizierRequest) returns (ConfigForVizierResponse);
+  // GetConfigForOperator provides the key for the operator that is used to send errors and stacktraces to Sentry
+  rpc GetConfigForOperator(ConfigForOperatorRequest) returns (ConfigForOperatorResponse);
 }
 
 // ConfigForVizierRequest is a request for Vizier yamls given a set of specs.
@@ -917,6 +919,15 @@ message ConfigForVizierResponse {
   map<string, string> nameToYamlContent = 1;
   // sentry_dsn contains the key for viziers to send errors and traces.
   string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
+}
+
+// ConfigForOperatorRequest is a request for the Operator Sentry DSN.
+message ConfigForOperatorRequest {}
+
+// ConfigForOperatorResponse is the response to a ConfigForOperatorRequest.
+message ConfigForOperatorResponse {
+    // sentry_operator_dsn contains the key for the operator to send errors and traces.
+    string sentry_operator_dsn = 1 [(gogoproto.customname) = "SentryOperatorDSN"];
 }
 
 // PluginService helps manage and configure plugins.

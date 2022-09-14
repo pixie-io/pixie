@@ -46,6 +46,7 @@ metadata:
 data:
   PL_PROD_SENTRY: ""
   PL_DEV_SENTRY: ""
+  PL_OPERATOR_SENTRY: ""
 ---
 apiVersion: v1
 kind: ConfigMap

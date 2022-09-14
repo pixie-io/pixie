@@ -36,6 +36,26 @@ func (m *MockConfigManagerServiceClient) EXPECT() *MockConfigManagerServiceClien
 	return m.recorder
 }
 
+// GetConfigForOperator mocks base method.
+func (m *MockConfigManagerServiceClient) GetConfigForOperator(ctx context.Context, in *configmanagerpb.ConfigForOperatorRequest, opts ...grpc.CallOption) (*configmanagerpb.ConfigForOperatorResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetConfigForOperator", varargs...)
+	ret0, _ := ret[0].(*configmanagerpb.ConfigForOperatorResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForOperator indicates an expected call of GetConfigForOperator.
+func (mr *MockConfigManagerServiceClientMockRecorder) GetConfigForOperator(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForOperator", reflect.TypeOf((*MockConfigManagerServiceClient)(nil).GetConfigForOperator), varargs...)
+}
+
 // GetConfigForVizier mocks base method.
 func (m *MockConfigManagerServiceClient) GetConfigForVizier(ctx context.Context, in *configmanagerpb.ConfigForVizierRequest, opts ...grpc.CallOption) (*configmanagerpb.ConfigForVizierResponse, error) {
 	m.ctrl.T.Helper()
@@ -77,6 +97,21 @@ func NewMockConfigManagerServiceServer(ctrl *gomock.Controller) *MockConfigManag
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConfigManagerServiceServer) EXPECT() *MockConfigManagerServiceServerMockRecorder {
 	return m.recorder
+}
+
+// GetConfigForOperator mocks base method.
+func (m *MockConfigManagerServiceServer) GetConfigForOperator(arg0 context.Context, arg1 *configmanagerpb.ConfigForOperatorRequest) (*configmanagerpb.ConfigForOperatorResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigForOperator", arg0, arg1)
+	ret0, _ := ret[0].(*configmanagerpb.ConfigForOperatorResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForOperator indicates an expected call of GetConfigForOperator.
+func (mr *MockConfigManagerServiceServerMockRecorder) GetConfigForOperator(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForOperator", reflect.TypeOf((*MockConfigManagerServiceServer)(nil).GetConfigForOperator), arg0, arg1)
 }
 
 // GetConfigForVizier mocks base method.
