@@ -25,7 +25,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
-#include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/plannerpb/planner.pb.h"
 #include "src/carnot/planner/probes/probes.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 

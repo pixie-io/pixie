@@ -27,7 +27,7 @@ go_library(
         "//src/carnot/goplanner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
+        "//src/carnot/planner/plannerpb:planner_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
