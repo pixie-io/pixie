@@ -39,7 +39,7 @@ commit_range=$(git merge-base origin/main HEAD)
 
 experimental_exclude=""
 if [[ -d experimental ]]; then
-    experimental_exclude="except //experimental/..."
+    experimental_exclude="except //private/experimental/..."
 fi
 
 ui_excludes="except //src/ui/..."

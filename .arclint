@@ -14,7 +14,7 @@
     "(^private\/credentials\/.*\\.yaml)",
     "(^private\/credentials\/.*\\.sh)",
     "(^docs/customer/)",
-    "(^experimental/users/)",
+    "(^private/experimental/users/)",
     "(^k8s/operator/crd/base/px\\.dev_viziers\\.yaml$)",
     "(^src/operator/client/versioned/)",
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
@@ -90,7 +90,7 @@
     "experimental-manual": {
       "type": "script-and-regex",
       "include": [
-        "(^experimental/.*BUILD\\.bazel$)"
+        "(^private/experimental/.*BUILD\\.bazel$)"
       ],
       "script-and-regex.script": "./tools/linters/experimental-manual.sh",
       "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
