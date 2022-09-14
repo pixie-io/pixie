@@ -32,7 +32,8 @@
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
     "(go\\.sum$)",
-    "(^third_party/cpplint/cpplint.py$)"
+    "(^third_party/cpplint/cpplint.py$)",
+    "(^third_party/github.com/gogo/protobuf/gogoproto/gogo.proto$)"
   ],
   "linters": {
     "bpf-naming": {
@@ -62,7 +63,8 @@
     "clang-format": {
       "type": "clang-format",
       "include": [
-        "(\\.(m|h|mm|c|cc)$)"
+        "(\\.(m|h|mm|c|cc)$)",
+        "(\\.proto$)"
       ]
     },
     "cpplint": {

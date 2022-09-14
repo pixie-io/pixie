@@ -81,14 +81,14 @@ message RegisterAgentRequest {
   // ASID is the agent short ID.
   // This field is used only when reregistering an agent, because the same ID needs
   // to be preserved.
-  uint32 asid = 3 [(gogoproto.customname) = "ASID"];
+  uint32 asid = 3 [ (gogoproto.customname) = "ASID" ];
   // DEPRECATED: This was update info, which are now only included in Heartbeats.
   reserved 2;
 }
 
 message RegisterAgentResponse {
   // ASID is the agent short ID.
-  uint32 asid = 1 [(gogoproto.customname) = "ASID"];
+  uint32 asid = 1 [ (gogoproto.customname) = "ASID" ];
   // DEPRECATED: This was clusterCIDR has been replaced by PodCIDRs in HeartbeatAck.
   reserved 2;
 }
@@ -107,13 +107,14 @@ message AgentUpdateInfo {
   // Whether the schema updates.
   bool does_update_schema = 6;
   AgentDataInfo data = 7;
-  // DEPRECATED: This was ProcessInfo which has been replaced by ProcessCreated and ProcessTerminated.
+  // DEPRECATED: This was ProcessInfo which has been replaced by ProcessCreated and
+  // ProcessTerminated.
   reserved 3;
 }
 
 // The heart beat signal.
 message Heartbeat {
-  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
   // The current unix time in ns on the machine.
   int64 time = 2;
   AgentUpdateInfo update_info = 3;
@@ -122,8 +123,8 @@ message Heartbeat {
 
 message MetadataUpdateInfo {
   // repeated px.shared.k8s.metadatapb.ResourceUpdate updates = 1;
-  string service_cidr = 2 [(gogoproto.customname) = "ServiceCIDR"];
-  repeated string pod_cidrs = 3 [(gogoproto.customname) = "PodCIDRs"];
+  string service_cidr = 2 [ (gogoproto.customname) = "ServiceCIDR" ];
+  repeated string pod_cidrs = 3 [ (gogoproto.customname) = "PodCIDRs" ];
   // Formerly used for K8s updates.
   reserved 1;
 }
@@ -143,7 +144,7 @@ message HeartbeatNack {
 }
 
 message ExecuteQueryRequest {
-  uuidpb.UUID query_id = 1 [(gogoproto.customname) = "QueryID"];
+  uuidpb.UUID query_id = 1 [ (gogoproto.customname) = "QueryID" ];
   // Formerly used for query string.
   reserved 2;
   px.carnot.planpb.Plan plan = 3;
@@ -153,22 +154,22 @@ message ExecuteQueryRequest {
 // The request to register tracepoints on a PEM.
 message RegisterTracepointRequest {
   px.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
-  uuidpb.UUID id = 2 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 2 [ (gogoproto.customname) = "ID" ];
 }
 
 // An update message sent when a tracepoint's status changes.
 message TracepointInfoUpdate {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The state of the tracepoint.
   px.statuspb.LifeCycleState state = 2;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
   px.statuspb.Status status = 3;
   // The ID of the agent sending the update.
-  uuidpb.UUID agent_id = 4 [(gogoproto.customname) = "AgentID"];
+  uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }
 
 message RemoveTracepointRequest {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // A request to update a config setting on a PEM.
@@ -184,6 +185,7 @@ message ConfigUpdateRequest {
 message MetricsMessage {
   // The prometheus metrics in prometheus' text exposition format.
   string prom_metrics_text = 1;
-  // The k8s name of the pod sending the metrics. If empty, it won't be added to the metric's labels.
+  // The k8s name of the pod sending the metrics. If empty, it won't be added to the metric's
+  // labels.
   string pod_name = 2;
 }

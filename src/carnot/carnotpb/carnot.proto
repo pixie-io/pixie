@@ -33,26 +33,27 @@ message TransferResultChunkRequest {
   string address = 1;
   // The ID of the remote query ID on the address that should receive this
   // RowBatch.
-  uuidpb.UUID query_id = 2 [(gogoproto.customname) = "QueryID"];
+  uuidpb.UUID query_id = 2 [ (gogoproto.customname) = "QueryID" ];
   // Previously used for grpc_source_id and table_name before they were grouped under
   // the RowBatchResult message.
   reserved 3;
   reserved 4;
-  // QueryResultContents is used to both initiate a connection between a GRPCSink and its remote destination
-  // at the beginning of the stream, also to send any result RowBatches between the sink and its
-  // destination. It contains metadata so that the sink->destination connection can be tracked and
-  // monitored, and the overall query context cancelled if a particular sink->destination stream
-  // has been closed earlier than expected.
+  // QueryResultContents is used to both initiate a connection between a GRPCSink and its remote
+  // destination at the beginning of the stream, also to send any result RowBatches between the sink
+  // and its destination. It contains metadata so that the sink->destination connection can be
+  // tracked and monitored, and the overall query context cancelled if a particular
+  // sink->destination stream has been closed earlier than expected.
   message SinkResult {
     oneof result_contents {
       // The row batch data.
       px.table_store.schemapb.RowBatchData row_batch = 1;
     }
-    reserved 4; // DEPRECATED: used to be initiate_result_stream. Replaced with InitiateConnection.
+    reserved 4;  // DEPRECATED: used to be initiate_result_stream. Replaced with InitiateConnection.
     oneof destination {
-      // When the TransferResultChunkRequest is being sent to another Carnot instance, 'grpc_source_id'
-      // identifies the source node within the query that should receive this RowBatch.
-      uint64 grpc_source_id = 2 [(gogoproto.customname) = "GRPCSourceID"];
+      // When the TransferResultChunkRequest is being sent to another Carnot instance,
+      // 'grpc_source_id' identifies the source node within the query that should receive this
+      // RowBatch.
+      uint64 grpc_source_id = 2 [ (gogoproto.customname) = "GRPCSourceID" ];
       // If this result chunk is being sent to a non-Carnot instance such as the querybroker,
       // this field denotes the name of the table that it belongs to.
       string table_name = 3;
@@ -68,7 +69,7 @@ message TransferResultChunkRequest {
     // Agent-specific execution stats, sent by every agent in the plan.
     repeated px.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
   }
-  message InitiateConnection { }
+  message InitiateConnection {}
 
   oneof result {
     // `query_result` covers query result data sent from a GRPC sink (including the request

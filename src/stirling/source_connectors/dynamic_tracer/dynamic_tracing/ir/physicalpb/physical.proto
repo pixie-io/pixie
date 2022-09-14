@@ -65,7 +65,8 @@ enum Register {
   // Places argument-passing registers onto the BPF stack as a contiguous piece of memory,
   // and returns the pointer to that memory.
   // System V ABI: https://wiki.osdev.org/System_V_ABI
-  // Golang register ABI: https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
+  // Golang register ABI:
+  // https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
   SYSV_AMD64_ARGS_PTR = 300;
   GOLANG_ARGS_PTR = 301;
 }
@@ -197,8 +198,8 @@ message ScalarVariable {
 
   // Describes type of the value held by this ScalarVariable.
   //
-  // When this is VOID_POINTER, this ScalarVariable describes an intermediate variable used to access
-  // a scalar variable.
+  // When this is VOID_POINTER, this ScalarVariable describes an intermediate variable used to
+  // access a scalar variable.
   shared.ScalarType type = 2;
 
   // Describes the source expression of the scalar variable.

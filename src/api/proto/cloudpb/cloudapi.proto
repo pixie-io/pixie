@@ -71,7 +71,7 @@ service OrganizationService {
 
 message UpdateUserRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.StringValue display_picture = 2;
   google.protobuf.BoolValue is_approved = 3;
 }
@@ -79,33 +79,32 @@ message UpdateUserRequest {
 // A request to update the user settings for a particular user.
 message UpdateUserSettingsRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  reserved 2; // DEPRECATED
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  reserved 2;  // DEPRECATED
   google.protobuf.BoolValue analytics_optout = 3;
 }
 
 // UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.
-message UpdateUserSettingsResponse {
-}
+message UpdateUserSettingsResponse {}
 
 // A request to get the user settings for a particular user.
 message GetUserSettingsRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  reserved 2; // DEPRECATED
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  reserved 2;  // DEPRECATED
 }
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
   // Settings for users key-value.
-  reserved 1; // DEPRECATED
+  reserved 1;  // DEPRECATED
   bool analytics_optout = 2;
 }
 
 // A request to get user attributes for the given user.
 message GetUserAttributesRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // The response for a GetUserAttributes call.
@@ -116,7 +115,7 @@ message GetUserAttributesResponse {
 // A request to set user attributes for the given user.
 message SetUserAttributesRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.BoolValue tour_seen = 2;
 }
 
@@ -162,7 +161,9 @@ service VizierImageAuthorization {
 message GetImageCredentialsRequest {}
 
 // GetImageCredentialsResponse returns the docker credentials.
-message GetImageCredentialsResponse { string creds = 1; }
+message GetImageCredentialsResponse {
+  string creds = 1;
+}
 
 // ArtifactType is the type of artifact that was released.
 enum ArtifactType {
@@ -403,9 +404,13 @@ message ClusterInfo {
   google.protobuf.Timestamp previous_status_time = 16;
 }
 
-message GetClusterInfoResponse { repeated ClusterInfo clusters = 1; }
+message GetClusterInfoResponse {
+  repeated ClusterInfo clusters = 1;
+}
 
-message GetClusterConnectionInfoRequest { px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
+message GetClusterConnectionInfoRequest {
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
 
 message GetClusterConnectionInfoResponse {
   string token = 2;
@@ -437,12 +442,12 @@ service VizierDeploymentKeyManager {
 // Metadata for a key that can be used to deploy a new vizier cluster.
 message DeploymentKeyMetadata {
   // They ID of the key.
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
   // 2 is reserved for the original key string.
   reserved 2;
 }
@@ -451,16 +456,15 @@ message DeploymentKeyMetadata {
 // is added to the X-API-KEY requests from Vizier on cloud conn.
 message DeploymentKey {
   // They ID of the key.
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The value of the key.
   string key = 2;
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
 }
-
 
 // Create a deployment key.
 message CreateDeploymentKeyRequest {
@@ -472,11 +476,17 @@ message ListDeploymentKeyRequest {
   // Empty message on purpose so we can extend with attributes easily if needed.
 }
 
-message ListDeploymentKeyResponse { repeated DeploymentKeyMetadata keys = 1; }
+message ListDeploymentKeyResponse {
+  repeated DeploymentKeyMetadata keys = 1;
+}
 
-message GetDeploymentKeyRequest { uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
+message GetDeploymentKeyRequest {
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
 
-message GetDeploymentKeyResponse { DeploymentKey key = 1; }
+message GetDeploymentKeyResponse {
+  DeploymentKey key = 1;
+}
 
 message LookupDeploymentKeyRequest {
   string key = 1;
@@ -505,15 +515,15 @@ service APIKeyManager {
 // is added to the PIXIE-API-KEY requests from API requests.
 message APIKey {
   // They ID of the key.
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The value of the key.
   string key = 2;
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
 
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
 }
 
 // The metadata associated with the key, everything except the actual key.
@@ -524,8 +534,8 @@ message APIKeyMetadata {
   // Description for the key.
   string desc = 4;
 
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
 
   // Reserves the key field which was used by the original APIKey proto.
   reserved 2;
@@ -541,11 +551,17 @@ message ListAPIKeyRequest {
   // Empty message on purpose so we can extend with attributes easily if needed.
 }
 
-message ListAPIKeyResponse { repeated APIKeyMetadata keys = 1; }
+message ListAPIKeyResponse {
+  repeated APIKeyMetadata keys = 1;
+}
 
-message GetAPIKeyRequest { uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ]; }
+message GetAPIKeyRequest {
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
 
-message GetAPIKeyResponse { APIKey key = 1; }
+message GetAPIKeyResponse {
+  APIKey key = 1;
+}
 
 message LookupAPIKeyRequest {
   string key = 1;
@@ -795,7 +811,7 @@ message CreateOrgRequest {
 
 message UpdateOrgRequest {
   // The ID of the org.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // Whether to enable/disable the requirement for admins to approve new users.
   google.protobuf.BoolValue enable_approvals = 2;
 }
@@ -804,7 +820,7 @@ message UpdateOrgRequest {
 // verified in the augmented token.
 message GetUsersInOrgRequest {
   // The org to get the users of.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // The response to a GetUsersInOrgRequest.
@@ -814,7 +830,7 @@ message GetUsersInOrgResponse {
 }
 
 message RemoveUserFromOrgRequest {
-  px.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID user_id = 1 [ (gogoproto.customname) = "UserID" ];
 }
 
 message RemoveUserFromOrgResponse {
@@ -822,7 +838,7 @@ message RemoveUserFromOrgResponse {
 }
 
 message CreateInviteTokenRequest {
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 message InviteToken {
@@ -837,16 +853,16 @@ message VerifyInviteTokenResponse {
 // IDEConfig is used to configure an IDE with Pixie.
 message IDEConfig {
   // The name of the IDE. For example: "github", "sourcemap".
-  string ide_name = 1 [(gogoproto.customname) = "IDEName"];
-  // A mustache.js template path for opening up a page in the IDE, given the symbol, function path, and function.
-  // For example: "subl://{{path}}/{{symbol}}".
+  string ide_name = 1 [ (gogoproto.customname) = "IDEName" ];
+  // A mustache.js template path for opening up a page in the IDE, given the symbol, function path,
+  // and function. For example: "subl://{{path}}/{{symbol}}".
   string path = 2;
 }
 
 // AddOrgIDEConfigRequest is a request to add an IDE config for the given org.
 message AddOrgIDEConfigRequest {
   // The org which the IDE config should be added to.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
   // The config that should be added to the org.
   IDEConfig config = 2;
 }
@@ -860,9 +876,9 @@ message AddOrgIDEConfigResponse {
 // DeleteOrgIDEConfigRequest is a request to delete an IDE config from an org.
 message DeleteOrgIDEConfigRequest {
   // The org which the IDE config should be removed from.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
   // The name of the IDE config to be deleted.
-  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+  string ide_name = 2 [ (gogoproto.customname) = "IDEName" ];
 }
 
 // DeleteOrgIDEConfigResponse is the response to deleting an IDE config from an org.
@@ -871,9 +887,10 @@ message DeleteOrgIDEConfigResponse {}
 // GetOrgIDEConfigsRequest is a request to get all IDE configs for an org.
 message GetOrgIDEConfigsRequest {
   // The org to get the IDE configs for.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-  // Optional, the name of the IDE to fetch configs for. If not specified, fetches all configs for the org.
-  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
+  // Optional, the name of the IDE to fetch configs for. If not specified, fetches all configs for
+  // the org.
+  string ide_name = 2 [ (gogoproto.customname) = "IDEName" ];
 }
 
 // GetOrgIDEConfigsResponse is the response to getting all IDE configs for an org.
@@ -885,9 +902,9 @@ message GetOrgIDEConfigsResponse {
 // UserInfo has information about a single end user in our system.
 message UserInfo {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The ID of the organization that they belong to.
-  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
   string first_name = 4;
   string last_name = 5;
   string email = 6;
@@ -901,7 +918,8 @@ message UserInfo {
 service ConfigService {
   //  GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
   rpc GetConfigForVizier(ConfigForVizierRequest) returns (ConfigForVizierResponse);
-  // GetConfigForOperator provides the key for the operator that is used to send errors and stacktraces to Sentry
+  // GetConfigForOperator provides the key for the operator that is used to send errors and
+  // stacktraces to Sentry
   rpc GetConfigForOperator(ConfigForOperatorRequest) returns (ConfigForOperatorResponse);
 }
 
@@ -918,7 +936,7 @@ message ConfigForVizierResponse {
   // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
   map<string, string> nameToYamlContent = 1;
   // sentry_dsn contains the key for viziers to send errors and traces.
-  string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
+  string sentry_dsn = 2 [ (gogoproto.customname) = "SentryDSN" ];
 }
 
 // ConfigForOperatorRequest is a request for the Operator Sentry DSN.
@@ -926,8 +944,8 @@ message ConfigForOperatorRequest {}
 
 // ConfigForOperatorResponse is the response to a ConfigForOperatorRequest.
 message ConfigForOperatorResponse {
-    // sentry_operator_dsn contains the key for the operator to send errors and traces.
-    string sentry_operator_dsn = 1 [(gogoproto.customname) = "SentryOperatorDSN"];
+  // sentry_operator_dsn contains the key for the operator to send errors and traces.
+  string sentry_operator_dsn = 1 [ (gogoproto.customname) = "SentryOperatorDSN" ];
 }
 
 // PluginService helps manage and configure plugins.
@@ -935,11 +953,14 @@ service PluginService {
   // Fetches all of the available plugins and whether the org has the plugin enabled.
   rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
   // Fetches metadata and configuration info about a specific retention plugin version.
-  rpc GetRetentionPluginInfo(GetRetentionPluginInfoRequest) returns (GetRetentionPluginInfoResponse);
+  rpc GetRetentionPluginInfo(GetRetentionPluginInfoRequest)
+      returns (GetRetentionPluginInfoResponse);
   // Gets the org's configuration for a retention plugin, such as API keys.
-  rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
+  rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest)
+      returns (GetOrgRetentionPluginConfigResponse);
   // Updates the org's configuration for a retention plugin.
-  rpc UpdateRetentionPluginConfig(UpdateRetentionPluginConfigRequest) returns (UpdateRetentionPluginConfigResponse);
+  rpc UpdateRetentionPluginConfig(UpdateRetentionPluginConfigRequest)
+      returns (UpdateRetentionPluginConfigResponse);
   // GetRetentionScripts gets the retention scripts configured for the org.
   rpc GetRetentionScripts(GetRetentionScriptsRequest) returns (GetRetentionScriptsResponse);
   // GetRetentionScript gets detailed information about a specific retention script.
@@ -984,8 +1005,8 @@ message Plugin {
   string enabled_version = 8;
 }
 
-// GetOrgRetentionPluginConfigRequest is a request to get the retention configuration for a plugin that
-// supports longterm data retention.
+// GetOrgRetentionPluginConfigRequest is a request to get the retention configuration for a plugin
+// that supports longterm data retention.
 message GetOrgRetentionPluginConfigRequest {
   // The ID of the plugin to fetch configs for.
   string plugin_id = 1;
@@ -993,10 +1014,11 @@ message GetOrgRetentionPluginConfigRequest {
 
 // GetOrgRetentionPluginConfigResponse is the response to a GetRetentionPluginConfigRequest.
 message GetOrgRetentionPluginConfigResponse {
-  // Map of configs user has specified for the plugin with the key being the name of the field, and value as user-specified value for the field.
+  // Map of configs user has specified for the plugin with the key being the name of the field, and
+  // value as user-specified value for the field.
   map<string, string> configs = 1;
   string custom_export_url = 2;
-  bool insecure_tls = 3 [(gogoproto.customname) = "InsecureTLS"];
+  bool insecure_tls = 3 [ (gogoproto.customname) = "InsecureTLS" ];
 }
 
 // UpdateRetentionPluginConfigRequest is a request to update the retention config for a plugin.
@@ -1007,7 +1029,7 @@ message UpdateRetentionPluginConfigRequest {
   google.protobuf.StringValue version = 4;
   // The custom export URL that should be applied to all plugin scripts.
   google.protobuf.StringValue custom_export_url = 5;
-  google.protobuf.BoolValue insecure_tls = 6 [(gogoproto.customname) = "InsecureTLS"];
+  google.protobuf.BoolValue insecure_tls = 6 [ (gogoproto.customname) = "InsecureTLS" ];
   // If enabling the plugin, whether to enable all preset scripts.
   google.protobuf.BoolValue disable_presets = 7;
 }
@@ -1015,8 +1037,8 @@ message UpdateRetentionPluginConfigRequest {
 // UpdateRetentionPluginConfigResponse is the response to a UpdateRetentionPluginConfigRequest.
 message UpdateRetentionPluginConfigResponse {}
 
-// GetRetentionPluginInfoRequest is a request to get info about a specific retention plugin version, such as which
-// fields are configurable.
+// GetRetentionPluginInfoRequest is a request to get info about a specific retention plugin version,
+// such as which fields are configurable.
 message GetRetentionPluginInfoRequest {
   // The ID of the plugin to fetch configs for.
   string plugin_id = 1;
@@ -1027,7 +1049,7 @@ message GetRetentionPluginInfoRequest {
 // RetentionScript represents a script being used for long-term data retention.
 message RetentionScript {
   // The ID for the script.
-  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
   // The name of the script.
   string script_name = 2;
   // A description for the script.
@@ -1035,7 +1057,7 @@ message RetentionScript {
   // How often the script should be run, in seconds.
   int64 frequency_s = 4;
   // The clusters the script should be run on. If empty, signifies all clusters.
-  repeated uuidpb.UUID cluster_ids = 5 [(gogoproto.customname) = "ClusterIDs"];
+  repeated uuidpb.UUID cluster_ids = 5 [ (gogoproto.customname) = "ClusterIDs" ];
   // The plugin which the script is sending data to.
   string plugin_id = 6;
   // Whether the script is enabled.
@@ -1044,14 +1066,15 @@ message RetentionScript {
   bool is_preset = 8;
 }
 
-// GetRetentionPluginInfoResponse is the response toa GetRetentionPluginInfoRequest. It contains information about
-// what configurations are available for a retention plugin.
+// GetRetentionPluginInfoResponse is the response toa GetRetentionPluginInfoRequest. It contains
+// information about what configurations are available for a retention plugin.
 message GetRetentionPluginInfoResponse {
-  // Map of configs required for the plugin, with the key being the name of the field, and value as the description of the field.
+  // Map of configs required for the plugin, with the key being the name of the field, and value as
+  // the description of the field.
   map<string, string> configs = 1;
-  bool allow_custom_export_url = 2 [(gogoproto.customname) = "AllowCustomExportURL"];
-  bool allow_insecure_tls = 3 [(gogoproto.customname) = "AllowInsecureTLS"];
-  string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
+  bool allow_custom_export_url = 2 [ (gogoproto.customname) = "AllowCustomExportURL" ];
+  bool allow_insecure_tls = 3 [ (gogoproto.customname) = "AllowInsecureTLS" ];
+  string default_export_url = 4 [ (gogoproto.customname) = "DefaultExportURL" ];
 }
 
 // GetRetentionScriptsRequest gets all retention scripts belonging to the org.
@@ -1064,7 +1087,7 @@ message GetRetentionScriptsResponse {
 
 // GetRetentionScriptRequest gets detailed information about a specific retention script.
 message GetRetentionScriptRequest {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // GetRetentionScriptResponse is a response to a GetRetentionScriptRequest.
@@ -1073,12 +1096,12 @@ message GetRetentionScriptResponse {
   // The actual PxL script that should be run.
   string contents = 2;
   // The URL which the script is configured to export to.
-  string export_url = 3 [(gogoproto.customname) = "ExportURL"];
+  string export_url = 3 [ (gogoproto.customname) = "ExportURL" ];
 }
 
 // UpdateRetentionScriptRequest updates a specific retention script.
 message UpdateRetentionScriptRequest {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The name of the script.
   google.protobuf.StringValue script_name = 2;
   // The description for the script.
@@ -1092,7 +1115,7 @@ message UpdateRetentionScriptRequest {
   // The export URL for the script.
   google.protobuf.StringValue export_url = 7;
   // The clusters the script should be run on. If empty, signifies all clusters.
-  repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+  repeated uuidpb.UUID cluster_ids = 8 [ (gogoproto.customname) = "ClusterIDs" ];
 }
 
 // UpdateRetentionScriptResponse is a response to a UpdateRetentionScriptRequest.
@@ -1111,19 +1134,19 @@ message CreateRetentionScriptRequest {
   // The export URL for the script.
   string export_url = 7;
   // The clusters the script should be run on. If empty, signifies all clusters.
-  repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+  repeated uuidpb.UUID cluster_ids = 8 [ (gogoproto.customname) = "ClusterIDs" ];
   // The plugin to use for the script.
   string plugin_id = 9;
 }
 
 // CreateRetentionScriptResponse is a response to a CreateRetentionScriptRequest.
 message CreateRetentionScriptResponse {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // DeleteRetentionScriptRequest is a request to delete a retention script.
 message DeleteRetentionScriptRequest {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // DeleteRetentionScriptResponse is a response to a DeleteRetentionScriptRequest.

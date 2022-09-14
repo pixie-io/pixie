@@ -28,7 +28,8 @@ import "src/shared/types/typespb/types.proto";
 
 // This file is mostly copied from
 // github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto,
-// github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto and
+// github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto
+// and
 // github.com/kubernetes/api/blob/f6f0d0e54216133456777fa675f58cf10cf79330/apps/v1/generated.proto
 // with some modifications, such as deletion of unnecessary fields and field re-naming.
 
@@ -50,15 +51,15 @@ message ObjectMetadata {
   // equivalent to the "default" namespace.
   string namespace = 2;
   // UID is an identifier that is unique in time and space value for this object.
-  string uid = 3 [(gogoproto.customname) = "UID"];
+  string uid = 3 [ (gogoproto.customname) = "UID" ];
   // An opaque value that represents the internal version of this object that can
   // be used by clients to determine when objects have changed. May be used for optimistic
   // concurrency, change detection, and the watch operation on a resource or set of resources.
   string resource_version = 4;
   // The server time in nanoseconds when this object was created.
-  int64 creation_timestamp_ns = 5 [(gogoproto.customname) = "CreationTimestampNS"];
+  int64 creation_timestamp_ns = 5 [ (gogoproto.customname) = "CreationTimestampNS" ];
   // The time in nanoseconds at which this resource will be deleted.
-  int64 deletion_timestamp_ns = 6 [(gogoproto.customname) = "DeletionTimestampNS"];
+  int64 deletion_timestamp_ns = 6 [ (gogoproto.customname) = "DeletionTimestampNS" ];
   // Map of string keys and values that can be used to organize and categorize
   // (scope and select) objects.
   map<string, string> labels = 7;
@@ -77,7 +78,7 @@ message OwnerReference {
   // Name of the referent.
   string name = 3;
   // UID of the referent.
-  string uid = 4 [(gogoproto.customname) = "UID"];
+  string uid = 4 [ (gogoproto.customname) = "UID" ];
 }
 
 message Namespace {
@@ -105,7 +106,7 @@ enum DNSPolicy {
 // PodSpec is a description of a pod.
 message PodSpec {
   // The DNS policy for the pod.
-  DNSPolicy dns_policy = 1 [(gogoproto.customname) = "DNSPolicy"];
+  DNSPolicy dns_policy = 1 [ (gogoproto.customname) = "DNSPolicy" ];
   // A selector which must be true for the pod to fit on a node.
   map<string, string> node_selector = 2;
   // A request to schedule this pod onto a specific node.
@@ -161,12 +162,12 @@ enum ContainerState {
 
 message ContainerStatus {
   string name = 1;
-  string container_id = 2 [(gogoproto.customname) = "ContainerID"];
+  string container_id = 2 [ (gogoproto.customname) = "ContainerID" ];
   ContainerState container_state = 3;
   // The server time in nanoseconds when the container started.
-  int64 start_timestamp_ns = 4 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 4 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The time in nanoseconds at which the container finished.
-  int64 stop_timestamp_ns = 5 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 5 [ (gogoproto.customname) = "StopTimestampNS" ];
   // The message for why the container is in its current status.
   string message = 6;
   // A brief CamelCase message indicating details about why the container is in this state.
@@ -198,10 +199,10 @@ message PodStatus {
   // e.g. 'Evicted'
   string reason = 4;
   // IP address of the host to which the pod is assigned. Empty if not yet scheduled.
-  string host_ip = 5 [(gogoproto.customname) = "HostIP"];
+  string host_ip = 5 [ (gogoproto.customname) = "HostIP" ];
   // IP address allocated to the pod. Routable at least within the cluster.
-  string pod_ip = 6 [(gogoproto.customname) = "PodIP"];
-  PodQOSClass qos_class = 7 [(gogoproto.customname) = "QOSClass"];
+  string pod_ip = 6 [ (gogoproto.customname) = "PodIP" ];
+  PodQOSClass qos_class = 7 [ (gogoproto.customname) = "QOSClass" ];
   repeated ContainerStatus container_statuses = 8;
   // The start time of the pod.
   google.protobuf.Timestamp created_at = 11;
@@ -246,7 +247,7 @@ message EndpointSubset {
 // EndpointAddress is a tuple that describes single Pod IP address.
 message EndpointAddress {
   // The Pod IP of this endpoint.
-  string ip = 1 [(gogoproto.customname) = "IP"];
+  string ip = 1 [ (gogoproto.customname) = "IP" ];
   // The hostname of this endpoint
   string hostname = 2;
   // Node hosting this endpoint. This can be used to determine endpoints local to a node.
@@ -281,7 +282,7 @@ message ObjectReference {
   // Name of the referent.
   string name = 3;
   // UID of the referent.
-  string uid = 4 [(gogoproto.customname) = "UID"];
+  string uid = 4 [ (gogoproto.customname) = "UID" ];
   // Specific resource version to which this reference is made, if any.
   string resourceVersion = 6;
 }
@@ -314,15 +315,15 @@ message ServiceSpec {
   // The list of ports that are exposed by this service.
   repeated ServicePort ports = 1;
   // The IP address of the service.
-  string cluster_ip = 2 [(gogoproto.customname) = "ClusterIP"];
+  string cluster_ip = 2 [ (gogoproto.customname) = "ClusterIP" ];
   // The type which determines how the Service is exposed.
   ServiceType type = 3;
   // List of IP addresses for which nodes in the cluster
   // will also accept traffic for this service.
-  repeated string external_ips = 4 [(gogoproto.customname) = "ExternalIPs"];
+  repeated string external_ips = 4 [ (gogoproto.customname) = "ExternalIPs" ];
   // Only applies to Service Type: LoadBalancer
   // LoadBalancer will get created with the IP specified in this field.
-  string load_balancer_ip = 5 [(gogoproto.customname) = "LoadBalancerIP"];
+  string load_balancer_ip = 5 [ (gogoproto.customname) = "LoadBalancerIP" ];
   // The external reference that kubedns or equivalent will
   // return as a CNAME record for this service.
   string external_name = 6;
@@ -348,13 +349,13 @@ message ContainerInfo {
   // Name of the container.
   string name = 1;
   // UID is an identifier that is unique in time and space value for the container.
-  string uid = 2 [(gogoproto.customname) = "UID"];
+  string uid = 2 [ (gogoproto.customname) = "UID" ];
   // The server time in nanoseconds when the container started.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The time in nanoseconds when the container stopped.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
   // The identifier of the pod that the container belongs to.
-  string pod_uid = 5 [(gogoproto.customname) = "PodUID"];
+  string pod_uid = 5 [ (gogoproto.customname) = "PodUID" ];
   // The namespace of the pod that the container is running in.
   string namespace = 6;
   // The processes running on the container.
@@ -365,13 +366,13 @@ message ContainerInfo {
 message ProcessInfo {
   // Name of the process.
   string name = 1;
-  px.types.UInt128 upid = 2 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 2 [ (gogoproto.customname) = "UPID" ];
   // The server time in nanoseconds when the process started.
-  int64 start_timestamp_ns = 4 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 4 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The time in nanoseconds when the process stopped.
-  int64 stop_timestamp_ns = 5 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 5 [ (gogoproto.customname) = "StopTimestampNS" ];
   string process_args = 6;
-  string cid = 7 [(gogoproto.customname) = "CID"];
+  string cid = 7 [ (gogoproto.customname) = "CID" ];
   // DEPRECATED: This was PID, which can be derived from UPID.
   reserved 3;
 }
@@ -379,32 +380,33 @@ message ProcessInfo {
 // PodUpdate contains updated information about a Pod on K8s.
 message PodUpdate {
   // The UID is a unique identifier in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name is a unique identifier in space but not time.
   string name = 2;
   // The namespace that this POD belongs to.
   string namespace = 3;
   // The unix time in nanoseconds when the this pod was created.
-  int64 start_timestamp_ns = 4 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 4 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this pod was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 5 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 5 [ (gogoproto.customname) = "StopTimestampNS" ];
   // List of container ids that this Pod has.
-  repeated string container_ids = 6 [(gogoproto.customname) = "ContainerIDs"];
+  repeated string container_ids = 6 [ (gogoproto.customname) = "ContainerIDs" ];
   // List of container names that this pod has, in the same order as the containerIDs.
   repeated string container_names = 11;
   // The QoS class that this pod runs as.
-  PodQOSClass qos_class = 7 [(gogoproto.customname) = "QOSClass"];
+  PodQOSClass qos_class = 7 [ (gogoproto.customname) = "QOSClass" ];
   // The pod's current phase.
   PodPhase phase = 8;
   repeated PodCondition conditions = 16;
   // According to https://godoc.org/k8s.io/api/core/v1#PodSpec,
   // "NodeName is a request to schedule this pod onto a specific node."
   // It is used by K8s clients to get the name of the node the pod is meant to be scheduled on,
-  // however note that if the node doesn't have the resources the pod may be in an unscheduled state.
+  // however note that if the node doesn't have the resources the pod may be in an unscheduled
+  // state.
   string node_name = 9;
   string hostname = 10;
-  string pod_ip = 12 [(gogoproto.customname) = "PodIP"];
-  string host_ip = 13 [(gogoproto.customname) = "HostIP"];
+  string pod_ip = 12 [ (gogoproto.customname) = "PodIP" ];
+  string host_ip = 13 [ (gogoproto.customname) = "HostIP" ];
   // The message for why the pod is in its current status.
   string message = 14;
   // A brief CamelCase message indicating details about why the pod is in this state.
@@ -424,15 +426,15 @@ enum ContainerType {
 // ContainerUpdate contains information about running containers.
 message ContainerUpdate {
   // CID is the unique container ID.
-  string cid = 1 [(gogoproto.customname) = "CID"];
+  string cid = 1 [ (gogoproto.customname) = "CID" ];
   // The name of the container.
   string name = 2;
   // The unix time in nanoseconds when the this container was created.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this container was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
   string namespace = 5;
-  string pod_id = 6 [(gogoproto.customname) = "PodID"];
+  string pod_id = 6 [ (gogoproto.customname) = "PodID" ];
   string pod_name = 7;
   ContainerState container_state = 8;
   // The message for why the container is in its current status.
@@ -446,53 +448,53 @@ message ContainerUpdate {
 // ServiceUpdate contains information about running services.
 message ServiceUpdate {
   // UID is the unique ID of this service in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name of the service, unique in space, but not time.
   string name = 2;
   // The namespace that this Service belongs to.
   string namespace = 3;
   // The unix time in nanoseconds when the this service was created.
-  int64 start_timestamp_ns = 4 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 4 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this service was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 5 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 5 [ (gogoproto.customname) = "StopTimestampNS" ];
   // A list of Pods that are service this service.
-  repeated string pod_ids = 6 [(gogoproto.customname) = "PodIDs"];
+  repeated string pod_ids = 6 [ (gogoproto.customname) = "PodIDs" ];
   repeated string pod_names = 7;
   // The External IPs for this service.
-  repeated string external_ips = 8 [(gogoproto.customname) = "ExternalIPs"];
+  repeated string external_ips = 8 [ (gogoproto.customname) = "ExternalIPs" ];
   // The Cluster IP for this service.
-  string cluster_ip = 9 [(gogoproto.customname) = "ClusterIP"];
+  string cluster_ip = 9 [ (gogoproto.customname) = "ClusterIP" ];
 }
 
 message NamespaceUpdate {
   // UID is the unique ID of this namespace in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name of the namespace, unique in space, but not time.
   string name = 2;
   // The unix time in nanoseconds when the this namespace was created.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this namespace was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
 }
 
 message ProcessCreated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  px.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 1 [ (gogoproto.customname) = "UPID" ];
   // DEPRECATED: This was PID, which can be derived from UPID.
   reserved 2;
   // The server time in nanoseconds when the process started.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The command line that this process is running.
   string cmdline = 4;
   // The container ID where under for container where this process is running.
-  string cid = 5 [(gogoproto.customname) = "CID"];
+  string cid = 5 [ (gogoproto.customname) = "CID" ];
 }
 
 message ProcessTerminated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  px.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 1 [ (gogoproto.customname) = "UPID" ];
   // The time in nanoseconds when the process stopped.
-  int64 stop_timestamp_ns = 2 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 2 [ (gogoproto.customname) = "StopTimestampNS" ];
 }
 
 // Node is a worker node in Kubernetes.
@@ -506,11 +508,11 @@ message Node {
 // NodeSpec describes the attributes that a node is created with.
 message NodeSpec {
   // podCIDRs represents the IP ranges assigned to the node for usage by Pods on that node. If this
-  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for
-  // each of IPv4 and IPv6.
-  repeated string pod_cidrs = 1 [(gogoproto.customname) = "PodCIDRs"];
+  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value
+  // for each of IPv4 and IPv6.
+  repeated string pod_cidrs = 1 [ (gogoproto.customname) = "PodCIDRs" ];
   // PodCIDR represents the pod IP range assigned to the node.
-  string pod_cidr = 2 [(gogoproto.customname) = "PodCIDR"];
+  string pod_cidr = 2 [ (gogoproto.customname) = "PodCIDR" ];
 }
 
 // These are the valid phases of node.
@@ -575,21 +577,21 @@ message NodeStatus {
 // This should contain information important for our agents to know.
 message NodeUpdate {
   // UID is the unique ID of this node in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name of the node, unique in space, but not time.
   string name = 2;
   // The unix time in nanoseconds when the this node was created.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this node was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
   // The current phase of the node.
   NodePhase phase = 5;
   // PodCIDR represents the pod IP range assigned to the node.
-  string pod_cidr = 6 [(gogoproto.customname) = "PodCIDR"];
+  string pod_cidr = 6 [ (gogoproto.customname) = "PodCIDR" ];
   // podCIDRs represents the IP ranges assigned to the node for usage by Pods on that node. If this
-  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for
-  // each of IPv4 and IPv6.
-  repeated string pod_cidrs = 7 [(gogoproto.customname) = "PodCIDRs"];
+  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value
+  // for each of IPv4 and IPv6.
+  repeated string pod_cidrs = 7 [ (gogoproto.customname) = "PodCIDRs" ];
   // Conditions is an array of current observed node conditions.
   repeated NodeCondition conditions = 8;
 }
@@ -690,13 +692,13 @@ message ReplicaSetStatus {
 // This should contain information important for our agents to know.
 message ReplicaSetUpdate {
   // UID is the unique ID of this replicaset in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name of the replicaSet, unique in space, but not time.
   string name = 2;
   // The unix time in nanoseconds when the this replicaset was created.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this replicaset was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
   string namespace = 12;
   int32 replicas = 5;
   int32 fully_labeled_replicas = 6;
@@ -736,10 +738,10 @@ message DeploymentCondition {
   ConditionStatus status = 2;
 
   // The last time this condition was updated.
-  int64 last_update_time_ns = 3 [(gogoproto.customname) = "LastUpdateTimeNS"];
+  int64 last_update_time_ns = 3 [ (gogoproto.customname) = "LastUpdateTimeNS" ];
 
   // Last time the condition transitioned from one status to another.
-  int64 last_transition_time_ns = 4 [(gogoproto.customname) = "LastTransitionTimeNS"];
+  int64 last_transition_time_ns = 4 [ (gogoproto.customname) = "LastTransitionTimeNS" ];
 
   // The reason for the condition's last transition.
   string reason = 5;
@@ -753,16 +755,19 @@ message DeploymentStatus {
   // The generation observed by the deployment controller.
   int64 observed_generation = 1;
 
-  // Total number of non-terminated pods targeted by this deployment (their labels match the selector).
+  // Total number of non-terminated pods targeted by this deployment (their labels match the
+  // selector).
   int32 replicas = 2;
 
-  // Total number of non-terminated pods targeted by this deployment that have the desired template spec.
+  // Total number of non-terminated pods targeted by this deployment that have the desired template
+  // spec.
   int32 updated_replicas = 3;
 
   // readyReplicas is the number of pods targeted by this Deployment with a Ready Condition.
   int32 ready_replicas = 4;
 
-  // Total number of available pods (ready for at least minReadySeconds) targeted by this deployment.
+  // Total number of available pods (ready for at least minReadySeconds) targeted by this
+  // deployment.
   int32 available_replicas = 5;
 
   // Total number of unavailable pods targeted by this deployment. This is the total number of
@@ -855,13 +860,13 @@ message RollingUpdateDeployment {
 // This should contain information important for our agents to know.
 message DeploymentUpdate {
   // UID is the unique ID of this deployment in both space and time.
-  string uid = 1 [(gogoproto.customname) = "UID"];
+  string uid = 1 [ (gogoproto.customname) = "UID" ];
   // Name of the deployment, unique in space, but not time.
   string name = 2;
   // The unix time in nanoseconds when the this deployment was created.
-  int64 start_timestamp_ns = 3 [(gogoproto.customname) = "StartTimestampNS"];
+  int64 start_timestamp_ns = 3 [ (gogoproto.customname) = "StartTimestampNS" ];
   // The unix time in nanoseconds when the this deployment was deleted. Still active if 0.
-  int64 stop_timestamp_ns = 4 [(gogoproto.customname) = "StopTimestampNS"];
+  int64 stop_timestamp_ns = 4 [ (gogoproto.customname) = "StopTimestampNS" ];
   // Namespace of this deployment
   string namespace = 5;
   int32 observed_generation = 6;

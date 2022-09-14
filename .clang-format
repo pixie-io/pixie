@@ -96,4 +96,8 @@ SpacesInSquareBrackets: false
 Standard:        Auto
 TabWidth:        2
 UseTab:          Never
+---
+Language: Proto
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: false
 ...

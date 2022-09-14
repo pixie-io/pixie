@@ -42,22 +42,23 @@ import "src/shared/k8s/metadatapb/metadata.proto";
 // Message to register a new Vizier.
 message RegisterVizierRequest {
   // The ID for this Vizier.
-  uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  uuidpb.UUID vizier_id = 1 [ (gogoproto.customname) = "VizierID" ];
   // The key that this cluster is using.
   string jwt_key = 2;
   VizierClusterInfo cluster_info = 4;
   reserved 3;
 }
 
-// VizierClusterInfo contains information describing a user's Vizier and the cluster that it is running on.
-// This information is stored in Pixie Cloud, where it may be used for purposes such as debugging.
+// VizierClusterInfo contains information describing a user's Vizier and the cluster that it is
+// running on. This information is stored in Pixie Cloud, where it may be used for purposes such as
+// debugging.
 message VizierClusterInfo {
   // A unique ID for the cluster. This is typically the kube-system namespace UID.
-  string cluster_uid = 1 [(gogoproto.customname) = "ClusterUID"];
+  string cluster_uid = 1 [ (gogoproto.customname) = "ClusterUID" ];
   // The name of the cluster. The return value of "kubectl config current-context".
   // This could be empty if the user has not deployed through the CLI.
   string cluster_name = 2;
-  reserved 3; // DEPRECATED
+  reserved 3;  // DEPRECATED
   // The version of the deployed Vizier.
   string vizier_version = 4;
 }
@@ -89,7 +90,7 @@ enum VizierStatus {
 
 message VizierHeartbeat {
   // The ID for this Vizier.
-  uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  uuidpb.UUID vizier_id = 1 [ (gogoproto.customname) = "VizierID" ];
   // The current unix time in ns on the machine.
   int64 time = 2;
   // The sequence number of the HB.
@@ -120,7 +121,7 @@ message VizierHeartbeat {
   // The message explaining why the cluster is in its current state.
   string status_message = 14;
   // The current Kubernetes version that the cluster is running.
-  string k8s_cluster_version = 16 [(gogoproto.customname) = "K8sClusterVersion"];
+  string k8s_cluster_version = 16 [ (gogoproto.customname) = "K8sClusterVersion" ];
 
   reserved 4, 5, 9, 10;
 }
@@ -137,7 +138,7 @@ message PodStatus {
   // The containers running in the pod.
   repeated ContainerStatus containers = 5;
   // The start time of the pod.
-  google.protobuf.Timestamp created_at = 6 [(gogoproto.customname) = "CreatedAt"];
+  google.protobuf.Timestamp created_at = 6 [ (gogoproto.customname) = "CreatedAt" ];
   // The K8s events associated with the pod.
   repeated K8sEvent events = 7;
   // The number of restarts for this pod.
@@ -166,7 +167,7 @@ message ContainerStatus {
   // A brief CamelCase message indicating details about why the container is in this state.
   string reason = 4;
   // The create time of the container.
-  google.protobuf.Timestamp created_at = 6 [(gogoproto.customname) = "CreatedAt"];
+  google.protobuf.Timestamp created_at = 6 [ (gogoproto.customname) = "CreatedAt" ];
   // The number of restarts for this container.
   int64 restart_count = 7;
 }
@@ -196,16 +197,14 @@ message VizierConfigUpdate {
 
 message VizierInfo {
   // The ID for this Vizier.
-  uuidpb.UUID vizier_id = 1 [
-    (gogoproto.customname) = "VizierID",
-    (gogoproto.moretags) = "db:vizier_id"
-  ];
+  uuidpb.UUID vizier_id = 1
+      [ (gogoproto.customname) = "VizierID", (gogoproto.moretags) = "db:vizier_id" ];
   VizierStatus status = 2;
   // Time in ns since the last heart beat. Negative number implies heartbeat never received.
-  int64 last_heartbeat_ns = 3 [(gogoproto.moretags) = "db:last_heartbeat"];
+  int64 last_heartbeat_ns = 3 [ (gogoproto.moretags) = "db:last_heartbeat" ];
   VizierConfig config = 4;
   // A unique ID for the cluster. This is typically the kube-system namespace UID.
-  string cluster_uid = 5 [(gogoproto.customname) = "ClusterUID"];
+  string cluster_uid = 5 [ (gogoproto.customname) = "ClusterUID" ];
   // The name of the cluster. The return value of "kubectl config current-context".
   // This could be empty if the user has not deployed through the CLI.
   string cluster_name = 6;
@@ -231,10 +230,8 @@ message VizierInfo {
 }
 
 message UpdateVizierConfigRequest {
-  uuidpb.UUID vizier_id = 1 [
-    (gogoproto.customname) = "VizierID",
-    (gogoproto.moretags) = "db:vizier_id"
-  ];
+  uuidpb.UUID vizier_id = 1
+      [ (gogoproto.customname) = "VizierID", (gogoproto.moretags) = "db:vizier_id" ];
   VizierConfigUpdate config_update = 2;
 }
 
@@ -243,7 +240,7 @@ message UpdateVizierConfigResponse {}
 // UpdateOrInstallVizierRequest is a request to install/update a vizier.
 message UpdateOrInstallVizierRequest {
   // The ID of the vizier to upgrade/install.
-  px.uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  px.uuidpb.UUID vizier_id = 1 [ (gogoproto.customname) = "VizierID" ];
   // The version to upgrade/install the cluster as. If no version is specified, we assume we should
   // upgrade to the latest version.
   string version = 2;
@@ -271,10 +268,11 @@ message VLogMessage {
   bytes data = 1;
 }
 
-// C2VAPIStreamRequest calls a Vizier's public stream API remotely from the cloud. Only streaming methods are permitted.
+// C2VAPIStreamRequest calls a Vizier's public stream API remotely from the cloud. Only streaming
+// methods are permitted.
 message C2VAPIStreamRequest {
   // The request ID is a GUID for the request. The reply will in the string .reply_<request_id>.
-  string request_id = 1 [(gogoproto.customname) = "RequestID"];
+  string request_id = 1 [ (gogoproto.customname) = "RequestID" ];
   // The token to when making the request.
   string token = 2;
   // The request.
@@ -284,7 +282,8 @@ message C2VAPIStreamRequest {
     C2VAPIStreamCancel cancel_req = 5;
     px.api.vizierpb.DebugLogRequest debug_log_req = 8;
     px.api.vizierpb.DebugPodsRequest debug_pods_req = 9;
-    px.api.vizierpb.GenerateOTelScriptRequest generate_otel_script_req = 10 [(gogoproto.customname) = "GenerateOTelScriptReq"];
+    px.api.vizierpb.GenerateOTelScriptRequest generate_otel_script_req = 10
+        [ (gogoproto.customname) = "GenerateOTelScriptReq" ];
   }
   reserved 6, 7;
 }
@@ -294,14 +293,15 @@ message C2VAPIStreamCancel {}
 
 message V2CAPIStreamResponse {
   // The request ID is a GUID for the request.
-  string request_id = 1 [(gogoproto.customname) = "RequestID"];
+  string request_id = 1 [ (gogoproto.customname) = "RequestID" ];
   oneof msg {
     px.api.vizierpb.ExecuteScriptResponse exec_resp = 2;
     px.api.vizierpb.HealthCheckResponse hc_resp = 3;
     px.api.vizierpb.Status status = 4;
     px.api.vizierpb.DebugLogResponse debug_log_resp = 7;
     px.api.vizierpb.DebugPodsResponse debug_pods_resp = 8;
-    px.api.vizierpb.GenerateOTelScriptResponse generate_otel_script_resp = 9 [(gogoproto.customname) = "GenerateOTelScriptResp"];
+    px.api.vizierpb.GenerateOTelScriptResponse generate_otel_script_resp = 9
+        [ (gogoproto.customname) = "GenerateOTelScriptResp" ];
   }
   reserved 5, 6;
 }
@@ -309,58 +309,63 @@ message V2CAPIStreamResponse {
 // V2CMessage is an envelope message for the top-level v2c.* NATS channel on the cloud side.
 message V2CMessage {
   // This is the ID of the vizier that we track.
-  string vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  string vizier_id = 1 [ (gogoproto.customname) = "VizierID" ];
   // This is the ID of K8s cluster as known to K8s. If this changes, we know
   // that the cluster has been updated.
-  string cluster_uid = 2 [(gogoproto.customname) = "ClusterUID"];
-  // This is an opaque monotonically increasing number that updates for each restart of cloud connector.
+  string cluster_uid = 2 [ (gogoproto.customname) = "ClusterUID" ];
+  // This is an opaque monotonically increasing number that updates for each restart of cloud
+  // connector.
   int64 session_id = 3;
   google.protobuf.Any msg = 4;
 }
 
 // C2VMessage is the envelope message for the top-level c2v.* NATS channel on the cloud side.
 message C2VMessage {
-  string vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  string vizier_id = 1 [ (gogoproto.customname) = "VizierID" ];
   google.protobuf.Any msg = 2;
 }
 
-// CronScript messages. These messages are used for syncing the cron scripts between cloud and vizier.
+// CronScript messages. These messages are used for syncing the cron scripts between cloud and
+// vizier.
 
 // CronScript represents a script that should be run on a schedule.
 message CronScript {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   string script = 2;
   string cron_expression = 3;
   string configs = 4;
   int64 frequency_s = 5;
 }
 
-// GetCronScriptsChecksumRequest is a request to get the hash of the set of cronScripts for a particular Vizier.
-// This is used to determine whether or not a Vizier should refetch all scripts from the Cloud.
+// GetCronScriptsChecksumRequest is a request to get the hash of the set of cronScripts for a
+// particular Vizier. This is used to determine whether or not a Vizier should refetch all scripts
+// from the Cloud.
 message GetCronScriptsChecksumRequest {
   // The topic that the response should be returned on.
   string topic = 1;
 }
 
-// GetCronScriptsChecksumResponse is a response to a GetCronScriptsChecksumRequest. This contains a hash of the set
-// of cronScripts registered to a particular Vizier.
+// GetCronScriptsChecksumResponse is a response to a GetCronScriptsChecksumRequest. This contains a
+// hash of the set of cronScripts registered to a particular Vizier.
 message GetCronScriptsChecksumResponse {
   string checksum = 1;
 }
 
-// GetCronScriptsRequest is a request to get all cronScripts that are registered for a particular Vizier.
+// GetCronScriptsRequest is a request to get all cronScripts that are registered for a particular
+// Vizier.
 message GetCronScriptsRequest {
   // The topic that the response should be returned on.
   string topic = 1;
 }
 
-// GetCronScriptsResponse is a response to a GetCronScriptsRequest. It contains the set of all cronScripts that
-// are registered to a Vizier.
+// GetCronScriptsResponse is a response to a GetCronScriptsRequest. It contains the set of all
+// cronScripts that are registered to a Vizier.
 message GetCronScriptsResponse {
   map<string, CronScript> scripts = 1;
 }
 
-// RegisterOrUpdateCronScriptRequest is a request to register or update a new cron script for a Vizier.
+// RegisterOrUpdateCronScriptRequest is a request to register or update a new cron script for a
+// Vizier.
 message RegisterOrUpdateCronScriptRequest {
   CronScript script = 1;
 }
@@ -370,7 +375,7 @@ message RegisterOrUpdateCronScriptResponse {}
 
 // DeleteCronScriptRequest is a request to a Vizier to delete a cron script.
 message DeleteCronScriptRequest {
-  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
 }
 
 // DeleteCronScriptResponse is a response to a DeleteCronScriptRequest.
@@ -382,7 +387,8 @@ message CronScriptUpdate {
     RegisterOrUpdateCronScriptRequest upsert_req = 1;
     DeleteCronScriptRequest delete_req = 2;
   }
-  string request_id = 3 [(gogoproto.customname) = "RequestID"];
-  // Timestamp indicates when this update event occurred, and can be used to filter out-of-order messages.
+  string request_id = 3 [ (gogoproto.customname) = "RequestID" ];
+  // Timestamp indicates when this update event occurred, and can be used to filter out-of-order
+  // messages.
   int64 timestamp = 4;
 }

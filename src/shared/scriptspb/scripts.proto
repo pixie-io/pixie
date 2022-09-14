@@ -38,4 +38,3 @@ message FuncArgsSpec {
   }
   repeated Arg args = 1;
 }
-

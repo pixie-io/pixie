@@ -35,8 +35,9 @@ import "src/vizier/services/shared/agentpb/agent.proto";
 import "src/shared/cvmsgspb/cvmsgs.proto";
 
 service MetadataService {
-  // An endpoint used by the query broker which is responsible for streaming the state of the agents.
-  // It first sends the full initial state of the agents, and then it sends state updates after that.
+  // An endpoint used by the query broker which is responsible for streaming the state of the
+  // agents. It first sends the full initial state of the agents, and then it sends state updates
+  // after that.
   rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse);
   // These RPC calls are used by UDTFs to fetch metadata.
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse);
@@ -70,8 +71,10 @@ service CronScriptStoreService {
   rpc SetScripts(SetScriptsRequest) returns (SetScriptsResponse);
   // RecordExecutionResult records the results of a CronScriptRun.
   rpc RecordExecutionResult(RecordExecutionResultRequest) returns (RecordExecutionResultResponse);
-// GetAllExecutionResults returns all of the execution results for cronscripts stored by this service.
-  rpc GetAllExecutionResults(GetAllExecutionResultsRequest) returns (GetAllExecutionResultsResponse);
+  // GetAllExecutionResults returns all of the execution results for cronscripts stored by this
+  // service.
+  rpc GetAllExecutionResults(GetAllExecutionResultsRequest)
+      returns (GetAllExecutionResultsResponse);
 }
 
 message SchemaRequest {}
@@ -108,7 +111,7 @@ message AgentUpdatesRequest {
 
 // AgentUpdate contains an update about a particular agent.
 message AgentUpdate {
-  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
   oneof update {
     // True if the agent has been deleted.
     bool deleted = 2;
@@ -127,12 +130,13 @@ message AgentUpdatesResponse {
   // refer to an agent ID that the client hasn't heard about yet.
   // Also note the schema will always be sent in its entirety, so it will not be paginated.
   repeated px.carnot.planner.distributedpb.SchemaInfo agent_schemas = 2;
-  // Whether or not the agent schemas have been updated. This is to differentiate between the case where
-  // there are truly no AgentSchemas present and when there is no update to those agent schemas.
+  // Whether or not the agent schemas have been updated. This is to differentiate between the case
+  // where there are truly no AgentSchemas present and when there is no update to those agent
+  // schemas.
   bool agent_schemas_updated = 3;
   // The AgentUpdateResponses are paginated and sent periodically.
-  // `end_of_update_batch` denotes that the latest batch of updates has completed, and the next message
-  // will be from a new batch of updates.
+  // `end_of_update_batch` denotes that the latest batch of updates has completed, and the next
+  // message will be from a new batch of updates.
   bool end_of_version = 4;
 }
 
@@ -165,7 +169,7 @@ message RegisterTracepointRequest {
     // The user-specified name for the tracepoint.
     string name = 2;
     // The TTL, in seconds, for how long we want the tracepoint to live.
-    google.protobuf.Duration ttl = 3 [(gogoproto.customname) = "TTL"];
+    google.protobuf.Duration ttl = 3 [ (gogoproto.customname) = "TTL" ];
   }
   repeated TracepointRequest requests = 1;
 }
@@ -175,7 +179,7 @@ message RegisterTracepointResponse {
   message TracepointStatus {
     px.statuspb.Status status = 1;
     // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
-    uuidpb.UUID id = 2 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID id = 2 [ (gogoproto.customname) = "ID" ];
     string name = 3;
   }
   repeated TracepointStatus tracepoints = 1;
@@ -186,14 +190,14 @@ message RegisterTracepointResponse {
 // The request to check the status for a tracepoint with the given names.
 message GetTracepointInfoRequest {
   // The tracepoint IDs to get the info for. If empty, fetches the info for all known tracepoints.
-  repeated uuidpb.UUID ids = 1 [(gogoproto.customname) = "IDs"];
+  repeated uuidpb.UUID ids = 1 [ (gogoproto.customname) = "IDs" ];
 }
 
 // The status of whether the tracepoint has successfully registered or not.
 message GetTracepointInfoResponse {
   message TracepointState {
     // The tracepoint ID.
-    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
     // The state of the tracepoint.
     px.statuspb.LifeCycleState state = 2;
     // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
@@ -252,17 +256,18 @@ message AddOrUpdateScriptRequest {
 }
 
 // AddOrUpdateScriptResponse is a response to a AddOrUpdateScriptRequest.
-message AddOrUpdateScriptResponse{}
+message AddOrUpdateScriptResponse {}
 
 // DeleteScriptRequest is a request to delete a script from the cron script store.
 message DeleteScriptRequest {
-  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
 }
 
 // DeleteScriptResponse is a response to a DeleteScriptRequest.
 message DeleteScriptResponse {}
 
-// SetScriptsRequest is a request to set all scripts in the cron script store to the set of given scripts.
+// SetScriptsRequest is a request to set all scripts in the cron script store to the set of given
+// scripts.
 message SetScriptsRequest {
   // Map from script ID to cronScript.
   map<string, cvmsgspb.CronScript> scripts = 1;
@@ -286,7 +291,7 @@ message ExecutionStats {
 
 message RecordExecutionResultRequest {
   // The ID of the script that was run.
-  uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
   google.protobuf.Timestamp timestamp = 2;
   oneof result {
     px.statuspb.Status error = 3;
@@ -300,12 +305,12 @@ message GetAllExecutionResultsRequest {}
 
 message GetAllExecutionResultsResponse {
   message ExecutionResult {
-    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+    uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
     google.protobuf.Timestamp timestamp = 2;
     oneof result {
       px.statuspb.Status error = 3;
       ExecutionStats execution_stats = 4;
     }
   }
-  repeated ExecutionResult results = 1 ;
+  repeated ExecutionResult results = 1;
 }

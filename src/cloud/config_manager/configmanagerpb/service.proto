@@ -27,26 +27,27 @@ import "src/api/proto/vizierconfigpb/vizier_types.proto";
 
 // ConfigManagerService provides configuration specs from the Cloud.
 service ConfigManagerService {
-    // GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
-    rpc GetConfigForVizier(ConfigForVizierRequest) returns (ConfigForVizierResponse);
-    // GetConfigForOperator provides the key for the operator that is used to send errors and stacktraces to Sentry
-    rpc GetConfigForOperator(ConfigForOperatorRequest) returns (ConfigForOperatorResponse);
+  // GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
+  rpc GetConfigForVizier(ConfigForVizierRequest) returns (ConfigForVizierResponse);
+  // GetConfigForOperator provides the key for the operator that is used to send errors and
+  // stacktraces to Sentry
+  rpc GetConfigForOperator(ConfigForOperatorRequest) returns (ConfigForOperatorResponse);
 }
 
 // ConfigForVizierRequest is a request for Vizier yamls given a set of specs.
 message ConfigForVizierRequest {
-    // Namespace of the Vizier.
-    string namespace = 1;
-    // Specs that describe how the Vizier should be configured.
-    vizierconfigpb.VizierSpec vz_spec = 2;
+  // Namespace of the Vizier.
+  string namespace = 1;
+  // Specs that describe how the Vizier should be configured.
+  vizierconfigpb.VizierSpec vz_spec = 2;
 }
 
 // ConfigForVizierResponse is the response to a ConfigForVizierRequest.
 message ConfigForVizierResponse {
-    // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
-    map<string, string> nameToYamlContent = 1;
-    // sentry_dsn contains the key for viziers to send errors and traces.
-    string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
+  // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
+  map<string, string> nameToYamlContent = 1;
+  // sentry_dsn contains the key for viziers to send errors and traces.
+  string sentry_dsn = 2 [ (gogoproto.customname) = "SentryDSN" ];
 }
 
 // ConfigForOperatorRequest is a request for the Operator Sentry DSN.
@@ -54,6 +55,6 @@ message ConfigForOperatorRequest {}
 
 // ConfigForOperatorResponse is the response to a ConfigForOperatorRequest.
 message ConfigForOperatorResponse {
-    // sentry_operator_dsn contains the key for the operator to send errors and traces.
-    string sentry_operator_dsn = 1 [(gogoproto.customname) = "SentryOperatorDSN"];
+  // sentry_operator_dsn contains the key for the operator to send errors and traces.
+  string sentry_operator_dsn = 1 [ (gogoproto.customname) = "SentryOperatorDSN" ];
 }

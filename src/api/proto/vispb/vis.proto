@@ -65,17 +65,19 @@ message Vis {
   // Those mappings do not exist here so that the same Vis message can be run multiple times with
   // different values for those variables. Multiple FuncArgs can be bound to the same Variable.
   message Variable {
-    // name is the name of the variable, which is the identifier that a FuncArg in a Widget can be bound to.
+    // name is the name of the variable, which is the identifier that a FuncArg in a Widget can be
+    // bound to.
     string name = 1;
-    // type is the type of the value that the variable belongs to. It can be a semantic type like PX_SERVICE,
-    // which maps to the pxl type px.Service, or it can be a basic type like INT64.
+    // type is the type of the value that the variable belongs to. It can be a semantic type like
+    // PX_SERVICE, which maps to the pxl type px.Service, or it can be a basic type like INT64.
     PXType type = 2;
-    // Whether this arg's value is provided by the user, is provided by a default value, or is truly optional.
-    // If default_value is omitted, then the user must always provide a value for this arg and it is required.
-    // If default_value is the empty string, then this arg is optional. The user may omit it, and it'll be "".
-    // If default_value is set and is not the empty string, this arg is required BUT the user need not set it.
-    // default_value gets serialized to a string, but pxl scripts will still parse it based on the type field.
-    // Example: for type=PX_STRING, default_value may be "foo"; for type=PX_INT64, default_value may be "123".
+    // Whether this arg's value is provided by the user, is provided by a default value, or is truly
+    // optional. If default_value is omitted, then the user must always provide a value for this arg
+    // and it is required. If default_value is the empty string, then this arg is optional. The user
+    // may omit it, and it'll be "". If default_value is set and is not the empty string, this arg
+    // is required BUT the user need not set it. default_value gets serialized to a string, but pxl
+    // scripts will still parse it based on the type field. Example: for type=PX_STRING,
+    // default_value may be "foo"; for type=PX_INT64, default_value may be "123".
     google.protobuf.StringValue default_value = 3;
     // description provides a description of the variable to help the user fill it in.
     string description = 4;
@@ -118,7 +120,8 @@ message Widget {
   // name must be unique across all Widgets in a given Vis.
   string name = 1;
   // Position The location in the Live View grid that this Widget resides in, as well as its size.
-  // While this is persisted, it is subject to change by the UI when loaded into the UI if the values collide.
+  // While this is persisted, it is subject to change by the UI when loaded into the UI if the
+  // values collide.
   message Position {
     // x is the x position in grid coordinates of the Widget.
     int32 x = 1;
@@ -134,13 +137,14 @@ message Widget {
   // May include a script name or not. (my_func vs my_script.my_func).
   message Func {
     // name represents the name of the function to be invoked by this Vis.
-    // It may include a path to a global or imported pxl script, or it may just be the name of the function
-    // when a single pxl script is used in a Vis.
+    // It may include a path to a global or imported pxl script, or it may just be the name of the
+    // function when a single pxl script is used in a Vis.
     string name = 1;
-    // FuncArg the args passed to the func when it is invoked. Func args are passed by keyword, and their
-    // type is inferred from the keyword argument type annotation in the pxl func.
+    // FuncArg the args passed to the func when it is invoked. Func args are passed by keyword, and
+    // their type is inferred from the keyword argument type annotation in the pxl func.
     message FuncArg {
-      // name is the name of the argument, which will be passed by keyword to the invoked pxl script function.
+      // name is the name of the argument, which will be passed by keyword to the invoked pxl script
+      // function.
       string name = 1;
       oneof input {
         // Arg values are always represented as strings in the serialized form of the Vis, and then
@@ -150,7 +154,8 @@ message Widget {
         string variable = 3;
       }
     }
-    // args is the keyword args and their values with which to call the func specified in 'name' (above).
+    // args is the keyword args and their values with which to call the func specified in 'name'
+    // (above).
     repeated FuncArg args = 2;
   }
   oneof func_or_ref {
@@ -180,7 +185,8 @@ message Axis {
   string label = 1;
 }
 
-// BarChart The visual spec for a bar chart. Supports stacking and grouping of a single value column.
+// BarChart The visual spec for a bar chart. Supports stacking and grouping of a single value
+// column.
 message BarChart {
   // Bar contains the logical specification of the Bar chart.
   message Bar {
@@ -390,7 +396,8 @@ message RequestGraph {
 
 // Display stacktrace information as a flamegraph.
 message StackTraceFlameGraph {
-  // The column containing the stacktraces, where the call-stack symbols are separated by semicolons.
+  // The column containing the stacktraces, where the call-stack symbols are separated by
+  // semicolons.
   string stacktrace_column = 1;
   // The column containing the count for the stacktrace.
   string count_column = 2;

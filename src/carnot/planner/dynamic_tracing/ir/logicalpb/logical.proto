@@ -155,7 +155,7 @@ message TracepointDeployment {
   string name = 1;
   // The liveness time of the tracepoint, represented in ns. After this time,
   // the tracepoint will be deleted.
-  google.protobuf.Duration ttl = 2 [(gogoproto.customname) = "TTL"];
+  google.protobuf.Duration ttl = 2 [ (gogoproto.customname) = "TTL" ];
   // The target processes of this deployment.
   // Right now this only applies to PXL application tracepoints.
   // May become applicable to bpftrace when we support bpftrace uprobes.
@@ -167,7 +167,7 @@ message TracepointDeployment {
     // A native PXL tracepoint specification.
     TracepointSpec spec = 2;
     // This applies to bpftrace. Note that only one bpftrace program is allowed.
-    BPFTrace bpftrace = 3 [(gogoproto.customname) = "BPFTrace"];
+    BPFTrace bpftrace = 3 [ (gogoproto.customname) = "BPFTrace" ];
   }
   repeated TracepointProgram programs = 4;
 }
