@@ -713,16 +713,30 @@ StatusOr<std::string> OTelGenerator::GenerateOTelScript(compiler::Compiler* comp
 
     blocks.push_back(absl::StrJoin(out_lines, "\n"));
   }
+
   // Grab the content after the last display call and add it as the last block.
-  std::vector<std::string> out_lines;
-  for (int64_t j = prev_idx; j < static_cast<int64_t>(all_script_lines.size()); ++j) {
-    out_lines.push_back(all_script_lines[j]);
-  }
-  if (out_lines.size() > 0) {
-    blocks.push_back(absl::StrJoin(out_lines, "\n"));
+  if (prev_idx < static_cast<int64_t>(all_script_lines.size())) {
+    blocks.push_back(
+        absl::StrJoin(all_script_lines.begin() + prev_idx, all_script_lines.end(), "\n"));
   }
 
-  return absl::StrJoin(blocks, "\n\n");
+  std::string otel_script = absl::StrJoin(blocks, "\n\n");
+
+  // Parse and replace the DataFrame calls with DataFrame calls that use plugin start/end variables.
+  PL_ASSIGN_OR_RETURN(auto dataframe_calls, ReplaceDataFrameTimes(otel_script));
+
+  std::vector<std::string> split_again = absl::StrSplit(otel_script, '\n');
+  std::vector<std::string> out_lines;
+  int64_t prev = 0;
+  for (const auto& call : dataframe_calls) {
+    out_lines.insert(out_lines.end(), split_again.begin() + prev,
+                     split_again.begin() + call.line_number_start);
+    prev = call.line_number_end + 1;
+    out_lines.push_back(call.updated_line);
+  }
+  out_lines.insert(out_lines.end(), split_again.begin() + prev, split_again.end());
+
+  return absl::StrJoin(out_lines, "\n");
 }
 
 }  // namespace planner

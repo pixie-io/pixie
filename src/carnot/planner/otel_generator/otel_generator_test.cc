@@ -317,7 +317,7 @@ df = df.groupby(['time_', 'service']).agg(
 )
 px.display(df[['time_', 'service', 'resp_latency_ns', 'num_errors']], 'http_graph'))pxl",
          R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 df.is_error = df.resp_status >= 400
 df = df.groupby(['time_', 'service']).agg(
@@ -354,7 +354,7 @@ df.service = df.ctx['service']
 px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph'))pxl",
          R"otel(import px
 otel_df = 'placeholder'
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph')
 
@@ -385,7 +385,7 @@ df = df.groupby(['time_', 'service']).agg(
 px.display(df[['time_', 'service', 'resp_latency_ns']], "http_latency")
 px.display(df[['time_', 'service', 'num_errors']], "http_num_errors"))pxl",
          R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 df.is_error = df.resp_status >= 400
 df = df.groupby(['time_', 'service']).agg(
@@ -433,7 +433,7 @@ df.service = df.ctx['service']
 df = df[['time_', 'service', 'resp_latency_ns']]
 px.display(df, 'http_graph'))pxl",
          R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 df = df[['time_', 'service', 'resp_latency_ns']]
 px.display(df, 'http_graph')
@@ -476,7 +476,7 @@ px.export(df, px.otel.Data(
   ]
 )))pxl",
          R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 df = df[['time_', 'service', 'resp_latency_ns']]
 px.display(df, 'http_graph')
@@ -520,7 +520,7 @@ px.display(df.groupby(['time_', 'service']).agg(
   resp_latency_ns=('resp_latency_ns', px.mean),
 ), 'http_graph'))pxl",
          R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 px.display(df.groupby(['time_', 'service']).agg(
   resp_latency_ns=('resp_latency_ns', px.mean),

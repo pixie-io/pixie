@@ -781,7 +781,7 @@ df = df[['time_', 'service', 'resp_latency_ns']]
 px.display(df, 'http_graph'))pxl");
   ASSERT_OK_AND_ASSIGN(auto resp, planner->GenerateOTelScript(req));
   EXPECT_EQ(resp->otel_script(), R"otel(import px
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 df = df[['time_', 'service', 'resp_latency_ns']]
 px.display(df, 'http_graph')
