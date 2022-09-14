@@ -22,6 +22,7 @@ replicas:
 resources:
 - ../base
 - ../overlays/exposed_services_ilb
+- plugin_db_updater_job.yaml
 patchesStrategicMerge:
 # bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
 # - bq_config.yaml

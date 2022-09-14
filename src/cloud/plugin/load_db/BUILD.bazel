@@ -17,7 +17,7 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 go_library(
     name = "load_db_lib",
@@ -26,15 +26,24 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/plugin/controllers",
+        "//src/cloud/plugin/pluginpb:service_pl_go_proto",
         "//src/cloud/plugin/schema",
         "//src/cloud/shared/pgmigrate",
+        "//src/shared/services",
         "//src/shared/services/pg",
+        "//src/shared/services/utils",
+        "//src/utils",
+        "@com_github_blang_semver//:semver",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//types",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_jmoiron_sqlx//:sqlx",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
         "@in_gopkg_yaml_v2//:yaml_v2",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//metadata",
     ],
 )
 
@@ -71,4 +80,23 @@ container_push(
     repository = "pixie-oss/pixie-dev/cloud/plugin/load_db",
     tag = "$(BUNDLE_VERSION)",
     tags = ["manual"],
+)
+
+go_test(
+    name = "load_db_test",
+    srcs = ["load_db_test.go"],
+    deps = [
+        ":load_db_lib",
+        "//src/cloud/plugin/pluginpb:service_pl_go_proto",
+        "//src/cloud/plugin/pluginpb/mock",
+        "//src/cloud/plugin/schema",
+        "//src/shared/services/pgtest",
+        "//src/utils",
+        "@com_github_gogo_protobuf//types",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_golang_mock//gomock",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

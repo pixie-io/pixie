@@ -21,24 +21,33 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 
+	"github.com/blang/semver"
+	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v2"
 
 	"px.dev/pixie/src/cloud/plugin/controllers"
+	"px.dev/pixie/src/cloud/plugin/pluginpb"
 	"px.dev/pixie/src/cloud/plugin/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/pg"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 const githubArchiveTmpl = "https://api.github.com/repos/%s/tarball"
@@ -47,16 +56,32 @@ const githubArchiveTmpl = "https://api.github.com/repos/%s/tarball"
 // bazel run //src/cloud/plugin/load_db:push_plugin_db_updater_image
 func init() {
 	pflag.String("plugin_repo", "pixie-io/pixie-plugin", "The name of the plugin repo.")
+	pflag.String("plugin_service", "plugin-service.plc.svc.cluster.local:50600", "The plugin service url (load balancer/list is ok)")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
-func initDBAndLoadPlugins() {
+func initDB() *sqlx.DB {
 	db := pg.MustConnectDefaultPostgresDB()
 	err := pgmigrate.PerformMigrationsUsingBindata(db, "plugin_service_migrations",
 		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}
-	loadPlugins(db)
+	return db
+}
+
+func initPluginServiceClients() (pluginpb.PluginServiceClient, pluginpb.DataRetentionPluginServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pluginChan, err := grpc.Dial(viper.GetString("plugin_service"), dialOpts...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return pluginpb.NewPluginServiceClient(pluginChan), pluginpb.NewDataRetentionPluginServiceClient(pluginChan), nil
 }
 
 type configSet struct {
@@ -78,7 +103,7 @@ func loadPlugins(db *sqlx.DB) {
 		log.WithError(err).Fatal("Failed to create req")
 	}
 
-	apiKey := os.Getenv("GH_API_KEY")
+	apiKey := viper.GetString("gh_api_key")
 	if apiKey != "" {
 		req.Header = http.Header{
 			"Authorization": {fmt.Sprintf("token %s", apiKey)},
@@ -197,6 +222,103 @@ func addConfigs(plugin *controllers.Plugin, retention *controllers.RetentionPlug
 	}
 }
 
+type pluginRelease struct {
+	ID      string `db:"plugin_id"`
+	Version string `db:"version"`
+}
+
+func getServiceCredentials(signingKey string) (string, error) {
+	claims := srvutils.GenerateJWTForService("PluginLoader", viper.GetString("domain_name"))
+	return srvutils.SignJWTClaims(claims, signingKey)
+}
+
+// UpdatePlugins loops through all enabled plugins and auto-updates them to the most recent version.
+func UpdatePlugins(db *sqlx.DB, pClient pluginpb.DataRetentionPluginServiceClient) {
+	txn, err := db.Beginx()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to start db transaction")
+	}
+	defer txn.Rollback()
+
+	// Get the latest version for each available plugin major version.
+	latestVersions := make(map[string]map[uint64]semver.Version)
+	query := `SELECT plugin_id, version FROM data_retention_plugin_releases`
+	rows, err := txn.Queryx(query)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fetch plugin releases")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p pluginRelease
+		err = rows.StructScan(&p)
+		if err != nil {
+			log.WithError(err).Error("Failed to read plugin release")
+			continue
+		}
+		currVers := semver.MustParse(p.Version)
+		// Get major version.
+		if _, ok := latestVersions[p.ID]; !ok {
+			latestVersions[p.ID] = make(map[uint64]semver.Version)
+		}
+
+		if v, ok := latestVersions[p.ID][currVers.Major]; ok {
+			if v.Compare(currVers) < 0 {
+				latestVersions[p.ID][currVers.Major] = currVers
+			}
+		} else {
+			latestVersions[p.ID][currVers.Major] = currVers
+		}
+	}
+
+	// Fetch all enabled plugins and current versions.
+	query = `SELECT plugin_id, version, org_id FROM org_data_retention_plugins`
+	rows2, err := txn.Queryx(query)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fetch org retention plugins")
+	}
+	for rows2.Next() {
+		var pluginID string
+		var orgID uuid.UUID
+		var version string
+
+		err = rows2.Scan(&pluginID, &version, &orgID)
+		if err != nil {
+			log.WithError(err).Error("Failed to read org retention plugin")
+			continue
+		}
+		currVer := semver.MustParse(version)
+
+		if _, ok := latestVersions[pluginID]; !ok {
+			continue
+		}
+
+		// If version is out-of-date, make request to plugin server to update.
+		if v, ok := latestVersions[pluginID][currVer.Major]; ok {
+			if currVer.Compare(v) >= 0 {
+				continue
+			}
+			serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+			if err != nil {
+				log.WithError(err).Fatal("Failed to generate service credentials")
+			}
+
+			ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+				fmt.Sprintf("bearer %s", serviceAuthToken))
+
+			updateReq := &pluginpb.UpdateOrgRetentionPluginConfigRequest{
+				PluginID: pluginID,
+				OrgID:    utils.ProtoFromUUID(orgID),
+				Version:  &types.StringValue{Value: v.String()},
+			}
+
+			_, err = pClient.UpdateOrgRetentionPluginConfig(ctxWithCreds, updateReq)
+			if err != nil {
+				log.WithError(err).Error("Failed to update retention plugin")
+			}
+		}
+	}
+}
+
 func main() {
 	log.Info("Starting load_plugins...")
 	pflag.Parse()
@@ -205,5 +327,18 @@ func main() {
 	viper.SetEnvPrefix("PL")
 	viper.BindPFlags(pflag.CommandLine)
 
-	initDBAndLoadPlugins()
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.CheckSSLClientFlags()
+
+	db := initDB()
+	_, retentionPluginClient, err := initPluginServiceClients()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to plugin service")
+	}
+	loadPlugins(db)
+
+	// Auto-update any plugins.
+	UpdatePlugins(db, retentionPluginClient)
 }
