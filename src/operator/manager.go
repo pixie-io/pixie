@@ -77,15 +77,18 @@ func main() {
 	}
 	clientset := k8s.GetClientset(kubeConfig)
 
-	if err = (&controllers.VizierReconciler{
+	vr := &controllers.VizierReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		Clientset:  clientset,
 		RestConfig: kubeConfig,
-	}).SetupWithManager(mgr); err != nil {
+	}
+	err = vr.SetupWithManager(mgr)
+	if err != nil {
 		log.WithError(err).Error("Unable to create controller")
 		os.Exit(1)
 	}
+	defer vr.Stop()
 	// +kubebuilder:scaffold:builder
 
 	log.Info("Starting manager")

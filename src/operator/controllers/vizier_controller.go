@@ -76,6 +76,8 @@ type VizierReconciler struct {
 
 	monitor      *VizierMonitor
 	lastChecksum []byte
+
+	sentryFlush func()
 }
 
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
@@ -208,6 +210,11 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.WithError(err).Error("Failed to connect to Pixie cloud")
 			return ctrl.Result{}, err
 		}
+
+		if r.sentryFlush == nil {
+			r.sentryFlush = setupSentry(ctx, cloudClient, r.Clientset)
+		}
+
 		r.monitor.InitAndStartMonitor(cloudClient)
 	}
 
@@ -922,6 +929,52 @@ func (r *VizierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Vizier{}).
 		Complete(r)
+}
+
+// Stop performs any necessary cleanup before shutdown.
+func (r *VizierReconciler) Stop() {
+	if r.sentryFlush != nil {
+		r.sentryFlush()
+	}
+}
+
+// setupSentry sets up the error logging.
+func setupSentry(ctx context.Context, conn *grpc.ClientConn, clientset *kubernetes.Clientset) func() {
+	// Use k8s UID instead of cluserID because newly deployed clusters may take some time to register and receive a clusterID
+	clusterUID, err := getClusterUID(clientset)
+	if err != nil {
+		log.WithError(err).Error("Failed to get Cluster UID")
+		return nil
+	}
+
+	config, err := getConfigForOperator(ctx, conn)
+	if err != nil {
+		log.WithError(err).Error("Failed to get Operator config")
+		return nil
+	}
+
+	flush := services.InitSentryWithDSN(clusterUID, config.SentryOperatorDSN)
+	return flush
+}
+
+// GetClusterUID gets UID for the cluster, represented by the kube-system namespace UID.
+func getClusterUID(clientset *kubernetes.Clientset) (string, error) {
+	ksNS, err := clientset.CoreV1().Namespaces().Get(context.Background(), "kube-system", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return string(ksNS.UID), nil
+}
+
+// getConfigForOperator is responsible retrieving the Operator config from from Pixie Cloud.
+func getConfigForOperator(ctx context.Context, conn *grpc.ClientConn) (*cloudpb.ConfigForOperatorResponse, error) {
+	client := cloudpb.NewConfigServiceClient(conn)
+	req := &cloudpb.ConfigForOperatorRequest{}
+	resp, err := client.GetConfigForOperator(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, resources []*k8s.Resource, allowUpdate bool) error {
