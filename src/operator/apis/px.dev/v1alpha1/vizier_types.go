@@ -124,6 +124,8 @@ type VizierStatus struct {
 	// A checksum of the last reconciled Vizier spec. If this checksum does not match the checksum
 	// of the current vizier spec, reconciliation should be performed.
 	Checksum []byte `json:"checksum,omitempty"`
+	// OperatorVersion is the actual version of the Operator instance.
+	OperatorVersion string `json:"operatorVersion,omitempty"`
 }
 
 // VizierPhase is a high-level summary of where the Vizier is in its lifecycle.
