@@ -5,6 +5,7 @@ namespace: plc-staging
 commonLabels:
   app: pl-cloud
 resources:
+- ../base/ssd
 - elastic
 - kibana
 - nats
