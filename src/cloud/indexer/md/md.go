@@ -129,7 +129,7 @@ func (v *VizierIndexer) Start(topic string) error {
 		WithField("ClusterUID", v.k8sUID).
 		Info("Starting Indexer")
 
-	sub, err := v.st.PersistentSubscribe(topic, "indexer"+v.indexName, v.streamHandler)
+	sub, err := v.st.PersistentSubscribe(topic, v.indexName, v.streamHandler)
 	if err != nil {
 		return fmt.Errorf("Failed to subscribe to topic %s: %s", topic, err.Error())
 	}
@@ -309,12 +309,12 @@ ctx._source.state = params.state;
 func (v *VizierIndexer) streamHandler(msg msgbus.Msg) {
 	ru := metadatapb.ResourceUpdate{}
 	err := ru.Unmarshal(msg.Data())
-	if err != nil { // We received an invalid message through stan.
-		log.WithError(err).Error("Could not unmarshal message from stan")
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal message from JetStream")
 		v.errCh <- err
 		err = msg.Ack()
 		if err != nil {
-			log.WithError(err).Error("Failed to ack stan msg")
+			log.WithError(err).Error("Failed to ack JetStream msg")
 		}
 		return
 	}
@@ -325,7 +325,7 @@ func (v *VizierIndexer) streamHandler(msg msgbus.Msg) {
 		v.errCh <- err
 		err = msg.Ack()
 		if err != nil {
-			log.WithError(err).Error("Failed to ack stan msg")
+			log.WithError(err).Error("Failed to ack JetStream msg")
 		}
 
 		return
@@ -333,7 +333,7 @@ func (v *VizierIndexer) streamHandler(msg msgbus.Msg) {
 
 	err = msg.Ack()
 	if err != nil {
-		log.WithError(err).Error("Failed to ack stan msg")
+		log.WithError(err).Error("Failed to ack JetStream msg")
 	}
 }
 

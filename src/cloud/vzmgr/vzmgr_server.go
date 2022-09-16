@@ -24,10 +24,8 @@ import (
 	_ "net/http/pprof"
 	"strings"
 
-	"github.com/gofrs/uuid"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -104,12 +102,12 @@ func extractMessageInfo(subject string) (string, string, string) {
 	return "", "", ""
 }
 
-func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
+func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 	nc := msgbus.MustConnectNATS()
-	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
-	strmr, err := msgbus.NewSTANStreamer(stc)
+	js := msgbus.MustConnectJetStream(nc)
+	strmr, err := msgbus.NewJetStreamStreamer(nc, js, msgbus.V2CDurableStream)
 	if err != nil {
-		log.WithError(err).Fatal("Could not start STAN streamer")
+		log.WithError(err).Fatal("Could not start JetStream streamer")
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
@@ -126,7 +124,7 @@ func mustSetupNATSAndSTAN() (*nats.Conn, stan.Conn, msgbus.Streamer) {
 			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
 		}
 	})
-	return nc, stc, strmr
+	return nc, strmr
 }
 
 func main() {
@@ -168,9 +166,8 @@ func main() {
 	}
 
 	// Connect to NATS.
-	nc, stc, strmr := mustSetupNATSAndSTAN()
+	nc, strmr := mustSetupNATSAndJetStream()
 	defer nc.Close()
-	defer stc.Close()
 
 	at, err := NewArtifactTrackerServiceClient()
 	if err != nil {

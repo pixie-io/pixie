@@ -22,7 +22,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -101,9 +100,9 @@ func main() {
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	nc := msgbus.MustConnectNATS()
-	sc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
+	js := msgbus.MustConnectJetStream(nc)
 
-	strmr, err := msgbus.NewSTANStreamer(sc)
+	strmr, err := msgbus.NewJetStreamStreamer(nc, js, msgbus.MetadataIndexStream)
 	if err != nil {
 		log.Fatal("Could not connect to streamer")
 	}

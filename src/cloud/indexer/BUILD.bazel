@@ -36,7 +36,6 @@ go_library(
         "//src/shared/services/metrics",
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
-        "@com_github_gofrs_uuid//:uuid",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sirupsen_logrus//:logrus",

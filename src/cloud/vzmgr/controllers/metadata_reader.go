@@ -232,7 +232,7 @@ func (m *MetadataReader) loadVizierState(id uuid.UUID, k8sUID string) (*VizierSt
 // startVizierUpdates starts listening to the metadata update channel for a given vizier.
 func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	// TODO(michellenguyen, PC-827): We currently don't have to signal when a Vizier has disconnected. When we have that
-	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
+	// functionality, we should clean up the Vizier map and stop its JetStream subscriptions.
 	vz := m.viziers.read(id)
 	if vz != nil {
 		log.WithField("vizier_id", id.String()).Info("Already listening to metadata updates from Vizier")
@@ -246,9 +246,9 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 		return err
 	}
 
-	// Subscribe to STAN topic for streaming updates.
+	// Subscribe to JetStream topic for streaming updates.
 	topic := vzshard.V2CTopic(streamingMetadataTopic, id)
-	log.WithField("topic", topic).Info("Subscribing to STAN")
+	log.WithField("topic", topic).Info("Subscribing to JetStream")
 	liveSub, err := m.st.PersistentSubscribe(topic, "vzmgr", func(msg msgbus.Msg) {
 		vzState.liveCh <- msg
 	})
@@ -300,7 +300,7 @@ func (m *MetadataReader) processVizierUpdates(vzState *VizierState) {
 			}
 			err = msg.Ack()
 			if err != nil {
-				log.WithError(err).Error("Failed to ack STAN message")
+				log.WithError(err).Error("Failed to ack JetStream message")
 			}
 		}
 	}

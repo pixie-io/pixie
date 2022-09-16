@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
@@ -73,8 +74,12 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
-	_, sc, cleanStan := testingutils.MustStartTestStan(t, "test-stan", "test-client")
-	st, err := msgbus.NewSTANStreamer(sc)
+	js := msgbus.MustConnectJetStream(nc)
+	st, err := msgbus.NewJetStreamStreamer(nc, js, &nats.StreamConfig{
+		Name:     "test",
+		Subjects: []string{"test"},
+		MaxAge:   1 * time.Minute,
+	})
 	require.NoError(t, err)
 	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, st)
 	vzconnpb.RegisterVZConnServiceServer(s, b)
@@ -91,7 +96,6 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	cleanupFunc := func(t *testing.T) {
 		natsCleanup()
 		conn.Close()
-		cleanStan()
 
 		// NATSBridgeController doesn't have a Stop method and blocks until it hits errors.
 		// So we cannot gracefulStop the grpc server, that causes the test to hang.

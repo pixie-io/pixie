@@ -28,7 +28,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,7 +45,7 @@ type MetadataRequest struct {
 	responses []*metadatapb.MissingK8SMetadataResponse
 }
 
-func listenForUnexpectedIndexerMessages(c chan *stan.Msg) error {
+func listenForUnexpectedIndexerMessages(c chan *nats.Msg) error {
 	run := true
 	for run {
 		select {
@@ -70,14 +69,14 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 	tests := []struct {
 		name                    string                       // Name of the test
 		oldMetadataIndexUpdates []int64                      // Updates that already exist on the MetadataIndex channel.
-		stanMetadataUpdates     []*metadatapb.ResourceUpdate // The updates sent on STAN
+		jsMetadataUpdates       []*metadatapb.ResourceUpdate // The updates sent on JetStream
 		missingMetadataCalls    []*MetadataRequest           // The expected metadata request and responses.
 		expectedIndexerUpdates  []*metadatapb.ResourceUpdate // The updates that should be sent to the indexer.
 		vizierStatus            string
 	}{
 		{
 			name: "In-order update",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{PrevUpdateVersion: 1234, UpdateVersion: 1235},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -98,7 +97,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "out-of-order update",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 17, PrevUpdateVersion: 16},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -129,7 +128,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "multiple out-of-order update",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 17, PrevUpdateVersion: 16},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -175,8 +174,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			vizierStatus: "HEALTHY",
 		},
 		{
-			name: "duplicate stan updates",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			name: "duplicate JetStream updates",
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{PrevUpdateVersion: 1234, UpdateVersion: 1235},
 				{PrevUpdateVersion: 1234, UpdateVersion: 1235},
 				{PrevUpdateVersion: 1234, UpdateVersion: 1235},
@@ -204,7 +203,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "disconnected vizier",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{PrevUpdateVersion: 1, UpdateVersion: 2},
 			},
 			expectedIndexerUpdates: []*metadatapb.ResourceUpdate{},
@@ -212,7 +211,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "duplicateUpdate",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{PrevUpdateVersion: 1, UpdateVersion: 2},
 			},
 			expectedIndexerUpdates: []*metadatapb.ResourceUpdate{},
@@ -220,7 +219,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "Metadata missing but k8s also missing the metadata on restart",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 1003, PrevUpdateVersion: 1002},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -242,7 +241,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "Expect Full Metadata Update requests on restart",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 1005, PrevUpdateVersion: 1004},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -273,7 +272,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "Expect Partial Metadata Update requests on restart",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 1005, PrevUpdateVersion: 1004},
 			},
 			missingMetadataCalls: []*MetadataRequest{
@@ -301,7 +300,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		},
 		{
 			name: "Receive update already sent to indexer and do nothing on restart",
-			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
+			jsMetadataUpdates: []*metadatapb.ResourceUpdate{
 				{UpdateVersion: 1000, PrevUpdateVersion: 999},
 			},
 			missingMetadataCalls:    []*MetadataRequest{},
@@ -327,10 +326,16 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			nc, natsCleanup := testingutils.MustStartTestNATS(t)
 			defer natsCleanup()
 
-			_, sc, stanCleanup := testingutils.MustStartTestStan(t, "test-stan", "test-client")
-			defer stanCleanup()
-
-			st, err := msgbus.NewSTANStreamer(sc)
+			js := msgbus.MustConnectJetStream(nc)
+			_ = js.PurgeStream("MetadataIndex")
+			st, err := msgbus.NewJetStreamStreamer(nc, js, &nats.StreamConfig{
+				Name: "MetadataIndex",
+				Subjects: []string{
+					"v2c.*.*.*",
+					"MetadataIndex.*",
+				},
+				MaxAge: time.Minute * 2,
+			})
 			require.NoError(t, err)
 
 			// First we add  entries in the indexer stream. This ensures that when we init the Vizier
@@ -342,16 +347,18 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				require.NoError(t, err)
 
 				// Push the update in.
-				err = sc.Publish("MetadataIndex.test", b)
+				_, err = js.Publish("MetadataIndex.test", b)
 				require.NoError(t, err)
 			}
 
-			idxCh := make(chan *stan.Msg)
-			indexerSub, err := sc.Subscribe("MetadataIndex.test", func(msg *stan.Msg) {
+			idxCh := make(chan *nats.Msg)
+			indexerSub, err := js.Subscribe("MetadataIndex.test", func(msg *nats.Msg) {
+				u := &metadatapb.ResourceUpdate{}
+				_ = proto.Unmarshal(msg.Data, u)
 				idxCh <- msg
-			})
+			}, nats.DeliverNew())
 			if err != nil {
-				t.Fatalf("failed to subscribe to stan: %v", err)
+				t.Fatalf("failed to subscribe to JetStream: %v", err)
 			}
 			defer func() {
 				err = indexerSub.Unsubscribe()
@@ -401,9 +408,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				for _, update := range test.stanMetadataUpdates {
-					// Publish update to STAN channel.
+				for _, update := range test.jsMetadataUpdates {
+					// Publish update to JetStream channel.
 					anyInitUpdate, err := types.MarshalAny(update)
 					require.NoError(t, err)
 					v2cMsg := cvmsgspb.V2CMessage{
@@ -412,7 +418,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					b, err := v2cMsg.Marshal()
 					require.NoError(t, err)
 
-					err = sc.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
+					err = st.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
 					require.NoError(t, err)
 				}
 			}()
@@ -450,15 +456,17 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 }
 
 func TestListenForUnexpectedIndexerMessages(t *testing.T) {
-	_, sc, stanCleanup := testingutils.MustStartTestStan(t, "test-stan", "test-client")
-	defer stanCleanup()
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	defer natsCleanup()
 
-	idxCh := make(chan *stan.Msg)
-	indexerSub, err := sc.Subscribe("MetadataIndex.test", func(msg *stan.Msg) {
+	js := msgbus.MustConnectJetStream(nc)
+
+	idxCh := make(chan *nats.Msg)
+	indexerSub, err := js.Subscribe("MetadataIndex.test", func(msg *nats.Msg) {
 		idxCh <- msg
 	})
 	if err != nil {
-		t.Fatalf("failed to subscribe to stan: %v", err)
+		t.Fatalf("failed to subscribe to JetStream: %v", err)
 	}
 	defer func() {
 		require.NoError(t, indexerSub.Unsubscribe())
@@ -469,8 +477,9 @@ func TestListenForUnexpectedIndexerMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	// Push the update in.
-	require.NoError(t, sc.Publish("MetadataIndex.test", b))
+	_, err = js.Publish("MetadataIndex.test", b)
+	require.NoError(t, err)
 
-	// We expect this to error out because we intentionally send a message over stan.
+	// We expect this to error out because we intentionally send a message over JetStream.
 	require.Error(t, listenForUnexpectedIndexerMessages(idxCh))
 }
