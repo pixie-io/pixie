@@ -86,7 +86,7 @@ void RunCoreStats::LogStats() const {
   absl::StrAppend(&s, ",", absl::StrJoin(no_work_histo_, ","));
 
   LOG(INFO) << absl::Substitute("|$0,$1,$2,$3,$4,$5,$6,$7,$8", num_main_loop_iters_,
-                                num_no_work_iters_, (num_main_loop_iters_ - num_main_loop_iters_),
+                                num_no_work_iters_, (num_main_loop_iters_ - num_no_work_iters_),
                                 (num_transfer_data_ + num_push_data_), num_transfer_data_,
                                 num_push_data_, min_push_or_transfer_, max_push_or_transfer_, s);
 }
