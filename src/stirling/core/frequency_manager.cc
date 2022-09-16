@@ -21,8 +21,8 @@
 namespace px {
 namespace stirling {
 
-void FrequencyManager::Reset() {
-  next_ = px::chrono::coarse_steady_clock::now() + period_;
+void FrequencyManager::Reset(const time_point now) {
+  next_ = now + period_;
   ++count_;
 }
 

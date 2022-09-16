@@ -120,8 +120,8 @@ class SourceConnector : public NotCopyable {
   virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }
   virtual void DisablePIDTrace(int pid) { pids_to_trace_.erase(pid); }
 
-  const FrequencyManager& sampling_freq_mgr() const { return sampling_freq_mgr_; }
-  const FrequencyManager& push_freq_mgr() const { return push_freq_mgr_; }
+  FrequencyManager& sampling_freq_mgr() { return sampling_freq_mgr_; }
+  FrequencyManager& push_freq_mgr() { return push_freq_mgr_; }
   const std::vector<DataTable*>& data_tables() const { return data_tables_; }
 
   void set_data_tables(std::vector<DataTable*> data_tables) {

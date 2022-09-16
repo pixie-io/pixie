@@ -29,16 +29,18 @@ namespace stirling {
  * Manages the frequency of periodical action.
  */
 class FrequencyManager {
+  using time_point = px::chrono::coarse_steady_clock::time_point;
+
  public:
   /**
    * Returns true if the current cycle has expired.
    */
-  bool Expired() const { return px::chrono::coarse_steady_clock::now() >= next_; }
+  bool Expired(const time_point now) const { return now >= next_; }
 
   /**
    * Ends the current cycle, and starts the next one.
    */
-  void Reset();
+  void Reset(const time_point now);
 
   void set_period(std::chrono::milliseconds period) { period_ = period; }
   const auto& period() const { return period_; }
