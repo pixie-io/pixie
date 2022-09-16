@@ -33,6 +33,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/common/perf/elapsed_timer.h"
+#include "src/stirling/utils/run_core_stats.h"
 #include "src/stirling/utils/system_info.h"
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
@@ -281,6 +282,10 @@ class StirlingImpl final : public Stirling {
 
   absl::flat_hash_map<sole::uuid, DynamicTraceInfo> trace_id_info_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  // RunCoreStats tracks how much work is accomplished in each run core iteration,
+  // and it also keeps a histogram of sleep durations.
+  RunCoreStats run_core_stats_;
 };
 
 StirlingImpl* g_stirling_ptr = nullptr;
@@ -821,6 +826,7 @@ void StirlingImpl::RunCore() {
           // TransferData() is normally a significant amount of work: update "time now".
           now = px::chrono::coarse_steady_clock::now();
           source->sampling_freq_mgr().Reset(now);
+          run_core_stats_.IncrementTransferDataCount();
         }
         // Phase 2: Push Data upstream.
         if (source->push_freq_mgr().Expired(now) || DataExceedsThreshold(source->data_tables())) {
@@ -829,6 +835,7 @@ void StirlingImpl::RunCore() {
           // PushData() is normally a significant amount of work: update "time now".
           now = px::chrono::coarse_steady_clock::now();
           source->push_freq_mgr().Reset(now);
+          run_core_stats_.IncrementPushDataCount();
         }
       }
 
@@ -840,6 +847,9 @@ void StirlingImpl::RunCore() {
 
     // We just went to sleep: update time now.
     now = px::chrono::coarse_steady_clock::now();
+
+    // Update the histograms in run core stats *and* trigger a periodic printout of the same.
+    run_core_stats_.EndIter(sleep_duration);
   }
   running_ = false;
 }
