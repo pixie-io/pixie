@@ -1241,6 +1241,23 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   }
 }
 
+def saveRepoInfo() {
+  perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
+  perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
+  withCredentials([
+    usernamePassword(
+      credentialsId: 'stirling-perf-postgres',
+      usernameVariable: 'STIRLING_PERF_DB_USERNAME',
+      passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
+    )
+  ]) {
+    sh 'mkdir -p logs'
+    sh "pip3 install -r ${perf_reqs}"
+    sh "python3 ${perf_eval} save-perf-record-repo-info-to-disk --jenkins"
+    stashOnGCS('perf-eval-repo-info', 'logs')
+  }
+}
+
 buildAndPushPemImagesForPerfEval = {
   WithSourceCodeK8s('pem-build-push') {
     container('pxbuild') {
