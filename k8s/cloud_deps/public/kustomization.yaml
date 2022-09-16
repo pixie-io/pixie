@@ -8,5 +8,4 @@ resources:
 - configs.yaml
 - elastic
 - nats
-- stan
 - postgres

@@ -21,7 +21,6 @@ go_library(
     srcs = [
         "jetstream.go",
         "nats.go",
-        "stan.go",
         "streamer.go",
     ],
     importpath = "px.dev/pixie/src/shared/services/msgbus",
@@ -29,7 +28,6 @@ go_library(
     deps = [
         "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_nats_io_stan_go//:stan_go",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
@@ -41,14 +39,12 @@ go_test(
     srcs = [
         "jetstream_test.go",
         "nats_test.go",
-        "stan_test.go",
         "streamer_test.go",
     ],
     deps = [
         ":msgbus",
         "//src/utils/testingutils",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_nats_io_stan_go//:stan_go",
         "@com_github_spf13_viper//:viper",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

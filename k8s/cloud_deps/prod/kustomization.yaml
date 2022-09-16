@@ -9,7 +9,6 @@ resources:
 - elastic
 - kibana
 - nats
-- stan
 patches:
 - path: node_selector_patch.yaml
   target:

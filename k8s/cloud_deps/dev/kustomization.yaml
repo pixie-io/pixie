@@ -8,5 +8,4 @@ resources:
 - elastic
 - kibana
 - nats
-- stan
 - postgres

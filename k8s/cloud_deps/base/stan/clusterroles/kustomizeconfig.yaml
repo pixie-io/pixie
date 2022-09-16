@@ -1,4 +1,0 @@
----
-varReference:
-- path: subjects/namespace
-  kind: ClusterRoleBinding

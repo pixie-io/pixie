@@ -8,4 +8,3 @@ resources:
 - elastic
 - kibana
 - nats
-- stan
