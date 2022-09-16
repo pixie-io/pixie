@@ -131,6 +131,18 @@ TEST(LinuxHeadersUtils, KernelHeadersDistance) {
             KernelHeadersDistance({4, 14, 255}, {4, 14, 0}));
 }
 
+TEST(LinuxHeadersUtils, CompareKernelVersions) {
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 2, 3}), KernelVersionOrder::kSame);
+
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 2, 4}), KernelVersionOrder::kOlder);
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 3, 3}), KernelVersionOrder::kOlder);
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {2, 2, 3}), KernelVersionOrder::kOlder);
+
+  EXPECT_EQ(CompareKernelVersions({1, 2, 4}, {1, 2, 3}), KernelVersionOrder::kNewer);
+  EXPECT_EQ(CompareKernelVersions({1, 3, 3}, {1, 2, 3}), KernelVersionOrder::kNewer);
+  EXPECT_EQ(CompareKernelVersions({2, 2, 3}, {1, 2, 3}), KernelVersionOrder::kNewer);
+}
+
 TEST(LinuxHeadersUtils, ModifyVersion) {
   // Test Setup
 

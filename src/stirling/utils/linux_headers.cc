@@ -525,6 +525,28 @@ uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b) {
          (abs(a.version - b.version) << 18);
 }
 
+KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b) {
+  if (a.version < b.version) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.version > b.version) {
+    return KernelVersionOrder::kNewer;
+  }
+  if (a.major_rev < b.major_rev) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.major_rev > b.major_rev) {
+    return KernelVersionOrder::kNewer;
+  }
+  if (a.minor_rev < b.minor_rev) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.minor_rev > b.minor_rev) {
+    return KernelVersionOrder::kNewer;
+  }
+  return KernelVersionOrder::kSame;
+}
+
 StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
     const std::filesystem::path& packaged_headers_root, KernelVersion kernel_version) {
   const std::string kHeaderDirPrefix =

@@ -56,6 +56,7 @@ pl_cc_test_library(
         "//src/stirling/source_connectors/socket_tracer/testing/containers:node_12_3_1_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:node_14_18_1_alpine_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:postgres_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:py_grpc_helloworld_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:redis_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:zookeeper_image.tar",

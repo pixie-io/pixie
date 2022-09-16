@@ -116,3 +116,8 @@ container_image(
     name = "amqp_image",
     base = "@rabbitmq_3_management//image",
 )
+
+container_image(
+    name = "py_grpc_helloworld_image",
+    base = "@py_grpc_helloworld_image//image",
+)

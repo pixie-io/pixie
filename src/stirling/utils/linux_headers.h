@@ -36,6 +36,9 @@ struct KernelVersion {
   uint8_t minor_rev = 0;
 
   uint32_t code() const { return (version << 16) | (major_rev << 8) | (minor_rev); }
+  std::string ToString() const {
+    return absl::Substitute("$0.$1.$2", version, major_rev, minor_rev);
+  }
 };
 
 enum class KernelVersionSource {
@@ -61,6 +64,15 @@ const std::vector<KernelVersionSource> kDefaultKernelVersionSources = {
     KernelVersionSource::kProcSysKernelVersion, KernelVersionSource::kUname};
 
 uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
+
+enum class KernelVersionOrder {
+  kOlder,
+  kSame,
+  kNewer,
+};
+
+// Compares two kernel versions and detect their relationship.
+KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b);
 
 /**
  * Parses a the Linux version code from a string.

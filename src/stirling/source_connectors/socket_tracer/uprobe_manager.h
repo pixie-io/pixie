@@ -43,6 +43,7 @@
 #include "src/stirling/utils/proc_tracker.h"
 
 DECLARE_bool(stirling_rescan_for_dlopen);
+DECLARE_bool(stirling_enable_grpc_c_tracing);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
 
 namespace px {
