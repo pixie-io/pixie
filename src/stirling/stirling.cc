@@ -746,13 +746,6 @@ std::chrono::milliseconds StirlingImpl::TimeUntilNextTick(const time_point now)
 
 namespace {
 
-void SleepForDuration(std::chrono::milliseconds sleep_duration) {
-  constexpr std::chrono::milliseconds kMinSleepDuration{1};
-  if (sleep_duration > kMinSleepDuration) {
-    std::this_thread::sleep_for(sleep_duration);
-  }
-}
-
 // Returns true if any of the input tables are beyond the threshold.
 bool DataExceedsThreshold(const std::vector<DataTable*>& data_tables) {
   // Data push threshold, based on percentage of buffer that is filled.
@@ -843,7 +836,7 @@ void StirlingImpl::RunCore() {
       sleep_duration = TimeUntilNextTick(now);
     }
 
-    SleepForDuration(sleep_duration);
+    std::this_thread::sleep_for(sleep_duration);
 
     // We just went to sleep: update time now.
     now = px::chrono::coarse_steady_clock::now();
