@@ -45,6 +45,8 @@ func startNATS() (*server.Server, *nats.Conn, error) {
 	}
 
 	opts := test.DefaultTestOptions
+	opts.ServerName = "test_nats_js"
+	opts.JetStream = true
 	opts.Port = port
 	gnatsd := test.RunServer(&opts)
 	if gnatsd == nil {

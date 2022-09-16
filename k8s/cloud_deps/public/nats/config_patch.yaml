@@ -15,6 +15,12 @@ data:
       key_file: "/etc/nats-server-tls-certs/server.key",
       timeout: 3
     }
+
+    server_name: $POD_NAME
+    jetstream {
+      store_dir: /data/jetstream
+    }
+
     cluster {
       name: pl-nats
       port: 6222

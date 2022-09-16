@@ -33,6 +33,12 @@ data:
       key_file: "/etc/nats-server-tls-certs/server.key",
       timeout: 3
     }
+
+    server_name: $POD_NAME
+    jetstream {
+      store_dir: /data/jetstream
+    }
+
     cluster {
       name: pl-nats
       port: 6222
@@ -92,6 +98,15 @@ spec:
       name: pl-nats
   replicas: 5
   serviceName: pl-nats
+  volumeClaimTemplates:
+  - metadata:
+      name: nats-sts-vol
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 50Gi
   template:
     metadata:
       labels:
@@ -148,6 +163,7 @@ spec:
         - "nats-server"
         - "--config"
         - "/etc/nats-config/nats.conf"
+        - "-js"
 
         # Required to be able to define an environment variable
         # that refers to other environment variables.  This env var
@@ -170,6 +186,8 @@ spec:
           mountPath: /etc/nats-server-tls-certs
         - name: pid
           mountPath: /var/run/nats
+        - name: nats-sts-vol
+          mountPath: /data/jetstream
 
         # Liveness/Readiness probes against the monitoring
         #

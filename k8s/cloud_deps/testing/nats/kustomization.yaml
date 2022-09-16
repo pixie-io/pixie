@@ -8,3 +8,5 @@ namespace: plc-testing
 resources:
 - clusterroles
 - ../../base/nats
+patchesStrategicMerge:
+- storage_patch.yaml

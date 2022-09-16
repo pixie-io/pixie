@@ -11,3 +11,4 @@ resources:
 patchesStrategicMerge:
 - config_patch.yaml
 - replica_patch.yaml
+- storage_patch.yaml

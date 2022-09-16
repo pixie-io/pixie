@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pl-nats
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: nats-sts-vol
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: ssd
+      resources:
+        requests:
+          storage: 50Gi
