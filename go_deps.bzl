@@ -1913,8 +1913,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_hashicorp_raft",
         importpath = "github.com/hashicorp/raft",
-        sum = "h1:v5xW5KzByoerQlN/o31VJrFNiozgzGyDoMgDJgXpsto=",
-        version = "v1.3.6",
+        sum = "h1:9yuo1aR0bFTr1cw7pj3S2Bk6MhJCsnr2NAxvIBrP2x4=",
+        version = "v1.3.9",
     )
 
     go_repository(
@@ -2257,8 +2257,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_klauspost_compress",
         importpath = "github.com/klauspost/compress",
-        sum = "h1:eijASRJcobkVtSt81Olfh7JX43osYLwy5krOJo6YEu4=",
-        version = "v1.14.4",
+        sum = "h1:wKRjX6JRtDdrE9qwa4b/Cip7ACOshUI4smpCQanqjSY=",
+        version = "v1.15.9",
     )
 
     go_repository(
@@ -2790,21 +2790,21 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_nats_io_jwt_v2",
         importpath = "github.com/nats-io/jwt/v2",
-        sum = "h1:vU9tpM3apjYlLLeY23zRWJ9Zktr5jp+mloR942LEOpY=",
-        version = "v2.2.1-0.20220113022732-58e87895b296",
+        sum = "h1:z2mA1a7tIf5ShggOFlR1oBPgd6hGqcDYsISxZByUzdI=",
+        version = "v2.3.0",
     )
     go_repository(
         name = "com_github_nats_io_nats_go",
         importpath = "github.com/nats-io/nats.go",
-        sum = "h1:zJf4l8Kp67RIZhoVeniSLZs69SHNgjLHz0aNsqPPlx8=",
-        version = "v1.13.1-0.20220308171302-2f2f6968e98d",
+        sum = "h1:1jp5BThsdGlN91hW0k3YEfJbfACjiOYtUiLXG0RL4IE=",
+        version = "v1.17.0",
     )
 
     go_repository(
         name = "com_github_nats_io_nats_server_v2",
         importpath = "github.com/nats-io/nats-server/v2",
-        sum = "h1:c+BZJ3rGzUKCBIM4IXO8uNT2u1vajGbD1kPA6wqCEaM=",
-        version = "v2.7.4",
+        sum = "h1:DLWu+7/VgGOoChcDKytnUZPAmudpv7o/MhKmNrnH1RE=",
+        version = "v2.9.0",
     )
 
     go_repository(
@@ -2812,8 +2812,8 @@ def pl_go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/nats-io/nats-streaming-server",
-        sum = "h1:uZez8jBkXscua++jaDsK7DhpSAkizdetar6yWbPMRco=",
-        version = "v0.24.3",
+        sum = "h1:iIZXuPSznnYkiy0P3L0AP9zEN9Etp+tITbbX1KKeq4Q=",
+        version = "v0.24.6",
     )
     go_repository(
         name = "com_github_nats_io_nkeys",
@@ -2834,8 +2834,8 @@ def pl_go_dependencies():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/nats-io/stan.go",
-        sum = "h1:gQLd05LhzmhFkHm3/qP/klYHfM/hys45GyHa1Uly/kI=",
-        version = "v0.10.2",
+        sum = "h1:8DOyQJ0+nza3zSVJZ19/cpikkrWA4rSKB3YvckIGOTI=",
+        version = "v0.10.3",
     )
 
     go_repository(
@@ -4496,6 +4496,13 @@ def pl_go_dependencies():
         sum = "h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=",
         version = "v1.7.0",
     )
+    go_repository(
+        name = "org_uber_go_automaxprocs",
+        importpath = "go.uber.org/automaxprocs",
+        sum = "h1:e1YG66Lrk73dn4qhg8WFSvhF0JuFQF0ERIp4rpuV8Qk=",
+        version = "v1.5.1",
+    )
+
     go_repository(
         name = "org_uber_go_goleak",
         importpath = "go.uber.org/goleak",
