@@ -19,6 +19,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "msgbus",
     srcs = [
+        "jetstream.go",
         "nats.go",
         "stan.go",
         "streamer.go",
@@ -37,6 +38,7 @@ go_library(
 go_test(
     name = "msgbus_test",
     srcs = [
+        "jetstream_test.go",
         "nats_test.go",
         "stan_test.go",
         "streamer_test.go",

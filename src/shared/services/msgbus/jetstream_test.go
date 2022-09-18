@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nats-io/stan.go"
+	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,57 +30,19 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
-type stanMessage struct {
-	sm *stan.Msg
-}
-
-func (m *stanMessage) Data() []byte {
-	return m.sm.Data
-}
-func (m *stanMessage) Ack() error {
-	return m.sm.Ack()
-}
-
-func TestSTAN_receiveExpectedUpdatesHelper(t *testing.T) {
-	// Make sure that the test helper receiveExpectedUpdates() will properly return an error if we don't expect any messages but messages come anyways.
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
-	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
-	require.NoError(t, err)
-
-	sub := "abc"
+func TestJetStream_PersistentSubscribeInterfaceAccuracy(t *testing.T) {
+	sub := t.Name()
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
-	// Publish data to the subject.
-	for _, d := range data {
-		require.NoError(t, s.Publish(sub, d))
-	}
-
-	ch1 := make(chan msgbus.Msg)
-	pSub, err := s.PersistentSubscribe(sub, "indexer", func(m msgbus.Msg) {
-		ch1 <- m
-		require.NoError(t, m.Ack())
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+	defer cleanup()
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
 	})
 	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, pSub.Close())
-	}()
-
-	// We expect this to error out because we intentionally send a message over stan, but the following call claims to expect no messages should be received over stan.
-	err = receiveExpectedUpdates(ch1, [][]byte{})
-	require.Error(t, err)
-	require.Regexp(t, "Unexpected message", err.Error())
-}
-
-func TestSTANPersistentSubscribeInterface(t *testing.T) {
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
-	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
-	require.NoError(t, err)
-
-	sub := "abc"
-	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	// Publish data to the subject.
 	for _, d := range data {
@@ -123,14 +85,24 @@ func TestSTANPersistentSubscribeInterface(t *testing.T) {
 	require.NoError(t, pSub.Close())
 }
 
-func TestStanPersistentSubscribeMultiConsumer(t *testing.T) {
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
+func TestJetStream_PersistentSubscribeMultiConsumer(t *testing.T) {
+	sub := t.Name()
+	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
+
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
+	})
 	require.NoError(t, err)
 
-	sub := "abc"
-	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
+	// Publish data to the subject.
+	for _, d := range data {
+		require.NoError(t, s.Publish(sub, d))
+	}
 
 	ch1 := make(chan msgbus.Msg)
 	pSub1, err := s.PersistentSubscribe(sub, "indexer", func(m msgbus.Msg) {
@@ -145,11 +117,6 @@ func TestStanPersistentSubscribeMultiConsumer(t *testing.T) {
 		require.NoError(t, m.Ack())
 	})
 	require.NoError(t, err)
-
-	// Publish data to the subject.
-	for _, d := range data {
-		require.NoError(t, s.Publish(sub, d))
-	}
 
 	var out [][]byte
 	func() {
@@ -168,16 +135,33 @@ func TestStanPersistentSubscribeMultiConsumer(t *testing.T) {
 	require.NoError(t, pSub1.Close())
 	require.NoError(t, pSub2.Close())
 	assert.ElementsMatch(t, data, out)
+
+	ch3 := make(chan msgbus.Msg)
+	pSub3, err := s.PersistentSubscribe(sub, "indexer", func(m msgbus.Msg) {
+		ch3 <- m
+		require.NoError(t, m.Ack())
+	})
+	require.NoError(t, err)
+	require.NoError(t, s.Publish(sub, []byte("new_data_1")))
+	require.NoError(t, s.Publish(sub, []byte("new_data_2")))
+	// Should receive only new messages.
+	require.NoError(t, receiveExpectedUpdates(ch3, [][]byte{[]byte("new_data_1"), []byte("new_data_2")}))
+	require.NoError(t, pSub3.Close())
 }
 
-func TestSTANPublishAfterSubscribe(t *testing.T) {
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
-	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
-	require.NoError(t, err)
-
-	sub := "abc"
+func TestJetStream_PublishAfterSubscribe(t *testing.T) {
+	sub := t.Name()
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
+
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+	defer cleanup()
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
+	})
+	require.NoError(t, err)
 
 	// Subscribe first to the data.
 	ch1 := make(chan msgbus.Msg)
@@ -197,18 +181,23 @@ func TestSTANPublishAfterSubscribe(t *testing.T) {
 	require.NoError(t, pSub.Close())
 }
 
-func TestSTANPersistentSubscribeReattemptAck(t *testing.T) {
+func TestJetStream_PersistentSubscribeReattemptAck(t *testing.T) {
+	sub := t.Name()
+	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
+
 	// Test to make sure that not-acking a message will make sure that it comes back.
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
-	ackWait := 1 * time.Second
+	js := msgbus.MustConnectJetStream(nc)
 
-	s, err := msgbus.NewSTANStreamerWithConfig(sc, msgbus.STANStreamerConfig{AckWait: ackWait})
+	ackWait := 100 * time.Millisecond
+	s, err := msgbus.NewJetStreamStreamerWithConfig(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
+	}, msgbus.JetStreamStreamerConfig{AckWait: ackWait})
 	require.NoError(t, err)
-
-	sub := "abc"
-	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	// Publish data to the subject.
 	for _, d := range data {
@@ -218,18 +207,18 @@ func TestSTANPersistentSubscribeReattemptAck(t *testing.T) {
 	ch4 := make(chan msgbus.Msg)
 	first := true
 	pSub, err := s.PersistentSubscribe(sub, "indexer", func(m msgbus.Msg) {
-		if !first {
-			ch4 <- m
-			require.NoError(t, m.Ack())
+		if first {
+			first = false
+			return
 		}
-		first = false
+		ch4 <- m
+		require.NoError(t, m.Ack())
 	})
 	require.NoError(t, err)
 
 	// Receive all but the first data point.
 	require.NoError(t, receiveExpectedUpdates(ch4, data[1:]))
 
-	// TODO(philkuz) This timeout is rather slow - should we add a suboption that reduces this for tests?
 	time.Sleep(ackWait)
 
 	// Receive the last missing datapoint.
@@ -238,30 +227,42 @@ func TestSTANPersistentSubscribeReattemptAck(t *testing.T) {
 	require.NoError(t, pSub.Close())
 }
 
-func TestSTANPeekLatestMessage_NoElements(t *testing.T) {
+func TestJetStream_PeekLatestMessage_NoElements(t *testing.T) {
+	sub := t.Name()
+
 	// Test PeekLatestMessage when the stream does not have elements.
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
-	s, err := msgbus.NewSTANStreamer(sc)
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
+	})
 	require.NoError(t, err)
 
 	// Notice that we don't publish any data, so peek should not work.
-	m, err := s.PeekLatestMessage("abc")
+	m, err := s.PeekLatestMessage(sub)
 	require.NoError(t, err)
 	// Expect bottom of queue to be nil because no elements found.
 	require.Nil(t, m)
 }
 
-func TestSTANPeekLatestMessage_MultiElements(t *testing.T) {
-	// Test PeekLatestMessage to return the latest result.
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
-	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
-	require.NoError(t, err)
-
-	sub := "abc"
+func TestJetStream_PeekLatestMessage_MultiElements(t *testing.T) {
+	sub := t.Name()
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
+
+	// Test PeekLatestMessage to return the latest result.
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+	defer cleanup()
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{sub},
+		MaxAge:   time.Minute * 2,
+	})
+	require.NoError(t, err)
 
 	for _, d := range data {
 		require.NoError(t, s.Publish(sub, d))
@@ -269,54 +270,54 @@ func TestSTANPeekLatestMessage_MultiElements(t *testing.T) {
 
 	m, err := s.PeekLatestMessage(sub)
 	require.NoError(t, err)
+	require.NotNil(t, m)
 	// Expect bottom of queue to be the last element we pushed.
-	assert.Equal(t, data[2], m.Data())
+	assert.Equal(t, []byte("asdf"), m.Data())
+
+	require.NoError(t, s.Publish(sub, []byte("qwer")))
+	m, err = s.PeekLatestMessage(sub)
+	require.NoError(t, err)
+	require.NotNil(t, m)
+	// Expect bottom of queue to be the last element we pushed.
+	assert.Equal(t, []byte("qwer"), m.Data())
 }
 
-func TestSTANSwitchDeliveryMethods(t *testing.T) {
-	// Make sure that when we change delivery methods for a Durable Queue we don't get old data.
-	_, sc, cleanup := testingutils.MustStartTestStan(t, "stan", "test-client")
-	defer cleanup()
-	s, err := msgbus.NewSTANStreamer(sc)
-	require.NoError(t, err)
-
+func TestJetStream_MultiSubjectStream(t *testing.T) {
 	sub := "abc"
-	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
-	persistentName := "indexer"
-
-	ch1 := make(chan msgbus.Msg)
-
-	// Create a q sub w/ default Delivery settings (start at new).
-	qsub, err := sc.QueueSubscribe(sub,
-		persistentName,
-		func(m *stan.Msg) {
-			ch1 <- &stanMessage{sm: m}
-			require.NoError(t, m.Ack())
-		},
-		stan.DurableName(persistentName),
-		stan.SetManualAckMode(),
-	)
-	require.NoError(t, err)
-	for _, d := range data {
-		require.NoError(t, s.Publish(sub, d))
-	}
-	require.NoError(t, receiveExpectedUpdates(ch1, data))
-	require.NoError(t, qsub.Close())
-
-	ch2 := make(chan msgbus.Msg)
-	deliverAllSub, err := sc.QueueSubscribe(sub,
-		persistentName,
-		func(m *stan.Msg) {
-			ch2 <- &stanMessage{sm: m}
-			require.NoError(t, m.Ack())
-		},
-		stan.DeliverAllAvailable(),
-		stan.DurableName(persistentName),
-		stan.SetManualAckMode(),
-	)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+	defer cleanup()
+	js := msgbus.MustConnectJetStream(nc)
+	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+		Name:     sub,
+		Subjects: []string{"abc", "abc.*", "abc.*.*", "abc.*.*.*"},
+		MaxAge:   time.Minute * 2,
+	})
 	require.NoError(t, err)
 
-	// Should receive all messages that were published.
-	require.NoError(t, receiveExpectedUpdates(ch2, [][]byte{}))
-	require.NoError(t, deliverAllSub.Close())
+	// Should be able to publish and receive single nested.
+	require.NoError(t, s.Publish("abc.blah", []byte("abc")))
+	m0, err := s.PeekLatestMessage("abc.blah")
+	require.NoError(t, err)
+	require.NotNil(t, m0)
+	assert.Equal(t, []byte("abc"), m0.Data())
+
+	// Should be able to publish and receive double nested.
+	require.NoError(t, s.Publish("abc.blah.blah", []byte("asdf")))
+	m1, err := s.PeekLatestMessage("abc.blah.blah")
+	require.NoError(t, err)
+	require.NotNil(t, m1)
+	assert.Equal(t, []byte("asdf"), m1.Data())
+
+	// Should be able to publish and receive triple nested.
+	require.NoError(t, s.Publish("abc.blah.blah.blah", []byte("bteg")))
+	m2, err := s.PeekLatestMessage("abc.blah.blah.blah")
+	require.NoError(t, err)
+	require.NotNil(t, m2)
+	assert.Equal(t, []byte("bteg"), m2.Data())
+
+	// Not part of the stream.
+	require.Error(t, s.Publish("abc.blah.blah.blah.blah", []byte("btegs")))
+	m3, err := s.PeekLatestMessage("abc.blah.blah.blah.blah")
+	assert.Error(t, err)
+	assert.Nil(t, m3)
 }

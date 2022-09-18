@@ -18,10 +18,32 @@
 
 package msgbus
 
-import "time"
+import (
+	"time"
+
+	"github.com/nats-io/nats.go"
+)
 
 // emptyQueueTimeout is the time we wait before we consider a queue to be empty.
 const emptyQueueTimeout = 200 * time.Millisecond
+
+// V2CDurableStream is the stream config for Durable v2c messages.
+var V2CDurableStream = &nats.StreamConfig{
+	Name: "V2CStream",
+	Subjects: []string{
+		"v2c.*.*.*",
+	},
+	MaxAge: time.Minute * 15,
+}
+
+// MetadataIndexStream is the stream config for MetadataIndex messages.
+var MetadataIndexStream = &nats.StreamConfig{
+	Name: "MetadataIndexStream",
+	Subjects: []string{
+		"MetadataIndex.*",
+	},
+	MaxAge: time.Hour * 24,
+}
 
 // Msg is the interface for a message sent over the stream
 type Msg interface {
