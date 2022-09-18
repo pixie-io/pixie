@@ -18,6 +18,11 @@
 
 package msgbus
 
+import "time"
+
+// emptyQueueTimeout is the time we wait before we consider a queue to be empty.
+const emptyQueueTimeout = 200 * time.Millisecond
+
 // Msg is the interface for a message sent over the stream
 type Msg interface {
 	// Data returns the serialized data stored in the message.

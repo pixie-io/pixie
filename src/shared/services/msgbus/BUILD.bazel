@@ -39,6 +39,7 @@ go_test(
     srcs = [
         "nats_test.go",
         "stan_test.go",
+        "streamer_test.go",
     ],
     deps = [
         ":msgbus",

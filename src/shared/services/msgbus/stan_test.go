@@ -19,9 +19,6 @@
 package msgbus_test
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -32,40 +29,6 @@ import (
 	"px.dev/pixie/src/shared/services/msgbus"
 	"px.dev/pixie/src/utils/testingutils"
 )
-
-func receiveExpectedUpdates(c <-chan msgbus.Msg, data [][]byte) error {
-	// On some investigations, found that messages are sent < 500us, chose a
-	// timeout that was 100x in case of any unexpected interruptions.
-	timeout := 50 * time.Millisecond
-
-	// We do not early return any errors, otherwise we won't consume all messages
-	// sent by STAN and risk race conditions in tests.
-	// If no errors are reached, `err` will be nil.
-	var err error
-
-	numUpdates := 0
-	for numUpdates < len(data) {
-		select {
-		case m := <-c:
-			if !bytes.Equal(data[numUpdates], m.Data()) {
-				err = fmt.Errorf("Data doesn't match on update %d", numUpdates)
-			}
-			numUpdates++
-		case <-time.After(timeout):
-			err = errors.New("Timed out waiting for messages on subscription")
-		}
-	}
-	run := true
-	for run {
-		select {
-		case idxMessage := <-c:
-			err = fmt.Errorf("Unexpected index message: %s", string(idxMessage.Data()))
-		case <-time.After(timeout):
-			run = false
-		}
-	}
-	return err
-}
 
 type stanMessage struct {
 	sm *stan.Msg
@@ -107,7 +70,7 @@ func TestSTAN_receiveExpectedUpdatesHelper(t *testing.T) {
 	// We expect this to error out because we intentionally send a message over stan, but the following call claims to expect no messages should be received over stan.
 	err = receiveExpectedUpdates(ch1, [][]byte{})
 	require.Error(t, err)
-	require.Regexp(t, "Unexpected index message", err.Error())
+	require.Regexp(t, "Unexpected message", err.Error())
 }
 
 func TestSTANPersistentSubscribeInterface(t *testing.T) {
