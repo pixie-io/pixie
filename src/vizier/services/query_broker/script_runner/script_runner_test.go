@@ -155,8 +155,8 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			nc, natsCleanup := testingutils.MustStartTestNATS(t)
 			defer natsCleanup()
-
-			sr, err := New(nc, &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}, nil, "test")
+			fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
+			sr, err := New(nc, &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}, fvs, "test")
 			require.NoError(t, err)
 
 			// Subscribe to request channel.
@@ -189,7 +189,6 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 				err = mdSub.Unsubscribe()
 				require.NoError(t, err)
 			}()
-
 			match, err := sr.compareScriptState(test.persistedScripts)
 			require.Nil(t, err)
 			assert.Equal(t, test.checksumMatch, match)
@@ -201,7 +200,8 @@ func TestScriptRunner_GetCloudScripts(t *testing.T) {
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	defer natsCleanup()
 
-	sr, err := New(nc, nil, nil, "test")
+	fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
+	sr, err := New(nc, nil, fvs, "test")
 	require.NoError(t, err)
 
 	scripts := map[string]*cvmsgspb.CronScript{
@@ -667,7 +667,8 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 			}
 
 			fcs := &fakeCronStore{scripts: initialScripts}
-			sr, err := New(nc, fcs, nil, "test")
+			fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
+			sr, err := New(nc, fcs, fvs, "test")
 			require.NoError(t, err)
 
 			var wg sync.WaitGroup
