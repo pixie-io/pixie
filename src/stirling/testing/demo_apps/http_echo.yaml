@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
+    istio-injection: enabled
     kubernetes.io/metadata.name: px-http-echo
   name: px-http-echo
 ---
