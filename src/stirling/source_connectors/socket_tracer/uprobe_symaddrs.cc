@@ -156,6 +156,10 @@ Status PopulateCommonTypeAddrs(ElfReader* elf_reader, std::string_view vendor_pr
   LOG_ASSIGN_OPTIONAL(symaddrs->net_TCPConn,
                       elf_reader->SymbolAddress("go.itab.*net.TCPConn,net.Conn"));
 
+  // TODO(chengruizhe): Refer to setGStructOffsetElf in dlv for a more accurate way of setting
+  // g_addr_offset using elf.
+  symaddrs->g_addr_offset = -8;
+
   // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
   // It should be the last layer of nested interface, and contains the FD.
   // The other conns can be invalid, and will simply be ignored.
@@ -180,16 +184,6 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
           VENDOR_SYMBOL("google.golang.org/grpc/credentials/internal.syscallConn"), "conn"));
   LOG_ASSIGN_STATUSOR(symaddrs->g_goid_offset,
                       dwarf_reader->GetStructMemberOffset("runtime.g", "goid"));
-
-  // Arguments of runtime.casgstatus.
-  {
-    const std::map<std::string, obj_tools::ArgInfo> kEmptyMap;
-    std::string_view fn = "runtime.casgstatus";
-    auto args_map = dwarf_reader->GetFunctionArgInfo(fn).ValueOr(kEmptyMap);
-    LOG_ASSIGN(symaddrs->casgstatus_gp_loc, GetArgOffset(args_map, "gp"));
-    LOG_ASSIGN(symaddrs->casgstatus_newval_loc, GetArgOffset(args_map, "newval"));
-  }
-
 #undef VENDOR_SYMBOL
 
   // List mandatory symaddrs here (symaddrs without which all probes become useless).
@@ -197,17 +191,6 @@ Status PopulateCommonDebugSymbols(DwarfReader* dwarf_reader, std::string_view ve
   if (symaddrs->FD_Sysfd_offset == -1) {
     return error::Internal("FD_Sysfd_offset not found");
   }
-
-  if (symaddrs->casgstatus_gp_loc.type == kLocationTypeInvalid ||
-      symaddrs->casgstatus_gp_loc.offset < 0) {
-    return error::Internal("Invalid go_ptr location.");
-  }
-
-  if (symaddrs->casgstatus_newval_loc.type == kLocationTypeInvalid ||
-      symaddrs->casgstatus_newval_loc.offset < 0) {
-    return error::Internal("Invalid newval location.");
-  }
-
   return Status::OK();
 }
 

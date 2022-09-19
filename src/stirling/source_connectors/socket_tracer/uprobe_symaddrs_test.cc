@@ -64,10 +64,6 @@ TEST_F(UprobeSymaddrsTest, GoCommonSymAddrs) {
   EXPECT_EQ(symaddrs.FD_Sysfd_offset, 16);
   EXPECT_EQ(symaddrs.tlsConn_conn_offset, 0);
   EXPECT_EQ(symaddrs.g_goid_offset, 152);
-
-  // Check location of arguments.
-  EXPECT_EQ(symaddrs.casgstatus_gp_loc, (location_t{.type = kLocationTypeStack, .offset = 8}));
-  EXPECT_EQ(symaddrs.casgstatus_newval_loc, (location_t{.type = kLocationTypeStack, .offset = 20}));
 }
 
 TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {

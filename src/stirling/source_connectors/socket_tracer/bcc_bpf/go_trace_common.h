@@ -79,6 +79,32 @@ static __inline void assign_arg(void* arg, size_t arg_size, struct location_t lo
   }
 }
 
+// Gets the ID of the go routine currently scheduled on the current tgid and pid.
+// We do that by accessing the thread local storage (fsbase) of the current pid from the
+// task_struct. From the tls, we find a pointer to the g struct and access the goid.
+static inline uint64_t get_goid(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+  uint32_t tgid = id >> 32;
+  struct go_common_symaddrs_t* common_symaddrs = go_common_symaddrs_map.lookup(&tgid);
+  if (common_symaddrs == NULL) {
+    return 0;
+  }
+
+  // Get fsbase from `struct task_struct`.
+  const struct task_struct* task_ptr = (struct task_struct*)bpf_get_current_task();
+  if (!task_ptr) {
+    return 0;
+  }
+  const void* fs_base = (void*)task_ptr->thread.fsbase;
+
+  // Get ptr to `struct g` from 8 bytes before fsbase and then access the goID.
+  uint64_t goid;
+  size_t g_addr;
+  bpf_probe_read_user(&g_addr, sizeof(void*), (void*)(fs_base + common_symaddrs->g_addr_offset));
+  bpf_probe_read_user(&goid, sizeof(void*), (void*)(g_addr + common_symaddrs->g_goid_offset));
+  return goid;
+}
+
 //-----------------------------------------------------------------------------
 // FD extraction functions
 //-----------------------------------------------------------------------------

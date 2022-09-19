@@ -29,6 +29,11 @@
 // Value: Symbol addresses for the binary with that TGID.
 BPF_HASH(go_tls_symaddrs_map, uint32_t, struct go_tls_symaddrs_t);
 
+struct tgid_goid_t {
+  uint32_t tgid;
+  int64_t goid;
+};
+
 struct go_tls_conn_args {
   void* conn_ptr;
   char* plaintext_ptr;
@@ -51,14 +56,12 @@ int probe_entry_tls_conn_write(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
   uint32_t pid = id;
 
-  int64_t* goid_ptr = get_goid(tgid, pid);
-  if (goid_ptr == NULL) {
-    return 0;
-  }
-
   struct tgid_goid_t tgid_goid = {};
   tgid_goid.tgid = tgid;
-  tgid_goid.goid = *goid_ptr;
+  uint64_t goid = get_goid(ctx);
+  if (goid == 0) {
+    return 0;
+  }
 
   struct go_tls_symaddrs_t* symaddrs = go_tls_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
@@ -147,14 +150,12 @@ int probe_return_tls_conn_write(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
   uint32_t pid = id;
 
-  int64_t* goid_ptr = get_goid(tgid, pid);
-  if (goid_ptr == NULL) {
-    return 0;
-  }
-
   struct tgid_goid_t tgid_goid = {};
   tgid_goid.tgid = tgid;
-  tgid_goid.goid = *goid_ptr;
+  uint64_t goid = get_goid(ctx);
+  if (goid == 0) {
+    return 0;
+  }
 
   struct go_tls_conn_args* args = active_tls_conn_op_map.lookup(&tgid_goid);
   if (args == NULL) {
@@ -180,14 +181,12 @@ int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
   uint32_t pid = id;
 
-  int64_t* goid_ptr = get_goid(tgid, pid);
-  if (goid_ptr == NULL) {
-    return 0;
-  }
-
   struct tgid_goid_t tgid_goid = {};
   tgid_goid.tgid = tgid;
-  tgid_goid.goid = *goid_ptr;
+  uint64_t goid = get_goid(ctx);
+  if (goid == 0) {
+    return 0;
+  }
 
   struct go_tls_symaddrs_t* symaddrs = go_tls_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
@@ -278,14 +277,12 @@ int probe_return_tls_conn_read(struct pt_regs* ctx) {
   uint32_t tgid = id >> 32;
   uint32_t pid = id;
 
-  int64_t* goid_ptr = get_goid(tgid, pid);
-  if (goid_ptr == NULL) {
-    return 0;
-  }
-
   struct tgid_goid_t tgid_goid = {};
   tgid_goid.tgid = tgid;
-  tgid_goid.goid = *goid_ptr;
+  uint64_t goid = get_goid(ctx);
+  if (goid == 0) {
+    return 0;
+  }
 
   struct go_tls_conn_args* args = active_tls_conn_op_map.lookup(&tgid_goid);
   if (args == NULL) {

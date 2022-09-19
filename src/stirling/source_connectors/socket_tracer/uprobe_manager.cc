@@ -76,8 +76,6 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
           bcc_, "node_tlswrap_symaddrs_map");
   grpc_c_versions_map_ =
       UserSpaceManagedBPFMap<uint32_t, uint64_t>::Create(bcc_, "grpc_c_versions");
-  go_goid_map_ = UserSpaceManagedBPFMap<uint32_t, int, ebpf::BPFMapInMapTable<uint32_t>>::Create(
-      bcc_, "tgid_goid_map");
 }
 
 void UProbeManager::NotifyMMapEvent(upid_t upid) {
@@ -407,42 +405,6 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
   return kOpenSSLUProbes.size() + count;
 }
 
-void UProbeManager::SetupGOIDMaps(const std::string& binary, const std::vector<int32_t>& pids) {
-  for (const auto& pid : pids) {
-    std::string map_name = absl::StrCat("goid_map_", std::to_string(pid));
-    // The map interface must match pid_goid_map as defined in go_runtime_trace.c.
-    // The key type, the value type and the capacity must all match.
-    int map_fd = bcc_create_map(BPF_MAP_TYPE_HASH, map_name.c_str(), sizeof(uint32_t),
-                                sizeof(int64_t), /* max_entries */ 1024, /* flags */ 0);
-    if (map_fd > 0) {
-      go_goid_map_->UpdateValue(pid, map_fd);
-
-      // Now the outer map owns a reference to the fd,
-      // close the fd so we don't have to clean it up later.
-      close(map_fd);
-    } else {
-      LOG(ERROR) << absl::Substitute("Failed to create BPF map for binary=$0 pid=$1 fd=$2 errno=$3",
-                                     binary, pid, map_fd, errno);
-    }
-  }
-}
-
-StatusOr<int> UProbeManager::AttachGoRuntimeUProbes(const std::string& binary,
-                                                    obj_tools::ElfReader* elf_reader,
-                                                    obj_tools::DwarfReader* /* dwarf_reader */,
-                                                    const std::vector<int32_t>& /* pids */) {
-  // Step 1: Update BPF symbols_map on all new PIDs.
-  // TODO(oazizi): Implement this piece.
-
-  // Step 2: Deploy uprobes on all new binaries.
-  auto result = go_probed_binaries_.insert(binary);
-  if (!result.second) {
-    // This is not a new binary, so nothing more to do.
-    return 0;
-  }
-  return AttachUProbeTmpl(kGoRuntimeUProbeTmpls, binary, elf_reader);
-}
-
 StatusOr<int> UProbeManager::AttachGoTLSUProbes(const std::string& binary,
                                                 obj_tools::ElfReader* elf_reader,
                                                 obj_tools::DwarfReader* dwarf_reader,
@@ -538,7 +500,6 @@ void UProbeManager::CleanupPIDMaps(const absl::flat_hash_set<md::UPID>& deleted_
     go_tls_symaddrs_map_->RemoveValue(pid.pid());
     go_http2_symaddrs_map_->RemoveValue(pid.pid());
     node_tlswrap_symaddrs_map_->RemoveValue(pid.pid());
-    go_goid_map_->RemoveValue(pid.pid());
   }
 }
 
@@ -784,29 +745,11 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
       continue;
     }
     std::unique_ptr<DwarfReader> dwarf_reader = dwarf_reader_status.ConsumeValueOrDie();
-
     Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec);
     if (!s.ok()) {
       VLOG(1) << absl::Substitute(
           "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
       continue;
-    }
-
-    // Setup thread to GOID mapping.
-    SetupGOIDMaps(binary, pid_vec);
-
-    // Go Runtime Probes.
-    {
-      StatusOr<int> attach_status =
-          AttachGoRuntimeUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
-      if (!attach_status.ok()) {
-        monitor_.AppendSourceStatusRecord("socket_tracer", attach_status.status(),
-                                          "AttachGoRuntimeUProbes");
-        LOG_FIRST_N(WARNING, 10) << absl::Substitute(
-            "Failed to attach Go Runtime Uprobes to $0: $1", binary, attach_status.ToString());
-      } else {
-        uprobe_count += attach_status.ValueOrDie();
-      }
     }
 
     // GoTLS Probes.
