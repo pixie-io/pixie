@@ -199,10 +199,11 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /
+            path: /healthz?js-enabled=true
             port: 8222
           initialDelaySeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 30
 
         # Gracefully stop NATS Server on pod deletion or image upgrade.
         #
