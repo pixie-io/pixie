@@ -17,3 +17,4 @@
  */
 
 export { parse } from './parser';
+export * from './command-providers';
