@@ -98,6 +98,14 @@ StatusOr<std::string> GetProcVersionSignature();
 
 /**
  * Determines the linux kernel version.
+ * It returns the cached value if the value is present, otherwise performs the search in the same
+ * way as FindKernelVersion().
+ */
+StatusOr<KernelVersion> GetKernelVersion(
+    std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
+
+/**
+ * Determines the linux kernel version.
  * It first searches /proc/version_signature (for Ubuntu distros).
  * If /proc/version_signature does not exist, it uses uname.
  *
@@ -106,7 +114,7 @@ StatusOr<std::string> GetProcVersionSignature();
  *
  * @return The kernel version, or error if it could not be determined.
  */
-StatusOr<KernelVersion> GetKernelVersion(
+StatusOr<KernelVersion> FindKernelVersion(
     std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
 
 /**

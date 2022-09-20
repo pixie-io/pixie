@@ -37,6 +37,7 @@
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/go_syms.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
+#include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_rescan_for_dlopen, false,
@@ -54,6 +55,9 @@ namespace stirling {
 
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
+using ::px::stirling::utils::GetKernelVersion;
+using ::px::stirling::utils::KernelVersion;
+using ::px::stirling::utils::KernelVersionOrder;
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
@@ -830,6 +834,17 @@ absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
   return upids_to_rescan;
 }
 
+bool KernelVersionAllowsGRPCCTracing() {
+  constexpr KernelVersion kKernelVersion5_3 = {5, 3, 0};
+  auto kernel_version_or = GetKernelVersion();
+  if (kernel_version_or.ok()) {
+    auto kernel_version = kernel_version_or.ValueOrDie();
+    auto order = CompareKernelVersions(kernel_version, kKernelVersion5_3);
+    return order == KernelVersionOrder::kSame || order == KernelVersionOrder::kNewer;
+  }
+  return false;
+}
+
 void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
 
@@ -844,14 +859,15 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   int uprobe_count = 0;
 
   uprobe_count += DeployOpenSSLUProbes(proc_tracker_.new_upids());
-  if (FLAGS_stirling_enable_grpc_c_tracing) {
+
+  if (FLAGS_stirling_enable_grpc_c_tracing && KernelVersionAllowsGRPCCTracing()) {
     uprobe_count += DeployGrpcCUProbes(proc_tracker_.new_upids());
   }
 
   if (FLAGS_stirling_rescan_for_dlopen) {
     auto pids_to_rescan_for_uprobes = PIDsToRescanForUProbes();
     uprobe_count += DeployOpenSSLUProbes(pids_to_rescan_for_uprobes);
-    if (FLAGS_stirling_enable_grpc_c_tracing) {
+    if (FLAGS_stirling_enable_grpc_c_tracing && KernelVersionAllowsGRPCCTracing()) {
       uprobe_count += DeployGrpcCUProbes(pids_to_rescan_for_uprobes);
     }
   }
