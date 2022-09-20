@@ -21,6 +21,7 @@ import * as React from 'react';
 import { makeCancellable } from 'app/utils/cancellable-promise';
 
 import { CommandProvider, CommandProviderResult } from './providers/command-provider';
+import { useScriptCommandProvider } from './providers/script-command-provider';
 
 /** Hook to passively update suggestions as the input and selection change in the command palette. */
 export const useCommandProviders: (
@@ -29,8 +30,7 @@ export const useCommandProviders: (
   input, selection,
 ) => {
   const providers: ReturnType<CommandProvider>[] = [
-    // New providers will be added here in future commits.
-    // Each one will have its own internal behavior, but ultimately resolve to a CommandProviderResult.
+    useScriptCommandProvider(),
   ];
 
   const promises = React.useMemo(
