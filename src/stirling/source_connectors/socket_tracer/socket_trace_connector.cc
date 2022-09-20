@@ -1028,9 +1028,8 @@ void SocketTraceConnector::AcceptGrpcCHeaderEventData(
                                  /* Whether this event indicates that a stream was closed */ false,
                                  event->direction == kEgress, &header_event_data_go_style);
 
-  std::string name = std::string(event->header.key).substr(0, MAXIMUM_LENGTH_OF_KEY_IN_METADATA);
-  std::string value =
-      std::string(event->header.value).substr(0, MAXIMUM_LENGTH_OF_VALUE_IN_METADATA);
+  std::string name(event->header.key, event->header.key_size);
+  std::string value(event->header.value, event->header.value_size);
   auto h_event_ready = std::make_unique<HTTP2HeaderEvent>();
   h_event_ready->attr = header_event_data_go_style.attr;
   h_event_ready->name = name;
