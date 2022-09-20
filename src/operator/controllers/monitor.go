@@ -24,7 +24,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -249,7 +251,12 @@ func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 		return &vizierState{Reason: status.NATSPodFailed}
 	}
 
-	resp, err := client.Get(fmt.Sprintf("http://%s:%d/", natsPod.pod.Status.PodIP, 8222))
+	u := url.URL{
+		Scheme: "http",
+		Host:   net.JoinHostPort(natsPod.pod.Status.PodIP, "8222"),
+	}
+
+	resp, err := client.Get(u.String())
 	if err != nil {
 		log.WithError(err).Error("Error making nats monitoring call")
 		return &vizierState{Reason: status.NATSPodFailed}
@@ -616,7 +623,12 @@ func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 		port = pod.Spec.Containers[0].Ports[0].ContainerPort
 	}
 
-	resp, err := client.Get(fmt.Sprintf("https://%s:%d/statusz", podIP, port))
+	u := url.URL{
+		Scheme: "https",
+		Host:   net.JoinHostPort(podIP, fmt.Sprintf("%d", port)),
+		Path:   "statusz",
+	}
+	resp, err := client.Get(u.String())
 	if err != nil {
 		log.WithError(err).Error("Error making statusz call")
 		return false, ""

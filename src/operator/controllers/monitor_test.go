@@ -391,8 +391,8 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 func TestMonitor_NATSPods(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
-			"http://127.0.0.1:8222/": "",
-			"http://127.0.0.3:8222/": "NATS Failed",
+			"http://127.0.0.1:8222": "",
+			"http://127.0.0.3:8222": "NATS Failed",
 		},
 	}
 

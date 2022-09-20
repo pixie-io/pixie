@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -93,13 +94,13 @@ func main() {
 	// For a given query, the agents may send multiple sets of results via the query broker.
 	// We pass the pod IP address down to the agents in order to ensure that they continue to
 	// communicate with the same query broker across a single request.
-	// TODO fix to ip
 	podAddr := viper.GetString("pod_ip_address")
 	if podAddr == "" {
 		log.Fatal("Expected to receive pod IP address.")
 	}
+	qbIPAddr := net.JoinHostPort(podAddr, fmt.Sprintf("%d", servicePort))
 	qbHostname := fmt.Sprintf("%s.%s.svc", querybrokerHostname, viper.GetString("pod_namespace"))
-	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), qbHostname, "vizier")
+	env, err := querybrokerenv.New(qbIPAddr, qbHostname, "vizier")
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment.")
 	}
