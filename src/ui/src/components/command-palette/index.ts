@@ -18,3 +18,4 @@
 
 export { parse } from './parser';
 export * from './command-providers';
+export * from './command-palette';
