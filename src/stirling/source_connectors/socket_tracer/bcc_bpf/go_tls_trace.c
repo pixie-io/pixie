@@ -62,6 +62,7 @@ int probe_entry_tls_conn_write(struct pt_regs* ctx) {
   if (goid == 0) {
     return 0;
   }
+  tgid_goid.goid = goid;
 
   struct go_tls_symaddrs_t* symaddrs = go_tls_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
@@ -156,6 +157,7 @@ int probe_return_tls_conn_write(struct pt_regs* ctx) {
   if (goid == 0) {
     return 0;
   }
+  tgid_goid.goid = goid;
 
   struct go_tls_conn_args* args = active_tls_conn_op_map.lookup(&tgid_goid);
   if (args == NULL) {
@@ -187,6 +189,7 @@ int probe_entry_tls_conn_read(struct pt_regs* ctx) {
   if (goid == 0) {
     return 0;
   }
+  tgid_goid.goid = goid;
 
   struct go_tls_symaddrs_t* symaddrs = go_tls_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
@@ -283,6 +286,7 @@ int probe_return_tls_conn_read(struct pt_regs* ctx) {
   if (goid == 0) {
     return 0;
   }
+  tgid_goid.goid = goid;
 
   struct go_tls_conn_args* args = active_tls_conn_op_map.lookup(&tgid_goid);
   if (args == NULL) {
