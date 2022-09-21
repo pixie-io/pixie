@@ -48,7 +48,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@egjs/hammerjs", "npm:2.0.17"],
             ["@emotion/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.5.0"],
             ["@emotion/styled", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.3.0"],
-            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
             ["@mui/icons-material", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.1.0"],
             ["@mui/lab", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.54"],
             ["@mui/material", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.1.0"],
@@ -118,6 +117,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["jest", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:27.3.1"],
             ["jest-junit", "npm:13.0.0"],
             ["jest-raw-loader", "npm:1.0.1"],
+            ["jose", "npm:4.9.3"],
             ["keycharm", "npm:0.3.1"],
             ["launchdarkly-react-client-sdk", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.22.2"],
             ["license-checker", "npm:25.0.1"],
@@ -4668,16 +4668,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
-      ["@inrupt/jose-legacy-modules", [
-        ["npm:0.0.3-3.14.3", {
-          "packageLocation": "./.yarn/cache/@inrupt-jose-legacy-modules-npm-0.0.3-3.14.3-ab52cced5a-2fb98990a5.zip/node_modules/@inrupt/jose-legacy-modules/",
-          "packageDependencies": [
-            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
-            ["jose", "npm:3.14.3"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
       ["@istanbuljs/load-nyc-config", [
         ["npm:1.1.0", {
           "packageLocation": "./.yarn/cache/@istanbuljs-load-nyc-config-npm-1.1.0-42d17c9cb1-d578da5e2e.zip/node_modules/@istanbuljs/load-nyc-config/",
@@ -6348,7 +6338,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@egjs/hammerjs", "npm:2.0.17"],
             ["@emotion/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.5.0"],
             ["@emotion/styled", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.3.0"],
-            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
             ["@mui/icons-material", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.1.0"],
             ["@mui/lab", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.54"],
             ["@mui/material", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.1.0"],
@@ -6418,6 +6407,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["jest", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:27.3.1"],
             ["jest-junit", "npm:13.0.0"],
             ["jest-raw-loader", "npm:1.0.1"],
+            ["jose", "npm:4.9.3"],
             ["keycharm", "npm:0.3.1"],
             ["launchdarkly-react-client-sdk", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.22.2"],
             ["license-checker", "npm:25.0.1"],
@@ -16577,10 +16567,10 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]
       ]],
       ["jose", [
-        ["npm:3.14.3", {
-          "packageLocation": "./.yarn/cache/jose-npm-3.14.3-3aa5cdfa85-653262b24d.zip/node_modules/jose/",
+        ["npm:4.9.3", {
+          "packageLocation": "./.yarn/cache/jose-npm-4.9.3-c196dad606-9586583076.zip/node_modules/jose/",
           "packageDependencies": [
-            ["jose", "npm:3.14.3"]
+            ["jose", "npm:4.9.3"]
           ],
           "linkType": "HARD",
         }]
