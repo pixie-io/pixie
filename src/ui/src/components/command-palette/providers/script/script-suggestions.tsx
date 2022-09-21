@@ -26,7 +26,7 @@ import { PixieCommandIcon as ScriptIcon } from 'app/components';
 import { ParseResult, Token } from 'app/components/command-palette/parser';
 import { CommandProviderResult } from 'app/components/command-palette/providers/command-provider';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
-import { pxTypeToEntityType } from 'app/containers/command-input/autocomplete-utils';
+import { pxTypeToEntityType } from 'app/containers/live/autocomplete-utils';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult, GQLAutocompleteSuggestion } from 'app/types/schema';
 import { Script } from 'app/utils/script-bundle';
 import { highlightMatch } from 'app/utils/string-search';

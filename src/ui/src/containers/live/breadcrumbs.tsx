@@ -30,7 +30,7 @@ import {
 } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
+import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/live/autocomplete-utils';
 import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
