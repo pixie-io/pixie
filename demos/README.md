@@ -41,6 +41,21 @@ kustomize build . >  kafka.yaml
 
 4. Copy the yaml file to `pixie/demos/kafka`.
 
+## Updating the `px-finagle` demo
+
+1. Clone `https://github.com/pixie-labs/finagle-helloworld`
+
+2. (optional) Build the container images & update the individual yaml files.
+
+3. Build a single yaml file for the demo:
+
+```
+kustomize . > finagle.yaml
+```
+
+4. Copy the yaml file to `pixie/demos/finagle`.
+
+
 ## Updating the `px-online-boutique` demo
 
 Our custom `adservice` image includes the `-XX:+PreserveFramePointer` Java option. To build our custom `adservice` image:

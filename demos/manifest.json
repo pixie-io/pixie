@@ -34,5 +34,13 @@
             "To turn off the invoicing delay, run:",
             "   kubectl exec -n px-kafka $INVC_POD -c invoicing -- kill -USR2 $INVC_PID"
         ]
+    },
+    "px-finagle": {
+        "description": "Microservice demo that generates thriftmux traffic with finagle",
+        "instructions": [
+            "Traffic will be continuously generated to ensure data is visible.",
+            "Mux tracing is only enabled on newer kernels (>= 5.2) by default.",
+            "Make sure your system meets these requirements before deploying."
+        ]
     }
 }
