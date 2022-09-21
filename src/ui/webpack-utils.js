@@ -56,11 +56,11 @@ function readYAMLFile(filePath, isEncrypted) {
   const cleanedPath = filePath.replace(/\//g, '\\/');
   let results;
   if (isEncrypted) {
-    results = execSync(`sops --decrypt ${cleanedPath}`);
+    results = execSync(`sops --decrypt ${cleanedPath}`, { stdio: ['pipe', 'pipe', 'ignore'] });
   } else {
     // Don't try to change this to `fs.readFileSync` to avoid the useless cat:
     // readFileSync can't find this path, cat can.
-    results = execSync(`cat ${cleanedPath}`);
+    results = execSync(`cat ${cleanedPath}`, { stdio: ['pipe', 'pipe', 'ignore'] });
   }
   return YAML.parse(results.toString());
 }

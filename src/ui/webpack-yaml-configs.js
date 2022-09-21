@@ -37,69 +37,64 @@ const ANNOUNCEMENT_DEFAULTS = {
   ANNOUNCE_WIDGET_URL: '',
 };
 
+function findConfig(root, environment, fileName, defaults, isEncrypted) {
+  const overrides = JSON.parse(process.env.PL_CONFIG_DIRS || '[]'); // Assumes it's a JSON-stringified array of strings.
+  for (const path of overrides) {
+    try {
+      return utils.readYAMLFile(join(root, ...path.split('/'), fileName), isEncrypted);
+    } catch (_) { /* Just try the next one */ }
+  }
+  // If there were no overrides or none of them have the file we're looking for, try the default location.
+  // If it isn't there either, use the supplied default values.
+  try {
+    return utils.readYAMLFile(join(root, 'k8s', 'cloud', environment, fileName), isEncrypted);
+  } catch (_) {
+    return { data: defaults };
+  }
+}
+
 /**
  * Used in the webpack dev server to configure things like oauth, third-party services, and others that are
  * normally handled by other processes in a deployed environment.
  *
- * @param {string} topLevelDir Top of git tree
+ * @param {string} root Top of git tree
  * @param {string} environment One of 'base', 'dev', 'staging', etc.
  */
-module.exports = function getYamls(topLevelDir, environment) {
-  const credentialsEnv = process.env.PL_BUILD_TYPE;
-  const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
-
+function getYamls(root, environment) {
   // Users can specify the OAUTH environment. Usually this just means
   // setting to "ory_auth", otherwise will default to `environment`.
-  const oauthPath = oauthConfigEnv === 'ory-auth'
-    ? join(topLevelDir, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml')
-    : join(topLevelDir, 'private', 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml');
-  let oauthYAML;
-  try {
-    oauthYAML = utils.readYAMLFile(oauthPath, true);
-  } catch (_) {
-    oauthYAML = { data: OAUTH_DEFAULTS };
-  }
+  const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
+  const oauth = oauthConfigEnv === 'ory-auth'
+    ? utils.readYAMLFile(join(root, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), true)
+    : findConfig(root, environment, 'oauth_config.yaml', OAUTH_DEFAULTS, true);
 
   // Get client ID for LaunchDarkly, if applicable.
-  let ldYAML;
-  try {
-    ldYAML = utils.readYAMLFile(join(topLevelDir, 'private', 'credentials', 'k8s',
-      credentialsEnv, 'configs', 'ld_config.yaml'), true);
-  } catch (_) {
-    ldYAML = { data: LD_DEFAULTS };
-  }
+  const ld = findConfig(root, environment, 'ld_config.yaml', LD_DEFAULTS, true);
 
   // Get domain name.
-  const domainYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml'), false);
+  const domain = findConfig(root, environment, 'domain_config.yaml', null, false);
 
   // Get whether to enable analytics.
-  const analyticsYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'analytics_config.yaml'), false);
+  const analytics = findConfig(root, environment, 'analytics_config.yaml', null, false);
 
   // Get whether to enable announcekit.
-  let announcementYAML;
-  try {
-    announcementYAML = utils.readYAMLFile(join(topLevelDir, 'private', 'credentials', 'k8s',
-      credentialsEnv, 'configs', 'announce_config.yaml'), true);
-  } catch (_) {
-    announcementYAML = { data: ANNOUNCEMENT_DEFAULTS };
-  }
+  const announcement = findConfig(root, environment, 'announce_config.yaml', ANNOUNCEMENT_DEFAULTS, true);
 
   // Get whether to enable chat contact.
-  const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'contact_config.yaml'), false);
+  const contact = findConfig(root, environment, 'contact_config.yaml', null, false);
 
   // Get URLs where PxL scripts can be found.
-  const scriptBundleYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'script_bundles_config.yaml'), false);
+  const scriptBundle = findConfig(root, environment, 'script_bundles_config.yaml', null, false);
 
   return {
-    oauthYAML,
-    ldYAML,
-    domainYAML,
-    analyticsYAML,
-    announcementYAML,
-    contactYAML,
-    scriptBundleYAML,
+    oauth,
+    ld,
+    domain,
+    analytics,
+    announcement,
+    contact,
+    scriptBundle,
   };
-};
+}
+
+module.exports = { findConfig, getYamls };
