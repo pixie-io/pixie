@@ -24,11 +24,13 @@ import {
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { EditIcon, Footer, scrollbarStyles } from 'app/components';
+import { CommandPalette } from 'app/components/command-palette';
 import { Spinner } from 'app/components/spinner/spinner';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
@@ -98,8 +100,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: theme.spacing(8),
     flex: '0 0 auto',
   },
-  spacer: {
+  middle: {
     flex: 1,
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
   },
   execute: {
     display: 'flex',
@@ -284,6 +288,7 @@ const Nav: React.FC<{
   setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
 }> = React.memo(({ widgetsMoveable, setWidgetsMoveable }) => {
   const classes = useStyles();
+  const { commandPalettePreview: showCommandPalette } = useFlags();
 
   if (isPixieEmbedded()) {
     return <></>;
@@ -292,7 +297,9 @@ const Nav: React.FC<{
   return <>
     <NavBars>
       <ClusterSelector />
-      <div className={classes.spacer} />
+      <div className={classes.middle}>
+        {showCommandPalette && <CommandPalette />}
+      </div>
       <ScriptOptions
         widgetsMoveable={widgetsMoveable}
         setWidgetsMoveable={setWidgetsMoveable}
