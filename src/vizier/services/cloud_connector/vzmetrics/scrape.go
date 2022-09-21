@@ -24,7 +24,9 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -121,10 +123,21 @@ func (s *scraperImpl) getEndpointsToScrape() ([]endpoint, error) {
 			log.WithField("pod name", podName).Warnf("Pod with %s annotation but no %s annotation which is required for metrics scraping", scrapeAnnotationName, portAnnotationName)
 			continue
 		}
+
+		// IPv4
 		podIP := strings.ReplaceAll(p.Status.PodIP, ".", "-")
+		// IPv6
+		podIP = strings.ReplaceAll(podIP, ":", "-")
+		// Use k8s pod DNS format instead of just the pod IP, so that the cert is valid.
+		host := fmt.Sprintf("%s.%s.pod.cluster.local", podIP, s.namespace)
+
+		u := url.URL{
+			Scheme: "https",
+			Host:   net.JoinHostPort(host, port),
+			Path:   metricsPath,
+		}
 		endpoints = append(endpoints, endpoint{
-			// Use k8s pod DNS format instead of just the pod IP, so that the cert is valid.
-			reqPath: fmt.Sprintf("https://%s.%s.pod.cluster.local:%s%s", podIP, s.namespace, port, metricsPath),
+			reqPath: u.String(),
 			podName: podName,
 		})
 	}
