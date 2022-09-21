@@ -798,13 +798,22 @@ void StirlingImpl::RunCore() {
   auto time_until_next_tick = std::chrono::milliseconds::zero();
   constexpr auto kRunWindow = std::chrono::milliseconds{1};
 
+  // The ctx_freq_mgr controls the update period for the k8s context "ctx".
+  FrequencyManager ctx_freq_mgr;
+  ctx_freq_mgr.set_period(std::chrono::milliseconds{200});
+  std::unique_ptr<ConnectorContext> ctx = GetContext();
+
   while (run_enable_) {
-    // Update the context/state on each iteration.
-    // Note that if no changes are present, the same pointer will be returned back.
-    // TODO(oazizi): If context constructor does a lot of work (e.g. ListUPIDs()),
-    //               then there might be an inefficiency here, since we don't know if
-    //               mgr->SamplingRequired() will be true for any manager.
-    std::unique_ptr<ConnectorContext> ctx = GetContext();
+    // To batch up work, i.e. to do more work per wakeup, we want to run our data
+    // transfer or push data if its desired run time is anywhere between
+    // time "now" and time "now + window".
+    const auto now_plus_run_window = now + kRunWindow;
+
+    if (ctx_freq_mgr.Expired(now_plus_run_window)) {
+      ctx = GetContext();
+      now = px::chrono::coarse_steady_clock::now();
+      ctx_freq_mgr.Reset(now);
+    }
 
     {
       // Acquire spin lock to go through one iteration of sampling and pushing data.
@@ -813,11 +822,6 @@ void StirlingImpl::RunCore() {
 
       // Run through every SourceConnector and InfoClassManager being managed.
       for (auto& source : sources_) {
-        // To batch up work, i.e. to do more work per wakeup, we want to run our data
-        // transfer or push data if its desired run time is anywhere between
-        // time "now" and time "now + window".
-        const auto now_plus_run_window = now + kRunWindow;
-
         // Phase 1: Probe each source for its data.
         if (source->sampling_freq_mgr().Expired(now_plus_run_window)) {
           source->TransferData(ctx.get());
