@@ -28,6 +28,7 @@ const { resolve, join } = require('path');
 const webpack = require('webpack');
 
 const utils = require('./webpack-utils');
+const getYamls = require('./webpack-yaml-configs');
 
 const isDevServer = process.argv.find((v) => v.includes('serve'));
 let topLevelDir = '';
@@ -267,49 +268,23 @@ module.exports = (env, argv) => {
     environment = 'base';
   }
 
-  let credentialsEnv = process.env.PL_BUILD_TYPE;
-
-  // Users can specify the OAUTH environment. Usually this just means
-  // setting to "ory_auth", otherwise will default to `environment`.
-  const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
-  let oauthYAML = utils.readYAMLFile(
-    join(topLevelDir, 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml'), true)
-  ;
-  // Special case for ory_auth where we read from the unecrypted file.
-  if (oauthConfigEnv === 'ory_auth') {
-    oauthYAML = utils.readYAMLFile(
-      join(topLevelDir, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), false
-    );
-  }
+  const {
+    oauthYAML,
+    ldYAML,
+    domainYAML,
+    analyticsYAML,
+    announcementYAML,
+    contactYAML,
+    scriptBundleYAML,
+  } = getYamls(topLevelDir, environment);
 
   // Setup the auth client.
-  const oauthProvider = oauthYAML.data.PL_OAUTH_PROVIDER;
-  const authURI = oauthYAML.data.PL_AUTH_URI;
-  const authClientID = oauthYAML.data.PL_AUTH_CLIENT_ID;
-  const authEmailPasswordConnection = oauthYAML.data.PL_AUTH_EMAIL_PASSWORD_CONN;
-
-  // Get LDClientID.
-  const ldYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
-    credentialsEnv, 'configs', 'ld_config.yaml'), true);
-
-  // Get domain name.
-  const domainYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml'), false);
-
-  // Get whether to enable analytics.
-  const analyticsYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'analytics_config.yaml'), false);
-
-  // Get whether to enable analytics.
-  const announcementYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
-    credentialsEnv, 'configs', 'announce_config.yaml'), true);
-
-  // Get whether to enable chat contact.
-  const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'contact_config.yaml'), false);
-
-  // Get URLs where PxL scripts can be found.
-  const scriptBundleYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
-    'script_bundles_config.yaml'), false);
+  const {
+    PL_OAUTH_PROVIDER: oauthProvider,
+    PL_AUTH_URI: authURI,
+    PL_AUTH_CLIENT_ID: authClientID,
+    PL_AUTH_EMAIL_PASSWORD_CONN: authEmailPasswordConnection,
+  } = oauthYAML.data;
 
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
