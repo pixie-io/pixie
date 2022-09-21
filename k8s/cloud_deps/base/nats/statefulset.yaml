@@ -199,7 +199,7 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /healthz?js-enabled=true
+            path: /
             port: 8222
           initialDelaySeconds: 10
           timeoutSeconds: 5
