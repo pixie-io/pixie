@@ -255,7 +255,7 @@ func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierp
 	vls := k8s.VizierLabelSelector()
 	// Get only control-plane pods.
 	vls.MatchLabels["plane"] = "control"
-	rawControlPodsList, err := v.clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+	rawControlPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&vls),
 	})
 	if err != nil {
@@ -265,7 +265,7 @@ func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierp
 	vls = k8s.VizierLabelSelector()
 	// Get only data-plane pods.
 	vls.MatchLabels["plane"] = "data"
-	rawDataPodsList, err := v.clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+	rawDataPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&vls),
 	})
 
