@@ -19,7 +19,7 @@
 # This version is identical to the Python gRPC module version for easier recognition.
 # This is because the produced docker image is mainly used for testing tracing Python gRPC app,
 # which depends on the version of the module.
-version=1.0
+version=1.1
 tag="gcr.io/pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:$version"
 
 docker build . -t $tag
