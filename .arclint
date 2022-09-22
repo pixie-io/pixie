@@ -14,7 +14,7 @@
     "(^private\/credentials\/.*\\.yaml)",
     "(^private\/credentials\/.*\\.sh)",
     "(^docs/customer/)",
-    "(^private/experimental/users/)",
+    "(^private/users/)",
     "(^k8s/operator/crd/base/px\\.dev_viziers\\.yaml$)",
     "(^src/operator/client/versioned/)",
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
