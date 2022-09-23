@@ -95,6 +95,9 @@ export PL_TESTING_ENV=dev
 After which, you can rerun a `px auth login` to authenticate with the dev cloud instance, and deploy a new Vizier that points to the dev cloud instance with `px deploy`.
 Make sure to `px delete --clobber` if running a prior instance of Vizier pointing to another cloud instance.
 
+## UI
+For UI development, refer to the [README](https://github.com/pixie-io/pixie/blob/main/src/ui/README.md).
+
 ## Vizier
 Vizier is Pixie’s data collector that runs on each cluster. It is responsible for query execution and managing PEMs.
 
