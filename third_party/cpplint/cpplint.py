@@ -721,7 +721,7 @@ C_STANDARD_HEADER_FOLDERS = frozenset([
 
 # Known C++ header directories.
 _CPP_HEADER_DIRS = tuple([
-    'private/experimental/',
+    'experimental/',
     'absl/',
     'prometheus/',
     'benchmark/',

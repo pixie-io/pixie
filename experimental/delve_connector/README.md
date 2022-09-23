@@ -13,7 +13,7 @@ sudo dlv --headless --log --log-output=rpc --listen=127.0.0.1:44101 attach $(pgr
 
 ### Step 2B: Run Delve front-end.
 ```
-bazel run //private/experimental/delve_connector:client -- --port=44101
+bazel run //experimental/delve_connector:client -- --port=44101
 # Add --quiet=1 for benchmarking
 ```
 

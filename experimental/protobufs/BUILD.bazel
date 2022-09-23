@@ -32,7 +32,7 @@ pl_cc_library(
     hdrs = glob(include = ["*.h"]),
     tags = ["manual"],
     deps = [
-        "//private/experimental/protobufs/proto:alias_pl_cc_proto",
+        "//experimental/protobufs/proto:alias_pl_cc_proto",
         "//src/common/grpcutils:cc_library",
         "@com_google_protobuf//:protobuf",
     ],
@@ -41,11 +41,11 @@ pl_cc_library(
 pl_cc_test(
     name = "aliasing_test",
     srcs = ["aliasing_test.cc"],
-    data = ["//private/experimental/protobufs/proto:test.proto"],
+    data = ["//experimental/protobufs/proto:test.proto"],
     tags = ["manual"],
     deps = [
         ":cc_library",
-        "//private/experimental/protobufs/proto:test_pl_cc_proto",
+        "//experimental/protobufs/proto:test_pl_cc_proto",
         "//src/common/grpcutils:cc_library",
         "//src/stirling:cc_library",
     ],
@@ -57,7 +57,7 @@ pl_cc_binary(
     tags = ["manual"],
     deps = [
         ":cc_library",
-        "//private/experimental/protobufs/proto:alias_pl_cc_proto",
+        "//experimental/protobufs/proto:alias_pl_cc_proto",
         "//src/common/grpcutils:cc_library",
     ],
 )

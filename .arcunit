@@ -26,7 +26,7 @@
          "(\\.go$)"
       ],
       "exclude": [
-        "(^private/experimental/)",
+        "(^experimental/)",
         "(^third_party/)"
       ]
     }

@@ -17,7 +17,7 @@
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
 package(
-    default_visibility = ["//private/experimental/protobufs:__pkg__"],
+    default_visibility = ["//experimental/protobufs:__pkg__"],
 )
 
 pl_proto_library(
