@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -19,38 +19,28 @@
 # This deploys a new cloud release.
 
 usage() {
-    echo "Usage: echo <changelog message> | $0 <artifact_type> [-r]"
+    echo "Usage: echo <changelog message> | $0 [-r]"
     echo " -r : Create a prod release."
-    echo "Example: echo 'this is a cloud prod release' | $0 cloud -r"
+    echo "Example: echo 'this is a cloud prod release' | $0 -r"
+    exit 1
 }
 
 parse_args() {
-  if [ $# -lt 1 ]; then
-    usage
-  fi
-
-  ARTIFACT_TYPE=$1
-  shift
-
-  while test $# -gt 0; do
-      case "$1" in
-        -r) RELEASE=true
-            shift
-            ;;
-        *)  usage ;;
-      esac
+  local OPTIND
+  while getopts "r" opt; do
+    case ${opt} in
+      r)
+        RELEASE=true
+        ;;
+      *)
+        usage
+        ;;
+    esac
   done
-}
-
-check_args() {
-    if [ "$ARTIFACT_TYPE" != "cloud" ] && [ "$ARTIFACT_TYPE" != "docs" ]; then
-        echo "Unsupported artifact type."
-        exit
-    fi
+  shift $((OPTIND - 1))
 }
 
 parse_args "$@"
-check_args
 
 # Get input from stdin.
 CHANGELOG=''
@@ -58,13 +48,14 @@ while IFS= read -r line; do
     CHANGELOG="${CHANGELOG}${line}\n"
 done
 
+set -x
 timestamp="$(date +"%s")"
 release="staging"
 if [ "$RELEASE" = "true" ]; then
   release="prod"
 fi
 
-new_tag="release/$ARTIFACT_TYPE/$release/$timestamp"
+new_tag="release/cloud/$release/$timestamp"
 git tag -a "$new_tag" -m "$(echo -e "$CHANGELOG")"
 
 git push origin "$new_tag"
