@@ -394,6 +394,14 @@ function stackBySeriesTransform(
   stackedEndField: string): Transforms[] {
   const meanValueField = 'meanOfValueField';
   return [
+    {
+      type: 'impute',
+      key: timeField,
+      field: valueField,
+      method: 'value',
+      value: 0,
+      groupby: [seriesField],
+    },
     // We do a join aggregate so that we can sort the stack by the mean value per series.
     // So that the more "important" fields end up on the top of the stack.
     {
