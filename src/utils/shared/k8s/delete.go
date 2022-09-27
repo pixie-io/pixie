@@ -22,6 +22,7 @@ import (
 	"context"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -33,30 +34,34 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	cmdwait "k8s.io/kubectl/pkg/cmd/wait"
 )
 
-var defaultConfigFlags = genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag().WithDiscoveryBurst(300).WithDiscoveryQPS(50.0)
-
 // ObjectDeleter has methods to delete K8s objects and wait for them. This code is adopted from `kubectl delete`.
 type ObjectDeleter struct {
-	Namespace     string
-	Clientset     *kubernetes.Clientset
-	RestConfig    *rest.Config
-	Timeout       time.Duration
+	Namespace  string
+	Clientset  *kubernetes.Clientset
+	RestConfig *rest.Config
+	Timeout    time.Duration
+
+	rcg           *restClientGetter
 	dynamicClient dynamic.Interface
 }
 
 // DeleteCustomObject is used to delete a custom object (instantiation of CRD).
 func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) error {
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
-	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-
-	r := f.NewBuilder().
+	if err := o.initRestClientGetter(); err != nil {
+		return err
+	}
+	b := resource.NewBuilder(o.rcg)
+	r := b.
 		Unstructured().
 		ContinueOnError().
 		NamespaceParam(o.Namespace).
@@ -69,8 +74,7 @@ func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) e
 	if err != nil {
 		return err
 	}
-	o.dynamicClient, err = f.DynamicClient()
-	if err != nil {
+	if err := o.initDynamicClient(); err != nil {
 		return err
 	}
 
@@ -80,10 +84,12 @@ func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) e
 
 // DeleteNamespace removes the namespace and all objects within it. Waits for deletion to complete.
 func (o *ObjectDeleter) DeleteNamespace() error {
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
-	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	if err := o.initRestClientGetter(); err != nil {
+		return err
+	}
+	b := resource.NewBuilder(o.rcg)
 
-	r := f.NewBuilder().
+	r := b.
 		Unstructured().
 		ContinueOnError().
 		NamespaceParam(o.Namespace).
@@ -96,8 +102,7 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 	if err != nil {
 		return err
 	}
-	o.dynamicClient, err = f.DynamicClient()
-	if err != nil {
+	if err := o.initDynamicClient(); err != nil {
 		return err
 	}
 
@@ -106,7 +111,10 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 }
 
 func (o *ObjectDeleter) getDeletableResourceTypes() ([]string, error) {
-	discoveryClient := o.Clientset.Discovery()
+	discoveryClient, err := o.rcg.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
 
 	lists, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
@@ -134,8 +142,10 @@ func (o *ObjectDeleter) getDeletableResourceTypes() ([]string, error) {
 
 // DeleteByLabel delete objects that match the labels and specified by resourceKinds. Waits for deletion.
 func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) (int, error) {
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
-	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+	if err := o.initRestClientGetter(); err != nil {
+		return 0, err
+	}
+	b := resource.NewBuilder(o.rcg)
 
 	if len(resourceKinds) == 0 {
 		allKinds, err := o.getDeletableResourceTypes()
@@ -145,7 +155,7 @@ func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) 
 		resourceKinds = allKinds
 	}
 
-	r := f.NewBuilder().
+	r := b.
 		Unstructured().
 		ContinueOnError().
 		NamespaceParam(o.Namespace).
@@ -159,8 +169,7 @@ func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) 
 	if err != nil {
 		return 0, err
 	}
-	o.dynamicClient, err = f.DynamicClient()
-	if err != nil {
+	if err := o.initDynamicClient(); err != nil {
 		return 0, err
 	}
 
@@ -243,6 +252,33 @@ func (o *ObjectDeleter) deleteResource(info *resource.Info, deleteOptions *metav
 	}
 
 	return deleteResponse, nil
+}
+
+func (o *ObjectDeleter) initRestClientGetter() error {
+	if o.rcg != nil {
+		return nil
+	}
+	o.rcg = &restClientGetter{
+		clientset:  o.Clientset,
+		restConfig: o.RestConfig,
+	}
+	return nil
+}
+
+func (o *ObjectDeleter) initDynamicClient() error {
+	if o.dynamicClient != nil {
+		return nil
+	}
+	config, err := o.rcg.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	c, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+	o.dynamicClient = c
+	return nil
 }
 
 // DeleteClusterRole deletes the clusterrole with the given name.
@@ -359,4 +395,63 @@ func DeletePods(clientset kubernetes.Interface, namespace string, selectors stri
 	}
 
 	return nil
+}
+
+type restClientGetter struct {
+	clientset  *kubernetes.Clientset
+	restConfig *rest.Config
+
+	discoveryClientLock sync.Mutex
+	discoveryClient     discovery.CachedDiscoveryInterface
+}
+
+func (r *restClientGetter) ToRESTConfig() (*rest.Config, error) {
+	return r.restConfig, nil
+}
+
+func (r *restClientGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	r.discoveryClientLock.Lock()
+	defer r.discoveryClientLock.Unlock()
+	if r.discoveryClient == nil {
+		c, err := r.toDiscoveryClient()
+		if err != nil {
+			return nil, err
+		}
+		r.discoveryClient = c
+	}
+	return r.discoveryClient, nil
+}
+
+const (
+	kubectlDefaultBurst = 300
+	kubectlDefaultQPS   = 50.0
+)
+
+func (r *restClientGetter) toDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := r.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config.Burst = kubectlDefaultBurst
+	config.QPS = kubectlDefaultQPS
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return memory.NewMemCacheClient(discoveryClient), nil
+}
+
+func (r *restClientGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := r.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return nil, err
+	}
+	return restmapper.NewDiscoveryRESTMapper(apiGroupResources), nil
 }
