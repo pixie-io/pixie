@@ -20,7 +20,9 @@ rules:
   - replicasets
   - deployments
   verbs:
-  - "*"
+  - "watch"
+  - "get"
+  - "list"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -56,6 +58,30 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pl-vizier-crd-role
+subjects:
+- kind: ServiceAccount
+  name: metadata-service-account
+  namespace: pl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pl-vizier-metadata-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pl-vizier-metadata-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pl-vizier-metadata-role
 subjects:
 - kind: ServiceAccount
   name: metadata-service-account
