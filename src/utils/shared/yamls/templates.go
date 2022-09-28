@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"text/template"
@@ -293,17 +294,26 @@ func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOp
 
 	combinedYAML, err := processYAML(clientset, inputYAML, rm, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
 		var err error
+
+		// Update image tags to account for custom registries.
+		updateImageTags(unstructuredObj)
+
+		json, err := unstructuredObj.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
 		for _, opt := range tmplOpts {
 			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceType) {
 				continue
 			}
 
-			currJSON, err = addPlaceholder(opt, gvk, currJSON)
+			json, err = addPlaceholder(opt, gvk, json)
 			if err != nil {
 				return nil, err
 			}
 		}
-		return currJSON, nil
+
+		return json, nil
 	})
 	if err != nil {
 		return "", err
@@ -318,6 +328,64 @@ func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOp
 	r := strings.NewReplacer(replacedStrings...)
 
 	return r.Replace(combinedYAML), nil
+}
+
+func updateImageTags(unstructuredObj unstructured.Unstructured) {
+	obj := unstructuredObj.Object
+	spec := obj["spec"]
+	if spec == nil {
+		return
+	}
+
+	tmpl := spec.(map[string]interface{})["template"]
+	if tmpl == nil {
+		return
+	}
+
+	tmplSpec := tmpl.(map[string]interface{})["spec"]
+	if tmplSpec == nil {
+		return
+	}
+	containers := tmplSpec.(map[string]interface{})["containers"]
+	if containers == nil {
+		return
+	}
+	containersList, ok := containers.([]interface{})
+	if !ok {
+		return
+	}
+
+	for _, c := range containersList {
+		container, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		container["image"] = templatizeImagePath(container["image"].(string))
+	}
+
+	initContainers := tmplSpec.(map[string]interface{})["initContainers"]
+	if initContainers == nil {
+		return
+	}
+	iContainersList, ok := initContainers.([]interface{})
+	if !ok {
+		return
+	}
+
+	for _, c := range iContainersList {
+		container, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		container["image"] = templatizeImagePath(container["image"].(string))
+	}
+}
+
+func templatizeImagePath(path string) string {
+	newImage := strings.ReplaceAll(path, "/", "-")
+
+	return fmt.Sprintf("{{ if .Values.registry }}{{ .Values.registry }}/%s{{ else }}%s{{ end }}", newImage, path)
 }
 
 type resourceProcessFn func(schema.GroupVersionKind, string, unstructured.Unstructured, []byte) ([]byte, error)
@@ -383,9 +451,7 @@ func processResourceInYAML(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecod
 	}
 	unstructuredOrig.Object = unstructBlob.(map[string]interface{})
 
-	// Add placeholders to the object.
 	currJSON := ext.Raw
-
 	currJSON, err = processFn(*gvk, resourceType, unstructuredOrig, currJSON)
 	if err != nil {
 		return "", err

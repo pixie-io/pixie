@@ -59,6 +59,7 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 			DataCollectorParams:      vizSpecReq.DataCollectorParams,
 			DataAccess:               vizSpecReq.DataAccess,
 			LeadershipElectionParams: vizSpecReq.LeadershipElectionParams,
+			Registry:                 vizSpecReq.Registry,
 		},
 	})
 	if err != nil {

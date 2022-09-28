@@ -180,6 +180,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		SentryDSN:             getSentryDSN(in.VzSpec.Version),
 		ClockConverter:        in.VzSpec.ClockConverter,
 		DataAccess:            in.VzSpec.DataAccess,
+		Registry:              in.VzSpec.Registry,
 	}
 
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSize != 0 {

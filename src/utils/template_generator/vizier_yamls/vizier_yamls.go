@@ -63,6 +63,7 @@ type VizierTmplValues struct {
 	DatastreamBufferSpikeSize uint32
 	ElectionPeriodMs          int64
 	CustomPEMFlags            map[string]string
+	Registry                  string
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -87,6 +88,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"datastreamBufferSpikeSize": tmplValues.DatastreamBufferSpikeSize,
 			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
 			"customPEMFlags":            tmplValues.CustomPEMFlags,
+			"registry":                  tmplValues.Registry,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
