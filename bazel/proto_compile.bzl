@@ -148,3 +148,61 @@ def pl_py_grpc_library(name, proto, deps = [], **kwargs):
         deps = deps,
         **kwargs
     )
+
+def _colocate_python_files_impl(ctx):
+    if not ctx.attr.protos_include_dir.endswith("/"):
+        fail("protos_include_dir should end in a slash '/'")
+    src_dest = []
+    for pkg in ctx.attr.srcs:
+        for src in pkg[PyInfo].transitive_sources.to_list():
+            if not src.short_path.startswith(ctx.attr.protos_include_dir):
+                continue
+            dest = ctx.actions.declare_file(src.basename)
+            src_dest.append((src, dest))
+    sh_file = ctx.actions.declare_file(ctx.label.name + "_copy.sh")
+    ctx.actions.write(
+        output = sh_file,
+        content = "\n".join([
+            "sed -E 's|^from {}[a-zA-Z0-9.]+|from .|g' {} > {}".format(
+                ctx.attr.protos_include_dir.replace("/", "."),
+                src.path,
+                dest.path,
+            )
+            for src, dest in src_dest
+        ]),
+    )
+    ctx.actions.run(
+        inputs = ctx.files.srcs,
+        tools = [sh_file],
+        outputs = [dest for src, dest in src_dest],
+        executable = "bash",
+        arguments = [sh_file.path],
+        mnemonic = "InternalCopyFile",
+        progress_message = "Copying files",
+        use_default_shell_env = True,
+    )
+    return [
+        DefaultInfo(
+            files = depset([dest for src, dest in src_dest]),
+        ),
+    ]
+
+colocate_python_files = rule(
+    doc = """
+    Recursively copies all the python contained inside the `protos_include_dir`
+    and created by the `srcs` to the toplevel directory where this rule is
+    called.
+
+    Developed to collect all the generated python proto files into a single
+    directory to simplify packaging.
+    """,
+    attrs = dict(
+        srcs = attr.label_list(
+            mandatory = True,
+            providers = [PyInfo],
+            allow_files = True,
+        ),
+        protos_include_dir = attr.string(),
+    ),
+    implementation = _colocate_python_files_impl,
+)

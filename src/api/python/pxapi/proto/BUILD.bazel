@@ -15,25 +15,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("@vizier_api_python_deps//:requirements.bzl", "requirement")
+load("//bazel:proto_compile.bzl", "colocate_python_files")
+
+colocate_python_files(
+    name = "pxapi_py_proto_files",
+    srcs = [
+        "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
+        "//src/api/proto/vizierpb:vizier_pl_py_grpc",
+    ],
+    protos_include_dir = "src/api/proto/",
+    visibility = ["//src/api/python/pxapi:__subpackages__"],
+)
 
 py_library(
-    name = "pxapi_library",
+    name = "pxapi_py_proto_library",
     srcs = [
-        "__init__.py",
-        "client.py",
-        "data.py",
-        "errors.py",
-        "utils.py",
+        ":pxapi_py_proto_files",
     ],
-    srcs_version = "PY3",
     visibility = ["//src/api/python:__subpackages__"],
-    deps = [
-        "//src/api/python/pxapi/proto:pxapi_py_proto_library",
-        requirement("gogo-python"),
-        requirement("grpcio"),
-        requirement("grpcio-tools"),
-        requirement("protobuf"),
-        requirement("Authlib"),
-    ],
 )

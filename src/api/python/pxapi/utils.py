@@ -17,8 +17,10 @@
 import uuid
 from authlib.jose import JsonWebKey, RSAKey, JsonWebEncryption
 
-from src.api.proto.uuidpb import uuid_pb2 as uuidpb
-from src.api.proto.vizierpb import vizierapi_pb2 as vpb
+from .proto import (
+    uuid_pb2 as uuidpb,
+    vizierapi_pb2 as vpb,
+)
 
 
 def uuid_pb_from_string(id_str: str) -> uuidpb.UUID:

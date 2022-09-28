@@ -44,14 +44,10 @@ py_wheel(
         "protobuf==3.20.1",
     ],
     strip_path_prefixes = ["src/api/python/"],
-    version = "0.7.0",
+    version = "0.8.0",
     deps = [
-        "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
-        "//src/api/proto/uuidpb:uuid_pl_py_proto",
-        "//src/api/proto/vispb:vis_pl_py_proto",
-        "//src/api/proto/vizierconfigpb:vizier_pl_py_proto",
-        "//src/api/proto/vizierpb:vizier_pl_py_grpc",
         "//src/api/python/pxapi:pxapi_library",
+        "//src/api/python/pxapi/proto:pxapi_py_proto_library",
     ],
 )
 

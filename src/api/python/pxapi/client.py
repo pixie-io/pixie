@@ -21,11 +21,6 @@ import warnings
 from typing import AsyncGenerator, Awaitable, Callable, cast, \
     Dict, Generator, List, Literal, Union, Set
 
-from src.api.proto.vizierpb import vizierapi_pb2 as vpb
-from src.api.proto.vizierpb import vizierapi_pb2_grpc
-
-from src.api.proto.cloudpb import cloudapi_pb2 as cpb
-from src.api.proto.cloudpb import cloudapi_pb2_grpc
 
 from .data import (
     _TableStream,
@@ -37,6 +32,13 @@ from .data import (
 
 from .errors import (
     build_pxl_exception,
+)
+
+from .proto import (
+    cloudapi_pb2 as cpb,
+    cloudapi_pb2_grpc,
+    vizierapi_pb2 as vpb,
+    vizierapi_pb2_grpc,
 )
 
 from .utils import (
