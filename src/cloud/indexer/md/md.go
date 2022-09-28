@@ -357,9 +357,10 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 		Upsert(esEntity)
 	v.bulkMu.Lock()
 	v.bulk.Add(req)
+	numPending := v.bulk.NumberOfActions()
 	v.bulkMu.Unlock()
 
-	if v.bulk.NumberOfActions() >= maxActionsPerBatch {
+	if numPending >= maxActionsPerBatch {
 		v.flush()
 	}
 
