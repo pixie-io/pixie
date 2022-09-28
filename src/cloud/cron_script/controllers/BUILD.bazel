@@ -35,7 +35,7 @@ go_library(
         "//src/shared/services/authcontext",
         "//src/shared/services/utils",
         "//src/utils",
-        "@com_github_cenkalti_backoff_v3//:backoff",
+        "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
         "@com_github_gogo_protobuf//types",

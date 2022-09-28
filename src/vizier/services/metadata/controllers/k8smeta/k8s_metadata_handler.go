@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/EvilSuperstars/go-cidrman"
-	"github.com/cenkalti/backoff/v3"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"

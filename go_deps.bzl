@@ -353,12 +353,6 @@ def pl_go_dependencies():
     )
 
     go_repository(
-        name = "com_github_cenkalti_backoff_v3",
-        importpath = "github.com/cenkalti/backoff/v3",
-        sum = "h1:cfUAAO3yvKMYKPrvhDuHSwQnhZNk/RMHKdZqKTxfm6M=",
-        version = "v3.2.2",
-    )
-    go_repository(
         name = "com_github_cenkalti_backoff_v4",
         importpath = "github.com/cenkalti/backoff/v4",
         sum = "h1:6Yo7N8UP2K6LWZnW94DLVSSrbobcWdVzAYOisuDPIFo=",

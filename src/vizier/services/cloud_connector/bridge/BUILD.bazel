@@ -43,7 +43,7 @@ go_library(
         "//src/vizier/services/cloud_connector/vzmetrics",
         "//src/vizier/utils/messagebus",
         "@com_github_blang_semver//:semver",
-        "@com_github_cenkalti_backoff_v3//:backoff",
+        "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
         "@com_github_gogo_protobuf//types",

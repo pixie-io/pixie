@@ -15,7 +15,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e
-	github.com/cenkalti/backoff/v3 v3.2.2
+	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/cockroachdb/pebble v0.0.0-20210120202502-6110b03a8a85
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dustin/go-humanize v1.0.0
@@ -122,7 +122,6 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect

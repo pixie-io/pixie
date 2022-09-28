@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff/v3"
+	"github.com/cenkalti/backoff/v4"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
