@@ -705,7 +705,8 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *v1alpha1.Vizi
 				},
 				NodeSelector: vz.Spec.Pod.NodeSelector,
 			},
-			Patches: vz.Spec.Patches,
+			Patches:  vz.Spec.Patches,
+			Registry: vz.Spec.Registry,
 		},
 	}
 
