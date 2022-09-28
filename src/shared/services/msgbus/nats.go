@@ -44,12 +44,13 @@ func MustConnectNATS() *nats.Conn {
 
 	if err != nil && !viper.GetBool("disable_ssl") {
 		log.WithError(err).
+			WithField("nats_url", natsURL).
 			WithField("client_tls_cert", viper.GetString("client_tls_cert")).
 			WithField("client_tls_key", viper.GetString("client_tls_key")).
 			WithField("tls_ca_cert", viper.GetString("tls_ca_cert")).
 			Fatal("Failed to connect to NATS")
 	} else if err != nil {
-		log.WithError(err).Fatal("Failed to connect to NATS")
+		log.WithError(err).WithField("nats_url", natsURL).Fatal("Failed to connect to NATS")
 	}
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		log.WithField("Sub", subscription.Subject).
