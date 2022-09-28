@@ -87,6 +87,8 @@ func init() {
 	DeployCmd.Flags().StringP("pem_memory_request", "r", "", "The memory request to specify for the PEMs, otherwise a default is used.")
 	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
 	DeployCmd.Flags().String("pem_flags", "", "Flags to be set on the PEM.")
+	DeployCmd.Flags().String("registry", "", "The custom image registry to use rather than Pixie's default (gcr.io).")
+
 	// Flags for deploying OLM.
 	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
 	DeployCmd.Flags().Bool("deploy_olm", true, "Whether to deploy Operator Lifecycle Manager. OLM is required. This should only be false if OLM is already deployed on the cluster (either manually or through another application). Note: OLM is deployed by default on Openshift clusters.")
@@ -243,6 +245,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	dataAccess, _ := cmd.Flags().GetString("data_access")
 	datastreamBufferSize, _ := cmd.Flags().GetUint32("datastream_buffer_size")
 	datastreamBufferSpikeSize, _ := cmd.Flags().GetUint32("datastream_buffer_spike_size")
+	registry, _ := cmd.Flags().GetString("registry")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -434,6 +437,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			"patches":             patchesMap,
 			"dataAccess":          castedDataAccess,
 			"dataCollectorParams": dataCollectorParams,
+			"registry":            registry,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": namespace,
