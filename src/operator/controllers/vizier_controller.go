@@ -45,6 +45,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vizierconfigpb"
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
+	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/certs"
@@ -216,6 +217,13 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 
 		r.monitor.InitAndStartMonitor(cloudClient)
+
+		// Update operator version
+		vizier.Status.OperatorVersion = version.GetVersion().ToString()
+		err = r.Status().Update(ctx, &vizier)
+		if err != nil {
+			log.WithError(err).Error("Failed to update vizier status")
+		}
 	}
 
 	// Vizier CRD has been updated, and we should update the running vizier accordingly.
