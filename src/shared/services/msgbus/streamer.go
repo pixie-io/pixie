@@ -26,6 +26,8 @@ import (
 
 // emptyQueueTimeout is the time we wait before we consider a queue to be empty.
 const emptyQueueTimeout = 200 * time.Millisecond
+const publishRetryInterval = 25 * time.Millisecond
+const publishTimeout = 1 * time.Minute
 
 // V2CDurableStream is the stream config for Durable v2c messages.
 var V2CDurableStream = &nats.StreamConfig{
@@ -33,7 +35,7 @@ var V2CDurableStream = &nats.StreamConfig{
 	Subjects: []string{
 		"v2c.*.*.*",
 	},
-	MaxAge: time.Minute * 15,
+	MaxAge: 15 * time.Minute,
 }
 
 // MetadataIndexStream is the stream config for MetadataIndex messages.
@@ -42,7 +44,7 @@ var MetadataIndexStream = &nats.StreamConfig{
 	Subjects: []string{
 		"MetadataIndex.*",
 	},
-	MaxAge: time.Hour * 24,
+	MaxAge: 24 * time.Hour,
 }
 
 // Msg is the interface for a message sent over the stream

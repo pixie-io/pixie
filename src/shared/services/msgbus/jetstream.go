@@ -23,13 +23,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 )
 
 // MustConnectJetStream creates a new JetStream connection.
 func MustConnectJetStream(nc *nats.Conn) nats.JetStreamContext {
-	js, err := nc.JetStream()
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(4096))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to JetStream")
 	}
@@ -70,6 +71,8 @@ type jetStreamStreamer struct {
 
 	stream  *nats.StreamInfo
 	ackWait time.Duration
+
+	bOpts *backoff.ExponentialBackOff
 }
 
 func (s *jetStreamStreamer) PersistentSubscribe(subject, persistentName string, cb MsgHandler) (PersistentSub, error) {
@@ -118,8 +121,18 @@ func (s *jetStreamStreamer) PersistentSubscribe(subject, persistentName string, 
 }
 
 func (s *jetStreamStreamer) Publish(subject string, data []byte) error {
-	_, err := s.js.Publish(subject, data)
-	return err
+	return backoff.Retry(func() error {
+		pubFuture, err := s.js.PublishAsync(subject, data)
+		if err != nil {
+			return err
+		}
+		select {
+		case <-pubFuture.Ok():
+			return nil
+		case err = <-pubFuture.Err():
+			return err
+		}
+	}, s.bOpts)
 }
 
 func (s *jetStreamStreamer) PeekLatestMessage(subject string) (Msg, error) {
@@ -164,10 +177,15 @@ func NewJetStreamStreamerWithConfig(js nats.JetStreamContext, sCfg *nats.StreamC
 		return nil, err
 	}
 
+	bOpts := backoff.NewExponentialBackOff()
+	bOpts.InitialInterval = publishRetryInterval
+	bOpts.MaxElapsedTime = publishTimeout
+
 	return &jetStreamStreamer{
 		js:      js,
 		stream:  streamInfo,
 		ackWait: cfg.AckWait,
+		bOpts:   bOpts,
 	}, nil
 }
 
