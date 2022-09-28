@@ -49,7 +49,6 @@ void SourceConnector::TransferData(ConnectorContext* ctx) {
   DCHECK_EQ(data_tables_.size(), table_schemas().size())
       << "DataTable objects must all be specified.";
   TransferDataImpl(ctx);
-  sampling_freq_mgr_.Reset();
 }
 
 void SourceConnector::PushData(DataPushCallback agent_callback) {
@@ -65,7 +64,6 @@ void SourceConnector::PushData(DataPushCallback agent_callback) {
       LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
     }
   }
-  push_freq_mgr_.Reset();
 }
 
 Status SourceConnector::Stop() {

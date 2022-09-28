@@ -51,7 +51,7 @@ TEST(LinuxHeadersUtils, ParseKernelVersionString) {
 }
 
 TEST(LinuxHeadersUtils, GetKernelVersionFromUname) {
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion({KernelVersionSource::kUname});
+  StatusOr<KernelVersion> kernel_version_status = FindKernelVersion({KernelVersionSource::kUname});
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
 
@@ -66,7 +66,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionFromUname) {
 
 TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
   StatusOr<KernelVersion> kernel_version_status =
-      GetKernelVersion({KernelVersionSource::kVDSONoteSection});
+      FindKernelVersion({KernelVersionSource::kVDSONoteSection});
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
 
@@ -87,7 +87,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
   system::Config::ResetInstance();
 
   // Main test.
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion(kProcFSKernelVersionSources);
+  StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x050441);
@@ -105,7 +105,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
   system::Config::ResetInstance();
 
   // Main test.
-  StatusOr<KernelVersion> kernel_version_status = GetKernelVersion(kProcFSKernelVersionSources);
+  StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x041398);
@@ -131,6 +131,18 @@ TEST(LinuxHeadersUtils, KernelHeadersDistance) {
             KernelHeadersDistance({4, 14, 255}, {4, 14, 0}));
 }
 
+TEST(LinuxHeadersUtils, CompareKernelVersions) {
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 2, 3}), KernelVersionOrder::kSame);
+
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 2, 4}), KernelVersionOrder::kOlder);
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {1, 3, 3}), KernelVersionOrder::kOlder);
+  EXPECT_EQ(CompareKernelVersions({1, 2, 3}, {2, 2, 3}), KernelVersionOrder::kOlder);
+
+  EXPECT_EQ(CompareKernelVersions({1, 2, 4}, {1, 2, 3}), KernelVersionOrder::kNewer);
+  EXPECT_EQ(CompareKernelVersions({1, 3, 3}, {1, 2, 3}), KernelVersionOrder::kNewer);
+  EXPECT_EQ(CompareKernelVersions({2, 2, 3}, {1, 2, 3}), KernelVersionOrder::kNewer);
+}
+
 TEST(LinuxHeadersUtils, ModifyVersion) {
   // Test Setup
 
@@ -150,7 +162,7 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
 
   // Functions Under Test
 
-  StatusOr<KernelVersion> host_linux_version = GetKernelVersion();
+  StatusOr<KernelVersion> host_linux_version = FindKernelVersion();
   ASSERT_OK(host_linux_version);
   uint32_t host_linux_version_code = host_linux_version.ValueOrDie().code();
   EXPECT_GT(host_linux_version_code, 0);

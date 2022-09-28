@@ -22,7 +22,8 @@ package px.stirling.sockeventpb;
 
 option go_package = "sockeventpb";
 
-// We do not use enum, instead use integer value to avoid tedious type conversions between C++ and protobuf.
+// We do not use enum, instead use integer value to avoid tedious type conversions between C++ and
+// protobuf.
 
 message ConnID {
   // User land PID, equivalent to TGID in the BPF and kernel land.

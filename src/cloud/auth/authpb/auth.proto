@@ -29,7 +29,7 @@ import "src/api/proto/uuidpb/uuid.proto";
 
 message AuthenticatedUserInfo {
   // User ID of the logged in user.
-  px.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID user_id = 1 [ (gogoproto.customname) = "UserID" ];
   // Name of the logged in user.
   string first_name = 2;
   string last_name = 3;
@@ -47,11 +47,13 @@ service AuthService {
   // Takes in a valid token, updates the claims with new data, then returns a new token.
   rpc RefetchToken(RefetchTokenRequest) returns (RefetchTokenResponse);
   // Takes an API key and produces a token with user details.
-  rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse);
+  rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest)
+      returns (GetAugmentedTokenForAPIKeyResponse);
   // Create a new account for the user's org and return an invite link.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
   // Create a new org, create a new user, then return an invite link for that user.
-  rpc CreateOrgAndInviteUser(CreateOrgAndInviteUserRequest) returns (CreateOrgAndInviteUserResponse);
+  rpc CreateOrgAndInviteUser(CreateOrgAndInviteUserRequest)
+      returns (CreateOrgAndInviteUserResponse);
   // Gets a short-lived token that can be used with an auth connector.
   rpc GetAuthConnectorToken(GetAuthConnectorTokenRequest) returns (GetAuthConnectorTokenResponse);
 }
@@ -81,7 +83,7 @@ message LoginReply {
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   message OrgInfo {
-    string org_id = 1 [(gogoproto.customname) = "OrgID"];
+    string org_id = 1 [ (gogoproto.customname) = "OrgID" ];
     string org_name = 2;
   }
   OrgInfo org_info = 6;
@@ -113,7 +115,7 @@ message SignupReply {
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   // Org ID of the user's org.
-  px.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 6 [ (gogoproto.customname) = "OrgID" ];
   // Org name of the user's org.
   string org_name = 7;
   // The service that provided the identity for this signup.
@@ -151,7 +153,7 @@ message RefetchTokenResponse {
 
 message GetAugmentedTokenForAPIKeyRequest {
   // An API Key that can be linked to a particular user/org.
-  string api_key = 1 [(gogoproto.customname) = "APIKey"];
+  string api_key = 1 [ (gogoproto.customname) = "APIKey" ];
 }
 
 message GetAugmentedTokenForAPIKeyResponse {
@@ -169,7 +171,7 @@ message InviteUserRequest {
   string last_name = 3;
 
   // The ID of the organization to create the user for.
-  px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 4 [ (gogoproto.customname) = "OrgID" ];
 }
 
 message InviteUserResponse {
@@ -197,8 +199,8 @@ message CreateOrgAndInviteUserResponse {
 }
 
 message GetAuthConnectorTokenRequest {
-  // ClusterName is the name of the cluster that can be used with the auth connector. This will be encoded in the
-  // returned JWT. This can be modified by the user, so consumers should take care to
+  // ClusterName is the name of the cluster that can be used with the auth connector. This will be
+  // encoded in the returned JWT. This can be modified by the user, so consumers should take care to
   // validate this is a real cluster which the user has access to.
   string cluster_name = 1;
 }
@@ -232,27 +234,27 @@ service APIKeyService {
 // is added to the PIXIE-API-KEY requests.
 message APIKey {
   // They ID of the key.
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The value of the key.
   string key = 2;
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
 
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
 }
 
 // The metadata associated with the key, everything except the actual key.
 message APIKeyMetadata {
   // They ID of the key.
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.Timestamp created_at = 3;
   // Description for the key.
   string desc = 4;
 
-  uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];
-  uuidpb.UUID user_id = 6 [(gogoproto.customname) = "UserID"];
+  uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  uuidpb.UUID user_id = 6 [ (gogoproto.customname) = "UserID" ];
 
   // Reserves the key field which was used by the original APIKey proto.
   reserved 2;
@@ -266,7 +268,6 @@ message CreateAPIKeyRequest {
 
 message ListAPIKeyRequest {
   // Empty message on purpose so we can extend with attributes easily if needed.
-
 }
 
 message ListAPIKeyResponse {
@@ -274,7 +275,7 @@ message ListAPIKeyResponse {
 }
 
 message GetAPIKeyRequest {
-  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 message GetAPIKeyResponse {

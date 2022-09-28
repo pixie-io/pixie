@@ -25,7 +25,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
-#include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/plannerpb/planner.pb.h"
 #include "src/carnot/planner/probes/probes.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
@@ -62,30 +62,8 @@ class LogicalPlanner : public NotCopyable {
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::CompileMutationsRequest& mutations_req);
 
-  StatusOr<absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation>>
-  CalculateOutputSchemas(const distributedpb::LogicalPlannerState& logical_state,
-                         const std::string& pxl);
-
-  StatusOr<std::string> GetUnusedVarName(const distributedpb::LogicalPlannerState& logical_state,
-                                         const std::string& script,
-                                         const std::string& base_name) const;
-
   StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> GenerateOTelScript(
       const plannerpb::GenerateOTelScriptRequest& generate_req);
-
-  struct DisplayLine {
-    std::string line;
-    std::string table_name;
-    std::string table_argument;
-    // The zero-indexed line number in the script where the px.display() call starts.
-    int64_t line_number_start;
-    // The zero-indexed line number in the script where the px.display() call ends.
-    // If the call is on a single line, then the end line number is the same as the start line
-    // number.
-    int64_t line_number_end;
-  };
-
-  static StatusOr<std::vector<DisplayLine>> GetPxDisplayLines(const std::string& script);
 
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);

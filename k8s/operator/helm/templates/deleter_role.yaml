@@ -7,7 +7,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: pl-deleter-binding
+  name: pl-deleter-cluster-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -20,21 +20,34 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: pl-deleter-role
+  name: pl-deleter-cluster-role
 rules:
 # Allow actions on Kubernetes objects
+- apiGroups:
+  - rbac.authorization.k8s.io
+  - etcd.database.coreos.com
+  - nats.io
+  resources:
+  - clusterroles
+  - clusterrolebindings
+  - persistentvolumes
+  - etcdclusters
+  - natsclusters
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pl-deleter-role
+rules:
 - apiGroups:
   - ""
   - apps
   - rbac.authorization.k8s.io
   - extensions
-  - etcd.database.coreos.com
   - batch
-  - nats.io
   - policy
   resources:
-  - clusterroles
-  - clusterrolebindings
   - configmaps
   - secrets
   - pods
@@ -42,13 +55,23 @@ rules:
   - deployments
   - daemonsets
   - persistentvolumes
-  - persistentvolumeclaims
   - roles
   - rolebindings
   - serviceaccounts
-  - etcdclusters
   - statefulsets
   - cronjobs
   - jobs
-  - natsclusters
   verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pl-deleter-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pl-deleter-role
+subjects:
+- kind: ServiceAccount
+  name: pl-deleter-service-account
+  namespace: "{{ .Release.Namespace }}"

@@ -100,9 +100,8 @@ struct go_common_symaddrs_t {
   // Member of runtime.g.
   int32_t g_goid_offset;  // 152
 
-  // Arguments of runtime.casgstatus.
-  struct location_t casgstatus_gp_loc;      // 8
-  struct location_t casgstatus_newval_loc;  // 20
+  // Offset of the ptr to struct g from the address in %fsbase.
+  int32_t g_addr_offset;  // -8
 };
 
 struct go_http2_symaddrs_t {

@@ -371,7 +371,7 @@ px.display(df[['time_', 'service', 'cpu_cycles']], 'out')`
 	require.NoError(t, err)
 	require.Equal(t, statuspb.OK, otelResponse.Status.ErrCode)
 	require.Equal(t, `import px
-df = px.DataFrame(table='table1')
+df = px.DataFrame('table1', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 px.display(df[['time_', 'service', 'cpu_cycles']], 'out')
 

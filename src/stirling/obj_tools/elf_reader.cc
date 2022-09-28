@@ -167,7 +167,7 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
 
   elf_reader->binary_path_ = binary_path;
 
-  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ false)) {
+  if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
   }
 
@@ -184,7 +184,7 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
       std::string debug_symbols_path = elf_reader->debug_symbols_path_.string();
       LOG(INFO) << absl::Substitute("Found debug symbols file $0 for binary $1", debug_symbols_path,
                                     binary_path);
-      elf_reader->elf_reader_.load(debug_symbols_path, /* skip_segments */ true);
+      elf_reader->elf_reader_.load_header_and_sections(debug_symbols_path);
       return elf_reader;
     }
   }

@@ -143,8 +143,8 @@ static inline struct grpc_c_metadata_t* initiate_empty_grpc_metadata() {
   out->count = 0;
 #pragma unroll
   for (u32 i = 0; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA; i++) {
-    out->items[i].key[0] = 0;
-    out->items[i].value[0] = 0;
+    out->items[i].key_size = 0;
+    out->items[i].value_size = 0;
   }
 
   return out;
@@ -195,13 +195,8 @@ static inline struct grpc_c_header_event_data_t* initiate_empty_grpc_header_even
     // User mode did not initiate the percpu buffer.
     return NULL;
   }
-
-  volatile u8* data_bytes = (u8*)data;
-#pragma unroll
-  for (u16 i = 0; i < sizeof(*data); i++) {
-    data_bytes[i] = 0;
-  }
-
+  data->header.key_size = 0;
+  data->header.value_size = 0;
   return data;
 }
 
@@ -533,20 +528,23 @@ static inline u32 fire_metadata_events(const struct grpc_c_metadata_t* const met
   header_event->timestamp = timestamp;
   header_event->direction = direction;
 
-#pragma unroll
+  // #pragma unroll cannot be added here, otherwise the unrolled code will breach the stack size
+  // limit of 512 bytes. Python gRPC tracing (supported by this function) would be enabled only for
+  // 5.3 or newer kernels, which adds support for bounded loops in bpf verifier.
   for (uint32_t i = 0; i < MAXIMUM_AMOUNT_OF_ITEMS_IN_METADATA; i++) {
     if (i >= metadata->count) {
       break;
     }
 
-#pragma unroll
-    for (u32 j = 0; j < MAXIMUM_LENGTH_OF_KEY_IN_METADATA; j++) {
-      header_event->header.key[j] = metadata->items[i].key[j];
-    }
-#pragma unroll
-    for (u32 j = 0; j < MAXIMUM_LENGTH_OF_VALUE_IN_METADATA; j++) {
-      header_event->header.value[j] = metadata->items[i].value[j];
-    }
+    header_event->header.key_size = metadata->items[i].key_size;
+    uint32_t key_size =
+        min_uint32_t(header_event->header.key_size, MAXIMUM_LENGTH_OF_KEY_IN_METADATA);
+    bpf_probe_read(header_event->header.key, key_size, metadata->items[i].key);
+
+    header_event->header.value_size = metadata->items[i].value_size;
+    uint32_t value_size =
+        min_uint32_t(header_event->header.value_size, MAXIMUM_LENGTH_OF_VALUE_IN_METADATA);
+    bpf_probe_read(header_event->header.value, value_size, metadata->items[i].value);
 
     // Submit the current event.
     grpc_c_header_events.perf_submit(ctx, header_event, sizeof(*header_event));
@@ -734,7 +732,7 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
   void* grpc_mdelem_data_with_storage_bits = NULL;
   grpc_mdelem_data* mdelem_data = NULL;
   u32 current_length = 0;
-  u32 to_copy = 0;
+  u32 bytes_to_copy = 0;
   void* current_bytes = NULL;
 
   if (NULL == mdelem_list) {
@@ -775,16 +773,16 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
       return -1;
     }
 
-    to_copy = current_length;
-    if (to_copy > MAXIMUM_LENGTH_OF_KEY_IN_METADATA) {
-      to_copy = MAXIMUM_LENGTH_OF_KEY_IN_METADATA;
+    bytes_to_copy = current_length;
+    if (bytes_to_copy > MAXIMUM_LENGTH_OF_KEY_IN_METADATA) {
+      bytes_to_copy = MAXIMUM_LENGTH_OF_KEY_IN_METADATA;
     }
-    if (0 != bpf_probe_read(metadata->items[i].key, to_copy, current_bytes)) {
+    if (0 != bpf_probe_read(metadata->items[i].key, bytes_to_copy, current_bytes)) {
       return -1;
     }
 
-    // to_copy was already validated against the target size, so verifier is happy
-    metadata->items[i].key[to_copy] = '\0';
+    // bytes_to_copy was already validated against the target size, so verifier is happy
+    metadata->items[i].key_size = bytes_to_copy;
 
     // Get the value.
     if (0 != get_data_ptr_from_slice((grpc_slice*)(mdelem_data + GRPC_SLICE_SIZE), &current_length,
@@ -795,16 +793,16 @@ static inline int fill_metadata_from_mdelem_list(const grpc_mdelem_list* const m
       return -1;
     }
 
-    to_copy = current_length;
-    if (to_copy > MAXIMUM_LENGTH_OF_VALUE_IN_METADATA) {
-      to_copy = MAXIMUM_LENGTH_OF_VALUE_IN_METADATA;
+    bytes_to_copy = current_length;
+    if (bytes_to_copy > MAXIMUM_LENGTH_OF_VALUE_IN_METADATA) {
+      bytes_to_copy = MAXIMUM_LENGTH_OF_VALUE_IN_METADATA;
     }
-    if (0 != bpf_probe_read(metadata->items[i].value, to_copy, current_bytes)) {
+    if (0 != bpf_probe_read(metadata->items[i].value, bytes_to_copy, current_bytes)) {
       return -1;
     }
 
-    // to_copy was already validated against the target size, so verifier is happy
-    metadata->items[i].value[to_copy] = '\0';
+    // bytes_to_copy was already validated against the target size, so verifier is happy
+    metadata->items[i].value_size = bytes_to_copy;
 
     // Go forward in the linked list of mdelems.
     if (0 != BPF_PROBE_READ_VAR(current_linked_mdelem, (void*)(current_linked_mdelem + 0x8))) {

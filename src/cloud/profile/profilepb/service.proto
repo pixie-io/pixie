@@ -65,17 +65,18 @@ service OrgService {
 // UserInfo has information about a single end user in our system.
 message UserInfo {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The ID of the organization that they belong to.
-  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
   string first_name = 4;
   string last_name = 5;
   string email = 6;
   string profile_picture = 7;
   bool is_approved = 8;
   string identity_provider = 9;
-  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
-  string auth_provider_id = 10 [(gogoproto.customname) = "AuthProviderID"];
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding
+  // user.
+  string auth_provider_id = 10 [ (gogoproto.customname) = "AuthProviderID" ];
 
   reserved 3;
 }
@@ -85,14 +86,15 @@ message GetUserByEmailRequest {
 }
 
 message GetUserByAuthProviderIDRequest {
-  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
-  string auth_provider_id = 1 [(gogoproto.customname) = "AuthProviderID"];
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding
+  // user.
+  string auth_provider_id = 1 [ (gogoproto.customname) = "AuthProviderID" ];
 }
 
 // OrgInfo contains information about a company in our system.
 message OrgInfo {
   // The ID of the organization.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The name of the organization (this is currently the same as the domain_name below and is the
   // last part of the email).
   string org_name = 2;
@@ -105,13 +107,14 @@ message OrgInfo {
 
 message CreateUserRequest {
   // Optional, the org_id (if any) that this user should belong to.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
   string first_name = 3;
   string last_name = 4;
   string email = 5;
   string identity_provider = 6;
-  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
-  string auth_provider_id = 7 [(gogoproto.customname) = "AuthProviderID"];
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding
+  // user.
+  string auth_provider_id = 7 [ (gogoproto.customname) = "AuthProviderID" ];
 
   reserved 2;
 }
@@ -126,8 +129,9 @@ message CreateOrgAndUserRequest {
     string last_name = 3;
     string email = 4;
     string identity_provider = 5;
-    // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
-    string auth_provider_id = 6 [(gogoproto.customname) = "AuthProviderID"];
+    // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding
+    // user.
+    string auth_provider_id = 6 [ (gogoproto.customname) = "AuthProviderID" ];
 
     reserved 1;
   }
@@ -136,8 +140,8 @@ message CreateOrgAndUserRequest {
 }
 
 message CreateOrgAndUserResponse {
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-  px.uuidpb.UUID user_id = 2 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
+  px.uuidpb.UUID user_id = 2 [ (gogoproto.customname) = "UserID" ];
 }
 
 message CreateOrgRequest {
@@ -161,10 +165,11 @@ message GetOrgsResponse {
 
 message UpdateUserRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.StringValue display_picture = 3;
   google.protobuf.BoolValue is_approved = 4;
-  px.uuidpb.UUID org_id = 5 [(gogoproto.customname) = "OrgID"];;
+  px.uuidpb.UUID org_id = 5 [ (gogoproto.customname) = "OrgID" ];
+  ;
   // This used to be `profile_picture` which has been replaced with `display_picture`
   // which correctly uses google's StringValues.
   reserved 2;
@@ -172,7 +177,7 @@ message UpdateUserRequest {
 
 message UpdateOrgRequest {
   // The ID of the org.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // Whether to enable/disable the requirement for admins to approve new users.
   google.protobuf.BoolValue enable_approvals = 2;
   google.protobuf.StringValue domain_name = 3;
@@ -181,37 +186,37 @@ message UpdateOrgRequest {
 // A request to get the user settings for a particular user.
 message GetUserSettingsRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  reserved 2; // DEPRECATED
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  reserved 2;  // DEPRECATED
 }
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
   // Settings for users key-value.
-  reserved 1; // DEPRECATED
-  reserved 2; // DEPRECATED
+  reserved 1;  // DEPRECATED
+  reserved 2;  // DEPRECATED
   bool analytics_optout = 3;
 }
 
 // A request to update the user settings for a particular user.
 message UpdateUserSettingsRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  reserved 2; // DEPRECATED
-  reserved 3; // DEPRECATED
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  reserved 2;  // DEPRECATED
+  reserved 3;  // DEPRECATED
   google.protobuf.BoolValue analytics_optout = 4;
 }
 
 // UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.
 message UpdateUserSettingsResponse {
   // Whether the update was successful.
-  bool ok = 1 [(gogoproto.customname) = "OK"];
+  bool ok = 1 [ (gogoproto.customname) = "OK" ];
 }
 
 // A request to get user attributes for the given user.
 message GetUserAttributesRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // The response for a GetUserAttributes call.
@@ -222,7 +227,7 @@ message GetUserAttributesResponse {
 // A request to set user attributes for the given user.
 message SetUserAttributesRequest {
   // The ID of the user.
-  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   google.protobuf.BoolValue tour_seen = 2;
 }
 
@@ -233,7 +238,7 @@ message SetUserAttributesResponse {}
 // verified in the augmented token.
 message GetUsersInOrgRequest {
   // The org to get the users of.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // The response to a GetUsersInOrgRequest.
@@ -245,16 +250,16 @@ message GetUsersInOrgResponse {
 // IDEConfig is used to configure an IDE with Pixie.
 message IDEConfig {
   // The name of the IDE. For example: "github", "sourcemap".
-  string ide_name = 1 [(gogoproto.customname) = "IDEName"];
-  // A mustache.js template path for opening up a page in the IDE, given the symbol, function path, and function.
-  // For example: "subl://{{.Path}}/{{.Symbol}}".
+  string ide_name = 1 [ (gogoproto.customname) = "IDEName" ];
+  // A mustache.js template path for opening up a page in the IDE, given the symbol, function path,
+  // and function. For example: "subl://{{.Path}}/{{.Symbol}}".
   string path = 2;
 }
 
 // AddOrgIDEConfigRequest is a request to add an IDE config for the given org.
 message AddOrgIDEConfigRequest {
   // The org which the IDE config should be added to.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
   // The config that should be added to the org.
   IDEConfig config = 2;
 }
@@ -268,9 +273,9 @@ message AddOrgIDEConfigResponse {
 // DeleteOrgIDEConfigRequest is a request to delete an IDE config from an org.
 message DeleteOrgIDEConfigRequest {
   // The org which the IDE config should be removed from.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
   // The name of the IDE config to be deleted.
-  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+  string ide_name = 2 [ (gogoproto.customname) = "IDEName" ];
 }
 
 // DeleteOrgIDEConfigResponse is the response to deleting an IDE config from an org.
@@ -279,9 +284,10 @@ message DeleteOrgIDEConfigResponse {}
 // GetOrgIDEConfigsRequest is a request to get all IDE configs for an org.
 message GetOrgIDEConfigsRequest {
   // The org to get the IDE configs for.
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-  // Optional, the name of the IDE to fetch configs for. If not specified, fetches all configs for the org.
-  string ide_name = 2 [(gogoproto.customname) = "IDEName"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
+  // Optional, the name of the IDE to fetch configs for. If not specified, fetches all configs for
+  // the org.
+  string ide_name = 2 [ (gogoproto.customname) = "IDEName" ];
 }
 
 // GetOrgIDEConfigsResponse is the response to getting all IDE configs for an org.
@@ -291,7 +297,7 @@ message GetOrgIDEConfigsResponse {
 }
 
 message CreateInviteTokenRequest {
-  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 message InviteToken {
@@ -302,5 +308,5 @@ message VerifyInviteTokenResponse {
   // Tells you if the invite is valid or not.
   bool valid = 1;
   // If valid, the org that this invite belongs to.
-  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
 }

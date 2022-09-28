@@ -108,9 +108,6 @@ func (s *stanStreamer) Publish(subject string, data []byte) error {
 	return s.sc.Publish(subject, data)
 }
 
-// emptyQueueTimeout is the time we wait before we consider a queue to be empty.
-const emptyQueueTimeout = 200 * time.Millisecond
-
 func (s *stanStreamer) PeekLatestMessage(subject string) (Msg, error) {
 	dataCh := make(chan *stan.Msg)
 	sub, err := s.sc.Subscribe(subject, func(m *stan.Msg) {

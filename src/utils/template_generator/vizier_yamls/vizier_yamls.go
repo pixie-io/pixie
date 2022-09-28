@@ -362,14 +362,14 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   fmt.Sprintf(".%s.svc", nsTmpl),
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-psp-binding"),
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-binding"),
 			Patch:           `{ "subjects": [{ "name": "updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-binding"),
-			Patch:           `{ "subjects": [{ "name": "updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-cluster-binding"),
+			Patch:           `{ "subjects": [{ "name": "updater-service-account", "namespace": "__PXqgq_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
 		},
@@ -380,7 +380,19 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   nsTmpl,
 		},
 		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-binding"),
+			Patch:           `{ "subjects": [{ "name": "cloud-conn-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-cluster-binding"),
+			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-binding"),
 			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,

@@ -162,7 +162,7 @@ message Column {
 // RowBatchData contains the data for a particular row batch from the specified table.
 message RowBatchData {
   // The ID of the table which the row batch belongs to.
-  string table_id = 5 [(gogoproto.customname) = "TableID"];
+  string table_id = 5 [ (gogoproto.customname) = "TableID" ];
   // The columns in this row-batch.
   repeated Column cols = 1;
   // The number of rows in this batch.
@@ -258,7 +258,7 @@ message ExecuteScriptRequest {
   // query_str is the string representation of the query to run.
   string query_str = 1;
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 3 [(gogoproto.customname) = "ClusterID"];
+  string cluster_id = 3 [ (gogoproto.customname) = "ClusterID" ];
   // FuncToExecute specifies the name and arguments of a function to execute.
   message FuncToExecute {
     // Name of function to execute. Can be of the form 'func_name' or 'module_name.func_name'.
@@ -316,7 +316,7 @@ message ExecuteScriptRequest {
 
   // If query_id is passed in then this execute request is treated as
   // a resume request for an already existing query.
-  string query_id = 7 [(gogoproto.customname) = "QueryID"];
+  string query_id = 7 [ (gogoproto.customname) = "QueryID" ];
   reserved 2;
   // Configs specifies extra configuration to be given to the compiler.
   Configs configs = 9;
@@ -330,11 +330,11 @@ message Configs {
   // OTelEndpointConfig contains information about which OTelEndpoint + headers should be attached
   // to all OTel export calls in the script.
   message OTelEndpointConfig {
-    string url = 1 [(gogoproto.customname) = "URL"];
+    string url = 1 [ (gogoproto.customname) = "URL" ];
     map<string, string> headers = 2;
     bool insecure = 3;
   }
-  OTelEndpointConfig otel_endpoint_config = 1 [(gogoproto.customname) = "OTelEndpointConfig"];
+  OTelEndpointConfig otel_endpoint_config = 1 [ (gogoproto.customname) = "OTelEndpointConfig" ];
   message PluginConfig {
     // The start_time of the script in nanoseconds.
     int64 start_time_ns = 1;
@@ -372,7 +372,7 @@ message QueryMetadata {
   string name = 2;
   // The UUID of the table. RowBatchData for this particular table will use
   // the same ID.
-  string id = 3 [(gogoproto.customname) = "ID"];
+  string id = 3 [ (gogoproto.customname) = "ID" ];
 }
 
 // Data message containing either a row batch or execution stats.
@@ -392,7 +392,7 @@ message ExecuteScriptResponse {
   // error, execution error, timeout, etc.
   Status status = 1;
   // The id for the query. UUID encoded as string.
-  string query_id = 2 [(gogoproto.customname) = "QueryID"];
+  string query_id = 2 [ (gogoproto.customname) = "QueryID" ];
   oneof result {
     QueryData data = 3;
     QueryMetadata meta_data = 4;
@@ -405,7 +405,7 @@ message ExecuteScriptResponse {
 message MutationInfo {
   message MutationState {
     // ID of resource created/updated by the mutation.
-    string id = 1 [(gogoproto.customname) = "ID"];
+    string id = 1 [ (gogoproto.customname) = "ID" ];
     // State of resource created/updated by the mutation.
     LifeCycleState state = 2;
     // The name of the resource created/updated by the mutation.
@@ -421,7 +421,7 @@ message MutationInfo {
 // Request for the HealthCheck call.
 message HealthCheckRequest {
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
 }
 
 // Response for the HealthCheck call.

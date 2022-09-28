@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <filesystem>
 #include <thread>
 
@@ -29,8 +30,11 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/greeter_server.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/greet.grpc.pb.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
+#include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"
 #include "src/stirling/testing/common.h"
+#include "src/stirling/utils/linux_headers.h"
 
 namespace px {
 namespace stirling {
@@ -40,6 +44,14 @@ using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
 using ::testing::AnyOf;
 using ::testing::HasSubstr;
+using ::testing::StrEq;
+
+StatusOr<md::UPID> ToUPID(uint32_t pid) {
+  std::filesystem::path proc_pid_path =
+      system::Config::GetInstance().proc_path() / std::to_string(pid);
+  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
+  return md::UPID{/* asid */ 0, pid, pid_start_time};
+}
 
 class GRPCServer {
  public:
@@ -147,10 +159,7 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   const std::string scheme_text = params.use_https ? R"(":scheme":"https")" : R"(":scheme":"http")";
 
   md::UPID upid(rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
-  std::filesystem::path proc_pid_path =
-      system::Config::GetInstance().proc_path() / std::to_string(server_.pid());
-  ASSERT_OK_AND_ASSIGN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
-  md::UPID expected_upid(/* asid */ 0, server_.pid(), pid_start_time);
+  ASSERT_OK_AND_ASSIGN(md::UPID expected_upid, ToUPID(server_.pid()));
   EXPECT_EQ(upid, expected_upid);
 
   EXPECT_THAT(
@@ -182,6 +191,80 @@ INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
                              TestParams{"1_17", false, true}, TestParams{"1_17", false, false},
                              TestParams{"1_18", false, true}, TestParams{"1_18", true, false},
                              TestParams{"1_19", false, false}, TestParams{"1_19", true, true}));
+
+class PyGRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
+ protected:
+  PyGRPCTraceTest() {
+    // This takes effect before initializing socket tracer, so Python gRPC is actually enabled.
+    FLAGS_stirling_enable_grpc_c_tracing = true;
+
+    // This enables uprobe attachment after stirling has started running.
+    FLAGS_stirling_rescan_for_dlopen = true;
+  }
+};
+
+// Test that socket tracker can trace Python gRPC server's message.
+TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
+  ASSERT_OK_AND_ASSIGN(const utils::KernelVersion kernel_version, utils::GetKernelVersion());
+  const utils::KernelVersion kKernelVersion5_3 = {5, 3, 0};
+  if (utils::CompareKernelVersions(kernel_version, kKernelVersion5_3) ==
+      utils::KernelVersionOrder::kOlder) {
+    LOG(WARNING) << absl::Substitute(
+        "Skipping because host kernel version $0 is older than $1, "
+        "old kernel versions do not support bounded loops, which is required by grpc_c_trace.c",
+        kernel_version.ToString(), kKernelVersion5_3.ToString());
+    return;
+  }
+
+  StartTransferDataThread();
+
+  testing::PyGRPCHelloWorld client;
+  testing::PyGRPCHelloWorld server;
+
+  // First start the server so the process can be detected by socket tracer.
+  PL_CHECK_OK(server.Run(std::chrono::seconds{60}, /*options*/ {},
+                         /*args*/ {"python", "helloworld/greeter_server.py"}));
+  PL_CHECK_OK(
+      client.Run(std::chrono::seconds{60},
+                 /*options*/ {absl::Substitute("--network=container:$0", server.container_name())},
+                 /*args*/ {"python", "helloworld/greeter_client.py"}));
+  // The client sends only 1 request and then exits. So we can wait for it to finish.
+  client.Wait();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+
+  const std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server.process_pid());
+  ASSERT_EQ(target_record_indices.size(), 1);
+  const size_t idx = target_record_indices.front();
+
+  md::UPID upid(rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
+  ASSERT_OK_AND_ASSIGN(md::UPID expected_upid, ToUPID(server.process_pid()));
+  EXPECT_EQ(upid, expected_upid);
+
+  EXPECT_THAT(
+      rb[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx).string(),
+      AllOf(HasSubstr(R"(":authority":"localhost:50051")"), HasSubstr(R"(":method":"POST")"),
+            HasSubstr(R"(":scheme":"http")"), HasSubstr(R"("content-type":"application/grpc")"),
+            HasSubstr(R"("te":"trailers")")));
+  EXPECT_THAT(rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx).string(), HasSubstr(R"(1: "you")"));
+  EXPECT_THAT(rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx).string(),
+              HasSubstr(R"(1: "Hello, you!")"));
+
+  EXPECT_THAT(
+      std::string(rb[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
+      AllOf(HasSubstr(R"(":status":"200")"), HasSubstr(R"("content-type":"application/grpc")"),
+            HasSubstr(R"("grpc-message":"")"), HasSubstr(R"("grpc-status":"0"})")));
+  EXPECT_THAT(std::string(rb[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
+              AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
+  EXPECT_EQ(2, rb[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_EQ(0, rb[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
+            rb[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
+}
 
 }  // namespace stirling
 }  // namespace px

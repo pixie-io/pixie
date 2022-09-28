@@ -67,7 +67,7 @@ message OperatorExecutionStats {
 }
 
 message AgentExecutionStats {
-  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
   repeated OperatorExecutionStats operator_execution_stats = 2;
   // The total execution time in nanoseconds for this agent.
   int64 execution_time_ns = 3;

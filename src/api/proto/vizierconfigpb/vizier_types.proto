@@ -27,95 +27,102 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 // Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go.
 // VizierSpec defines the desired state of Vizier
 message VizierSpec {
-    reserved 11;
-    // Version is the desired version of the Vizier instance.
-    string version = 1;
-    // DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
-    // specific user/org.
-    string deploy_key = 2;
-    // DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
-    bool disable_auto_update = 3;
-    // UseEtcdOperator specifies whether the metadata service should use etcd for storage.
-    bool use_etcd_operator = 4;
-    // ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
-    // deployed to. If not specified, a random name will be generated.
-    string cluster_name = 5;
-    // CloudAddr is the address of the cloud instance that the Vizier should be pointing to.
-    string cloud_addr = 6;
-    // DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no ingress to help
-    // redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
-    // running on, for example: "plc-dev".
-    string dev_cloud_namespace = 7;
-    // PemMemoryLimit is a memory limit applied specifically to PEM pods.
-    string pem_memory_limit = 8;
-    // PemMemoryRequest is a memory request applied specifically to PEM pods.
-    string pem_memory_request = 17;
-    // Pod defines the policy for creating Vizier pods.
-    PodPolicyReq Pod_Policy = 9;
-    // Patches defines patches that should be applied to Vizier resources.
-    // The key of the patch should be the name of the resource that is patched. The value of the patch is the patch,
-    // encoded as a string which follow the "strategic merge patch" rules for K8s.
-    map<string, string> patches = 10;
-    // ClockConverter specifies which routine should be used to convert timestamps to a synced reference time.
-    string clock_converter = 12;
-    // DataAccess defines the level of data that may be accesssed when executing a script on the cluster. If none specified,
-    // assumes full data access.
-    string data_access = 13;
-    // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
-    DataCollectorParams data_collector_params = 14;
-    // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
-    LeadershipElectionParams leadership_election_params = 15;
-    // CustomDeployKeySecret allows the user to specify their deploy key in a custom secret.
-    string custom_deploy_key_secret = 16;
+  reserved 11;
+  // Version is the desired version of the Vizier instance.
+  string version = 1;
+  // DeployKey is the deploy key associated with the Vizier instance. This is used to link the
+  // Vizier to a specific user/org.
+  string deploy_key = 2;
+  // DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
+  bool disable_auto_update = 3;
+  // UseEtcdOperator specifies whether the metadata service should use etcd for storage.
+  bool use_etcd_operator = 4;
+  // ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
+  // deployed to. If not specified, a random name will be generated.
+  string cluster_name = 5;
+  // CloudAddr is the address of the cloud instance that the Vizier should be pointing to.
+  string cloud_addr = 6;
+  // DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no
+  // ingress to help redirect traffic to the correct service. The DevCloudNamespace is the namespace
+  // that the dev Pixie cloud is running on, for example: "plc-dev".
+  string dev_cloud_namespace = 7;
+  // PemMemoryLimit is a memory limit applied specifically to PEM pods.
+  string pem_memory_limit = 8;
+  // PemMemoryRequest is a memory request applied specifically to PEM pods.
+  string pem_memory_request = 17;
+  // Pod defines the policy for creating Vizier pods.
+  PodPolicyReq Pod_Policy = 9;
+  // Patches defines patches that should be applied to Vizier resources.
+  // The key of the patch should be the name of the resource that is patched. The value of the patch
+  // is the patch, encoded as a string which follow the "strategic merge patch" rules for K8s.
+  map<string, string> patches = 10;
+  // ClockConverter specifies which routine should be used to convert timestamps to a synced
+  // reference time.
+  string clock_converter = 12;
+  // DataAccess defines the level of data that may be accesssed when executing a script on the
+  // cluster. If none specified, assumes full data access.
+  string data_access = 13;
+  // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
+  DataCollectorParams data_collector_params = 14;
+  // LeadershipElectionParams specifies configurable values for the K8s leaderships elections which
+  // Vizier uses manage pod leadership.
+  LeadershipElectionParams leadership_election_params = 15;
+  // CustomDeployKeySecret allows the user to specify their deploy key in a custom secret.
+  string custom_deploy_key_secret = 16;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.
 message PodPolicyReq {
-    // Labels specifies the labels to attach to pods the operator creates.
-    map<string, string> labels = 1;
-    // Annotations specifies the annotations to attach to pods the operator creates.
-    map<string, string> annotations = 2;
-    // Resources is the resource requirements for a container.
-    // This field cannot be updated once the cluster is created.
-    ResourceReqs resources = 3;
-    // NodeSelector is a selector which must be true for the pod to fit on a node.
-    // This field cannot be updated once the cluster is created.
-    map<string, string> nodeSelector = 4;
+  // Labels specifies the labels to attach to pods the operator creates.
+  map<string, string> labels = 1;
+  // Annotations specifies the annotations to attach to pods the operator creates.
+  map<string, string> annotations = 2;
+  // Resources is the resource requirements for a container.
+  // This field cannot be updated once the cluster is created.
+  ResourceReqs resources = 3;
+  // NodeSelector is a selector which must be true for the pod to fit on a node.
+  // This field cannot be updated once the cluster is created.
+  map<string, string> nodeSelector = 4;
 }
 
-// ResourceReqs is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceRequirements
+// ResourceReqs is copied from the k8s api:
+// https://pkg.go.dev/k8s.io/api/core/v1#ResourceRequirements
 message ResourceReqs {
-    ResourceList limits = 1;
+  ResourceList limits = 1;
 
-    ResourceList requests = 2;
+  ResourceList requests = 2;
 }
 
 // ResourceList is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceList
 message ResourceList {
-    map<string, ResourceQuantity> resource_list = 1;
+  map<string, ResourceQuantity> resource_list = 1;
 }
 
 message ResourceQuantity {
-    string value = 1;
+  string value = 1;
 }
 
 // DataCollectorParams specifies configurable values for the data collectors running in the PEMs.
 message DataCollectorParams {
-    // DatastreamBufferSize is the maximum size of a data stream buffer retained between cycles.
-    // Default size is 1 Mbyte. For high-throughput applications, try increasing this number if experiencing data loss.
-    uint32 datastream_buffer_size = 1;
-    // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before processing.
-    uint32 datastream_buffer_spike_size = 2;
-    // Formerly reserved for TableStoreTableSizeLimit.
-    reserved 3;
-    // CustomPEMFlags specifies custom flags that should be passed to the PEM via environment variables.
-    map<string, string> custom_pem_flags = 4 [(gogoproto.customname) = "CustomPEMFlags"];
+  // DatastreamBufferSize is the maximum size of a data stream buffer retained between cycles.
+  // Default size is 1 Mbyte. For high-throughput applications, try increasing this number if
+  // experiencing data loss.
+  uint32 datastream_buffer_size = 1;
+  // DatastreamBufferSpikeSize is the maximum temporary size of a data stream buffer before
+  // processing.
+  uint32 datastream_buffer_spike_size = 2;
+  // Formerly reserved for TableStoreTableSizeLimit.
+  reserved 3;
+  // CustomPEMFlags specifies custom flags that should be passed to the PEM via environment
+  // variables.
+  map<string, string> custom_pem_flags = 4 [ (gogoproto.customname) = "CustomPEMFlags" ];
 }
 
-// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
+// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which
+// Vizier uses manage pod leadership.
 message LeadershipElectionParams {
-    // ElectionPeriodMs defines how frequently Vizier attempts to run a K8s leader election, in milliseconds. The period
-    // also determines how long Vizier waits for a leader election response back from the K8s API. If the K8s API is
-    // slow to respond, consider increasing this number.
-    int64 election_period_ms = 1;
+  // ElectionPeriodMs defines how frequently Vizier attempts to run a K8s leader election, in
+  // milliseconds. The period also determines how long Vizier waits for a leader election response
+  // back from the K8s API. If the K8s API is slow to respond, consider increasing this number.
+  int64 election_period_ms = 1;
 }

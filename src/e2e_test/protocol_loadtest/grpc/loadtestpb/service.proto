@@ -31,7 +31,8 @@ service LoadTester {
   // Tests a server streaming GRPC call.
   rpc ServerStreaming(ServerStreamingRequest) returns (stream ServerStreamingReply);
   // Tests a bidirectional streaming GRPC call. Each client message gets one reply from the server.
-  rpc BidirectionalStreaming(stream BidirectionalStreamingRequest) returns (stream BidirectionalStreamingReply);
+  rpc BidirectionalStreaming(stream BidirectionalStreamingRequest)
+      returns (stream BidirectionalStreamingReply);
 }
 
 message UnaryRequest {

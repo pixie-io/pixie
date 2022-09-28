@@ -199,7 +199,7 @@ StatusOr<KernelVersion> GetLinuxVersionFromNoteSection() {
   return error::NotFound("Could not extract kernel version from vDSO .note section.");
 }
 
-StatusOr<KernelVersion> GetKernelVersion(std::vector<KernelVersionSource> sources) {
+StatusOr<KernelVersion> FindKernelVersion(std::vector<KernelVersionSource> sources) {
   for (const auto& source : sources) {
     switch (source) {
       // Use vDSO .note section to find Linux kernel version.
@@ -250,6 +250,20 @@ StatusOr<KernelVersion> GetKernelVersion(std::vector<KernelVersionSource> source
   }
 
   return error::Internal("Could not determine kernel version.");
+}
+
+StatusOr<KernelVersion> GetKernelVersion(std::vector<KernelVersionSource> sources) {
+  static std::optional<KernelVersion> g_kernel_version;
+
+  if (g_kernel_version.has_value()) {
+    return g_kernel_version.value();
+  }
+
+  auto version_or = FindKernelVersion(sources);
+  if (version_or.ok()) {
+    g_kernel_version = version_or.ValueOrDie();
+  }
+  return version_or;
 }
 
 KernelVersion GetCachedKernelVersion() {
@@ -523,6 +537,28 @@ uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b) {
 
   return (abs(a.minor_rev - b.minor_rev)) + (abs(a.major_rev - b.major_rev) << 9) +
          (abs(a.version - b.version) << 18);
+}
+
+KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b) {
+  if (a.version < b.version) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.version > b.version) {
+    return KernelVersionOrder::kNewer;
+  }
+  if (a.major_rev < b.major_rev) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.major_rev > b.major_rev) {
+    return KernelVersionOrder::kNewer;
+  }
+  if (a.minor_rev < b.minor_rev) {
+    return KernelVersionOrder::kOlder;
+  }
+  if (a.minor_rev > b.minor_rev) {
+    return KernelVersionOrder::kNewer;
+  }
+  return KernelVersionOrder::kSame;
 }
 
 StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(

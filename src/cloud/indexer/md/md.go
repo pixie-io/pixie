@@ -34,6 +34,7 @@ import (
 )
 
 const (
+	maxActionsPerBatch = 256
 	// The period when we flush data to Elasticsearch.
 	defaultFlushInterval = time.Second * 10
 )
@@ -90,6 +91,23 @@ func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID, indexName str
 	return NewVizierIndexerWithBulkSettings(vizierID, orgID, k8sUID, indexName, st, es, defaultFlushInterval)
 }
 
+func (v *VizierIndexer) flush() {
+	v.bulkMu.Lock()
+	defer v.bulkMu.Unlock()
+
+	// Don't run if there's nothing to flush.
+	if v.bulk.NumberOfActions() == 0 {
+		return
+	}
+
+	_, err := v.bulk.Refresh("false").Do(context.Background())
+	if err != nil {
+		log.WithError(err).Error("Failed to flush bulk")
+		// Record the failure in prometheus.
+		elasticFailuresCollector.WithLabelValues(v.vizierID.String()).Add(1.0)
+	}
+}
+
 // FlushRoutine runs the routine that handles bulk API flushing.
 func (v *VizierIndexer) FlushRoutine() {
 	ticker := time.NewTicker(v.bulkFlushInterval)
@@ -99,20 +117,7 @@ func (v *VizierIndexer) FlushRoutine() {
 		case <-v.quitCh:
 			return
 		case <-ticker.C:
-			v.bulkMu.Lock()
-			// Don't run if there's nothing to flush.
-			if v.bulk.NumberOfActions() == 0 {
-				v.bulkMu.Unlock()
-				continue
-			}
-
-			_, err := v.bulk.Refresh("false").Do(context.Background())
-			v.bulkMu.Unlock()
-			if err != nil {
-				log.WithError(err).Error("Failed to flush bulk")
-				// Record the failure in prometheus.
-				elasticFailuresCollector.WithLabelValues(v.vizierID.String()).Add(1.0)
-			}
+			v.flush()
 		}
 	}
 }
@@ -353,6 +358,10 @@ func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) 
 	v.bulkMu.Lock()
 	v.bulk.Add(req)
 	v.bulkMu.Unlock()
+
+	if v.bulk.NumberOfActions() >= maxActionsPerBatch {
+		v.flush()
+	}
 
 	return nil
 }

@@ -2662,15 +2662,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inrupt/jose-legacy-modules@npm:^0.0.3-3.14.3":
-  version: 0.0.3-3.14.3
-  resolution: "@inrupt/jose-legacy-modules@npm:0.0.3-3.14.3"
-  dependencies:
-    jose: 3.14.3
-  checksum: 2fb98990a5df15bcc95893b9feb5a16af217c98333c01b4c6401f36332fbb1fdc1016a20f18a3e0dbca9cbde705ed54f6518b1d9b4bed219a350f3f0f9af6a92
-  languageName: node
-  linkType: hard
-
 "@istanbuljs/load-nyc-config@npm:^1.0.0":
   version: 1.1.0
   resolution: "@istanbuljs/load-nyc-config@npm:1.1.0"
@@ -3736,7 +3727,6 @@ __metadata:
     "@egjs/hammerjs": ^2.0.0
     "@emotion/react": ^11.5.0
     "@emotion/styled": ^11.3.0
-    "@inrupt/jose-legacy-modules": ^0.0.3-3.14.3
     "@mui/icons-material": ^5.1.0
     "@mui/lab": ^5.0.0-alpha.54
     "@mui/material": ^5.1.0
@@ -3806,6 +3796,7 @@ __metadata:
     jest: ^27.3.1
     jest-junit: ^13.0.0
     jest-raw-loader: ^1.0.1
+    jose: ^4.9.3
     keycharm: ^0.3.0
     launchdarkly-react-client-sdk: ^2.20.0
     license-checker: ^25.0.1
@@ -12334,10 +12325,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:3.14.3":
-  version: 3.14.3
-  resolution: "jose@npm:3.14.3"
-  checksum: 653262b24dfefbf5c8c9ac48283170420615811c877698ac2a134ab224342792af093ca4b630c653bd6c485c134481649af21ae33cf03a8c7bae699416893fdf
+"jose@npm:^4.9.3":
+  version: 4.9.3
+  resolution: "jose@npm:4.9.3"
+  checksum: 95865830768dcf82774d19e92dc854c5bc9dc5d9c9626a65a2974272e3aca5d2f56678611943f85802431d2d6d6f8bff9548b7cdb7578e6fe61529bd9c82e1d3
   languageName: node
   linkType: hard
 

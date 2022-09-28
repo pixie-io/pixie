@@ -50,9 +50,9 @@ message FuncToExecute {
   //   3. the value in arg_value doesn't parse to the expected type.
   repeated ArgValue arg_values = 2;
   // output_table_prefix is the prefix of the name of the table that is returned in the response.
-  // If the function returns a dataframe, then the table name will be `format("%s", output_table_prefix)`.
-  // If the function returns a list of dataframes (even if the list is of length 1), then the table names will be
-  // `format("%s[%d]", output_table_prefix, index)`.
+  // If the function returns a dataframe, then the table name will be `format("%s",
+  // output_table_prefix)`. If the function returns a list of dataframes (even if the list is of
+  // length 1), then the table names will be `format("%s[%d]", output_table_prefix, index)`.
   string output_table_prefix = 3;
 }
 
@@ -62,16 +62,16 @@ message Configs {
   // OTelEndpointConfig contains information about which OTelEndpoint + headers should be attached
   // to all OTel export calls in the script.
   message OTelEndpointConfig {
-    string url = 1 [(gogoproto.customname) = "URL"];
+    string url = 1 [ (gogoproto.customname) = "URL" ];
     map<string, string> headers = 2;
     bool insecure = 3;
   }
-  OTelEndpointConfig otel_endpoint_config = 1 [(gogoproto.customname) = "OTelEndpointConfig"];
+  OTelEndpointConfig otel_endpoint_config = 1 [ (gogoproto.customname) = "OTelEndpointConfig" ];
   message PluginConfig {
-      // The start_time of the script in nanoseconds.
-      int64 start_time_ns = 1;
-      // The end_time of the script in nanoseconds.
-      int64 end_time_ns = 2;
+    // The start_time of the script in nanoseconds.
+    int64 start_time_ns = 1;
+    // The end_time of the script in nanoseconds.
+    int64 end_time_ns = 2;
   }
   PluginConfig plugin_config = 2;
 }

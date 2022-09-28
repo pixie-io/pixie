@@ -182,8 +182,8 @@ message VariableType {
 message Map {
   string name = 1;
   // TODO(yzhao): Remove the following 2 lines and create PerfBuffer in physical.proto with them.
-  VariableType key_type = 2; // Exclusive to physical IR.
-  VariableType value_type = 3; // Exclusive to physical IR.
+  VariableType key_type = 2;    // Exclusive to physical IR.
+  VariableType value_type = 3;  // Exclusive to physical IR.
 }
 
 // Describes a condition to be checked.

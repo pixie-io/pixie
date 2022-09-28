@@ -235,6 +235,10 @@ spec:
                 description: Message is a human-readable message with details about
                   why the Vizier is in this condition.
                 type: string
+              operatorVersion:
+                description: OperatorVersion is the actual version of the Operator
+                  instance.
+                type: string
               reconciliationPhase:
                 description: ReconciliationPhase describes the state the Reconciler
                   is in for this Vizier. See the documentation above the ReconciliationPhase

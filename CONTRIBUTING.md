@@ -35,10 +35,6 @@ Before reporting a bug, we encourage you to search the existing Github issues to
 
 The project is still in its early stages, and we are a small team actively working on delivering our roadmap. For all changes, regardless of size, please create a Github issue that details the bug or feature being addressed before submitting a pull request. In the Github issue, contributors may discuss the viability of the solution, alternatives, and considerations.
 
-#### Contribution Roadmap
-
-As we are still an early-stage open source project, more changes to the contribution guidelines will follow in the coming months. We are actively working on opening our JIRA for issue tracking.
-
 #### Contribution Flow
 
 1. Steps to making a code contribution to Pixie will generally look like the following:

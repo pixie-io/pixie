@@ -164,5 +164,5 @@ message StructuredDocs {
   px.carnot.udfspb.Docs udf_docs = 4;
 
   // Docs for the OpenTelemetry exporter.
-  repeated OTelDoc otel_docs = 7 [(gogoproto.customname) = "OTelDocs"];
+  repeated OTelDoc otel_docs = 7 [ (gogoproto.customname) = "OTelDocs" ];
 }

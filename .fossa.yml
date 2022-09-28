@@ -12,10 +12,10 @@ analyze:
     type: bazel
     target: third_party/...
     path: .
-  - name: px.dev/pixie/private/experimental/stirling/proto_data_model/proto
+  - name: px.dev/pixie/experimental/stirling/proto_data_model/proto
     type: go
-    target: px.dev/pixie/private/experimental/stirling/proto_data_model/proto
-    path: private/experimental/stirling/proto_data_model/proto
+    target: px.dev/pixie/experimental/stirling/proto_data_model/proto
+    path: experimental/stirling/proto_data_model/proto
   - name: px.dev/pixie/src/api/go/pxapi
     type: go
     target: px.dev/pixie/src/api/go/pxapi

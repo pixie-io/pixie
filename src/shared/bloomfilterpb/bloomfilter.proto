@@ -31,6 +31,7 @@ option go_package = "bloomfilterpb";
 message XXHash64BloomFilter {
   // The bloom filter contents serialized as bytes.
   bytes data = 1;
-  // The number of hashes to apply to convert strings to their byte representation for this bloom filter.
+  // The number of hashes to apply to convert strings to their byte representation for this bloom
+  // filter.
   int32 num_hashes = 2;
 }

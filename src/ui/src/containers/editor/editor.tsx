@@ -30,11 +30,13 @@ import {
   ResizableDrawer,
   Spinner,
 } from 'app/components';
+import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { getKeyMap } from 'app/containers/live/shortcuts';
 import { EditorContext } from 'app/context/editor-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ScriptContext } from 'app/context/script-context';
+import { GQLPluginKind } from 'app/types/schema';
 import { WithChildren } from 'app/utils/react-boilerplate';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -177,12 +179,17 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
   const closeEditor = () => setEditorPanelOpen(false);
   const { script } = React.useContext(ScriptContext);
   const { pxlEditorText } = React.useContext(EditorContext);
+  const { plugins } = usePluginList(GQLPluginKind.PK_RETENTION);
 
   const [isRunningExportScript, setIsRunningExportScript] = React.useState(false);
   const generateOTelExportScriptMemo = React.useCallback(() => {
     setIsRunningExportScript(true);
     generateOTelExportScript(pxlEditorText).then(() => setIsRunningExportScript(false));
   }, [generateOTelExportScript, pxlEditorText]);
+
+  const hasValidPlugins = React.useMemo(() => (
+    plugins.some(p => p.supportsRetention && p.retentionEnabled)
+  ), [plugins]);
 
 
   /* eslint-disable react-memo/require-usememo */
@@ -200,20 +207,24 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
           </StyledTabs>
           {script?.id === SCRATCH_SCRIPT.id && (
             <>
-              <Tooltip title='Set this script to regularly export its data to a plugin'>
-                <Button
-                  variant='text'
-                  color='primary'
-                  size='small'
-                  disabled={isRunningExportScript}
-                  onClick={generateOTelExportScriptMemo}
-                  // The spinner is only necessary while we support clusters that
-                  // might not have generateOTelExportScript. After November 8th,
-                  // we should probably remove the spinner.
-                  startIcon={!isRunningExportScript ? <Upload /> : <Spinner />}
-                >
-                  Export to Plugin
-                </Button>
+              <Tooltip title={hasValidPlugins ?
+                'Set this script to regularly export its data to a plugin' :
+                'You must set-up a plugin in the Admin page before you can generate an export script'}>
+                <span>
+                  <Button
+                    variant='text'
+                    color='primary'
+                    size='small'
+                    disabled={!hasValidPlugins || isRunningExportScript}
+                    onClick={generateOTelExportScriptMemo}
+                    // The spinner is only necessary while we support clusters that
+                    // might not have generateOTelExportScript. After November 8th,
+                    // we should probably remove the spinner.
+                    startIcon={!isRunningExportScript ? <Upload /> : <Spinner />}
+                  >
+                    Export to Plugin
+                  </Button>
+                </span>
               </Tooltip>
               <Divider variant='middle' orientation='vertical' sx={{ ml: 1, mr: 1, borderColor: 'divider' }} />
             </>

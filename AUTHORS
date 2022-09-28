@@ -5,13 +5,6 @@
 #     Individual's name <submission email address>
 #     Individual's name <submission email address> [alias] <email2> [alias] <emailN>
 #
-# If you wish to keep your @pixielabs.ai (or @newrelic.com) address hidden,
-# please still list <@pixielabs.ai> (or @newrelic) (with no user name)
-# in the list of aliases.
-#
-# (Note: there is no point in hiding it if it is mentioned
-# in the git log already.)
-#
 # For more details about the format, see git-check-mailmap(1)
 #
 # Please keep the list sorted.

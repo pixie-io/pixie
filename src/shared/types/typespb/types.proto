@@ -34,6 +34,7 @@ enum DataType {
 }
 
 // The types of patterns for the different data elements.
+// clang-format off
 //|                | Current Value | Time Series | Histogram | Event log | Top K | Example                          |
 //|----------------|---------------|-------------|-----------|-----------|-------|----------------------------------|
 //| UNSPECIFIED    |               |             |           |           |       |                                  |
@@ -42,8 +43,10 @@ enum DataType {
 //| GENERAL_ENUM   | Y             | N           | Y         | Y         | Y?    | http_status, bpf_event           |
 //| GENERAL        | Y             | N           | N         | Y         | Y     | src_addr, src_port, pid          |
 //| STRUCTURED     | Y             | N           | N         | Y         | N     | http_body, http_headers          |
-// Counters and gauges generally only applies to numeric types. General_enum records states/properties with finite
-// locality. General includes other information/logs. Structured is everything can be parsed(JSON, HTML, SQL body etc.).
+// clang-format on
+// Counters and gauges generally only applies to numeric types. General_enum records
+// states/properties with finite locality. General includes other information/logs. Structured is
+// everything can be parsed(JSON, HTML, SQL body etc.).
 enum PatternType {
   UNSPECIFIED = 0;
   GENERAL = 100;

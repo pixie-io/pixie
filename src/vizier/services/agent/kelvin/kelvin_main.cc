@@ -116,6 +116,10 @@ int main(int argc, char** argv) {
   }
 
   std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
+  if (FLAGS_pod_ip[0] != '[' && FLAGS_pod_ip.rfind(':') != FLAGS_pod_ip.npos) {
+    // IPv6 literals must be enclosed in brackets.
+    addr = absl::Substitute("[$0]:$1", FLAGS_pod_ip, FLAGS_rpc_port);
+  }
 
   std::string mds_addr =
       absl::Substitute("$0.$1.svc:$2", FLAGS_mds_addr, FLAGS_namespace, FLAGS_mds_port);

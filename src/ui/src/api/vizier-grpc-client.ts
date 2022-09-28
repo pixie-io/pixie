@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { compactDecrypt } from '@inrupt/jose-legacy-modules';
 import { ClientReadableStream } from 'grpc-web';
+import { compactDecrypt } from 'jose';
 import * as pako from 'pako';
 import { Observable, of, from } from 'rxjs';
 import {

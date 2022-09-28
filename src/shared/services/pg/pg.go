@@ -20,6 +20,8 @@ package pg
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	// This is required to get the "pgx" driver.
@@ -48,7 +50,7 @@ func init() {
 func DefaultDBURI() string {
 	dbPort := viper.GetInt32("postgres_port")
 	dbHostname := viper.GetString("postgres_hostname")
-	dbName := viper.Get("postgres_db")
+	dbName := viper.GetString("postgres_db")
 	dbUsername := viper.GetString("postgres_username")
 	dbPassword := viper.GetString("postgres_password")
 
@@ -57,8 +59,18 @@ func DefaultDBURI() string {
 		sslMode = "disable"
 	}
 
-	dbURI := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", dbUsername, dbPassword, dbHostname, dbPort, dbName, sslMode)
-	return dbURI
+	v := url.Values{}
+	v.Set("sslmode", sslMode)
+
+	u := url.URL{
+		Scheme:   "postgres",
+		Host:     net.JoinHostPort(dbHostname, fmt.Sprintf("%d", dbPort)),
+		User:     url.UserPassword(dbUsername, dbPassword),
+		Path:     dbName,
+		RawQuery: v.Encode(),
+	}
+
+	return u.String()
 }
 
 // MustCreateDefaultPostgresDB creates a postgres DB instance.

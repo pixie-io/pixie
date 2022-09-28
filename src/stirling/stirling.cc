@@ -33,6 +33,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/common/perf/elapsed_timer.h"
+#include "src/stirling/utils/run_core_stats.h"
 #include "src/stirling/utils/system_info.h"
 
 #include "src/stirling/bpf_tools/probe_cleaner.h"
@@ -178,6 +179,8 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistryFromFlag() {
 }
 
 class StirlingImpl final : public Stirling {
+  using time_point = px::chrono::coarse_steady_clock::time_point;
+
  public:
   explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
 
@@ -235,7 +238,7 @@ class StirlingImpl final : public Stirling {
   void RunCore();
 
   // Computes the amount of time to sleep based on the next source connector that needs to wakeup.
-  std::chrono::milliseconds TimeUntilNextTick();
+  std::chrono::milliseconds TimeUntilNextTick(const time_point now);
 
   // Wait for Stirling to stop its main loop.
   void WaitForStop();
@@ -279,6 +282,10 @@ class StirlingImpl final : public Stirling {
 
   absl::flat_hash_map<sole::uuid, DynamicTraceInfo> trace_id_info_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  // RunCoreStats tracks how much work is accomplished in each run core iteration,
+  // and it also keeps a histogram of sleep durations.
+  RunCoreStats run_core_stats_;
 };
 
 StirlingImpl* g_stirling_ptr = nullptr;
@@ -720,11 +727,10 @@ void StirlingImpl::Run() {
   RunCore();
 }
 
-std::chrono::milliseconds StirlingImpl::TimeUntilNextTick()
+std::chrono::milliseconds StirlingImpl::TimeUntilNextTick(const time_point now)
     ABSL_SHARED_LOCKS_REQUIRED(info_class_mgrs_lock_) {
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
-  auto now = px::chrono::coarse_steady_clock::now();
 
   // Worst case, wake-up every so often.
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.
@@ -739,13 +745,6 @@ std::chrono::milliseconds StirlingImpl::TimeUntilNextTick()
 }
 
 namespace {
-
-void SleepForDuration(std::chrono::milliseconds sleep_duration) {
-  constexpr std::chrono::milliseconds kMinSleepDuration{1};
-  if (sleep_duration > kMinSleepDuration) {
-    std::this_thread::sleep_for(sleep_duration);
-  }
-}
 
 // Returns true if any of the input tables are beyond the threshold.
 bool DataExceedsThreshold(const std::vector<DataTable*>& data_tables) {
@@ -787,15 +786,34 @@ void StirlingImpl::RunCore() {
   // Indicates completion of initialization, and start of data collection.
   LOG(INFO) << "Stirling is running.";
 
-  while (run_enable_) {
-    auto sleep_duration = std::chrono::milliseconds::zero();
+  // Inside of the main loop below "while (run_enable_)", to minimize syscalls to clock_gettime(),
+  // we update the concept of "time now" only when a significant amount of work has been done --
+  // i.e. after calling TransferData() or PushData() -- or after sleep has been called.
+  // Each data source (e.g. socket tracer or perf profiler, etc...) has some underlying notion
+  // of periodicity for data collection and data transfer (and those periodicities are different).
+  // To avoid having the underlying data sources make syscalls to clock_gettime(), we inject
+  // the notion of "time now" into their methods (such as "Expired", i.e. the method that says
+  // a time period has expired and a call to TransferData() or PushData() is required).
+  auto now = px::chrono::coarse_steady_clock::now();
+  auto time_until_next_tick = std::chrono::milliseconds::zero();
+  constexpr auto kRunWindow = std::chrono::milliseconds{1};
 
-    // Update the context/state on each iteration.
-    // Note that if no changes are present, the same pointer will be returned back.
-    // TODO(oazizi): If context constructor does a lot of work (e.g. ListUPIDs()),
-    //               then there might be an inefficiency here, since we don't know if
-    //               mgr->SamplingRequired() will be true for any manager.
-    std::unique_ptr<ConnectorContext> ctx = GetContext();
+  // The ctx_freq_mgr controls the update period for the k8s context "ctx".
+  FrequencyManager ctx_freq_mgr;
+  ctx_freq_mgr.set_period(std::chrono::milliseconds{200});
+  std::unique_ptr<ConnectorContext> ctx = GetContext();
+
+  while (run_enable_) {
+    // To batch up work, i.e. to do more work per wakeup, we want to run our data
+    // transfer or push data if its desired run time is anywhere between
+    // time "now" and time "now + window".
+    const auto now_plus_run_window = now + kRunWindow;
+
+    if (ctx_freq_mgr.Expired(now_plus_run_window)) {
+      ctx = GetContext();
+      now = px::chrono::coarse_steady_clock::now();
+      ctx_freq_mgr.Reset(now);
+    }
 
     {
       // Acquire spin lock to go through one iteration of sampling and pushing data.
@@ -805,20 +823,47 @@ void StirlingImpl::RunCore() {
       // Run through every SourceConnector and InfoClassManager being managed.
       for (auto& source : sources_) {
         // Phase 1: Probe each source for its data.
-        if (source->sampling_freq_mgr().Expired()) {
+        if (source->sampling_freq_mgr().Expired(now_plus_run_window)) {
           source->TransferData(ctx.get());
+
+          // TransferData() is normally a significant amount of work: update "time now".
+          now = px::chrono::coarse_steady_clock::now();
+          source->sampling_freq_mgr().Reset(now);
+          run_core_stats_.IncrementTransferDataCount();
         }
         // Phase 2: Push Data upstream.
-        if (source->push_freq_mgr().Expired() || DataExceedsThreshold(source->data_tables())) {
+        if (source->push_freq_mgr().Expired(now_plus_run_window) ||
+            DataExceedsThreshold(source->data_tables())) {
           source->PushData(data_push_callback_);
+
+          // PushData() is normally a significant amount of work: update "time now".
+          now = px::chrono::coarse_steady_clock::now();
+          source->push_freq_mgr().Reset(now);
+          run_core_stats_.IncrementPushDataCount();
         }
       }
 
-      // Figure out how long to sleep.
-      sleep_duration = TimeUntilNextTick();
+      // Figure the time remaining until the next required data sample or push data.
+      time_until_next_tick = TimeUntilNextTick(now);
     }
 
-    SleepForDuration(sleep_duration);
+    // Sleep, only if time_until_next_tick exceeds the "run window," i.e. if that time
+    // is long enough that Stirling should go to sleep. Otherwise, don't sleep and loop back
+    // through the sources, with the expectation that one of the sources triggers a call to
+    // either TransferData() or to PushData().
+    if (time_until_next_tick >= kRunWindow) {
+      std::this_thread::sleep_for(time_until_next_tick);
+
+      // Update the histograms in run core stats *and* trigger a periodic printout of the same.
+      run_core_stats_.EndIter(time_until_next_tick);
+
+      // We just went to sleep: update time now.
+      now = px::chrono::coarse_steady_clock::now();
+    } else {
+      // Did not sleep, but we still update the histograms in run core stats
+      // *and* trigger a periodic printout of the same.
+      run_core_stats_.EndIter(std::chrono::milliseconds::zero());
+    }
   }
   running_ = false;
 }

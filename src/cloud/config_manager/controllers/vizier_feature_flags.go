@@ -40,7 +40,7 @@ var availableFeatureFlags = []*featureFlag{
 	{
 		FeatureFlagName: "java-profiler",
 		VizierFlagName:  "PL_PROFILER_JAVA_SYMBOLS",
-		DefaultValue:    false,
+		DefaultValue:    true,
 	},
 }
 

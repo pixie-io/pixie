@@ -54,6 +54,6 @@ message GetDownloadLinkRequest {
 message GetDownloadLinkResponse {
   string url = 1;
   // The sha256 of the artifact.
-  string sha256 = 2 [(gogoproto.customname) = "SHA256"];
+  string sha256 = 2 [ (gogoproto.customname) = "SHA256" ];
   google.protobuf.Timestamp valid_until = 3;
 }

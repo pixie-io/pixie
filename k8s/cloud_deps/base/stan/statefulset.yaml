@@ -178,8 +178,9 @@ spec:
           httpGet:
             path: /streaming/serverz
             port: 8222
-          initialDelaySeconds: 120
+          initialDelaySeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 30
       volumes:
       - name: config-volume
         configMap:

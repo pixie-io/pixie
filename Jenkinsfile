@@ -1104,19 +1104,45 @@ useCluster = { String clusterName ->
   sh "gcloud container clusters get-credentials ${clusterName} --project pl-pixies --zone us-west1-a"
 }
 
+deleteCluster = { String clusterName ->
+  // We use 'delete || true' so that failure does not cause the entire pipeline to fail or go unstable.
+  // In particular, deleteCluster is invoked when createCluster fails; this has two scenarios:
+  // 1. The cluster was created, but the gcloud command failed anyway.
+  // 2. The cluster was not created.
+  // ... For (1) above, we expect cluster deletion to succeed.
+  // ... For (2) above, we invoke deleteCluster (because it is hard to know we are in this scenario),
+  // ... and we expect the command to fail, but we don't want the entire build/perf-eval to stop.
+  // In general, if clusters leak through, they are eventually cleaned up by the perf eval cluster
+  // cleanup cron job.
+  sh "gcloud container --project pl-pixies clusters delete ${clusterName} --zone us-west1-a --quiet || true"
+}
+
 createCluster = { String clusterName ->
+  retryIdx = 0
   numRetries = 3
+
+  // We will uniquify the cluster name based on the retry count because there is some chance
+  // that gcloud will refuse to create a cluster (on retry) based on a name being in use.
+  // Here we create a local variable 'retryUniqueClusterName' that is distinct from 'clusterName'
+  // because 'clusterName' is curried into 'oneEval'. If we clobber 'clusterName' here,
+  // the currying becomes wrong and different evals will wrongly all pick up the same cluster name.
+  retryUniqueClusterName = null
+
   createClusterScript = "scripts/create_gke_cluster.sh"
   sh 'hostname'
   sh 'gcloud components update'
   sh 'gcloud --version'
   retry(numRetries) {
-    sh "${createClusterScript} -S -f -n 1 -c ${clusterName}"
+    if (retryIdx > 0) {
+      // Prevent leaking clusters from previous attempts.
+      deleteCluster(retryUniqueClusterName)
+    }
+    // Uniquify the cluster name based on the retryIdx because retry attempts
+    // may fail based on the pre-existing cluster name.
+    retryUniqueClusterName = clusterName  + '-' + String.format('%d', retryIdx)
+    sh "${createClusterScript} -S -f -n 1 -c ${retryUniqueClusterName}"
+    ++retryIdx
   }
-}
-
-deleteCluster = { String clusterName ->
-  sh "gcloud container --project pl-pixies clusters delete ${clusterName} --zone us-west1-a --quiet"
 }
 
 pxDeployForStirlingPerfEval = {
@@ -1136,9 +1162,9 @@ pxDeployForStirlingPerfEval = {
       sh 'curl -fsSL https://storage.googleapis.com/pixie-dev-public/cli/latest/cli_linux_amd64 -o /usr/local/bin/px'
       sh 'chmod +x /usr/local/bin/px'
       sh 'px auth login --use_api_key --api_key ${THE_PIXIE_CLI_API_KEY}'
-      sh 'px demo deploy px-kafka -y'
-      sh 'px demo deploy px-sock-shop -y'
-      sh 'px demo deploy px-online-boutique -y'
+      sh 'px demo deploy px-kafka -y -q'
+      sh 'px demo deploy px-sock-shop -y -q'
+      sh 'px demo deploy px-online-boutique -y -q'
       sh 'px deploy -y -q'
 
       // Ensure skaffold is configured with the dev. image registry.
@@ -1155,7 +1181,13 @@ pxDeployForStirlingPerfEval = {
 
 pxCollectPerfInfo = {
   withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
-    sh 'mkdir -p logs'
+    // The subdirectory 'logs' should have been created when un-stashing the repo info.
+    assert fileExists('logs')
+
+    // Show the cluster name (useful if results are strange and we suspect the wrong
+    // cluster was used for recording perf info).
+    sh 'kubectl config current-context'
+
     sh "px run pixielabs.ai/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
     sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
   }
@@ -1191,16 +1223,41 @@ insertRecordsToPerfDB = { int evalIdx ->
   }
 }
 
+def getCurrentClusterName(String clusterName) {
+  def currentClusterName = sh(
+    script: 'kubectl config current-context',
+    returnStdout: true,
+    returnStatus: false
+  ).trim()
+
+  // currentClusterName will look something like this:
+  // gke_pl-pixies_us-west1-a_stirling-perf-2022-08-24--0648-09-00-0
+  // However, fro a GKE perspective the name is stirling-perf-2022-08-24--0648-09-00-0.
+  def tokens = currentClusterName.split('_')
+  currentClusterName = tokens.last()
+  return currentClusterName
+}
+
 oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   int margin = 2
-  int clusterCreationMinutes = 10
+  int clusterCreationMinutes = 15
   int pixieDeployMinutes = 10
   int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
 
   return {
-    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes, {
-    container('pxbuild', {
-      dockerStep(dockerArgsForBPFTest, {
+    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes) {
+      container('pxbuild') {
+
+        // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
+        // In more detail, here, we start with a fresh fully up-to-date source tree. The "as built" repo
+        // state will often be different (e.g. a particular diff or local experiment).
+        // That state is only known inside of buildAndPushPemImagesForPerfEval. Because we need that
+        // information, buildAndPushPemImagesForPerfEval is responsible for stashing the info on GCS,
+        // and here, we recover the saved state (in file 'logs/perf_eval_repo_info.bin').
+        // The stash on GCS is needed because file system state is volatile in these build stages.
+        unstashFromGCS('perf-eval-repo-info')
+        assert fileExists('logs/perf_eval_repo_info.bin')
+
         if (newClusterNeeded) {
           // Default behavior: create a new cluster for this perf eval.
           stage("Create cluster.") {
@@ -1232,49 +1289,109 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
           // Earlier, we had created a new cluster for this perf eval.
           // Here, we clean up.
           stage("Delete cluster.") {
-            deleteCluster(clusterName)
+            deleteCluster(getCurrentClusterName(clusterName))
           }
         }
-      })
-    })
-    })
+      }
+    }
   }
+}
+
+def saveRepoInfo() {
+  perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
+  perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
+  withCredentials([
+    usernamePassword(
+      credentialsId: 'stirling-perf-postgres',
+      usernameVariable: 'STIRLING_PERF_DB_USERNAME',
+      passwordVariable: 'STIRLING_PERF_DB_PASSWORD',
+    )
+  ]) {
+    sh 'mkdir -p logs'
+    sh "pip3 install -r ${perf_reqs}"
+    sh "python3 ${perf_eval} save-perf-record-repo-info-to-disk --jenkins"
+    stashOnGCS('perf-eval-repo-info', 'logs')
+  }
+}
+
+def checkIfRequiredImagesExist() {
+  numImages = Integer.parseInt(
+    sh(
+      script: "cat artifacts.json | jq '.builds[].imageName' | wc -l",
+      returnStdout: true,
+      returnStatus: false
+    ).trim()
+  )
+
+  // Use the artifacts.json file and jq to build a list of all required images.
+  def requiredImages = []
+
+  for( int i=0; i < numImages; i++ ) {
+    imageNameAndTag = sh(script: "cat artifacts.json | jq '.builds[${i}].tag'", returnStdout: true, returnStatus: false).trim()
+    requiredImages.add(imageNameAndTag)
+  }
+
+  // allRequiredImagesExist will be set to false if we cannot find any one of the required images.
+  boolean allRequiredImagesExist = true
+
+  for (imageNameAndTag in requiredImages) {
+    echo "Checking if image: ${imageNameAndTag} exists."
+    describeStatusCode = sh(script: "gcloud container images describe ${imageNameAndTag}", returnStdout: false, returnStatus: true)
+
+    if (describeStatusCode != 0) {
+      echo "Image: ${imageNameAndTag} does not exist."
+      allRequiredImagesExist = false
+      break
+    }
+    else {
+      echo "Image: ${imageNameAndTag} exists."
+    }
+  }
+
+  if (allRequiredImagesExist) {
+    sep = "\n... "
+    echo "All images found:${sep}${requiredImages.join(sep)}"
+  }
+  return allRequiredImagesExist
 }
 
 buildAndPushPemImagesForPerfEval = {
   WithSourceCodeK8s('pem-build-push') {
     container('pxbuild') {
-      dockerStep(dockerArgsForBPFTest) {
-        // We will need the repo, fail fast here if it is not available.
-        assert fileExists('.git')
+      // We will need the repo, fail fast here if it is not available.
+      assert fileExists('.git')
 
-        // Ensure repo is configured for use.
-        sh 'git config --global --add safe.directory $(pwd)'
+      // Ensure repo is configured for use.
+      sh 'git config --global --add safe.directory $(pwd)'
 
-        // Log out beginning, target, and final repo state.
-        sh 'echo "Starting repo state:" && git rev-parse HEAD'
-        sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
+      // Log out beginning, target, and final repo state.
+      sh 'echo "Starting repo state:" && git rev-parse HEAD'
+      sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
 
-        // The user can give a hash like "HEAD~3" or "some-branch".
-        // Here, we turn that into a sha and then construct the resulting image tag.
-        gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
-        imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
-        sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
-        sh "git checkout ${gitHashForPerfEval}"
-        sh 'echo "Repo state:" && git rev-parse HEAD'
+      // The user can give a hash like "HEAD~3" or "some-branch".
+      // Here, we turn that into a sha and then construct the resulting image tag.
+      gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
+      imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
+      sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
+      sh "git checkout ${gitHashForPerfEval}"
+      sh 'echo "Repo state:" && git rev-parse HEAD'
+      saveRepoInfo()
 
-        // Ensure skaffold is configured for dev. image registry.
-        sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
+      // Ensure skaffold is configured for dev. image registry.
+      sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
 
-        // Remote caching setup does not work correctly at this time:
-        // disable remote caching by removing this bazelrc file.
-        sh 'rm bes.bazelrc'
+      // Remote caching setup does not work correctly at this time:
+      // disable remote caching by removing this bazelrc file.
+      sh 'rm bes.bazelrc'
 
-        // Log out the json file listing the image artifacts we will soon build.
-        // Useful if one wants to cross check vs. the artifacts that we deploy later.
-        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run"
+      // Save the image names & tags into artiacts.json, and log out the same info.
+      // Useful if one wants to cross check vs. the artifacts that we deploy later.
+      sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
 
-        // Build and push pem images (based on the target repo state), but do not deploy.
+      allRequiredImagesExist = checkIfRequiredImagesExist()
+
+      if (!allRequiredImagesExist) {
+        echo "Building all images."
         sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
       }
     }

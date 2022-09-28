@@ -28,150 +28,162 @@ import "src/api/proto/uuidpb/uuid.proto";
 
 // This is a service for fetching available plugins and their configurations.
 service PluginService {
-    // GetPlugins fetches all available plugins.
-    rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
-    // Gets configuration info for a plugin release.
-    rpc GetRetentionPluginConfig(GetRetentionPluginConfigRequest) returns (GetRetentionPluginConfigResponse);
+  // GetPlugins fetches all available plugins.
+  rpc GetPlugins(GetPluginsRequest) returns (GetPluginsResponse);
+  // Gets configuration info for a plugin release.
+  rpc GetRetentionPluginConfig(GetRetentionPluginConfigRequest)
+      returns (GetRetentionPluginConfigResponse);
 }
 
-// This is a service for managing an org's data retention plugin(s), such as fetching/updating configurations,
-// and registered scripts.
+// This is a service for managing an org's data retention plugin(s), such as fetching/updating
+// configurations, and registered scripts.
 service DataRetentionPluginService {
-    // Gets all data retention plugins enabled by the org.
-    rpc GetRetentionPluginsForOrg(GetRetentionPluginsForOrgRequest) returns (GetRetentionPluginsForOrgResponse);
-    // Gets the org's configuration for a plugin.
-    rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest) returns (GetOrgRetentionPluginConfigResponse);
-    // Update an org's configuration for a plugin.
-    rpc UpdateOrgRetentionPluginConfig(UpdateOrgRetentionPluginConfigRequest) returns (UpdateOrgRetentionPluginConfigResponse);
+  // Gets all data retention plugins enabled by the org.
+  rpc GetRetentionPluginsForOrg(GetRetentionPluginsForOrgRequest)
+      returns (GetRetentionPluginsForOrgResponse);
+  // Gets the org's configuration for a plugin.
+  rpc GetOrgRetentionPluginConfig(GetOrgRetentionPluginConfigRequest)
+      returns (GetOrgRetentionPluginConfigResponse);
+  // Update an org's configuration for a plugin.
+  rpc UpdateOrgRetentionPluginConfig(UpdateOrgRetentionPluginConfigRequest)
+      returns (UpdateOrgRetentionPluginConfigResponse);
 
-    // Gets all retention scripts the org has configured.
-    rpc GetRetentionScripts(GetRetentionScriptsRequest) returns (GetRetentionScriptsResponse);
-    // Gets the details for a script an org is using for long-term data retention.
-    rpc GetRetentionScript(GetRetentionScriptRequest) returns (GetRetentionScriptResponse);
-    // Creates a script that is used for long-term data retention.
-    rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
-    // Updates a script used for long-term data retention.
-    rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
-    // DeleteRetentionScript is a request to delete a long-term data retention script.
-    rpc DeleteRetentionScript(DeleteRetentionScriptRequest) returns (DeleteRetentionScriptResponse);
+  // Gets all retention scripts the org has configured.
+  rpc GetRetentionScripts(GetRetentionScriptsRequest) returns (GetRetentionScriptsResponse);
+  // Gets the details for a script an org is using for long-term data retention.
+  rpc GetRetentionScript(GetRetentionScriptRequest) returns (GetRetentionScriptResponse);
+  // Creates a script that is used for long-term data retention.
+  rpc CreateRetentionScript(CreateRetentionScriptRequest) returns (CreateRetentionScriptResponse);
+  // Updates a script used for long-term data retention.
+  rpc UpdateRetentionScript(UpdateRetentionScriptRequest) returns (UpdateRetentionScriptResponse);
+  // DeleteRetentionScript is a request to delete a long-term data retention script.
+  rpc DeleteRetentionScript(DeleteRetentionScriptRequest) returns (DeleteRetentionScriptResponse);
 }
 
 enum PluginKind {
-    PLUGIN_KIND_UNKNOWN = 0;
-    PLUGIN_KIND_RETENTION = 1;
+  PLUGIN_KIND_UNKNOWN = 0;
+  PLUGIN_KIND_RETENTION = 1;
 }
 
 // GetPluginsRequest is a request to fetch all available plugins.
 message GetPluginsRequest {
-    // If not specified, returns all available plugins. Otherwise, only filters to plugins who support the specified kind.
-    PluginKind kind = 1;
+  // If not specified, returns all available plugins. Otherwise, only filters to plugins who support
+  // the specified kind.
+  PluginKind kind = 1;
 }
 
 // GetPluginsResponse is the response to the request to fetch available plugins.
 message GetPluginsResponse {
-    repeated Plugin plugins = 1;
+  repeated Plugin plugins = 1;
 }
 
-// GetRetentionPluginsForOrgRequest is a request to fetch available and configured plugins for an org.
+// GetRetentionPluginsForOrgRequest is a request to fetch available and configured plugins for an
+// org.
 message GetRetentionPluginsForOrgRequest {
-    // The org ID to get plugins for.
-    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  // The org ID to get plugins for.
+  uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // GetRetentionPluginsForOrgResponse contains info about which plugins an org has available.
 message GetRetentionPluginsForOrgResponse {
-    message PluginState {
-        Plugin plugin = 1;
-        // If enabled, the actual version of the plugin the org is running.
-        string enabled_version = 2;
-    }
-    repeated PluginState plugins = 1;
+  message PluginState {
+    Plugin plugin = 1;
+    // If enabled, the actual version of the plugin the org is running.
+    string enabled_version = 2;
+  }
+  repeated PluginState plugins = 1;
 }
 
-// Plugin contains metadata about a plugin, and also includes information about whether the org has the plugin configured.
+// Plugin contains metadata about a plugin, and also includes information about whether the org has
+// the plugin configured.
 message Plugin {
-    // Name is the human-readable name for the plugin.
-    string name = 1;
-    // A unique identifier for the plugin. This is specified by the plugin writer.
-    string id = 2 [(gogoproto.customname) = "ID"];
-    // A description about the plugin.
-    string description = 3;
-    // The logo for the plugin, in SVG format.
-    string logo = 4;
-    // The semVer version of the latest plugin release.
-    string latest_version = 5;
-    // Whether this plugin supports data retention.
-    bool retention_enabled = 6;
+  // Name is the human-readable name for the plugin.
+  string name = 1;
+  // A unique identifier for the plugin. This is specified by the plugin writer.
+  string id = 2 [ (gogoproto.customname) = "ID" ];
+  // A description about the plugin.
+  string description = 3;
+  // The logo for the plugin, in SVG format.
+  string logo = 4;
+  // The semVer version of the latest plugin release.
+  string latest_version = 5;
+  // Whether this plugin supports data retention.
+  bool retention_enabled = 6;
 }
 
-// GetRetentionPluginConfigRequest is a request to get the configuration settings for a specific plugin release.
+// GetRetentionPluginConfigRequest is a request to get the configuration settings for a specific
+// plugin release.
 message GetRetentionPluginConfigRequest {
-    // The ID of the plugin to fetch the settings for.
-    string id = 1 [(gogoproto.customname) = "ID"];
-    // The release version to fetch the settings for.
-    string version = 2;
+  // The ID of the plugin to fetch the settings for.
+  string id = 1 [ (gogoproto.customname) = "ID" ];
+  // The release version to fetch the settings for.
+  string version = 2;
 }
 
-// GetRetentionPluginConfigResponse is the response to a request for configuration settings for a specific plugin release.
+// GetRetentionPluginConfigResponse is the response to a request for configuration settings for a
+// specific plugin release.
 message GetRetentionPluginConfigResponse {
-    // The set of configurations, specified by the plugin provider, which should be filled in by the user to
-    // configure the plugin. Keys represent the name of the field, and the value is a description of the field.
-    map<string, string> configurations = 1;
+  // The set of configurations, specified by the plugin provider, which should be filled in by the
+  // user to configure the plugin. Keys represent the name of the field, and the value is a
+  // description of the field.
+  map<string, string> configurations = 1;
 
-    // PresetScript represents a script written by the plugin provider, which they want to provide by default.
-    message PresetScript {
-        // The name of the script, to display to the user.
-        string name = 1;
-        // The description of what the script does.
-        string description = 2;
-        // The default frequency at which the script should be run.
-        int64 default_frequency_s = 3;
-        // The script to run.
-        string script = 4;
-    }
+  // PresetScript represents a script written by the plugin provider, which they want to provide by
+  // default.
+  message PresetScript {
+    // The name of the script, to display to the user.
+    string name = 1;
+    // The description of what the script does.
+    string description = 2;
+    // The default frequency at which the script should be run.
+    int64 default_frequency_s = 3;
+    // The script to run.
+    string script = 4;
+  }
 
-    // A set of preset scripts written by the plugin provider.
-    repeated PresetScript preset_scripts = 2;
-    // A URL which points to a page providing documentation about the plugin provider's data retention plugin.
-    string documentation_url = 3 [(gogoproto.customname) = "DocumentationURL"];
-    // The default export endpoint which data should be sent to.
-    string default_export_url = 4 [(gogoproto.customname) = "DefaultExportURL"];
-    // Whether users can specify a custom URL to which to send their scripts.
-    bool allow_custom_export_url = 5 [(gogoproto.customname) = "AllowCustomExportURL"];
-    bool allow_insecure_tls = 6 [(gogoproto.customname) = "AllowInsecureTLS"];
+  // A set of preset scripts written by the plugin provider.
+  repeated PresetScript preset_scripts = 2;
+  // A URL which points to a page providing documentation about the plugin provider's data retention
+  // plugin.
+  string documentation_url = 3 [ (gogoproto.customname) = "DocumentationURL" ];
+  // The default export endpoint which data should be sent to.
+  string default_export_url = 4 [ (gogoproto.customname) = "DefaultExportURL" ];
+  // Whether users can specify a custom URL to which to send their scripts.
+  bool allow_custom_export_url = 5 [ (gogoproto.customname) = "AllowCustomExportURL" ];
+  bool allow_insecure_tls = 6 [ (gogoproto.customname) = "AllowInsecureTLS" ];
 }
 
 // GetOrgRetentionPluginConfigRequest is a request to get an org's configuration for a plugin.
 message GetOrgRetentionPluginConfigRequest {
-    string plugin_id = 1 [(gogoproto.customname) = "PluginID"];
-    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  string plugin_id = 1 [ (gogoproto.customname) = "PluginID" ];
+  uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // GetOrgRetentionPluginConfigResponse gets the org's configuration for a given plugin.
 message GetOrgRetentionPluginConfigResponse {
-    // The set of configurations specified by the org. They key is the name of the configuration,
-    // and the value represents the configuration value.
-    map<string, string> configurations = 1;
-    string custom_export_url = 2;
-    bool insecure_tls = 3 [(gogoproto.customname) = "InsecureTLS"];
+  // The set of configurations specified by the org. They key is the name of the configuration,
+  // and the value represents the configuration value.
+  map<string, string> configurations = 1;
+  string custom_export_url = 2;
+  bool insecure_tls = 3 [ (gogoproto.customname) = "InsecureTLS" ];
 }
 
 // UpdateOrgRetentionPluginConfigRequest is a request to update a plugin's configuration.
 message UpdateOrgRetentionPluginConfigRequest {
-    // The org ID to update the plugin configuration for.
-    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-    string plugin_id = 2 [(gogoproto.customname) = "PluginID"];
-    // The configuration settings to update.
-    map<string, string> configurations = 3;
-    // Whether to disable/enable the plugin.
-    google.protobuf.BoolValue enabled = 4;
-    // The version to enable.
-    google.protobuf.StringValue version = 5;
-    // The custom export URL that should be applied to all plugin scripts.
-    google.protobuf.StringValue custom_export_url = 6;
-    google.protobuf.BoolValue insecure_tls = 7 [(gogoproto.customname) = "InsecureTLS"];
-    // If enabling the plugin, whether to enable all preset scripts.
-    google.protobuf.BoolValue disable_presets = 8;
+  // The org ID to update the plugin configuration for.
+  uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
+  string plugin_id = 2 [ (gogoproto.customname) = "PluginID" ];
+  // The configuration settings to update.
+  map<string, string> configurations = 3;
+  // Whether to disable/enable the plugin.
+  google.protobuf.BoolValue enabled = 4;
+  // The version to enable.
+  google.protobuf.StringValue version = 5;
+  // The custom export URL that should be applied to all plugin scripts.
+  google.protobuf.StringValue custom_export_url = 6;
+  google.protobuf.BoolValue insecure_tls = 7 [ (gogoproto.customname) = "InsecureTLS" ];
+  // If enabling the plugin, whether to enable all preset scripts.
+  google.protobuf.BoolValue disable_presets = 8;
 }
 
 // UpdateOrgRetentionPluginConfigResponse is a response to update a plugin's configuration.
@@ -179,92 +191,93 @@ message UpdateOrgRetentionPluginConfigResponse {}
 
 // GetRetentionScriptsRequest is a request to get all scripts configured by an org.
 message GetRetentionScriptsRequest {
-    // The org ID for the org to fetch the scripts for.
-    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  // The org ID for the org to fetch the scripts for.
+  uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // RetentionScript represents a script being used for long-term data retention.
 message RetentionScript {
-    // The ID for the script.
-    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
-    // The name of the script.
-    string script_name = 2;
-    // A description for the script.
-    string description = 3;
-    // How often the script should be run, in seconds.
-    int64 frequency_s = 4;
-    // The clusters the script should be run on. If empty, signifies all clusters.
-    repeated uuidpb.UUID cluster_ids = 5 [(gogoproto.customname) = "ClusterIDs"];
-    // The plugin which the script is sending data to.
-    string plugin_id = 6;
-    // Whether the script is enabled.
-    bool enabled = 7;
-    // Whether the script is originally a preset script.
-    bool is_preset = 8;
+  // The ID for the script.
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
+  // The name of the script.
+  string script_name = 2;
+  // A description for the script.
+  string description = 3;
+  // How often the script should be run, in seconds.
+  int64 frequency_s = 4;
+  // The clusters the script should be run on. If empty, signifies all clusters.
+  repeated uuidpb.UUID cluster_ids = 5 [ (gogoproto.customname) = "ClusterIDs" ];
+  // The plugin which the script is sending data to.
+  string plugin_id = 6;
+  // Whether the script is enabled.
+  bool enabled = 7;
+  // Whether the script is originally a preset script.
+  bool is_preset = 8;
 }
 
-// DetailedRetentionScript represents a script used for long-term data retention, with more information
-// such as script/URL configuration.
+// DetailedRetentionScript represents a script used for long-term data retention, with more
+// information such as script/URL configuration.
 message DetailedRetentionScript {
-    // The script used for long-term data retention.
-    RetentionScript script = 1;
-    // The actual PxL script that should be run.
-    string contents = 2;
-    // The URL which the script is configured to export to.
-    string export_url = 3 [(gogoproto.customname) = "ExportURL"];
+  // The script used for long-term data retention.
+  RetentionScript script = 1;
+  // The actual PxL script that should be run.
+  string contents = 2;
+  // The URL which the script is configured to export to.
+  string export_url = 3 [ (gogoproto.customname) = "ExportURL" ];
 }
 
 // GetRetentionScriptsResponse is a response containing all scripts configured by an org.
 message GetRetentionScriptsResponse {
-    // The scripts configured by the org.
-    repeated RetentionScript scripts = 1;
+  // The scripts configured by the org.
+  repeated RetentionScript scripts = 1;
 }
 
 // GetRetentionScriptRequest is a request to get a script used for long-term data retention.
 message GetRetentionScriptRequest {
-    // The org ID for the org running the script.
-    uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-    // The ID for the script.
-    uuidpb.UUID script_id = 2 [(gogoproto.customname) = "ScriptID"];
+  // The org ID for the org running the script.
+  uuidpb.UUID org_id = 1 [ (gogoproto.customname) = "OrgID" ];
+  // The ID for the script.
+  uuidpb.UUID script_id = 2 [ (gogoproto.customname) = "ScriptID" ];
 }
 
-// GetRetentionScriptResponse is the response for getting a script used for long-term data retention.
+// GetRetentionScriptResponse is the response for getting a script used for long-term data
+// retention.
 message GetRetentionScriptResponse {
-    // The script that is used for long-term data retention.
-    DetailedRetentionScript script = 1;
+  // The script that is used for long-term data retention.
+  DetailedRetentionScript script = 1;
 }
 
 // CreateRetentionScriptRequest is the request to configure a new retention script.
 message CreateRetentionScriptRequest {
-    // The script to create.
-    DetailedRetentionScript script = 1;
-    // The org ID for the org running the script.
-    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  // The script to create.
+  DetailedRetentionScript script = 1;
+  // The org ID for the org running the script.
+  uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // CreateRetentionScriptResponse is the response to creating a new retention script.
 message CreateRetentionScriptResponse {
-    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
 }
 
 // UpdateRetentionScriptRequest is a request to update an existing retention script.
 message UpdateRetentionScriptRequest {
-    // The ID for the script.
-    uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
-    // The name of the script.
-    google.protobuf.StringValue script_name = 2;
-    // The description for the script.
-    google.protobuf.StringValue description = 3;
-    // Whether to disable/enable the script.
-    google.protobuf.BoolValue enabled = 4;
-    // The frequency that the script should be run.
-    google.protobuf.Int64Value frequency_s = 5;
-    // The contents of the script.
-    google.protobuf.StringValue contents = 6;
-    // The export URL for the script.
-    google.protobuf.StringValue export_url = 7;
-    // The clusters the script should be run on. If empty, signifies all clusters.
-    repeated uuidpb.UUID cluster_ids = 8 [(gogoproto.customname) = "ClusterIDs"];
+  // The ID for the script.
+  uuidpb.UUID script_id = 1 [ (gogoproto.customname) = "ScriptID" ];
+  // The name of the script.
+  google.protobuf.StringValue script_name = 2;
+  // The description for the script.
+  google.protobuf.StringValue description = 3;
+  // Whether to disable/enable the script.
+  google.protobuf.BoolValue enabled = 4;
+  // The frequency that the script should be run.
+  google.protobuf.Int64Value frequency_s = 5;
+  // The contents of the script.
+  google.protobuf.StringValue contents = 6;
+  // The export URL for the script.
+  google.protobuf.StringValue export_url = 7;
+  // The clusters the script should be run on. If empty, signifies all clusters.
+  repeated uuidpb.UUID cluster_ids = 8 [ (gogoproto.customname) = "ClusterIDs" ];
 }
 
 // UpdateRetentionScriptResponse is the response to updating an existing retention script.
@@ -272,8 +285,8 @@ message UpdateRetentionScriptResponse {}
 
 // DeleteRetentionScriptRequest is a request to delete a retention script.
 message DeleteRetentionScriptRequest {
-    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  uuidpb.UUID org_id = 2 [ (gogoproto.customname) = "OrgID" ];
 }
 
 // DeleteRetentionScriptResponse is the response to deleting a retention script.

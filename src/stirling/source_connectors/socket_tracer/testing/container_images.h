@@ -633,6 +633,23 @@ class ProductCatalogClient : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+// Python gRPC helloworld app does not have dedicated container runners for client & server.
+// Run server with `python helloworld/greeter_server.py`
+// and client with `python helloworld/greeter_client.py` respectively.
+class PyGRPCHelloWorld : public ContainerRunner {
+ public:
+  PyGRPCHelloWorld()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "py_grpc_helloworld_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "py_grpc";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace px

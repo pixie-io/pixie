@@ -30,6 +30,7 @@ pl_cc_library(
         "//src/carnot/planner/compiler:cc_library",
         "//src/carnot/planner/distributed:cc_library",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
+        "//src/carnot/planner/otel_generator:cc_library",
     ],
 )
 

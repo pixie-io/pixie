@@ -75,6 +75,9 @@ func MustStartTestStan(t *testing.T, clusterID, clientID string) (*server.StanSe
 	stanConnectFn := func() error {
 		var err error
 		st, sc, err = startStan(clusterID, clientID)
+		if st == nil && sc == nil { // Handle case where startStan has a recover.
+			err = errors.New("Failed to connect to STAN")
+		}
 		if err != nil {
 			return err
 		}

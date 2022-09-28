@@ -55,7 +55,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/compilerpb //src/carnot/planner/compilerpb:compiler_status_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/distributedpb //src/carnot/planner/distributedpb:distributed_plan_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb //src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/carnot/planner/plannerpb //src/carnot/planner/plannerpb:func_args_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/carnot/planner/plannerpb //src/carnot/planner/plannerpb:planner_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planpb //src/carnot/planpb:plan_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/queryresultspb //src/carnot/queryresultspb:query_results_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/udfspb //src/carnot/udfspb:udfs_pl_go_proto
@@ -92,7 +92,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/vizier/services/metadata/storepb //src/vizier/services/metadata/storepb:store_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/vizier/services/shared/agentpb //src/vizier/services/shared/agentpb:agent_pl_go_proto
 #
-# gazelle:resolve go px.dev/pixie/experimental/stirling/proto_data_model/proto //private/experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
+# gazelle:resolve go px.dev/pixie/experimental/stirling/proto_data_model/proto //experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
 #
 # Make gazelle resolve CGO libraries correctly.
 # gazelle:resolve go px.dev/pixie/src/carnot/goplanner //src/carnot/goplanner:go_default_library

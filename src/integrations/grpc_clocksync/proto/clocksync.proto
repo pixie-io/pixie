@@ -23,10 +23,10 @@ package clocksync;
 message CurrentReferenceTimeRequest {}
 
 message CurrentReferenceTimeReply {
-    uint64 local_time = 3;
-    uint64 reference_time = 5;
+  uint64 local_time = 3;
+  uint64 reference_time = 5;
 }
 
 service ProberService {
-    rpc CurrentReferenceTime(CurrentReferenceTimeRequest) returns (CurrentReferenceTimeReply);
+  rpc CurrentReferenceTime(CurrentReferenceTimeRequest) returns (CurrentReferenceTimeReply);
 }

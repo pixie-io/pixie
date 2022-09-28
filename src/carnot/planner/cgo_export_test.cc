@@ -27,7 +27,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
-#include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/plannerpb/planner.pb.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -302,7 +302,7 @@ df.service = df.ctx['service']
 px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph'))pxl";
 constexpr char kGeneratedPxL[] = R"otel(import px
 otel_df = 'placeholder'
-df = px.DataFrame('http_events', start_time='-5m')
+df = px.DataFrame('http_events', start_time=px.plugin.start_time, end_time=px.plugin.end_time)
 df.service = df.ctx['service']
 px.display(df[['time_', 'service', 'resp_latency_ns']], 'http_graph')
 
