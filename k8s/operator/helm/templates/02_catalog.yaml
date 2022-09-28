@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Values.olmOperatorNamespace }}
 spec:
   sourceType: grpc
-  image: gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1
+  image: {{ if .Values.registry }}{{ .Values.registry }}/gcr.io-pixie-oss-pixie-prod-operator-bundle_index:0.0.1{{ else }}gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1{{ end }}
   displayName: Pixie Vizier Operator
   publisher: px.dev
   updateStrategy:

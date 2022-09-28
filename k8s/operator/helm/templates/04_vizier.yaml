@@ -32,6 +32,9 @@ spec:
   {{- if .Values.patches }}
   patches: {{ .Values.patches | toYaml | nindent 4 }}
   {{- end }}
+  {{- if .Values.registry }}
+  registry: {{ .Values.registry }}
+  {{- end}}
   {{- if .Values.dataCollectorParams }}
   dataCollectorParams:
     {{- if .Values.dataCollectorParams.datastreamBufferSize }}
