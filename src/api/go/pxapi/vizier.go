@@ -42,6 +42,7 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 		QueryStr:          pxl,
 		EncryptionOptions: v.encOpts,
 	}
+	origCtx := ctx
 	ctx, cancel := context.WithCancel(ctx)
 	res, err := v.vzClient.ExecuteScript(v.cloud.cloudCtxWithMD(ctx), req)
 	if err != nil {
@@ -54,6 +55,8 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 	sr.cancel = cancel
 	sr.tm = mux
 	sr.decOpts = v.decOpts
+	sr.v = v
+	sr.origCtx = origCtx
 
 	return sr, nil
 }

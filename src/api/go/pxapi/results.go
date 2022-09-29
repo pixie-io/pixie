@@ -20,9 +20,15 @@ package pxapi
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
 	"px.dev/pixie/src/api/go/pxapi/types"
@@ -59,6 +65,10 @@ type ScriptResults struct {
 	wg               sync.WaitGroup
 
 	stats *ResultsStats
+
+	v       *VizierClient
+	queryID string
+	origCtx context.Context
 }
 
 func newScriptResults() *ScriptResults {
@@ -133,6 +143,37 @@ func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierpb.Execut
 	return errdefs.ErrInternalUnImplementedType
 }
 
+func isTransientGRPCError(err error) bool {
+	s, ok := status.FromError(err)
+	if !ok {
+		return false
+	}
+	if s.Code() == codes.Internal && strings.Contains(s.Message(), "RST_STREAM") {
+		return true
+	}
+	return false
+}
+
+func (s *ScriptResults) reconnect() error {
+	if s.queryID == "" {
+		return errors.New("cannot reconnect to query that hasn't returned a QueryID yet")
+	}
+	req := &vizierpb.ExecuteScriptRequest{
+		ClusterID:         s.v.vizierID,
+		QueryID:           s.queryID,
+		EncryptionOptions: s.v.encOpts,
+	}
+	ctx, cancel := context.WithCancel(s.origCtx)
+	res, err := s.v.vzClient.ExecuteScript(s.v.cloud.cloudCtxWithMD(ctx), req)
+	if err != nil {
+		cancel()
+		return err
+	}
+	s.cancel = cancel
+	s.c = res
+	return nil
+}
+
 func (s *ScriptResults) run() error {
 	ctx := s.c.Context()
 	for {
@@ -143,10 +184,22 @@ func (s *ScriptResults) run() error {
 				// Stream has terminated.
 				return nil
 			}
+			if isTransientGRPCError(err) {
+				origErr := err
+				err = s.reconnect()
+				if err != nil {
+					return fmt.Errorf("streaming failed: %w, error occurred while reconnecting: %v", origErr, err)
+				}
+				ctx = s.c.Context()
+				continue
+			}
 			return err
 		}
 		if resp == nil {
 			return nil
+		}
+		if s.queryID == "" {
+			s.queryID = resp.QueryID
 		}
 		if err := s.handleGRPCMsg(ctx, resp); err != nil {
 			return err
