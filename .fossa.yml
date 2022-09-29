@@ -392,10 +392,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/cloud/shared/vzutils
     path: src/cloud/shared/vzutils
-  - name: px.dev/pixie/src/cloud/utils/stan_watcher
-    type: go
-    target: px.dev/pixie/src/cloud/utils/stan_watcher
-    path: src/cloud/utils/stan_watcher
   - name: px.dev/pixie/src/cloud/vzconn
     type: go
     target: px.dev/pixie/src/cloud/vzconn
@@ -892,10 +888,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/vizier/utils/messagebus
     path: src/vizier/utils/messagebus
-  - name: px.dev/pixie/src/vizier/utils/nats_watcher
-    type: go
-    target: px.dev/pixie/src/vizier/utils/nats_watcher
-    path: src/vizier/utils/nats_watcher
   - name: px.dev/pixie/tools/licenses
     type: go
     target: px.dev/pixie/tools/licenses
