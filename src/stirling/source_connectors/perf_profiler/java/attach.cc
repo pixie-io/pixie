@@ -89,7 +89,7 @@ bool AgentAttacher::Finished() {
 }
 
 AgentAttacher::AgentAttacher(const struct upid_t& upid, const std::string& agent_libs)
-    : start_time_(px::chrono::coarse_steady_clock::now()) {
+    : start_time_(std::chrono::steady_clock::now()) {
   std::string pid_arg = absl::Substitute("$0", upid.pid);
   std::string start_time_ticks_arg = absl::Substitute("$0", upid.start_time_ticks);
   std::string agent_libs_arg = agent_libs;

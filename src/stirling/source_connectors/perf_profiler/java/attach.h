@@ -59,10 +59,10 @@ class AgentAttacher {
   inline bool attached() const { return attached_; }
 
   // Used to kill attachers that have run for too long.
-  const px::chrono::coarse_steady_clock::time_point& start_time() { return start_time_; }
+  const std::chrono::steady_clock::time_point& start_time() { return start_time_; }
 
  private:
-  const px::chrono::coarse_steady_clock::time_point start_time_;
+  const std::chrono::steady_clock::time_point start_time_;
   int child_pid_;
   bool finished_ = false;
   bool attached_ = false;

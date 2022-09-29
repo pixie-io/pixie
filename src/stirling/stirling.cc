@@ -179,7 +179,7 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistryFromFlag() {
 }
 
 class StirlingImpl final : public Stirling {
-  using time_point = px::chrono::coarse_steady_clock::time_point;
+  using time_point = std::chrono::steady_clock::time_point;
 
  public:
   explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
@@ -794,7 +794,7 @@ void StirlingImpl::RunCore() {
   // To avoid having the underlying data sources make syscalls to clock_gettime(), we inject
   // the notion of "time now" into their methods (such as "Expired", i.e. the method that says
   // a time period has expired and a call to TransferData() or PushData() is required).
-  auto now = px::chrono::coarse_steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
   auto time_until_next_tick = std::chrono::milliseconds::zero();
   constexpr auto kRunWindow = std::chrono::milliseconds{1};
 
@@ -811,7 +811,7 @@ void StirlingImpl::RunCore() {
 
     if (ctx_freq_mgr.Expired(now_plus_run_window)) {
       ctx = GetContext();
-      now = px::chrono::coarse_steady_clock::now();
+      now = std::chrono::steady_clock::now();
       ctx_freq_mgr.Reset(now);
     }
 
@@ -827,7 +827,7 @@ void StirlingImpl::RunCore() {
           source->TransferData(ctx.get());
 
           // TransferData() is normally a significant amount of work: update "time now".
-          now = px::chrono::coarse_steady_clock::now();
+          now = std::chrono::steady_clock::now();
           source->sampling_freq_mgr().Reset(now);
           run_core_stats_.IncrementTransferDataCount();
         }
@@ -837,7 +837,7 @@ void StirlingImpl::RunCore() {
           source->PushData(data_push_callback_);
 
           // PushData() is normally a significant amount of work: update "time now".
-          now = px::chrono::coarse_steady_clock::now();
+          now = std::chrono::steady_clock::now();
           source->push_freq_mgr().Reset(now);
           run_core_stats_.IncrementPushDataCount();
         }
@@ -858,7 +858,7 @@ void StirlingImpl::RunCore() {
       run_core_stats_.EndIter(time_until_next_tick);
 
       // We just went to sleep: update time now.
-      now = px::chrono::coarse_steady_clock::now();
+      now = std::chrono::steady_clock::now();
     } else {
       // Did not sleep, but we still update the histograms in run core stats
       // *and* trigger a periodic printout of the same.

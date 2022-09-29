@@ -301,7 +301,7 @@ bool JavaSymbolizer::Uncacheable(const struct upid_t& upid) {
 
   if (!attacher.Finished()) {
     constexpr auto kTimeOutForAttach = std::chrono::seconds{10};
-    const auto now = px::chrono::coarse_steady_clock::now();
+    const auto now = std::chrono::steady_clock::now();
     const auto start_time = attacher.start_time();
     const auto elapsed_time = now - start_time;
 

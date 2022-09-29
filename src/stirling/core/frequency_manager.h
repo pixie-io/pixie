@@ -29,7 +29,7 @@ namespace stirling {
  * Manages the frequency of periodical action.
  */
 class FrequencyManager {
-  using time_point = px::chrono::coarse_steady_clock::time_point;
+  using time_point = std::chrono::steady_clock::time_point;
 
  public:
   /**
@@ -52,7 +52,7 @@ class FrequencyManager {
   std::chrono::milliseconds period_ = {};
 
   // When the current cycle should end.
-  px::chrono::coarse_steady_clock::time_point next_ = {};
+  std::chrono::steady_clock::time_point next_ = {};
 
   // The count of expired cycle so far.
   uint32_t count_ = 0;

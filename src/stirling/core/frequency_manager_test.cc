@@ -29,10 +29,10 @@ namespace stirling {
 TEST(FrequencyManagerTest, CheckInit) {
   FrequencyManager mgr;
   EXPECT_EQ(mgr.period(), std::chrono::milliseconds(0));
-  px::chrono::coarse_steady_clock::time_point zero;
+  std::chrono::steady_clock::time_point zero;
   EXPECT_EQ(mgr.next(), zero);
   EXPECT_EQ(mgr.count(), static_cast<uint32_t>(0));
-  EXPECT_TRUE(mgr.Expired(px::chrono::coarse_steady_clock::now()));
+  EXPECT_TRUE(mgr.Expired(std::chrono::steady_clock::now()));
 }
 
 // Tests that the sequence of setting period, checking time, and check expiration work as expected.
@@ -40,11 +40,11 @@ TEST(FrequencyManagerTest, SetPeriodEndAndCheck) {
   FrequencyManager mgr;
   mgr.set_period(std::chrono::milliseconds{10000});
   EXPECT_EQ(mgr.period(), std::chrono::milliseconds{10000});
-  EXPECT_TRUE(mgr.Expired(px::chrono::coarse_steady_clock::now()));
+  EXPECT_TRUE(mgr.Expired(std::chrono::steady_clock::now()));
 
-  mgr.Reset(px::chrono::coarse_steady_clock::now());
-  EXPECT_FALSE(mgr.Expired(px::chrono::coarse_steady_clock::now()));
-  auto computed_period = mgr.next() - px::chrono::coarse_steady_clock::now();
+  mgr.Reset(std::chrono::steady_clock::now());
+  EXPECT_FALSE(mgr.Expired(std::chrono::steady_clock::now()));
+  auto computed_period = mgr.next() - std::chrono::steady_clock::now();
   EXPECT_LE(computed_period, std::chrono::milliseconds{10000});
   EXPECT_GE(computed_period, std::chrono::milliseconds{9990});
 }

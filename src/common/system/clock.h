@@ -48,7 +48,8 @@ using boot_clock = basic_clock<CLOCK_BOOTTIME>;
 
 // Clock based on CLOCK_MONOTONIC_COARSE.
 // This is faster, but lower resolution than CLOCK_MONOTONIC.
-// If resolution beyond a millisecond is not required, this should be sufficient.
+// However, its resolution is approx ~4 ms. and repeated calls to clock_gettime() can return
+// the same timestamp if within the resolution window (i.e. if < 4 ms. have elapsed between calls).
 using coarse_steady_clock = basic_clock<CLOCK_MONOTONIC_COARSE>;
 
 }  // namespace chrono
