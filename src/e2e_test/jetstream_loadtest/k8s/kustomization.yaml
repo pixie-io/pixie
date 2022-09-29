@@ -1,0 +1,8 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- publisher_deployment.yaml
+- publisher_service.yaml
+- subscriber_deployment.yaml
+- subscriber_service.yaml

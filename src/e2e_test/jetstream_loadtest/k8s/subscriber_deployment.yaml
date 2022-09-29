@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jetstream-subsciber
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: jetstream-subsciber
+  template:
+    metadata:
+      labels:
+        name: jetstream-subsciber
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8080'
+        prometheus.io/scheme: 'http'
+    spec:
+      initContainers:
+      - name: wait-for-publisher
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        # yamllint disable rule:indentation rule:line-length
+        command: ['sh', '-c', 'set -xe;
+          URL="http://jetstream-publisher.${NS}.svc.cluster.local:8080/metrics";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}";
+            sleep 2;
+          done;']
+        # yamllint enable rule:indentation rule:line-length
+        env:
+        - name: NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      containers:
+      - name: app
+        image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/jetstream_loadtest/subscriber_image:latest
+        ports:
+        - containerPort: 8080
+          name: metrics
+        env:
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
