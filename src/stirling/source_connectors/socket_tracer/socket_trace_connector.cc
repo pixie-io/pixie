@@ -394,7 +394,6 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_DNS_TRACING=", FLAGS_stirling_enable_dns_tracing),
       absl::StrCat("-DENABLE_REDIS_TRACING=", FLAGS_stirling_enable_redis_tracing),
       absl::StrCat("-DENABLE_NATS_TRACING=", FLAGS_stirling_enable_nats_tracing),
-      absl::StrCat("-DENABLE_MUX_TRACING=", FLAGS_stirling_enable_mux_tracing),
       absl::StrCat("-DENABLE_AMQP_TRACING=", FLAGS_stirling_enable_amqp_tracing),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
   };
