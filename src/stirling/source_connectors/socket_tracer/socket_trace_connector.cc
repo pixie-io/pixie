@@ -73,6 +73,10 @@ DEFINE_string(socket_trace_data_events_output_path, "",
               "binary format; otherwise, text format.");
 
 // PROTOCOL_LIST: Requires update on new protocols.
+//
+// Due to BPF instruction limits (< 4096 instructions) on kernels older than
+// 5.2, we can't simultaneously enable all protocols. Thus, some protocols
+// are only enabled on newer kernels.
 DEFINE_int32(stirling_enable_http_tracing, px::stirling::TraceMode::On,
              "If true, stirling will trace and process HTTP messages");
 DEFINE_int32(stirling_enable_http2_tracing, px::stirling::TraceMode::On,
@@ -385,16 +389,16 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 Status SocketTraceConnector::InitBPF() {
   // PROTOCOL_LIST: Requires update on new protocols.
   std::vector<std::string> defines = {
-      absl::StrCat("-DENABLE_HTTP_TRACING=", FLAGS_stirling_enable_http_tracing),
-      absl::StrCat("-DENABLE_CQL_TRACING=", FLAGS_stirling_enable_cass_tracing),
-      absl::StrCat("-DENABLE_MUX_TRACING=", FLAGS_stirling_enable_mux_tracing),
-      absl::StrCat("-DENABLE_PGSQL_TRACING=", FLAGS_stirling_enable_pgsql_tracing),
-      absl::StrCat("-DENABLE_MYSQL_TRACING=", FLAGS_stirling_enable_mysql_tracing),
-      absl::StrCat("-DENABLE_KAFKA_TRACING=", FLAGS_stirling_enable_kafka_tracing),
-      absl::StrCat("-DENABLE_DNS_TRACING=", FLAGS_stirling_enable_dns_tracing),
-      absl::StrCat("-DENABLE_REDIS_TRACING=", FLAGS_stirling_enable_redis_tracing),
-      absl::StrCat("-DENABLE_NATS_TRACING=", FLAGS_stirling_enable_nats_tracing),
-      absl::StrCat("-DENABLE_AMQP_TRACING=", FLAGS_stirling_enable_amqp_tracing),
+      absl::StrCat("-DENABLE_HTTP_TRACING=", protocol_transfer_specs_[kProtocolHTTP].enabled),
+      absl::StrCat("-DENABLE_CQL_TRACING=", protocol_transfer_specs_[kProtocolCQL].enabled),
+      absl::StrCat("-DENABLE_MUX_TRACING=", protocol_transfer_specs_[kProtocolMux].enabled),
+      absl::StrCat("-DENABLE_PGSQL_TRACING=", protocol_transfer_specs_[kProtocolPGSQL].enabled),
+      absl::StrCat("-DENABLE_MYSQL_TRACING=", protocol_transfer_specs_[kProtocolMySQL].enabled),
+      absl::StrCat("-DENABLE_KAFKA_TRACING=", protocol_transfer_specs_[kProtocolKafka].enabled),
+      absl::StrCat("-DENABLE_DNS_TRACING=", protocol_transfer_specs_[kProtocolDNS].enabled),
+      absl::StrCat("-DENABLE_REDIS_TRACING=", protocol_transfer_specs_[kProtocolRedis].enabled),
+      absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
+      absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
   };
   PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));

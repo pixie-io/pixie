@@ -70,7 +70,6 @@ pl_cc_test(
         "ENABLE_DNS_TRACING=true",
         "ENABLE_REDIS_TRACING=true",
         "ENABLE_NATS_TRACING=true",
-        "ENABLE_MUX_TRACING=true",
         "ENABLE_MONGO_TRACING=true",
         "ENABLE_AMQP_TRACING=true",
     ],
