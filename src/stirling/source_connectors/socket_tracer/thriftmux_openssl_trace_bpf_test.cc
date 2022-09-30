@@ -57,6 +57,11 @@ bool Init() {
   // Make sure Mux tracing is enabled.
   FLAGS_stirling_enable_mux_tracing = true;
 
+  // We turn off CQL and NATS tracing to give some BPF instructions back for Mux.
+  // This is required for older kernels with only 4096 BPF instructions.
+  FLAGS_stirling_enable_cass_tracing = false;
+  FLAGS_stirling_enable_nats_tracing = false;
+
   // Enable the raw fptr fallback for determining ssl lib version.
   FLAGS_openssl_raw_fptrs_enabled = true;
   return true;
@@ -140,15 +145,6 @@ using ThriftMuxTLSTraceTest = BaseOpenSSLTraceTest<T>;
 TYPED_TEST_SUITE(ThriftMuxTLSTraceTest, ThriftMuxTLSServerImplementations);
 
 TYPED_TEST(ThriftMuxTLSTraceTest, mtls_thriftmux_client) {
-  // If kernel version is older than 5.2, we turn off some protocol tracers due to instruction
-  // limits.
-  constexpr uint32_t kLinux5p2VersionCode = 328192;
-  auto kernel_version = utils::GetKernelVersion();
-  if (!kernel_version.ok() || kernel_version.ConsumeValueOrDie().code() < kLinux5p2VersionCode) {
-    VLOG(1) << "Mux Tracing is turned off for kernel version older than 5.2.";
-    return;
-  }
-
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
