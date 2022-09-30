@@ -171,7 +171,11 @@ var DefaultJetStreamStreamerConfig = JetStreamStreamerConfig{
 }
 
 // NewJetStreamStreamerWithConfig creates a new Streamer implemented using JetStream with specific configuration.
-func NewJetStreamStreamerWithConfig(js nats.JetStreamContext, sCfg *nats.StreamConfig, cfg JetStreamStreamerConfig) (Streamer, error) {
+func NewJetStreamStreamerWithConfig(nc *nats.Conn, js nats.JetStreamContext, sCfg *nats.StreamConfig, cfg JetStreamStreamerConfig) (Streamer, error) {
+	clusterSize := len(nc.Servers())
+	if sCfg.Replicas > clusterSize {
+		sCfg.Replicas = clusterSize
+	}
 	streamInfo, err := js.AddStream(sCfg)
 	if err != nil {
 		return nil, err
@@ -190,6 +194,6 @@ func NewJetStreamStreamerWithConfig(js nats.JetStreamContext, sCfg *nats.StreamC
 }
 
 // NewJetStreamStreamer creates a new Streamer implemented using JetStream with default configuration.
-func NewJetStreamStreamer(js nats.JetStreamContext, sCfg *nats.StreamConfig) (Streamer, error) {
-	return NewJetStreamStreamerWithConfig(js, sCfg, DefaultJetStreamStreamerConfig)
+func NewJetStreamStreamer(nc *nats.Conn, js nats.JetStreamContext, sCfg *nats.StreamConfig) (Streamer, error) {
+	return NewJetStreamStreamerWithConfig(nc, js, sCfg, DefaultJetStreamStreamerConfig)
 }

@@ -35,7 +35,8 @@ var V2CDurableStream = &nats.StreamConfig{
 	Subjects: []string{
 		"v2c.*.*.*",
 	},
-	MaxAge: 15 * time.Minute,
+	MaxAge:   15 * time.Minute,
+	Replicas: 5,
 }
 
 // MetadataIndexStream is the stream config for MetadataIndex messages.
@@ -44,7 +45,8 @@ var MetadataIndexStream = &nats.StreamConfig{
 	Subjects: []string{
 		"MetadataIndex.*",
 	},
-	MaxAge: 24 * time.Hour,
+	MaxAge:   24 * time.Hour,
+	Replicas: 5,
 }
 
 // Msg is the interface for a message sent over the stream

@@ -21,6 +21,7 @@ package testingutils
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -48,6 +49,7 @@ func startNATS() (*server.Server, *nats.Conn, error) {
 	opts.ServerName = "test_nats_js"
 	opts.JetStream = true
 	opts.Port = port
+	opts.StoreDir = os.TempDir()
 	gnatsd := test.RunServer(&opts)
 	if gnatsd == nil {
 		return nil, nil, errors.New("Could not run NATS server")

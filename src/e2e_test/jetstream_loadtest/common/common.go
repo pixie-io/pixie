@@ -75,8 +75,8 @@ func SetupJetStream(purge bool) msgbus.Streamer {
 	js := msgbus.MustConnectJetStream(nc)
 
 	// Cap replica count.
-	if LoadTestStream.Replicas > len(nc.DiscoveredServers()) {
-		LoadTestStream.Replicas = len(nc.DiscoveredServers())
+	if LoadTestStream.Replicas > len(nc.Servers()) {
+		LoadTestStream.Replicas = len(nc.Servers())
 	}
 
 	if purge {
@@ -90,7 +90,7 @@ func SetupJetStream(purge bool) msgbus.Streamer {
 		}
 	}
 
-	strmr, err := msgbus.NewJetStreamStreamer(js, LoadTestStream)
+	strmr, err := msgbus.NewJetStreamStreamer(nc, js, LoadTestStream)
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to streamer")
 	}

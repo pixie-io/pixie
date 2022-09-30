@@ -30,18 +30,22 @@ import (
 	"px.dev/pixie/src/utils/testingutils"
 )
 
+var testStreamCfg = &nats.StreamConfig{
+	Name:     "abc",
+	Subjects: []string{"abc"},
+	MaxAge:   2 * time.Minute,
+	Replicas: 3,
+	Storage:  nats.MemoryStorage,
+}
+
 func TestJetStream_PersistentSubscribeInterfaceAccuracy(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	})
+	s, err := msgbus.NewJetStreamStreamer(nc, js, testStreamCfg)
 	require.NoError(t, err)
 
 	// Publish data to the subject.
@@ -86,17 +90,13 @@ func TestJetStream_PersistentSubscribeInterfaceAccuracy(t *testing.T) {
 }
 
 func TestJetStream_PersistentSubscribeMultiConsumer(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	})
+	s, err := msgbus.NewJetStreamStreamer(nc, js, testStreamCfg)
 	require.NoError(t, err)
 
 	// Publish data to the subject.
@@ -150,17 +150,13 @@ func TestJetStream_PersistentSubscribeMultiConsumer(t *testing.T) {
 }
 
 func TestJetStream_PublishAfterSubscribe(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	})
+	s, err := msgbus.NewJetStreamStreamer(nc, js, testStreamCfg)
 	require.NoError(t, err)
 
 	// Subscribe first to the data.
@@ -182,7 +178,7 @@ func TestJetStream_PublishAfterSubscribe(t *testing.T) {
 }
 
 func TestJetStream_PersistentSubscribeReattemptAck(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	// Test to make sure that not-acking a message will make sure that it comes back.
@@ -192,11 +188,7 @@ func TestJetStream_PersistentSubscribeReattemptAck(t *testing.T) {
 	js := msgbus.MustConnectJetStream(nc)
 
 	ackWait := 100 * time.Millisecond
-	s, err := msgbus.NewJetStreamStreamerWithConfig(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	}, msgbus.JetStreamStreamerConfig{AckWait: ackWait})
+	s, err := msgbus.NewJetStreamStreamerWithConfig(nc, js, testStreamCfg, msgbus.JetStreamStreamerConfig{AckWait: ackWait})
 	require.NoError(t, err)
 
 	// Publish data to the subject.
@@ -228,18 +220,14 @@ func TestJetStream_PersistentSubscribeReattemptAck(t *testing.T) {
 }
 
 func TestJetStream_PeekLatestMessage_NoElements(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 
 	// Test PeekLatestMessage when the stream does not have elements.
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	})
+	s, err := msgbus.NewJetStreamStreamer(nc, js, testStreamCfg)
 	require.NoError(t, err)
 
 	// Notice that we don't publish any data, so peek should not work.
@@ -250,18 +238,14 @@ func TestJetStream_PeekLatestMessage_NoElements(t *testing.T) {
 }
 
 func TestJetStream_PeekLatestMessage_MultiElements(t *testing.T) {
-	sub := t.Name()
+	sub := testStreamCfg.Name
 	data := [][]byte{[]byte("123"), []byte("abc"), []byte("asdf")}
 
 	// Test PeekLatestMessage to return the latest result.
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
-		Name:     sub,
-		Subjects: []string{sub},
-		MaxAge:   time.Minute * 2,
-	})
+	s, err := msgbus.NewJetStreamStreamer(nc, js, testStreamCfg)
 	require.NoError(t, err)
 
 	for _, d := range data {
@@ -287,7 +271,7 @@ func TestJetStream_MultiSubjectStream(t *testing.T) {
 	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 	js := msgbus.MustConnectJetStream(nc)
-	s, err := msgbus.NewJetStreamStreamer(js, &nats.StreamConfig{
+	s, err := msgbus.NewJetStreamStreamer(nc, js, &nats.StreamConfig{
 		Name:     sub,
 		Subjects: []string{"abc", "abc.*", "abc.*.*", "abc.*.*.*"},
 		MaxAge:   time.Minute * 2,
