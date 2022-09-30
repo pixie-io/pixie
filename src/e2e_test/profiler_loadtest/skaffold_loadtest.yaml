@@ -14,4 +14,4 @@ build:
 deploy:
   kustomize:
     paths:
-    - k8s/
+    - src/e2e_test/profiler_loadtest/k8s/

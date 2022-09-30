@@ -18,10 +18,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//bazel:go_image_alias.bzl", "go_image")
 
 go_library(
-    name = "load_tester_lib",
-    srcs = ["load_tester_server.go"],
-    importpath = "px.dev/pixie/src/vizier/services/load_tester",
-    visibility = ["//visibility:private"],
+    name = "vzconn_loadtest_lib",
+    srcs = ["server.go"],
+    importpath = "px.dev/pixie/src/e2e_test/vzconn_loadtest",
+    visibility = ["//src/e2e_test:__subpackages__"],
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
@@ -43,16 +43,15 @@ go_library(
 )
 
 go_binary(
-    name = "load_tester",
-    embed = [":load_tester_lib"],
+    name = "server",
+    embed = [":vzconn_loadtest_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_image(
-    name = "load_tester_server_image",
-    binary = ":load_tester",
+    name = "server_image",
+    binary = ":server",
     visibility = [
-        "//k8s:__subpackages__",
-        "//src/vizier:__subpackages__",
+        "//src/e2e_test:__subpackages__",
     ],
 )

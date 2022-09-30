@@ -24,7 +24,10 @@ go_library(
         "vzinfo.go",
     ],
     importpath = "px.dev/pixie/src/vizier/services/cloud_connector/bridge",
-    visibility = ["//src/vizier:__subpackages__"],
+    visibility = [
+        "//src/e2e_test:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
