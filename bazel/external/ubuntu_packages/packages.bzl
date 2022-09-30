@@ -19,12 +19,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 def download_ubuntu_packages():
     http_file(
-        name = "libbyteman-java",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libbyteman-java_4.0.18-1_all.deb"],
-        sha256 = "40d91e567da1d5369e7e7d022d3b9b88fca529a357cbd22eb737c5a9e6ea8ab4",
-        downloaded_file_path = "out.deb",
-    )
-    http_file(
         name = "libc6",
         urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libc6_2.35-0ubuntu3_amd64.deb"],
         sha256 = "16281f1199723ff302ac05fc9daa647fa1cdc420b547a3b5a83e81cb40f0aea5",
@@ -62,7 +56,6 @@ def download_ubuntu_packages():
     )
 
 packages = {
-    "libbyteman-java": "@libbyteman-java//file:out.deb",
     "libc6": "@libc6//file:out.deb",
     "libcrypt1": "@libcrypt1//file:out.deb",
     "libelf1": "@libelf1//file:out.deb",

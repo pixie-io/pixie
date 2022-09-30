@@ -22,9 +22,5 @@
    {
       "path": "main/z/zlib/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb",
       "checksum": "52449467942cc943d651fd16867014e9339f3657935fc09b75b3347aa5a78066"
-   },
-   {
-      "path": "universe/b/byteman/libbyteman-java_4.0.18-1_all.deb",
-      "checksum": "f442036d59e855573bbfe1abfd108cafa62073be9926066ece42867eb7e6bf43"
    }
 ]
