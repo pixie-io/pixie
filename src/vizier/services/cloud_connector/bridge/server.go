@@ -1126,7 +1126,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			log.WithError(err).Warn("Failed to get CRD")
 		}
 
-		var msg string
+		var msg, operatorVersion string
 		status := s.currentStatus()
 
 		if vz != nil {
@@ -1140,6 +1140,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			if vz.Status.ReconciliationPhase == v1alpha1.ReconciliationPhaseUpdating {
 				status = cvmsgspb.VZ_ST_UPDATING
 			}
+			operatorVersion = vz.Status.OperatorVersion
 		} else if status == cvmsgspb.VZ_ST_HEALTHY && !crdSeen {
 			// If running on non-operator, and is healthy, consider the vizier in a degraded state.
 			status = cvmsgspb.VZ_ST_DEGRADED
@@ -1158,6 +1159,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			Status:                        status,
 			StatusMessage:                 msg,
 			DisableAutoUpdate:             viper.GetBool("disable_auto_update"),
+			OperatorVersion:               operatorVersion,
 		}
 
 		// Only send the control plane pod statuses every 1 min.

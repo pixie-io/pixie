@@ -122,6 +122,8 @@ message VizierHeartbeat {
   string status_message = 14;
   // The current Kubernetes version that the cluster is running.
   string k8s_cluster_version = 16 [ (gogoproto.customname) = "K8sClusterVersion" ];
+  // The version of the deployed Operator.
+  string operator_version = 17;
 
   reserved 4, 5, 9, 10;
 }
