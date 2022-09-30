@@ -643,7 +643,9 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
 // interface will likely change as we learn more about other ssl library
 // integrations.
 bool IsBoringSSL(const std::filesystem::path& openssl_lib) {
-  if (absl::StrContains(openssl_lib.string(), kLibNettyTcnativePrefix)) return true;
+  if (absl::StrContains(openssl_lib.string(), kLibNettyTcnativePrefix)) {
+      return true;
+  }
 
   return false;
 }

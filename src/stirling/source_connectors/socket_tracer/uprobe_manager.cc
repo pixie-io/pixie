@@ -286,8 +286,8 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
 // SSLLibMatcher allows customizing the search of shared object files
 // that need to be traced with the SSL_write and SSL_read uprobes.
 // In dynamically linked cases, it's likely that there are two
-// shared libraries (libssl and libcrypto). While statically linked
-// cases are contained within the same binary. SSLLibMatcher
+// shared libraries (libssl and libcrypto). In constrast, statically
+// linked cases are contained within the same binary. SSLLibMatcher
 // allows for handling both cases.
 struct VanillaSSLLibs {
   std::string_view libssl;
