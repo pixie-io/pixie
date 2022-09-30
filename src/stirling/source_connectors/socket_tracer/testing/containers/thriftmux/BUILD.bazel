@@ -62,19 +62,6 @@ pkg_tar(
     strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
 )
 
-# TODO(ddelnano): byteman is required until dealing with
-# netty's libnetty_tcnative.so's random file name is solved for.
-# See #407 for more details.
-pkg_tar(
-    name = "byteman_rule",
-    srcs = [
-        "byteman_rule.txt",
-    ],
-    mode = "0755",
-    package_dir = "/etc/byteman",
-    strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux",
-)
-
 thrift_library(
     name = "thrift_library",
     srcs = glob(["**/*.thrift"]),
@@ -140,12 +127,10 @@ container_image(
     name = "thriftmux_base",
     base = DEFAULT_JAVA_BASE,
     debs = [
-        packages["libbyteman-java"],
         packages["libcrypt1"],
     ],
     tars = [
         ":ssl_keys",
-        ":byteman_rule",
     ],
 )
 
@@ -154,8 +139,6 @@ scala_image(
     srcs = glob(["**/*.scala"]),
     base = ":thriftmux_base",
     jvm_flags = [
-        "-javaagent:/usr/share/java/byteman-4.0.18.jar=script:/etc/byteman/byteman_rule.txt,boot:/usr/share/java/byteman-4.0.18.jar",
-        "-Dorg.jboss.byteman.transform.all",
         "-Dio.netty.native.deleteLibAfterLoading=false",
     ],
     main_class = "Server",
