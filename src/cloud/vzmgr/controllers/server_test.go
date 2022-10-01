@@ -400,6 +400,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		expectedControlPlanePodStatuses controllers.PodStatuses
 		unhealthyDataPlanePodStatuses   controllers.PodStatuses
 		clusterVersion                  string
+		operatorVersion                 string
 		numNodes                        int32
 		numInstrumentedNodes            int32
 		checkVersion                    bool
@@ -417,6 +418,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			controlPlanePodStatuses:         testPodStatuses,
 			unhealthyDataPlanePodStatuses:   testDataPlanePodStatuses,
 			clusterVersion:                  "v1.20.1",
+			operatorVersion:                 "0.0.30",
 			numNodes:                        4,
 			numInstrumentedNodes:            3,
 			checkVersion:                    true,
@@ -514,6 +516,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				PodStatuses:                   tc.controlPlanePodStatuses,
 				UnhealthyDataPlanePodStatuses: tc.unhealthyDataPlanePodStatuses,
 				K8sClusterVersion:             tc.clusterVersion,
+				OperatorVersion:               tc.operatorVersion,
 				NumNodes:                      tc.numNodes,
 				NumInstrumentedNodes:          tc.numInstrumentedNodes,
 				DisableAutoUpdate:             tc.disableAutoUpdate,
@@ -538,7 +541,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			clusterQuery := `
 			SELECT status, last_heartbeat, control_plane_pod_statuses, num_nodes, num_instrumented_nodes,
 			auto_update_enabled, unhealthy_data_plane_pod_statuses, prev_status,
-			prev_status_time, cluster_version, status_message
+			prev_status_time, cluster_version, operator_version, status_message
 			FROM vizier_cluster_info WHERE vizier_cluster_id=$1`
 			var clusterInfo struct {
 				Status                        string                  `db:"status"`
@@ -546,6 +549,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				PrevStatus                    *string                 `db:"prev_status"`
 				PrevStatusTime                *time.Time              `db:"prev_status_time"`
 				ClusterVersion                *string                 `db:"cluster_version"`
+				OperatorVersion               *string                 `db:"operator_version"`
 				ControlPlanePodStatuses       controllers.PodStatuses `db:"control_plane_pod_statuses"`
 				UnhealthyDataPlanePodStatuses controllers.PodStatuses `db:"unhealthy_data_plane_pod_statuses"`
 				NumNodes                      int32                   `db:"num_nodes"`
@@ -564,6 +568,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				assert.Equal(t, tc.expectedPrevStatus, *clusterInfo.PrevStatus)
 			}
 			assert.Equal(t, tc.clusterVersion, *clusterInfo.ClusterVersion)
+			assert.Equal(t, tc.operatorVersion, *clusterInfo.OperatorVersion)
 			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
 			assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
 			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)

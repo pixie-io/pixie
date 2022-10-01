@@ -60,6 +60,8 @@
 // 000029_remove_first_seen.up.sql
 // 000030_add_degraded_cluster_status_enum.down.sql
 // 000030_add_degraded_cluster_status_enum.up.sql
+// 000031_add_operator_version_column.down.sql
+// 000031_add_operator_version_column.up.sql
 package schema
 
 import (
@@ -1336,6 +1338,46 @@ func _000030_add_degraded_cluster_status_enumUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000031_add_operator_version_columnDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x52\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x2f\x48\x2d\x4a\x2c\xc9\x2f\x8a\x2f\x4b\x2d\x2a\xce\xcc\xcf\xb3\xe6\x02\x04\x00\x00\xff\xff\x51\x18\x6d\x17\x40\x00\x00\x00")
+
+func _000031_add_operator_version_columnDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000031_add_operator_version_columnDownSql,
+		"000031_add_operator_version_column.down.sql",
+	)
+}
+
+func _000031_add_operator_version_columnDownSql() (*asset, error) {
+	bytes, err := _000031_add_operator_version_columnDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000031_add_operator_version_column.down.sql", size: 64, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000031_add_operator_version_columnUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x52\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x2f\x48\x2d\x4a\x2c\xc9\x2f\x8a\x2f\x4b\x2d\x2a\xce\xcc\xcf\x53\x28\x4b\x2c\x4a\xce\x48\x2c\xd2\x30\x34\x30\x30\xd0\xb4\xe6\x02\x04\x00\x00\xff\xff\xc8\x89\x3d\xf8\x4d\x00\x00\x00")
+
+func _000031_add_operator_version_columnUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000031_add_operator_version_columnUpSql,
+		"000031_add_operator_version_column.up.sql",
+	)
+}
+
+func _000031_add_operator_version_columnUpSql() (*asset, error) {
+	bytes, err := _000031_add_operator_version_columnUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000031_add_operator_version_column.up.sql", size: 77, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -1448,6 +1490,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000029_remove_first_seen.up.sql":                        _000029_remove_first_seenUpSql,
 	"000030_add_degraded_cluster_status_enum.down.sql":       _000030_add_degraded_cluster_status_enumDownSql,
 	"000030_add_degraded_cluster_status_enum.up.sql":         _000030_add_degraded_cluster_status_enumUpSql,
+	"000031_add_operator_version_column.down.sql":            _000031_add_operator_version_columnDownSql,
+	"000031_add_operator_version_column.up.sql":              _000031_add_operator_version_columnUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1551,6 +1595,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000029_remove_first_seen.up.sql":                        &bintree{_000029_remove_first_seenUpSql, map[string]*bintree{}},
 	"000030_add_degraded_cluster_status_enum.down.sql":       &bintree{_000030_add_degraded_cluster_status_enumDownSql, map[string]*bintree{}},
 	"000030_add_degraded_cluster_status_enum.up.sql":         &bintree{_000030_add_degraded_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000031_add_operator_version_column.down.sql":            &bintree{_000031_add_operator_version_columnDownSql, map[string]*bintree{}},
+	"000031_add_operator_version_column.up.sql":              &bintree{_000031_add_operator_version_columnUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

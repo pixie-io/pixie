@@ -623,7 +623,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		UPDATE vizier_cluster_info x
 		SET last_heartbeat = $1, status = $2, control_plane_pod_statuses = CASE WHEN $11 THEN $3::json ELSE y.control_plane_pod_statuses END,
 			num_nodes = $4, num_instrumented_nodes = $5, auto_update_enabled = $6,
-			unhealthy_data_plane_pod_statuses = $7, cluster_version = $8, status_message = $9
+			unhealthy_data_plane_pod_statuses = $7, cluster_version = $8, status_message = $9, operator_version = $12
 		FROM (SELECT * FROM vizier_cluster_info WHERE vizier_cluster_id = $10) y
 		WHERE x.vizier_cluster_id = y.vizier_cluster_id
 		RETURNING (x.status != y.status
@@ -640,7 +640,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	rows, err := s.db.Queryx(query, time.Now(), vizierStatus(req.Status), PodStatuses(req.PodStatuses), req.NumNodes,
 		req.NumInstrumentedNodes, !req.DisableAutoUpdate, PodStatuses(req.UnhealthyDataPlanePodStatuses),
-		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil)
+		req.K8sClusterVersion, req.StatusMessage, vizierID, req.PodStatuses != nil, req.OperatorVersion)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 		return
