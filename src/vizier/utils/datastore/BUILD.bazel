@@ -30,15 +30,11 @@ go_test(
     tags = ["integration"],
     deps = [
         "//src/utils/testingutils",
-        "//src/vizier/utils/datastore/badgerdb",
-        "//src/vizier/utils/datastore/buntdb",
         "//src/vizier/utils/datastore/etcd",
         "//src/vizier/utils/datastore/pebbledb",
         "@com_github_cockroachdb_pebble//:pebble",
         "@com_github_cockroachdb_pebble//vfs",
-        "@com_github_dgraph_io_badger_v3//:badger",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
-        "@com_github_tidwall_buntdb//:buntdb",
     ],
 )

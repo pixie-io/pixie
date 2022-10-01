@@ -24,14 +24,10 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
-	"github.com/dgraph-io/badger/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bunt "github.com/tidwall/buntdb"
 
 	"px.dev/pixie/src/utils/testingutils"
-	"px.dev/pixie/src/vizier/utils/datastore/badgerdb"
-	"px.dev/pixie/src/vizier/utils/datastore/buntdb"
 	"px.dev/pixie/src/vizier/utils/datastore/etcd"
 	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
@@ -52,16 +48,6 @@ func setupDatastore(t *testing.T, db Setter) {
 }
 
 func TestDatastore(t *testing.T) {
-	bnt, err := bunt.Open(":memory:")
-	if err != nil {
-		t.Fatal("failed to initialize buntdb")
-	}
-
-	bgr, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
-	if err != nil {
-		t.Fatal("failed to initialize badgerdb")
-	}
-
 	memFS := vfs.NewMem()
 	pbbl, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
@@ -78,8 +64,6 @@ func TestDatastore(t *testing.T) {
 		name        string
 		runTTLTests bool
 	}{
-		{buntdb.New(bnt), "BuntDB", false},
-		{badgerdb.New(bgr), "BadgerDB", false},
 		{pebbledb.New(pbbl, 2*time.Second), "PebbleDB", true},
 		{etcd.New(et), "etcd", false},
 	}
