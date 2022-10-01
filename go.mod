@@ -10,7 +10,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
-	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/bazelbuild/rules_go v0.32.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2

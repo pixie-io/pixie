@@ -22,10 +22,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/badoux/checkmail"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/lestrrat-go/jwx/jwa"
@@ -44,10 +42,6 @@ import (
 	claimsutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 )
-
-var emailDomainBlockedList = map[string]bool{
-	"blocklist.com": true,
-}
 
 // DefaultProjectName is the name of the default project we automatically assign to every org.
 const DefaultProjectName string = "default"
@@ -170,23 +164,6 @@ func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
 	}
 }
 
-func checkValidEmail(email string) error {
-	if len(email) == 0 || checkmail.ValidateFormat(email) != nil {
-		return errors.New("failed validation")
-	}
-
-	components := strings.Split(email, "@")
-	if len(components) != 2 {
-		return errors.New("malformed email")
-	}
-	_, domain := components[0], components[1]
-
-	if _, exists := emailDomainBlockedList[domain]; exists {
-		return errors.New("disallowed email domain")
-	}
-	return nil
-}
-
 func toExternalError(err error) error {
 	if err == datastore.ErrOrgNotFound {
 		return status.Error(codes.NotFound, "no such org")
@@ -217,8 +194,8 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 		// Mark user as needing approval if this org requires approvals.
 		userInfo.IsApproved = !orgInfo.EnableApprovals
 	}
-	if err := checkValidEmail(userInfo.Email); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	if userInfo.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email must not be empty")
 	}
 	if userInfo.IdentityProvider == "" {
 		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")
@@ -277,13 +254,12 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	if len(orgInfo.OrgName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid org name")
 	}
+	if userInfo.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email must not be empty")
+	}
 	if userInfo.IdentityProvider == "" {
 		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")
 	}
-	if err := checkValidEmail(userInfo.Email); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	orgID, userID, err := s.uds.CreateUserAndOrg(orgInfo, userInfo)
 	if err != nil {
 		return nil, err

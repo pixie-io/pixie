@@ -148,21 +148,6 @@ func TestServer_CreateUser(t *testing.T) {
 			enableApprovals: false,
 		},
 		{
-			name:      "banned email",
-			makesCall: false,
-			userInfo: &profilepb.CreateUserRequest{
-				OrgID:            utils.ProtoFromUUID(testOrgUUID),
-				FirstName:        "foo",
-				LastName:         "bar",
-				Email:            "foo@blocklist.com",
-				IdentityProvider: "github",
-			},
-			expectErr:       true,
-			expectCode:      codes.InvalidArgument,
-			respID:          nil,
-			enableApprovals: false,
-		},
-		{
 			name:      "allowed email",
 			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
@@ -175,21 +160,6 @@ func TestServer_CreateUser(t *testing.T) {
 			expectErr:       false,
 			expectCode:      codes.OK,
 			respID:          utils.ProtoFromUUID(testUUID),
-			enableApprovals: false,
-		},
-		{
-			name:      "invalid email",
-			makesCall: false,
-			userInfo: &profilepb.CreateUserRequest{
-				OrgID:            utils.ProtoFromUUID(testOrgUUID),
-				FirstName:        "foo",
-				LastName:         "bar",
-				Email:            "foo.com",
-				IdentityProvider: "github",
-			},
-			expectErr:       true,
-			expectCode:      codes.InvalidArgument,
-			respID:          nil,
 			enableApprovals: false,
 		},
 		{
@@ -611,21 +581,6 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					FirstName:        "foo",
 					LastName:         "bar",
 					Email:            "",
-					IdentityProvider: "github",
-				},
-			},
-		},
-		{
-			name: "banned email",
-			req: &profilepb.CreateOrgAndUserRequest{
-				Org: &profilepb.CreateOrgAndUserRequest_Org{
-					OrgName:    "my-org",
-					DomainName: "my-org.com",
-				},
-				User: &profilepb.CreateOrgAndUserRequest_User{
-					FirstName:        "foo",
-					LastName:         "bar",
-					Email:            "foo@blocklist.com",
 					IdentityProvider: "github",
 				},
 			},

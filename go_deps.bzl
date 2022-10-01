@@ -263,12 +263,6 @@ def pl_go_dependencies():
         sum = "h1:TYi4+3m5t6K48TGI9AUdb+IzbnSxvnvUMfuitfgcfuo=",
         version = "v0.6.0",
     )
-    go_repository(
-        name = "com_github_badoux_checkmail",
-        importpath = "github.com/badoux/checkmail",
-        sum = "h1:kXfVkP8xPSJXzicomzjECcw6tv1Wl9h1lNenWBfNKdg=",
-        version = "v0.0.0-20181210160741-9661bd69e9ad",
-    )
 
     go_repository(
         name = "com_github_bazelbuild_rules_go",
