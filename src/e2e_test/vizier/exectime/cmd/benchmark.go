@@ -35,6 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils/script"
 )
@@ -63,6 +64,7 @@ func init() {
 	BenchmarkCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
 	BenchmarkCmd.PersistentFlags().StringP("bundle", "b", defaultBundleFile, "The bundle file to use")
 	BenchmarkCmd.PersistentFlags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	BenchmarkCmd.PersistentFlags().BoolP("split-funcs", "p", false, "Run each function from the vis spec separately")
 	BenchmarkCmd.PersistentFlags().StringP("cluster", "c", "", "Run only on selected cluster")
 	BenchmarkCmd.PersistentFlags().StringSliceP("scripts", "s", nil, "Run only on selected scripts")
 	BenchmarkCmd.PersistentFlags().StringP("output", "o", "table", "Output format to use. Currently supports 'table' or 'json'")
@@ -391,6 +393,7 @@ func benchmarkCmd(cmd *cobra.Command) {
 	selectedCluster, _ := cmd.Flags().GetString("cluster")
 	selectedScripts, _ := cmd.Flags().GetStringSlice("scripts")
 	outputFmt, _ := cmd.Flags().GetString("output")
+	splitByFunc, _ := cmd.Flags().GetBool("split-funcs")
 
 	clusterID := uuid.FromStringOrNil(selectedCluster)
 
@@ -404,7 +407,6 @@ func benchmarkCmd(cmd *cobra.Command) {
 	}
 
 	scripts := br.GetScripts()
-	log.Infof("Running %d scripts %d times each", len(scripts), repeatCount)
 
 	if !allClusters && clusterID == uuid.Nil {
 		clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
@@ -420,8 +422,7 @@ func benchmarkCmd(cmd *cobra.Command) {
 
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
-	scriptsToRun := make([]*script.ExecutableScript, 0)
-	data := make(map[string]*ScriptExecData)
+	viableScripts := make([]*script.ExecutableScript, 0)
 	for _, s := range scripts {
 		if !isAllowed(s, allowedScripts) {
 			continue
@@ -443,11 +444,53 @@ func benchmarkCmd(cmd *cobra.Command) {
 			}
 			s.Args[v.Name] = script.Arg{Name: v.Name, Value: value}
 		}
+		if !splitByFunc || s.Vis == nil {
+			viableScripts = append(viableScripts, s)
+			continue
+		}
 
+		// Make the script name base + the name of the function
+		// Make the only function the global function to go through.
+
+		scriptFuncs := make([]*vispb.Vis_GlobalFunc, 0)
+		if s.Vis.GlobalFuncs != nil {
+			scriptFuncs = append(scriptFuncs, s.Vis.GlobalFuncs...)
+		}
+		for _, w := range s.Vis.Widgets {
+			switch w.FuncOrRef.(type) {
+			case *vispb.Widget_Func_:
+				scriptFuncs = append(scriptFuncs, &vispb.Vis_GlobalFunc{
+					OutputName: w.Name,
+					Func:       w.GetFunc(),
+				})
+			default:
+				// Skip if it's not a function definition.
+				continue
+			}
+		}
+
+		s.Vis.Widgets = nil
+		for _, f := range scriptFuncs {
+			newScript := &script.ExecutableScript{
+				ScriptString: s.ScriptString,
+				ScriptName:   s.ScriptName + "/" + f.OutputName,
+				Vis: &vispb.Vis{
+					GlobalFuncs: []*vispb.Vis_GlobalFunc{f},
+					Variables:   s.Vis.Variables,
+				},
+				Args: s.Args,
+			}
+			viableScripts = append(viableScripts, newScript)
+		}
+	}
+
+	log.Infof("Running %d scripts %d times each", len(viableScripts), repeatCount)
+	data := make(map[string]*ScriptExecData)
+	scriptsToRun := make([]*script.ExecutableScript, 0)
+	for _, s := range viableScripts {
 		for i := 0; i < repeatCount; i++ {
 			scriptsToRun = append(scriptsToRun, s)
 		}
-
 		externalExecTiming := make([]time.Duration, 0)
 		internalExecTiming := make([]time.Duration, 0)
 		compilationTiming := make([]time.Duration, 0)

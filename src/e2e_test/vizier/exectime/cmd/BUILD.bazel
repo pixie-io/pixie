@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/e2e_test/vizier/exectime/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/pixie_cli/pkg/vizier",
         "//src/utils/script",
         "@com_github_fatih_color//:color",
