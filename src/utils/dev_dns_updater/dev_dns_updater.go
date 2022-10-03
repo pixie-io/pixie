@@ -56,7 +56,7 @@ type svcInfo struct {
 	Addr    string
 }
 
-func setupFlags() {
+func init() {
 	pflag.String("n", "plc-dev", "The namespace to watch (plc-dev) by default")
 	pflag.String("domain-name", "dev.withpixie.dev", "The domain name to use")
 	pflag.String("kubeconfig", filepath.Join(homeDir(), ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -92,13 +92,11 @@ func getClientset(config *rest.Config) *kubernetes.Clientset {
 }
 
 func homeDir() string {
-	if u := os.Getenv("SUDO_USER"); u != "" {
-		return fmt.Sprintf("/home/%s", u)
+	hd, err := os.UserHomeDir()
+	if err != nil && !viper.IsSet("kubeconfig") {
+		log.Fatal("Cannot determine homedir, pass in a kubeconfig location explicitly with --kubeconfig")
 	}
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
+	return hd
 }
 
 func generateDomainEntries() {
@@ -251,7 +249,12 @@ func sudoSelfIfNotRoot() {
 	uid := os.Getuid()
 	if uid != 0 {
 		f, _ := filepath.Abs(os.Args[0])
-		args := append([]string{f}, os.Args[1:]...)
+		args := []string{
+			f,
+			fmt.Sprintf("--n=%s", viper.GetString("n")),
+			fmt.Sprintf("--domain-name=%s", viper.GetString("domain-name")),
+			fmt.Sprintf("--kubeconfig=%s", viper.GetString("kubeconfig")),
+		}
 
 		c1 := exec.Command("sudo", args...)
 		c1.Stdin = os.Stdin
@@ -270,10 +273,8 @@ func sudoSelfIfNotRoot() {
 	}
 }
 func main() {
-	sudoSelfIfNotRoot()
-
-	setupFlags()
 	parseFlags()
+	sudoSelfIfNotRoot()
 
 	generateDomainEntries()
 	err := copyFile("/etc/hosts", "/etc/hosts.bak")
