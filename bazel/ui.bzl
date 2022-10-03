@@ -201,12 +201,9 @@ pl_ui_test = rule(
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
-        # Workaround for bazelbuild/bazel#6293. See comment in lcov_merger.sh.
-        # This dummy binary is a shell script that just exits with no error.
         "_lcov_merger": attr.label(
-            executable = True,
-            default = Label("@io_bazel_rules_go//go/tools/builders:lcov_merger"),
-            cfg = "target",
+            default = configuration_field(fragment = "coverage", name = "output_generator"),
+            cfg = "exec",
         ),
     }),
     test = True,

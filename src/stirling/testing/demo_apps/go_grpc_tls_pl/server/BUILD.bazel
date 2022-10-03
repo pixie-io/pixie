@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -45,25 +45,25 @@ go_binary(
     embed = [":server_lib"],
 )
 
-go_cross(
+go_cross_binary(
     name = "golang_1_16_grpc_tls_server_binary",
     sdk_version = "1.16",
     target = ":server",
 )
 
-go_cross(
+go_cross_binary(
     name = "golang_1_17_grpc_tls_server_binary",
     sdk_version = "1.17",
     target = ":server",
 )
 
-go_cross(
+go_cross_binary(
     name = "golang_1_18_grpc_tls_server_binary",
     sdk_version = "1.18",
     target = ":server",
 )
 
-go_cross(
+go_cross_binary(
     name = "golang_1_19_grpc_tls_server_binary",
     sdk_version = "1.19",
     target = ":server",

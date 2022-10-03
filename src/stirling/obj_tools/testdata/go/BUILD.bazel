@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -36,25 +36,25 @@ go_binary(
     }),
 )
 
-go_cross(
+go_cross_binary(
     name = "test_go_1_16_binary",
     sdk_version = "1.16",
     target = ":test_go_binary",
 )
 
-go_cross(
+go_cross_binary(
     name = "test_go_1_17_binary",
     sdk_version = "1.17",
     target = ":test_go_binary",
 )
 
-go_cross(
+go_cross_binary(
     name = "test_go_1_18_binary",
     sdk_version = "1.18",
     target = ":test_go_binary",
 )
 
-go_cross(
+go_cross_binary(
     name = "test_go_1_19_binary",
     sdk_version = "1.19",
     target = ":test_go_binary",
