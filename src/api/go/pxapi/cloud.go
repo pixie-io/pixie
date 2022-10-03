@@ -145,3 +145,31 @@ func (c *Client) DeleteAPIKey(ctx context.Context, id string) error {
 	_, err := apiKeyMgr.Delete(c.cloudCtxWithMD(ctx), req)
 	return err
 }
+
+// GetLatestVizierVersion returns the latest version of vizier available.
+func (c *Client) GetLatestVizierVersion(ctx context.Context) (string, error) {
+	return c.getLatestArtifact(ctx, "vizier", cloudpb.AT_CONTAINER_SET_YAMLS)
+}
+
+// GetLatestOperatorVersion returns the latest version of the operator available.
+func (c *Client) GetLatestOperatorVersion(ctx context.Context) (string, error) {
+	return c.getLatestArtifact(ctx, "operator", cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS)
+}
+
+// Helper function to fetch artifact versions.
+func (c *Client) getLatestArtifact(ctx context.Context, an string, at cloudpb.ArtifactType) (string, error) {
+	ac := cloudpb.NewArtifactTrackerClient(c.grpcConn)
+	req := &cloudpb.GetArtifactListRequest{
+		ArtifactName: an,
+		ArtifactType: at,
+		Limit:        1,
+	}
+	resp, err := ac.GetArtifactList(c.cloudCtxWithMD(ctx), req)
+	if err != nil {
+		return "", err
+	}
+	if len(resp.Artifact) != 1 {
+		return "", errdefs.ErrMissingArtifact
+	}
+	return resp.Artifact[0].VersionStr, nil
+}

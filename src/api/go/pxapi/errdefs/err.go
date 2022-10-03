@@ -53,6 +53,9 @@ var (
 
 	// ErrCompilation is a generic PxL compilation error.
 	ErrCompilation = errors.New("compilation error")
+
+	// ErrMissingArtifact occurs when an artifact could not be found.
+	ErrMissingArtifact = errors.New("missing artifact")
 )
 
 // MultiError is an interface to allow access to groups of errors.
