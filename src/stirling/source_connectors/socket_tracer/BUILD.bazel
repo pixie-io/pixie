@@ -448,9 +448,9 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "thriftmux_openssl_trace_bpf_test",
+    name = "netty_tls_trace_bpf_test",
     timeout = "long",
-    srcs = ["thriftmux_openssl_trace_bpf_test.cc"],
+    srcs = ["netty_tls_trace_bpf_test.cc"],
     flaky = True,
     shard_count = 2,
     tags = [

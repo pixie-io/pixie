@@ -137,14 +137,14 @@ mux::Record RecordWithType(mux::Type req_type) {
   return r;
 }
 
-using ThriftMuxTLSServerImplementations = ::testing::Types<ThriftMuxServerContainerWrapper>;
+using NettyTLSServerImplementations = ::testing::Types<ThriftMuxServerContainerWrapper>;
 
 template <typename T>
-using ThriftMuxTLSTraceTest = BaseOpenSSLTraceTest<T>;
+using NettyTLSTraceTest = BaseOpenSSLTraceTest<T>;
 
-TYPED_TEST_SUITE(ThriftMuxTLSTraceTest, ThriftMuxTLSServerImplementations);
+TYPED_TEST_SUITE(NettyTLSTraceTest, NettyTLSServerImplementations);
 
-TYPED_TEST(ThriftMuxTLSTraceTest, mtls_thriftmux_client) {
+TYPED_TEST(NettyTLSTraceTest, mtls_thriftmux_client) {
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
