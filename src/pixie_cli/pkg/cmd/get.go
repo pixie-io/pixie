@@ -34,10 +34,10 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/components"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
 	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/script"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 

@@ -31,7 +31,7 @@ import (
 	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/indexer/md"
 	"px.dev/pixie/src/cloud/profile/profilepb"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/utils/script"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.

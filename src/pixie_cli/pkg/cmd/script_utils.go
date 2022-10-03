@@ -29,8 +29,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/utils/script"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
@@ -51,7 +52,9 @@ func createBundleReader() (*script.BundleManager, error) {
 	if bundleFile == "" {
 		bundleFile = defaultBundleFile
 	}
-	br, err := script.NewBundleManager([]string{bundleFile, ossBundleFile})
+
+	authInfo := auth.MustLoadDefaultCredentials()
+	br, err := script.NewBundleManagerWithOrg([]string{bundleFile, ossBundleFile}, authInfo.OrgID, authInfo.OrgName)
 	if err != nil {
 		return nil, err
 	}

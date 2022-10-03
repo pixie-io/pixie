@@ -30,7 +30,7 @@ import (
 	"github.com/sahilm/fuzzy"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/utils/script"
 )
 
 // Very rudimentary tokenizer. Not going to be fully robust, but it should be fine for our purposes.

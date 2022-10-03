@@ -38,10 +38,10 @@ import (
 	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
 	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/script"
 )
 
 const (

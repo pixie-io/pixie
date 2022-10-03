@@ -30,8 +30,7 @@ import (
 	"strings"
 	"sync"
 
-	"px.dev/pixie/src/pixie_cli/pkg/auth"
-	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 // BundleManager reads a script bundle.
@@ -81,7 +80,7 @@ func NewBundleManagerWithOrg(bundleFiles []string, orgID, orgName string) (*Bund
 		if isValidURL(bundleFile) {
 			resp, err := http.Get(bundleFile)
 			if err != nil {
-				utils.WithError(err).Error("Error checking bundle file URL")
+				log.WithError(err).Error("Error checking bundle file URL")
 				return
 			}
 			defer resp.Body.Close()
@@ -89,7 +88,7 @@ func NewBundleManagerWithOrg(bundleFiles []string, orgID, orgName string) (*Bund
 		} else {
 			f, err := os.Open(bundleFile)
 			if err != nil {
-				utils.WithError(err).Error("Error reading bundle file")
+				log.WithError(err).Error("Error reading bundle file")
 				return
 			}
 			defer f.Close()
@@ -99,7 +98,7 @@ func NewBundleManagerWithOrg(bundleFiles []string, orgID, orgName string) (*Bund
 		var b bundle
 		err := json.NewDecoder(r).Decode(&b)
 		if err != nil {
-			utils.WithError(err).Error("Error decoding bundle file")
+			log.WithError(err).Error("Error decoding bundle file")
 			return
 		}
 
@@ -142,13 +141,6 @@ func NewBundleManagerWithOrg(bundleFiles []string, orgID, orgName string) (*Bund
 	}, nil
 }
 
-// NewBundleManager reads the json bundle and initializes the bundle reader.
-func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
-	// TODO(zasgar): Refactor user login state, etc.
-	authInfo := auth.MustLoadDefaultCredentials()
-	return NewBundleManagerWithOrg(bundleFiles, authInfo.OrgID, authInfo.OrgName)
-}
-
 // GetScripts returns metadata about available scripts.
 func (b BundleManager) GetScripts() []*ExecutableScript {
 	s := make([]*ExecutableScript, 0)
@@ -156,7 +148,7 @@ func (b BundleManager) GetScripts() []*ExecutableScript {
 	for k, val := range b.scripts {
 		pixieScript, err := pixieScriptToExecutableScript(k, val)
 		if err != nil {
-			utils.WithError(err).Error("Failed to parse script, skipping...")
+			log.WithError(err).Error("Failed to parse script, skipping...")
 			continue
 		}
 		s = append(s, pixieScript)
@@ -193,7 +185,7 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
-		utils.WithError(err).Fatal("Failed to get script")
+		log.WithError(err).Fatal("Failed to get script")
 	}
 	return es
 }

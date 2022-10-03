@@ -34,8 +34,8 @@ import (
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/utils/script"
 )
 
 type taskWrapper struct {

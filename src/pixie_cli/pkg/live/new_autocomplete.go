@@ -29,7 +29,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
-	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/utils/script"
 )
 
 // AutocompleteModal is a modal for autocomplete.

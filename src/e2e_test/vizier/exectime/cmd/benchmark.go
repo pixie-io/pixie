@@ -35,8 +35,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	"px.dev/pixie/src/utils/script"
 )
 
 var disallowedScripts = map[string]bool{
@@ -203,7 +203,7 @@ func (d *BytesDistribution) Stddev() float64 {
 }
 
 func createBundleReader(bundleFile string) (*script.BundleManager, error) {
-	br, err := script.NewBundleManager([]string{bundleFile})
+	br, err := script.NewBundleManagerWithOrg([]string{bundleFile}, "", "")
 	if err != nil {
 		return nil, err
 	}

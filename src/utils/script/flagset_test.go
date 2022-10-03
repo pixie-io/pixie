@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/utils/script"
 )
 
 func setupTest() *script.FlagSet {

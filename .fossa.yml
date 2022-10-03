@@ -504,10 +504,10 @@ analyze:
     type: go
     target: px.dev/pixie/src/pixie_cli/pkg/pxconfig
     path: src/pixie_cli/pkg/pxconfig
-  - name: px.dev/pixie/src/pixie_cli/pkg/script
+  - name: px.dev/pixie/src/utils/script
     type: go
-    target: px.dev/pixie/src/pixie_cli/pkg/script
-    path: src/pixie_cli/pkg/script
+    target: px.dev/pixie/src/utils/script
+    path: src/utils/script
   - name: px.dev/pixie/src/pixie_cli/pkg/sentryhook
     type: go
     target: px.dev/pixie/src/pixie_cli/pkg/sentryhook

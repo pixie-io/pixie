@@ -30,7 +30,7 @@ go_library(
         "//src/cloud/autocomplete/ebnf",
         "//src/cloud/indexer/md",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
-        "//src/pixie_cli/pkg/script",
+        "//src/utils/script",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sahilm_fuzzy//:fuzzy",
