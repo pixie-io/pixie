@@ -21,7 +21,7 @@ import * as React from 'react';
 import { Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 
-import { PartialPlugin } from 'app/pages/configure-data-export/data-export-gql';
+import { GQLDetailedRetentionScript, GQLRetentionScript } from 'app/types/schema';
 
 export const DataExportNoPluginsEnabledSplash = React.memo<{ isEmbedded: boolean }>(({ isEmbedded }) => {
   return (
@@ -49,8 +49,17 @@ export const DataExportNoPluginsEnabledSplash = React.memo<{ isEmbedded: boolean
 });
 DataExportNoPluginsEnabledSplash.displayName = 'DataExportNoPluginsEnabledSplash';
 
+/** May be useful if your environment has special rules for permitted retention script names. */
+export function allowRetentionScriptName(scriptName: string): boolean {
+  return typeof scriptName === 'string'; // But by default, no such rule exists
+}
+
 /** May be useful for custom environments. By default, doesn't do anything. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hidePresetsForPlugin(plugin: PartialPlugin): boolean {
-  return false;
+export function customizeDetailedRetentionScript(script: GQLDetailedRetentionScript): GQLDetailedRetentionScript {
+  return script;
+}
+
+/** May be useful for custom environments. By default, doesn't do anything. */
+export function customizeScriptList(scripts: GQLRetentionScript[]): GQLRetentionScript[] {
+  return scripts;
 }

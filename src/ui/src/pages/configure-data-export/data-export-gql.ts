@@ -28,6 +28,7 @@ import {
   GQLRetentionScript,
 } from 'app/types/schema';
 import pixieAnalytics from 'app/utils/analytics';
+import { customizeRetentionScript, customizeScriptList } from 'configurable/data-export';
 
 export const DEFAULT_RETENTION_PXL = `import px
 
@@ -183,7 +184,7 @@ export function useRetentionScripts(): { loading: boolean, error?: ApolloError, 
   return React.useMemo(() => ({
     loading: loading && !error,
     error,
-    scripts: data?.retentionScripts ?? [],
+    scripts: customizeScriptList(data?.retentionScripts ?? []),
   }), [data, loading, error]);
 }
 
@@ -205,7 +206,7 @@ export function useRetentionScript(id: string): {
   return React.useMemo(() => ({
     loading: loading && !error,
     error,
-    script: data?.retentionScript ?? null,
+    script: customizeRetentionScript(data?.retentionScript ?? null),
   }), [data, loading, error]);
 }
 
@@ -236,12 +237,17 @@ export function useMutateRetentionScript(
     return updateScript({
       variables: {
         id: script.id,
-        // TODO(michelle): When plugins can be changed on existing scripts, remove the `pluginID: undefined` part.
         script: {
           ...script,
           ...newScript,
-          contents: script.isPreset ? undefined : newScript.contents,
+          // TODO(michelle): When plugins can be changed on existing scripts, remove the `pluginID: undefined` part.
           pluginID: undefined,
+          // Preset scripts have a few extra read-only fields; don't try to set them.
+          ...(script.isPreset ? {
+            name: undefined,
+            description: undefined,
+            contents: undefined,
+          } : {}),
         },
       },
       refetchQueries: [GQL_GET_RETENTION_SCRIPTS, GQL_GET_RETENTION_SCRIPT],

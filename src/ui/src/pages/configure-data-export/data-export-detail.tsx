@@ -44,6 +44,7 @@ import { CodeEditor, EDITOR_THEME_MAP, StatusCell, StatusGroup, useSnackbar } fr
 import { usePluginConfig } from 'app/containers/admin/plugins/plugin-gql';
 import { GQLClusterStatus, GQLEditableRetentionScript } from 'app/types/schema';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
+import { allowRetentionScriptName } from 'configurable/data-export';
 
 import { PluginIcon } from './data-export-common';
 import {
@@ -287,7 +288,13 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
   const [saving, setSaving] = React.useState(false);
   const valid = React.useMemo(() => (
     pendingValues.name.trim().length
-      && (pendingValues.name.trim() === script?.name || !takenScriptNames.includes(pendingValues.name.trim()))
+      && (
+        pendingValues.name.trim() === script?.name
+        || (
+          !takenScriptNames.includes(pendingValues.name.trim())
+          && allowRetentionScriptName(pendingValues.name)
+        )
+      )
       && pendingValues.clusters != null
       && pendingValues.clusters.every(c => validClusters.some(v => v.id === c.id))
       && pendingValues.contents != null
@@ -306,6 +313,8 @@ export const EditDataExportScript = React.memo<{ scriptId: string, isCreate: boo
       return 'Script needs a name';
     } else if (name !== script?.name && takenScriptNames.includes(name)) {
       return 'That name is already in use';
+    } else if (!allowRetentionScriptName(name)) {
+      return 'That name is not allowed';
     }
     return ' ';
   }, [pendingValues.name, dirty, script?.name, takenScriptNames]);
