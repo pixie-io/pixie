@@ -298,7 +298,7 @@ func (s *Server) createPresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 			Description: j.Description,
 			IsPreset:    true,
 			ExportURL:   "",
-		}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, disablePresets)
+		}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, j.DefaultDisabled || disablePresets)
 		if err != nil {
 			return status.Errorf(codes.Internal, "Failed to create preset scripts")
 		}
@@ -423,7 +423,7 @@ func (s *Server) updatePresetScripts(ctx context.Context, txn *sqlx.Tx, orgID uu
 				Description: j.Description,
 				IsPreset:    true,
 				ExportURL:   "",
-			}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, disablePresets)
+			}, j.Script, make([]*uuidpb.UUID, 0), j.DefaultFrequencyS, disablePresets || j.DefaultDisabled)
 			if err != nil {
 				return err
 			}

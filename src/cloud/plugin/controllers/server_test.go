@@ -138,6 +138,7 @@ func mustLoadTestData(db *sqlx.DB) {
 			Description:       "This is a script to get dns data 2",
 			DefaultFrequencyS: 20,
 			Script:            "dns script 2",
+			DefaultDisabled:   true,
 		},
 	}), "http://test-doc-url3", "http://test-export-url3", true, true)
 
@@ -461,6 +462,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					ClusterIDs: make([]*uuidpb.UUID, 0),
 					Configs:    string(mConfig3),
 					FrequencyS: 20,
+					Disabled:   true,
 					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
 			},
@@ -632,6 +634,7 @@ func TestServer_UpdateRetentionConfigs(t *testing.T) {
 					Configs:    string(mConfig4),
 					FrequencyS: 20,
 					OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Disabled:   true,
 				},
 			},
 			expectedPluginScripts: []*controllers.RetentionScript{

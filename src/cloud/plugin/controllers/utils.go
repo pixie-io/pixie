@@ -62,6 +62,7 @@ type PresetScript struct {
 	Description       string `json:"description"`
 	DefaultFrequencyS int64  `json:"default_frequency_s" yaml:"defaultFrequencyS"`
 	Script            string `json:"script"`
+	DefaultDisabled   bool   `json:"default_disabled" yaml:"defaultDisabled"`
 }
 
 // Value Returns a golang database/sql driver value for PresetScripts.
