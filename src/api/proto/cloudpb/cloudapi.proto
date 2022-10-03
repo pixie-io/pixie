@@ -1139,6 +1139,8 @@ message CreateRetentionScriptRequest {
   repeated uuidpb.UUID cluster_ids = 8 [ (gogoproto.customname) = "ClusterIDs" ];
   // The plugin to use for the script.
   string plugin_id = 9;
+  // Whether the retention should should be disabled upon creation.
+  bool disabled = 10;
 }
 
 // CreateRetentionScriptResponse is a response to a CreateRetentionScriptRequest.
