@@ -114,7 +114,7 @@ var GetViziersCmd = &cobra.Command{
 
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
-		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Vizier Version", "Last Heartbeat", "Status", "Status Message"})
+		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Operator Version", "Vizier Version", "Last Heartbeat", "Status", "Status Message"})
 
 		for _, vz := range vzs {
 			var lastHeartbeat interface{}
@@ -126,24 +126,29 @@ var GetViziersCmd = &cobra.Command{
 							time.Since(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
 				}
 			}
-			sb := strings.Builder{}
-
-			// Parse the version to pretty print it.
-			if sv, err := semver.Parse(vz.VizierVersion); err == nil {
-				sb.WriteString(fmt.Sprintf("%d.%d.%d", sv.Major, sv.Minor, sv.Patch))
-				for idx, pre := range sv.Pre {
-					if idx == 0 {
-						sb.WriteString("-")
-					} else {
-						sb.WriteString(".")
-					}
-					sb.WriteString(pre.String())
-				}
-			}
-			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion, sb.String(),
-				lastHeartbeat, vz.Status, vz.StatusMessage})
+			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion,
+				prettyVersion(vz.OperatorVersion), prettyVersion(vz.VizierVersion), lastHeartbeat, vz.Status, vz.StatusMessage})
 		}
 	},
+}
+
+// prettyVersion returns a pretty form of the version string.
+func prettyVersion(version string) string {
+	sb := strings.Builder{}
+	sv, err := semver.Parse(version)
+	if err != nil {
+		return ""
+	}
+	sb.WriteString(fmt.Sprintf("%d.%d.%d", sv.Major, sv.Minor, sv.Patch))
+	for idx, pre := range sv.Pre {
+		if idx == 0 {
+			sb.WriteString("-")
+		} else {
+			sb.WriteString(".")
+		}
+		sb.WriteString(pre.String())
+	}
+	return sb.String()
 }
 
 // GetClusterCmd is the "get cluster" command to get information about the current kubeconfig cluster.
