@@ -287,48 +287,38 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
 // that need to be traced with the SSL_write and SSL_read uprobes.
 // In dynamically linked cases, it's likely that there are two
 // shared libraries (libssl and libcrypto). In constrast, statically
-// linked cases are contained within the same binary. SSLLibMatcher
-// allows for handling both cases.
-struct VanillaSSLLibs {
+// linked cases are contained within the same binary.
+struct SSLLibMatcher {
   std::string_view libssl;
   std::string_view libcrypto;
-};
-struct SSLLibMatcher {
-  std::variant<VanillaSSLLibs, std::string_view> ssl_lib_patterns;
   HostPathForPIDPathSearchType search_type;
 };
 
 static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
     SSLLibMatcher{
-        .ssl_lib_patterns =
-            VanillaSSLLibs{.libssl = "libssl.so.1.1", .libcrypto = "libcrypto.so.1.1"},
+        .libssl = "libssl.so.1.1",
+        .libcrypto = "libcrypto.so.1.1",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
     },
     SSLLibMatcher{
-        .ssl_lib_patterns = kLibNettyTcnativePrefix,
+        .libssl =  kLibNettyTcnativePrefix,
+        .libcrypto=  kLibNettyTcnativePrefix,
         .search_type = HostPathForPIDPathSearchType::kSearchTypeContains,
     },
 });
 
-std::vector<std::string_view> GetSSLLibsFromVariant(
-    std::variant<VanillaSSLLibs, std::string_view> ssl_lib_patterns) {
-  if (std::holds_alternative<VanillaSSLLibs>(ssl_lib_patterns)) {
-    auto vanilla = std::get<VanillaSSLLibs>(ssl_lib_patterns);
-    return std::vector<std::string_view>{vanilla.libssl, vanilla.libcrypto};
-  }
-  return std::vector<std::string_view>{std::get<std::string_view>(ssl_lib_patterns)};
-}
-
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
+
+  const system::Config& sysconfig = system::Config::GetInstance();
+
   for (auto ssl_library_match : kLibSSLMatchers) {
-    auto lib_patterns = ssl_library_match.ssl_lib_patterns;
+    const auto libssl = ssl_library_match.libssl;
+    const auto libcrypto = ssl_library_match.libcrypto;
 
-    const auto lib_names = GetSSLLibsFromVariant(lib_patterns);
+    const std::vector<std::string_view> lib_names = {libssl, libcrypto};
     const auto search_type = ssl_library_match.search_type;
-
-    const system::Config& sysconfig = system::Config::GetInstance();
 
     // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
     PL_ASSIGN_OR_RETURN(
@@ -336,8 +326,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
         FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_, search_type));
 
     std::filesystem::path container_libssl = container_lib_paths[0];
-    std::filesystem::path container_libcrypto =
-        lib_names.size() == 1 ? container_lib_paths[0] : container_lib_paths[1];
+    std::filesystem::path container_libcrypto = container_lib_paths[1];
 
     if ((container_libssl.empty() || container_libcrypto.empty())) {
       // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
