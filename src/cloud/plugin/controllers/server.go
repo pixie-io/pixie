@@ -870,7 +870,7 @@ func (s *Server) CreateRetentionScript(ctx context.Context, req *pluginpb.Create
 		Description: req.Script.Script.Description,
 		IsPreset:    req.Script.Script.IsPreset,
 		ExportURL:   req.Script.ExportURL,
-	}, req.Script.Contents, req.Script.Script.ClusterIDs, req.Script.Script.FrequencyS, false)
+	}, req.Script.Contents, req.Script.Script.ClusterIDs, req.Script.Script.FrequencyS, !req.Script.Script.Enabled)
 	if err != nil {
 		return nil, err
 	}

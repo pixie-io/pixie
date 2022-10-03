@@ -306,7 +306,7 @@ func (p *PluginServiceServer) CreateRetentionScript(ctx context.Context, req *cl
 				FrequencyS:  req.FrequencyS,
 				ClusterIDs:  req.ClusterIDs,
 				PluginId:    req.PluginId,
-				Enabled:     true,
+				Enabled:     !req.Disabled,
 				IsPreset:    false,
 			},
 			Contents:  req.Contents,

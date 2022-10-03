@@ -1318,6 +1318,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 		Configs:    string(mConfig),
 		FrequencyS: 20,
 		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+		Disabled:   true,
 	}).Return(&cronscriptpb.CreateScriptResponse{
 		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 	}, nil)
@@ -1333,7 +1334,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 				},
 				PluginId: "test-plugin",
-				Enabled:  true,
+				Enabled:  false,
 				IsPreset: false,
 			},
 			Contents:  "px.display()",
