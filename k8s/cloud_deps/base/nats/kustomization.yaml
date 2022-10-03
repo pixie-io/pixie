@@ -4,6 +4,7 @@ kind: Kustomization
 commonLabels:
   app: pl-cloud
 resources:
+- configmap.yaml
 - service_accounts.yaml
 - statefulset.yaml
 vars:

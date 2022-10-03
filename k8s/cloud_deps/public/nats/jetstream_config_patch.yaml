@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-jetstream-config
+data:
+  PL_JETSTREAM_CLUSTER_SIZE: "3"

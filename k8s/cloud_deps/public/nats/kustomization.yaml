@@ -10,5 +10,6 @@ resources:
 - ../../base/nats
 patchesStrategicMerge:
 - config_patch.yaml
+- jetstream_config_patch.yaml
 - replica_patch.yaml
 - storage_patch.yaml

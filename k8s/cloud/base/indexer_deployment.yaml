@@ -48,6 +48,8 @@ spec:
         - configMapRef:
             name: pl-domain-config
         - configMapRef:
+            name: pl-jetstream-config
+        - configMapRef:
             name: pl-errors-config
             optional: true
         env:

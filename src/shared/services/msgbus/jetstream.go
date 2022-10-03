@@ -26,7 +26,13 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
+
+func init() {
+	pflag.Int("jetstream_cluster_size", 5, "The number of JetStream replicas, used to configure stream replication.")
+}
 
 // MustConnectJetStream creates a new JetStream connection.
 func MustConnectJetStream(nc *nats.Conn) nats.JetStreamContext {
@@ -172,7 +178,7 @@ var DefaultJetStreamStreamerConfig = JetStreamStreamerConfig{
 
 // NewJetStreamStreamerWithConfig creates a new Streamer implemented using JetStream with specific configuration.
 func NewJetStreamStreamerWithConfig(nc *nats.Conn, js nats.JetStreamContext, sCfg *nats.StreamConfig, cfg JetStreamStreamerConfig) (Streamer, error) {
-	clusterSize := len(nc.Servers())
+	clusterSize := viper.GetInt("jetstream_cluster_size")
 	if sCfg.Replicas > clusterSize {
 		sCfg.Replicas = clusterSize
 	}
