@@ -24,6 +24,7 @@ describe('selectCluster', () => {
   const commonClusterProps = {
     clusterVersion: '1.0.0',
     vizierVersion: '1.0.0',
+    operatorVersion: '0.1.0',
     lastHeartbeatMs: 0,
     controlPlanePodStatuses: [],
     unhealthyDataPlanePodStatuses: [],

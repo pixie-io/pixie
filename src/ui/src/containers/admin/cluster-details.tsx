@@ -512,6 +512,7 @@ const ClusterSummaryTable = ({ cluster }: {
   'numNodes' |
   'numInstrumentedNodes' |
   'vizierVersion' |
+  'operatorVersion' |
   'clusterVersion' |
   'lastHeartbeatMs'
   >
