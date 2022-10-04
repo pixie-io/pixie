@@ -72,7 +72,7 @@ types::StringValue MySQLCommandNameUDF::Exec(FunctionContext*, Int64Value api_ke
 }
 
 types::StringValue MuxFrameTypeUDF::Exec(FunctionContext*, Int64Value frame_type) {
-  return mux ::FrameTypeName(frame_type.val);
+  return mux::FrameTypeName(frame_type.val);
 }
 
 }  // namespace protocols

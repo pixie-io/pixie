@@ -60,7 +60,7 @@ inline std::string FrameTypeName(int frame_type) {
     case -62:
       return "Tdiscarded (legacy)";
     default:
-      return std::to_string(frame_type);
+      return absl::Substitute("Unknown ($0)", frame_type);
   }
 }
 
