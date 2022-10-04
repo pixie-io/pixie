@@ -382,6 +382,64 @@ func (s *stdoutTableWriter) Write(data *[]*ScriptExecData) error {
 	return nil
 }
 
+func getArgDefaults(v []*vizier.Connector) (map[string]script.Arg, error) {
+	argMap := make(map[string]script.Arg)
+	argMap["start_time"] = script.Arg{Name: "start_time", Value: "-5m"}
+	// Run a script that gets the busiest pod, service, and namespace + the node of that pod.
+	pxl := `
+import pxviews
+import px
+df = pxviews.container_process_summary('-5m', px.now())
+df = df[df.pod != '' and df.service != '']
+max_cpu = df.agg(max_cpu=('cpu_usage', px.max))
+df = df.merge(max_cpu, left_on=['cpu_usage'], right_on=['max_cpu'], how='inner')
+px.display(df[['pod', 'service', 'namespace', 'node']])
+`
+
+	execScript := &script.ExecutableScript{
+		ScriptName:   "get_arg_defaults",
+		ScriptString: pxl,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// Start running the streaming script.
+	resp, err := vizier.RunScript(ctx, v, execScript, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Accumulate the streamed data and block until all data is received.
+	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory, nil)
+	err = tw.Finish()
+
+	if err != nil {
+		log.WithError(err).Infof("Error '%s' on '%s'", vizier.FormatErrorMessage(err), execScript.ScriptName)
+		return nil, err
+	}
+
+	views, err := tw.Views()
+	if err != nil {
+		log.WithError(err).Error("couldn't get views")
+		return nil, err
+	}
+	for _, table := range views {
+		if table.Name() != "output" {
+			continue
+		}
+
+		argMap["pod"] = script.Arg{Name: "pod", Value: table.Data()[0][0].(string)}
+		argMap["service"] = script.Arg{Name: "service", Value: table.Data()[0][1].(string)}
+		argMap["namespace"] = script.Arg{Name: "namespace", Value: table.Data()[0][2].(string)}
+		argMap["node"] = script.Arg{Name: "node", Value: table.Data()[0][3].(string)}
+	}
+
+	if len(argMap) != 5 {
+		return nil, errors.New("couldn't get arg defaults from pxl script")
+	}
+	return argMap, nil
+}
+
 func benchmarkCmd(cmd *cobra.Command) {
 	// Set the logger to use stderr so that json output can be consumed without log lines.
 	log.SetOutput(os.Stderr)
@@ -422,6 +480,11 @@ func benchmarkCmd(cmd *cobra.Command) {
 
 	vzrConns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
 
+	argDefaults, err := getArgDefaults(vzrConns)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get arg defaults")
+	}
+
 	viableScripts := make([]*script.ExecutableScript, 0)
 	for _, s := range scripts {
 		if !isAllowed(s, allowedScripts) {
@@ -429,7 +492,9 @@ func benchmarkCmd(cmd *cobra.Command) {
 		}
 
 		s.Args = make(map[string]script.Arg)
-		s.Args["start_time"] = script.Arg{Name: "start_time", Value: "-5m"}
+		for k, v := range argDefaults {
+			s.Args[k] = v
+		}
 
 		for _, v := range s.Vis.Variables {
 			if _, ok := s.Args[v.Name]; ok {
