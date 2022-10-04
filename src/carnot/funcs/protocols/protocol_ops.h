@@ -107,6 +107,19 @@ class AMQPMethodTypeUDF : public px::carnot::udf::ScalarUDF {
   }
 };
 
+class MuxFrameTypeUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value frame_type);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a Mux frame type to its name.")
+        .Details("UDF to convert Mux frame type into their corresponding human-readable names.")
+        .Arg("frame_type", "A Mux frame_type in numeric value")
+        .Example("df.frame_type_name = px.mux_frame_type_name(df.req_cmd)")
+        .Returns("The mux frame type name.");
+  }
+};
+
 void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace protocols
