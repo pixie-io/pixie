@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -510,20 +509,19 @@ func (m *VizierMonitor) statusAggregator(nodeStateCh, pvcStateCh <-chan *vizierS
 func (m *VizierMonitor) repairVizier(state *vizierState) error {
 	// Input validation: Return if state is good
 	if state.Reason == "" {
-		err := errors.New("Trying to repair when state is good")
-		log.WithError(err).Error()
-		return err
+		log.Warn("Vizier seems to have repaired itself")
+		return nil
 	}
 
 	// Delete pod if nats pod failed
 	if state.Reason == status.NATSPodFailed {
 		err := m.clientset.CoreV1().Pods(m.namespace).Delete(m.ctx, natsPodName, metav1.DeleteOptions{})
 		if err != nil {
-			log.WithError(err).Error("Failed to delete pod")
+			log.WithError(err).Error("Failed to delete NATS pod")
 			return err
 		}
 
-		log.Info("Pod was successfully deleted")
+		log.Info("NATS pod was successfully deleted")
 	} else if state.Reason == status.MetadataPVCMissing || state.Reason == status.MetadataPVCStorageClassUnavailable || state.Reason == status.MetadataPVCPendingBinding {
 		log.Info("Switching to etcd backed metadata store")
 
@@ -571,10 +569,10 @@ func (m *VizierMonitor) runReconciler() {
 				log.WithError(err).Error("Failed to update vizier status")
 			}
 
-			if vizierState != okState() {
+			if !isOk(vizierState) {
 				err := m.repairVizier(vizierState)
 				if err != nil {
-					return
+					log.WithError(err).Info("Failed to autorepair vizier")
 				}
 			}
 		}

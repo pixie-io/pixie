@@ -32,11 +32,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	testclient "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
@@ -236,7 +235,7 @@ func TestMonitor_repairVizier_NATS(t *testing.T) {
 			name:               "natsPod is running and correct name",
 			podName:            "pl-nats-0",
 			state:              &vizierState{Reason: ""},
-			expectedError:      "Trying to repair when state is good",
+			expectedError:      "",
 			expectedDeleteCall: "",
 		},
 	}
@@ -283,7 +282,7 @@ func TestMonitor_repairVizier_NATS(t *testing.T) {
 			err := monitor.repairVizier(test.state)
 
 			if test.expectedError != "" {
-				assert.Regexp(t, test.expectedError, err.Error())
+				assert.ErrorContains(t, err, test.expectedError)
 			} else {
 				assert.Nil(t, err)
 			}
