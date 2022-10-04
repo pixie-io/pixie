@@ -253,6 +253,7 @@ type VizierInfo struct {
 	ClusterUID                    *string       `db:"cluster_uid"`
 	ClusterName                   *string       `db:"cluster_name"`
 	ClusterVersion                *string       `db:"cluster_version"`
+	OperatorVersion               *string       `db:"operator_version"`
 	VizierVersion                 *string       `db:"vizier_version"`
 	StatusMessage                 *string       `db:"status_message"`
 	ControlPlanePodStatuses       PodStatuses   `db:"control_plane_pod_statuses"`
@@ -268,6 +269,7 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 	clusterUID := ""
 	clusterName := ""
 	clusterVersion := ""
+	operatorVersion := ""
 	vizierVersion := ""
 	statusMessage := ""
 	var prevStatusTime *types.Timestamp
@@ -286,6 +288,9 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 	}
 	if vzInfo.ClusterVersion != nil {
 		clusterVersion = *vzInfo.ClusterVersion
+	}
+	if vzInfo.OperatorVersion != nil {
+		operatorVersion = *vzInfo.OperatorVersion
 	}
 	if vzInfo.VizierVersion != nil {
 		vizierVersion = *vzInfo.VizierVersion
@@ -308,6 +313,7 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 		ClusterUID:                    clusterUID,
 		ClusterName:                   clusterName,
 		ClusterVersion:                clusterVersion,
+		OperatorVersion:               operatorVersion,
 		VizierVersion:                 vizierVersion,
 		StatusMessage:                 statusMessage,
 		ControlPlanePodStatuses:       vzInfo.ControlPlanePodStatuses,
@@ -336,8 +342,8 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 		ids[i] = utils.UUIDFromProtoOrNil(id)
 	}
 
-	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version, c.org_id,
-			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
+	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.operator_version, i.vizier_version,
+			  c.org_id, i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
               i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time
               FROM vizier_cluster_info as i, vizier_cluster as c
@@ -389,7 +395,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.vizier_version,
+	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, i.cluster_version, i.operator_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
               i.control_plane_pod_statuses, i.unhealthy_data_plane_pod_statuses,
 							i.num_nodes, i.num_instrumented_nodes, i.status_message, i.prev_status, i.prev_status_time

@@ -378,6 +378,8 @@ message ClusterInfo {
   // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
   // the user has not deployed through the CLI.
   string cluster_version = 7;
+  // The version of the deployed Operator.
+  string operator_version = 17;
   // The version of the deployed Vizier.
   string vizier_version = 8;
   // Map of pod name to pod status. This only includes pods that are part of the

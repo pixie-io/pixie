@@ -201,6 +201,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			PrettyClusterName:             prettyName,
 			ClusterVersion:                vzInfo.ClusterVersion,
 			VizierVersion:                 vzInfo.VizierVersion,
+			OperatorVersion:               vzInfo.OperatorVersion,
 			ControlPlanePodStatuses:       convertPodStatuses(vzInfo.ControlPlanePodStatuses),
 			UnhealthyDataPlanePodStatuses: convertPodStatuses(vzInfo.UnhealthyDataPlanePodStatuses),
 			NumNodes:                      vzInfo.NumNodes,

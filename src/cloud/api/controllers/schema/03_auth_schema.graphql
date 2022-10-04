@@ -241,6 +241,7 @@ type ClusterInfo {
   status: ClusterStatus!
   lastHeartbeatMs: Float!
   vizierVersion: String!
+  operatorVersion: String!
   clusterVersion: String!
   clusterName: String!
   prettyClusterName: String!

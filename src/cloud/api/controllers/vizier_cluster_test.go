@@ -122,6 +122,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 					LastHeartbeatNs: int64(1305646598000000000),
 					Config:          &cvmsgspb.VizierConfig{},
 					VizierVersion:   "1.2.3",
+					OperatorVersion: "0.0.30",
 					ClusterUID:      "a UID",
 					ClusterName:     "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
 					ClusterVersion:  "5.6.7",
@@ -203,6 +204,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 			assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 			assert.Equal(t, "1.2.3", cluster.VizierVersion)
+			assert.Equal(t, "0.0.30", cluster.OperatorVersion)
 			assert.Equal(t, "a UID", cluster.ClusterUID)
 			assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
 			assert.Equal(t, "gke:dev-cluster-zasgar-3", cluster.PrettyClusterName)

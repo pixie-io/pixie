@@ -237,6 +237,7 @@ export interface GQLClusterInfo {
   status: GQLClusterStatus;
   lastHeartbeatMs: number;
   vizierVersion: string;
+  operatorVersion: string;
   clusterVersion: string;
   clusterName: string;
   prettyClusterName: string;
@@ -1170,6 +1171,7 @@ export interface GQLClusterInfoTypeResolver<TParent = any> {
   status?: ClusterInfoToStatusResolver<TParent>;
   lastHeartbeatMs?: ClusterInfoToLastHeartbeatMsResolver<TParent>;
   vizierVersion?: ClusterInfoToVizierVersionResolver<TParent>;
+  operatorVersion?: ClusterInfoToOperatorVersionResolver<TParent>;
   clusterVersion?: ClusterInfoToClusterVersionResolver<TParent>;
   clusterName?: ClusterInfoToClusterNameResolver<TParent>;
   prettyClusterName?: ClusterInfoToPrettyClusterNameResolver<TParent>;
@@ -1196,6 +1198,10 @@ export interface ClusterInfoToLastHeartbeatMsResolver<TParent = any, TResult = a
 }
 
 export interface ClusterInfoToVizierVersionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToOperatorVersionResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

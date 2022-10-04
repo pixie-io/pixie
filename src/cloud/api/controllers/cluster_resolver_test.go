@@ -95,6 +95,7 @@ func TestClusterInfo(t *testing.T) {
 				Status:                  cloudpb.CS_HEALTHY,
 				LastHeartbeatNs:         4 * 1000 * 1000,
 				VizierVersion:           "vzVersion",
+				OperatorVersion:         "opVersion",
 				ClusterVersion:          "clusterVersion",
 				ClusterName:             "clusterName",
 				ClusterUID:              "clusterUID",
@@ -129,6 +130,7 @@ func TestClusterInfo(t *testing.T) {
 									restartCount
 								}
 								vizierVersion
+								operatorVersion
 								clusterVersion
 								clusterName
 								clusterUID
@@ -149,6 +151,7 @@ func TestClusterInfo(t *testing.T) {
 									"restartCount": 10
 								}],
 								"vizierVersion": "vzVersion",
+								"operatorVersion": "opVersion",
 								"clusterVersion": "clusterVersion",
 								"clusterName": "clusterName",
 								"clusterUID": "clusterUID",
@@ -200,6 +203,7 @@ func TestClusterInfoByName(t *testing.T) {
 				Status:          cloudpb.CS_HEALTHY,
 				LastHeartbeatNs: 4 * 1000 * 1000,
 				VizierVersion:   "vzVersion",
+				OperatorVersion: "opVersion",
 				ClusterVersion:  "clusterVersion2",
 				ClusterName:     "clusterName2",
 				ClusterUID:      "clusterUID2",
@@ -223,6 +227,7 @@ func TestClusterInfoByName(t *testing.T) {
 								status
 								lastHeartbeatMs
 								vizierVersion
+								operatorVersion
 								clusterVersion
 								clusterName
 								clusterUID
@@ -237,6 +242,7 @@ func TestClusterInfoByName(t *testing.T) {
 								"status": "CS_HEALTHY",
 								"lastHeartbeatMs": 4,
 								"vizierVersion": "vzVersion",
+								"operatorVersion": "",
 								"clusterVersion": "clusterVersion",
 								"clusterName": "clusterName",
 								"clusterUID": "clusterUID",

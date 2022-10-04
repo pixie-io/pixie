@@ -144,6 +144,7 @@ type ClusterInfoResolver struct {
 	Status                        string
 	LastHeartbeatMs               float64
 	VizierVersion                 string
+	OperatorVersion               string
 	ClusterVersion                string
 	ClusterUID                    string
 	ClusterName                   string
@@ -189,6 +190,7 @@ func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, 
 		Status:                        cluster.Status.String(),
 		LastHeartbeatMs:               float64(cluster.LastHeartbeatNs) / 1e6,
 		VizierVersion:                 cluster.VizierVersion,
+		OperatorVersion:               cluster.OperatorVersion,
 		ClusterVersion:                cluster.ClusterVersion,
 		ClusterUID:                    cluster.ClusterUID,
 		ClusterName:                   cluster.ClusterName,
