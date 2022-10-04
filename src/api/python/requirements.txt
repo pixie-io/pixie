@@ -2,4 +2,4 @@ Authlib==1.0.1
 gogo-python==0.0.1
 grpcio==1.47.0
 grpcio-tools==1.47.0
-protobuf==3.20.1
+protobuf==3.20.3

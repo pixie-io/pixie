@@ -275,6 +275,6 @@ def stirling_test_images():
     # Built and pushed by src/stirling/testing/demo_apps/py_grpc/update_gcr.sh
     _gcr_io_image(
         "py_grpc_helloworld_image",
-        "sha256:27208985f08887bbbc9cf3e03c947ec1aeb2d144d8dc27958571936c40ab06af",
-        "pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:1.1",
+        "sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
+        "pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:1.2",
     )
