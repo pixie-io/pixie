@@ -2395,82 +2395,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@date-io/core@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "@date-io/core@npm:2.11.0"
-  checksum: ad26af280b0fb08bf4a272fbd5d41fb9bdb5b5aa3fcc4930ea5ae92a691c6b1adad8d54aa4172cc164b260aa5ee7994d5d1fcee00609f2e12efda8556fa32ba2
-  languageName: node
-  linkType: hard
-
-"@date-io/date-fns@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "@date-io/date-fns@npm:2.11.0"
-  dependencies:
-    "@date-io/core": ^2.11.0
-  peerDependencies:
-    date-fns: ^2.0.0
-  peerDependenciesMeta:
-    date-fns:
-      optional: true
-  checksum: cdab6e3836c69b3d81a43afb6fe082feb29edd55923422f821c4bf7aa8dbdcee890fa5b7e85a133403196f942e0ca5eb14707413e768a0abb05d7a819dbbfd95
-  languageName: node
-  linkType: hard
-
-"@date-io/dayjs@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "@date-io/dayjs@npm:2.11.0"
-  dependencies:
-    "@date-io/core": ^2.11.0
-  peerDependencies:
-    dayjs: ^1.8.17
-  peerDependenciesMeta:
-    dayjs:
-      optional: true
-  checksum: 298f5355c3c0e0a60581e8daa1a3208b50741b5af7b59319ecbaaf69369f1faa51bfa711a030297d0b37b4b13444dbe909fc8773d0104bbead789ecce2433b89
-  languageName: node
-  linkType: hard
-
-"@date-io/luxon@npm:^2.11.1":
-  version: 2.11.1
-  resolution: "@date-io/luxon@npm:2.11.1"
-  dependencies:
-    "@date-io/core": ^2.11.0
-  peerDependencies:
-    luxon: ^1.21.3 || ^2.x
-  peerDependenciesMeta:
-    luxon:
-      optional: true
-  checksum: 64782a8bc95b3b4adb24bdbf05a211b0f7afe36a2c9ce92c6262bd167b43c897ef049b2fa80e03a489b67877cadae7adecd21518193359ac192a7c2d3dc11764
-  languageName: node
-  linkType: hard
-
-"@date-io/moment@npm:^2.11.0":
-  version: 2.11.0
-  resolution: "@date-io/moment@npm:2.11.0"
-  dependencies:
-    "@date-io/core": ^2.11.0
-  peerDependencies:
-    moment: ^2.24.0
-  peerDependenciesMeta:
-    moment:
-      optional: true
-  checksum: db0d3e79ba485ca9c6804ded95ab5d6c84900774c75d9f4e37fced67161737fa2bfd460b15ce969ef8336dbea2cc4119cf938e5d1df55a1aea27cb4297d5270c
-  languageName: node
-  linkType: hard
-
 "@discoveryjs/json-ext@npm:^0.5.0":
   version: 0.5.2
   resolution: "@discoveryjs/json-ext@npm:0.5.2"
   checksum: cf7ce79a6e25944b6618f3336a4f69191ce9019ee08e47129c4933f03f66aa625c0e7d55075f890cdfc9a7f9b3f6c5465a1e51bd3e7a73aec803753d7d0cec91
-  languageName: node
-  linkType: hard
-
-"@egjs/hammerjs@npm:^2.0.0":
-  version: 2.0.17
-  resolution: "@egjs/hammerjs@npm:2.0.17"
-  dependencies:
-    "@types/hammerjs": ^2.0.36
-  checksum: 8945137cec5837edd70af3f2e0ea621543eb0aa3b667e6269ec6485350f4d120c2434b37c7c30b1cf42a65275dd61c1f24626749c616696d3956ac0c008c4766
   languageName: node
   linkType: hard
 
@@ -3452,47 +3380,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/lab@npm:^5.0.0-alpha.54":
-  version: 5.0.0-alpha.54
-  resolution: "@mui/lab@npm:5.0.0-alpha.54"
-  dependencies:
-    "@babel/runtime": ^7.16.0
-    "@date-io/date-fns": ^2.11.0
-    "@date-io/dayjs": ^2.11.0
-    "@date-io/luxon": ^2.11.1
-    "@date-io/moment": ^2.11.0
-    "@mui/core": 5.0.0-alpha.54
-    "@mui/system": ^5.1.0
-    "@mui/utils": ^5.1.0
-    clsx: ^1.1.1
-    prop-types: ^15.7.2
-    react-is: ^17.0.2
-    react-transition-group: ^4.4.2
-    rifm: ^0.12.0
-  peerDependencies:
-    "@mui/material": ^5.0.0
-    "@types/react": ^16.8.6 || ^17.0.0
-    date-fns: ^2.25.0
-    dayjs: ^1.10.7
-    luxon: ^1.28.0
-    moment: ^2.29.1
-    react: ^17.0.2
-    react-dom: ^17.0.2
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-    date-fns:
-      optional: true
-    dayjs:
-      optional: true
-    luxon:
-      optional: true
-    moment:
-      optional: true
-  checksum: 4aff05f5ac26722b5d159314e1dd367054eba7f597ce80f2a997e6f97cb1ce468b08bb533e580c3fb04303b535654e7ed375721f639d9e3d1219d69a0f2e75c2
-  languageName: node
-  linkType: hard
-
 "@mui/material@npm:^5.1.0":
   version: 5.1.0
   resolution: "@mui/material@npm:5.1.0"
@@ -3724,11 +3611,9 @@ __metadata:
     "@babel/preset-env": ^7.16.7
     "@babel/preset-react": ^7.16.7
     "@babel/preset-typescript": ^7.16.7
-    "@egjs/hammerjs": ^2.0.0
     "@emotion/react": ^11.5.0
     "@emotion/styled": ^11.3.0
     "@mui/icons-material": ^5.1.0
-    "@mui/lab": ^5.0.0-alpha.54
     "@mui/material": ^5.1.0
     "@mui/styles": ^5.1.0
     "@mui/system": ^5.1.0
@@ -3761,7 +3646,6 @@ __metadata:
     canvas: ^2.8.0
     case-sensitive-paths-webpack-plugin: ^2.1.2
     client-oauth2: ^4.3.3
-    component-emitter: ^1.3.0
     compression-webpack-plugin: ^4.0.0
     concurrently: ^6.2.0
     cross-fetch: ^3.1.5
@@ -3797,12 +3681,10 @@ __metadata:
     jest-junit: ^13.0.0
     jest-raw-loader: ^1.0.1
     jose: ^4.9.3
-    keycharm: ^0.3.0
     launchdarkly-react-client-sdk: ^2.20.0
     license-checker: ^25.0.1
     lodash: ^4.17.21
     mini-css-extract-plugin: ^1.3.1
-    moment: ^2.24.0
     monaco-editor: 0.20.0
     monaco-editor-webpack-plugin: ^1.9.0
     mustache: ^4.2.0
@@ -3826,7 +3708,6 @@ __metadata:
     react-router-dom: ^5.2.0
     react-split: ^2.0.7
     react-table: ^7.7.0
-    react-test-renderer: ^18.1.0
     react-vega: ^7.4.2
     react-virtualized-auto-sizer: ^1.0.5
     react-window: ^1.8.6
@@ -3835,7 +3716,6 @@ __metadata:
     shelljs: ^0.8.2
     style-loader: ^2.0.0
     svg-url-loader: ^6.0.0
-    timsort: ^0.3.0
     ts-node: ^8.10.2
     typeface-roboto: ^0.0.75
     typeface-roboto-mono: ^0.0.75
@@ -3847,17 +3727,10 @@ __metadata:
     vega: 5.21.0
     vega-embed: ^6.15.0
     vega-lite: 4.17.0
-    vega-parser: 6.1.2
     vega-scale: ^7.0.0
     vega-scenegraph: 4.9.2
-    vega-schema: 5.18.0
-    vega-tooltip: ^0.25.0
     vega-typings: ~0.19.2
-    vega-util: ^1.16.0
-    vega-view-transforms: 4.5.8
-    vis-data: ^6.2.1
     vis-network: ^7.7.1
-    vis-util: ^4.0.0
     webpack: ^5.51.2
     webpack-bundle-analyzer: ^4.4.2
     webpack-cli: ^4.9.2
@@ -4479,13 +4352,6 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: d076bb61f45d0fc42dee496ef8b1c2f8742e15d5e47e90e20d0243386e426c04d4efd408a48875ab432f7960b4ce3414db20ed0fbbfc7bcc89d84e574f6e045a
-  languageName: node
-  linkType: hard
-
-"@types/hammerjs@npm:^2.0.36":
-  version: 2.0.39
-  resolution: "@types/hammerjs@npm:2.0.39"
-  checksum: 74080a049c6b66dc4e08fa065873a3e3380ef2a78cfa5cfc1b1138ad63b13c3c93a9d92d10a40b476cbf9755b30667548c9f7c5cba444723baa7cc863cec589b
   languageName: node
   linkType: hard
 
@@ -7162,7 +7028,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"component-emitter@npm:^1.2.1, component-emitter@npm:^1.3.0":
+"component-emitter@npm:^1.2.1":
   version: 1.3.0
   resolution: "component-emitter@npm:1.3.0"
   checksum: b3c46de38ffd35c57d1c02488355be9f218e582aec72d72d1b8bbec95a3ac1b38c96cd6e03ff015577e68f550fbb361a3bfdbd9bb248be9390b7b3745691be6b
@@ -12674,13 +12540,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keycharm@npm:^0.3.0":
-  version: 0.3.1
-  resolution: "keycharm@npm:0.3.1"
-  checksum: f561c349fe522fd8475fa3c64ee53eff98a62bbd7d96560da2cd2c607f48e46aafedc99e19d1c2603a5a73955d7a1370af0f622f15fb0d3044cef25cfeed7da0
-  languageName: node
-  linkType: hard
-
 "keyv@npm:^4.0.0":
   version: 4.0.3
   resolution: "keyv@npm:4.0.3"
@@ -13491,13 +13350,6 @@ __metadata:
   bin:
     mkdirp: bin/cmd.js
   checksum: a96865108c6c3b1b8e1d5e9f11843de1e077e57737602de1b82030815f311be11f96f09cce59bd5b903d0b29834733e5313f9301e3ed6d6f6fba2eae0df4298f
-  languageName: node
-  linkType: hard
-
-"moment@npm:^2.24.0":
-  version: 2.29.4
-  resolution: "moment@npm:2.29.4"
-  checksum: 0ec3f9c2bcba38dc2451b1daed5daded747f17610b92427bebe1d08d48d8b7bdd8d9197500b072d14e326dd0ccf3e326b9e3d07c5895d3d49e39b6803b76e80e
   languageName: node
   linkType: hard
 
@@ -15215,13 +15067,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-is@npm:^16.12.0 || ^17.0.0 || ^18.0.0, react-is@npm:^18.1.0":
-  version: 18.1.0
-  resolution: "react-is@npm:18.1.0"
-  checksum: d206a0fe6790851bff168727bfb896de02c5591695afb0c441163e8630136a3e13ee1a7ddd59fdccddcc93968b4721ae112c10f790b194b03b35a3dc13a355ef
-  languageName: node
-  linkType: hard
-
 "react-is@npm:^16.13.1, react-is@npm:^16.6.0, react-is@npm:^16.7.0, react-is@npm:^16.8.1":
   version: 16.13.1
   resolution: "react-is@npm:16.13.1"
@@ -15306,18 +15151,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-shallow-renderer@npm:^16.15.0":
-  version: 16.15.0
-  resolution: "react-shallow-renderer@npm:16.15.0"
-  dependencies:
-    object-assign: ^4.1.1
-    react-is: ^16.12.0 || ^17.0.0 || ^18.0.0
-  peerDependencies:
-    react: ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: 6052c7e3e9627485120ebd8257f128aad8f56386fe8d42374b7743eac1be457c33506d153c7886b4e32923c0c352d402ab805ef9ca02dbcd8393b2bdeb6e5af8
-  languageName: node
-  linkType: hard
-
 "react-split@npm:^2.0.7":
   version: 2.0.10
   resolution: "react-split@npm:2.0.10"
@@ -15336,19 +15169,6 @@ __metadata:
   peerDependencies:
     react: ^16.8.3 || ^17.0.0-0
   checksum: a679edecc76d3e51311b095528395b38ac85a1ffa371716bea01559a5fdc75af9a6abb9bb907c63190c8e77da22b11f7b05065b3a45d190d8f43cb83e4366206
-  languageName: node
-  linkType: hard
-
-"react-test-renderer@npm:^18.1.0":
-  version: 18.1.0
-  resolution: "react-test-renderer@npm:18.1.0"
-  dependencies:
-    react-is: ^18.1.0
-    react-shallow-renderer: ^16.15.0
-    scheduler: ^0.22.0
-  peerDependencies:
-    react: ^18.1.0
-  checksum: 401a0020ff39ebdb37e015197ab11ceb13ddb7004716b7fb6304b169f20d6b0c4d0e14aaa0da139ce2b1eb14088cf370b5771b30fee52f16d6b682b5332c5781
   languageName: node
   linkType: hard
 
@@ -15876,15 +15696,6 @@ resolve@^2.0.0-next.3:
   version: 1.3.0
   resolution: "rfdc@npm:1.3.0"
   checksum: fb2ba8512e43519983b4c61bd3fa77c0f410eff6bae68b08614437bc3f35f91362215f7b4a73cbda6f67330b5746ce07db5dd9850ad3edc91271ad6deea0df32
-  languageName: node
-  linkType: hard
-
-"rifm@npm:^0.12.0":
-  version: 0.12.0
-  resolution: "rifm@npm:0.12.0"
-  peerDependencies:
-    react: ">=16.8"
-  checksum: 8ea4f820f3e7a9804e79397194b19d8feee23037b8bf040223d1811551144e57e85b364758c04804e677d505a56a87f69db46ae2b7a37852d078e9adc4912a02
   languageName: node
   linkType: hard
 
@@ -17249,13 +17060,6 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"timsort@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "timsort@npm:0.3.0"
-  checksum: 1a66cb897dacabd7dd7c91b7e2301498ca9e224de2edb9e42d19f5b17c4b6dc62a8d4cbc64f28be82aaf1541cb5a78ab49aa818f42a2989ebe049a64af731e2a
-  languageName: node
-  linkType: hard
-
 "tiny-invariant@npm:^1.0.2":
   version: 1.1.0
   resolution: "tiny-invariant@npm:1.1.0"
@@ -18063,17 +17867,17 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vega-event-selector@npm:^2.0.6, vega-event-selector@npm:~2.0.6":
-  version: 2.0.6
-  resolution: "vega-event-selector@npm:2.0.6"
-  checksum: 411f53c8fafc89cc12f9167cd6082cf55a5f5be835dd793dfed89a2942d72d13c0db36c7e7614b4a85aa85c9d62bac6f5fddaf482c6a246a303a78b245b1e3fc
-  languageName: node
-  linkType: hard
-
 "vega-event-selector@npm:^3.0.0, vega-event-selector@npm:~3.0.0":
   version: 3.0.0
   resolution: "vega-event-selector@npm:3.0.0"
   checksum: a4d64b7bb11290818bf4ca8d40ecfe2068edaae59e032863d7f10bc9f206f99c56e423fa561ce03c0a862e8af40871418aa61354c78560606e754228da75e99b
+  languageName: node
+  linkType: hard
+
+"vega-event-selector@npm:~2.0.6":
+  version: 2.0.6
+  resolution: "vega-event-selector@npm:2.0.6"
+  checksum: 411f53c8fafc89cc12f9167cd6082cf55a5f5be835dd793dfed89a2942d72d13c0db36c7e7614b4a85aa85c9d62bac6f5fddaf482c6a246a303a78b245b1e3fc
   languageName: node
   linkType: hard
 
@@ -18231,19 +18035,6 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vega-parser@npm:6.1.2":
-  version: 6.1.2
-  resolution: "vega-parser@npm:6.1.2"
-  dependencies:
-    vega-dataflow: ^5.7.3
-    vega-event-selector: ^2.0.6
-    vega-functions: ^5.10.0
-    vega-scale: ^7.1.1
-    vega-util: ^1.15.2
-  checksum: c7a8ecece80a30ce9b6c58f314edaf1027a905fd2d7ba9b9c9cff5692500ced762f7aec52cbc71cabf9dd5289b20a9dcfc9eaba737aa80911e3d35f6bd5fac29
-  languageName: node
-  linkType: hard
-
 "vega-parser@npm:~6.1.4":
   version: 6.1.4
   resolution: "vega-parser@npm:6.1.4"
@@ -18337,15 +18128,6 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vega-schema@npm:5.18.0":
-  version: 5.18.0
-  resolution: "vega-schema@npm:5.18.0"
-  dependencies:
-    vega-scale: ^7.1.1
-  checksum: 66f35107aa5387e90d601c1358d8e31f4ff733869de2924771289ea4cd2633ad8e735ca5c5833457d038981417aa2a9345bd9224e501005d1a077a2a5ba791aa
-  languageName: node
-  linkType: hard
-
 "vega-selections@npm:^5.3.1":
   version: 5.3.1
   resolution: "vega-selections@npm:5.3.1"
@@ -18395,7 +18177,7 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vega-tooltip@npm:^0.25.0, vega-tooltip@npm:^0.25.1":
+"vega-tooltip@npm:^0.25.1":
   version: 0.25.1
   resolution: "vega-tooltip@npm:0.25.1"
   dependencies:
@@ -18451,7 +18233,7 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vega-view-transforms@npm:4.5.8, vega-view-transforms@npm:~4.5.8":
+"vega-view-transforms@npm:~4.5.8":
   version: 4.5.8
   resolution: "vega-view-transforms@npm:4.5.8"
   dependencies:
@@ -18562,17 +18344,6 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"vis-data@npm:^6.2.1":
-  version: 6.6.1
-  resolution: "vis-data@npm:6.6.1"
-  peerDependencies:
-    moment: ^2.24.0
-    uuid: ^7.0.0 || ^8.0.0
-    vis-util: ^4.0.0
-  checksum: 1c0c19899dc09c9d9ce48a2b178b30bb06fce867f6b593ce4c7216650773bfdaa58f129ec69ee39839ce73e7aa9f922121718bf601fb0f8a86cc7cf0a527c087
-  languageName: node
-  linkType: hard
-
 "vis-network@npm:^7.7.1":
   version: 7.10.2
   resolution: "vis-network@npm:7.10.2"
@@ -18586,13 +18357,6 @@ resolve@^2.0.0-next.3:
     vis-data: ^6.2.1
     vis-util: ^3.0.0 || ^4.0.0
   checksum: 6393463b9bb91b7c19e4c00e71b41f4b7cf09b797b29ba6b7084fbac94244d526bfa18bb1c725c6403c875d7943243f46bf7d5f0499feac49a102e85c9135ea3
-  languageName: node
-  linkType: hard
-
-"vis-util@npm:^4.0.0":
-  version: 4.3.4
-  resolution: "vis-util@npm:4.3.4"
-  checksum: a07f921e5cb0b4adef3c37a66e817c784fbd8351242008f3040d2e7036b3a7c9d77d20ef75e8e94461ae82218ad7506a72b2416e3c54861f969dbb8b6cd23bc7
   languageName: node
   linkType: hard
 
