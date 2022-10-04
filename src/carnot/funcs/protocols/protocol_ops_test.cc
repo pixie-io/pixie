@@ -67,6 +67,14 @@ TEST(ProtocolOps, AMQPMethodTypeUDF) {
   udf_tester.ForInput(60, 40).Expect("BasicPublish");
 }
 
+TEST(ProtocolOps, MuxFrameTypeUDF) {
+  auto udf_tester = udf::UDFTester<MuxFrameTypeUDF>();
+  udf_tester.ForInput(1).Expect("Treq");
+  udf_tester.ForInput(-1).Expect("Rreq");
+  udf_tester.ForInput(68).Expect("Tinit");
+  udf_tester.ForInput(-68).Expect("Rinit");
+}
+
 }  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot
