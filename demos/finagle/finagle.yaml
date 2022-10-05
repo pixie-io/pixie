@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: px-finagle
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f ../docker/docker-compose.yml
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: finagle-server
+  name: finagle-server
+  namespace: px-finagle
+spec:
+  ports:
+  - name: "9992"
+    port: 9992
+    targetPort: 9992
+  selector:
+    io.kompose.service: finagle-server
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f ../docker/docker-compose.yml
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: finagle-client
+  name: finagle-client
+  namespace: px-finagle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: finagle-client
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f ../docker/docker-compose.yml
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: finagle-client
+    spec:
+      containers:
+      - args:
+        - client/run
+        image: gcr.io/pixie-prod/demos/finagle/hello:1.0
+        name: finagle-client
+        resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f ../docker/docker-compose.yml
+    kompose.version: 1.26.1 (a9d05d509)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: finagle-server
+  name: finagle-server
+  namespace: px-finagle
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: finagle-server
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f ../docker/docker-compose.yml
+        kompose.version: 1.26.1 (a9d05d509)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: finagle-server
+    spec:
+      containers:
+      - image: gcr.io/pixie-prod/demos/finagle/hello:1.0
+        name: finagle-server
+        ports:
+        - containerPort: 9992
+        resources: {}
+      restartPolicy: Always
+status: {}

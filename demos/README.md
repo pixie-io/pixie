@@ -31,7 +31,7 @@ bazel run //demos:upload_prod_demo
 
 1. Clone `https://github.com/pixie-io/microservice-kafka` and switch to the `pixie` branch.
 
-2. (optional) Build the container images & update the individual yaml files.
+2. (optional) Build the container image & update the individual yaml files.
 
 3. Build a single yaml file for the demo:
 
@@ -40,6 +40,21 @@ kustomize build . >  kafka.yaml
 ```
 
 4. Copy the yaml file to `pixie/demos/kafka`.
+
+## Updating the `px-finagle` demo
+
+1. Clone `https://github.com/pixie-io/finagle-helloworld`
+
+2. (optional) Build the container images & update the individual yaml files.
+
+3. Build a single yaml file for the demo:
+
+```
+kustomize . > finagle.yaml
+```
+
+4. Copy the yaml file to `pixie/demos/finagle`.
+
 
 ## Updating the `px-online-boutique` demo
 
