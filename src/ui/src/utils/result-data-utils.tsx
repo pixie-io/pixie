@@ -17,7 +17,6 @@
  */
 
 import * as jspb from 'google-protobuf';
-import * as _ from 'lodash';
 
 import {
   Column, Relation, RowBatchData,
@@ -31,8 +30,9 @@ export function ResultsToCsv(results: string): string {
   const jsonResults = JSON.parse(results);
   let csvStr = '';
 
-  csvStr += `${_.map(jsonResults.relation.columns, 'columnName').join()}\n`;
-  _.each(jsonResults.rowBatches, (rowBatch) => {
+  const colNames = jsonResults.relation.columns.map((column) => (column.columnName));
+  csvStr += `${colNames.join()}\n`;
+  for (const rowBatch of jsonResults.rowBatches) {
     const numRows = parseInt(rowBatch.numRows, 10);
     const numCols = rowBatch.cols.length;
     for (let i = 0; i < numRows; i++) {
@@ -51,7 +51,7 @@ export function ResultsToCsv(results: string): string {
       }
       csvStr += `${rowData.join()}\n`;
     }
-  });
+  }
 
   return csvStr;
 }

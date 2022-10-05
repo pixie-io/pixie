@@ -26,7 +26,6 @@ import {
 import { IconButton, Tooltip } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import * as _ from 'lodash';
 
 import { LegendData, LegendEntry } from './legend-data';
 
@@ -144,7 +143,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const handleRowLeftClick = React.useCallback((key: string) => {
     // Toggle selected series.
-    if (_.includes(interactState.selectedSeries, key)) {
+    if (interactState.selectedSeries.includes(key)) {
       setInteractState({
         ...interactState,
         selectedSeries: interactState.selectedSeries.filter((s: string) => s !== key),
@@ -205,10 +204,10 @@ const Legend = React.memo((props: LegendProps) => {
   let dataEntries: LegendEntry[];
   if (interactState.selectedSeries.length > 0) {
     // Put selected series first.
-    dataEntries = data.entries.filter((entry) => _.includes(interactState.selectedSeries, entry.key));
+    dataEntries = data.entries.filter((entry) => interactState.selectedSeries.includes(entry.key));
     dataEntries = [
       ...dataEntries,
-      ...data.entries.filter((entry) => !_.includes(interactState.selectedSeries, entry.key)),
+      ...data.entries.filter((entry) => !interactState.selectedSeries.includes(entry.key)),
     ];
   } else {
     dataEntries = data.entries;
@@ -251,7 +250,7 @@ const Legend = React.memo((props: LegendProps) => {
       const styles: CSSProperties = {
         opacity: '1.0',
       };
-      if (interactState.selectedSeries.length > 0 && !_.includes(interactState.selectedSeries, entry.key)) {
+      if (interactState.selectedSeries.length > 0 && !interactState.selectedSeries.includes(entry.key)) {
         styles.opacity = '0.3';
       }
       if (interactState.hoveredSeries === entry.key) {
