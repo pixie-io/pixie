@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-'''  Data Tracer
+'''  Mux Data Tracer
 
 This script displays all mux traces in the cluster.
 '''
@@ -46,7 +46,7 @@ def mux_data(start_time: str, num_head: int):
 def add_source_dest_columns(df):
     ''' Add source and destination columns for the mux request.
 
-    mux requests are traced server-side (trace_role==2), unless the server is
+    Mux requests are traced server-side (trace_role==2), unless the server is
     outside of the cluster in which case the request is traced client-side (trace_role==1).
 
     When trace_role==2, the mux request source is the remote_addr column
