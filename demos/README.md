@@ -43,7 +43,7 @@ kustomize build . >  kafka.yaml
 
 ## Updating the `px-finagle` demo
 
-1. Clone `https://github.com/pixie-labs/finagle-helloworld`
+1. Clone `https://github.com/pixie-io/finagle-helloworld`
 
 2. (optional) Build the container images & update the individual yaml files.
 
