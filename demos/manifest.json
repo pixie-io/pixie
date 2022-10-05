@@ -38,7 +38,7 @@
     "px-finagle": {
         "description": "Microservice demo that generates thriftmux traffic with finagle",
         "instructions": [
-            "Traffic will be continuously generated to ensure data is visible.",
+            "Use the px/mux_data script to view the traffic that is continuously generated.",
             "Mux tracing is only enabled on newer kernels (>= 5.2) by default.",
             "Make sure your system meets these requirements before deploying."
         ]
