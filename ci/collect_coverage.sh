@@ -28,9 +28,7 @@ GENERATE_HTML=false
 UPLOAD_TO_CODECOV=false
 HTML_OUTPUT_DIR=""
 
-CC_COVERAGE_FILE="cc_coverage.info"
-GO_COVERAGE_FILE="coverage.txt"
-UI_OUTPUT=bazel-testlogs/src/ui/ui-tests/coverage.dat
+COVERAGE_FILE="coverage.info"
 
 # Print out the usage information and exit.
 usage() {
@@ -121,16 +119,11 @@ parse_args() {
 }
 
 generate_html() {
-  genhtml -o ${HTML_OUTPUT_DIR} -s ${CC_COVERAGE_FILE}
-
-  echo "****************************************************"
-  echo "* For Go HTML do the following:                     "
-  echo "*     go tool cover -html=${GO_COVERAGE_FILE}       "
-  echo "****************************************************"
+  genhtml -o "${HTML_OUTPUT_DIR}" -s ${COVERAGE_FILE}
 }
 
 upload_to_codecov() {
-  codecov -t "${CODECOV_TOKEN}" -B "${GIT_BRANCH}" -C "${GIT_COMMIT}" -r "${GIT_REPO}" -f "${CC_COVERAGE_FILE}"  -f "${GO_COVERAGE_FILE}"  -f "${UI_OUTPUT}"
+  codecov -t "${CODECOV_TOKEN}" -B "${GIT_BRANCH}" -C "${GIT_COMMIT}" -r "${GIT_REPO}" -f "${COVERAGE_FILE}"
 }
 
 # We use globs, make sure they are supported.
@@ -151,43 +144,35 @@ cd $(bazel info workspace)
 bazel coverage --remote_download_outputs=all //src/...
 
 # Fixup paths for the UI coverage output
-sed -i "s|SF:src|SF:src/ui/src|g" ${UI_OUTPUT}
+sed -i "s|SF:src|SF:src/ui/src|g" bazel-testlogs/src/ui/ui-tests/coverage.dat
 
 # This finds all the valid coverage files and then creates a list of them
 # prefixed by -a, which allows up to add them to the lcov output.
-# This part only works for C++ coverage.
-file_merge_args=""
-for file in bazel-out/**/coverage.dat
-do
-  # Only consider valid files. Some files only contain Go coverage and that
-  # does not work with LCOV.
-  lcov --summary "${file}" >/dev/null 2>&1 && file_merge_args+=" -a ${file}"
+file_merge_args=()
+for file in bazel-out/**/coverage.dat; do
+  # Only consider valid files.
+  if [ -s "${file}" ]; then
+    file_merge_args+=("-a" "${file}")
+  fi
 done
 
 # Merge all the files.
-lcov $file_merge_args -o cc_coverage.info
+lcov "${file_merge_args[@]}" -o ${COVERAGE_FILE}
 
 # Print out the summary.
-lcov --summary ${CC_COVERAGE_FILE}
+lcov --summary ${COVERAGE_FILE}
 
 # Remove test files from the coverage files.
-lcov -r ${CC_COVERAGE_FILE} '**/*_test.cc' -o ${CC_COVERAGE_FILE}
-lcov -r ${CC_COVERAGE_FILE} '**/*_mock.cc' -o ${CC_COVERAGE_FILE}
-lcov -r ${CC_COVERAGE_FILE} '**/*_mock.h' -o ${CC_COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*_test.cc' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*_mock.cc' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*_mock.h' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*_test.go' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*.gen.go' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*-mock.tsx' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} '**/*-mock.ts' -o ${COVERAGE_FILE}
 
 # Print out the final summary.
-lcov --summary ${CC_COVERAGE_FILE}
-
-# Create go coverage file, by grabbing all the .go entries.
-echo "mode: set" > coverage.tmp
-for file in bazel-out/**/coverage.dat
-do
-    grep ".go" ${file} >> coverage.tmp || true
-done
-
-# Remove test files from the go coverage.
-grep -v "_test.go" coverage.tmp > ${GO_COVERAGE_FILE}
-rm -f coverage.tmp
+lcov --summary ${COVERAGE_FILE}
 
 # Upload to codecov.io.
 if [ "${UPLOAD_TO_CODECOV}" = true ]; then
