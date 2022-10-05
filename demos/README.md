@@ -20,8 +20,8 @@ file describes the demo scenarios.
 bazel run //demos:upload_dev_demo
 
 # 3. Test the CLI with the dev artifacts:
-bazel run //src/pixie_cli:px demo list -- -artifacts <DEV_ARTIFACTS_URL>
-bazel run //src/pixie_cli:px demo deploy <DEMO_NAME> -- -artifacts <DEV_ARTIFACTS_URL>
+bazel run //src/pixie_cli:px demo list -- --artifacts <DEV_ARTIFACTS_URL>
+bazel run //src/pixie_cli:px demo deploy <DEMO_NAME> -- --artifacts <DEV_ARTIFACTS_URL>
 
 # 4. After your PR is merged, upload the demo artifacts to the prod bucket:
 bazel run //demos:upload_prod_demo
