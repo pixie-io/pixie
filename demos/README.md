@@ -29,7 +29,7 @@ bazel run //demos:upload_prod_demo
 
 ## Updating the `px-kafka` demo
 
-1. Clone `https://github.com/pixie-labs/microservice-kafka` and switch to the `pixie` branch.
+1. Clone `https://github.com/pixie-io/microservice-kafka` and switch to the `pixie` branch.
 
 2. (optional) Build the container images & update the individual yaml files.
 
@@ -45,7 +45,7 @@ kustomize build . >  kafka.yaml
 
 Our custom `adservice` image includes the `-XX:+PreserveFramePointer` Java option. To build our custom `adservice` image:
 
-1. Clone `https://github.com/pixie-labs/microservices-demo` and switch to the `pixie` branch.
+1. Clone `https://github.com/pixie-io/microservices-demo` and switch to the `pixie` branch.
 
 2. Run the following commands:
 
