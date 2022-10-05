@@ -31,11 +31,7 @@ def mux_data(start_time: str, num_head: int):
     df = add_source_dest_columns(df)
     df = add_source_dest_links(df, start_time)
 
-    # Filter out entities as specified by the user.
-    # df = df[px.contains(df.source, source_filter)]
-    # df = df[px.contains(df.destination, destination_filter)]
-
-    # Add additional filters below:
+    # Add mux frame type
     df.req_name = px.mux_frame_type_name(df.req_type)
 
     # Restrict number of results.
