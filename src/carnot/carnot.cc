@@ -396,6 +396,8 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
                 for (const auto& [k, v] : stats->extra_info) {
                   (*stats_pb->mutable_extra_info())[k] = v;
                 }
+                (*stats_pb->mutable_extra_info())["DebugString"] =
+                    pf->nodes()[node_id]->DebugString();
               }
             }
             return Status::OK();
