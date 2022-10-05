@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as _ from 'lodash';
 import { View } from 'vega-typings';
 
 import { COLOR_SCALE } from 'app/containers/live/convert-to-vega-spec';
@@ -127,25 +126,28 @@ const keyAvgs = (hoverData: ValidHoverDatum[]): { [key: string]: number } => {
       keyedAvgState[key].n += 1;
     });
   });
-  return _.mapValues(keyedAvgState, (state: { sum: number; n: number }) => {
-    if (state.n === 0) {
-      return 0.0;
-    }
-    return state.sum / state.n;
-  });
+  return Object.fromEntries(
+    Object.entries(keyedAvgState).map(([key, state]) => {
+      if (state.n === 0) {
+        return [key, 0.0];
+      }
+      return [key, state.sum / state.n];
+    }),
+  );
 };
 
-const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) => number): TimeHashMap => {
+function buildTimeHashMap(
+  hoverData: ValidHoverDatum[],
+  sortBy: (a: UnformattedLegendEntry, b: UnformattedLegendEntry) => number,
+): TimeHashMap {
   const timeHashMap: TimeHashMap = {};
-  hoverData.forEach((datum) => {
+  for (const datum of hoverData) {
     const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({ key: entry[0], val: entry[1] }))
-      .filter((item) => item.key !== 'time' && item.key !== 'sum');
-    // noinspection UnnecessaryLocalVariableJS
-    const sortedRest = _.sortBy(rest, (item) => sortBy(item.key));
-    timeHashMap[datum.time] = sortedRest;
-  });
+      .filter((item) => item.key !== 'time' && item.key !== 'sum').sort(sortBy);
+    timeHashMap[datum.time] = rest;
+  }
   return timeHashMap;
-};
+}
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const buildHoverDataCache = (hoverData: any): HoverDataCache => {
@@ -177,7 +179,7 @@ export const buildHoverDataCache = (hoverData: any): HoverDataCache => {
   const { minTime, maxTime } = minMaxTimes(validEntries);
   const keyedAvgs = keyAvgs(validEntries);
 
-  const timeHashMap: TimeHashMap = buildTimeHashMap(validEntries, (key) => -keyedAvgs[key]);
+  const timeHashMap: TimeHashMap = buildTimeHashMap(validEntries, (a, b) => keyedAvgs[b.key] - keyedAvgs[a.key]);
 
   return {
     timeHashMap,
