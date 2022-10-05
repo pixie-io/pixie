@@ -81,8 +81,7 @@ void ExtractToColumnWrapper(const std::vector<GroupArgs>& group_args,
 }  // namespace
 
 std::string AggNode::DebugStringImpl() {
-  // TODO(zasgar): implement.
-  return "";
+  return absl::Substitute("Exec::AggNode<$0>", plan_node_->DebugString());
 }
 
 Status AggNode::InitImpl(const plan::Operator& plan_node) {

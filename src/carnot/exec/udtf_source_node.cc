@@ -44,7 +44,9 @@ namespace exec {
 // The batch size to use for UDTFs by default.
 constexpr int kUDTFBatchSize = 1024;
 
-std::string UDTFSourceNode::DebugStringImpl() { return std::string(); }
+std::string UDTFSourceNode::DebugStringImpl() {
+  return absl::Substitute("Exec::UDTFSourceNode<$0>", plan_node_->DebugString());
+}
 
 Status UDTFSourceNode::InitImpl(const plan::Operator& plan_node) {
   const auto* source_plan_node = static_cast<const plan::UDTFSourceOperator*>(&plan_node);
