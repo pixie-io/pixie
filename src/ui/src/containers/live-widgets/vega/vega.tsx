@@ -23,7 +23,6 @@ import * as React from 'react';
 import { Theme, useTheme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import * as _ from 'lodash';
 import { Vega as ReactVega } from 'react-vega';
 import { View } from 'vega-typings';
 
@@ -110,14 +109,21 @@ function getCleanerForSemanticType(semType: SemanticType) {
 }
 
 function cleanInputData(relation: Relation, data: Array<Record<string, unknown>>) {
-  const columnToCleaner = _.fromPairs(relation.getColumnsList().map((colInfo) => {
+  const columnToCleaner = Object.fromEntries(relation.getColumnsList().map((colInfo) => {
     const colName = colInfo.getColumnName();
     const colST = colInfo.getColumnSemanticType();
     return [colName, getCleanerForSemanticType(colST)];
   }));
-  return data.map((row: any) => _.mapValues(row, (val, key) => (
-    columnToCleaner[key] ? columnToCleaner[key](val) : val
-  )));
+  return data.map((row: any) => {
+    return Object.fromEntries(
+      Object.entries(row).map(([key, val]) => {
+        if (columnToCleaner[key]) {
+          return [key, columnToCleaner[key](val)];
+        }
+        return [key, val];
+      }),
+    );
+  });
 }
 
 const Vega = React.memo((props: VegaProps) => {
@@ -248,12 +254,12 @@ const Vega = React.memo((props: VegaProps) => {
         hoveredSeries: value,
       }));
     },
-    [REVERSE_SELECT_SIGNAL]: (name, value) => {
+    [REVERSE_SELECT_SIGNAL]: (_name, value) => {
       if (!value) {
         return;
       }
       setLegendInteractState((state) => {
-        if (_.includes(state.selectedSeries, value)) {
+        if (state.selectedSeries.includes(value)) {
           return { ...state, selectedSeries: state.selectedSeries.filter((s) => s !== value) };
         }
         return { ...state, selectedSeries: [...state.selectedSeries, value] };

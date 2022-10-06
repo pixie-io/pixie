@@ -57,7 +57,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@testing-library/react-hooks", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:8.0.0"],
             ["@types/d3", "npm:5.16.4"],
             ["@types/jest", "npm:27.0.2"],
-            ["@types/lodash", "npm:4.14.168"],
             ["@types/numeral", "npm:0.0.27"],
             ["@types/react", "npm:18.0.9"],
             ["@types/react-dom", "npm:18.0.5"],
@@ -117,7 +116,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["jose", "npm:4.9.3"],
             ["launchdarkly-react-client-sdk", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.22.2"],
             ["license-checker", "npm:25.0.1"],
-            ["lodash", "npm:4.17.21"],
             ["mini-css-extract-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.4.1"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
@@ -6110,7 +6108,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@testing-library/react-hooks", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:8.0.0"],
             ["@types/d3", "npm:5.16.4"],
             ["@types/jest", "npm:27.0.2"],
-            ["@types/lodash", "npm:4.14.168"],
             ["@types/numeral", "npm:0.0.27"],
             ["@types/react", "npm:18.0.9"],
             ["@types/react-dom", "npm:18.0.5"],
@@ -6170,7 +6167,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["jose", "npm:4.9.3"],
             ["launchdarkly-react-client-sdk", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.22.2"],
             ["license-checker", "npm:25.0.1"],
-            ["lodash", "npm:4.17.21"],
             ["mini-css-extract-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.4.1"],
             ["monaco-editor", "npm:0.20.0"],
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
@@ -7069,15 +7065,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@types/keyv", "npm:3.1.1"],
             ["@types/node", "npm:14.14.37"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/lodash", [
-        ["npm:4.14.168", {
-          "packageLocation": "./.yarn/cache/@types-lodash-npm-4.14.168-2d65abe211-3326966ee0.zip/node_modules/@types/lodash/",
-          "packageDependencies": [
-            ["@types/lodash", "npm:4.14.168"]
           ],
           "linkType": "HARD",
         }]

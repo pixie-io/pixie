@@ -3623,7 +3623,6 @@ __metadata:
     "@testing-library/react-hooks": ^8.0.0
     "@types/d3": ^5.7.2
     "@types/jest": ^27.0.2
-    "@types/lodash": ^4.14.150
     "@types/numeral": ^0.0.27
     "@types/react": ^18.0.9
     "@types/react-dom": ^18.0.5
@@ -3683,7 +3682,6 @@ __metadata:
     jose: ^4.9.3
     launchdarkly-react-client-sdk: ^2.20.0
     license-checker: ^25.0.1
-    lodash: ^4.17.21
     mini-css-extract-plugin: ^1.3.1
     monaco-editor: 0.20.0
     monaco-editor-webpack-plugin: ^1.9.0
@@ -4447,13 +4445,6 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: ee0d098693bf4af44be756eed02daf95f5d0fd4b5b02da952a5952e08842baddf6a986a9ea5f9e460729782f1a0a47848c892ad96ea188b66a363feb49a1536f
-  languageName: node
-  linkType: hard
-
-"@types/lodash@npm:^4.14.150":
-  version: 4.14.168
-  resolution: "@types/lodash@npm:4.14.168"
-  checksum: 3326966ee089debde7a7d819e13b64991756e879945852c3357df14a7be837130f697c2cb451be9dd599eb7213fed0975bc9ca0f8f56b46fa73c46a83815b79c
   languageName: node
   linkType: hard
 
