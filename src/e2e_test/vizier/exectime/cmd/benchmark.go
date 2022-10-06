@@ -525,7 +525,7 @@ func benchmarkCmd(cmd *cobra.Command) {
 			switch w.FuncOrRef.(type) {
 			case *vispb.Widget_Func_:
 				scriptFuncs = append(scriptFuncs, &vispb.Vis_GlobalFunc{
-					OutputName: w.Name,
+					OutputName: w.GetFunc().Name,
 					Func:       w.GetFunc(),
 				})
 			default:
@@ -538,7 +538,7 @@ func benchmarkCmd(cmd *cobra.Command) {
 		for _, f := range scriptFuncs {
 			newScript := &script.ExecutableScript{
 				ScriptString: s.ScriptString,
-				ScriptName:   s.ScriptName + "/" + f.OutputName,
+				ScriptName:   s.ScriptName + "/" + f.Func.Name,
 				Vis: &vispb.Vis{
 					GlobalFuncs: []*vispb.Vis_GlobalFunc{f},
 					Variables:   s.Vis.Variables,
