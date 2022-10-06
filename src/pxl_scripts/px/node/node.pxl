@@ -54,8 +54,6 @@ def resource_timeseries(start_time: str, node: px.Node, groupby: str):
     '''
     df = pxviews.container_process_timeseries(start_time, px.now(), window_ns)
     df = df[df.ctx['node'] == node]
-    # Ok this won't work with a long term export. We need to save the metadata
-    # somewhere.
     df[groupby] = df.ctx[groupby]
 
     df = df.groupby(['time_', groupby]).agg(
