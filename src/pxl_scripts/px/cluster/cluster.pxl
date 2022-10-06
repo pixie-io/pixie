@@ -155,8 +155,7 @@ def service_let_graph(start_time: str):
     @start_time: The timestamp of data to start at.
     '''
     df = pxviews.http_graph(start_time, px.now())
-    # TODO(philkuz): create a general purpose time conversion function.
-    df.window = px.DurationNanos(px.now() - (px.now() + px.parse_duration(start_time)))
+    df.window = px.DurationNanos(px.now() - px.parse_time(start_time))
     # Compute statistics about each edge of the service graph.
     df.request_throughput = df.num_requests / df.window
     df.inbound_throughput = df.req_bytes / df.window
