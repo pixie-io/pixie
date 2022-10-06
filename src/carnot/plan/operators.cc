@@ -94,7 +94,10 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
  * Memory Source Operator Implementation.
  */
 
-std::string MemorySourceOperator::DebugString() const { return "Op:MemorySource"; }
+std::string MemorySourceOperator::DebugString() const {
+  return absl::Substitute("Op:MemorySource($0, [$1], start=$2, end=$3, streaming=$4)", TableName(),
+                          absl::StrJoin(Columns(), ","), start_time(), stop_time(), streaming());
+}
 
 Status MemorySourceOperator::Init(const planpb::MemorySourceOperator& pb) {
   pb_ = pb;
@@ -342,7 +345,8 @@ StatusOr<table_store::schema::Relation> GRPCSinkOperator::OutputRelation(
  * Filter Operator Implementation.
  */
 std::string FilterOperator::DebugString() const {
-  std::string debug_string = absl::Substitute("($0)", expression_->DebugString());
+  std::string debug_string = absl::Substitute("($0, selected=[$1])", expression_->DebugString(),
+                                              absl::StrJoin(selected_cols_, ","));
   return "Op:Filter" + debug_string;
 }
 
