@@ -70,7 +70,12 @@ const plugins = [
     /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/,
   ),
   // Uncomment to enabled bundle analysis.
-  // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin),
+  // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)({
+  //   analyzerMode: 'static',
+  //   analyzerHost: '0.0.0.0',
+  //   generateStatsFile: true,
+  //   openAnalyzer: false,
+  // }),
   new MonacoWebpackPlugin({
     languages: ['json', 'python'],
   }),
