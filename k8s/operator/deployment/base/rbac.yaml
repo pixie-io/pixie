@@ -54,6 +54,7 @@ rules:
   - poddisruptionbudgets
   - viziers
   - viziers/status
+  - podsecuritypolicies
   verbs: ["*"]
 # Allow read-only access to storage class.
 - apiGroups:
