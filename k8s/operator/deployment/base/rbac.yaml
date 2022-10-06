@@ -58,6 +58,8 @@ rules:
 # Allow read-only access to storage class.
 - apiGroups:
   - storage.k8s.io
+  - ""
   resources:
   - storageclasses
+  - namespaces
   verbs: ["get", "list"]
