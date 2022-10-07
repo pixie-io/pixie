@@ -67,6 +67,31 @@ func (s *Server) getUser(ctx context.Context, userInfo *UserInfo) (*profilepb.Us
 	return s.env.ProfileClient().GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 }
 
+func (s *Server) reconcileOrgAndLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo, orgInfo *profilepb.OrgInfo) (*authpb.LoginReply, error) {
+	if user.OrgID == nil {
+		// Add user to org.
+		_, err := s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
+			ID:    user.ID,
+			OrgID: orgInfo.ID,
+			IsApproved: &types.BoolValue{
+				// User should only be auto-approved if the org doesn't require
+				// approvals (EnableApprovals = false).
+				Value: !orgInfo.EnableApprovals,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		return s.loginUser(ctx, userInfo, orgInfo, false)
+	}
+
+	if !utils.AreSameUUID(user.OrgID, orgInfo.ID) {
+		return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
+	}
+
+	return s.loginUser(ctx, userInfo, orgInfo, false)
+}
+
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
@@ -93,100 +118,62 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	if user != nil && !utils.IsNilUUIDProto(inviteOrgID) && !utils.IsNilUUIDProto(user.OrgID) {
 		return nil, status.Error(codes.PermissionDenied, "cannot join org - user already belongs to another org")
 	}
-	newUser := user == nil
+
 	if !utils.IsNilUUIDProto(inviteOrgID) {
-		orgInfo, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
-		if err != nil {
-			return nil, err
-		}
-		if user != nil {
-			_, err := s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
-				ID:    user.ID,
-				OrgID: inviteOrgID,
-				IsApproved: &types.BoolValue{
-					// User should only be auto-approved if the org doesn't require
-					// approvals (EnableApprovals = false).
-					Value: !orgInfo.EnableApprovals,
-				},
-			})
-			if err != nil {
-				return nil, err
-			}
-		}
+		return s.loginInvited(ctx, userInfo, user, inviteOrgID)
+	}
+
+	if userInfo.HostedDomain != "" {
+		return s.loginHostedDomain(ctx, userInfo, user)
+	}
+
+	return s.loginSimple(ctx, userInfo, user)
+}
+
+func (s *Server) loginInvited(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo, inviteOrgID *uuidpb.UUID) (*authpb.LoginReply, error) {
+	newUser := user == nil
+	orgInfo, err := s.env.OrgClient().GetOrg(ctx, inviteOrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	if newUser {
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
-	switch userInfo.IdentityProvider {
-	case kratosIdentityProvider:
-		return s.kratosLogin(ctx, userInfo, user)
-	case googleIdentityProvider:
-		return s.googleOAuthLogin(ctx, userInfo, user)
-	case auth0IdentityProvider:
-		return s.auth0Login(ctx, userInfo, user)
-	default:
-		return nil, status.Error(codes.InvalidArgument, "received unexpected identity provider for user login")
-	}
+	return s.reconcileOrgAndLogin(ctx, userInfo, user, orgInfo)
 }
 
-func (s *Server) auth0Login(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
-	var orgInfo *profilepb.OrgInfo
-	var err error
-	if user != nil && !utils.IsNilUUIDProto(user.OrgID) {
-		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
-		}
-	}
-
+func (s *Server) loginHostedDomain(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
 	newUser := user == nil
-	return s.loginUser(ctx, userInfo, orgInfo, newUser)
-}
+	orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
 
-func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
-	newUser := user == nil
-	if newUser {
-		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
-		orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
-		if status.Code(err) == codes.NotFound {
+	if status.Code(err) == codes.NotFound {
+		if newUser {
 			return nil, status.Error(codes.NotFound, "organization not found, please register.")
 		}
-		if err != nil {
-			return nil, err
-		}
+		return nil, status.Error(codes.NotFound, "matching org for existing user does not exist, contact support")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if newUser {
 		return s.loginUser(ctx, userInfo, orgInfo, newUser)
 	}
 
-	// If existing users don't belong to an org, but have a non-empty HostedDomain
-	// we try add them to the corresponding DomainName org. We want
-	// HostedDomain users to use HostedDomain orgs and nothing else.
-	if utils.IsNilUUIDProto(user.OrgID) && userInfo.HostedDomain != "" {
-		orgInfo, err := s.getMatchingOrgForUser(ctx, userInfo)
-		if status.Code(err) == codes.NotFound {
-			return nil, status.Error(codes.NotFound, "matching org for existing user does not exist, contact support")
-		}
-		if err != nil {
-			return nil, err
-		}
-		// Add user to org.
-		_, err = s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
-			ID:    user.ID,
-			OrgID: orgInfo.ID,
-			IsApproved: &types.BoolValue{
-				// User should only be auto-approved if the org doesn't require
-				// approvals (EnableApprovals = false).
-				Value: !orgInfo.EnableApprovals,
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
+	return s.reconcileOrgAndLogin(ctx, userInfo, user, orgInfo)
+}
 
-		return s.loginUser(ctx, userInfo, orgInfo, newUser)
-	}
+// loginSimple is the fallback login system. This handles users that are neither invited to a specific org
+// nor in a Google HostedDomain org.
+func (s *Server) loginSimple(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
+	newUser := user == nil
 
 	var orgInfo *profilepb.OrgInfo
 	var err error
-	if !utils.IsNilUUIDProto(user.OrgID) {
+
+	if !newUser && !utils.IsNilUUIDProto(user.OrgID) {
 		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
 		if status.Code(err) == codes.NotFound {
 			return nil, status.Error(codes.NotFound, "organization ID does not exist, please contact support")
@@ -199,23 +186,9 @@ func (s *Server) googleOAuthLogin(ctx context.Context, userInfo *UserInfo, user 
 	// We've switched over to use HostedDomain instead of email domain to determine org membership.
 	// Some running systems have users who are in their email domain org, but not their org according to HostedDomain.
 	// This flags those users and informs them that they should contact support to fix their org info in the database.
-	if userInfo.HostedDomain == "" && orgInfo != nil && userInfo.Email != orgInfo.OrgName && orgInfo.DomainName == nil {
+	if orgInfo != nil && userInfo.Email != orgInfo.OrgName && orgInfo.DomainName == nil {
 		return nil, status.Errorf(codes.PermissionDenied, "Our system found an issue with your account. Please contact support and include your email '%s' and this error in your message", userInfo.Email)
 	}
-	return s.loginUser(ctx, userInfo, orgInfo, newUser)
-}
-
-func (s *Server) kratosLogin(ctx context.Context, userInfo *UserInfo, user *profilepb.UserInfo) (*authpb.LoginReply, error) {
-	var orgInfo *profilepb.OrgInfo
-	var err error
-	if user != nil && !utils.IsNilUUIDProto(user.OrgID) {
-		orgInfo, err = s.env.OrgClient().GetOrg(ctx, user.OrgID)
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or contact support '%v'", err)
-		}
-	}
-
-	newUser := user == nil
 	return s.loginUser(ctx, userInfo, orgInfo, newUser)
 }
 
