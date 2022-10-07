@@ -915,7 +915,7 @@ func (r *VizierReconciler) watchForFailedVizierUpdates() {
 			if time.Since(vz.Status.LastReconciliationPhaseTime.Time) < updatingFailedTimeout {
 				continue
 			}
-			log.WithField("namespace", vz.Namespace).WithField("vizier", vz.Name).Error("Marking vizier as failed")
+			log.WithField("namespace", vz.Namespace).WithField("vizier", vz.Name).Info("Marking vizier as failed")
 			vz.SetReconciliationPhase(v1alpha1.ReconciliationPhaseFailed)
 			err := r.Status().Update(ctx, &vz)
 			if err != nil {
