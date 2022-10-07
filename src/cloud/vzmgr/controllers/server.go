@@ -637,6 +637,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		  OR ((x.num_instrumented_nodes is not NULL) AND (x.num_instrumented_nodes != y.num_instrumented_nodes))
 		  OR ((x.auto_update_enabled IS NOT NULL) AND (x.auto_update_enabled != y.auto_update_enabled))
 		  OR ((x.cluster_version IS NOT NULL) AND (x.cluster_version != y.cluster_version))
+		  OR ((x.operator_version IS NOT NULL) AND (x.operator_version != y.operator_version))
 		  OR ((x.status_message is not NULL) AND (x.status_message != y.status_message))) as changed, x.vizier_version`
 
 	var info struct {
@@ -677,6 +678,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 				Set("num_instrumented_nodes", req.NumInstrumentedNodes).
 				Set("k8s_version", req.K8sClusterVersion).
 				Set("vizier_version", info.Version).
+				Set("operator_version", req.OperatorVersion).
 				Set("auto_update_enabled", !req.DisableAutoUpdate).
 				Set("status_message", req.StatusMessage),
 		})
