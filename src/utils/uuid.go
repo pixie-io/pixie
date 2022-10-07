@@ -84,3 +84,8 @@ func IsNilUUIDProto(pb *uuidpb.UUID) bool {
 	}
 	return true
 }
+
+// AreSameUUID tells you if the two protos refer to the same underlying UUID.
+func AreSameUUID(pb1, pb2 *uuidpb.UUID) bool {
+	return pb1.HighBits == pb2.HighBits && pb1.LowBits == pb2.LowBits
+}

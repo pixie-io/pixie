@@ -81,6 +81,45 @@ func TestUUIDFromProto_EmptyUUID(t *testing.T) {
 	assert.Contains(t, err.Error(), "uuid data in proto is nil")
 }
 
+func TestUUIDSame_NilNil(t *testing.T) {
+	p1 := &uuidpb.UUID{}
+	p2 := &uuidpb.UUID{}
+	assert.True(t, utils.AreSameUUID(p1, p2))
+}
+
+func TestUUIDSame_NilNotNil(t *testing.T) {
+	p1 := &uuidpb.UUID{}
+	p2 := &uuidpb.UUID{
+		HighBits: hi,
+		LowBits:  lo,
+	}
+	assert.False(t, utils.AreSameUUID(p1, p2))
+}
+
+func TestUUIDSame_Same(t *testing.T) {
+	p1 := &uuidpb.UUID{
+		HighBits: hi,
+		LowBits:  lo,
+	}
+	p2 := &uuidpb.UUID{
+		HighBits: hi,
+		LowBits:  lo,
+	}
+	assert.True(t, utils.AreSameUUID(p1, p2))
+}
+
+func TestUUIDSame_Different(t *testing.T) {
+	p1 := &uuidpb.UUID{
+		HighBits: hi,
+		LowBits:  lo,
+	}
+	p2 := &uuidpb.UUID{
+		HighBits: lo,
+		LowBits:  hi,
+	}
+	assert.False(t, utils.AreSameUUID(p1, p2))
+}
+
 func BenchmarkUUIDFromString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		uuid.FromStringOrNil(uuidStr)
