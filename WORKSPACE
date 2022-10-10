@@ -23,7 +23,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.19",
+    version = "1.19.2",
 )
 
 go_rules_dependencies()
@@ -198,22 +198,22 @@ gazelle_dependencies(go_sdk = "go_sdk")
 # Download alternative go toolchains after all other dependencies, so that they aren't used by external dependencies.
 go_download_sdk(
     name = "go_sdk_1_16",
-    version = "1.16.14",
+    version = "1.16.15",
 )
 
 go_download_sdk(
     name = "go_sdk_1_17",
-    version = "1.17.11",
+    version = "1.17.13",
 )
 
 go_download_sdk(
     name = "go_sdk_1_18",
-    version = "1.18.5",
+    version = "1.18.7",
 )
 
 go_download_sdk(
     name = "go_sdk_1_19",
-    version = "1.19",
+    version = "1.19.2",
 )
 
 pip_parse(
