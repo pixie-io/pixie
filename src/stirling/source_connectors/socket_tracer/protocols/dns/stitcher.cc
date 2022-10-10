@@ -29,6 +29,9 @@
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
+DEFINE_bool(include_respless_dns_requests, false,
+            "If true, use customStitchFrames otherwise uses simple StitchFrames");
+
 namespace px {
 namespace stirling {
 namespace protocols {
@@ -175,7 +178,7 @@ StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_fr
 // Currently StitchFrames() uses a response-led matching algorithm.
 // For each response that is at the head of the deque, there should exist a previous request with
 // the same txid. Find it, and consume both frames.
-RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
+RecordsWithErrorCount<Record> PxStitchFrames(std::deque<Frame>* req_frames,
                                            std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
   int error_count = 0;
@@ -238,6 +241,99 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
   resp_frames->clear();
 
   return {entries, error_count};
+}
+
+// CustomStitchFrames is a re-implementation of the existing StitchFrames with an added 
+// ability to record those DNS requests as well for which we could not match any response.
+// Flag include_respless_dns_requests must be set to include such DNS requests.
+RecordsWithErrorCount<Record> CustomStitchFrames(std::deque<Frame>* req_frames,
+                                           std::deque<Frame>* resp_frames) {
+  std::vector<Record> entries;
+  int error_count = 0;
+
+  for (auto& resp_frame : *resp_frames) {
+    bool found_match = false;
+
+    // Search for matching req frame
+    for (auto& req_frame : *req_frames) {
+      // If the request timestamp is after the response, then it can't be the match.
+      // Nor can any subsequent requests either, so stop searching.
+      
+      if (req_frame.timestamp_ns > resp_frame.timestamp_ns) {
+        break;
+      }
+
+      if (resp_frame.header.txid == req_frame.header.txid) {
+        StatusOr<Record> record_status = ProcessReqRespPair(req_frame, resp_frame);
+        if (record_status.ok()) {
+          entries.push_back(record_status.ConsumeValueOrDie());
+        } else {
+          VLOG(1) << record_status.ToString();
+          ++error_count;
+        }
+
+        // Found a match, so remove both request and response.
+        // We don't remove request frames on the fly, however,
+        // because it could otherwise cause unnecessary churn/copying in the deque.
+        // This is due to the fact that responses can come out-of-order.
+        // Just mark the request as consumed, and clean-up when they reach the head of the queue.
+        // Note that responses are always head-processed, so they don't require this optimization.
+        found_match = true;
+        req_frame.consumed = true;
+        break;
+      }
+    }
+
+    if (!found_match) {
+      VLOG(1) << absl::Substitute("Did not find a request matching the response. TXID = $0",
+                                  resp_frame.header.txid);
+      ++error_count;
+    }
+
+    // Clean-up consumed frames at the head.
+    // Do this inside the resp loop to aggressively clean-out req_frames whenever a frame consumed.
+    // Should speed up the req_frames search for the next iteration.
+    auto it = req_frames->begin();
+    while (it != req_frames->end()) {
+      if (!(*it).consumed) {
+        break;
+      }
+      it++;
+    }
+    req_frames->erase(req_frames->begin(), it);
+
+    // TODO(oazizi): Consider removing requests that are too old, otherwise a lost response can mean
+    // the are never processed. This would result in a memory leak until the more drastic connection
+    // tracker clean-up mechanisms kick in.
+  }
+
+  resp_frames->clear();
+   
+    // After the external loop's lifecycle comes to an end we end up with the request deque
+    // having only those request frames which have not been consumed yet i.e. consumed = false
+    // so essentially these are the requests which could not be matched with any response frame. 
+    // Hence we iterate over this request deque, add a default response to it, make a record and
+    // append those records at the end of the entries vector.
+    auto it = req_frames->begin();
+    while (it != req_frames->end()){ 
+       if (!(*it).consumed) 
+      { 
+        Frame default_resp_frame; 
+        default_resp_frame.timestamp_ns = 99;
+        StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
+        entries.push_back(record_status.ConsumeValueOrDie());
+      } 
+      it++; 
+    } 
+    return {entries, error_count};  
+} 
+
+RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
+                                           std::deque<Frame>* resp_frames){
+  return (FLAGS_include_respless_dns_requests)
+             ? CustomStitchFrames(req_frames, resp_frames) 
+             : PxStitchFrames(req_frames, resp_frames);
+             
 }
 
 }  // namespace dns
