@@ -22,12 +22,24 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <chrono>
 #include <deque>
 #include <string>
 #include <utility>
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
+
+DEFINE_bool(include_respless_dns_requests, false,
+            "If true, use customStitchFrames otherwise uses simple StitchFrames");
+
+DEFINE_uint64(dns_request_timeout_threshold_milliseconds, 2000,
+              "Number of seconds to wait for the in-flight response of a dns request. Depends on "
+              "include_respless_dns_requests.");
+
+auto current_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch())
+                        .count();
 
 namespace px {
 namespace stirling {
@@ -176,7 +188,8 @@ StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_fr
 // For each response that is at the head of the deque, there should exist a previous request with
 // the same txid. Find it, and consume both frames.
 RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
-                                           std::deque<Frame>* resp_frames) {
+                                           std::deque<Frame>* resp_frames,
+                                           bool include_respless_dns_requests) {
   std::vector<Record> entries;
   int error_count = 0;
 
@@ -237,7 +250,31 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 
   resp_frames->clear();
 
-  return {entries, error_count};
+  if (include_respless_dns_requests) {
+    // After the external loop's lifecycle comes to an end we end up with the request deque
+    // having only those request frames which have not been consumed yet i.e. consumed = false
+    // so essentially these are the requests which could not be matched with any response frame.
+    // Hence we iterate over this request deque, add a default response to it, make a record and
+    // append those records at the end of the entries vector.
+    auto it = req_frames->begin();
+    while (it != req_frames->end()) {
+      if (!(it->consumed)) {
+        auto elapsed_seconds = current_time - it->timestamp_ns;
+
+        if (elapsed_seconds > FLAGS_dns_request_timeout_threshold_milliseconds) {
+          Frame default_resp_frame;
+          default_resp_frame.timestamp_ns =
+              (it->timestamp_ns) + FLAGS_dns_request_timeout_threshold_milliseconds;
+          StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
+          entries.push_back(record_status.ConsumeValueOrDie());
+        }
+      }
+      it++;
+    }
+    return {entries, error_count};
+  } else {
+    return {entries, error_count};
+  }
 }
 
 }  // namespace dns

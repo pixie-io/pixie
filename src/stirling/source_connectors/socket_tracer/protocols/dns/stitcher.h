@@ -26,6 +26,11 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
+// Choose either the simple implementation of StitchFrames (without missing records) or
+// to use CustomStitchFrames for including responseless DNS requests as well.
+DECLARE_bool(include_respless_dns_requests);
+DECLARE_uint64(dns_request_timeout_threshold_milliseconds);
+
 namespace px {
 namespace stirling {
 namespace protocols {
@@ -36,10 +41,13 @@ namespace dns {
  *
  * @param req_packets: deque of all request frames.
  * @param resp_packets: deque of all response frames.
+ * @param include_respless_dns_requests: bool to decide whether to include responseless DNS requests
+ * or not.
  * @return A vector of entries to be appended to table store.
  */
 RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_packets,
-                                           std::deque<Frame>* resp_packets);
+                                           std::deque<Frame>* resp_packets,
+                                           bool include_respless_dns_requests);
 
 }  // namespace dns
 
@@ -47,7 +55,7 @@ template <>
 inline RecordsWithErrorCount<dns::Record> StitchFrames(std::deque<dns::Frame>* req_packets,
                                                        std::deque<dns::Frame>* resp_packets,
                                                        NoState* /* state */) {
-  return dns::StitchFrames(req_packets, resp_packets);
+  return dns::StitchFrames(req_packets, resp_packets, FLAGS_include_respless_dns_requests);
 }
 
 }  // namespace protocols

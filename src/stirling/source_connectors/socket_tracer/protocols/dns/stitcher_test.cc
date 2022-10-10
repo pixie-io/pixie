@@ -23,6 +23,7 @@
 
 #include "src/common/base/inet_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/stitcher.h"
+#include "src/stirling/testing/common.h"
 
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
@@ -90,7 +91,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   req_frames.push_back(req0_frame);
   resp_frames.push_back(resp0_frame);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -116,6 +117,8 @@ TEST(DnsStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> resp_frames;
   RecordsWithErrorCount<Record> result;
 
+  PL_SET_FOR_SCOPE(FLAGS_include_respless_dns_requests, true);
+
   int t = 0;
 
   Frame req0_frame = CreateReqFrame(++t, 0);
@@ -125,7 +128,7 @@ TEST(DnsStitcherTest, OutOfOrderMatching) {
   Frame req2_frame = CreateReqFrame(++t, 2);
   Frame resp2_frame = CreateRespFrame(++t, 2, std::vector<DNSRecord>());
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
@@ -134,38 +137,38 @@ TEST(DnsStitcherTest, OutOfOrderMatching) {
   req_frames.push_back(req0_frame);
   req_frames.push_back(req1_frame);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
   EXPECT_EQ(result.error_count, 0);
-  EXPECT_EQ(result.records.size(), 0);
+  EXPECT_EQ(result.records.size(), FLAGS_include_respless_dns_requests ? 2 : 0);
 
   resp_frames.push_back(resp1_frame);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
   EXPECT_EQ(result.error_count, 0);
-  EXPECT_EQ(result.records.size(), 1);
+  EXPECT_EQ(result.records.size(), FLAGS_include_respless_dns_requests ? 2 : 1);
 
   req_frames.push_back(req2_frame);
   resp_frames.push_back(resp0_frame);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 1);
   EXPECT_EQ(result.error_count, 0);
-  EXPECT_EQ(result.records.size(), 1);
+  EXPECT_EQ(result.records.size(), FLAGS_include_respless_dns_requests ? 2 : 1);
 
   resp_frames.push_back(resp2_frame);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 1);
 
-  result = StitchFrames(&req_frames, &resp_frames);
+  result = StitchFrames(&req_frames, &resp_frames, FLAGS_include_respless_dns_requests);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
   EXPECT_EQ(result.error_count, 0);
