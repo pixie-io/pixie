@@ -31,7 +31,7 @@ const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
 const date = Number.isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
-const dateStr = format(date, 'YYYY.MM.DD.hh.mm');
+const dateStr = format(date, 'yyyy.MM.dd.hh.mm');
 const parts = [];
 if (typeof STABLE_BUILD_SCM_REVISION === 'string') {
   parts.push(STABLE_BUILD_SCM_REVISION.substr(0, 7));

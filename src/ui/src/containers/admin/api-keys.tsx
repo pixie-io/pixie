@@ -27,7 +27,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { distanceInWords } from 'date-fns';
+import { formatDistance } from 'date-fns';
 
 import { useSnackbar } from 'app/components';
 import { GQLAPIKey, GQLAPIKeyMetadata } from 'app/types/schema';
@@ -52,7 +52,7 @@ export function formatAPIKey(apiKey: GQLAPIKeyMetadata): APIKeyDisplay {
   return {
     id: apiKey.id,
     idShort: apiKey.id.split('-').pop(),
-    createdAt: `${distanceInWords(new Date(apiKey.createdAtMs), now, { addSuffix: false })} ago`,
+    createdAt: `${formatDistance(new Date(apiKey.createdAtMs), now, { addSuffix: false })} ago`,
     desc: apiKey.desc,
   };
 }
