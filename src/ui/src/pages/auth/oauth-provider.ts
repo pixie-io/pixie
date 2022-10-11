@@ -24,30 +24,30 @@ import { FormStructure } from 'app/components';
 import { CallbackArgs } from './callback-url';
 
 /** OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra. */
-export abstract class OAuthProviderClient {
+export interface OAuthProviderClient {
   /** refetchToken will get the OAuthProvider to refetch and store the token. */
-  abstract refetchToken(): void;
+  refetchToken(): void;
 
   /** handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback. */
-  abstract handleToken(): Promise<CallbackArgs>;
+  handleToken(): Promise<CallbackArgs>;
 
   /** getPasswordLoginFlow returns the form structure for logging in. */
-  abstract getPasswordLoginFlow(): Promise<FormStructure>;
+  getPasswordLoginFlow(): Promise<FormStructure>;
 
   /** getResetPasswordFlow returns the form to reset a password. */
-  abstract getResetPasswordFlow(): Promise<FormStructure>;
+  getResetPasswordFlow(): Promise<FormStructure>;
 
   /** getError retrieves a specific error from the OAuthProvider's server. */
-  abstract getError(): Promise<FormStructure>;
+  getError(): Promise<FormStructure>;
 
-  abstract isInvitationEnabled(): boolean;
+  isInvitationEnabled(): boolean;
 
   /** If the provider supports invitations and they're enabled, it can return a React component to create them. */
-  abstract getInvitationComponent(): React.FC | undefined;
+  getInvitationComponent(): React.FC | undefined;
 
   /** Gets the login buttons for this OAuthProvider. */
-  abstract getLoginButtons(): React.ReactElement;
+  getLoginButtons(): React.ReactElement;
 
   /** Gets the signup buttons for this OAuthProvider. */
-  abstract getSignupButtons(): React.ReactElement;
+  getSignupButtons(): React.ReactElement;
 }

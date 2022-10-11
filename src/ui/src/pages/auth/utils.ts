@@ -33,11 +33,11 @@ const cookies = new Cookies();
 export const GetOAuthProvider = (): OAuthProviderClient => {
   switch (OAUTH_PROVIDER) {
     case 'auth0':
-      return new Auth0Client();
+      return Auth0Client;
     case 'hydra':
-      return new HydraClient();
+      return HydraClient;
     case 'oidc':
-      return new OIDCClient();
+      return OIDCClient;
     default:
       throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra, oidc or auth0.`);
   }

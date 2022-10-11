@@ -25,43 +25,40 @@ import { OIDCButtons } from 'app/containers/auth/oidc-buttons';
 import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL } from 'app/containers/constants';
 
 import { CallbackArgs, getLoginArgs, getSignupArgs } from './callback-url';
-import { OAuthProviderClient } from './oauth-provider';
 
-export class OIDCClient extends OAuthProviderClient {
-  makeOIDCClient(): UserManager {
-    return new UserManager({
-      authority: OIDC_HOST,
-      metadataUrl: OIDC_METADATA_URL,
-      client_id: OIDC_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/auth/callback`,
-      scope: 'openid profile email',
-      response_type: 'token id_token',
-    });
-  }
+export const OIDCClient = {
+  userManager: new UserManager({
+    authority: OIDC_HOST,
+    metadataUrl: OIDC_METADATA_URL,
+    client_id: OIDC_CLIENT_ID,
+    redirect_uri: `${window.location.origin}/auth/callback`,
+    scope: 'openid profile email',
+    response_type: 'token id_token',
+  }),
 
   redirectToLogin(): void {
-    this.makeOIDCClient().signinRedirect({
+    this.userManager.signinRedirect({
       state: {
         redirect: getLoginArgs(),
       },
     });
-  }
+  },
 
   redirectToSignup(): void {
-    this.makeOIDCClient().signinRedirect({
+    this.userManager.signinRedirect({
       state: {
         redirect: getSignupArgs(),
       },
     });
-  }
+  },
 
   refetchToken(): void {
-    this.makeOIDCClient().signinSilent({
+    this.userManager.signinSilent({
       state: {
         redirect: getLoginArgs(),
       },
     });
-  }
+  },
 
   handleToken(): Promise<CallbackArgs> {
     return new Promise<CallbackArgs>((resolve, reject) => {
@@ -81,39 +78,39 @@ export class OIDCClient extends OAuthProviderClient {
           });
         }).catch(reject);
     });
-  }
+  },
 
   async getPasswordLoginFlow(): Promise<FormStructure> {
     throw new Error('Password flow not available for OIDC. Use the proper OIDC flow.');
-  }
+  },
 
   async getResetPasswordFlow(): Promise<FormStructure> {
     throw new Error('Reset Password flow not available for OIDC. Use the proper OIDC flow.');
-  }
+  },
 
   getLoginButtons(): React.ReactElement {
     return OIDCButtons({
       loginButtonText: 'Login',
       onLoginButtonClick: () => this.redirectToLogin(),
     });
-  }
+  },
 
   getSignupButtons(): React.ReactElement {
     return OIDCButtons({
       loginButtonText: 'Sign-up',
       onLoginButtonClick: () => this.redirectToSignup(),
     });
-  }
+  },
 
   async getError(): Promise<FormStructure> {
     throw new Error('error flow not supported for OIDC');
-  }
+  },
 
   isInvitationEnabled(): boolean {
     return false;
-  }
+  },
 
   getInvitationComponent(): React.FC {
     return undefined;
-  }
-}
+  },
+};

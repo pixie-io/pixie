@@ -25,9 +25,8 @@ import { Auth0Buttons } from 'app/containers/auth/auth0-buttons';
 import { AUTH_CLIENT_ID, AUTH_EMAIL_PASSWORD_CONN, AUTH_URI } from 'app/containers/constants';
 
 import { getSignupArgs, CallbackArgs, getLoginArgs } from './callback-url';
-import { OAuthProviderClient } from './oauth-provider';
 
-export class Auth0Client extends OAuthProviderClient {
+export const Auth0Client = {
   makeAuth0OIDCClient(extraQueryParams?: Record<string, any>): UserManager {
     return new UserManager({
       authority: `https://${AUTH_URI}`,
@@ -41,7 +40,7 @@ export class Auth0Client extends OAuthProviderClient {
       // complaining about a mismatch between repsonse claims and ID token claims.
       response_type: 'token id_token',
     });
-  }
+  },
 
   redirectToGoogleLogin(): void {
     this.makeAuth0OIDCClient(
@@ -53,7 +52,7 @@ export class Auth0Client extends OAuthProviderClient {
         redirectArgs: getLoginArgs(),
       },
     });
-  }
+  },
 
   redirectToGoogleSignup(): void {
     this.makeAuth0OIDCClient(
@@ -65,7 +64,7 @@ export class Auth0Client extends OAuthProviderClient {
         redirectArgs: getSignupArgs(),
       },
     });
-  }
+  },
 
   redirectToEmailLogin(): void {
     this.makeAuth0OIDCClient(
@@ -79,7 +78,7 @@ export class Auth0Client extends OAuthProviderClient {
         redirectArgs: getLoginArgs(),
       },
     });
-  }
+  },
 
   redirectToEmailSignup(): void {
     this.makeAuth0OIDCClient(
@@ -99,7 +98,7 @@ export class Auth0Client extends OAuthProviderClient {
         },
       },
     );
-  }
+  },
 
   refetchToken(): void {
     // Omitting the prompt parameter with the New Universal Login will cause this to fetch the token
@@ -117,7 +116,7 @@ export class Auth0Client extends OAuthProviderClient {
         redirectArgs: getLoginArgs(),
       },
     });
-  }
+  },
 
   handleToken(): Promise<CallbackArgs> {
     return new Promise<CallbackArgs>((resolve, reject) => {
@@ -137,15 +136,15 @@ export class Auth0Client extends OAuthProviderClient {
           });
         }).catch(reject);
     });
-  }
+  },
 
   async getPasswordLoginFlow(): Promise<FormStructure> {
     throw new Error('Password flow not available for OIDC. Use the proper OIDC flow.');
-  }
+  },
 
   async getResetPasswordFlow(): Promise<FormStructure> {
     throw new Error('Reset Password flow not available for OIDC. Use the proper OIDC flow.');
-  }
+  },
 
   getLoginButtons(): React.ReactElement {
     return Auth0Buttons({
@@ -155,7 +154,7 @@ export class Auth0Client extends OAuthProviderClient {
       emailPasswordButtonText: 'Login with Email',
       onEmailPasswordButtonClick: () => this.redirectToEmailLogin(),
     });
-  }
+  },
 
   getSignupButtons(): React.ReactElement {
     return Auth0Buttons({
@@ -165,17 +164,17 @@ export class Auth0Client extends OAuthProviderClient {
       emailPasswordButtonText: 'Sign-up with Email',
       onEmailPasswordButtonClick: () => this.redirectToEmailSignup(),
     });
-  }
+  },
 
   async getError(): Promise<FormStructure> {
     throw new Error('error flow not supported for Auth0');
-  }
+  },
 
   isInvitationEnabled(): boolean {
     return false;
-  }
+  },
 
   getInvitationComponent(): React.FC {
     return undefined;
-  }
-}
+  },
+};

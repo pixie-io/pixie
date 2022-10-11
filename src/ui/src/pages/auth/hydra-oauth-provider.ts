@@ -28,7 +28,6 @@ import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-butto
 import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
 
 import { CallbackArgs, getSignupArgs, getLoginArgs } from './callback-url';
-import { OAuthProviderClient } from './oauth-provider';
 
 export const PasswordError = new Error('Kratos identity server error: Password method not found in flows.');
 export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
@@ -48,40 +47,38 @@ const displayErrorFormStructure = (error: Error): FormStructure => ({
   },
 });
 
-export class HydraClient extends OAuthProviderClient {
-  makeHydraClient(): UserManager {
-    return new UserManager({
-      authority: AUTH_URI,
-      client_id: AUTH_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/auth/callback`,
-      scope: 'vizier',
-      response_type: 'token',
-    });
-  }
+export const HydraClient = {
+  userManager: new UserManager({
+    authority: AUTH_URI,
+    client_id: AUTH_CLIENT_ID,
+    redirect_uri: `${window.location.origin}/auth/callback`,
+    scope: 'vizier',
+    response_type: 'token',
+  }),
 
   loginRequest(): void {
-    this.makeHydraClient().signinRedirect({
+    this.userManager.signinRedirect({
       state: {
         redirectArgs: getLoginArgs(),
       },
     });
-  }
+  },
 
   signupRequest(): void {
-    this.makeHydraClient().signinRedirect({
+    this.userManager.signinRedirect({
       state: {
         redirectArgs: getSignupArgs(),
       },
     });
-  }
+  },
 
   refetchToken(): void {
-    this.makeHydraClient().signinSilent({
+    this.userManager.signinSilent({
       state: {
         redirectArgs: getLoginArgs(),
       },
     });
-  }
+  },
 
   handleToken(): Promise<CallbackArgs> {
     return new Promise<CallbackArgs>((resolve, reject) => {
@@ -98,7 +95,7 @@ export class HydraClient extends OAuthProviderClient {
           });
         }).catch(reject);
     });
-  }
+  },
 
   // Get the PasswordLoginFlow from Kratos.
   async getPasswordLoginFlow(): Promise<FormStructure> {
@@ -121,7 +118,7 @@ export class HydraClient extends OAuthProviderClient {
       // through an XmlHttpRequest, the default HTML Form submit behavior.
       defaultSubmit: true,
     };
-  }
+  },
 
   async getResetPasswordFlow(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
@@ -143,7 +140,7 @@ export class HydraClient extends OAuthProviderClient {
       // through an XmlHttpRequest, the default HTML Form submit behavior.
       defaultSubmit: true,
     };
-  }
+  },
 
   async getError(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
@@ -154,24 +151,24 @@ export class HydraClient extends OAuthProviderClient {
     const { data } = await kratosClient.getSelfServiceError(error);
 
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
-  }
+  },
 
   isInvitationEnabled(): boolean {
     return true;
-  }
+  },
 
   getInvitationComponent(): React.FC {
     return HydraInvitationForm;
-  }
+  },
 
   getLoginButtons(): React.ReactElement {
     return HydraButtons({
       onUsernamePasswordButtonClick: () => this.loginRequest(),
       usernamePasswordText: 'Login',
     });
-  }
+  },
 
   getSignupButtons(): React.ReactElement {
     return RejectHydraSignup({});
-  }
-}
+  },
+};
