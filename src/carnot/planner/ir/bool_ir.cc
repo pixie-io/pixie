@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/ir/bool_ir.h"
+#include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {
 namespace carnot {
@@ -42,6 +43,8 @@ Status BoolIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IR
   val_ = bool_ir->val_;
   return Status::OK();
 }
+
+bool BoolIR::NodeMatches(IRNode* node) { return Match(node, Bool()); }
 
 }  // namespace planner
 }  // namespace carnot

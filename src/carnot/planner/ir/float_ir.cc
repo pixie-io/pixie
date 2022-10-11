@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/ir/float_ir.h"
+#include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {
 namespace carnot {
@@ -30,6 +31,7 @@ Status FloatIR::ToProtoImpl(planpb::ScalarValue* value) const {
 uint64_t FloatIR::HashValueImpl() const {
   return ::util::Hash64(reinterpret_cast<const char*>(&val_), sizeof(double));
 }
+bool FloatIR::NodeMatches(IRNode* node) { return Match(node, Float()); }
 
 /* Float IR */
 Status FloatIR::Init(double val) {

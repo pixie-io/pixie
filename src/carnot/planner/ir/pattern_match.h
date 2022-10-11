@@ -133,6 +133,9 @@ struct ClassMatch : public ParentMatch {
 
 // Match an arbitrary Int value.
 inline ClassMatch<IRNodeType::kInt> Int() { return ClassMatch<IRNodeType::kInt>(); }
+inline ClassMatch<IRNodeType::kFloat> Float() { return ClassMatch<IRNodeType::kFloat>(); }
+inline ClassMatch<IRNodeType::kBool> Bool() { return ClassMatch<IRNodeType::kBool>(); }
+inline ClassMatch<IRNodeType::kUInt128> UInt128() { return ClassMatch<IRNodeType::kUInt128>(); }
 
 // Match an arbitrary String value.
 inline ClassMatch<IRNodeType::kString> String() { return ClassMatch<IRNodeType::kString>(); }

@@ -54,6 +54,8 @@ class TimeIR : public DataIR {
     return data->val() == val();
   }
 
+  static bool NodeMatches(IRNode* input);
+
  protected:
   uint64_t HashValueImpl() const override;
 

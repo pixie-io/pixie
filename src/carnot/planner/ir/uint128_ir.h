@@ -79,6 +79,8 @@ class UInt128IR : public DataIR {
     return data->val() == val();
   }
 
+  static bool NodeMatches(IRNode* input);
+
  protected:
   uint64_t HashValueImpl() const override;
 

@@ -160,6 +160,7 @@ class ColumnIR : public ExpressionIR {
   }
 
   Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
+  static bool NodeMatches(IRNode* input);
 
  protected:
   Status CopyFromNodeImpl(const IRNode* node,

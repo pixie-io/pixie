@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/ir/uint128_ir.h"
+#include "src/carnot/planner/ir/pattern_match.h"
 #include "src/shared/upid/upid.h"
 
 namespace px {
@@ -55,6 +56,7 @@ Status UInt128IR::CopyFromNodeImpl(const IRNode* source,
   val_ = input->val_;
   return Status::OK();
 }
+bool UInt128IR::NodeMatches(IRNode* node) { return Match(node, UInt128()); }
 
 }  // namespace planner
 }  // namespace carnot

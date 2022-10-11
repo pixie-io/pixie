@@ -17,6 +17,7 @@
  */
 
 #include "src/carnot/planner/ir/time_ir.h"
+#include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {
 namespace carnot {
@@ -43,6 +44,7 @@ Status TimeIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IR
   return Status::OK();
 }
 
+bool TimeIR::NodeMatches(IRNode* node) { return Match(node, Time()); }
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

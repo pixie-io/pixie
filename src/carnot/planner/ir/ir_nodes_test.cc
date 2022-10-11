@@ -2100,6 +2100,35 @@ TEST_F(OpTests, join_prune_outputs) {
   }
 }
 
+TEST(NodeMatches, CompareAllDataTypes) {
+  auto ast = MakeTestAstPtr();
+  auto ir = std::make_shared<IR>();
+  // Make a Node for each type.
+  ASSERT_OK_AND_ASSIGN(auto bool_ir, ir->CreateNode<BoolIR>(ast, true));
+  ASSERT_OK_AND_ASSIGN(auto int_ir, ir->CreateNode<IntIR>(ast, 1));
+  ASSERT_OK_AND_ASSIGN(auto float_ir, ir->CreateNode<FloatIR>(ast, 1.0));
+  ASSERT_OK_AND_ASSIGN(auto string_ir, ir->CreateNode<StringIR>(ast, "foo"));
+  ASSERT_OK_AND_ASSIGN(auto time_ir, ir->CreateNode<TimeIR>(ast, 1));
+  ASSERT_OK_AND_ASSIGN(auto uint128_ir,
+                       ir->CreateNode<UInt128IR>(ast, "01234567-89ab-cdef-0123-456789abcdef"));
+
+  std::vector<DataIR*> nodes{bool_ir, int_ir, float_ir, string_ir, time_ir, uint128_ir};
+  // A vector of functions for each CompareNodes function.
+  std::vector<std::function<bool(IRNode*)>> compare_funcs{
+      BoolIR::NodeMatches,   IntIR::NodeMatches,  FloatIR::NodeMatches,
+      StringIR::NodeMatches, TimeIR::NodeMatches, UInt128IR::NodeMatches};
+  ASSERT_EQ(nodes.size(), compare_funcs.size());
+  for (const auto& [i, node] : Enumerate(nodes)) {
+    for (const auto& [j, compare_func] : Enumerate(compare_funcs)) {
+      if (i == j) {
+        EXPECT_TRUE(compare_func(node));
+      } else {
+        EXPECT_FALSE(compare_func(node));
+      }
+    }
+  }
+}
+
 TEST(ZeroValueForType, TestBool) {
   auto ir = std::make_shared<IR>();
   auto val = DataIR::ZeroValueForType(ir.get(), IRNodeType::kBool).ConsumeValueOrDie();

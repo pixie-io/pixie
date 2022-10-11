@@ -19,6 +19,7 @@
 
 #include "src/carnot/planner/ir/column_ir.h"
 #include "src/carnot/planner/ir/ir.h"
+#include "src/carnot/planner/ir/pattern_match.h"
 
 namespace px {
 namespace carnot {
@@ -114,6 +115,8 @@ Status ColumnIR::CopyFromNode(const IRNode* source,
 Status ColumnIR::CopyFromNodeImpl(const IRNode*, absl::flat_hash_map<const IRNode*, IRNode*>*) {
   return Status::OK();
 }
+
+bool ColumnIR::NodeMatches(IRNode* node) { return Match(node, ColumnNode()); }
 
 Status ColumnIR::ResolveType(CompilerState* /* compiler_state */,
                              const std::vector<TypePtr>& parent_types) {
