@@ -58,8 +58,9 @@ class OTelModule : public QLObject {
   Args:
     data (List[px.otel.Data]): The list of OTel configurations for the data, describing how the
       data is created in the DataFrame and what kind of metric to populate in OTel.
-    resource (Dict[string, Column]): A description of the resource that creates
-      this data. Must include 'service.name' but can also include other data as well.
+    resource (Dict[string, Column|string]): A description of the resource that creates
+      this data. Is a mapping of attribute name to a string or a column that stores data about
+      the attribute. Must include 'service.name' as one attribute.
     endpoint (px.otel.Endpoint, optional): The endpoint configuration value. The endpoint
       can be omitted if this script is run in the OTel plugin context where an endpoint
       is configured.
@@ -113,8 +114,8 @@ class OTelMetrics : public QLObject {
     name (string): The name of the metric. Must adhere to [OpenTelemetry's naming conventions](https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument)
     value (Column): The column that contains the data. Must be either an INT64 or a FLOAT64.
     description (string, optional): A description of what the metric tracks.
-    attributes (Dict[string, string], optional): A mapping of attribute name to the column
-      name that stores data about the attribute.
+    attributes (Dict[string, Column|string], optional): A mapping of attribute name to a string or the column
+      that stores data about the attribute.
     unit (string, optional): The unit string to use for the metric. If not specified, will attempt
       to use the Semantic Type of the `value` to infer the unit string.
   Returns:
@@ -142,8 +143,8 @@ class OTelMetrics : public QLObject {
     quantile_values (Dict[float, Column]): The mapping of the quantile value to the DataFrame column
       containing the quantile value information. Must be FLOAT64.
     description (string, optional): A description of what the metric tracks.
-    attributes (Dict[double, Column], optional): A mapping of attribute name to the column
-      name that stores data about the attribute.
+    attributes (Dict[string, Column|string], optional): A mapping of attribute name to a string or the column
+      that stores data about the attribute.
     unit (string, optional): The unit string to use for the metric. If not specified, will attempt
       to use the Semantic Type of the quantile values to infer the unit string.
   Returns:
@@ -191,8 +192,8 @@ class OTelTrace : public QLObject {
     parent_span_id (Column, optional): The column containing parent_span_ids, must be formatted as a lower-case hex
       with 16 hex characters (aka 8 bytes), or the engine will write the data as empty. If not specified,
       will leave the parent_span_id field empty.
-    attributes (Dict[string, string], optional): A mapping of attribute name to the column
-      name that stores data about the attribute.
+    attributes (Dict[string, Column|string], optional): A mapping of attribute name to a string or the column
+      that stores data about the attribute.
     kind (int, optional): The OpenTelemetry SpanKind enum value to assign for all the spans. Defaults to SPAN_KIND_SERVER
       if not set.
   Returns:

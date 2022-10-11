@@ -485,6 +485,7 @@ otel.Data(
         'http.method': df.req_method,
         'http.proportion': df.proportion,
         'http.success': df.success,
+        'http.version': '1.1',
       }
     )
   ]
@@ -547,6 +548,10 @@ otel_sink_op {
         column_type: BOOLEAN
         column_index: 6
       }
+    }
+    attributes {
+      name: "http.version"
+      string_value: "1.1"
     }
     time_column_index: 0
     unit: "ns"
