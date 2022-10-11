@@ -29,6 +29,26 @@ namespace builtins {
  */
 void RegisterCollectionOpsOrDie(udf::Registry* registry);
 
+template <typename T>
+types::StringValue SerializeScalar(T* value) {
+  return types::StringValue(reinterpret_cast<char*>(value), sizeof(*value));
+}
+
+template <>
+inline types::StringValue SerializeScalar(types::StringValue* value) {
+  return *value;
+}
+
+template <typename T>
+T DeserializeScalar(const types::StringValue& data) {
+  return *reinterpret_cast<const typename types::ValueTypeTraits<T>::native_type*>(data.data());
+}
+
+template <>
+inline types::StringValue DeserializeScalar(const types::StringValue& data) {
+  return data;
+}
+
 template <typename TArg>
 class AnyUDA : public udf::UDA {
  public:
@@ -50,6 +70,13 @@ class AnyUDA : public udf::UDA {
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<AnyUDA>::CreateGeneric()};
+  }
+
+  StringValue Serialize(FunctionContext*) { return SerializeScalar(&val_); }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    val_ = DeserializeScalar<TArg>(data);
+    return Status::OK();
   }
 
   static udf::UDADocBuilder Doc() {
