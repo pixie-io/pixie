@@ -21,10 +21,7 @@ import type * as React from 'react';
 
 import { FormStructure } from 'app/components';
 
-export type Token = {
-  accessToken?: string;
-  idToken?: string;
-};
+import { CallbackArgs } from './callback-url';
 
 /** OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra. */
 export abstract class OAuthProviderClient {
@@ -32,7 +29,7 @@ export abstract class OAuthProviderClient {
   abstract refetchToken(): void;
 
   /** handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback. */
-  abstract handleToken(): Promise<Token>;
+  abstract handleToken(): Promise<CallbackArgs>;
 
   /** getPasswordLoginFlow returns the form structure for logging in. */
   abstract getPasswordLoginFlow(): Promise<FormStructure>;

@@ -21,7 +21,6 @@ import Cookies from 'universal-cookie';
 import { OAUTH_PROVIDER } from 'app/containers/constants';
 
 import { Auth0Client } from './auth0-oauth-provider';
-import { getRedirectURL } from './callback-url';
 import { HydraClient } from './hydra-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
 import { OIDCClient } from './oidc-oauth-provider';
@@ -34,11 +33,11 @@ const cookies = new Cookies();
 export const GetOAuthProvider = (): OAuthProviderClient => {
   switch (OAUTH_PROVIDER) {
     case 'auth0':
-      return new Auth0Client(getRedirectURL);
+      return new Auth0Client();
     case 'hydra':
-      return new HydraClient(getRedirectURL);
+      return new HydraClient();
     case 'oidc':
-      return new OIDCClient(getRedirectURL);
+      return new OIDCClient();
     default:
       throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra, oidc or auth0.`);
   }

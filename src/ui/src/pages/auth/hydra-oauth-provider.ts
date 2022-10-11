@@ -27,30 +27,9 @@ import { HydraInvitationForm } from 'app/containers/admin/hydra-invitation-form'
 import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-buttons';
 import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
 
-import { OAuthProviderClient, Token } from './oauth-provider';
+import { CallbackArgs, getSignupArgs, getLoginArgs } from './callback-url';
+import { OAuthProviderClient } from './oauth-provider';
 
-// Copied from auth0-js/src/helper/window.js
-function randomString(length) {
-  // eslint-disable-next-line no-var
-  var bytes = new Uint8Array(length);
-  const result = [];
-  const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._~';
-
-  const cryptoObj = window.crypto;
-  if (!cryptoObj) {
-    return null;
-  }
-
-  const random = cryptoObj.getRandomValues(bytes);
-
-  for (let a = 0; a < random.length; a++) {
-    result.push(charset[random[a] % charset.length]);
-  }
-
-  return result.join('');
-}
-
-const hydraStorageKey = 'hydra_auth_state';
 export const PasswordError = new Error('Kratos identity server error: Password method not found in flows.');
 export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
 
@@ -70,65 +49,58 @@ const displayErrorFormStructure = (error: Error): FormStructure => ({
 });
 
 export class HydraClient extends OAuthProviderClient {
-  getRedirectURL: (boolean) => string;
-
-  hydraStorageKey: string;
-
-  constructor(getRedirectURL: (boolean) => string) {
-    super();
-    this.getRedirectURL = getRedirectURL;
-    this.hydraStorageKey = hydraStorageKey;
-  }
-
-  makeHydraClient(redirectURI: string): UserManager {
+  makeHydraClient(): UserManager {
     return new UserManager({
       authority: AUTH_URI,
       client_id: AUTH_CLIENT_ID,
-      redirect_uri: redirectURI,
-      prompt: 'login',
+      redirect_uri: `${window.location.origin}/auth/callback`,
       scope: 'vizier',
       response_type: 'token',
     });
   }
 
   loginRequest(): void {
-    this.makeHydraClient(
-      this.getRedirectURL(/* isSignup */ false),
-    ).signinRedirect();
+    this.makeHydraClient().signinRedirect({
+      state: {
+        redirectArgs: getLoginArgs(),
+      },
+    });
   }
 
   signupRequest(): void {
-    this.makeHydraClient(
-      this.getRedirectURL(/* isSignup */ true),
-    ).signinRedirect();
+    this.makeHydraClient().signinRedirect({
+      state: {
+        redirectArgs: getSignupArgs(),
+      },
+    });
   }
 
   refetchToken(): void {
-    new UserManager({
-      authority: AUTH_URI,
-      client_id: AUTH_CLIENT_ID,
-      redirect_uri: this.getRedirectURL(/* isSignup */ false),
-      scope: 'vizier',
-      response_type: 'token',
-    }).signinRedirect();
+    this.makeHydraClient().signinSilent({
+      state: {
+        redirectArgs: getLoginArgs(),
+      },
+    });
   }
 
-  handleToken(): Promise<Token> {
-    return new Promise<Token>((resolve, reject) => {
+  handleToken(): Promise<CallbackArgs> {
+    return new Promise<CallbackArgs>((resolve, reject) => {
       new UserManager({}).signinRedirectCallback()
         .then((user) => {
           if (!user) {
             reject(new Error('user is undefined, please try logging in again'));
           }
           resolve({
-            accessToken: user.access_token,
+            redirectArgs: user.state.redirectArgs,
+            token: {
+              accessToken: user.access_token,
+            },
           });
         }).catch(reject);
     });
   }
 
   // Get the PasswordLoginFlow from Kratos.
-  // eslint-disable-next-line class-methods-use-this
   async getPasswordLoginFlow(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const flow = parsed.flow as string;
@@ -151,7 +123,6 @@ export class HydraClient extends OAuthProviderClient {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async getResetPasswordFlow(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const flow = parsed.flow as string;
@@ -174,7 +145,6 @@ export class HydraClient extends OAuthProviderClient {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async getError(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const error = parsed.error as string;
@@ -186,12 +156,10 @@ export class HydraClient extends OAuthProviderClient {
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
   }
 
-  // eslint-disable-next-line class-methods-use-this
   isInvitationEnabled(): boolean {
     return true;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   getInvitationComponent(): React.FC {
     return HydraInvitationForm;
   }
@@ -203,7 +171,6 @@ export class HydraClient extends OAuthProviderClient {
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
   getSignupButtons(): React.ReactElement {
     return RejectHydraSignup({});
   }

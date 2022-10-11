@@ -24,51 +24,47 @@ import { FormStructure } from 'app/components';
 import { OIDCButtons } from 'app/containers/auth/oidc-buttons';
 import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL } from 'app/containers/constants';
 
-import { OAuthProviderClient, Token } from './oauth-provider';
+import { CallbackArgs, getLoginArgs, getSignupArgs } from './callback-url';
+import { OAuthProviderClient } from './oauth-provider';
 
 export class OIDCClient extends OAuthProviderClient {
-  getRedirectURL: (boolean) => string;
-
-  constructor(getRedirectURL: (boolean) => string) {
-    super();
-    this.getRedirectURL = getRedirectURL;
-  }
-
-  /* eslint-disable class-methods-use-this */
-  makeOIDCClient(redirectURI: string): UserManager {
+  makeOIDCClient(): UserManager {
     return new UserManager({
       authority: OIDC_HOST,
       metadataUrl: OIDC_METADATA_URL,
       client_id: OIDC_CLIENT_ID,
-      redirect_uri: redirectURI,
-      prompt: 'login',
+      redirect_uri: `${window.location.origin}/auth/callback`,
       scope: 'openid profile email',
       response_type: 'token id_token',
     });
   }
 
   redirectToLogin(): void {
-    this.makeOIDCClient(this.getRedirectURL(/* isSignup */ false)).signinRedirect();
+    this.makeOIDCClient().signinRedirect({
+      state: {
+        redirect: getLoginArgs(),
+      },
+    });
   }
 
   redirectToSignup(): void {
-    this.makeOIDCClient(this.getRedirectURL(/* isSignup */ true)).signinRedirect();
+    this.makeOIDCClient().signinRedirect({
+      state: {
+        redirect: getSignupArgs(),
+      },
+    });
   }
 
   refetchToken(): void {
-    const client = new UserManager({
-      authority: OIDC_HOST,
-      metadataUrl: OIDC_METADATA_URL,
-      client_id: OIDC_CLIENT_ID,
-      redirect_uri: this.getRedirectURL(/* isSignup */ false),
-      scope: 'openid profile email',
-      response_type: 'token id_token',
+    this.makeOIDCClient().signinSilent({
+      state: {
+        redirect: getLoginArgs(),
+      },
     });
-    client.signinRedirect();
   }
 
-  handleToken(): Promise<Token> {
-    return new Promise<Token>((resolve, reject) => {
+  handleToken(): Promise<CallbackArgs> {
+    return new Promise<CallbackArgs>((resolve, reject) => {
       // The callback doesn't require any settings to be created.
       // That means this implementation is agnostic to the OIDC that we connected to.
       new UserManager({}).signinRedirectCallback()
@@ -77,8 +73,11 @@ export class OIDCClient extends OAuthProviderClient {
             reject(new Error('user is undefined, please try logging in again'));
           }
           resolve({
-            accessToken: user.access_token,
-            idToken: user.id_token,
+            redirectArgs: user.state.redirectArgs,
+            token: {
+              accessToken: user.access_token,
+              idToken: user.id_token,
+            },
           });
         }).catch(reject);
     });
@@ -117,5 +116,4 @@ export class OIDCClient extends OAuthProviderClient {
   getInvitationComponent(): React.FC {
     return undefined;
   }
-  /* eslint-enable class-methods-use-this */
 }

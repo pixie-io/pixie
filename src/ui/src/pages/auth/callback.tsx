@@ -30,8 +30,7 @@ import { isValidAnalytics } from 'app/utils/env';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 
 import { BasePage } from './base';
-import { AuthCallbackMode, parseRedirectArgs } from './callback-url';
-import { Token } from './oauth-provider';
+import { AuthCallbackMode, CallbackArgs } from './callback-url';
 import { GetOAuthProvider } from './utils';
 
 // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
@@ -331,9 +330,7 @@ export const AuthCallbackPage: React.FC = React.memo(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config?.err?.errorType, performSignup, performUILogin, sendTokenToCLI]);
 
-  const handleAccessToken = React.useCallback((token: Token) => {
-    const args = parseRedirectArgs(QueryString.parse(window.location.search));
-
+  const handleAccessToken = React.useCallback(({ token, redirectArgs: args }: CallbackArgs) => {
     setConfig({
       mode: args.mode,
       signup: args.signup,

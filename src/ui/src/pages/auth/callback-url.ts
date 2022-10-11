@@ -29,7 +29,17 @@ export interface RedirectArgs {
   invite_token?: string;
 }
 
-export const getRedirectURL = (isSignup: boolean): string => {
+export type Token = {
+  accessToken?: string;
+  idToken?: string;
+};
+
+export type CallbackArgs = {
+  redirectArgs: RedirectArgs;
+  token: Token;
+};
+
+const getRedirectArgs = (isSignup: boolean): RedirectArgs => {
   // Translate the login parameters to type of login flow.
   // local_mode && (no redirect_uri) -> cli_token
   // local_mode && redirect_uri -> cli_get
@@ -60,22 +70,8 @@ export const getRedirectURL = (isSignup: boolean): string => {
   if (parsed.tid && typeof parsed.tid === 'string') {
     pixieAnalytics.alias(parsed.tid);
   }
-  return `${window.location.origin}/auth/callback?${QueryString.stringify(redirectArgs)}`;
-};
-
-// Takes in the window.location.search from a page and returns the params
-// parsed into redirectArgs.
-export const parseRedirectArgs = (params: QueryString.ParsedQuery): RedirectArgs => {
-  const redirectArgs: RedirectArgs = {
-    signup: !!params.signup,
-    redirect_uri: params.redirect_uri && String(params.redirect_uri),
-    invite_token: params.invite_token && String(params.invite_token),
-    // Mode defaults to ui.
-    mode: 'ui',
-  };
-  // We override the default only if the mode param is a valid member.
-  if (['cli_get', 'cli_token', 'ui'].includes(params.mode as string)) {
-    redirectArgs.mode = params.mode as AuthCallbackMode;
-  }
   return redirectArgs;
 };
+
+export const getSignupArgs = () => getRedirectArgs(true);
+export const getLoginArgs = () => getRedirectArgs(false);

@@ -73,15 +73,7 @@ Pixie Cloud manages users, authentication, and proxying “passthrough” mode. 
         --response-types code,id_token,token \
         --scope openid,offline,vizier \
         --callbacks https://dev.withpixie.dev/oauth/auth/callback \
-        --callbacks https://work.dev.withpixie.dev/auth/callback\?mode\=ui \
-        --callbacks https://work.dev.withpixie.dev/auth/callback\?mode\=ui\&signup\=true \
-        --callbacks https://work.dev.withpixie.dev/auth/callback\?mode\=cli_get\&redirect_uri\=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete \
-        --callbacks https://work.dev.withpixie.dev/auth/callback\?mode\=cli_token \
-        --callbacks https://work.dev.withpixie.dev:8080/auth/callback\?mode\=ui \
-        --callbacks https://work.dev.withpixie.dev:8080/auth/callback\?mode\=ui\&signup\=true \
-        --callbacks https://work.dev.withpixie.dev:8080/auth/callback\?mode\=cli_token \
-        --callbacks https://work.dev.withpixie.dev:8080/auth/callback\?mode\=cli_get \
-        --callbacks https://work.dev.withpixie.dev:8080/auth/callback\?mode\=cli_get\&redirect_uri\=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete \
+        --callbacks https://work.dev.withpixie.dev/auth/callback \
         --skip-tls-verify
     ```
 
