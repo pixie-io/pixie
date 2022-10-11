@@ -25,6 +25,9 @@ const OAUTH_DEFAULTS = {
   PL_AUTH_URI: 'oauth/hydra/oauth2/auth',
   PL_AUTH_CLIENT_ID: 'auth-code-client',
   PL_AUTH_EMAIL_PASSWORD_CONN: '',
+  PL_OIDC_HOST: '',
+  PL_OIDC_METADATA_URL: '',
+  PL_OIDC_CLIENT_ID: '',
 };
 
 const LD_DEFAULTS = {

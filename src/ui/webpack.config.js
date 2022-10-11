@@ -281,6 +281,9 @@ module.exports = (env, argv) => {
     PL_AUTH_URI: authURI,
     PL_AUTH_CLIENT_ID: authClientID,
     PL_AUTH_EMAIL_PASSWORD_CONN: authEmailPasswordConnection,
+    PL_OIDC_HOST: oidcHost,
+    PL_OIDC_METADATA_URL: oidcMetadataURL,
+    PL_OIDC_CLIENT_ID: oidcClientID,
   } = yamls.oauth.data;
 
   webpackConfig.plugins.unshift(
@@ -295,6 +298,9 @@ module.exports = (env, argv) => {
       __CONFIG_AUTH_URI__: JSON.stringify(authURI),
       __CONFIG_AUTH_CLIENT_ID__: JSON.stringify(authClientID),
       __CONFIG_AUTH_EMAIL_PASSWORD_CONN__: JSON.stringify(authEmailPasswordConnection),
+      __CONFIG_OIDC_HOST__: JSON.stringify(oidcHost),
+      __CONFIG_OIDC_METADATA_URL__: JSON.stringify(oidcMetadataURL),
+      __CONFIG_OIDC_CLIENT_ID__: JSON.stringify(oidcClientID),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(yamls.domain.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(yamls.ld.data.PL_LD_CLIENT_ID),
       __CONFIG_SCRIPT_BUNDLE_URLS__: JSON.stringify(yamls.scriptBundle.data.SCRIPT_BUNDLE_URLS),
