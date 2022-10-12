@@ -47,7 +47,7 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 std::string FilterNode::DebugStringImpl() {
-  return absl::Substitute("Exec::FilterNode<$0>", evaluator_->DebugString());
+  return absl::Substitute("Exec::FilterNode<$0>", plan_node_->DebugString());
 }
 
 Status FilterNode::InitImpl(const plan::Operator& plan_node) {

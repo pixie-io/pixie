@@ -27,7 +27,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
-import { distanceInWords } from 'date-fns';
+import { formatDistance } from 'date-fns';
 
 import { useSnackbar } from 'app/components';
 import { GQLDeploymentKey, GQLDeploymentKeyMetadata } from 'app/types/schema';
@@ -53,7 +53,7 @@ export function formatDeploymentKey(depKey: GQLDeploymentKeyMetadata): Deploymen
   return {
     id: depKey.id,
     idShort: depKey.id.split('-').pop(),
-    createdAt: `${distanceInWords(new Date(depKey.createdAtMs), now, { addSuffix: false })} ago`,
+    createdAt: `${formatDistance(new Date(depKey.createdAtMs), now, { addSuffix: false })} ago`,
     desc: depKey.desc,
   };
 }

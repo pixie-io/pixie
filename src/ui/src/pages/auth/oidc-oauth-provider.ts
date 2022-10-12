@@ -22,7 +22,7 @@ import { UserManager } from 'oidc-client';
 
 import { FormStructure } from 'app/components';
 import { OIDCButtons } from 'app/containers/auth/oidc-buttons';
-import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
+import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL } from 'app/containers/constants';
 
 import { OAuthProviderClient, Token } from './oauth-provider';
 
@@ -37,8 +37,9 @@ export class OIDCClient extends OAuthProviderClient {
   /* eslint-disable class-methods-use-this */
   makeOIDCClient(redirectURI: string): UserManager {
     return new UserManager({
-      authority: `https://${AUTH_URI}`,
-      client_id: AUTH_CLIENT_ID,
+      authority: OIDC_HOST,
+      metadataUrl: OIDC_METADATA_URL,
+      client_id: OIDC_CLIENT_ID,
       redirect_uri: redirectURI,
       prompt: 'login',
       scope: 'openid profile email',
@@ -56,8 +57,9 @@ export class OIDCClient extends OAuthProviderClient {
 
   refetchToken(): void {
     const client = new UserManager({
-      authority: `https://${AUTH_URI}`,
-      client_id: AUTH_CLIENT_ID,
+      authority: OIDC_HOST,
+      metadataUrl: OIDC_METADATA_URL,
+      client_id: OIDC_CLIENT_ID,
       redirect_uri: this.getRedirectURL(/* isSignup */ false),
       scope: 'openid profile email',
       response_type: 'token id_token',

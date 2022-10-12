@@ -76,6 +76,17 @@ execute 'install gcloud::docker-credential-gcr' do
   action :run
 end
 
+directory '/opt/google-cloud-sdk/.install/.backup' do
+  action :delete
+  recursive true
+end
+
+execute 'remove gcloud pycache' do
+  action :run
+  cwd '/opt/google-cloud-sdk'
+  command "find . -regex '.*/__pycache__' -exec rm -r {} +"
+end
+
 execute 'configure docker-credential-gcr' do
   command 'docker-credential-gcr configure-docker'
   action :run

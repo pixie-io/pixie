@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { timeFormat } from 'd3-time-format';
+import { format } from 'date-fns';
 import * as vega from 'vega';
 import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
@@ -104,16 +104,15 @@ function parityReduce(labels: Label[]): Label[] {
 }
 
 // Formats the tick value into a time string given the options passed in.
-export function formatTime(tick: Date, showAmPm = false,
-  showDate = false): string {
-  let fmtStr = '%-I:%M:%S';
+export function formatTime(tick: Date, showAmPm = false, showDate = false): string {
+  let fmtStr = 'h:mm:ss';
   if (showAmPm) {
-    fmtStr += ' %p';
+    fmtStr += ' a';
     if (showDate) {
-      fmtStr = `%b %d, %Y ${fmtStr}`;
+      fmtStr = `MMM dd, yyyy ${fmtStr}`;
     }
   }
-  return timeFormat(fmtStr)(tick);
+  return format(tick, fmtStr);
 }
 
 function amPmFormatter(): LabelsFormatter {

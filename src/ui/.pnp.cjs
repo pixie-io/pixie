@@ -85,8 +85,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["css-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.2.6"],
             ["cypress", "npm:9.3.0"],
             ["d3", "npm:5.16.0"],
-            ["d3-time-format", "npm:2.3.0"],
-            ["date-fns", "npm:1.30.1"],
+            ["date-fns", "npm:2.29.3"],
             ["esbuild", "npm:0.13.13"],
             ["esbuild-jest", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:0.5.0"],
             ["esbuild-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.16.0"],
@@ -6136,8 +6135,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["css-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.2.6"],
             ["cypress", "npm:9.3.0"],
             ["d3", "npm:5.16.0"],
-            ["d3-time-format", "npm:2.3.0"],
-            ["date-fns", "npm:1.30.1"],
+            ["date-fns", "npm:2.29.3"],
             ["esbuild", "npm:0.13.13"],
             ["esbuild-jest", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:0.5.0"],
             ["esbuild-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:2.16.0"],
@@ -11360,17 +11358,17 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         }]
       ]],
       ["date-fns", [
-        ["npm:1.30.1", {
-          "packageLocation": "./.yarn/cache/date-fns-npm-1.30.1-b974a8f1e1-86b1f3269c.zip/node_modules/date-fns/",
-          "packageDependencies": [
-            ["date-fns", "npm:1.30.1"]
-          ],
-          "linkType": "HARD",
-        }],
         ["npm:2.22.1", {
           "packageLocation": "./.yarn/cache/date-fns-npm-2.22.1-cc0cbadceb-7ff97cd605.zip/node_modules/date-fns/",
           "packageDependencies": [
             ["date-fns", "npm:2.22.1"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:2.29.3", {
+          "packageLocation": "./.yarn/cache/date-fns-npm-2.29.3-fef7e3c72c-e01cf5b62a.zip/node_modules/date-fns/",
+          "packageDependencies": [
+            ["date-fns", "npm:2.29.3"]
           ],
           "linkType": "HARD",
         }]

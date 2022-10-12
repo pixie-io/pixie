@@ -49,7 +49,7 @@ import {
   Typography,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { distanceInWordsStrict } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
 import { Link, useRouteMatch } from 'react-router-dom';
 
 import { isPixieEmbedded } from 'app/common/embed-context';
@@ -208,7 +208,7 @@ const RetentionScriptRow = React.memo<{ script: GQLRetentionScript }>(({ script 
       </TableCell>
       <TableCell sx={{ minWidth: (t) => t.spacing(26) }}>
         <Tooltip title={frequencyS > 60 ? `${Number(frequencyS).toLocaleString()} seconds` : ''}>
-          <span>{distanceInWordsStrict(0, frequencyS * 1000)}</span>
+          <span>{formatDistanceStrict(0, frequencyS * 1000)}</span>
         </Tooltip>
       </TableCell>
       <TableCell sx={{ minWidth: (t) => t.spacing(30) }}>

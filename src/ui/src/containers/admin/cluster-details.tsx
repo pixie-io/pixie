@@ -36,7 +36,7 @@ import {
 } from '@mui/material';
 import { Theme, styled } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { distanceInWords } from 'date-fns';
+import { formatDistance } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { BehaviorSubject } from 'rxjs';
@@ -144,7 +144,7 @@ export function formatAgent(agentInfo): AgentDisplay {
     statusGroup: agentStatusGroup(agentInfo.agent_state),
     hostname: agentInfo.hostname,
     lastHeartbeat: convertHeartbeatMS(agentInfo.last_heartbeat_ns / (1000 * 1000)),
-    uptime: distanceInWords(new Date(agentInfo.create_time), now, { addSuffix: false }),
+    uptime: formatDistance(new Date(agentInfo.create_time), now, { addSuffix: false }),
   };
 }
 

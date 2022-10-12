@@ -135,53 +135,6 @@ func TestServer_LoginNewUser_NoOrg(t *testing.T) {
 	assert.Equal(t, resp.OrgInfo.OrgName, "")
 }
 
-func TestServer_LoginNewUser_NoHostDomainAndNotAuth0FailsSignup(t *testing.T) {
-	// TODO(philkuz, PC-1264) This test will be removed when we generally support CreateOrg.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuthProvider(ctrl)
-	authProviderID := "github|abc123"
-
-	fakeUserInfo := &controllers.UserInfo{
-		Email:            "abc@gmail.com",
-		EmailVerified:    true,
-		FirstName:        "first",
-		LastName:         "last",
-		Picture:          "something",
-		AuthProviderID:   authProviderID,
-		IdentityProvider: googleIdentityProvider,
-	}
-
-	a.EXPECT().GetUserInfoFromAccessToken("tokenabc").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockOrg := mock_profile.NewMockOrgServiceClient(ctrl)
-
-	mockProfile.EXPECT().
-		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{
-			AuthProviderID: authProviderID,
-		}).
-		Return(nil, status.Error(codes.NotFound, "user not found"))
-
-	mockOrg.EXPECT().
-		GetOrgByName(gomock.Any(), &profilepb.GetOrgByNameRequest{Name: "abc@gmail.com"}).
-		Return(nil, status.Error(codes.NotFound, "org not found"))
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	viper.Set("domain_name", "withpixie.ai")
-
-	env, err := authenv.New(mockProfile, mockOrg)
-	require.NoError(t, err)
-	s, err := controllers.NewServer(env, a, nil)
-	require.NoError(t, err)
-
-	_, err = doLoginRequest(getTestContext(), t, s)
-	require.Error(t, err)
-	assert.Equal(t, codes.NotFound, status.Code(err))
-}
-
 func TestServer_LoginNewUser_ExistingOrgWithHostedDomain(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -458,7 +411,9 @@ func TestServer_Login_GoogleUser_ProperHostedDomain(t *testing.T) {
 		ID:      orgPb,
 	}
 	mockOrg.EXPECT().
-		GetOrg(gomock.Any(), orgPb).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{
+			DomainName: "randomorg.com",
+		}).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -766,7 +721,8 @@ func TestServer_Login_UserInExistingOrg(t *testing.T) {
 			OrgID: orgPb,
 		}, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: orgPb,
+		ID:         orgPb,
+		DomainName: &types.StringValue{},
 	}
 	mockOrg.EXPECT().
 		GetOrg(gomock.Any(), orgPb).
@@ -1739,6 +1695,7 @@ func TestServer_Login_UserNotApproved(t *testing.T) {
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 	fakeOrgInfo := &profilepb.OrgInfo{
+		OrgName:         "abc@gmail.com",
 		ID:              orgPb,
 		EnableApprovals: true,
 	}

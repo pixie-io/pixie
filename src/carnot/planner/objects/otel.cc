@@ -107,11 +107,22 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
   std::vector<OTelAttribute> otel_attributes;
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
     PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
-    PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(values[idx], "attribute value column"));
     if (key->str().empty()) {
       return keyobj->CreateError("Attribute key must be a non-empty string");
     }
-    otel_attributes.push_back({key->str(), val, ""});
+    if (!ExprObject::IsExprObject(values[idx])) {
+      return values[idx]->CreateError("Expected column or string for attribute value, got '$0'",
+                                      QLObjectTypeString(values[idx]->type()));
+    }
+    auto expr = static_cast<ExprObject*>(values[idx].get())->expr();
+    if (Match(expr, ColumnNode())) {
+      otel_attributes.push_back({key->str(), static_cast<ColumnIR*>(expr), ""});
+    } else if (Match(expr, String())) {
+      otel_attributes.push_back({key->str(), nullptr, static_cast<StringIR*>(expr)->str()});
+    } else {
+      return values[idx]->CreateError("Expected column or string for attribute value, got '$0'",
+                                      expr->DebugString());
+    }
   }
   return otel_attributes;
 }
