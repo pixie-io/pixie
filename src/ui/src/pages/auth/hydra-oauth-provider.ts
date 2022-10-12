@@ -19,7 +19,7 @@
 import type * as React from 'react';
 
 import { PublicApiFactory } from '@ory/kratos-client';
-import ClientOAuth2 from 'client-oauth2';
+import { UserManager } from 'oidc-client';
 import * as QueryString from 'query-string';
 
 import { FormStructure } from 'app/components';
@@ -80,23 +80,50 @@ export class HydraClient extends OAuthProviderClient {
     this.hydraStorageKey = hydraStorageKey;
   }
 
+  makeHydraClient(redirectURI: string): UserManager {
+    return new UserManager({
+      authority: AUTH_URI,
+      client_id: AUTH_CLIENT_ID,
+      redirect_uri: redirectURI,
+      prompt: 'login',
+      scope: 'vizier',
+      response_type: 'token',
+    });
+  }
+
   loginRequest(): void {
-    window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ false).token.getUri();
+    this.makeHydraClient(
+      this.getRedirectURL(/* isSignup */ false),
+    ).signinRedirect();
   }
 
   signupRequest(): void {
-    window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ true).token.getUri();
+    this.makeHydraClient(
+      this.getRedirectURL(/* isSignup */ true),
+    ).signinRedirect();
   }
 
   refetchToken(): void {
-    window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ false).token.getUri();
+    new UserManager({
+      authority: AUTH_URI,
+      client_id: AUTH_CLIENT_ID,
+      redirect_uri: this.getRedirectURL(/* isSignup */ false),
+      scope: 'vizier',
+      response_type: 'token',
+    }).signinRedirect();
   }
 
   handleToken(): Promise<Token> {
     return new Promise<Token>((resolve, reject) => {
-      this.makeClient(this.getStoredState(), false).token.getToken(window.location).then((user) => {
-        resolve({ accessToken: user.accessToken });
-      }).catch((err) => reject(err));
+      new UserManager({}).signinRedirectCallback()
+        .then((user) => {
+          if (!user) {
+            reject(new Error('user is undefined, please try logging in again'));
+          }
+          resolve({
+            accessToken: user.access_token,
+          });
+        }).catch(reject);
     });
   }
 
@@ -179,34 +206,5 @@ export class HydraClient extends OAuthProviderClient {
   // eslint-disable-next-line class-methods-use-this
   getSignupButtons(): React.ReactElement {
     return RejectHydraSignup({});
-  }
-
-  private makeAndStoreState(): string {
-    const state = randomString(48);
-    try {
-      window.localStorage.setItem(this.hydraStorageKey, state);
-    } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
-    return state;
-  }
-
-  private getStoredState(): string {
-    try {
-      const state = window.localStorage.getItem(this.hydraStorageKey);
-      if (state != null) {
-        return state;
-      }
-    } catch { /* See above - localStorage isn't always available. */ }
-
-    throw new Error('OAuth state not found. Please try logging in again.');
-  }
-
-  private makeClient(state: string, isSignup: boolean): ClientOAuth2 {
-    return new ClientOAuth2({
-      clientId: AUTH_CLIENT_ID,
-      authorizationUri: `https://${window.location.host}/${AUTH_URI}`,
-      redirectUri: this.getRedirectURL(isSignup),
-      scopes: ['vizier'],
-      state,
-    });
   }
 }

@@ -215,10 +215,6 @@ const webpackConfig = {
         resolve(__dirname, 'assets/'),
       ]
     },
-    fallback: {
-      // client-oauth2 references `querystring` (nodeJS builtin). We use `query-string` to polyfill it in browsers.
-      querystring: require.resolve('query-string'),
-    },
   },
   optimization: {
     splitChunks: {
