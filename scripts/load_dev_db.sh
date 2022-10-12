@@ -60,23 +60,22 @@ postgres_pod=$(kubectl get pod --namespace "$namespace" --selector="name=postgre
     --output jsonpath='{.items[0].metadata.name}')
 kubectl port-forward pods/"$postgres_pod" ${postgres_port}:5432 -n "$namespace" &
 
+bazel build -c opt //src/utils/artifacts/versions_gen:versions_gen //src/utils/artifacts/artifact_db_updater:artifact_db_updater
+
+versions_gen_binary=$(bazel cquery //src/utils/artifacts/versions_gen:versions_gen -c opt --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
+db_updater_binary=$(bazel cquery //src/utils/artifacts/artifact_db_updater:artifact_db_updater -c opt --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
+
 # Update database with Vizier versions.
-bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
-      --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
-bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
-    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
+"${versions_gen_binary}" --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
+"${db_updater_binary}" --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 # Update database with CLI versions.
-bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
-      --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
-bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
-    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
+"${versions_gen_binary}" --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
+"${db_updater_binary}" --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 # Update database with operator versions.
-bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
-      --repo_path "${repo_path}" --artifact_name operator --versions_file "${versions_file}"
-bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
-    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
+"${versions_gen_binary}" --repo_path "${repo_path}" --artifact_name operator --versions_file "${versions_file}"
+"${db_updater_binary}" --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 git checkout main "$versions_file"
 
