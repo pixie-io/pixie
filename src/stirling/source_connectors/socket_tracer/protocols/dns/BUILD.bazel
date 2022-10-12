@@ -48,5 +48,8 @@ pl_cc_test(
 pl_cc_test(
     name = "stitcher_test",
     srcs = ["stitcher_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )
