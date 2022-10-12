@@ -128,6 +128,66 @@ spec:
         - name: certs
           mountPath: /certs
         resources: {}
+      - name: client-create-or-update
+        imagePullPolicy: IfNotPresent
+        image: oryd/hydra:v1.9.2-alpine
+        # yamllint disable rule:indentation
+        command: ['sh', '-c', 'set -x;
+          URL="https://localhost:4445/health/ready";
+          until [
+            $(wget --no-check-certificate --spider --quiet --server-response ${URL} 2>&1 |
+              awk ''NR==1{print $2}'') -eq 200
+          ]; do
+            echo "waiting for ${URL}";
+            sleep 2;
+          done;
+          CMD="hydra clients update auth-code-client";
+          hydra clients get auth-code-client
+            --endpoint=https://localhost:4445
+            --skip-tls-verify;
+          if [ $? -ne 0 ]; then
+            echo "Creating client";
+            CMD="hydra clients create --id auth-code-client";
+          fi;
+          ${CMD}
+            --endpoint https://localhost:4445
+            --secret "${HYDRA_CLIENT_SECRET}"
+            --grant-types authorization_code,refresh_token,implicit
+            --response-types code,id_token,token
+            --scope openid,offline,notifications,gist,vizier
+            --callbacks
+            "https://${PL_DOMAIN_NAME}/oauth/auth/callback"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}/auth/callback?mode=ui"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}/auth/callback?mode=ui&signup=true"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}/auth/callback?mode=cli_get&redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}/auth/callback?mode=cli_token"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}:8080/auth/callback?mode=ui"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}:8080/auth/callback?mode=ui&signup=true"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}:8080/auth/callback?mode=cli_token"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}:8080/auth/callback?mode=cli_get"
+            --callbacks
+            "https://work.${PL_DOMAIN_NAME}:8080/auth/callback?mode=cli_get&redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete"
+            --skip-tls-verify;
+          sleep infinity;
+        ']
+        # yamllint enable rule:indentation
+        envFrom:
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: HYDRA_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: CLIENT_SECRET
       restartPolicy: Always
       volumes:
       - name: config
