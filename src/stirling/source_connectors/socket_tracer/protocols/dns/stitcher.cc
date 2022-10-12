@@ -179,7 +179,7 @@ StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_fr
 // For each response that is at the head of the deque, there should exist a previous request with
 // the same txid. Find it, and consume both frames.
 RecordsWithErrorCount<Record> PxStitchFrames(std::deque<Frame>* req_frames,
-                                           std::deque<Frame>* resp_frames) {
+                                             std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
   int error_count = 0;
 
@@ -243,11 +243,11 @@ RecordsWithErrorCount<Record> PxStitchFrames(std::deque<Frame>* req_frames,
   return {entries, error_count};
 }
 
-// CustomStitchFrames is a re-implementation of the existing StitchFrames with an added 
+// CustomStitchFrames is a re-implementation of the existing StitchFrames with an added
 // ability to record those DNS requests as well for which we could not match any response.
 // Flag include_respless_dns_requests must be set to include such DNS requests.
 RecordsWithErrorCount<Record> CustomStitchFrames(std::deque<Frame>* req_frames,
-                                           std::deque<Frame>* resp_frames) {
+                                                 std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
   int error_count = 0;
 
@@ -258,7 +258,7 @@ RecordsWithErrorCount<Record> CustomStitchFrames(std::deque<Frame>* req_frames,
     for (auto& req_frame : *req_frames) {
       // If the request timestamp is after the response, then it can't be the match.
       // Nor can any subsequent requests either, so stop searching.
-      
+
       if (req_frame.timestamp_ns > resp_frame.timestamp_ns) {
         break;
       }
@@ -308,32 +308,29 @@ RecordsWithErrorCount<Record> CustomStitchFrames(std::deque<Frame>* req_frames,
   }
 
   resp_frames->clear();
-   
-    // After the external loop's lifecycle comes to an end we end up with the request deque
-    // having only those request frames which have not been consumed yet i.e. consumed = false
-    // so essentially these are the requests which could not be matched with any response frame. 
-    // Hence we iterate over this request deque, add a default response to it, make a record and
-    // append those records at the end of the entries vector.
-    auto it = req_frames->begin();
-    while (it != req_frames->end()){ 
-       if (!(*it).consumed) 
-      { 
-        Frame default_resp_frame; 
-        default_resp_frame.timestamp_ns = 99;
-        StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
-        entries.push_back(record_status.ConsumeValueOrDie());
-      } 
-      it++; 
-    } 
-    return {entries, error_count};  
-} 
+
+  // After the external loop's lifecycle comes to an end we end up with the request deque
+  // having only those request frames which have not been consumed yet i.e. consumed = false
+  // so essentially these are the requests which could not be matched with any response frame.
+  // Hence we iterate over this request deque, add a default response to it, make a record and
+  // append those records at the end of the entries vector.
+  auto it = req_frames->begin();
+  while (it != req_frames->end()) {
+    if (!(*it).consumed) {
+      Frame default_resp_frame;
+      default_resp_frame.timestamp_ns = 99;
+      StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
+      entries.push_back(record_status.ConsumeValueOrDie());
+    }
+    it++;
+  }
+  return {entries, error_count};
+}
 
 RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
-                                           std::deque<Frame>* resp_frames){
-  return (FLAGS_include_respless_dns_requests)
-             ? CustomStitchFrames(req_frames, resp_frames) 
-             : PxStitchFrames(req_frames, resp_frames);
-             
+                                           std::deque<Frame>* resp_frames) {
+  return (FLAGS_include_respless_dns_requests) ? CustomStitchFrames(req_frames, resp_frames)
+                                               : PxStitchFrames(req_frames, resp_frames);
 }
 
 }  // namespace dns

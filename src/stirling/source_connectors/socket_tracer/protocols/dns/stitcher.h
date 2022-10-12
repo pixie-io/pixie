@@ -26,7 +26,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
-// Choose either the simple implementation of StitchFrames (without missing records) or 
+// Choose either the simple implementation of StitchFrames (without missing records) or
 // to use CustomStitchFrames for including responseless DNS requests as well.
 DECLARE_bool(include_respless_dns_requests);
 
