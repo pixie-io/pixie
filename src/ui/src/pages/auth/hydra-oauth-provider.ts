@@ -82,7 +82,7 @@ export const HydraClient = {
 
   handleToken(): Promise<CallbackArgs> {
     return new Promise<CallbackArgs>((resolve, reject) => {
-      new UserManager({}).signinRedirectCallback()
+      this.userManager.signinRedirectCallback()
         .then((user) => {
           if (!user) {
             reject(new Error('user is undefined, please try logging in again'));

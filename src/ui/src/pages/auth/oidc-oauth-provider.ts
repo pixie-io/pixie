@@ -39,7 +39,7 @@ export const OIDCClient = {
   redirectToLogin(): void {
     this.userManager.signinRedirect({
       state: {
-        redirect: getLoginArgs(),
+        redirectArgs: getLoginArgs(),
       },
     });
   },
@@ -47,7 +47,7 @@ export const OIDCClient = {
   redirectToSignup(): void {
     this.userManager.signinRedirect({
       state: {
-        redirect: getSignupArgs(),
+        redirectArgs: getSignupArgs(),
       },
     });
   },
@@ -55,7 +55,7 @@ export const OIDCClient = {
   refetchToken(): void {
     this.userManager.signinSilent({
       state: {
-        redirect: getLoginArgs(),
+        redirectArgs: getLoginArgs(),
       },
     });
   },
@@ -64,7 +64,7 @@ export const OIDCClient = {
     return new Promise<CallbackArgs>((resolve, reject) => {
       // The callback doesn't require any settings to be created.
       // That means this implementation is agnostic to the OIDC that we connected to.
-      new UserManager({}).signinRedirectCallback()
+      this.userManager.signinRedirectCallback()
         .then((user) => {
           if (!user) {
             reject(new Error('user is undefined, please try logging in again'));
