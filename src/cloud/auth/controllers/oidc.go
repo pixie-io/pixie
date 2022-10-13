@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -60,16 +61,38 @@ func init() {
 	pflag.String("oidc_google_access_token_claim", "", "The custom claim that includes the Google Access token")
 }
 
+// Some OIDC providers do not properly encode booleans in the JSON representation.
+// So unfortunately this is a workaround to handle both bools and string representations of bools
+// in the userinfo.
+type boolLike bool
+
+func (sb *boolLike) UnmarshalJSON(b []byte) error {
+	switch strings.ToLower(string(b)) {
+	case "true", `"true"`:
+		*sb = true
+		return nil
+	case "false", `"false"`:
+		*sb = false
+		return nil
+	default:
+		return errors.New("invalid bool")
+	}
+}
+
+func (sb boolLike) MarshalJSON() ([]byte, error) {
+	return json.Marshal(bool(sb))
+}
+
 // userInfo tracks the returned info.
 // Follows the standard claim spec https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
 type userInfo struct {
-	Sub           string `json:",omitempty"`
-	Name          string `json:",omitempty"`
-	FirstName     string `json:"given_name,omitempty"`
-	LastName      string `json:"family_name,omitempty"`
-	Picture       string `json:",omitempty"`
-	Email         string `json:",omitempty"`
-	EmailVerified bool   `json:"email_verified,omitempty"`
+	Sub           string   `json:",omitempty"`
+	Name          string   `json:",omitempty"`
+	FirstName     string   `json:"given_name,omitempty"`
+	LastName      string   `json:"family_name,omitempty"`
+	Picture       string   `json:",omitempty"`
+	Email         string   `json:",omitempty"`
+	EmailVerified boolLike `json:"email_verified,omitempty"`
 }
 
 // OIDPMetadata is used to parse the provider metadata.
@@ -224,7 +247,7 @@ func (c *OIDCConnector) GetUserInfoFromAccessToken(accessToken string) (*UserInf
 
 	userInfo := &UserInfo{
 		Email:            info.Email,
-		EmailVerified:    info.EmailVerified,
+		EmailVerified:    bool(info.EmailVerified),
 		FirstName:        info.FirstName,
 		LastName:         info.LastName,
 		Name:             info.Name,

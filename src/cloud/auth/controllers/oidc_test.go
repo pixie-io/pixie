@@ -287,15 +287,14 @@ func TestOIDCConnectorImpl_GetUserInfo(t *testing.T) {
 		callCount++
 		assert.Equal(t, "/oauth2/userinfo", r.URL.String())
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
-		_, err := w.Write([]byte(`
-         {
-						"email": "testuser@test.com",
-						"email_verified": false,
-						"name": "Test User",
-						"picture": "picture.jpg",
-						"sub": "123990813094",
-						"http://px.dev/identityProvider": "github"
-         }`))
+		_, err := w.Write([]byte(`{
+			"email": "testuser@test.com",
+			"email_verified": false,
+			"name": "Test User",
+			"picture": "picture.jpg",
+			"sub": "123990813094",
+			"http://px.dev/identityProvider": "github"
+		}`))
 		require.NoError(t, err)
 	}))
 	defer server.Close()
@@ -319,6 +318,38 @@ func TestOIDCConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "", userInfo.HostedDomain)
 }
 
+func TestOIDCConnectorImpl_GetUserInfo_BadBools(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		callCount++
+		assert.Equal(t, "/oauth2/userinfo", r.URL.String())
+		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
+		_, err := w.Write([]byte(`{
+			"email_verified": "false",
+			"sub": "123990813094"
+		}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupOIDCViperEnvironment(t, server.URL)
+	defer cleanup()
+	viper.Set("oidc_idprovider_claim", "http://px.dev/identityProvider")
+
+	c, err := controllers.NewOIDCConnector()
+	require.NoError(t, err)
+
+	userInfo, err := c.GetUserInfoFromAccessToken("test_token")
+	require.NoError(t, err)
+	assert.Equal(t, 1, callCount)
+	assert.False(t, userInfo.EmailVerified)
+	assert.Equal(t, "123990813094", userInfo.AuthProviderID)
+}
+
 func TestOIDCConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -336,16 +367,15 @@ func TestOIDCConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 
 		assert.Equal(t, "/oauth2/userinfo", r.URL.String())
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
-		_, err := w.Write([]byte(`
-			{
-				"email": "testuser@test.com",
-				"email_verified": true,
-				"name": "Test User",
-				"picture": "picture.jpg",
-				"sub": "123990813094",
-				"http://px.dev/google_access_token": "google-token",
-				"http://px.dev/identityProvider": "oidc-google-oauth"
-			}`))
+		_, err := w.Write([]byte(`{
+			"email": "testuser@test.com",
+			"email_verified": true,
+			"name": "Test User",
+			"picture": "picture.jpg",
+			"sub": "123990813094",
+			"http://px.dev/google_access_token": "google-token",
+			"http://px.dev/identityProvider": "oidc-google-oauth"
+		}`))
 		require.NoError(t, err)
 	}))
 	defer server.Close()
