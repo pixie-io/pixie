@@ -27,6 +27,7 @@ declare global {
       OIDC_HOST: string;
       OIDC_METADATA_URL: string;
       OIDC_CLIENT_ID: string;
+      OIDC_ADDITIONAL_SCOPES: string;
       DOMAIN_NAME: string;
       SEGMENT_UI_WRITE_KEY: string;
       LD_CLIENT_ID: string;
@@ -49,6 +50,7 @@ export const { AUTH_EMAIL_PASSWORD_CONN } = window.__PIXIE_FLAGS__;
 export const { OIDC_HOST } = window.__PIXIE_FLAGS__;
 export const { OIDC_METADATA_URL } = window.__PIXIE_FLAGS__;
 export const { OIDC_CLIENT_ID } = window.__PIXIE_FLAGS__;
+export const { OIDC_ADDITIONAL_SCOPES } = window.__PIXIE_FLAGS__;
 export const { DOMAIN_NAME } = window.__PIXIE_FLAGS__;
 export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;
 export const { LD_CLIENT_ID } = window.__PIXIE_FLAGS__;

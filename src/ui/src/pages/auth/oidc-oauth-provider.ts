@@ -22,9 +22,11 @@ import { UserManager } from 'oidc-client';
 
 import { FormStructure } from 'app/components';
 import { OIDCButtons } from 'app/containers/auth/oidc-buttons';
-import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL } from 'app/containers/constants';
+import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL, OIDC_ADDITIONAL_SCOPES } from 'app/containers/constants';
 
 import { CallbackArgs, getLoginArgs, getSignupArgs } from './callback-url';
+
+const COMMON_SCOPES = 'openid profile email';
 
 export const OIDCClient = {
   userManager: new UserManager({
@@ -32,7 +34,7 @@ export const OIDCClient = {
     metadataUrl: OIDC_METADATA_URL,
     client_id: OIDC_CLIENT_ID,
     redirect_uri: `${window.location.origin}/auth/callback`,
-    scope: 'openid profile email',
+    scope: OIDC_ADDITIONAL_SCOPES ? `${OIDC_ADDITIONAL_SCOPES} ${COMMON_SCOPES}` : COMMON_SCOPES,
     response_type: 'token id_token',
   }),
 
