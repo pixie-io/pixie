@@ -134,7 +134,6 @@
     "react-window": "^1.8.6",
     "rxjs": "^6.5.4",
     "svg-url-loader": "^6.0.0",
-    "ts-node": "^8.10.2",
     "typeface-roboto": "^0.0.75",
     "typeface-roboto-mono": "^0.0.75",
     "typeface-walter-turncoat": "^1.1.13",
@@ -162,7 +161,6 @@
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "yarn pnpify license-checker",
     "lint": "tsc --noEmit && eslint -c .eslintrc.json .",
-    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },
