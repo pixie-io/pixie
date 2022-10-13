@@ -40,11 +40,12 @@ func init() {
 	pflag.String("oidc_client_id", "", "OIDC client ID")
 	pflag.String("oidc_client_secret", "", "OIDC client secret")
 
-	// Defaults to <oidc_host>/oauth2/authorize
-	pflag.String("oidc_authorization_endpoint", "", "OIDC auth endpoint URL")
-	// Defaults to <oidc_host>/oauth2/token
+	// Defaults to <oidc_host>/.well-known/openid-configuration
+	pflag.String("oidc_metadata_url", "", "OIDC discovery endpoint URL")
+
+	// The following two params are fetched from the discovery endpoint automatically
+	// but may be overridden as need be.
 	pflag.String("oidc_token_endpoint", "", "OIDC token endpoint URL")
-	// Defaults to <oidc_host>/oauth2/userinfo
 	pflag.String("oidc_userinfo_endpoint", "", "OIDC UserInfo endpoint URL")
 
 	// The following three flags are to be used in conjunction. They control the fetching of the HostedDomain
@@ -71,16 +72,24 @@ type userInfo struct {
 	EmailVerified bool   `json:"email_verified,omitempty"`
 }
 
+// OIDPMetadata is used to parse the provider metadata.
+// See spec https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+type OIDPMetadata struct {
+	Issuer           string `json:"issuer"`
+	AuthEndpoint     string `json:"authorization_endpoint"`
+	TokenEndpoint    string `json:"token_endpoint,omitempty"`
+	UserinfoEndpoint string `json:"userinfo_endpoint,omitempty"`
+}
+
 // OIDCConnector implements the AuthProvider interface for OIDC.
 type OIDCConnector struct {
-	Issuer string
+	Issuer           string
+	MetadataEndpoint string
 
 	ClientID     string
 	ClientSecret string
 
-	AuthEndpoint     string
-	TokenEndpoint    string
-	UserinfoEndpoint string
+	Metadata *OIDPMetadata
 
 	IDProviderClaim        string
 	GoogleIdentityProvider string
@@ -106,23 +115,9 @@ func NewOIDCConnector() (*OIDCConnector, error) {
 	}
 
 	var err error
-	authEndpoint := viper.GetString("oidc_authorization_endpoint")
-	if authEndpoint == "" {
-		authEndpoint, err = url.JoinPath(issuer, "oauth2/authorize")
-		if err != nil {
-			return nil, err
-		}
-	}
-	tokenEndpoint := viper.GetString("oidc_token_endpoint")
-	if tokenEndpoint == "" {
-		tokenEndpoint, err = url.JoinPath(issuer, "oauth2/token")
-		if err != nil {
-			return nil, err
-		}
-	}
-	userinfoEndpoint := viper.GetString("oidc_userinfo_endpoint")
-	if userinfoEndpoint == "" {
-		userinfoEndpoint, err = url.JoinPath(issuer, "oauth2/userinfo")
+	metadataEndpoint := viper.GetString("oidc_metadata_url")
+	if metadataEndpoint == "" {
+		metadataEndpoint, err = url.JoinPath(issuer, ".well-known/openid-configuration")
 		if err != nil {
 			return nil, err
 		}
@@ -136,23 +131,60 @@ func NewOIDCConnector() (*OIDCConnector, error) {
 		return nil, errors.New("must set oidc_idprovider_claim and oidc_google_idprovider_value when setting oidc_google_access_token_claim")
 	}
 
-	return &OIDCConnector{
+	conn := &OIDCConnector{
 		Issuer:                 issuer,
 		ClientID:               clientID,
 		ClientSecret:           clientSecret,
-		AuthEndpoint:           authEndpoint,
-		TokenEndpoint:          tokenEndpoint,
-		UserinfoEndpoint:       userinfoEndpoint,
+		MetadataEndpoint:       metadataEndpoint,
 		IDProviderClaim:        idProviderClaim,
 		GoogleIdentityProvider: googleIDProvider,
 		GoogleAccessTokenClaim: googleAccessTokenClaim,
 		client:                 &http.Client{},
-	}, nil
+	}
+
+	conn.tryFetchMetadata()
+
+	tokenEndpoint := viper.GetString("oidc_token_endpoint")
+	if tokenEndpoint != "" {
+		conn.Metadata.TokenEndpoint = tokenEndpoint
+	}
+	userinfoEndpoint := viper.GetString("oidc_userinfo_endpoint")
+	if userinfoEndpoint != "" {
+		conn.Metadata.UserinfoEndpoint = userinfoEndpoint
+	}
+
+	if conn.Metadata.UserinfoEndpoint == "" {
+		return nil, errors.New("Userinfo endpoint missing")
+	}
+	return conn, nil
+}
+
+func (c *OIDCConnector) tryFetchMetadata() {
+	c.Metadata = &OIDPMetadata{}
+	req, err := http.NewRequest("GET", c.MetadataEndpoint, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return
+	}
+
+	_ = json.Unmarshal(body, c.Metadata)
 }
 
 // GetUserInfoFromAccessToken returns the UserID for the particular token.
 func (c *OIDCConnector) GetUserInfoFromAccessToken(accessToken string) (*UserInfo, error) {
-	req, err := http.NewRequest("GET", c.UserinfoEndpoint, nil)
+	req, err := http.NewRequest("GET", c.Metadata.UserinfoEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +208,7 @@ func (c *OIDCConnector) GetUserInfoFromAccessToken(accessToken string) (*UserInf
 	}
 
 	info := &userInfo{}
-	if err = json.Unmarshal(body, &info); err != nil {
+	if err = json.Unmarshal(body, info); err != nil {
 		return nil, err
 	}
 

@@ -37,7 +37,8 @@ func SetupOIDCViperEnvironment(t *testing.T, hostname string) func() {
 	viper.Set("oidc_host", hostname)
 	viper.Set("oidc_client_id", "client-id")
 	viper.Set("oidc_client_secret", "client-secret")
-	viper.Set("google_oauth_userinfo_url", fmt.Sprintf("%s/%s", hostname, "google/oauth2/userinfo"))
+	viper.Set("google_oauth_userinfo_url", fmt.Sprintf("%s/google/oauth2/userinfo", hostname))
+	viper.Set("oidc_userinfo_endpoint", fmt.Sprintf("%s/oauth2/userinfo", hostname))
 
 	return func() {
 		viper.Reset()
@@ -54,9 +55,11 @@ func TestNewOIDCConn(t *testing.T) {
 	assert.Equal(t, "http://test_path", conn.Issuer)
 	assert.Equal(t, "client-id", conn.ClientID)
 	assert.Equal(t, "client-secret", conn.ClientSecret)
-	assert.Equal(t, "http://test_path/oauth2/authorize", conn.AuthEndpoint)
-	assert.Equal(t, "http://test_path/oauth2/token", conn.TokenEndpoint)
-	assert.Equal(t, "http://test_path/oauth2/userinfo", conn.UserinfoEndpoint)
+	assert.Equal(t, "http://test_path/.well-known/openid-configuration", conn.MetadataEndpoint)
+	assert.Equal(t, "", conn.Metadata.Issuer)
+	assert.Equal(t, "", conn.Metadata.AuthEndpoint)
+	assert.Equal(t, "", conn.Metadata.TokenEndpoint)
+	assert.Equal(t, "http://test_path/oauth2/userinfo", conn.Metadata.UserinfoEndpoint)
 	assert.Equal(t, "", conn.IDProviderClaim)
 	assert.Equal(t, "", conn.GoogleIdentityProvider)
 	assert.Equal(t, "", conn.GoogleAccessTokenClaim)
@@ -92,20 +95,101 @@ func TestOIDCConnectorImpl_Init_MissingHost(t *testing.T) {
 	assert.EqualError(t, err, "OIDC issuer missing")
 }
 
+func TestOIDCConnectorImpl_Init_FetchEndpoints(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		assert.Equal(t, "/.well-known/openid-configuration", r.URL.String())
+		_, err := w.Write([]byte(`{
+			"issuer": "iss",
+			"authorization_endpoint": "/auth",
+		  "token_endpoint": "/token",
+			"userinfo_endpoint": "/userinfo"
+		}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupOIDCViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	viper.Set("oidc_userinfo_endpoint", "")
+	conn, err := controllers.NewOIDCConnector()
+	require.NoError(t, err)
+
+	assert.Equal(t, conn.Metadata.TokenEndpoint, "/token")
+	assert.Equal(t, conn.Metadata.UserinfoEndpoint, "/userinfo")
+}
+
+func TestOIDCConnectorImpl_Init_OverrideFetchEndpoints(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		assert.Equal(t, "/meta", r.URL.String())
+		_, err := w.Write([]byte(`{
+			"issuer": "iss",
+			"authorization_endpoint": "/auth",
+		  "token_endpoint": "/oauth/token",
+			"userinfo_endpoint": "/oauth/userinfo"
+		}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupOIDCViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	viper.Set("oidc_metadata_url", fmt.Sprintf("%s/meta", server.URL))
+	viper.Set("oidc_userinfo_endpoint", "")
+	conn, err := controllers.NewOIDCConnector()
+	require.NoError(t, err)
+
+	assert.Equal(t, conn.Metadata.TokenEndpoint, "/oauth/token")
+	assert.Equal(t, conn.Metadata.UserinfoEndpoint, "/oauth/userinfo")
+}
+
+func TestOIDCConnectorImpl_Init_FetchEndpointsBadResp(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		assert.Equal(t, "/.well-known/openid-configuration", r.URL.String())
+		_, err := w.Write([]byte(`{truncated......`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupOIDCViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	viper.Set("oidc_userinfo_endpoint", "/userinfo2")
+	conn, err := controllers.NewOIDCConnector()
+	require.NoError(t, err)
+
+	assert.Equal(t, conn.Metadata.TokenEndpoint, "")
+	assert.Equal(t, conn.Metadata.UserinfoEndpoint, "/userinfo2")
+}
+
+func TestOIDCConnectorImpl_Init_MissingUserinfo(t *testing.T) {
+	cleanup := SetupOIDCViperEnvironment(t, "http://test_path")
+	defer cleanup()
+
+	viper.Set("oidc_userinfo_endpoint", "")
+	_, err := controllers.NewOIDCConnector()
+	assert.ErrorContains(t, err, "Userinfo endpoint missing")
+}
+
 func TestOIDCConnectorImpl_Init_OverrideEndpoints(t *testing.T) {
 	cleanup := SetupOIDCViperEnvironment(t, "http://test_path")
 	defer cleanup()
 
-	viper.Set("oidc_authorization_endpoint", "http://oauth.test_path/a/auth")
 	viper.Set("oidc_token_endpoint", "http://oidc.test_path/token")
 	viper.Set("oidc_userinfo_endpoint", "http://test_path/v3/userinfo")
 
 	conn, err := controllers.NewOIDCConnector()
 	require.NoError(t, err)
 
-	assert.Equal(t, conn.AuthEndpoint, "http://oauth.test_path/a/auth")
-	assert.Equal(t, conn.TokenEndpoint, "http://oidc.test_path/token")
-	assert.Equal(t, conn.UserinfoEndpoint, "http://test_path/v3/userinfo")
+	assert.Equal(t, conn.Metadata.TokenEndpoint, "http://oidc.test_path/token")
+	assert.Equal(t, conn.Metadata.UserinfoEndpoint, "http://test_path/v3/userinfo")
 }
 
 func TestOIDCConnectorImpl_Init_GoogleMissingIDProviderKey(t *testing.T) {
@@ -145,6 +229,10 @@ func TestOIDCConnectorImpl_Init_SetGoogleIDPValue(t *testing.T) {
 func TestOIDCConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		callCount++
 		_, err := w.Write([]byte(`{"sub": `))
 		require.NoError(t, err)
@@ -166,6 +254,10 @@ func TestOIDCConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 func TestOIDCConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		callCount++
 		// Return an unauthorized error.
 		_, err := w.Write([]byte(`{"error": "access_denied", "error_description": "Unauthorized"}`))
@@ -188,6 +280,10 @@ func TestOIDCConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 func TestOIDCConnectorImpl_GetUserInfo(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		callCount++
 		assert.Equal(t, "/oauth2/userinfo", r.URL.String())
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
@@ -226,6 +322,10 @@ func TestOIDCConnectorImpl_GetUserInfo(t *testing.T) {
 func TestOIDCConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		callCount++
 		if r.URL.String() == "/google/oauth2/userinfo" {
 			_, err := w.Write([]byte(`{"hd": "test.com"}`))
@@ -275,6 +375,10 @@ func TestOIDCConnectorImpl_GetUserInfo_GoogleOAuth(t *testing.T) {
 func TestOIDCConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.String() == "/.well-known/openid-configuration" {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		callCount++
 		if r.URL.String() != "/oauth2/userinfo" {
 			require.Failf(t, "unexpected call to server URL: %s", r.URL.String())
