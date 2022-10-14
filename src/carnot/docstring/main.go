@@ -26,7 +26,7 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
@@ -47,48 +47,48 @@ func main() {
 	// Read the raw pxlDocs File.
 	pxlDocs := &docspb.InternalPXLDocs{}
 
-	logrus.Info("Extracting cpp documentation")
+	log.Info("Extracting cpp documentation")
 	extractor, err := bazel.Runfile(viper.GetString("pxl_doc_extractor"))
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	internalPxlDocsPath := "internal_pxl_docs.pb"
 	_, err = exec.Command(extractor, "--output_file", internalPxlDocsPath).Output()
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	pxlB, err := os.ReadFile(internalPxlDocsPath)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 	err = proto.UnmarshalText(string(pxlB), pxlDocs)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Parse and format the docstrings.
 	formattedPxlDocs, err := docstring.ParseAllDocStrings(pxlDocs)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
-	logrus.Info("Extracting py api docs")
+	log.Info("Extracting py api docs")
 	pyAPIDocsPath, err := bazel.Runfile(viper.GetString("py_api_docs"))
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Read in the python api doc file.
 	var pyAPI json.RawMessage
 	pyB, err := os.ReadFile(pyAPIDocsPath)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 	err = json.Unmarshal(pyB, &pyAPI)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// First marshal the protobuf to a json format. The
@@ -96,13 +96,13 @@ func main() {
 	m := jsonpb.Marshaler{}
 	pxlDocsString, err := m.MarshalToString(formattedPxlDocs)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Next, unmarshal the protobuf into a raw message.
 	var pxlJSON map[string]*json.RawMessage
 	if err := json.Unmarshal([]byte(pxlDocsString), &pxlJSON); err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Add on the pyApiDocs.
@@ -111,18 +111,18 @@ func main() {
 	// Finally, Marshal out the full structure.
 	outb, err := json.MarshalIndent(&pxlJSON, "", "  ")
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Write out the file.
 	outputF, err := os.Create(viper.GetString("output_json"))
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 	defer outputF.Close()
 
 	_, err = outputF.Write(outb)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 }

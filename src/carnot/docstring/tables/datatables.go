@@ -25,7 +25,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
@@ -59,19 +59,19 @@ func main() {
 	// Marshal out the full structure.
 	outb, err := json.MarshalIndent(dataSchema, "", " ")
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Write out the file.
 	outputF, err := os.Create(viper.GetString("output_json"))
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 	defer outputF.Close()
 
 	_, err = outputF.Write(outb)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 }
 

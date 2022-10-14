@@ -23,23 +23,23 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
-	levelMap = map[logrus.Level]sentry.Level{
-		logrus.TraceLevel: sentry.LevelDebug,
-		logrus.DebugLevel: sentry.LevelDebug,
-		logrus.InfoLevel:  sentry.LevelInfo,
-		logrus.WarnLevel:  sentry.LevelWarning,
-		logrus.ErrorLevel: sentry.LevelError,
-		logrus.FatalLevel: sentry.LevelFatal,
-		logrus.PanicLevel: sentry.LevelFatal,
+	levelMap = map[log.Level]sentry.Level{
+		log.TraceLevel: sentry.LevelDebug,
+		log.DebugLevel: sentry.LevelDebug,
+		log.InfoLevel:  sentry.LevelInfo,
+		log.WarnLevel:  sentry.LevelWarning,
+		log.ErrorLevel: sentry.LevelError,
+		log.FatalLevel: sentry.LevelFatal,
+		log.PanicLevel: sentry.LevelFatal,
 	}
 )
 
 // Converter converts log entry to sentry.
-type Converter func(entry *logrus.Entry, event *sentry.Event, hub *sentry.Hub)
+type Converter func(entry *log.Entry, event *sentry.Event, hub *sentry.Hub)
 
 // Option are sentry options.
 type Option func(h *Hook)
@@ -47,14 +47,14 @@ type Option func(h *Hook)
 // Hook is a logrus hook structure.
 type Hook struct {
 	hub       *sentry.Hub
-	levels    []logrus.Level
+	levels    []log.Level
 	tags      map[string]string
 	extra     map[string]interface{}
 	converter Converter
 }
 
 // New creates a new logrus hook.
-func New(levels []logrus.Level, options ...Option) Hook {
+func New(levels []log.Level, options ...Option) Hook {
 	h := Hook{
 		levels:    levels,
 		hub:       sentry.CurrentHub(),
@@ -76,12 +76,12 @@ func WithTags(tags map[string]string) Option {
 }
 
 // Levels returns the valid log levels to hook.
-func (hook Hook) Levels() []logrus.Level {
+func (hook Hook) Levels() []log.Level {
 	return hook.levels
 }
 
 // Fire sends an event to sentry.
-func (hook Hook) Fire(entry *logrus.Entry) error {
+func (hook Hook) Fire(entry *log.Entry) error {
 	event := sentry.NewEvent()
 	for k, v := range hook.extra {
 		event.Extra[k] = v
@@ -98,7 +98,7 @@ func (hook Hook) Fire(entry *logrus.Entry) error {
 }
 
 // DefaultConverter is the default log converter.
-func DefaultConverter(entry *logrus.Entry, event *sentry.Event, hub *sentry.Hub) {
+func DefaultConverter(entry *log.Entry, event *sentry.Event, hub *sentry.Hub) {
 	event.Level = levelMap[entry.Level]
 	event.Message = entry.Message
 
@@ -106,7 +106,7 @@ func DefaultConverter(entry *logrus.Entry, event *sentry.Event, hub *sentry.Hub)
 		event.Extra[k] = v
 	}
 
-	if err, ok := entry.Data[logrus.ErrorKey].(error); ok {
+	if err, ok := entry.Data[log.ErrorKey].(error); ok {
 		exception := sentry.Exception{
 			Type:  reflect.TypeOf(err).String(),
 			Value: err.Error(),
