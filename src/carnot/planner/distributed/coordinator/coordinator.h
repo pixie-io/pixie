@@ -94,33 +94,6 @@ class CoordinatorImpl : public Coordinator {
   const distributedpb::CarnotInfo& GetRemoteProcessor() const;
   bool HasExecutableNodes(const IR* plan);
 
-  /**
-   * @brief Removes the sources and any operators depending on that source. Operators that depend on
-   * the source not only means the Transitive dependents, but also any parents of those Transitive
-   * dependents that are not dependents of the sources to be deleted but don't feed data anywhere
-   * else as a result of the source being deleted.
-   *
-   * For example in the following graph with UDTFSrc set for
-   * removal:
-   *
-   * UDTFSrc   MemSrc
-   *        \  /
-   *         \/
-   *        Join
-   *
-   * We would delete the entire graph by first marking UDTFsrc and Join for removal, pushing
-   * MemSrc into the extra_parents queue and then marking it for removal after.  However, in the
-   * following graph, we would only want to delete UDTF->Join, as MemSrc->GRPCSink should still be
-   * data we would want to collect.
-   *
-   *  UDTFSrc   MemSrc
-   *        \  /      \
-   *         \/        \
-   *        Join       GRPCSink
-   *
-   */
-  Status RemoveSourcesAndDependentOperators(IR* plan,
-                                            const std::vector<OperatorIR*>& sources_to_remove);
   // Nodes that have a source of data.
   std::vector<CarnotInfo> data_store_nodes_;
   // Nodes that remotely prcoess data.

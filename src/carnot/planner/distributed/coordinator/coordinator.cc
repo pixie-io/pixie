@@ -99,65 +99,6 @@ bool CoordinatorImpl::HasExecutableNodes(const IR* plan) {
   return plan->FindNodesThatMatch(Operator()).size() > 0;
 }
 
-// Removes the sources and any members of their "independent graphs".
-Status CoordinatorImpl::RemoveSourcesAndDependentOperators(
-    IR* plan, const std::vector<OperatorIR*>& sources_to_remove) {
-  absl::flat_hash_set<int64_t> nodes_to_remove;
-  std::queue<OperatorIR*> to_remove_q;
-  for (auto src_op : sources_to_remove) {
-    DCHECK(Match(src_op, SourceOperator()));
-    to_remove_q.push(src_op);
-  }
-  // extra_parents queue tracks parents of removed operators that are not removed themselves.
-  // We need to do extra analysis to determine if we remove those parents.
-  std::queue<OperatorIR*> extra_parents;
-  while (!to_remove_q.empty()) {
-    OperatorIR* parent_op = to_remove_q.front();
-    to_remove_q.pop();
-
-    nodes_to_remove.insert(parent_op->id());
-    for (OperatorIR* child : parent_op->Children()) {
-      for (OperatorIR* other_parent_of_child : child->parents()) {
-        // Make sure not to check parent_op in the extra_parents loop.
-        if (other_parent_of_child != parent_op) {
-          extra_parents.push(other_parent_of_child);
-        }
-      }
-      to_remove_q.push(child);
-    }
-  }
-
-  // Check to see if we can delete any extra parents of nodes
-  while (!extra_parents.empty()) {
-    OperatorIR* parent = extra_parents.front();
-    extra_parents.pop();
-    // The parent might have been deleted after being added to extra_parents.
-    if (nodes_to_remove.contains(parent->id())) {
-      continue;
-    }
-
-    // If all of operator's children have been removed, then we remove the op.
-    bool parent_keeps_children = false;
-    for (OperatorIR* child : parent->Children()) {
-      if (!nodes_to_remove.contains(child->id())) {
-        parent_keeps_children = true;
-        break;
-      }
-    }
-    // If the parent keeps children, then we don't delete the parent.
-    if (parent_keeps_children) {
-      continue;
-    }
-    nodes_to_remove.insert(parent->id());
-    // Now check if the parents of the parent can be deleted.
-    for (OperatorIR* grandparent : parent->parents()) {
-      extra_parents.push(grandparent);
-    }
-  }
-
-  return plan->Prune(nodes_to_remove);
-}
-
 const distributedpb::CarnotInfo& CoordinatorImpl::GetRemoteProcessor() const {
   // TODO(philkuz) update this with a more sophisticated strategy in the future.
   DCHECK_GT(remote_processor_nodes_.size(), 0UL);
