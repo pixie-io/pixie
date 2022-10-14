@@ -33,6 +33,7 @@ export const OIDCClient = {
     authority: OIDC_HOST,
     metadataUrl: OIDC_METADATA_URL,
     client_id: OIDC_CLIENT_ID,
+    loadUserInfo: false,
     redirect_uri: `${window.location.origin}/auth/callback`,
     scope: OIDC_ADDITIONAL_SCOPES ? `${OIDC_ADDITIONAL_SCOPES} ${COMMON_SCOPES}` : COMMON_SCOPES,
     response_type: 'token id_token',
@@ -40,6 +41,7 @@ export const OIDCClient = {
 
   redirectToLogin(): void {
     this.userManager.signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getLoginArgs(),
       },
@@ -48,6 +50,7 @@ export const OIDCClient = {
 
   redirectToSignup(): void {
     this.userManager.signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getSignupArgs(),
       },

@@ -27,27 +27,21 @@ import { AUTH_CLIENT_ID, AUTH_EMAIL_PASSWORD_CONN, AUTH_URI } from 'app/containe
 import { getSignupArgs, CallbackArgs, getLoginArgs } from './callback-url';
 
 export const Auth0Client = {
-  makeAuth0OIDCClient(extraQueryParams?: Record<string, any>): UserManager {
-    return new UserManager({
-      authority: `https://${AUTH_URI}`,
-      client_id: AUTH_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/auth/callback`,
-      extraQueryParams,
-      prompt: 'login',
-      scope: 'openid profile email',
-      // "token" is returned and propagated as the main authorization access_token.
-      // "id_token" used by oidc-client-js to verify claims, errors if missing.
-      // complaining about a mismatch between repsonse claims and ID token claims.
-      response_type: 'token id_token',
-    });
-  },
+  userManager: new UserManager({
+    authority: `https://${AUTH_URI}`,
+    client_id: AUTH_CLIENT_ID,
+    redirect_uri: `${window.location.origin}/auth/callback`,
+    loadUserInfo: false,
+    scope: 'openid profile email',
+    response_type: 'token id_token',
+  }),
 
   redirectToGoogleLogin(): void {
-    this.makeAuth0OIDCClient(
-      {
+    this.userManager.signinRedirect({
+      extraQueryParams: {
         connection: 'google-oauth2',
       },
-    ).signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getLoginArgs(),
       },
@@ -55,11 +49,11 @@ export const Auth0Client = {
   },
 
   redirectToGoogleSignup(): void {
-    this.makeAuth0OIDCClient(
-      {
+    this.userManager.signinRedirect({
+      extraQueryParams: {
         connection: 'google-oauth2',
       },
-    ).signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getSignupArgs(),
       },
@@ -67,13 +61,13 @@ export const Auth0Client = {
   },
 
   redirectToEmailLogin(): void {
-    this.makeAuth0OIDCClient(
-      {
+    this.userManager.signinRedirect({
+      extraQueryParams: {
         connection: AUTH_EMAIL_PASSWORD_CONN,
         // Manually configured in Classic Universal Login settings.
         mode: 'login',
       },
-    ).signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getLoginArgs(),
       },
@@ -81,37 +75,25 @@ export const Auth0Client = {
   },
 
   redirectToEmailSignup(): void {
-    this.makeAuth0OIDCClient(
-      {
+    this.userManager.signinRedirect({
+      extraQueryParams: {
         connection: AUTH_EMAIL_PASSWORD_CONN,
         // Manually configured in Classic Universal Login settings.
         mode: 'signUp',
         // Used by New Universal Login https://auth0.com/docs/login/universal-login/new-experience#signup
         screen_hint: 'signup',
       },
-    ).signinRedirect(
-      // Even though we are in a signup flow, the callback shouldn't "sign up" the
-      // user until verification is complete.
-      {
-        state: {
-          redirectArgs: getLoginArgs(),
-        },
+      prompt: 'login',
+      state: {
+        // Even though we are in a signup flow, the callback shouldn't "sign up" the
+        // user until verification is complete.
+        redirectArgs: getLoginArgs(),
       },
-    );
+    });
   },
 
   refetchToken(): void {
-    // Omitting the prompt parameter with the New Universal Login will cause this to fetch the token
-    // from an existing Auth0 session if possible. https://auth0.com/docs/login/universal-login/new-experience#signup
-    const client = new UserManager({
-      authority: `https://${AUTH_URI}`,
-      client_id: AUTH_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/auth/callback`,
-      extraQueryParams: { connection: AUTH_EMAIL_PASSWORD_CONN },
-      scope: 'openid profile email',
-      response_type: 'token id_token',
-    });
-    client.signinRedirect({
+    this.userManager.signinSilent({
       state: {
         redirectArgs: getLoginArgs(),
       },
@@ -120,9 +102,7 @@ export const Auth0Client = {
 
   handleToken(): Promise<CallbackArgs> {
     return new Promise<CallbackArgs>((resolve, reject) => {
-      // The callback doesn't require any settings to be created.
-      // That means this implementation is agnostic to the OIDC that we connected to.
-      new UserManager({}).signinRedirectCallback()
+      this.userManager.signinRedirectCallback()
         .then((user) => {
           if (!user) {
             reject(new Error('user is undefined, please try logging in again'));

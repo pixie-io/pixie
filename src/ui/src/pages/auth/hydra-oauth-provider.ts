@@ -52,12 +52,14 @@ export const HydraClient = {
     authority: AUTH_URI,
     client_id: AUTH_CLIENT_ID,
     redirect_uri: `${window.location.origin}/auth/callback`,
+    loadUserInfo: false,
     scope: 'vizier',
     response_type: 'token',
   }),
 
   loginRequest(): void {
     this.userManager.signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getLoginArgs(),
       },
@@ -66,6 +68,7 @@ export const HydraClient = {
 
   signupRequest(): void {
     this.userManager.signinRedirect({
+      prompt: 'login',
       state: {
         redirectArgs: getSignupArgs(),
       },
