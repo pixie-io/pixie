@@ -138,9 +138,10 @@ func TestPlanner_Simple(t *testing.T) {
 	require.NoError(t, err)
 
 	queryRequestPB := &plannerpb.QueryRequest{
-		QueryStr: query,
+		QueryStr:            query,
+		LogicalPlannerState: plannerStatePB,
 	}
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+	plannerResultPB, err := c.Plan(queryRequestPB)
 
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
@@ -192,9 +193,10 @@ func TestPlanner_MissingTable(t *testing.T) {
 	require.NoError(t, err)
 
 	queryRequestPB := &plannerpb.QueryRequest{
-		QueryStr: query,
+		QueryStr:            query,
+		LogicalPlannerState: plannerStatePB,
 	}
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+	plannerResultPB, err := c.Plan(queryRequestPB)
 
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
@@ -228,9 +230,10 @@ func TestPlanner_EmptyString(t *testing.T) {
 	require.NoError(t, err)
 
 	queryRequestPB := &plannerpb.QueryRequest{
-		QueryStr: query,
+		QueryStr:            query,
+		LogicalPlannerState: plannerStatePB,
 	}
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+	plannerResultPB, err := c.Plan(queryRequestPB)
 
 	if err != nil {
 		t.Fatal("Failed to plan:", err)
@@ -326,9 +329,10 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	compileRequestPB := &plannerpb.CompileMutationsRequest{
-		QueryStr: probePxl,
+		QueryStr:            probePxl,
+		LogicalPlannerState: plannerStatePB,
 	}
-	compileMutationResponse, err := c.CompileMutations(plannerStatePB, compileRequestPB)
+	compileMutationResponse, err := c.CompileMutations(compileRequestPB)
 	require.NoError(t, err)
 
 	status := compileMutationResponse.Status

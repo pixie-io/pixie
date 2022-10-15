@@ -1288,8 +1288,8 @@ func setupPlanner() (*goplanner.GoPlanner, error) {
 	return &c, nil
 }
 
-func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, plannerStatePB *distributedpb.LogicalPlannerState, queryRequestPB *plannerpb.QueryRequest) {
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, queryRequestPB *plannerpb.QueryRequest) {
+	plannerResultPB, err := c.Plan(queryRequestPB)
 
 	if err != nil {
 		log.Fatalln("Failed to plan:", err)
@@ -1312,11 +1312,11 @@ func benchmarkPlanner(b *testing.B, queryRequestPB *plannerpb.QueryRequest, numA
 	defer c.Free()
 
 	// Make the planner state.
-	plannerStatePB := makePlannerState(numAgents)
+	queryRequestPB.LogicalPlannerState = makePlannerState(numAgents)
 
 	// Run the benchmark loop.
 	for i := 0; i < b.N; i++ {
-		benchmarkPlannerInnerLoop(c, plannerStatePB, queryRequestPB)
+		benchmarkPlannerInnerLoop(c, queryRequestPB)
 	}
 }
 

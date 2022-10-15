@@ -86,12 +86,12 @@ func (m *MutationExecutorImpl) Execute(ctx context.Context, req *vizierpb.Execut
 	if err != nil {
 		return nil, err
 	}
-	plannerState := &distributedpb.LogicalPlannerState{
+	convertedReq.LogicalPlannerState = &distributedpb.LogicalPlannerState{
 		DistributedState: m.distributedState,
 		PlanOptions:      planOpts,
 	}
 
-	mutations, err := m.planner.CompileMutations(plannerState, convertedReq)
+	mutations, err := m.planner.CompileMutations(convertedReq)
 	if err != nil {
 		log.WithError(err).Error("Got an error while compiling mutations")
 		return nil, err

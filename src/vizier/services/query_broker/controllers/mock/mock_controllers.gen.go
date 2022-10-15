@@ -37,18 +37,18 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 }
 
 // CompileMutations mocks base method.
-func (m *MockPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
+func (m *MockPlanner) CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompileMutations", planState, request)
+	ret := m.ctrl.Call(m, "CompileMutations", request)
 	ret0, _ := ret[0].(*plannerpb.CompileMutationsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CompileMutations indicates an expected call of CompileMutations.
-func (mr *MockPlannerMockRecorder) CompileMutations(planState, request interface{}) *gomock.Call {
+func (mr *MockPlannerMockRecorder) CompileMutations(request interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompileMutations", reflect.TypeOf((*MockPlanner)(nil).CompileMutations), planState, request)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompileMutations", reflect.TypeOf((*MockPlanner)(nil).CompileMutations), request)
 }
 
 // Free mocks base method.
@@ -79,18 +79,18 @@ func (mr *MockPlannerMockRecorder) GenerateOTelScript(request interface{}) *gomo
 }
 
 // Plan mocks base method.
-func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
+func (m *MockPlanner) Plan(req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Plan", planState, req)
+	ret := m.ctrl.Call(m, "Plan", req)
 	ret0, _ := ret[0].(*distributedpb.LogicalPlannerResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Plan indicates an expected call of Plan.
-func (mr *MockPlannerMockRecorder) Plan(planState, req interface{}) *gomock.Call {
+func (mr *MockPlannerMockRecorder) Plan(req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), req)
 }
 
 // MockAgentsTracker is a mock of AgentsTracker interface.

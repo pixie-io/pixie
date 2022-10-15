@@ -78,6 +78,7 @@ message Configs {
 
 // QueryRequest is the body of the request made to the planner.
 message QueryRequest {
+  px.carnot.planner.distributedpb.LogicalPlannerState logical_planner_state = 5;
   // query_str is the string representation of the query to run.
   string query_str = 1;
   // exec_funcs is a list of functions to execute.
@@ -92,6 +93,7 @@ message QueryRequest {
 // CompileMutationRequest represents any request that compiles to a mutation of
 // Pixie internal data state.
 message CompileMutationsRequest {
+  px.carnot.planner.distributedpb.LogicalPlannerState logical_planner_state = 5;
   // The pxl script to run that compiles into a mutation
   string query_str = 1;
   // exec_funcs is a list of functions to execute.

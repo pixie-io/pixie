@@ -55,11 +55,9 @@ class LogicalPlanner : public NotCopyable {
    * @return std::unique_ptr<DistributedPlan> or error if one occurs during compilation.
    */
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
-      const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::QueryRequest& query);
 
   StatusOr<std::unique_ptr<compiler::MutationsIR>> CompileTrace(
-      const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::CompileMutationsRequest& mutations_req);
 
   StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> GenerateOTelScript(

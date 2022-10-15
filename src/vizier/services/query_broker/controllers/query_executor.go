@@ -342,7 +342,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 		},
 	}
 
-	plannerState := &distributedpb.LogicalPlannerState{
+	req.LogicalPlannerState = &distributedpb.LogicalPlannerState{
 		DistributedState:    distributedState,
 		PlanOptions:         planOpts,
 		ResultAddress:       q.resultAddress,
@@ -355,7 +355,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 
 	// Compile the query plan.
 	start := time.Now()
-	plannerResultPB, err := q.planner.Plan(plannerState, req)
+	plannerResultPB, err := q.planner.Plan(req)
 	// This `err` is nil if there's a user compilation error (ie Syntax, invalid arg, etc).
 	// User compilation errors are stored in `plannerResultPB.Status` which is handled below.
 	if err != nil {

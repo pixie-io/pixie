@@ -42,12 +42,12 @@ func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {
 }
 
 // Plan the query with the passed in state, then return the result as a planner result protobuf.
-func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
+func (cm GoPlanner) Plan(queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	return nil, errorUnimplemented
 }
 
 // CompileMutations compiles the query into a mutation of Pixie Data Table.
-func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
+func (cm GoPlanner) CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
 	return nil, errorUnimplemented
 }
 

@@ -347,7 +347,8 @@ func TestAllScriptsCompile(t *testing.T) {
 			planner, ps, err := setupPlanner(req, udfInfo, distributedState)
 			require.NoError(t, err)
 			defer planner.Free()
-			result, err := planner.Plan(ps, req)
+			req.LogicalPlannerState = ps
+			result, err := planner.Plan(req)
 			require.NoError(t, err)
 			if result.Status != nil && result.Status.ErrCode != 0 {
 				if result.Status.Context != nil {
@@ -400,7 +401,8 @@ func BenchmarkAllScripts(b *testing.B) {
 				planner, ps, err := setupPlanner(req, udfInfo, distributedState)
 				require.NoError(b, err)
 				b.StartTimer()
-				result, err = planner.Plan(ps, req)
+				req.LogicalPlannerState = ps
+				result, err = planner.Plan(req)
 				b.StopTimer()
 				require.NoError(b, err)
 				planner.Free()

@@ -42,8 +42,7 @@ PlannerPtr PlannerNew(const char* udf_info_str_data, int udf_info_str_len);
  * @param query_request_str_len   The length of the query request serialized string.
  * @return char*                  The distributed plan proto, serialized as a string.
  */
-char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
-                  int planner_state_str_len, const char* query, int query_len, int* resultLen);
+char* PlannerPlan(PlannerPtr planner_ptr, const char* query, int query_len, int* resultLen);
 
 /**
  * @brief Compiles mutations into their executable form. Takes in a serialized
@@ -60,8 +59,7 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
  * length of the message is `resultLen`. If the request contains an erroneous format, the response
  * stores the error information in the status field.
  */
-char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_str_c,
-                              int planner_state_str_len, const char* mutation_request_str_c,
+char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* mutation_request_str_c,
                               int mutation_request_str_len, int* resultLen);
 
 /**

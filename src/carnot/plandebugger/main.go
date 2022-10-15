@@ -829,7 +829,7 @@ func main() {
 		id := utils.UUIDFromProtoOrNil(agent.AgentID)
 		agent.QueryBrokerAddress = id.String()
 	}
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+	plannerResultPB, err := c.Plan(queryRequestPB)
 
 	if err != nil {
 		log.Fatalf("Failed to plan: %v", err)

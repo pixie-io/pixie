@@ -123,13 +123,14 @@ Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
 }
 
 StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
-    const distributedpb::LogicalPlannerState& logical_state,
     const plannerpb::QueryRequest& query_request) {
   // Compile into the IR.
-  auto ms = logical_state.plan_options().max_output_rows_per_table();
+
+  auto ms = query_request.logical_planner_state().plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info_.get(), ms));
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<CompilerState> compiler_state,
+      CreateCompilerState(query_request.logical_planner_state(), registry_info_.get(), ms));
 
   std::vector<plannerpb::FuncToExecute> exec_funcs(query_request.exec_funcs().begin(),
                                                    query_request.exec_funcs().end());
@@ -137,22 +138,24 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
       std::shared_ptr<IR> single_node_plan,
       compiler_.CompileToIR(query_request.query_str(), compiler_state.get(), exec_funcs));
   // Create the distributed plan.
-  PL_ASSIGN_OR_RETURN(auto distributed_plan,
-                      distributed_planner_->Plan(logical_state.distributed_state(),
-                                                 compiler_state.get(), single_node_plan.get()));
-  distributed_plan->SetExecutionCompleteAddress(logical_state.result_address(),
-                                                logical_state.result_ssl_targetname());
+  PL_ASSIGN_OR_RETURN(
+      auto distributed_plan,
+      distributed_planner_->Plan(query_request.logical_planner_state().distributed_state(),
+                                 compiler_state.get(), single_node_plan.get()));
+  distributed_plan->SetExecutionCompleteAddress(
+      query_request.logical_planner_state().result_address(),
+      query_request.logical_planner_state().result_ssl_targetname());
   return distributed_plan;
 }
 
 StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
-    const distributedpb::LogicalPlannerState& logical_state,
     const plannerpb::CompileMutationsRequest& mutations_req) {
   // Compile into the IR.
-  auto ms = logical_state.plan_options().max_output_rows_per_table();
+  auto ms = mutations_req.logical_planner_state().plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState(logical_state, registry_info_.get(), ms));
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<CompilerState> compiler_state,
+      CreateCompilerState(mutations_req.logical_planner_state(), registry_info_.get(), ms));
 
   std::vector<plannerpb::FuncToExecute> exec_funcs(mutations_req.exec_funcs().begin(),
                                                    mutations_req.exec_funcs().end());

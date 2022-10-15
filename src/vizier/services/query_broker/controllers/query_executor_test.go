@@ -405,7 +405,7 @@ func runTestCase(t *testing.T, test *queryExecTestCase) {
 	planner := mock_controllers.NewMockPlanner(ctrl)
 	if test.Req.QueryID == "" {
 		planner.EXPECT().
-			Plan(test.PlannerState, gomock.Any()).
+			Plan(gomock.Any()).
 			Return(test.ExpectedPlannerResult, nil)
 	}
 

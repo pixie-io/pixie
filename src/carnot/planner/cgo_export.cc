@@ -74,20 +74,10 @@ px::Status LoadProto(const std::string& serialized_proto, google::protobuf::Mess
   return px::Status::OK();
 }
 
-char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
-                  int planner_state_str_len, const char* query_request_str_c,
+char* PlannerPlan(PlannerPtr planner_ptr, const char* query_request_str_c,
                   int query_request_str_len, int* resultLen) {
-  DCHECK(planner_state_str_c != nullptr);
-  std::string planner_state_pb_str(planner_state_str_c,
-                                   planner_state_str_c + planner_state_str_len);
   std::string query_request_pb_str(query_request_str_c,
                                    query_request_str_c + query_request_str_len);
-
-  // Load in the planner state protobuf.
-  px::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
-  PLANNER_RETURN_IF_ERROR(LogicalPlannerResult, resultLen,
-                          LoadProto(planner_state_pb_str, &planner_state_pb,
-                                    "Failed to process the logical planner state"));
 
   // Load in the query request protobuf.
   px::carnot::planner::plannerpb::QueryRequest query_request_pb;
@@ -97,7 +87,7 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
 
   auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
-  auto distributed_plan_status = planner->Plan(planner_state_pb, query_request_pb);
+  auto distributed_plan_status = planner->Plan(query_request_pb);
   if (!distributed_plan_status.ok()) {
     return ExitEarly<LogicalPlannerResult>(distributed_plan_status.status(), resultLen);
   }
@@ -110,7 +100,7 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
   // In the future, if we actually have plan options that will actually determine how the plan is
   // constructed, we may want to pass the planOptions to planner.Plan. However, this
   // will need to go through many more layers (such as the coordinator), so this is fine for now.
-  distributed_plan->SetPlanOptions(planner_state_pb.plan_options());
+  distributed_plan->SetPlanOptions(query_request_pb.logical_planner_state().plan_options());
 
   auto plan_pb_status = distributed_plan->ToProto();
   if (!plan_pb_status.ok()) {
@@ -123,20 +113,10 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
   return PrepareResult(&planner_result_pb, resultLen);
 }
 
-char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_str_c,
-                              int planner_state_str_len, const char* mutation_request_str_c,
+char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* mutation_request_str_c,
                               int mutation_request_str_len, int* resultLen) {
-  DCHECK(planner_state_str_c != nullptr);
-  std::string planner_state_pb_str(planner_state_str_c,
-                                   planner_state_str_c + planner_state_str_len);
   std::string mutation_request_pb_str(mutation_request_str_c,
                                       mutation_request_str_c + mutation_request_str_len);
-
-  // Load in the planner state protobuf.
-  px::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
-  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
-                          LoadProto(planner_state_pb_str, &planner_state_pb,
-                                    "Failed to parse the logical planner state"));
 
   // Load in the mutation request protobuf.
   px::carnot::planner::plannerpb::CompileMutationsRequest mutation_request_pb;
@@ -146,7 +126,7 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
 
   auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
-  auto dynamic_trace_or_s = planner->CompileTrace(planner_state_pb, mutation_request_pb);
+  auto dynamic_trace_or_s = planner->CompileTrace(mutation_request_pb);
   if (!dynamic_trace_or_s.ok()) {
     return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
   }

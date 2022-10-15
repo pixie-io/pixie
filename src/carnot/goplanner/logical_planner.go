@@ -64,15 +64,8 @@ func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {
 }
 
 // Plan the query with the passed in state, then return the result as a planner result protobuf.
-func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
+func (cm GoPlanner) Plan(queryRequest *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error) {
 	var resultLen C.int
-	stateBytes, err := proto.Marshal(planState)
-	if err != nil {
-		return nil, err
-	}
-	stateData := C.CBytes(stateBytes)
-	defer C.free(stateData)
-
 	queryRequestBytes, err := proto.Marshal(queryRequest)
 	if err != nil {
 		return nil, err
@@ -80,7 +73,7 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequ
 	queryRequestData := C.CBytes(queryRequestBytes)
 	defer C.free(queryRequestData)
 
-	res := C.PlannerPlan(cm.planner, (*C.char)(stateData), C.int(len(stateBytes)), (*C.char)(queryRequestData), C.int(len(queryRequestBytes)), &resultLen)
+	res := C.PlannerPlan(cm.planner, (*C.char)(queryRequestData), C.int(len(queryRequestBytes)), &resultLen)
 	defer C.StrFree(res)
 	lp := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {
@@ -95,14 +88,8 @@ func (cm GoPlanner) Plan(planState *distributedpb.LogicalPlannerState, queryRequ
 }
 
 // CompileMutations compiles the query into a mutation of Pixie Data Table.
-func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
+func (cm GoPlanner) CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
 	var resultLen C.int
-	stateBytes, err := proto.Marshal(planState)
-	if err != nil {
-		return nil, err
-	}
-	stateData := C.CBytes(stateBytes)
-	defer C.free(stateData)
 
 	requestBytes, err := proto.Marshal(request)
 	if err != nil {
@@ -111,7 +98,7 @@ func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerStat
 	requestData := C.CBytes(requestBytes)
 	defer C.free(requestData)
 
-	res := C.PlannerCompileMutations(cm.planner, (*C.char)(stateData), C.int(len(stateBytes)), (*C.char)(requestData), C.int(len(requestBytes)), &resultLen)
+	res := C.PlannerCompileMutations(cm.planner, (*C.char)(requestData), C.int(len(requestBytes)), &resultLen)
 	defer C.StrFree(res)
 	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {

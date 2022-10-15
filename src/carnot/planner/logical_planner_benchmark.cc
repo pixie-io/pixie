@@ -33,11 +33,12 @@ namespace logical_planner {
 void BM_Query(benchmark::State& state) {
   auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
   auto planner = LogicalPlanner::Create(info).ConsumeValueOrDie();
-  auto planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   plannerpb::QueryRequest query_request;
   query_request.set_query_str(testutils::kHttpRequestStats);
+  *query_request.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   for (auto _ : state) {
-    auto plan_or_s = planner->Plan(planner_state, query_request);
+    auto plan_or_s = planner->Plan(query_request);
     EXPECT_OK(plan_or_s);
   }
 }

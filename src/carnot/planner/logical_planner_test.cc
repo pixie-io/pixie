@@ -47,9 +47,11 @@ using ::px::testing::proto::EqualsProto;
 class LogicalPlannerTest : public ::testing::Test {
  protected:
   void SetUp() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb(); }
-  plannerpb::QueryRequest MakeQueryRequest(const std::string& query) {
+  plannerpb::QueryRequest MakeQueryRequest(const distributedpb::LogicalPlannerState& state,
+                                           const std::string& query) {
     plannerpb::QueryRequest query_request;
     query_request.set_query_str(query);
+    *query_request.mutable_logical_planner_state() = state;
     return query_request;
   }
   udfspb::UDFInfo info_;
@@ -57,10 +59,9 @@ class LogicalPlannerTest : public ::testing::Test {
 
 TEST_F(LogicalPlannerTest, one_pems_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  ASSERT_OK_AND_ASSIGN(
-      auto plan,
-      planner->Plan(testutils::CreateOnePEMOneKelvinPlannerState(),
-                    MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')")));
+  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(MakeQueryRequest(
+                                      testutils::CreateOnePEMOneKelvinPlannerState(),
+                                      "import px\npx.display(px.DataFrame('table1'), 'out')")));
   auto plan_pb = plan->ToProto().ConsumeValueOrDie();
   distributedpb::DistributedPlan expected_pb;
   google::protobuf::TextFormat::MergeFromString(testutils::kExpectedPlanOnePEMOneKelvin,
@@ -89,7 +90,7 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto ps = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   ASSERT_OK_AND_ASSIGN(auto plan,
-                       planner->Plan(ps, MakeQueryRequest(testutils::kHttpRequestStats)));
+                       planner->Plan(MakeQueryRequest(ps, testutils::kHttpRequestStats)));
   ASSERT_OK_AND_ASSIGN(auto plan_pb, plan->ToProto());
 
   auto kelvin_plan = plan_pb.qb_address_to_plan().find("kelvin");
@@ -117,7 +118,7 @@ TEST_F(LogicalPlannerTest, max_output_rows) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   state.mutable_plan_options()->set_max_output_rows_per_table(100);
-  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kSimpleQueryDefaultLimit));
+  auto plan_or_s = planner->Plan(MakeQueryRequest(state, kSimpleQueryDefaultLimit));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
 
@@ -187,9 +188,9 @@ px.display(joined_table)
 
 TEST_F(LogicalPlannerTest, duplicate_int) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kCompileTimeQuery));
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kCompileTimeQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -228,9 +229,9 @@ px.display(df)
 )query";
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kTwoWindowQuery));
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kTwoWindowQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -246,9 +247,8 @@ px.display(df1.append(df2))
 
 TEST_F(LogicalPlannerTest, AppendTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kAppendQuery));
+  auto plan_or_s = planner->Plan(MakeQueryRequest(
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), kAppendQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -264,9 +264,9 @@ px.display(df1.append(df2))
 
 TEST_F(LogicalPlannerTest, AppendSelfTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kAppendSelfQuery));
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kAppendSelfQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -340,9 +340,9 @@ px.display(rcv[[src_name, dest_name]], 'talks_to')
 
 TEST_F(LogicalPlannerTest, BrokenQueryTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kPlannerQueryError));
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kPlannerQueryError));
   ASSERT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -364,8 +364,10 @@ TEST_F(LogicalPlannerTest, PlanWithExecFuncs) {
   auto a = f->add_arg_values();
   a->set_name("a");
   a->set_value("1");
-  auto plan_or_s = planner->Plan(
-      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+
+  *req.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto plan_or_s = planner->Plan(req);
   ASSERT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -439,8 +441,9 @@ TEST_F(LogicalPlannerTest, CompileTrace) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   plannerpb::CompileMutationsRequest req;
   req.set_query_str(kSingleProbePxl);
-  auto trace_ir_or_s = planner->CompileTrace(
-      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+  *req.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto trace_ir_or_s = planner->CompileTrace(req);
   ASSERT_OK(trace_ir_or_s);
   auto trace_ir = trace_ir_or_s.ConsumeValueOrDie();
   plannerpb::CompileMutationsResponse resp;
@@ -480,9 +483,10 @@ TEST_F(LogicalPlannerTest, CompileTraceWithExecFuncs) {
   auto duration = func_to_execute->add_arg_values();
   duration->set_name("upid");
   duration->set_value("123e4567-e89b-12d3-a456-426655440000");
+  *req.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
 
-  auto trace_ir_or_s = planner->CompileTrace(
-      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+  auto trace_ir_or_s = planner->CompileTrace(req);
   ASSERT_OK(trace_ir_or_s);
   auto trace_ir = trace_ir_or_s.ConsumeValueOrDie();
   plannerpb::CompileMutationsResponse resp;
@@ -515,9 +519,9 @@ px.display(df2)
 )pxl";
 TEST_F(LogicalPlannerTest, partial_agg) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kBrokenFunc1234));
+  auto plan_or_s = planner->Plan(
+      MakeQueryRequest(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                       kBrokenFunc1234));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -532,9 +536,8 @@ px.display(df)
 )pxl";
 TEST_F(LogicalPlannerTest, pem_only_limit) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto plan_or_s =
-      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
-                    MakeQueryRequest(kPemOnlyLimit));
+  auto plan_or_s = planner->Plan(MakeQueryRequest(
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), kPemOnlyLimit));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
@@ -641,7 +644,7 @@ TEST_F(LogicalPlannerTest, limit_pushdown_failing) {
   // Replicate what happens in the main environment.
   state.mutable_plan_options()->set_max_output_rows_per_table(10000);
 
-  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kLimitFailing));
+  auto plan_or_s = planner->Plan(MakeQueryRequest(state, kLimitFailing));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   auto proto_or_s = plan->ToProto();
@@ -666,7 +669,7 @@ px.display(df)
 TEST_F(LogicalPlannerTest, filter_pushdown_bug) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
-  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(state, MakeQueryRequest(kFilterPushDownBugQuery)));
+  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(MakeQueryRequest(state, kFilterPushDownBugQuery)));
   ASSERT_OK(plan->ToProto());
 }
 
@@ -734,7 +737,7 @@ TEST_F(LogicalPlannerTest, otel_debug_attributes_end_to_end) {
   EXPECT_EQ(compiler_state->debug_info().otel_debug_attrs[1].value, "v1.2.3");
 
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(state, MakeQueryRequest(kOTelDebugInfo)));
+  ASSERT_OK_AND_ASSIGN(auto plan, planner->Plan(MakeQueryRequest(state, kOTelDebugInfo)));
   ASSERT_OK_AND_ASSIGN(auto distributed_plan, plan->ToProto());
   auto kelvin_plan = (*distributed_plan.mutable_qb_address_to_plan())["kelvin"];
 

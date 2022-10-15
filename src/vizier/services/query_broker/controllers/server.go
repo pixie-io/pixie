@@ -59,8 +59,8 @@ const (
 
 // Planner describes the interface for any planner.
 type Planner interface {
-	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
-	CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
+	Plan(req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
+	CompileMutations(request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
 	GenerateOTelScript(request *plannerpb.GenerateOTelScriptRequest) (*plannerpb.GenerateOTelScriptResponse, error)
 	Free()
 }
