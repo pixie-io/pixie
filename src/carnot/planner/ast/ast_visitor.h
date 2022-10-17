@@ -32,7 +32,7 @@
 #include <pypa/ast/tree_walker.hh>
 
 #include "src/carnot/planner/ir/ir.h"
-#include "src/carnot/planner/plannerpb/planner.pb.h"
+#include "src/carnot/planner/plannerpb/service.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace px {

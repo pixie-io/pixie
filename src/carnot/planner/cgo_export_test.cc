@@ -27,7 +27,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
-#include "src/carnot/planner/plannerpb/planner.pb.h"
+#include "src/carnot/planner/plannerpb/service.pb.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"

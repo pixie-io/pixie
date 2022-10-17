@@ -38,7 +38,7 @@
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/var_table.h"
-#include "src/carnot/planner/plannerpb/planner.pb.h"
+#include "src/carnot/planner/plannerpb/service.pb.h"
 #include "src/carnot/planner/probes/probes.h"
 #include "src/carnot/planner/probes/tracing_module.h"
 #include "src/shared/scriptspb/scripts.pb.h"

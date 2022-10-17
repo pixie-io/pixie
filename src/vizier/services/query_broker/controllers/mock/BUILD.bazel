@@ -23,7 +23,7 @@ go_library(
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/planner/plannerpb:planner_pl_go_proto",
+        "//src/carnot/planner/plannerpb:service_pl_go_proto",
         "//src/vizier/services/query_broker/tracker",
         "@com_github_golang_mock//gomock",
     ],

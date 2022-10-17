@@ -90,6 +90,15 @@ message QueryRequest {
   reserved 2;
 }
 
+// QueryResponse contains the plan or status of the query.
+message QueryResponse {
+  // The Status of the Query Request. Holds an error with debug
+  // information if the originating request had a bug, otherwise will be set to
+  // OK.
+  px.statuspb.Status status = 1;
+  px.carnot.planner.distributedpb.DistributedPlan plan = 2;
+}
+
 // CompileMutationRequest represents any request that compiles to a mutation of
 // Pixie internal data state.
 message CompileMutationsRequest {
@@ -154,4 +163,13 @@ message GenerateOTelScriptResponse {
   // OK.
   px.statuspb.Status status = 1;
   string otel_script = 2 [ (gogoproto.customname) = "OTelScript" ];
+}
+
+service PlannerService {
+  // CompileQuery compiles a query into a set of logical plans.
+  rpc CompileQuery(QueryRequest) returns (QueryResponse);
+  // CompileMutations compiles a set of mutations into a set of logical plans.
+  rpc CompileMutations(CompileMutationsRequest) returns (CompileMutationsResponse);
+  // GenerateOTelScript generates an OTel script from a PXL script.
+  rpc GenerateOTelScript(GenerateOTelScriptRequest) returns (GenerateOTelScriptResponse);
 }

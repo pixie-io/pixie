@@ -24,7 +24,7 @@
 
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/carnot/planner/objects/funcobject.h"
-#include "src/carnot/planner/plannerpb/planner.pb.h"
+#include "src/carnot/planner/plannerpb/service.pb.h"
 #include "src/carnot/planner/probes/label_selector_target.h"
 #include "src/carnot/planner/probes/process_target.h"
 #include "src/carnot/planner/probes/shared_object.h"
