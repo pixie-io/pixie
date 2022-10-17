@@ -1086,6 +1086,7 @@ int numPerfEvals = (params.NUM_EVAL_RUNS != null) ? Integer.parseInt(params.NUM_
 int warmupMinutes = (params.WARMUP_MINUTES != null) ? Integer.parseInt(params.WARMUP_MINUTES) : 30
 int evalMinutes = (params.EVAL_MINUTES != null) ? Integer.parseInt(params.EVAL_MINUTES) : 60
 int profilerMinutes = (params.PROFILER_MINUTES != null) ? Integer.parseInt(params.PROFILER_MINUTES) : 5
+int cleanupClusters = (params.CLEANUP_CLUSTERS != null) ? Integer.parseInt(params.CLEANUP_CLUSTERS) : 1
 String groupName = (params.GROUP_NAME != null) ? params.GROUP_NAME : 'none'
 String experimentTag = (params.EXPERIMENT_TAG != null) ? params.EXPERIMENT_TAG : 'none'
 String gitHashForPerfEval = (params.GIT_HASH_FOR_PERF_EVAL != null) ? params.GIT_HASH_FOR_PERF_EVAL : 'HEAD'
@@ -1289,7 +1290,11 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
           // Earlier, we had created a new cluster for this perf eval.
           // Here, we clean up.
           stage("Delete cluster.") {
-            deleteCluster(getCurrentClusterName(clusterName))
+            if(cleanupClusters) {
+              deleteCluster(getCurrentClusterName(clusterName))
+            } else {
+              sh "echo skipping cluster cleanup."
+            }
           }
         }
       }
