@@ -1170,7 +1170,7 @@ pxDeployForStirlingPerfEval = {
       // Ensure skaffold is configured with the dev. image registry.
       sh 'skaffold config set default-repo gcr.io/pl-dev-infra'
       // Regenerate the json list of artifacts targeting the images built for this eval.
-      sh "skaffold build -t ${imageTagForPerfEval} --dry-run -q -f skaffold/skaffold_vizier.yaml > artifacts.json"
+      sh "skaffold build -p opt -t ${imageTagForPerfEval} --dry-run -q -f skaffold/skaffold_vizier.yaml > artifacts.json"
       // Useful for local debug, or to verify the image tags.
       sh 'cat artifacts.json'
       // Skaffold deploy using perf-eval images generated in the build & push step.
@@ -1386,13 +1386,13 @@ buildAndPushPemImagesForPerfEval = {
 
       // Save the image names & tags into artiacts.json, and log out the same info.
       // Useful if one wants to cross check vs. the artifacts that we deploy later.
-      sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
+      sh "skaffold build -p opt -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml -q --dry-run | tee artifacts.json"
 
       allRequiredImagesExist = checkIfRequiredImagesExist()
 
       if (!allRequiredImagesExist) {
         echo "Building all images."
-        sh "skaffold build -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
+        sh "skaffold build -p opt -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
       }
     }
   }
