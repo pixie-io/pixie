@@ -23,7 +23,6 @@
 
 #include "src/carnot/planner/metadata/metadata_handler.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
 namespace px {
 namespace carnot {

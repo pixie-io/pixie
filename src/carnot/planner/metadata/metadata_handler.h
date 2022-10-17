@@ -25,11 +25,8 @@
 
 #include "src/carnot/planner/ir/metadata_ir.h"
 #include "src/carnot/planner/ir/pattern_match.h"
-#include "src/common/base/error.h"
-#include "src/common/base/status.h"
-#include "src/common/base/statusor.h"
+#include "src/common/base/base.h"
 #include "src/shared/metadatapb/metadata.pb.h"
-#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
 namespace px {
 namespace carnot {
