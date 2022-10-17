@@ -108,6 +108,7 @@ buildifier(
 
 pl_cc_base_packages = [
     packages["libc6"],
+    packages["libcrypt1"],
     packages["libelf1"],
     packages["liblzma5"],
     packages["libtinfo6"],
