@@ -29,7 +29,7 @@ export const LoginButton = React.memo<{ text: string; onClick: () => void }>(({
     color='primary'
     onClick={onClick}
     // eslint-disable-next-line react-memo/require-usememo
-    sx={{ pt: 1, pb: 1, textTransform: 'capitalize' }}
+    sx={{ pt: 1, pb: 1, minWidth: 160, textTransform: 'capitalize' }}
   >
     {text}
   </Button>
