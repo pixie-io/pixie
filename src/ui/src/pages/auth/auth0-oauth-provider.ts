@@ -93,7 +93,7 @@ export const Auth0Client = {
   },
 
   refetchToken(): void {
-    this.userManager.signinSilent({
+    this.userManager.signinRedirect({
       state: {
         redirectArgs: getLoginArgs(),
       },

@@ -58,7 +58,7 @@ export const OIDCClient = {
   },
 
   refetchToken(): void {
-    this.userManager.signinSilent({
+    this.userManager.signinRedirect({
       state: {
         redirectArgs: getLoginArgs(),
       },

@@ -76,7 +76,7 @@ export const HydraClient = {
   },
 
   refetchToken(): void {
-    this.userManager.signinSilent({
+    this.userManager.signinRedirect({
       state: {
         redirectArgs: getLoginArgs(),
       },
