@@ -1308,6 +1308,13 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   }
 }
 
+def savePodResourceUsagePxlScript() {
+  pod_resource_usage_path = "src/pxl_scripts/private/b7ca1b62-6c9f-4a3f-a45d-a5bdffbcae6a/pod_resource_usage"
+  assert fileExists(pod_resource_usage_path)
+  sh 'mkdir -p logs/pod_resource_usage'
+  sh "cp ${pod_resource_usage_path}/* logs/pod_resource_usage"
+}
+
 def saveRepoInfo() {
   perf_reqs = 'src/stirling/private/scripts/perf/requirements.txt'
   perf_eval = 'src/stirling/private/scripts/perf/perf-eval.py'
@@ -1375,6 +1382,10 @@ buildAndPushPemImagesForPerfEval = {
       // Ensure repo is configured for use.
       sh 'git config --global --add safe.directory $(pwd)'
 
+      // Copy the pod resource utilization script into the logs directory,
+      // so that it is stashed along with repo info.
+      savePodResourceUsagePxlScript()
+
       // Log out beginning, target, and final repo state.
       sh 'echo "Starting repo state:" && git rev-parse HEAD'
       sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
@@ -1386,6 +1397,7 @@ buildAndPushPemImagesForPerfEval = {
       sh "echo Image tag for perf eval: ${imageTagForPerfEval}"
       sh "git checkout ${gitHashForPerfEval}"
       sh 'echo "Repo state:" && git rev-parse HEAD'
+
       saveRepoInfo()
 
       // Ensure skaffold is configured for dev. image registry.
