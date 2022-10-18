@@ -36,7 +36,7 @@ kubectl create secret generic -n "${namespace}" \
 kubectl create secret generic -n "${namespace}" \
   pl-db-secrets \
   --from-literal=PL_POSTGRES_USERNAME="pl" \
-  --from-literal=PL_POSTGRES_PASSWORD="pl" \
+  --from-literal=PL_POSTGRES_PASSWORD="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 24 | head -n 1)" \
   --from-literal=database-key="$(< /dev/urandom tr -dc 'a-zA-Z0-9#$%&().' | fold -w 24 | head -n 1)"
 
 kubectl create secret generic -n "${namespace}" \
