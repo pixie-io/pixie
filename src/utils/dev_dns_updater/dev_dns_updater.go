@@ -45,8 +45,7 @@ import (
 )
 
 var dnsEntriesByServiceCfg = map[string][]string{
-	"cloud-proxy-service": {"", "work", "segment", "docs"},
-	"vzconn-service":      {"cloud"},
+	"cloud-proxy-service": {"", "work"},
 }
 
 var dnsEntriesByService = map[string][]string{}
@@ -250,6 +249,7 @@ func sudoSelfIfNotRoot() {
 	if uid != 0 {
 		f, _ := filepath.Abs(os.Args[0])
 		args := []string{
+			"--preserve-env",
 			f,
 			fmt.Sprintf("--n=%s", viper.GetString("n")),
 			fmt.Sprintf("--domain-name=%s", viper.GetString("domain-name")),
