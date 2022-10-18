@@ -56,7 +56,7 @@ func FindVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
 func FindOperatorNamespace(clientset *kubernetes.Clientset) (string, error) {
 	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
+			{
 				Key:      "app",
 				Operator: metav1.LabelSelectorOpIn,
 				Values:   []string{"pixie-operator"},

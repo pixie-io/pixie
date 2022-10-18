@@ -98,35 +98,35 @@ func loadTestData(db *sqlx.DB, pluginVersions map[string][]string, enabledPlugin
 
 func TestLoadDB_UpdatePlugins(t *testing.T) {
 	loadTestData(db, map[string][]string{
-		"test-plugin": []string{
+		"test-plugin": {
 			"0.0.1", "0.0.2", "0.0.3", "0.1.0", "0.1.1", "0.1.2", "1.0.0", "1.1.0",
 		},
-		"another-plugin": []string{
+		"another-plugin": {
 			"0.0.1", "0.0.2",
 		},
 	}, map[string][]*enabledPlugin{
-		"223e4567-e89b-12d3-a456-426655440000": []*enabledPlugin{
-			&enabledPlugin{
+		"223e4567-e89b-12d3-a456-426655440000": {
+			{
 				pluginID: "test-plugin",
 				version:  "0.0.3",
 			},
 		},
-		"223e4567-e89b-12d3-a456-426655440001": []*enabledPlugin{
-			&enabledPlugin{
+		"223e4567-e89b-12d3-a456-426655440001": {
+			{
 				pluginID: "test-plugin",
 				version:  "0.1.2",
 			},
-			&enabledPlugin{
+			{
 				pluginID: "another-plugin",
 				version:  "0.0.1",
 			},
 		},
-		"223e4567-e89b-12d3-a456-426655440002": []*enabledPlugin{
-			&enabledPlugin{
+		"223e4567-e89b-12d3-a456-426655440002": {
+			{
 				pluginID: "test-plugin",
 				version:  "1.0.0",
 			},
-			&enabledPlugin{
+			{
 				pluginID: "another-plugin",
 				version:  "0.0.2",
 			},
@@ -146,17 +146,17 @@ func TestLoadDB_UpdatePlugins(t *testing.T) {
 	main.UpdatePlugins(db, mockClient)
 
 	assert.ElementsMatch(t, []*pluginpb.UpdateOrgRetentionPluginConfigRequest{
-		&pluginpb.UpdateOrgRetentionPluginConfigRequest{
+		{
 			OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 			Version:  &types.StringValue{Value: "0.1.2"},
 			PluginID: "test-plugin",
 		},
-		&pluginpb.UpdateOrgRetentionPluginConfigRequest{
+		{
 			OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 			Version:  &types.StringValue{Value: "0.0.2"},
 			PluginID: "another-plugin",
 		},
-		&pluginpb.UpdateOrgRetentionPluginConfigRequest{
+		{
 			OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 			Version:  &types.StringValue{Value: "1.1.0"},
 			PluginID: "test-plugin",

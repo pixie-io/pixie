@@ -40,7 +40,7 @@ func TestPluginResolver_Plugins(t *testing.T) {
 		Kind: cloudpb.PK_RETENTION,
 	}).Return(&cloudpb.GetPluginsResponse{
 		Plugins: []*cloudpb.Plugin{
-			&cloudpb.Plugin{
+			{
 				Name:               "Test Plugin",
 				Id:                 "test-plugin",
 				Description:        "Here is a plugin that is used for this test",
@@ -50,7 +50,7 @@ func TestPluginResolver_Plugins(t *testing.T) {
 				RetentionEnabled:   false,
 				EnabledVersion:     "",
 			},
-			&cloudpb.Plugin{
+			{
 				Name:               "Another Plugin",
 				Id:                 "another-plugin",
 				Description:        "Here is a another plugin that is used for this test",
@@ -319,7 +319,7 @@ func TestPluginResolver_RetentionScripts(t *testing.T) {
 
 	mockClients.MockPlugin.EXPECT().GetRetentionScripts(gomock.Any(), &cloudpb.GetRetentionScriptsRequest{}).Return(&cloudpb.GetRetentionScriptsResponse{
 		Scripts: []*cloudpb.RetentionScript{
-			&cloudpb.RetentionScript{
+			{
 				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				ScriptName:  "Test Script",
 				Description: "This is a script",
@@ -332,7 +332,7 @@ func TestPluginResolver_RetentionScripts(t *testing.T) {
 				Enabled:  true,
 				IsPreset: false,
 			},
-			&cloudpb.RetentionScript{
+			{
 				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
 				ScriptName:  "Another Script",
 				Description: "This is another script",

@@ -62,12 +62,12 @@ func main() {
 	// First delete non-bootstrap items. For example, avoid clusterrole objects as these may prevent following deletes from going through.
 	vzNameLabelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
+			{
 				Key:      "vizier-name",
 				Operator: metav1.LabelSelectorOpIn,
 				Values:   []string{vzName},
 			},
-			metav1.LabelSelectorRequirement{
+			{
 				Key:      "vizier-bootstrap",
 				Operator: metav1.LabelSelectorOpNotIn,
 				Values:   []string{"true"},
@@ -80,7 +80,7 @@ func main() {
 	// Delete clusterrole objects.
 	labelSelector := metav1.FormatLabelSelector(&metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
+			{
 				Key:      "vizier-name",
 				Operator: metav1.LabelSelectorOpIn,
 				Values:   []string{vzName},

@@ -602,7 +602,7 @@ func (p *ServiceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdate,
 	// Service updates will also be sent to PEMs by the EndpointsUpdateProcessor in order to provide
 	// a mapping from service->pod.
 	return []*OutgoingUpdate{
-		&OutgoingUpdate{
+		{
 			Update: &metadatapb.ResourceUpdate{
 				UpdateVersion: uv,
 				Update: &metadatapb.ResourceUpdate_ServiceUpdate{

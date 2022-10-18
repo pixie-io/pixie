@@ -51,7 +51,7 @@ func TestCronScript_GetChecksum(t *testing.T) {
 		{
 			name: "one empty",
 			mapA: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 10,
 					Configs:    "test",
@@ -64,19 +64,19 @@ func TestCronScript_GetChecksum(t *testing.T) {
 		{
 			name: "matching",
 			mapA: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 10,
 					Configs:    "test",
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
-				"323e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"323e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 100,
 					Configs:    "config 2",
 					ID:         utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440001"),
 				},
-				"423e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"423e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 2,
 					Configs:    "config 3",
@@ -84,19 +84,19 @@ func TestCronScript_GetChecksum(t *testing.T) {
 				},
 			},
 			mapB: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 10,
 					Configs:    "test",
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
-				"423e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"423e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 2,
 					Configs:    "config 3",
 					ID:         utils.ProtoFromUUIDStrOrNil("423e4567-e89b-12d3-a456-426655440001"),
 				},
-				"323e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"323e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 100,
 					Configs:    "config 2",
@@ -108,19 +108,19 @@ func TestCronScript_GetChecksum(t *testing.T) {
 		{
 			name: "slight mismatch",
 			mapA: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 10,
 					Configs:    "test",
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
-				"323e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"323e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 100,
 					Configs:    "config 2",
 					ID:         utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440001"),
 				},
-				"423e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"423e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 2,
 					Configs:    "config 3",
@@ -128,19 +128,19 @@ func TestCronScript_GetChecksum(t *testing.T) {
 				},
 			},
 			mapB: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 11,
 					Configs:    "test",
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 				},
-				"423e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"423e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 2,
 					Configs:    "config 3",
 					ID:         utils.ProtoFromUUIDStrOrNil("423e4567-e89b-12d3-a456-426655440001"),
 				},
-				"323e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"323e4567-e89b-12d3-a456-426655440001": {
 					Script:     "px.display()",
 					FrequencyS: 100,
 					Configs:    "config 2",

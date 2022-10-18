@@ -69,7 +69,7 @@ func TestAuthServer_LoginAPIKey(t *testing.T) {
 	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	md := map[string][]string{
-		"pixie-api-key": []string{"test-token"},
+		"pixie-api-key": {"test-token"},
 	}
 
 	ctx := metadata.NewIncomingContext(context.Background(), md)

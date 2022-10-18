@@ -335,7 +335,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 
 	debugInfo := &distributedpb.DebugInfo{
 		OtelDebugAttributes: []*distributedpb.DebugInfo_OTelDebugAttribute{
-			&distributedpb.DebugInfo_OTelDebugAttribute{
+			{
 				Name:  "px.cloud.address",
 				Value: viper.GetString("cloud_addr"),
 			},

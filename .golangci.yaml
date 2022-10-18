@@ -19,6 +19,9 @@ linters:
   - asciicheck
   - deadcode
   - errcheck
+  # Although goimports includes gofmt, it doesn't support the simplify option.
+  # So we include gofmt here.
+  - gofmt
   - gosimple
   - ineffassign
   - makezero
@@ -37,8 +40,6 @@ linters:
   # - wastedassign
   - whitespace
   disable:
-  # We run goimports which includes gofmt.
-  - gofmt
   # The following linters are run separately by arcanist at the moment.
   # This is because we have autofix hooks for these linters.
   - goimports

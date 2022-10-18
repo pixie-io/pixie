@@ -153,7 +153,7 @@ func TestServer_GetScripts(t *testing.T) {
 
 	assert.Equal(t, &cronscriptpb.GetScriptsResponse{
 		Scripts: []*cronscriptpb.CronScript{
-			&cronscriptpb.CronScript{
+			{
 				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
 				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				Script: "px.display()",
@@ -165,7 +165,7 @@ func TestServer_GetScripts(t *testing.T) {
 				Enabled:    true,
 				FrequencyS: 5,
 			},
-			&cronscriptpb.CronScript{
+			{
 				ID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 				OrgID:  utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				Script: "px()",
@@ -201,11 +201,11 @@ func TestServer_CreateScript(t *testing.T) {
 		VizierIDs: clusterIDs,
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
 		VizierInfos: []*cvmsgspb.VizierInfo{
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: utils.ProtoFromUUIDStrOrNil(vz1ID),
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: utils.ProtoFromUUIDStrOrNil(vz2ID),
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
@@ -431,11 +431,11 @@ func TestServer_UpdateScript(t *testing.T) {
 		VizierIDs: clusterIDs,
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
 		VizierInfos: []*cvmsgspb.VizierInfo{
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440002"),
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
@@ -448,7 +448,7 @@ func TestServer_UpdateScript(t *testing.T) {
 		},
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
 		VizierInfos: []*cvmsgspb.VizierInfo{
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
@@ -516,7 +516,7 @@ func TestServer_DeleteScript(t *testing.T) {
 		},
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
 		VizierInfos: []*cvmsgspb.VizierInfo{
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID: vzIDpb,
 				Status:   cvmsgspb.VZ_ST_HEALTHY,
 			},
@@ -595,7 +595,7 @@ func TestServer_HandleChecksumRequest(t *testing.T) {
 	wg.Add(1)
 
 	csMap := map[string]*cvmsgspb.CronScript{
-		"123e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+		"123e4567-e89b-12d3-a456-426655440001": {
 			ID:         utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Script:     "px.stream()",
 			FrequencyS: 10,
@@ -654,7 +654,7 @@ func TestServer_HandleGetScriptsRequest(t *testing.T) {
 	wg.Add(1)
 
 	csMap := map[string]*cvmsgspb.CronScript{
-		"123e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+		"123e4567-e89b-12d3-a456-426655440001": {
 			ID:         utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 			Script:     "px.stream()",
 			FrequencyS: 10,

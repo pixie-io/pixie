@@ -535,7 +535,7 @@ func buildPlannerErrorTestCase(t *testing.T) queryExecTestCase {
 			Code:    int32(statuspb.INVALID_ARGUMENT),
 			Message: "",
 			ErrorDetails: []*vizierpb.ErrorDetails{
-				&vizierpb.ErrorDetails{
+				{
 					Error: &vizierpb.ErrorDetails_CompilerError{
 						CompilerError: &vizierpb.CompilerError{
 							Line:    1,
@@ -544,7 +544,7 @@ func buildPlannerErrorTestCase(t *testing.T) queryExecTestCase {
 						},
 					},
 				},
-				&vizierpb.ErrorDetails{
+				{
 					Error: &vizierpb.ErrorDetails_CompilerError{
 						CompilerError: &vizierpb.CompilerError{
 							Line:    20,
@@ -600,7 +600,7 @@ func buildPlanInvalidUUIDTestCase(t *testing.T) queryExecTestCase {
 		Status: &statuspb.Status{ErrCode: statuspb.OK},
 		Plan: &distributedpb.DistributedPlan{
 			QbAddressToPlan: map[string]*planpb.Plan{
-				"not a uuid": &planpb.Plan{},
+				"not a uuid": {},
 			},
 		},
 	}
@@ -631,8 +631,8 @@ func buildConsumeErrorTestCase(t *testing.T) queryExecTestCase {
 		},
 		ResultForwarderResps: []*vizierpb.ExecuteScriptResponse{
 			// These responses should not be received by the consumer.
-			&vizierpb.ExecuteScriptResponse{},
-			&vizierpb.ExecuteScriptResponse{},
+			{},
+			{},
 		},
 		ExpectedResps:              []*vizierpb.ExecuteScriptResponse{},
 		TableNames:                 []string{"agent1_table", "agent2_table"},
@@ -757,7 +757,7 @@ func buildResumeQueryBadQueryIDTestCase(t *testing.T) queryExecTestCase {
 		},
 		ResultForwarderResps: []*vizierpb.ExecuteScriptResponse{
 			// This should not be sent.
-			&vizierpb.ExecuteScriptResponse{},
+			{},
 		},
 		ExpectedResps: []*vizierpb.ExecuteScriptResponse{},
 		// Resuming should not send table relation responses again.
@@ -795,7 +795,7 @@ func buildMutationFailedQueryTestCase(t *testing.T) queryExecTestCase {
 		},
 		ResultForwarderResps: []*vizierpb.ExecuteScriptResponse{},
 		ExpectedResps: []*vizierpb.ExecuteScriptResponse{
-			&vizierpb.ExecuteScriptResponse{
+			{
 				Status:       &vizierpb.Status{Code: 0},
 				MutationInfo: mutInfo,
 			},

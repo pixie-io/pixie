@@ -56,13 +56,13 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 		{
 			name: "checksums match",
 			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -70,13 +70,13 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 				},
 			},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -88,13 +88,13 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 		{
 			name: "checksums mismatch: one field different",
 			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -102,13 +102,13 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 				},
 			},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 6,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -120,13 +120,13 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 		{
 			name: "checksums mismatch: missing script",
 			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -134,7 +134,7 @@ func TestScriptRunner_CompareScriptState(t *testing.T) {
 				},
 			},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
@@ -205,13 +205,13 @@ func TestScriptRunner_GetCloudScripts(t *testing.T) {
 	require.NoError(t, err)
 
 	scripts := map[string]*cvmsgspb.CronScript{
-		"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+		"223e4567-e89b-12d3-a456-426655440000": {
 			ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 			Script:     "px.display()",
 			Configs:    "config1",
 			FrequencyS: 5,
 		},
-		"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+		"223e4567-e89b-12d3-a456-426655440001": {
 			ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 			Script:     "test script",
 			Configs:    "config2",
@@ -320,13 +320,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 		{
 			name: "initial match",
 			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -334,13 +334,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -348,7 +348,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			updates: []*cvmsgspb.CronScriptUpdate{
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -362,7 +362,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "1",
 					Timestamp: 1,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
@@ -373,13 +373,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 					Script:     "test script 2",
 					Configs:    "config3",
@@ -390,13 +390,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 		{
 			name: "initial mismatch",
 			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440000": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 					Script:     "px.display()",
 					Configs:    "config1",
 					FrequencyS: 5,
 				},
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -404,7 +404,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -412,7 +412,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			updates: []*cvmsgspb.CronScriptUpdate{
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -426,7 +426,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "1",
 					Timestamp: 1,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
@@ -437,7 +437,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 					Script:     "test script 2",
 					Configs:    "config3",
@@ -449,7 +449,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 			name:             "persisted empty",
 			persistedScripts: map[string]*cvmsgspb.CronScript{},
 			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
@@ -457,7 +457,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			updates: []*cvmsgspb.CronScriptUpdate{
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -471,7 +471,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "1",
 					Timestamp: 1,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
@@ -482,13 +482,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
 					Script:     "test script",
 					Configs:    "config2",
 					FrequencyS: 22,
 				},
-				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 					Script:     "test script 2",
 					Configs:    "config3",
@@ -501,7 +501,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 			persistedScripts: map[string]*cvmsgspb.CronScript{},
 			cloudScripts:     map[string]*cvmsgspb.CronScript{},
 			updates: []*cvmsgspb.CronScriptUpdate{
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -515,7 +515,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "1",
 					Timestamp: 1,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -529,7 +529,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "2",
 					Timestamp: 2,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -543,7 +543,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "3",
 					Timestamp: 3,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
@@ -554,13 +554,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 					Script:     "test script 2",
 					Configs:    "config3",
 					FrequencyS: 123,
 				},
-				"223e4567-e89b-12d3-a456-426655440004": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440004": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
 					Script:     "test script 2",
 					Configs:    "config3",
@@ -573,7 +573,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 			persistedScripts: map[string]*cvmsgspb.CronScript{},
 			cloudScripts:     map[string]*cvmsgspb.CronScript{},
 			updates: []*cvmsgspb.CronScriptUpdate{
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -587,7 +587,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "1",
 					Timestamp: 1,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -601,7 +601,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "2",
 					Timestamp: 2,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -615,7 +615,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "3",
 					Timestamp: 3,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
 						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
 							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
@@ -624,7 +624,7 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 					RequestID: "4",
 					Timestamp: 4,
 				},
-				&cvmsgspb.CronScriptUpdate{
+				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
@@ -640,13 +640,13 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				},
 			},
 			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440002": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
 					Script:     "test script 2",
 					Configs:    "config3",
 					FrequencyS: 123,
 				},
-				"223e4567-e89b-12d3-a456-426655440004": &cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440004": {
 					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
 					Script:     "test script 2",
 					Configs:    "config3",
@@ -819,7 +819,7 @@ func TestScriptRunner_StoreResults(t *testing.T) {
 		{
 			name: "forwards exec stats",
 			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
-				&vizierpb.ExecuteScriptResponse{
+				{
 					Result: &vizierpb.ExecuteScriptResponse_Data{
 						Data: &vizierpb.QueryData{
 							ExecutionStats: &vizierpb.QueryExecutionStats{
@@ -848,7 +848,7 @@ func TestScriptRunner_StoreResults(t *testing.T) {
 		{
 			name: "handles non-compiler error",
 			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
-				&vizierpb.ExecuteScriptResponse{
+				{
 					Status: &vizierpb.Status{
 						Code:    3, // INVALID_ARGUMENT
 						Message: "Invalid",
@@ -867,7 +867,7 @@ func TestScriptRunner_StoreResults(t *testing.T) {
 		{
 			name: "handles compiler error",
 			execScriptResponses: []*vizierpb.ExecuteScriptResponse{
-				&vizierpb.ExecuteScriptResponse{
+				{
 					Status: &vizierpb.Status{
 						Code: 3, // INVALID_ARGUMENT
 						ErrorDetails: []*vizierpb.ErrorDetails{

@@ -360,11 +360,11 @@ func TestOrgSettingsResolver_IDEConfigs(t *testing.T) {
 				}).
 				Return(&cloudpb.GetOrgIDEConfigsResponse{
 					Configs: []*cloudpb.IDEConfig{
-						&cloudpb.IDEConfig{
+						{
 							IDEName: "test",
 							Path:    "subl://{{symbol}}",
 						},
-						&cloudpb.IDEConfig{
+						{
 							IDEName: "anothertest",
 							Path:    "test://{{symbol}}",
 						},

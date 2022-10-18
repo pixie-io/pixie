@@ -115,9 +115,9 @@ func TestMonitor_queryPodStatusz(t *testing.T) {
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Ports: []v1.ContainerPort{
-								v1.ContainerPort{
+								{
 									ContainerPort: test.podPort,
 								},
 							},
@@ -183,9 +183,9 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
-								v1.Container{
+								{
 									Ports: []v1.ContainerPort{
-										v1.ContainerPort{
+										{
 											ContainerPort: 8080,
 										},
 									},
@@ -354,9 +354,9 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 
 	spec := v1.PodSpec{
 		Containers: []v1.Container{
-			v1.Container{
+			{
 				Ports: []v1.ContainerPort{
-					v1.ContainerPort{
+					{
 						ContainerPort: 8080,
 					},
 				},
@@ -613,7 +613,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					phase: v1.PodPending,
 					plane: "control",
 					conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:    v1.PodScheduled,
 							Status:  v1.ConditionFalse,
 							Reason:  v1.PodReasonUnschedulable,
@@ -632,7 +632,7 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 					phase: v1.PodPending,
 					plane: "control",
 					conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Type:    v1.PodScheduled,
 							Status:  v1.ConditionFalse,
 							Reason:  v1.PodReasonUnschedulable,
@@ -673,11 +673,11 @@ func TestMonitor_getControlPlanePodState(t *testing.T) {
 }
 
 var healthyConditions = []v1.PodCondition{
-	v1.PodCondition{
+	{
 		Type:   v1.PodReady,
 		Status: v1.ConditionTrue,
 	},
-	v1.PodCondition{
+	{
 		Type:   v1.PodScheduled,
 		Status: v1.ConditionTrue,
 	},
@@ -779,7 +779,7 @@ func TestMonitor_getPEMsSomeInsufficientMemory(t *testing.T) {
 					name:  "vizier-pem-abcdefg",
 					phase: v1.PodPending,
 					conditions: []v1.PodCondition{
-						v1.PodCondition{
+						{
 							Reason:  "FailedScheduling",
 							Message: "foo",
 						},
@@ -1055,7 +1055,7 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 						Status: v1.PodStatus{
 							Phase: p.phase,
 							ContainerStatuses: []v1.ContainerStatus{
-								v1.ContainerStatus{
+								{
 									Name:  "pem",
 									State: p.containerState,
 								},

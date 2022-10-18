@@ -1666,7 +1666,7 @@ func TestServer_GetOrgIDEConfigs_Single(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.GetOrgIDEConfigsResponse{
 		Configs: []*profilepb.IDEConfig{
-			&profilepb.IDEConfig{
+			{
 				IDEName: "test",
 				Path:    "test://{{symbol}}",
 			},
@@ -1691,11 +1691,11 @@ func TestServer_GetOrgIDEConfigs_Multi(t *testing.T) {
 	osds.EXPECT().
 		GetIDEConfigs(orgID).
 		Return([]*datastore.IDEConfig{
-			&datastore.IDEConfig{
+			{
 				Name: "test",
 				Path: "test://{{symbol}}",
 			},
-			&datastore.IDEConfig{
+			{
 				Name: "test2",
 				Path: "test2://{{symbol2}}",
 			},
@@ -1707,11 +1707,11 @@ func TestServer_GetOrgIDEConfigs_Multi(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.GetOrgIDEConfigsResponse{
 		Configs: []*profilepb.IDEConfig{
-			&profilepb.IDEConfig{
+			{
 				IDEName: "test",
 				Path:    "test://{{symbol}}",
 			},
-			&profilepb.IDEConfig{
+			{
 				IDEName: "test2",
 				Path:    "test2://{{symbol2}}",
 			},

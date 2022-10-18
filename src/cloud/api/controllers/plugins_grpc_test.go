@@ -47,7 +47,7 @@ func TestGetPlugins(t *testing.T) {
 			name: "regular user",
 			ctx:  CreateTestContext(),
 			allPlugins: []*pluginpb.Plugin{
-				&pluginpb.Plugin{
+				{
 					Name:             "Test Plugin",
 					ID:               "test-plugin",
 					Description:      "Here is a plugin that is used for this test",
@@ -55,7 +55,7 @@ func TestGetPlugins(t *testing.T) {
 					LatestVersion:    "2.0.0",
 					RetentionEnabled: true,
 				},
-				&pluginpb.Plugin{
+				{
 					Name:             "Another Plugin",
 					ID:               "another-plugin",
 					Description:      "Here is a another plugin that is used for this test",
@@ -65,7 +65,7 @@ func TestGetPlugins(t *testing.T) {
 				},
 			},
 			orgRetentionPlugins: []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
-				&pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+				{
 					Plugin: &pluginpb.Plugin{
 						Name:             "Another Plugin",
 						ID:               "another-plugin",
@@ -78,7 +78,7 @@ func TestGetPlugins(t *testing.T) {
 				},
 			},
 			expectedPlugins: []*cloudpb.Plugin{
-				&cloudpb.Plugin{
+				{
 					Name:               "Test Plugin",
 					Id:                 "test-plugin",
 					Description:        "Here is a plugin that is used for this test",
@@ -88,7 +88,7 @@ func TestGetPlugins(t *testing.T) {
 					RetentionEnabled:   false,
 					EnabledVersion:     "",
 				},
-				&cloudpb.Plugin{
+				{
 					Name:               "Another Plugin",
 					Id:                 "another-plugin",
 					Description:        "Here is a another plugin that is used for this test",
@@ -104,7 +104,7 @@ func TestGetPlugins(t *testing.T) {
 			name: "API user",
 			ctx:  CreateAPIUserTestContext(),
 			allPlugins: []*pluginpb.Plugin{
-				&pluginpb.Plugin{
+				{
 					Name:             "Test Plugin",
 					ID:               "test-plugin",
 					Description:      "Here is a plugin that is used for this test",
@@ -112,7 +112,7 @@ func TestGetPlugins(t *testing.T) {
 					LatestVersion:    "2.0.0",
 					RetentionEnabled: true,
 				},
-				&pluginpb.Plugin{
+				{
 					Name:             "Another Plugin",
 					ID:               "another-plugin",
 					Description:      "Here is a another plugin that is used for this test",
@@ -122,7 +122,7 @@ func TestGetPlugins(t *testing.T) {
 				},
 			},
 			orgRetentionPlugins: []*pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
-				&pluginpb.GetRetentionPluginsForOrgResponse_PluginState{
+				{
 					Plugin: &pluginpb.Plugin{
 						Name:             "Another Plugin",
 						ID:               "another-plugin",
@@ -135,7 +135,7 @@ func TestGetPlugins(t *testing.T) {
 				},
 			},
 			expectedPlugins: []*cloudpb.Plugin{
-				&cloudpb.Plugin{
+				{
 					Name:               "Test Plugin",
 					Id:                 "test-plugin",
 					Description:        "Here is a plugin that is used for this test",
@@ -145,7 +145,7 @@ func TestGetPlugins(t *testing.T) {
 					RetentionEnabled:   false,
 					EnabledVersion:     "",
 				},
-				&cloudpb.Plugin{
+				{
 					Name:               "Another Plugin",
 					Id:                 "another-plugin",
 					Description:        "Here is a another plugin that is used for this test",
@@ -342,7 +342,7 @@ func TestGetRetentionScripts(t *testing.T) {
 	mockClients.MockDataRetentionPlugin.EXPECT().GetRetentionScripts(gomock.Any(), mockReq).
 		Return(&pluginpb.GetRetentionScriptsResponse{
 			Scripts: []*pluginpb.RetentionScript{
-				&pluginpb.RetentionScript{
+				{
 					ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 					ScriptName:  "Test Script",
 					Description: "This is a script",
@@ -355,7 +355,7 @@ func TestGetRetentionScripts(t *testing.T) {
 					Enabled:  true,
 					IsPreset: false,
 				},
-				&pluginpb.RetentionScript{
+				{
 					ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
 					ScriptName:  "Another Script",
 					Description: "This is another script",
@@ -379,7 +379,7 @@ func TestGetRetentionScripts(t *testing.T) {
 
 	assert.Equal(t, &cloudpb.GetRetentionScriptsResponse{
 		Scripts: []*cloudpb.RetentionScript{
-			&cloudpb.RetentionScript{
+			{
 				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				ScriptName:  "Test Script",
 				Description: "This is a script",
@@ -392,7 +392,7 @@ func TestGetRetentionScripts(t *testing.T) {
 				Enabled:  true,
 				IsPreset: false,
 			},
-			&cloudpb.RetentionScript{
+			{
 				ScriptID:    utils.ProtoFromUUIDStrOrNil("1ba7b810-9dad-11d1-80b4-00c04fd430c1"),
 				ScriptName:  "Another Script",
 				Description: "This is another script",

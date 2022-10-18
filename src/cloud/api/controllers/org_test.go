@@ -442,11 +442,11 @@ func TestOrganizationServiceServer_GetOrgIDEConfigs(t *testing.T) {
 		OrgID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 	}).Return(&profilepb.GetOrgIDEConfigsResponse{
 		Configs: []*profilepb.IDEConfig{
-			&profilepb.IDEConfig{
+			{
 				IDEName: "test",
 				Path:    "test://{{symbol}}",
 			},
-			&profilepb.IDEConfig{
+			{
 				IDEName: "another-test",
 				Path:    "sublime://{{symbol}}",
 			},
@@ -461,11 +461,11 @@ func TestOrganizationServiceServer_GetOrgIDEConfigs(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []*cloudpb.IDEConfig{
-		&cloudpb.IDEConfig{
+		{
 			IDEName: "test",
 			Path:    "test://{{symbol}}",
 		},
-		&cloudpb.IDEConfig{
+		{
 			IDEName: "another-test",
 			Path:    "sublime://{{symbol}}",
 		},
