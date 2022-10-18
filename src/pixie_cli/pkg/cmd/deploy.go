@@ -409,8 +409,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		clusterName = kubeAPIConfig.CurrentContext
 	}
 
+	tmplCloudAddr := cloudAddr
 	if devCloudNS != "" {
-		cloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
+		tmplCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
 	}
 
 	// Fill in template values.
@@ -423,7 +424,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			"name":                 "pixie",
 			"version":              versionString,
 			"deployKey":            deployKey,
-			"cloudAddr":            cloudAddr,
+			"cloudAddr":            tmplCloudAddr,
 			"clusterName":          clusterName,
 			"disableAutoUpdate":    false,
 			"useEtcdOperator":      useEtcdOperator,
