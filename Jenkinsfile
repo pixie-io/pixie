@@ -1150,7 +1150,12 @@ createCluster = { String clusterName ->
 pxDeployForStirlingPerfEval = {
   withCredentials([
     string(
-      credentialsId: 'px-staging-user-api-key',
+      // There are two credentials for perf-evals:
+      // 1. px-staging-user-api-key: staging cloud as pixie org. member.
+      // 2. px-stirling-perf-eval-user-api-key: staging cloud, as "perf-eval" (a different) org.
+      // Currently using (2) above because that isolates the perf evals from updates made to staging
+      // cloud by the cloud team, e.g. plugin scripts running (or not running).
+      credentialsId: 'px-stirling-perf-eval-user-api-key',
       variable: 'THE_PIXIE_CLI_API_KEY'
     )
   ]) {
