@@ -18,306 +18,240 @@
 
 import * as React from 'react';
 
-import { gql } from '@apollo/client';
 import {
   Badge as NamespaceIcon,
   DryCleaning as ServiceIcon,
   GridView as NodeIcon,
   Inventory as PodIcon,
 } from '@mui/icons-material';
-import { Box } from '@mui/material';
 
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
-import { isPixieEmbedded } from 'app/common/embed-context';
-import { PixieCommandIcon as ScriptIcon } from 'app/components';
-import { parse } from 'app/components/command-palette/parser';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { parse, ParseResult, Token } from 'app/components/command-palette/parser';
+import {
+  CommandProvider,
+  CommandProviderResult,
+} from 'app/components/command-palette/providers/command-provider';
+import { ScriptsContext } from 'app/containers/App/scripts-context';
 import {
   GQLAutocompleteFieldResult,
   GQLAutocompleteEntityKind,
 } from 'app/types/schema';
-import { CancellablePromise, makeCancellable } from 'app/utils/cancellable-promise';
 import { Script } from 'app/utils/script-bundle';
-import { highlightMatch, normalize } from 'app/utils/string-search';
 
-import { useEmptyInputScriptProvider } from '.';
-import { CommandCompletion, CommandProvider } from '../command-provider';
-import { getScriptCommandCta } from './script-provider-cta';
+import {
+  useEmptyInputScriptProvider,
+  useMissingScriptProvider,
+} from '.';
+import {
+  CompletionLabel,
+  getFieldSuggestions,
+  getOnSelectSetKeyVal,
+  getSelectedKeyAndValueToken,
+  quoteIfNeeded,
+} from './script-provider-common';
+import { getScriptCommandCta, isScriptCommandValid } from './script-provider-cta';
+import {
+  getFullScriptSuggestions,
+  getScriptArgSuggestions,
+  getScriptArgValueSuggestions,
+} from './script-suggestions';
 
-// A hacky solution until we check by type rather than by arg name in a later change.
-enum CommonArgNames {
-  SCRIPT = 'script',
-  POD = 'pod',
-  SVC = 'service',
-  NAMESPACE = 'namespace',
-  NODE = 'node',
-}
 
-async function getFieldSuggestions(
-  search: string,
-  kind: GQLAutocompleteEntityKind,
-  clusterUID: string,
-  client: PixieAPIClient,
-): Promise<GQLAutocompleteFieldResult> {
-  const query = client.getCloudClient().graphQL.query<{ autocompleteField: GQLAutocompleteFieldResult }>({
-    query: gql`
-      query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID:String) {
-        autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {
-          suggestions {
-            name
-            description
-            matchedIndexes
-            state
-          }
-          hasAdditionalMatches
-        }
-      }
-    `,
-    fetchPolicy: 'no-cache',
-    variables: {
-      input: search,
-      kind,
-      clusterUID,
-    },
-  });
-
-  try {
-    const { data: { autocompleteField } } = await query;
-    return autocompleteField;
-  } catch (err) {
-    console.warn('Something went wrong fetching suggestions, likely transient:', err);
-    return { suggestions: [], hasAdditionalMatches: false };
-  }
-}
-
-function getScriptSuggestions(partial: string, scripts: Map<string, Script>): GQLAutocompleteFieldResult {
-  const scriptIds = [...scripts.keys()];
-  const normalizedInput = normalize(partial);
-  const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
-
-  const ids = !partial ? [...scriptIds] : scriptIds.filter((s) => {
-    const ns = normalize(s);
-    return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
-  });
-
-  // The `px` namespace should appear before all others
-  ids.sort((a, b) => Number(b.startsWith('px/')) - Number(a.startsWith('px/')));
-
-  // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
-  // unless it's the only thing in the list.
-  const scratchIndex = ids.indexOf(SCRATCH_SCRIPT.id);
-  if (scratchIndex !== -1) {
-    ids.splice(scratchIndex, 1);
-    // Don't include SCRATCH in embedded views.
-    if (!isPixieEmbedded()) {
-      ids.unshift(SCRATCH_SCRIPT.id);
-    }
-  }
-
-  const suggestions = ids.map((scriptId) => ({
-    name: scriptId,
-    description: scripts.get(scriptId).description,
-    matchedIndexes: scriptId === SCRATCH_SCRIPT.id ? [] : highlightMatch(partial, scriptId),
-  }));
-
-  // Prefer closest matches
-  suggestions.sort((a, b) => b.matchedIndexes.length - a.matchedIndexes.length);
-
-  return {
-    suggestions: suggestions.slice(0, 5),
-    hasAdditionalMatches: suggestions.length > 5,
-  };
-}
-
-const CompletionLabel = React.memo<{
-  icon: React.ReactNode,
-  input: string,
-  highlights: number[],
-}>(({ icon, input, highlights }) => {
-  const outs: React.ReactNode[] = [];
-  for (let i = 0; i < input.length; i++) {
-    if (highlights.includes(i)) outs.push(<strong key={i}>{input.substring(i, i + 1)}</strong>);
-    else outs.push(<span key={i}>{input.substring(i, i + 1)}</span>);
-  }
-  return (
-    // eslint-disable-next-line react-memo/require-usememo
-    <Box sx={{ display: 'flex', gap: 1, flexFlow: 'row nowrap' }}>
-      {icon}
-      <span>{outs}</span>
-    </Box>
-  );
-});
-CompletionLabel.displayName = 'CompletionLabel';
-
-async function getAutocompleteSuggestions(
-  input: string,
-  selection: [start: number, end: number],
+/**
+ * Get suggestions for a bare value (not attached to a key token) somewhere in the current string.
+ * This is the most complex suggester, as the possibilities depend on what else is already in the full input.
+ *
+ * For example, if the input is `script:px/http_data st` and the caret is at the end, `bare` is `st` here,
+ * suggestions might include `script:px/http_data start_time:` (fill out the argument).
+ * Alternatively, if there's an argument with set `validValues`, and `st` matches one of those, it might also suggest
+ * adding that argument and setting its value to the matched one.
+ *
+ * But if the input is just `pod`, we might suggest `script:px/pod ...`, or any other script that takes `pod` as an arg,
+ * or any script that takes a namespace arg where one of the namespaces happens to be named `pod`, and so on.
+ */
+async function suggestFromBare(
+  parsed: ParseResult,
+  selectedToken: Token,
   clusterUID: string,
   client: PixieAPIClient,
   scripts: Map<string, Script>,
-): Promise<{ completions: CommandCompletion[], hasAdditionalMatches: boolean }> {
-  const parsed = parse(input, selection);
+): Promise<CommandProviderResult> {
+  const script: Script | null = scripts.get(parsed.kvMap.get('script') ?? '') ?? null;
 
-  const selectedKeys = parsed.selectedTokens.filter(t => t.token.type === 'key');
-  const selectedEq = parsed.selectedTokens.filter(t => t.token.type === 'eq');
-  const selectedValues = parsed.selectedTokens.filter(t => t.token.type === 'value');
+  // If there is already a script, its arguments all come into play.
+  const argSuggestions = script
+    ? await getScriptArgSuggestions(parsed, selectedToken, clusterUID, client, script)
+    : { completions: [], hasAdditionalMatches: false };
 
-  // Only suggest something if the selection covers exactly one significant token.
-  if (selectedKeys.length + selectedValues.length > 1) {
-    // TODO(nick): If the selection is just a bunch of `value`+`none` tokens, we could suggest as if they were combined.
-    return { completions: [], hasAdditionalMatches: false };
-  }
+  const valueSuggestions = script
+    ? getScriptArgValueSuggestions(parsed, selectedToken, script)
+    : { completions: [], hasAdditionalMatches: false };
 
-  // A key token sets `relatedToken` to the value token, if it exists. Both eq and value tokens link to their key token.
-  const keyToken = selectedKeys[0]?.token
-    ?? selectedValues[0]?.token.relatedToken
-    ?? selectedEq[0]?.token.relatedToken
-    ?? null;
+  const hasAdditionalMatches = argSuggestions.hasAdditionalMatches || valueSuggestions.hasAdditionalMatches;
 
-  const valueToken = selectedValues[0]?.token
-    ?? selectedKeys[0]?.token.relatedToken
-    ?? selectedEq[0]?.token.relatedToken?.relatedToken
-    ?? null;
+  return {
+    providerName: 'Scripts',
+    completions: [
+      ...argSuggestions.completions,
+      ...valueSuggestions.completions,
+    ],
+    hasAdditionalMatches,
+  };
+}
 
-  if (valueToken && !keyToken) {
-    // TODO(nick): It's a bare value. We can suggest a key, or a key:value if the bare value resembles a known type.
-    //   For example, `px/http` -> `script:px/http_data`; `script:px/pod p` -> `script:px/pod pod:`; `` -> `script:`
-    //   GQLAutocompleteEntityKind.AEK_UNKNOWN might work here? If it reliably returns `kind`, that is.
-    const existingKeys = new Set(...(parsed.kvMap?.keys() ?? []));
-    existingKeys.delete(valueToken.value);
+function useSuggestFromValue() {
+  const clusterUID = React.useContext(ClusterContext)?.selectedClusterUID ?? null;
+  const client = React.useContext(PixieAPIContext) as PixieAPIClient;
+  const scripts = React.useContext(ScriptsContext)?.scripts;
+  return React.useCallback((input: string, selection: [number, number]) => {
+    const parsed = parse(input, selection);
+    let valueToken = getSelectedKeyAndValueToken(parsed).valueToken ?? null;
+    if (!valueToken) valueToken = parsed.selectedTokens[0].token; // In case the selection was between two spaces
+    return suggestFromBare(parsed, valueToken, clusterUID, client, scripts);
+  }, [scripts, clusterUID, client]);
+}
 
-    if (parsed.kvMap?.get('script')?.length && valueToken.value !== 'script') {
-      // TODO(nick): We already have a script; this is something else. Valid keys are the names of that script's args.
-    }
+async function suggestFromKey(
+  parsed: ParseResult,
+  keyToken: Token,
+  clusterUID: string,
+  client: PixieAPIClient,
+  scripts: Map<string, Script>,
+): Promise<CommandProviderResult> {
+  const valueToken = keyToken.relatedToken ?? null;
 
-    return {
-      completions:[{
-        key: 'bare-value',
-        label: `Bare value: "${valueToken.text}"`,
-        description: null,
-        onSelect: () => {
-          console.info('NYI: Selected bare-value, but there is no meaning for that yet');
-        },
-      }],
-      hasAdditionalMatches: false,
-    };
-  } else if (keyToken) {
-    // TODO(nick): If there's no script yet but the input looks like a pod (for example), suggest `script:px/pod pod:_`.
-    let heading: string;
-    let result: GQLAutocompleteFieldResult;
-    let icon: React.ReactNode;
-    switch (keyToken.value) {
-      case CommonArgNames.SCRIPT:
-        heading = 'PxL Scripts';
-        icon = <ScriptIcon />;
-        result = getScriptSuggestions(valueToken?.text || '', scripts);
-        break;
-      case CommonArgNames.POD:
+  let heading: string;
+  let result: GQLAutocompleteFieldResult;
+  let icon: React.ReactNode;
+
+  if (keyToken.value === 'script') return getFullScriptSuggestions(valueToken?.text || '', scripts);
+
+  const scriptId = parsed.kvMap?.get('script');
+  if (scriptId && scripts.has(scriptId)) {
+    // We do have a script, and this isn't the script. Use information about the script's args to issue suggestions.
+    const script = scripts.get(scriptId);
+    const foundArg = script.vis.variables.find(v => v.name === keyToken.value);
+    if (!foundArg) return { providerName: 'Scripts', completions: [], hasAdditionalMatches: false };
+
+    switch (foundArg.type) {
+      case 'PX_POD':
         heading = 'Pods';
         icon = <PodIcon />;
         result = await getFieldSuggestions(
           valueToken?.text || '', GQLAutocompleteEntityKind.AEK_POD, clusterUID, client);
         break;
-      case CommonArgNames.SVC:
+      case 'PX_SERVICE':
         heading = 'Services';
         icon = <ServiceIcon />;
         result = await getFieldSuggestions(
           valueToken?.text || '', GQLAutocompleteEntityKind.AEK_SVC, clusterUID, client);
         break;
-      case CommonArgNames.NAMESPACE:
+      case 'PX_NAMESPACE':
         heading = 'Namespaces';
         icon = <NamespaceIcon />;
         result = await getFieldSuggestions(
           valueToken?.text || '', GQLAutocompleteEntityKind.AEK_NAMESPACE, clusterUID, client);
         break;
-      case CommonArgNames.NODE:
+      case 'PX_NODE':
         heading = 'Nodes';
         icon = <NodeIcon />;
         result = await getFieldSuggestions(
           valueToken?.text || '', GQLAutocompleteEntityKind.AEK_NODE, clusterUID, client);
         break;
       default:
-        // TODO(nick): If `key` matches the script's arguments, check options for that arg. If not, maybe it's partial.
-        return {
-          completions: [{
-            key: 'keyval',
-            label: `Key/value: "${keyToken.text}":"${valueToken?.text ?? '(no value token present)'}"`,
-            description: 'A key/value token pair',
-            onSelect: () => {
-              console.info('NYI: Selected option keyval, but there is no meaning for that yet');
-            },
-          }],
-          hasAdditionalMatches: false,
-        };
+        heading = 'MISSED THIS CASE';
+        icon = <PodIcon />;
+        result = { suggestions: [], hasAdditionalMatches: false };
+        break;
     }
-
-    return {
-      completions: result.suggestions.map((s, i) => ({
-        heading,
-        key: `${heading}_${s.name}_${i}`,
-        label: <CompletionLabel icon={icon} input={s.name} highlights={s.matchedIndexes} />,
-        description: s.description || `One ${heading}, "${s.name}"`,
-        onSelect: () => {
-          // Quote the value if needed
-          const newName = /[\s"]+/.test(s.name) ? `"${s.name.replace(/"/g, '\\"')}"` : s.name;
-
-          // Here, we do have a keyToken, and thus we must also have an eqToken. So, we're replacing the value.
-          const splitIndex = parsed.tokens.findIndex((t) => t.type === 'eq' && t.relatedToken === keyToken);
-
-          const earlierTokens = parsed.tokens.slice(0, splitIndex + 1);
-          const laterTokens = parsed.tokens.slice(valueToken ? valueToken.index + 1 : splitIndex + 1);
-          const prefix = earlierTokens.map(t => t.text).join('') + newName;
-          return [
-            prefix + laterTokens.map(t => t.text).join(''),
-            prefix.length,
-          ];
-        },
-      })),
-      hasAdditionalMatches: result.hasAdditionalMatches,
-    };
-  } else if (input.length) {
-    // Selection doesn't cover anything that makes sense to this suggester, and it wasn't the empty string.
-    // Don't suggest anything in this case.
-    return { completions: [], hasAdditionalMatches: false };
   } else {
-    // Empty input. Handled elsewhere.
-    return { completions: [], hasAdditionalMatches: false };
+    // This function only gets called if there is a script, so getting here means it isn't a known script.
+    return { providerName: 'Scripts', completions: [], hasAdditionalMatches: false };
   }
+
+  return {
+    providerName: 'Scripts',
+    completions: result.suggestions.map((s, i) => ({
+      heading,
+      key: `${heading}_${s.name}_${i}`,
+      label: <CompletionLabel icon={icon} input={s.name} highlights={s.matchedIndexes} />,
+      description: s.description || `One ${heading}, "${s.name}"`,
+      onSelect: getOnSelectSetKeyVal(parsed, keyToken, keyToken.value, s.name),
+    })),
+    hasAdditionalMatches: result.hasAdditionalMatches,
+  };
 }
 
-export const useScriptCommandProvider: CommandProvider = () => {
+function useSuggestFromKeyedValue() {
+  const clusterUID = React.useContext(ClusterContext)?.selectedClusterUID ?? null;
   const client = React.useContext(PixieAPIContext) as PixieAPIClient;
+  const scripts = React.useContext(ScriptsContext)?.scripts;
+  return React.useCallback((input: string, selection: [number, number]) => {
+    const parsed = parse(input, selection);
+    const { keyToken } = getSelectedKeyAndValueToken(parsed);
+    if (!keyToken) throw new Error('Called suggestFromKeyedValue, but there is no key token related to the selection');
+    return suggestFromKey(parsed, keyToken, clusterUID, client, scripts);
+  }, [client, clusterUID, scripts]);
+}
 
-  const clusterContext = React.useContext(ClusterContext);
-  const clusterUID = clusterContext?.selectedClusterUID || null;
-
-  const scriptsContext = React.useContext(ScriptsContext);
-  const scripts = scriptsContext?.scripts;
-
-  const [, setPromise] = React.useState<CancellablePromise<{
-    completions: CommandCompletion[], hasAdditionalMatches: boolean }>>(null);
-
+/**
+ * Provides PxL Script commands, such as `script:px/cluster start_time:-5m`, and understands the nuances involved to
+ * suggest the parts of the command separately.
+ *
+ * Some examples of what it will suggest (the ‸ symbol represents the user's text caret or selection):
+ * `` (empty input) -> `script:px/cluster start_time:-5m‸`, recommends some common commands
+ * `script:px/cluster ‸` -> `script:px/cluster start_time:‸`, discovers missing arguments
+ * `script:px/pod foo‸` -> `script:px/pod pod:foo_pod`, discovers missing arguments with hints
+ * `script:po‸d` -> `script:px/pod pod:‸ start_time:-5m` finishes the script, prefills default arguments, and tabs to
+ *   the first argument that the user needs to fill in. Then, it will suggest completions for that argument.
+ * `pod:foo‸` -> `script:px/pod pod:foo‸`, finds scripts that take args in the input if the script isn't set yet
+ * `foo‸` -> `script:px/foo ...`, `script:px/pod pod:...`, can suggest many things based on what the input matches here
+ * `script:px/namespace namespace:foo‸` -> suggests namespaces directly since that arg for that script accepts them
+ */
+export const useScriptCommandProvider: CommandProvider = () => {
+  const scripts = React.useContext(ScriptsContext)?.scripts;
   const emptyInputProvider = useEmptyInputScriptProvider();
+  const missingScriptProvider = useMissingScriptProvider();
+  const bareValueProvider = useSuggestFromValue();
+  const keyedValueProvider = useSuggestFromKeyedValue();
 
-  return React.useCallback(async (input: string, selection: [start: number, end: number]) => {
+  return React.useCallback(async (input, selection) => {
+    const parsed = parse(input, selection);
+
+    const { keyToken, valueToken } = getSelectedKeyAndValueToken(parsed);
+
+    const selectionTooBroad = keyToken && valueToken && keyToken.relatedToken !== valueToken;
+    const inputIsOneLongString = parsed.tokens.every(({ type }) => type === 'value' || type === 'none');
+    const script = scripts?.get(parsed.kvMap?.get('script') ?? '') ?? null;
+    const commandFullyFilled = isScriptCommandValid(parsed.kvMap ?? new Map(), scripts ?? new Map());
+
+    const cta = getScriptCommandCta(input, selection, scripts);
     if (!input.trim().length) {
+      // With a blank input, offer common fully-filled commands to try.
       return emptyInputProvider(input, selection);
+    } else if (inputIsOneLongString) {
+      // If the entire input is just text, try treating it as one giant value token.
+      const newInput = quoteIfNeeded(parsed.tokens.map(({ text }) => text).join(''));
+      const res = await missingScriptProvider(newInput, [newInput.length, newInput.length]);
+      return { ...res, cta };
+    } else if (selectionTooBroad || (!keyToken && !valueToken && commandFullyFilled)) {
+      // Either selection crosses multiple key:value pairs,
+      // Or it doesn't cross any and the command is already fully valid (all required args exist and are valid)
+      return { providerName: 'Scripts', completions: [], hasAdditionalMatches: false, cta };
+    } else if (!script && (keyToken || valueToken)) {
+      // We don't have a (valid) script, but do have some input. Try to suggest scripts that make sense with the input.
+      const res = await missingScriptProvider(parsed.input, parsed.selection);
+      return { ...res, cta };
+    } else if (keyToken) {
+      // There is a script, and we have either `key:` or `key:value`. This is the simplest scenario.
+      const res = await keyedValueProvider(parsed.input, parsed.selection);
+      return { ...res, cta };
+    } else {
+      // We have a bare string (not part of a key:value pair). This is the most complex scenario.
+      // This also comes up if the caret is between two spaces, or between a space and the start/end of the input.
+      const res = await bareValueProvider(parsed.input, parsed.selection);
+      return { ...res, cta };
     }
-    const newPromise = makeCancellable(
-      getAutocompleteSuggestions(input, selection, clusterUID, client, scripts ?? new Map()),
-    );
-    setPromise((prev) => {
-      prev?.cancel();
-      return newPromise;
-    });
-
-    const result = await newPromise;
-    return {
-      providerName: 'PxL',
-      hasAdditionalMatches: result.hasAdditionalMatches,
-      completions: result.completions,
-      cta: getScriptCommandCta(input, selection, scripts),
-    };
-  }, [clusterUID, client, scripts, emptyInputProvider]);
+  }, [bareValueProvider, emptyInputProvider, missingScriptProvider, keyedValueProvider, scripts]);
 };

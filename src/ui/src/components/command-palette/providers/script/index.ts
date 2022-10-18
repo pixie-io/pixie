@@ -16,5 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Reexport all of them...
+
 export * from './empty-input-provider';
+export * from './missing-script-provider';
 export * from './script-provider';
