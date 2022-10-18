@@ -50,7 +50,6 @@ rules:
   - services
   - events
   - pods/log
-  - viziers
   verbs:
   - "get"
   - "watch"
@@ -67,6 +66,7 @@ rules:
   - secrets
   - endpoints
   - pods
+  - viziers
   verbs:
   - "*"
 ---
