@@ -190,8 +190,6 @@ class FuncObject : public QLObject {
     return arg_types_;
   }
 
-  px::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
-
   static bool IsFuncObject(const QLObjectPtr& ptr) { return ptr->type() == FuncType.type(); }
 
  private:

@@ -21,14 +21,11 @@
 #include <memory>
 #include <utility>
 #include "src/carnot/planner/objects/type_object.h"
-#include "src/carnot/planner/parser/parser.h"
 
 namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
-
-using px::shared::scriptspb::FuncArgsSpec;
 
 StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
     std::string_view name, const std::vector<std::string>& arguments,
@@ -183,25 +180,6 @@ Status FuncObject::ResolveArgAnnotationsToTypes(
     }
   }
   return Status::OK();
-}
-
-FuncArgsSpec FuncObject::CreateFuncArgsSpec() const {
-  FuncArgsSpec spec;
-  for (const auto& arg_name : arguments_) {
-    auto arg = spec.add_args();
-    arg->set_name(arg_name);
-    if (!arg_types_.contains(arg_name)) {
-      LOG(INFO) << absl::Substitute("Can't find '$0' type in function", arg_name);
-    } else {
-      auto type_object = arg_types_.find(arg_name)->second;
-      arg->set_data_type(type_object->data_type());
-      arg->set_semantic_type(type_object->semantic_type());
-    }
-    if (HasDefault(arg_name)) {
-      arg->set_default_value(defaults_.find(arg_name)->second);
-    }
-  }
-  return spec;
 }
 
 }  // namespace compiler
