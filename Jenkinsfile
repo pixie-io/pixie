@@ -1088,6 +1088,7 @@ int evalMinutes = (params.EVAL_MINUTES != null) ? Integer.parseInt(params.EVAL_M
 int profilerMinutes = (params.PROFILER_MINUTES != null) ? Integer.parseInt(params.PROFILER_MINUTES) : 5
 int cleanupClusters = (params.CLEANUP_CLUSTERS != null) ? Integer.parseInt(params.CLEANUP_CLUSTERS) : 1
 String groupName = (params.GROUP_NAME != null) ? params.GROUP_NAME : 'none'
+String machineType = (params.MACHINE_TYPE != null) ? params.MACHINE_TYPE : 'n2-standard-4'
 String experimentTag = (params.EXPERIMENT_TAG != null) ? params.EXPERIMENT_TAG : 'none'
 String gitHashForPerfEval = (params.GIT_HASH_FOR_PERF_EVAL != null) ? params.GIT_HASH_FOR_PERF_EVAL : 'HEAD'
 String imageTagForPerfEval = 'none'
@@ -1141,7 +1142,7 @@ createCluster = { String clusterName ->
     // Uniquify the cluster name based on the retryIdx because retry attempts
     // may fail based on the pre-existing cluster name.
     retryUniqueClusterName = clusterName  + '-' + String.format('%d', retryIdx)
-    sh "${createClusterScript} -S -f -n 1 -c ${retryUniqueClusterName}"
+    sh "${createClusterScript} -S -f -n 1 -c ${retryUniqueClusterName} -m ${machineType}"
     ++retryIdx
   }
 }
