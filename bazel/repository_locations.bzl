@@ -320,6 +320,20 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.1.tar.gz",
         ],
     ),
+    com_github_iovisor_bcc = dict(
+        sha256 = "0fe8e9f0ebac749db7bdc96dfc532fdf34f4f804a2103e4840a5160651ed3bf5",
+        strip_prefix = "bcc-b9cc317740d943173a493f2941f716679c560fa8",
+        urls = [
+            "https://github.com/pixie-io/bcc/archive/b9cc317740d943173a493f2941f716679c560fa8.tar.gz",
+        ],
+    ),
+    com_github_iovisor_bpftrace = dict(
+        sha256 = "b8ebddb930aca0293f4f0f9ffaf3b550eba6e14a5ba3f0f3abbb3028873e5554",
+        strip_prefix = "bpftrace-ad53050229186cb71021bf4d6617e8765c666a3c",
+        urls = [
+            "https://github.com/pixie-io/bpftrace/archive/ad53050229186cb71021bf4d6617e8765c666a3c.tar.gz",
+        ],
+    ),
 )
 
 # To modify one of the forked repos below:
@@ -331,16 +345,6 @@ REPOSITORY_LOCATIONS = dict(
 # Then change the local repo, commit the change, and replace `commit` with your new commit.
 # See LOCAL_REPOSITORY_LOCATIONS for an alternative approach.
 GIT_REPOSITORY_LOCATIONS = dict(
-    com_github_iovisor_bcc = dict(
-        remote = "https://github.com/pixie-io/bcc.git",
-        commit = "b9cc317740d943173a493f2941f716679c560fa8",
-        shallow_since = "1666139145 -0700",
-    ),
-    com_github_iovisor_bpftrace = dict(
-        remote = "https://github.com/pixie-io/bpftrace.git",
-        commit = "ad53050229186cb71021bf4d6617e8765c666a3c",
-        shallow_since = "1666153746 -0700",
-    ),
     com_github_apangin_jattach = dict(
         remote = "https://github.com/pixie-io/jattach.git",
         commit = "fa36a4fa141b4e9486b9126640d54a94c1d36fce",
@@ -351,7 +355,7 @@ GIT_REPOSITORY_LOCATIONS = dict(
 # To use a local repo for local development, update the path to point to your local repo.
 #   ex: path = "/home/user/pixie-io/bcc"
 # then uncomment the lines with `_local_repo(name_of_repo_you_care_about, ...)` in `repositories.bzl` and
-# comment out the corresponding lines with `_git_repo(name_of_repo_you_care_about, ...)`.
+# comment out the corresponding lines with `_bazel_repo(name_of_repo_you_care_about, ...)`.
 # Note that if you do this, you have to handle the building of these repos' artifacts yourself.
 # See `bazel/external/local_dev/{bcc,bpftrace}.BUILD` for the cmake commands for building these repos.
 #
