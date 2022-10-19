@@ -21,6 +21,7 @@ import * as React from 'react';
 import { Typography } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { Link } from 'react-router-dom';
 
 import { VersionInfo } from 'app/components/version-info/version-info';
 
@@ -84,6 +85,7 @@ export const Footer = React.memo<FooterProps>(({
         <div className={classes.text}><VersionInfo /></div>
       </div>
       <div className={classes.right}>
+        <Link to='/credits' className={classes.text}>Credits</Link>
         <Typography variant='subtitle2' className={classes.text}>
           <Copyright />
         </Typography>
