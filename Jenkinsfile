@@ -1186,17 +1186,32 @@ pxDeployForStirlingPerfEval = {
   }
 }
 
-pxCollectPerfInfo = {
-  withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
-    // The subdirectory 'logs' should have been created when un-stashing the repo info.
-    assert fileExists('logs')
+def pxCollectPerfInfo(String clusterName, int evalIdx, int evalMinutes, int profilerMinutes) {
+  withCredentials([
+    string(
+      credentialsId: 'px-stirling-perf-eval-user-api-key',
+      variable: 'THE_PIXIE_CLI_API_KEY'
+    )
+  ]) {
+    withEnv(['PL_CLOUD_ADDR=staging.withpixie.dev:443']) {
+      // These should have been created when un-stashing the repo info.
+      assert fileExists('logs')
+      assert fileExists('logs/pod_resource_usage')
 
-    // Show the cluster name (useful if results are strange and we suspect the wrong
-    // cluster was used for recording perf info).
-    sh 'kubectl config current-context'
+      // Show the cluster name (useful if results are strange and we suspect the wrong
+      // cluster was used for recording perf info).
+      sh 'kubectl config current-context'
 
-    sh "px run pixielabs.ai/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
-    sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
+      sh 'px auth login --use_api_key --api_key ${THE_PIXIE_CLI_API_KEY}'
+      sh "px run -f logs/pod_resource_usage -o json -- --start_time=-${evalMinutes}m 1> logs/perf.jsons 2> logs/perf.jsons.stderr"
+
+      sh "px run px/perf_flamegraph -o json -- --start_time=-${profilerMinutes}m --pct_basis_entity=node --pod=pem 1> logs/stack-traces.jsons 2> logs/stack-traces.jsons.stderr"
+      sh "gcloud container clusters list --project pl-pixies --filter='name:${clusterName}' --format=json | tee logs/cluster-info.json"
+
+      // Save the original results.
+      indexedEvalResultName = String.format('perf-eval-results-%02d', evalIdx)
+      stashOnGCS(indexedEvalResultName, 'logs')
+    }
   }
 }
 
@@ -1264,6 +1279,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
         // The stash on GCS is needed because file system state is volatile in these build stages.
         unstashFromGCS('perf-eval-repo-info')
         assert fileExists('logs/perf_eval_repo_info.bin')
+        assert fileExists('logs/pod_resource_usage')
 
         if (newClusterNeeded) {
           // Default behavior: create a new cluster for this perf eval.
@@ -1287,7 +1303,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
           sh "sleep ${60 * evalMinutes}"
         }
         stage('Collect.') {
-          pxCollectPerfInfo()
+          pxCollectPerfInfo(getCurrentClusterName(clusterName), evalIdx, evalMinutes, profilerMinutes)
         }
         stage('Insert records to perf db.') {
           insertRecordsToPerfDB(evalIdx)
