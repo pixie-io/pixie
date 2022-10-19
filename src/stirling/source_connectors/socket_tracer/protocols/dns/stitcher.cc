@@ -36,6 +36,10 @@ DEFINE_bool(include_respless_dns_requests, false,
 DEFINE_uint64(dns_request_timeout_threshold_milliseconds, 2000,
               "Number of seconds to wait for the in-flight response of a dns request.");
 
+auto current_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch())
+                        .count();
+
 namespace px {
 namespace stirling {
 namespace protocols {
@@ -253,15 +257,12 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
     // append those records at the end of the entries vector.
     auto it = req_frames->begin();
     while (it != req_frames->end()) {
-      if (!(*it).consumed) {
-        auto current_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                std::chrono::system_clock::now().time_since_epoch())
-                                .count();
-        auto elapsed_seconds = current_time - (*it).timestamp_ns;
+      if (!(it->consumed)) {
+        auto elapsed_seconds = current_time - it->timestamp_ns;
 
         if (elapsed_seconds > FLAGS_dns_request_timeout_threshold_milliseconds) {
           Frame default_resp_frame;
-          default_resp_frame.timestamp_ns = 99;
+          default_resp_frame.timestamp_ns = (it->timestamp_ns) + 1;
           StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
           entries.push_back(record_status.ConsumeValueOrDie());
         }
