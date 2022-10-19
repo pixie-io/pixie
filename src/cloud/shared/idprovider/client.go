@@ -31,17 +31,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/gorilla/sessions"
 	hydra "github.com/ory/hydra-client-go/client"
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
-	kratos "github.com/ory/kratos-client-go/client"
-	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
-	kratosPublic "github.com/ory/kratos-client-go/client/public"
-	kratosModels "github.com/ory/kratos-client-go/models"
+	kratos "github.com/ory/kratos-client-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -100,13 +96,13 @@ type hydraAdminClientService interface {
 }
 
 type kratosPublicClientService interface {
-	Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error)
+	ToSession(context.Context) kratos.V0alpha2ApiApiToSessionRequest
 }
 
 type kratosAdminClientService interface {
-	GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
-	CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error)
-	CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error)
+	AdminGetIdentity(context.Context, string) kratos.V0alpha2ApiApiAdminGetIdentityRequest
+	AdminCreateIdentity(context.Context) kratos.V0alpha2ApiApiAdminCreateIdentityRequest
+	AdminCreateSelfServiceRecoveryLink(context.Context) kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest
 }
 
 // HydraKratosClient implements the Client interface for the a Hydra and Kratos integration.
@@ -159,6 +155,20 @@ func createRuntime(path string, client *http.Client) (*httptransport.Runtime, er
 	), nil
 }
 
+func createKratosClient(host string, client *http.Client) (*kratos.APIClient, error) {
+	u, err := url.Parse(host)
+	if err != nil {
+		return nil, err
+	}
+
+	conf := kratos.NewConfiguration()
+	conf.Host = u.Host
+	conf.Scheme = u.Scheme
+	conf.Servers = kratos.ServerConfigurations{{URL: host}}
+	conf.HTTPClient = client
+	return kratos.NewAPIClient(conf), nil
+}
+
 // NewHydraKratosClientFromConfig creates a new client from a config.
 func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient, error) {
 	var err error
@@ -177,26 +187,27 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 	// We specify the Admin client to avoid confusing bugs because the Public client is held behind a different endpoint.
 	hydraAdminClient := hydra.New(hydraAdminRuntime, strfmt.NewFormats()).Admin
 
-	kratosPublicRuntime, err := createRuntime(cfg.KratosPublicHost, httpClient)
+	// One can theoretically send public requests to the Admin Host but then kratos will
+	// 302 the requests to the public host/port.
+	// For OSS cloud, the kratos public host might not be accessible from within the cluster
+	// so we use an explicit public client that points to the cluster internal kratos public
+	// addr.
+	kratosPublicClient, err := createKratosClient(cfg.KratosPublicHost, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	// We specify the Public client to avoid confusing bugs because the Admin client is held behind a different endpoint.
-	kratosPublicClient := kratos.New(kratosPublicRuntime, strfmt.NewFormats()).Public
 
-	kratosAdminRuntime, err := createRuntime(cfg.KratosAdminHost, httpClient)
+	kratosAdminClient, err := createKratosClient(cfg.KratosAdminHost, httpClient)
 	if err != nil {
 		return nil, err
 	}
-	// We specify the Admin client to avoid confusing bugs because the Admin client is held behind a different endpoint.
-	kratosAdminClient := kratos.New(kratosAdminRuntime, strfmt.NewFormats()).Admin
 
 	return &HydraKratosClient{
 		Config:             cfg,
 		httpClient:         httpClient,
 		hydraAdminClient:   hydraAdminClient,
-		kratosPublicClient: kratosPublicClient,
-		kratosAdminClient:  kratosAdminClient,
+		kratosAdminClient:  kratosAdminClient.V0alpha2Api,
+		kratosPublicClient: kratosPublicClient.V0alpha2Api,
 	}, nil
 }
 
@@ -294,12 +305,12 @@ func (c *HydraKratosClient) kratosLoginURL(returnToURL string) (string, error) {
 
 // Whoami contains information about a user.
 type Whoami struct {
-	kratosSession *kratosModels.Session
+	kratosSession *kratos.Session
 }
 
 // ID returns the ID of the whoami.
 func (w *Whoami) ID() string {
-	return strfmt.UUID4(w.kratosSession.Identity.ID).String()
+	return w.kratosSession.Identity.GetId()
 }
 
 // Whoami implements the Kratos whoami flow.
@@ -308,16 +319,11 @@ func (c *HydraKratosClient) Whoami(ctx context.Context, r *http.Request) (*Whoam
 	if cookie == "" {
 		return nil, fmt.Errorf("Request cookie is empty")
 	}
-	params := &kratosPublic.WhoamiParams{
-		Context: ctx,
-		Cookie:  &cookie,
-	}
-	// Auth is nil because we pass auth through the cookie.
-	resp, err := c.kratosPublicClient.Whoami(params, nil)
+	session, _, err := c.kratosPublicClient.ToSession(ctx).Cookie(cookie).Execute()
 	if err != nil {
 		return nil, err
 	}
-	return &Whoami{kratosSession: resp.GetPayload()}, nil
+	return &Whoami{kratosSession: session}, nil
 }
 
 // Store the hydraLoginState as a cookie.
@@ -557,20 +563,16 @@ type KratosUserInfo struct {
 
 // GetUserInfo returns the UserInfo for the userID.
 func (c *HydraKratosClient) GetUserInfo(ctx context.Context, userID string) (*KratosUserInfo, error) {
-	params := &kratosAdmin.GetIdentityParams{
-		ID:      userID,
-		Context: ctx,
-	}
-	resp, err := c.kratosAdminClient.GetIdentity(params)
+	id, _, err := c.kratosAdminClient.AdminGetIdentity(ctx, userID).Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	return convertIdentityToKratosUserInfo(resp.Payload)
+	return convertIdentityToKratosUserInfo(id)
 }
 
 // Converts the Kratos internal representation to the KratosUserInfo representation.
-func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUserInfo, error) {
+func convertIdentityToKratosUserInfo(identity *kratos.Identity) (*KratosUserInfo, error) {
 	// Trick to convert the traits map into a struct.
 	s, err := json.Marshal(identity.Traits)
 	if err != nil {
@@ -582,7 +584,7 @@ func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUs
 	if err != nil {
 		return nil, err
 	}
-	k.KratosID = strfmt.UUID4(identity.ID).String()
+	k.KratosID = identity.GetId()
 
 	return k, nil
 }
@@ -596,21 +598,15 @@ type CreateIdentityResponse struct {
 // CreateIdentity creates an identity for the comparable email.
 func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error) {
 	schemaID := viper.GetString("kratos_schema_id")
-	idResp, err := c.kratosAdminClient.CreateIdentity(&kratosAdmin.CreateIdentityParams{
-		Context: ctx,
-		Body: &kratosModels.CreateIdentity{
-			SchemaID: &schemaID,
-			Traits: &KratosUserInfo{
-				Email: email,
-			},
-		},
-	})
 
+	body := kratos.NewAdminCreateIdentityBody(schemaID, map[string]interface{}{"email": email})
+	idResp, _, err := c.kratosAdminClient.AdminCreateIdentity(ctx).AdminCreateIdentityBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
+
 	return &CreateIdentityResponse{
-		AuthProviderID:   strfmt.UUID4(idResp.Payload.ID).String(),
+		AuthProviderID:   idResp.GetId(),
 		IdentityProvider: "kratos",
 	}, nil
 }
@@ -627,22 +623,13 @@ type CreateInviteLinkForIdentityResponse struct {
 
 // CreateInviteLinkForIdentity creates a Kratos recovery link for the identity, which can act like a one-time use invitelink.
 func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error) {
-	var identityID strfmt.UUID4
-	if err := identityID.UnmarshalText([]byte(req.AuthProviderID)); err != nil {
-		return nil, err
-	}
-	recovery, err := c.kratosAdminClient.CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
-		Context: ctx,
-		Body: &kratosModels.CreateRecoveryLink{
-			ExpiresIn:  viper.GetString("kratos_recovery_link_lifetime"),
-			IdentityID: kratosModels.UUID(identityID),
-		},
-	})
-
+	body := kratos.NewAdminCreateSelfServiceRecoveryLinkBody(req.AuthProviderID)
+	body.SetExpiresIn(viper.GetString("kratos_recovery_link_lifetime"))
+	recovery, _, err := c.kratosAdminClient.AdminCreateSelfServiceRecoveryLink(ctx).AdminCreateSelfServiceRecoveryLinkBody(*body).Execute()
 	if err != nil {
 		return nil, err
 	}
 	return &CreateInviteLinkForIdentityResponse{
-		InviteLink: *recovery.Payload.RecoveryLink,
+		InviteLink: recovery.GetRecoveryLink(),
 	}, nil
 }

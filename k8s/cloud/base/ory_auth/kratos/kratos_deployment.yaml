@@ -44,7 +44,7 @@ spec:
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.5.5
+        image: oryd/kratos:v0.10.1
         resources: {}
         volumeMounts:
         - mountPath: /etc/config/kratos
@@ -95,7 +95,7 @@ spec:
           value: $(AUTH_LOGIN_URL)/
         - name: HYDRA_LOGIN_URL
           value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
-        - name: SELFSERVICE_WHITELISTED_RETURN_URLS
+        - name: SELFSERVICE_ALLOWED_RETURN_URLS
           value: $(FRONTEND_URL)/,$(HYDRA_LOGIN_URL)
         # The settings UI is where recovery and invite links redirect when resetting password.
         # All other user settings must be changed via the Pixie API, not the self-service flow
@@ -113,7 +113,7 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.5.5
+        image: oryd/kratos:v0.10.1
         ports:
         - containerPort: 4433
         - containerPort: 4434

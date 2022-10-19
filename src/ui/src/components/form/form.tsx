@@ -191,6 +191,8 @@ export const Form: React.FC<FormStructure> = ({
           variant='contained'
           type='submit'
           color='primary'
+          name='method'
+          value='password'
         >
           {submitBtnText}
         </Button>

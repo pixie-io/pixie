@@ -19,47 +19,53 @@
 package idprovider
 
 import (
-	"errors"
+	"context"
+	"net/http"
 
-	"github.com/go-openapi/runtime"
-	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
-	kratosPublic "github.com/ory/kratos-client-go/client/public"
-	kratosModels "github.com/ory/kratos-client-go/models"
+	kratos "github.com/ory/kratos-client-go"
 )
 
-// Implements the kratosAdminClient interface.
-type fakeKratosAdminClient struct {
-	updateIdentityFn *func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
-	getIdentityFn    *func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
+type kratosFakeAPI struct {
+	kratos.V0alpha2Api
+
+	userID       string
+	recoveryLink string
 }
 
-func (ka *fakeKratosAdminClient) GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
-	if ka.getIdentityFn == nil {
-		return nil, errors.New("not implemented")
+func (k kratosFakeAPI) ToSession(ctx context.Context) kratos.V0alpha2ApiApiToSessionRequest {
+	return kratos.V0alpha2ApiApiToSessionRequest{
+		ApiService: k,
 	}
-
-	return (*ka.getIdentityFn)(params)
 }
 
-func (ka *fakeKratosAdminClient) CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (ka *fakeKratosAdminClient) CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Implements the kratosPublicClientService interface.
-type fakeKratosPublicClient struct {
-	userID string
-}
-
-func (kp *fakeKratosPublicClient) Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error) {
-	return &kratosPublic.WhoamiOK{
-		Payload: &kratosModels.Session{
-			Identity: &kratosModels.Identity{
-				ID: kratosModels.UUID(kp.userID),
-			},
+func (k kratosFakeAPI) ToSessionExecute(r kratos.V0alpha2ApiApiToSessionRequest) (*kratos.Session, *http.Response, error) {
+	return &kratos.Session{
+		Identity: kratos.Identity{
+			Id: k.userID,
 		},
-	}, nil
+	}, nil, nil
+}
+
+func (k kratosFakeAPI) AdminCreateIdentity(ctx context.Context) kratos.V0alpha2ApiApiAdminCreateIdentityRequest {
+	return kratos.V0alpha2ApiApiAdminCreateIdentityRequest{
+		ApiService: k,
+	}
+}
+
+func (k kratosFakeAPI) AdminCreateIdentityExecute(r kratos.V0alpha2ApiApiAdminCreateIdentityRequest) (*kratos.Identity, *http.Response, error) {
+	return &kratos.Identity{
+		Id: k.userID,
+	}, nil, nil
+}
+
+func (k kratosFakeAPI) AdminCreateSelfServiceRecoveryLink(ctx context.Context) kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest {
+	return kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest{
+		ApiService: k,
+	}
+}
+
+func (k kratosFakeAPI) AdminCreateSelfServiceRecoveryLinkExecute(r kratos.V0alpha2ApiApiAdminCreateSelfServiceRecoveryLinkRequest) (*kratos.SelfServiceRecoveryLink, *http.Response, error) {
+	return &kratos.SelfServiceRecoveryLink{
+		RecoveryLink: k.recoveryLink,
+	}, nil, nil
 }

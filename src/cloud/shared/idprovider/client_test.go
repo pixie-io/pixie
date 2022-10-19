@@ -25,17 +25,12 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/go-openapi/strfmt"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/sessions"
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
-	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
-	kratosModels "github.com/ory/kratos-client-go/models"
+	kratos "github.com/ory/kratos-client-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	mock_idprovider "px.dev/pixie/src/cloud/shared/idprovider/mock"
 )
 
 func makeClient(t *testing.T) (*HydraKratosClient, func()) {
@@ -51,8 +46,6 @@ type testClientConfig struct {
 	hydraBrowserURL         string
 	hydraConsentPath        string
 	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
-	updateIdentityFn        *func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
-	getIdentityFn           *func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
 }
 
 func fillDefaults(p *testClientConfig) *testClientConfig {
@@ -124,18 +117,15 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 			redirect:                p.hydraBrowserURL + p.hydraConsentPath,
 			acceptConsentRequestFn:  &acceptConsentRequestFn,
 		},
-		kratosPublicClient: &fakeKratosPublicClient{},
-		kratosAdminClient: &fakeKratosAdminClient{
-			getIdentityFn:    p.getIdentityFn,
-			updateIdentityFn: p.updateIdentityFn,
-		},
+		kratosPublicClient: &kratosFakeAPI{},
+		kratosAdminClient:  &kratosFakeAPI{},
 	}, hydraPublicHostFake.Close
 }
 
 func TestWhoami(t *testing.T) {
 	client := HydraKratosClient{}
 
-	kratosPublicClient := &fakeKratosPublicClient{userID: "1234"}
+	kratosPublicClient := &kratosFakeAPI{userID: "1234"}
 	client.kratosPublicClient = kratosPublicClient
 
 	r := &http.Request{}
@@ -254,9 +244,9 @@ func TestAcceptHydraLogin(t *testing.T) {
 
 	// Fake whoami response.
 	whoami := &Whoami{
-		kratosSession: &kratosModels.Session{
-			Identity: &kratosModels.Identity{
-				ID: kratosModels.UUID("user"),
+		kratosSession: &kratos.Session{
+			Identity: kratos.Identity{
+				Id: "user",
 			},
 		},
 	}
@@ -458,29 +448,9 @@ func Test_CreateIdentity(t *testing.T) {
 	c, cleanup := makeClient(t)
 	defer cleanup()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	d := mock_idprovider.NewMockkratosAdminClientService(ctrl)
-	c.kratosAdminClient = d
-
-	var idStruct strfmt.UUID4
-	require.NoError(t, idStruct.UnmarshalText([]byte("08c254cb-741b-4088-9fa4-19806efe497a")))
-
-	schemaID := ""
-
-	d.EXPECT().CreateIdentity(&kratosAdmin.CreateIdentityParams{
-		Context: context.Background(),
-		Body: &kratosModels.CreateIdentity{
-			SchemaID: &schemaID,
-			Traits:   &KratosUserInfo{Email: "blahblah@gmail.com"},
-		},
-	}).
-		Return(&kratosAdmin.CreateIdentityCreated{
-			Payload: &kratosModels.Identity{
-				ID: kratosModels.UUID(idStruct),
-			},
-		}, nil)
+	c.kratosAdminClient = kratosFakeAPI{
+		userID: "08c254cb-741b-4088-9fa4-19806efe497a",
+	}
 
 	ident, err := c.CreateIdentity(context.Background(), "blahblah@gmail.com")
 	require.NoError(t, err)
@@ -492,28 +462,10 @@ func Test_CreateInviteLinkForIdentity(t *testing.T) {
 	c, cleanup := makeClient(t)
 	defer cleanup()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	d := mock_idprovider.NewMockkratosAdminClientService(ctrl)
-	c.kratosAdminClient = d
-
-	var idStruct strfmt.UUID4
-	require.NoError(t, idStruct.UnmarshalText([]byte("08c254cb-741b-4088-9fa4-19806efe497a")))
-
 	link := "https://work.withpixie.dev/recovery"
-
-	d.EXPECT().CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
-		Context: context.Background(),
-		Body: &kratosModels.CreateRecoveryLink{
-			IdentityID: kratosModels.UUID(idStruct),
-		},
-	}).
-		Return(&kratosAdmin.CreateRecoveryLinkOK{
-			Payload: &kratosModels.RecoveryLink{
-				RecoveryLink: &link,
-			},
-		}, nil)
+	c.kratosAdminClient = kratosFakeAPI{
+		recoveryLink: link,
+	}
 
 	linkResp, err := c.CreateInviteLinkForIdentity(context.Background(), &CreateInviteLinkForIdentityRequest{
 		AuthProviderID: "08c254cb-741b-4088-9fa4-19806efe497a",

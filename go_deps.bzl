@@ -34,12 +34,6 @@ def pl_go_dependencies():
     )
 
     go_repository(
-        name = "com_github_agnivade_levenshtein",
-        importpath = "github.com/agnivade/levenshtein",
-        sum = "h1:3oJU7J3FGFmyhn8KHjmVaZCN5hxTr7GxgRue+sxIXdQ=",
-        version = "v1.0.1",
-    )
-    go_repository(
         name = "com_github_ajg_form",
         importpath = "github.com/ajg/form",
         sum = "h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=",
@@ -126,12 +120,6 @@ def pl_go_dependencies():
         version = "v0.0.0-20190306092124-e2d15f34fcf9",
     )
 
-    go_repository(
-        name = "com_github_andreyvit_diff",
-        importpath = "github.com/andreyvit/diff",
-        sum = "h1:bvNMNQO63//z+xNgfBlViaCIJKLlCJ6/fmUseuG0wVQ=",
-        version = "v0.0.0-20170406064948-c7f18ee00883",
-    )
     go_repository(
         name = "com_github_andybalholm_brotli",
         importpath = "github.com/andybalholm/brotli",
@@ -2576,8 +2564,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_ory_kratos_client_go",
         importpath = "github.com/ory/kratos-client-go",
-        sum = "h1:GHfgWVYqJwYj7aitzLOpy8aiTfywb/GjOVJc3AUuQmI=",
-        version = "v0.5.4-alpha.1",
+        sum = "h1:kSRk+0leCJ1nPMS+FPho8b9WMzrKNpgszvta0Xo32QU=",
+        version = "v0.10.1",
     )
 
     go_repository(
@@ -3084,12 +3072,6 @@ def pl_go_dependencies():
         version = "v4.11.0",
     )
 
-    go_repository(
-        name = "com_github_vektah_gqlparser",
-        importpath = "github.com/vektah/gqlparser",
-        sum = "h1:ZsyLGn7/7jDNI+y4SEhI4yAxRChlv15pUHMjijT+e68=",
-        version = "v1.1.2",
-    )
     go_repository(
         name = "com_github_vishvananda_netlink",
         importpath = "github.com/vishvananda/netlink",

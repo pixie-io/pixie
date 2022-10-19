@@ -18,11 +18,14 @@
 
 import type * as React from 'react';
 
-import { PublicApiFactory } from '@ory/kratos-client';
+import {
+  UiNode, UiNodeAttributes, UiNodeGroupEnum, UiNodeInputAttributes,
+  UiNodeTypeEnum, V0alpha2ApiFactory,
+} from '@ory/kratos-client';
 import { UserManager } from 'oidc-client';
 import * as QueryString from 'query-string';
 
-import { FormStructure } from 'app/components';
+import { FormField, FormStructure } from 'app/components';
 import { HydraInvitationForm } from 'app/containers/admin/hydra-invitation-form';
 import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-buttons';
 import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
@@ -32,7 +35,7 @@ import { CallbackArgs, getSignupArgs, getLoginArgs } from './callback-url';
 export const PasswordError = new Error('Kratos identity server error: Password method not found in flows.');
 export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
 
-const kratosClient = PublicApiFactory(null, '/oauth/kratos');
+const kratosClient = V0alpha2ApiFactory(null, '/oauth/kratos');
 
 // Renders a form with an error and no fields.
 const displayErrorFormStructure = (error: Error): FormStructure => ({
@@ -46,6 +49,37 @@ const displayErrorFormStructure = (error: Error): FormStructure => ({
     window.location.href = '/auth/login';
   },
 });
+
+function isInputAttributes(attr: UiNodeAttributes): attr is UiNodeInputAttributes {
+  return attr.node_type === UiNodeTypeEnum.Input;
+}
+
+function nodeToFormField(node: UiNode): FormField | null {
+  if (!isInputAttributes(node.attributes)) {
+    return null;
+  }
+  // We render our own form button.
+  if (node.attributes.type === 'submit') {
+    return null;
+  }
+  return {
+    disabled: node.attributes.disabled,
+    messages: node.messages,
+    name: node.attributes.name,
+    pattern: node.attributes.pattern,
+    required: node.attributes.required,
+    type: node.attributes.type,
+    value: node.attributes.value,
+  };
+}
+
+function nodesToFormFields(nodes: Array<UiNode>): Array<FormField> {
+  return nodes
+    .filter(node => node.type === UiNodeTypeEnum.Input)
+    .filter(node => node.group === UiNodeGroupEnum.Password || node.group === UiNodeGroupEnum.Default)
+    .map(nodeToFormField)
+    .filter(node => node);
+}
 
 export const HydraClient = {
   userManager: new UserManager({
@@ -108,15 +142,13 @@ export const HydraClient = {
       return displayErrorFormStructure(FlowIDError);
     }
     const { data } = await kratosClient.getSelfServiceLoginFlow(flow);
-    const passwordMethods = data.methods.password;
-    if (passwordMethods == null) {
-      return displayErrorFormStructure(PasswordError);
-    }
 
     return {
-      ...passwordMethods.config,
+      action: data.ui.action,
+      method: data.ui.method,
+      errors: data.ui.messages,
+      fields: nodesToFormFields(data.ui.nodes),
       submitBtnText: 'Login',
-      errors: passwordMethods.config.messages,
       // Kratos and browser redirects limits us to submit the login form
       // through an XmlHttpRequest, the default HTML Form submit behavior.
       defaultSubmit: true,
@@ -130,15 +162,13 @@ export const HydraClient = {
       return displayErrorFormStructure(FlowIDError);
     }
     const { data } = await kratosClient.getSelfServiceSettingsFlow(flow);
-    const passwordMethods = data.methods.password;
-    if (passwordMethods == null) {
-      return displayErrorFormStructure(PasswordError);
-    }
 
     return {
-      ...passwordMethods.config,
+      action: data.ui.action,
+      method: data.ui.method,
+      errors: data.ui.messages,
+      fields: nodesToFormFields(data.ui.nodes),
       submitBtnText: 'Change Password',
-      errors: passwordMethods.config.messages,
       // Kratos and browser redirects limits us to submit the login form
       // through an XmlHttpRequest, the default HTML Form submit behavior.
       defaultSubmit: true,

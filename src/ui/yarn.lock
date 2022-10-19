@@ -3588,12 +3588,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ory/kratos-client@npm:^v0.5.5-alpha.4":
-  version: 0.5.5-alpha.4
-  resolution: "@ory/kratos-client@npm:0.5.5-alpha.4"
+"@ory/kratos-client@npm:^v0.10.1":
+  version: 0.10.1
+  resolution: "@ory/kratos-client@npm:0.10.1"
   dependencies:
-    axios: ^0.19.2
-  checksum: 2bc6fd1b2c57c10fa4f6d7e40367a6ce79ba2852bff6bac2f9a0bbb6026eab25ce3dfd088e52f013304a90f18bd1881b42f86afa04addb9686124278652b2f81
+    axios: ^0.21.4
+  checksum: 1c2283629904be0a8ab91a9b7e6c91c277e10f892bbe47a39eb9cbf6940b344477473f16dc93f7b12b265727b8fa033fd8a64bfd1f560179497c4b6ea1146b8d
   languageName: node
   linkType: hard
 
@@ -3618,7 +3618,7 @@ __metadata:
     "@mui/styles": ^5.1.0
     "@mui/system": ^5.1.0
     "@mui/utils": ^5.4.4
-    "@ory/kratos-client": ^v0.5.5-alpha.4
+    "@ory/kratos-client": ^v0.10.1
     "@testing-library/react": ^13.2.0
     "@testing-library/react-hooks": ^8.0.0
     "@types/jest": ^27.0.2
