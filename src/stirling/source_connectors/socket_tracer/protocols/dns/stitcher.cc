@@ -262,7 +262,8 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 
         if (elapsed_seconds > FLAGS_dns_request_timeout_threshold_milliseconds) {
           Frame default_resp_frame;
-          default_resp_frame.timestamp_ns = (it->timestamp_ns) + 1;
+          default_resp_frame.timestamp_ns =
+              (it->timestamp_ns) + FLAGS_dns_request_timeout_threshold_milliseconds;
           StatusOr<Record> record_status = ProcessReqRespPair(*it, default_resp_frame);
           entries.push_back(record_status.ConsumeValueOrDie());
         }
