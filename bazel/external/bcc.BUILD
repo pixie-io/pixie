@@ -31,9 +31,12 @@ cmake(
         "-l`nproc`",
     ],
     cache_entries = {
+        "CMAKE_USE_LIBBPF_PACKAGE": "ON",
         "ENABLE_EXAMPLES": "OFF",
         "ENABLE_MAN": "OFF",
         "ENABLE_TESTS": "OFF",
+        "LIBBPF_INCLUDE_DIR": "$EXT_BUILD_DEPS/libbpf/include",
+        "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
     },
     includes = [
         "bcc/compat",
@@ -61,4 +64,5 @@ cmake(
         "clang_frontend",
     ],
     visibility = ["//visibility:public"],
+    deps = ["@com_github_libbpf_libbpf//:libbpf"],
 )

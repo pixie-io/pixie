@@ -42,13 +42,15 @@ cmake(
         "ENABLE_LIBDW": "OFF",
         "ENABLE_MAN": "OFF",
 
-        # Provide paths to dependent binaries: bcc and libcereal.
+        # Provide paths to dependent binaries: libbpf, bcc and libcereal.
         # Notice that bcc and libceral are in the bazel deps below as well.
         # $EXT_BUILD_DEPS is a macro that points to where dependencies are built.
         "LIBBCC_BPF_LIBRARIES": "$EXT_BUILD_DEPS/bcc/lib/libbcc_bpf.a",
         "LIBBCC_INCLUDE_DIRS": "$EXT_BUILD_DEPS/bcc/include",
         "LIBBCC_LIBRARIES": "$EXT_BUILD_DEPS/bcc/lib/libbcc.a",
         "LIBBCC_LOADER_LIBRARY_STATIC": "$EXT_BUILD_DEPS/bcc/lib/libbcc-loader-static.a",
+        "LIBBPF_INCLUDE_DIRS": "$EXT_BUILD_DEPS/libbpf/include",
+        "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
         "LIBCEREAL_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
     },
     lib_source = ":bpftrace_source",
@@ -73,5 +75,6 @@ cmake(
     deps = [
         "@com_github_USCiLab_cereal//:cereal",
         "@com_github_iovisor_bcc//:bcc",
+        "@com_github_libbpf_libbpf//:libbpf",
     ],
 )

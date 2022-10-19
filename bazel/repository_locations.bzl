@@ -333,13 +333,13 @@ REPOSITORY_LOCATIONS = dict(
 GIT_REPOSITORY_LOCATIONS = dict(
     com_github_iovisor_bcc = dict(
         remote = "https://github.com/pixie-io/bcc.git",
-        commit = "665ef026d27e0e066d0cd1816ebd1ab63ce8c1ef",
-        shallow_since = "1656825375 -0700",
+        commit = "b9cc317740d943173a493f2941f716679c560fa8",
+        shallow_since = "1666139145 -0700",
     ),
     com_github_iovisor_bpftrace = dict(
         remote = "https://github.com/pixie-io/bpftrace.git",
-        commit = "9dd8045d2b7a6971634b877686298135e2004e86",
-        shallow_since = "1655490642 -0700",
+        commit = "ad53050229186cb71021bf4d6617e8765c666a3c",
+        shallow_since = "1666153746 -0700",
     ),
     com_github_apangin_jattach = dict(
         remote = "https://github.com/pixie-io/jattach.git",
