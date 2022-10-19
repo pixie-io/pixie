@@ -45,7 +45,6 @@ metadata:
 rules:
 - apiGroups:
   - ""
-  - px.dev
   resources:
   - services
   - events
@@ -62,6 +61,7 @@ rules:
   - "*"
 - apiGroups:
   - ""
+  - px.dev
   resources:
   - secrets
   - endpoints
