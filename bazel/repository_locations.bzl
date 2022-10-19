@@ -313,6 +313,13 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/googleapis/googleapis/archive/2f9af297c84c55c8b871ba4495e01ade42476c92.tar.gz",
         ],
     ),
+    com_github_libbpf_libbpf = dict(
+        sha256 = "3d6afde67682c909e341bf194678a8969f17628705af25f900d5f68bd299cb03",
+        strip_prefix = "libbpf-1.0.1",
+        urls = [
+            "https://github.com/libbpf/libbpf/archive/refs/tags/v1.0.1.tar.gz",
+        ],
+    ),
 )
 
 # To modify one of the forked repos below:
