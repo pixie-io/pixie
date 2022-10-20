@@ -71,7 +71,6 @@ class SchemaHooks:
                         name, enum, schema, type_, case.query, ParamType.QUERY
                     )
                 # todo @benkilimnik: generate cookies, headers
-                # todo @benkilimnik: loop arbitrarily deep into schema. Currently only checking first level
                 # todo @benkilimnik: parse multi-component schemas that have property params for each component
                 return case
 
@@ -129,9 +128,9 @@ class SchemaHooks:
                 return case_attr[name]
             # last resort, assign string value
             if name:
-                self.log.debug(f"{name} |could not be matched. Assigning string...| ")
-                nonpii = self.providers.get_nonpii_provider("string")
-                case_attr[name] = nonpii.template_name
+                self.log.debug(
+                    f"{name} |could not be matched. Assigning string...| ")
+                case_attr[name] = "{{string}}"
 
         def check_for_pii_keywords(self, name: str, schema: Optional[dict], type_: Optional[Union[str, bool]],
                                    case_attr: dict, parameter_type: ParamType) -> Optional[bool]:

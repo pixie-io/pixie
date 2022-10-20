@@ -88,8 +88,9 @@ def parse_args():
     parser.add_argument(
         "--api_specs",
         "-a",
-        required=True,
-        help="Absolute path to folder download openapi specs into. Privy checks if this folder already exists.",
+        required=False,
+        default=Path(__file__).parent,
+        help="Absolute path to folder to download openapi specs into. Privy checks if this folder already exists.",
     )
 
     parser.add_argument(

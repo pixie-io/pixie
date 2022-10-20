@@ -28,6 +28,7 @@ from tqdm_joblib import tqdm_joblib
 from tqdm import tqdm
 from alive_progress import alive_bar
 from schemathesis import DataGenerationMethod
+from schemathesis.specs.openapi.schemas import BaseOpenAPISchema
 from hypothesis import (
     HealthCheck,
     given,
@@ -147,21 +148,19 @@ class PayloadGenerator:
         case_attr = dict(case_attr)
         return case_attr
 
-    @settings(
-        verbosity=Verbosity.quiet,
-        deadline=timedelta(milliseconds=5000),
-        max_examples=1,
-        suppress_health_check=(
-            HealthCheck.too_slow, HealthCheck.data_too_large, HealthCheck.filter_too_much),
-    )
-    @given(data=st.data())
-    def parse_http_methods(self, data, schema, start: float, timeout: int):
+    def parse_http_methods(self, schema: BaseOpenAPISchema, start: float, timeout: int):
         """instantiate synthetic request payload and choose data providers for a given openapi spec"""
-        for path in schema.keys():
-            for http_type in self.http_types:
-                method = schema[path].get(http_type, None)
-                if method:
-                    break
+
+        @settings(
+            verbosity=Verbosity.quiet,
+            deadline=timedelta(milliseconds=500000),
+            max_examples=1,
+            suppress_health_check=(
+                HealthCheck.too_slow, HealthCheck.data_too_large, HealthCheck.filter_too_much),
+        )
+        @given(data=st.data())
+        @schema.parametrize()
+        def generate_fake_data(data: st.DataObject, method) -> None:
             # choose default strategies (data generators in hypothesis) based on schema of api path
             strategy = method.as_strategy()
             # replace default strategies with custom providers via before_generate_case hook in hooks.py,
@@ -181,11 +180,21 @@ class PayloadGenerator:
             # often in pii requests, the parameters are not given pii keywords for security reasons
             # to account for this we insert additional random pii fields in requests we know contain pii
             # until {equalize_to_percentage}% of payloads contain PII
-            self.equalize_pii_distribution(deepcopy(case.path_parameters), deepcopy(case.query))
-            if time.time() - start > timeout:
-                self.log.warning(
-                    f"OpenAPI spec took too long to parse. Timeout of {timeout} reached.")
-                return
+            self.equalize_pii_distribution(case.path_parameters, case.query)
+        # generate data for every API path
+        for path in schema.keys():
+            for http_type in self.http_types:
+                method = schema[path].get(http_type, None)
+                if method:
+                    try:
+                        generate_fake_data(method)
+                        if time.time() - start > timeout:
+                            self.log.warning(
+                                f"HTTP method of OpenAPI spec took too long to parse. Timeout of {timeout} reached.")
+                            return
+                    except Exception:
+                        self.log.warning(traceback.format_exc())
+                        continue
 
     def equalize_pii_distribution(self, path_parameters, query) -> None:
         """insert additional random pii fields into payloads we know contain pii until
@@ -198,13 +207,13 @@ class PayloadGenerator:
             original_path_pii_types = self.hook.deepcopy_pii_types(ParamType.PATH)
             original_query_pii_types = self.hook.deepcopy_pii_types(ParamType.QUERY)
             if path_parameters:
-                pii_path_params = self.generate_pii_case(path_parameters, ParamType.PATH)
+                pii_path_params = self.generate_pii_case(deepcopy(path_parameters), ParamType.PATH)
                 self.route.write_payload_to_csv(
                     pii_path_params, self.hook.has_pii(ParamType.PATH), self.hook.get_pii_types(ParamType.PATH)
                 )
                 self.hook.overwrite_pii_types(ParamType.PATH, original_path_pii_types)
             if query:
-                pii_path_params = self.generate_pii_case(query, ParamType.QUERY)
+                pii_path_params = self.generate_pii_case(deepcopy(query), ParamType.QUERY)
                 self.route.write_payload_to_csv(
                     pii_path_params, self.hook.has_pii(ParamType.QUERY), self.hook.get_pii_types(ParamType.QUERY)
                 )
