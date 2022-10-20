@@ -249,11 +249,10 @@ module.exports = (env, argv) => {
     return webpackConfig;
   }
 
-  const sslDisabled = env && Object.prototype.hasOwnProperty.call(env, 'disable_ssl') && env.disable_ssl;
   // Add the Gateway to the proxy config.
   let gatewayPath = process.env.PL_GATEWAY_URL;
   if (!gatewayPath) {
-    gatewayPath = `http${sslDisabled ? '' : 's'}://${utils.findGatewayProxyPath()}`;
+    throw new Error('Must set PL_GATEWAY_URL when running webpack in dev mode.');
   }
 
   webpackConfig.devServer.proxy.push({
