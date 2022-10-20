@@ -68,8 +68,8 @@ function getYamls(root, environment) {
   // Users can specify the OAUTH environment. Usually this just means
   // setting to "ory_auth", otherwise will default to `environment`.
   const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
-  const oauth = oauthConfigEnv === 'ory-auth'
-    ? utils.readYAMLFile(join(root, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), true)
+  const oauth = oauthConfigEnv === 'ory_auth'
+    ? utils.readYAMLFile(join(root, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), false)
     : findConfig(root, environment, 'oauth_config.yaml', OAUTH_DEFAULTS, true);
 
   // Get client ID for LaunchDarkly, if applicable.
