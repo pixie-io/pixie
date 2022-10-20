@@ -660,23 +660,6 @@ func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUs
 	return k, nil
 }
 
-// UpdateUserInfo sets the userInfo for the user. Note that it doesn't patch, but fully updates so you likely need to GetUserInfo first.
-func (c *HydraKratosClient) UpdateUserInfo(ctx context.Context, userID string, kratosInfo *KratosUserInfo) (*KratosUserInfo, error) {
-	params := &kratosAdmin.UpdateIdentityParams{
-		ID: userID,
-		Body: &kratosModels.UpdateIdentity{
-			Traits: kratosInfo,
-		},
-		Context: ctx,
-	}
-	resp, err := c.kratosAdminClient.UpdateIdentity(params)
-	if err != nil {
-		return nil, err
-	}
-
-	return convertIdentityToKratosUserInfo(resp.Payload)
-}
-
 // CreateIdentityResponse contains relevant information about the Identity that was created.
 type CreateIdentityResponse struct {
 	IdentityProvider string

@@ -41,10 +41,6 @@ func (c *testHydraKratosUserClient) GetUserInfo(ctx context.Context, userID stri
 	return &idprovider.KratosUserInfo{}, nil
 }
 
-func (c *testHydraKratosUserClient) UpdateUserInfo(ctx context.Context, userID string, kratosInfo *idprovider.KratosUserInfo) (*idprovider.KratosUserInfo, error) {
-	return nil, errors.New("not implemented")
-}
-
 func (c *testHydraKratosUserClient) CreateInviteLinkForIdentity(ctx context.Context, req *idprovider.CreateInviteLinkForIdentityRequest) (*idprovider.CreateInviteLinkForIdentityResponse, error) {
 	return nil, errors.New("not implemented")
 }

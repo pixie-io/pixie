@@ -71,12 +71,6 @@ func (ka *fakeKratosAdminClient) CreateRecoveryLink(params *kratosAdmin.CreateRe
 	return nil, errors.New("not implemented")
 }
 
-func convertKratosUserInfoToIdentity(t *testing.T, ui *KratosUserInfo) *kratosModels.Identity {
-	return &kratosModels.Identity{
-		Traits: ui,
-	}
-}
-
 // Implements the hydraAdminClientService interface.
 type fakeHydraAdminClient struct {
 	redirect         string
@@ -620,67 +614,6 @@ func TestHandleLoginPerformsRedirects(t *testing.T) {
 	resp = w.Result()
 	assert.Equal(t, http.StatusFound, w.Code)
 	assert.Equal(t, stripQuery(t, loginURL), stripQuery(t, getRedirectURL(t, resp)))
-}
-
-func TestManageUserInfo(t *testing.T) {
-	email := "a@b.com"
-	plUserID := "123456789"
-	kratosID := "6f41e7a4-12ef-44bd-8bfe-c307a1cf325f"
-	token := "usertoken"
-
-	updateIdentityFn := func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error) {
-		assert.Equal(t, params.ID, plUserID)
-		ui := &KratosUserInfo{
-			Email: email,
-		}
-		assert.Equal(t, params.Body.Traits, ui)
-		return &kratosAdmin.UpdateIdentityOK{
-			Payload: convertKratosUserInfoToIdentity(t, ui),
-		}, nil
-	}
-	introspectOAuth2TokenFn := func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error) {
-		assert.Equal(t, params.Token, token)
-		return &hydraAdmin.IntrospectOAuth2TokenOK{
-			Payload: &hydraModels.OAuth2TokenIntrospection{
-				Sub: plUserID,
-			},
-		}, nil
-	}
-
-	getIdentityFn := func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
-		var idStruct strfmt.UUID4
-		require.NoError(t, idStruct.UnmarshalText([]byte(kratosID)))
-		identy := convertKratosUserInfoToIdentity(t, &KratosUserInfo{
-			Email: email,
-		})
-		identy.ID = kratosModels.UUID(idStruct)
-		assert.Equal(t, params.ID, plUserID)
-		return &kratosAdmin.GetIdentityOK{
-			Payload: identy,
-		}, nil
-	}
-
-	c, cleanup := makeClientFromConfig(t, &testClientConfig{
-		updateIdentityFn:        &updateIdentityFn,
-		introspectOAuth2TokenFn: &introspectOAuth2TokenFn,
-		getIdentityFn:           &getIdentityFn,
-	})
-
-	defer cleanup()
-	_, err := c.UpdateUserInfo(context.Background(), plUserID, &KratosUserInfo{
-		Email: email,
-	})
-	require.NoError(t, err)
-
-	userID, err := c.GetUserIDFromToken(context.Background(), token)
-	require.NoError(t, err)
-	assert.Equal(t, userID, plUserID)
-
-	userInfo, err := c.GetUserInfo(context.Background(), userID)
-	require.NoError(t, err)
-
-	assert.Equal(t, userInfo.KratosID, kratosID)
-	assert.Equal(t, userInfo.Email, email)
 }
 
 func Test_CreateIdentity(t *testing.T) {

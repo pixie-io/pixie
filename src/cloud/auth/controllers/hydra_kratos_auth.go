@@ -41,7 +41,6 @@ func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*
 type HydraKratosUserClient interface {
 	GetUserIDFromToken(ctx context.Context, token string) (string, error)
 	GetUserInfo(ctx context.Context, userID string) (*idprovider.KratosUserInfo, error)
-	UpdateUserInfo(ctx context.Context, userID string, kratosInfo *idprovider.KratosUserInfo) (*idprovider.KratosUserInfo, error)
 	CreateInviteLinkForIdentity(ctx context.Context, req *idprovider.CreateInviteLinkForIdentityRequest) (*idprovider.CreateInviteLinkForIdentityResponse, error)
 	CreateIdentity(ctx context.Context, email string) (*idprovider.CreateIdentityResponse, error)
 }
