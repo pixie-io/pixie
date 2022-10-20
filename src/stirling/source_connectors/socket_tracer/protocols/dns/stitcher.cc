@@ -34,7 +34,8 @@ DEFINE_bool(include_respless_dns_requests, false,
             "If true, use customStitchFrames otherwise uses simple StitchFrames");
 
 DEFINE_uint64(dns_request_timeout_threshold_milliseconds, 2000,
-              "Number of seconds to wait for the in-flight response of a dns request.");
+              "Number of seconds to wait for the in-flight response of a dns request. Depends on "
+              "include_respless_dns_requests.");
 
 auto current_time = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch())
