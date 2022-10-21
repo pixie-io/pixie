@@ -95,32 +95,16 @@ const HydraLoginStateKey string = "hydra_login_state"
 type hydraAdminClientService interface {
 	AcceptConsentRequest(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
 	AcceptLoginRequest(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
-	AcceptLogoutRequest(params *hydraAdmin.AcceptLogoutRequestParams) (*hydraAdmin.AcceptLogoutRequestOK, error)
 	GetConsentRequest(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
-	GetLoginRequest(params *hydraAdmin.GetLoginRequestParams) (*hydraAdmin.GetLoginRequestOK, error)
-	GetLogoutRequest(params *hydraAdmin.GetLogoutRequestParams) (*hydraAdmin.GetLogoutRequestOK, error)
 	IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
 }
+
 type kratosPublicClientService interface {
-	CompleteSelfServiceBrowserSettingsOIDCSettingsFlow(params *kratosPublic.CompleteSelfServiceBrowserSettingsOIDCSettingsFlowParams) error
-	CompleteSelfServiceLoginFlowWithPasswordMethod(params *kratosPublic.CompleteSelfServiceLoginFlowWithPasswordMethodParams) (*kratosPublic.CompleteSelfServiceLoginFlowWithPasswordMethodOK, error)
-	CompleteSelfServiceRegistrationFlowWithPasswordMethod(params *kratosPublic.CompleteSelfServiceRegistrationFlowWithPasswordMethodParams) (*kratosPublic.CompleteSelfServiceRegistrationFlowWithPasswordMethodOK, error)
-
-	GetSelfServiceLoginFlow(params *kratosPublic.GetSelfServiceLoginFlowParams) (*kratosPublic.GetSelfServiceLoginFlowOK, error)
-	GetSelfServiceRecoveryFlow(params *kratosPublic.GetSelfServiceRecoveryFlowParams) (*kratosPublic.GetSelfServiceRecoveryFlowOK, error)
-	GetSelfServiceRegistrationFlow(params *kratosPublic.GetSelfServiceRegistrationFlowParams) (*kratosPublic.GetSelfServiceRegistrationFlowOK, error)
-	GetSelfServiceSettingsFlow(params *kratosPublic.GetSelfServiceSettingsFlowParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.GetSelfServiceSettingsFlowOK, error)
-
-	InitializeSelfServiceBrowserLogoutFlow(params *kratosPublic.InitializeSelfServiceBrowserLogoutFlowParams) error
-
-	InitializeSelfServiceLoginViaBrowserFlow(params *kratosPublic.InitializeSelfServiceLoginViaBrowserFlowParams) error
-	InitializeSelfServiceRecoveryViaBrowserFlow(params *kratosPublic.InitializeSelfServiceRecoveryViaBrowserFlowParams) error
-	InitializeSelfServiceRegistrationViaBrowserFlow(params *kratosPublic.InitializeSelfServiceRegistrationViaBrowserFlowParams) error
 	Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error)
 }
+
 type kratosAdminClientService interface {
 	GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
-	UpdateIdentity(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
 	CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error)
 	CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error)
 }

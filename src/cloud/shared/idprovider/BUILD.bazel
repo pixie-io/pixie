@@ -42,7 +42,11 @@ go_library(
 
 go_test(
     name = "idprovider_test",
-    srcs = ["client_test.go"],
+    srcs = [
+        "client_test.go",
+        "hydra_fake_test.go",
+        "kratos_fake_test.go",
+    ],
     embed = [":idprovider"],
     deps = [
         "//src/cloud/shared/idprovider/mock",

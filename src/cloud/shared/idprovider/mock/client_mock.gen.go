@@ -67,21 +67,6 @@ func (mr *MockhydraAdminClientServiceMockRecorder) AcceptLoginRequest(params int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptLoginRequest", reflect.TypeOf((*MockhydraAdminClientService)(nil).AcceptLoginRequest), params)
 }
 
-// AcceptLogoutRequest mocks base method.
-func (m *MockhydraAdminClientService) AcceptLogoutRequest(params *admin.AcceptLogoutRequestParams) (*admin.AcceptLogoutRequestOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AcceptLogoutRequest", params)
-	ret0, _ := ret[0].(*admin.AcceptLogoutRequestOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AcceptLogoutRequest indicates an expected call of AcceptLogoutRequest.
-func (mr *MockhydraAdminClientServiceMockRecorder) AcceptLogoutRequest(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptLogoutRequest", reflect.TypeOf((*MockhydraAdminClientService)(nil).AcceptLogoutRequest), params)
-}
-
 // GetConsentRequest mocks base method.
 func (m *MockhydraAdminClientService) GetConsentRequest(params *admin.GetConsentRequestParams) (*admin.GetConsentRequestOK, error) {
 	m.ctrl.T.Helper()
@@ -95,36 +80,6 @@ func (m *MockhydraAdminClientService) GetConsentRequest(params *admin.GetConsent
 func (mr *MockhydraAdminClientServiceMockRecorder) GetConsentRequest(params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsentRequest", reflect.TypeOf((*MockhydraAdminClientService)(nil).GetConsentRequest), params)
-}
-
-// GetLoginRequest mocks base method.
-func (m *MockhydraAdminClientService) GetLoginRequest(params *admin.GetLoginRequestParams) (*admin.GetLoginRequestOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLoginRequest", params)
-	ret0, _ := ret[0].(*admin.GetLoginRequestOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLoginRequest indicates an expected call of GetLoginRequest.
-func (mr *MockhydraAdminClientServiceMockRecorder) GetLoginRequest(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoginRequest", reflect.TypeOf((*MockhydraAdminClientService)(nil).GetLoginRequest), params)
-}
-
-// GetLogoutRequest mocks base method.
-func (m *MockhydraAdminClientService) GetLogoutRequest(params *admin.GetLogoutRequestParams) (*admin.GetLogoutRequestOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLogoutRequest", params)
-	ret0, _ := ret[0].(*admin.GetLogoutRequestOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetLogoutRequest indicates an expected call of GetLogoutRequest.
-func (mr *MockhydraAdminClientServiceMockRecorder) GetLogoutRequest(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogoutRequest", reflect.TypeOf((*MockhydraAdminClientService)(nil).GetLogoutRequest), params)
 }
 
 // IntrospectOAuth2Token mocks base method.
@@ -163,166 +118,6 @@ func NewMockkratosPublicClientService(ctrl *gomock.Controller) *MockkratosPublic
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockkratosPublicClientService) EXPECT() *MockkratosPublicClientServiceMockRecorder {
 	return m.recorder
-}
-
-// CompleteSelfServiceBrowserSettingsOIDCSettingsFlow mocks base method.
-func (m *MockkratosPublicClientService) CompleteSelfServiceBrowserSettingsOIDCSettingsFlow(params *public.CompleteSelfServiceBrowserSettingsOIDCSettingsFlowParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteSelfServiceBrowserSettingsOIDCSettingsFlow", params)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CompleteSelfServiceBrowserSettingsOIDCSettingsFlow indicates an expected call of CompleteSelfServiceBrowserSettingsOIDCSettingsFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) CompleteSelfServiceBrowserSettingsOIDCSettingsFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteSelfServiceBrowserSettingsOIDCSettingsFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).CompleteSelfServiceBrowserSettingsOIDCSettingsFlow), params)
-}
-
-// CompleteSelfServiceLoginFlowWithPasswordMethod mocks base method.
-func (m *MockkratosPublicClientService) CompleteSelfServiceLoginFlowWithPasswordMethod(params *public.CompleteSelfServiceLoginFlowWithPasswordMethodParams) (*public.CompleteSelfServiceLoginFlowWithPasswordMethodOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteSelfServiceLoginFlowWithPasswordMethod", params)
-	ret0, _ := ret[0].(*public.CompleteSelfServiceLoginFlowWithPasswordMethodOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CompleteSelfServiceLoginFlowWithPasswordMethod indicates an expected call of CompleteSelfServiceLoginFlowWithPasswordMethod.
-func (mr *MockkratosPublicClientServiceMockRecorder) CompleteSelfServiceLoginFlowWithPasswordMethod(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteSelfServiceLoginFlowWithPasswordMethod", reflect.TypeOf((*MockkratosPublicClientService)(nil).CompleteSelfServiceLoginFlowWithPasswordMethod), params)
-}
-
-// CompleteSelfServiceRegistrationFlowWithPasswordMethod mocks base method.
-func (m *MockkratosPublicClientService) CompleteSelfServiceRegistrationFlowWithPasswordMethod(params *public.CompleteSelfServiceRegistrationFlowWithPasswordMethodParams) (*public.CompleteSelfServiceRegistrationFlowWithPasswordMethodOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CompleteSelfServiceRegistrationFlowWithPasswordMethod", params)
-	ret0, _ := ret[0].(*public.CompleteSelfServiceRegistrationFlowWithPasswordMethodOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CompleteSelfServiceRegistrationFlowWithPasswordMethod indicates an expected call of CompleteSelfServiceRegistrationFlowWithPasswordMethod.
-func (mr *MockkratosPublicClientServiceMockRecorder) CompleteSelfServiceRegistrationFlowWithPasswordMethod(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteSelfServiceRegistrationFlowWithPasswordMethod", reflect.TypeOf((*MockkratosPublicClientService)(nil).CompleteSelfServiceRegistrationFlowWithPasswordMethod), params)
-}
-
-// GetSelfServiceLoginFlow mocks base method.
-func (m *MockkratosPublicClientService) GetSelfServiceLoginFlow(params *public.GetSelfServiceLoginFlowParams) (*public.GetSelfServiceLoginFlowOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelfServiceLoginFlow", params)
-	ret0, _ := ret[0].(*public.GetSelfServiceLoginFlowOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSelfServiceLoginFlow indicates an expected call of GetSelfServiceLoginFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) GetSelfServiceLoginFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfServiceLoginFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).GetSelfServiceLoginFlow), params)
-}
-
-// GetSelfServiceRecoveryFlow mocks base method.
-func (m *MockkratosPublicClientService) GetSelfServiceRecoveryFlow(params *public.GetSelfServiceRecoveryFlowParams) (*public.GetSelfServiceRecoveryFlowOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelfServiceRecoveryFlow", params)
-	ret0, _ := ret[0].(*public.GetSelfServiceRecoveryFlowOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSelfServiceRecoveryFlow indicates an expected call of GetSelfServiceRecoveryFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) GetSelfServiceRecoveryFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfServiceRecoveryFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).GetSelfServiceRecoveryFlow), params)
-}
-
-// GetSelfServiceRegistrationFlow mocks base method.
-func (m *MockkratosPublicClientService) GetSelfServiceRegistrationFlow(params *public.GetSelfServiceRegistrationFlowParams) (*public.GetSelfServiceRegistrationFlowOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelfServiceRegistrationFlow", params)
-	ret0, _ := ret[0].(*public.GetSelfServiceRegistrationFlowOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSelfServiceRegistrationFlow indicates an expected call of GetSelfServiceRegistrationFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) GetSelfServiceRegistrationFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfServiceRegistrationFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).GetSelfServiceRegistrationFlow), params)
-}
-
-// GetSelfServiceSettingsFlow mocks base method.
-func (m *MockkratosPublicClientService) GetSelfServiceSettingsFlow(params *public.GetSelfServiceSettingsFlowParams, authInfo runtime.ClientAuthInfoWriter) (*public.GetSelfServiceSettingsFlowOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSelfServiceSettingsFlow", params, authInfo)
-	ret0, _ := ret[0].(*public.GetSelfServiceSettingsFlowOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSelfServiceSettingsFlow indicates an expected call of GetSelfServiceSettingsFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) GetSelfServiceSettingsFlow(params, authInfo interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSelfServiceSettingsFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).GetSelfServiceSettingsFlow), params, authInfo)
-}
-
-// InitializeSelfServiceBrowserLogoutFlow mocks base method.
-func (m *MockkratosPublicClientService) InitializeSelfServiceBrowserLogoutFlow(params *public.InitializeSelfServiceBrowserLogoutFlowParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitializeSelfServiceBrowserLogoutFlow", params)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InitializeSelfServiceBrowserLogoutFlow indicates an expected call of InitializeSelfServiceBrowserLogoutFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) InitializeSelfServiceBrowserLogoutFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeSelfServiceBrowserLogoutFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).InitializeSelfServiceBrowserLogoutFlow), params)
-}
-
-// InitializeSelfServiceLoginViaBrowserFlow mocks base method.
-func (m *MockkratosPublicClientService) InitializeSelfServiceLoginViaBrowserFlow(params *public.InitializeSelfServiceLoginViaBrowserFlowParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitializeSelfServiceLoginViaBrowserFlow", params)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InitializeSelfServiceLoginViaBrowserFlow indicates an expected call of InitializeSelfServiceLoginViaBrowserFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) InitializeSelfServiceLoginViaBrowserFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeSelfServiceLoginViaBrowserFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).InitializeSelfServiceLoginViaBrowserFlow), params)
-}
-
-// InitializeSelfServiceRecoveryViaBrowserFlow mocks base method.
-func (m *MockkratosPublicClientService) InitializeSelfServiceRecoveryViaBrowserFlow(params *public.InitializeSelfServiceRecoveryViaBrowserFlowParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitializeSelfServiceRecoveryViaBrowserFlow", params)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InitializeSelfServiceRecoveryViaBrowserFlow indicates an expected call of InitializeSelfServiceRecoveryViaBrowserFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) InitializeSelfServiceRecoveryViaBrowserFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeSelfServiceRecoveryViaBrowserFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).InitializeSelfServiceRecoveryViaBrowserFlow), params)
-}
-
-// InitializeSelfServiceRegistrationViaBrowserFlow mocks base method.
-func (m *MockkratosPublicClientService) InitializeSelfServiceRegistrationViaBrowserFlow(params *public.InitializeSelfServiceRegistrationViaBrowserFlowParams) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitializeSelfServiceRegistrationViaBrowserFlow", params)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// InitializeSelfServiceRegistrationViaBrowserFlow indicates an expected call of InitializeSelfServiceRegistrationViaBrowserFlow.
-func (mr *MockkratosPublicClientServiceMockRecorder) InitializeSelfServiceRegistrationViaBrowserFlow(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeSelfServiceRegistrationViaBrowserFlow", reflect.TypeOf((*MockkratosPublicClientService)(nil).InitializeSelfServiceRegistrationViaBrowserFlow), params)
 }
 
 // Whoami mocks base method.
@@ -406,19 +201,4 @@ func (m *MockkratosAdminClientService) GetIdentity(params *admin0.GetIdentityPar
 func (mr *MockkratosAdminClientServiceMockRecorder) GetIdentity(params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentity", reflect.TypeOf((*MockkratosAdminClientService)(nil).GetIdentity), params)
-}
-
-// UpdateIdentity mocks base method.
-func (m *MockkratosAdminClientService) UpdateIdentity(params *admin0.UpdateIdentityParams) (*admin0.UpdateIdentityOK, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateIdentity", params)
-	ret0, _ := ret[0].(*admin0.UpdateIdentityOK)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateIdentity indicates an expected call of UpdateIdentity.
-func (mr *MockkratosAdminClientServiceMockRecorder) UpdateIdentity(params interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentity", reflect.TypeOf((*MockkratosAdminClientService)(nil).UpdateIdentity), params)
 }

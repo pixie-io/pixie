@@ -20,20 +20,17 @@ package idprovider
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
-	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/sessions"
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
 	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
-	kratosPublic "github.com/ory/kratos-client-go/client/public"
 	kratosModels "github.com/ory/kratos-client-go/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,165 +38,6 @@ import (
 	mock_idprovider "px.dev/pixie/src/cloud/shared/idprovider/mock"
 )
 
-// Implements the kratosAdminClient interface.
-type fakeKratosAdminClient struct {
-	updateIdentityFn *func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
-	getIdentityFn    *func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
-}
-
-func (ka *fakeKratosAdminClient) GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
-	if ka.getIdentityFn == nil {
-		return nil, errors.New("not implemented")
-	}
-
-	return (*ka.getIdentityFn)(params)
-}
-
-func (ka *fakeKratosAdminClient) UpdateIdentity(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error) {
-	if ka.updateIdentityFn == nil {
-		return nil, errors.New("not implemented")
-	}
-
-	return (*ka.updateIdentityFn)(params)
-}
-
-func (ka *fakeKratosAdminClient) CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (ka *fakeKratosAdminClient) CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Implements the hydraAdminClientService interface.
-type fakeHydraAdminClient struct {
-	redirect         string
-	consentChallenge string
-
-	oauthClientID           string
-	getConsentRequestFn     *func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
-	acceptConsentRequestFn  *func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
-	acceptLoginRequestFn    *func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
-	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
-}
-
-func (ha *fakeHydraAdminClient) AcceptConsentRequest(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
-	if ha.acceptConsentRequestFn != nil {
-		return (*ha.acceptConsentRequestFn)(params)
-	}
-
-	return &hydraAdmin.AcceptConsentRequestOK{
-		Payload: &hydraModels.CompletedRequest{
-			RedirectTo: &ha.redirect,
-		},
-	}, nil
-}
-
-func (ha *fakeHydraAdminClient) AcceptLoginRequest(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error) {
-	if ha.acceptLoginRequestFn != nil {
-		return (*ha.acceptLoginRequestFn)(params)
-	}
-	return &hydraAdmin.AcceptLoginRequestOK{
-		Payload: &hydraModels.CompletedRequest{
-			RedirectTo: &ha.redirect,
-		},
-	}, nil
-}
-
-func (ha *fakeHydraAdminClient) IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error) {
-	if ha.introspectOAuth2TokenFn == nil {
-		return nil, errors.New("not implemented")
-	}
-
-	return (*ha.introspectOAuth2TokenFn)(params)
-}
-
-func (ha *fakeHydraAdminClient) AcceptLogoutRequest(params *hydraAdmin.AcceptLogoutRequestParams) (*hydraAdmin.AcceptLogoutRequestOK, error) {
-	panic("not implemented")
-}
-
-func (ha *fakeHydraAdminClient) GetConsentRequest(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error) {
-	if ha.getConsentRequestFn != nil {
-		return (*ha.getConsentRequestFn)(params)
-	}
-	return &hydraAdmin.GetConsentRequestOK{
-		Payload: &hydraModels.ConsentRequest{
-			Client: &hydraModels.OAuth2Client{
-				ClientID: ha.oauthClientID,
-			},
-			RequestedScope:               []string{},
-			RequestedAccessTokenAudience: []string{},
-			Challenge:                    &ha.consentChallenge,
-		},
-	}, nil
-}
-
-func (ha *fakeHydraAdminClient) GetLoginRequest(params *hydraAdmin.GetLoginRequestParams) (*hydraAdmin.GetLoginRequestOK, error) {
-	panic("not implemented")
-}
-
-func (ha *fakeHydraAdminClient) GetLogoutRequest(params *hydraAdmin.GetLogoutRequestParams) (*hydraAdmin.GetLogoutRequestOK, error) {
-	panic("not implemented")
-}
-
-// Implements the kratosPublicClientService interface.
-type fakeKratosPublicClient struct {
-	userID string
-}
-
-func (kp *fakeKratosPublicClient) CompleteSelfServiceBrowserSettingsOIDCSettingsFlow(params *kratosPublic.CompleteSelfServiceBrowserSettingsOIDCSettingsFlowParams) error {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) CompleteSelfServiceLoginFlowWithPasswordMethod(params *kratosPublic.CompleteSelfServiceLoginFlowWithPasswordMethodParams) (*kratosPublic.CompleteSelfServiceLoginFlowWithPasswordMethodOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) CompleteSelfServiceRegistrationFlowWithPasswordMethod(params *kratosPublic.CompleteSelfServiceRegistrationFlowWithPasswordMethodParams) (*kratosPublic.CompleteSelfServiceRegistrationFlowWithPasswordMethodOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) GetSelfServiceLoginFlow(params *kratosPublic.GetSelfServiceLoginFlowParams) (*kratosPublic.GetSelfServiceLoginFlowOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) GetSelfServiceRecoveryFlow(params *kratosPublic.GetSelfServiceRecoveryFlowParams) (*kratosPublic.GetSelfServiceRecoveryFlowOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) GetSelfServiceRegistrationFlow(params *kratosPublic.GetSelfServiceRegistrationFlowParams) (*kratosPublic.GetSelfServiceRegistrationFlowOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) GetSelfServiceSettingsFlow(params *kratosPublic.GetSelfServiceSettingsFlowParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.GetSelfServiceSettingsFlowOK, error) {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) InitializeSelfServiceBrowserLogoutFlow(params *kratosPublic.InitializeSelfServiceBrowserLogoutFlowParams) error {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) InitializeSelfServiceLoginViaBrowserFlow(params *kratosPublic.InitializeSelfServiceLoginViaBrowserFlowParams) error {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) InitializeSelfServiceRecoveryViaBrowserFlow(params *kratosPublic.InitializeSelfServiceRecoveryViaBrowserFlowParams) error {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) InitializeSelfServiceRegistrationViaBrowserFlow(params *kratosPublic.InitializeSelfServiceRegistrationViaBrowserFlowParams) error {
-	panic("not implemented")
-}
-
-func (kp *fakeKratosPublicClient) Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error) {
-	return &kratosPublic.WhoamiOK{
-		Payload: &kratosModels.Session{
-			Identity: &kratosModels.Identity{
-				ID: kratosModels.UUID(kp.userID),
-			},
-		},
-	}, nil
-}
 func makeClient(t *testing.T) (*HydraKratosClient, func()) {
 	return makeClientFromConfig(t, &testClientConfig{})
 }
