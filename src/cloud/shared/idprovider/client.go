@@ -25,7 +25,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -335,62 +334,6 @@ func (c *HydraKratosClient) Whoami(ctx context.Context, r *http.Request) (*Whoam
 		return nil, err
 	}
 	return &Whoami{kratosSession: resp.GetPayload()}, nil
-}
-
-// PasswordRegistrationFlow describes what information is necessary to register using a password.
-type PasswordRegistrationFlow struct {
-	flow *kratosModels.RegistrationFlowMethod
-}
-
-// PasswordLoginFlow describes what informasetion is necessary to login with a password.
-type PasswordLoginFlow struct {
-	flow *kratosModels.LoginFlowMethod
-}
-
-// GetPasswordRegistrationFlow returns the registration flow for the oss auth. Used to render the form to register a user.
-func (c *HydraKratosClient) GetPasswordRegistrationFlow(ctx context.Context, flowID string) (*PasswordRegistrationFlow, error) {
-	params := &kratosPublic.GetSelfServiceRegistrationFlowParams{
-		ID:      flowID,
-		Context: ctx,
-	}
-	resp, err := c.kratosPublicClient.GetSelfServiceRegistrationFlow(params)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.GetPayload() == nil {
-		return nil, errors.New("no message received from kratos self-service registration flow endpoint")
-	}
-
-	flow, ok := resp.GetPayload().Methods["password"]
-	if !ok {
-		return nil, errors.New("Does not have password method")
-	}
-	return &PasswordRegistrationFlow{&flow}, nil
-}
-
-// GetPasswordLoginFlow returns the login flow for the oss auth. Used to render the form to login a user.
-func (c *HydraKratosClient) GetPasswordLoginFlow(ctx context.Context, flowID string) (*PasswordLoginFlow, error) {
-	params := &kratosPublic.GetSelfServiceLoginFlowParams{
-		ID:      flowID,
-		Context: ctx,
-	}
-	// Auth is nil because we pass auth through the cookie.
-	resp, err := c.kratosPublicClient.GetSelfServiceLoginFlow(params)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.GetPayload() == nil {
-		return nil, errors.New("no message received from kratos self-service login flow endpoint")
-	}
-
-	flow, ok := resp.GetPayload().Methods["password"]
-	if !ok {
-		return nil, errors.New("Does not have password method")
-	}
-
-	return &PasswordLoginFlow{&flow}, nil
 }
 
 // Store the hydraLoginState as a cookie.
