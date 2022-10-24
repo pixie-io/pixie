@@ -37,7 +37,7 @@ default['antlr']['download_path'] = 'https://www.antlr.org/download/antlr-4.9-co
 default['antlr']['sha256'] = 'bd11b2464bc8aee5f51b119dff617101b77fa729540ee7f08241a6a672e6bc81'
 
 default['bazel']                     = {}
-default['bazel']['version']          = '5.3.1'
+default['bazel']['version']          = '5.3.2'
 default['bazel']['zsh_completions']  =
   "https://raw.githubusercontent.com/bazelbuild/bazel/#{default['bazel']['version']}/scripts/zsh_completion/_bazel"
 default['bazel']['zcomp_sha256']     = '4094dc84add2f23823bc341186adf6b8487fbd5d4164bd52d98891c41511eba4'
@@ -68,7 +68,7 @@ if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-linux-x86_64"
   default['bazel']['sha256'] =
-    'f680a8a35789fb550c966a9a6661349af6993edd5ebf85bfb0f22e968c78115a'
+    '973e213b1e9207ccdd3ea4730c0f92cbef769ec112ac2b84980583220d8db845'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.19.2.linux-amd64.tar.gz'
@@ -176,7 +176,7 @@ elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
   default['bazel']['sha256'] =
-    '003fbf2015644cae941a384d489e1331cc78b630e82b8dea9030c663d56224ec'
+    'fe01824013184899386a4807435e38811949ca13f46713e7fc39c70fa1528a17'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.19.2.darwin-amd64.tar.gz'
