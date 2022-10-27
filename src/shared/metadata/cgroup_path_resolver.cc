@@ -38,8 +38,12 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
 
     // Attempt assuming naming scheme #1.
     std::string base_path = absl::StrCat(sysfs_path, "/cgroup/", cgroup_dir);
+    std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup/");
+
     if (fs::Exists(base_path)) {
       return base_path;
+    } else if (fs::Exists(cgv2_base_path)) {
+      return cgv2_base_path;
     }
   }
 
