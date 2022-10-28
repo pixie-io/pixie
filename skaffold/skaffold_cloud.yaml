@@ -55,10 +55,6 @@ build:
     context: .
     bazel:
       target: //src/cloud/cron_script:cron_script_server_image.tar
-  - image: gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image
-    context: .
-    bazel:
-      target: //src/cloud/jobs/create_admin_user:create_admin_job_image.tar
   - image: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db
     context: .
     bazel:
