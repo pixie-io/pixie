@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-def image_map_with_bundle_version(image_map, replace, tag_latest):
+def image_map_with_bundle_version(image_map, replace):
     with_version = {}
 
     for k, v in image_map.items():
@@ -24,10 +24,6 @@ def image_map_with_bundle_version(image_map, replace, tag_latest):
             image_tag = image_tag.replace(old, new)
         k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
         with_version[k_with_version] = v
-
-        if tag_latest:
-            k_with_version = "{0}:latest".format(image_tag)
-            with_version[k_with_version] = v
 
     return with_version
 

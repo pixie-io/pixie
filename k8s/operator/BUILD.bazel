@@ -38,7 +38,6 @@ container_bundle(
     images = image_map_with_bundle_version(
         image_map = OPERATOR_IMAGE_MAP,
         replace = {},
-        tag_latest = False,
     ),
 )
 
@@ -47,7 +46,6 @@ container_bundle(
     images = image_map_with_bundle_version(
         image_map = OPERATOR_IMAGE_MAP,
         replace = public_image_replacement,
-        tag_latest = False,
     ),
 )
 
