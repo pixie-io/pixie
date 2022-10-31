@@ -59,6 +59,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/jobs/create_admin_user:create_admin_job_image.tar
+  - image: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db
+    context: .
+    bazel:
+      target: //src/cloud/plugin/load_db:plugin_db_updater_image.tar
   - image: gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image
     context: .
     bazel:

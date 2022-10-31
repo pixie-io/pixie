@@ -75,3 +75,6 @@ images:
 - name: gcr.io/pixie-oss/pixie-dev/cloud/job/create_admin_job_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/job/create_admin_job_image
   newTag: latest
+- name: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db
+  newName: gcr.io/pixie-oss/pixie-prod/cloud/plugin/load_db
+  newTag: latest

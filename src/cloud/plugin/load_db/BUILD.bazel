@@ -78,8 +78,7 @@ container_push(
     image = ":plugin_db_updater_image",
     registry = "gcr.io",
     repository = "pixie-oss/pixie-dev/cloud/plugin/load_db",
-    tag = "$(BUNDLE_VERSION)",
-    tags = ["manual"],
+    tag = "{STABLE_BUILD_TAG}",
 )
 
 go_test(

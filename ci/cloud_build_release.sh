@@ -64,11 +64,6 @@ if [[ "$PUBLIC" == "true" ]]; then
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/${image_tag}.json"
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
 
-  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-      //src/cloud/plugin/load_db:push_plugin_db_updater_image
-  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="latest" \
-      //src/cloud/plugin/load_db:push_plugin_db_updater_image
-
   # Write YAMLs + image paths to a tar file to support easy deployment.
   mkdir -p "${repo_path}/pixie_cloud"
   mkdir -p "${repo_path}/pixie_cloud/yamls"
