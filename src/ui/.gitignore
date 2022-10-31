@@ -16,8 +16,10 @@ junit.xml
 # Yarn/npm files.
 node_modules
 yarn-error.log
+
+# We don't use zero installs. See https://next.yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.pnp.*
 .yarn/*
-# !.yarn/cache # Either huge cache in repository OR slow fresh installs locally. Neither is great. Choosing the latter.
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases

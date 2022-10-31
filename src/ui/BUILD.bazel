@@ -30,8 +30,11 @@ UI_DEP_PACKAGES = [
     ".babelrc.json",
     ".yarnrc.yml",
 ] + glob([
-    "node_modules/**",
-    ".yarn/**",
+    ".yarn/patches/**",
+    ".yarn/plugins/**",
+    ".yarn/releases/**",
+    ".yarn/sdks/**",
+    ".yarn/versions/**",
 ])
 
 UI_SRCS = glob([

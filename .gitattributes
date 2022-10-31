@@ -3,4 +3,6 @@
 *_pb.js -diff
 *_pb.d.ts -diff
 go_deps.bzl -diff
+src/ui/.yarn/releases/** -diff
+src/ui/.yarn/plugins/** -diff
 *.pxl linguist-language=python
