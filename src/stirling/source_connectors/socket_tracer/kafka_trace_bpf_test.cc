@@ -200,7 +200,7 @@ KafkaTraceRecord kProduceRecord = {
         "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":\"foo\","
         "\"partitions\":[{\"index\":0,\"message_set\":{\"size\":74}}]}]}",
     .resp =
-        "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":\"kNone\","
+        "{\"topics\":[{\"name\":\"foo\",\"partitions\":[{\"index\":0,\"error_code\":0,"
         "\"base_offset\":0,\"log_append_time_ms\":-1,\"log_start_offset\":0,\"record_errors\":[],"
         "\"error_message\":\"\"}]}],\"throttle_time_ms\":0}"};
 

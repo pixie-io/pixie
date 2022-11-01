@@ -89,7 +89,7 @@ struct ProduceRespPartition {
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
     builder->WriteKV("index", index);
-    builder->WriteKV("error_code", magic_enum::enum_name(static_cast<ErrorCode>(error_code)));
+    builder->WriteKV("error_code", error_code);
     builder->WriteKV("base_offset", base_offset);
     builder->WriteKV("log_append_time_ms", log_append_time_ms);
     builder->WriteKV("log_start_offset", log_start_offset);
