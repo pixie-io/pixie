@@ -19,8 +19,7 @@
 import * as React from 'react';
 
 import { Button } from '@mui/material';
-import { Theme, useTheme } from '@mui/material/styles';
-import { createStyles, makeStyles } from '@mui/styles';
+import { useTheme } from '@mui/material/styles';
 import { useHistory } from 'react-router-dom';
 import {
   data as visData,
@@ -35,11 +34,11 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { WidgetDisplay } from 'app/containers/live/vis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
-import { buildClass } from 'app/utils/build-class';
 import { GaugeLevel, getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
 
 import { formatByDataType, formatBySemType } from '../../format-data/format-data';
 import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
+import { GraphBase } from './graph-base';
 import {
   ColInfo,
   colInfoFromName,
@@ -70,6 +69,28 @@ export interface GraphDisplay extends WidgetDisplay {
   readonly enableDefaultHierarchy?: boolean;
 }
 
+interface GraphProps {
+  dot?: any;
+  data?: any[];
+  toCol?: ColInfo;
+  fromCol?: ColInfo;
+  propagatedArgs?: Arguments;
+  edgeWeightColumn?: string;
+  nodeWeightColumn?: string;
+  edgeColorColumn?: ColInfo;
+  edgeThresholds?: EdgeThresholds;
+  edgeHoverInfo?: ColInfo[];
+  edgeLength?: number;
+  enableDefaultHierarchy?: boolean;
+}
+
+interface GraphData {
+  nodes: visData.DataSet<Node>;
+  edges: visData.DataSet<Edge>;
+  idToSemType: { [ key: string ]: SemanticType };
+  propagatedArgs?: Arguments;
+}
+
 interface GraphWidgetProps {
   display: GraphDisplay;
   data: any[];
@@ -87,29 +108,6 @@ const LATENCY_TYPES = [
   SemanticType.ST_THROUGHPUT_PER_NS,
   SemanticType.ST_THROUGHPUT_BYTES_PER_NS,
 ];
-
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  root: {
-    width: '100%',
-    flex: 1,
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-  },
-  container: {
-    width: '100%',
-    height: '100%',
-    minHeight: 0,
-    border: '1px solid transparent',
-    // https://cssinjs.org/jss-plugin-nested/#use-rulename-to-reference-a-local-rule-within-the-same-style-sheet
-    '&$focus': { borderColor: theme.palette.foreground.grey2 },
-    '& > .vis-active': {
-      boxShadow: 'none',
-    },
-  },
-  focus: {/* Blank entry so the rule above has something to reference */},
-}), { name: 'Graph' });
 
 function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds): GaugeLevel {
   if (!thresholds && LATENCY_TYPES.includes(col.semType)) {
@@ -135,9 +133,6 @@ export const Graph = React.memo<GraphProps>(({
   const history = useHistory();
 
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(enableDefaultHierarchy);
-  const [focused, setFocused] = React.useState<boolean>(false);
-  const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<GraphData>(null);
 
@@ -270,19 +265,15 @@ export const Graph = React.memo<GraphProps>(({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, doubleClickCallback, hierarchyEnabled]);
 
-  const classes = useStyles();
   return (
-    <div className={classes.root} onFocus={toggleFocus} onBlur={toggleFocus}>
-      <div className={buildClass(classes.container, focused && classes.focus)} ref={ref} />
-      <div>
-        <Button
-          size='small'
-          onClick={toggleHierarchy}
-        >
-          {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
-        </Button>
-      </div>
-    </div>
+    <GraphBase network={network} visRootRef={ref} showZoomButtons={true}>
+      <Button
+        size='small'
+        onClick={toggleHierarchy}
+      >
+        {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
+      </Button>
+    </GraphBase>
   );
 });
 Graph.displayName = 'Graph';
@@ -340,25 +331,3 @@ export const GraphWidget = React.memo<GraphWidgetProps>(({
   return <div key={display.dotColumn}>Invalid spec for graph</div>;
 });
 GraphWidget.displayName = 'GraphWidget';
-
-interface GraphProps {
-  dot?: any;
-  data?: any[];
-  toCol?: ColInfo;
-  fromCol?: ColInfo;
-  propagatedArgs?: Arguments;
-  edgeWeightColumn?: string;
-  nodeWeightColumn?: string;
-  edgeColorColumn?: ColInfo;
-  edgeThresholds?: EdgeThresholds;
-  edgeHoverInfo?: ColInfo[];
-  edgeLength?: number;
-  enableDefaultHierarchy?: boolean;
-}
-
-interface GraphData {
-  nodes: visData.DataSet<Node>;
-  edges: visData.DataSet<Edge>;
-  idToSemType: { [ key: string ]: SemanticType };
-  propagatedArgs?: Arguments;
-}

@@ -40,7 +40,7 @@ export interface ColInfo {
 
 export function getGraphOptions(theme: Theme, edgeLength: number): Options {
   return {
-    clickToUse: true,
+    clickToUse: false,
     layout: {
       randomSeed: 10,
       improvedLayout: false,

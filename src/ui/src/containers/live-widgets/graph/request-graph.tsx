@@ -23,8 +23,6 @@ import {
   Workspaces as WorkspacesIcon,
   Speed as SpeedIcon,
   ErrorOutline as ErrorOutlineIcon,
-  Remove as ZoomOutIcon,
-  Add as ZoomInIcon,
 } from '@mui/icons-material';
 import { IconButton, Tooltip } from '@mui/material';
 import { Theme, useTheme } from '@mui/material/styles';
@@ -36,8 +34,8 @@ import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Relation } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
-import { buildClass } from 'app/utils/build-class';
 
+import { GraphBase } from './graph-base';
 import {
   getColorForErrorRate,
   getColorForLatency,
@@ -55,54 +53,10 @@ interface RequestGraphProps {
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
-  root: {
-    width: '100%',
-    flex: 1,
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    '&:hover $zoomButton': { opacity: 1 }, // See below for how this works
-  },
-  container: {
-    width: '100%',
-    height: '100%',
-    minHeight: 0,
-    border: '1px solid transparent',
-    // https://cssinjs.org/jss-plugin-nested/#use-rulename-to-reference-a-local-rule-within-the-same-style-sheet
-    '&$focus': { borderColor: theme.palette.foreground.grey2 },
-    '& > .vis-active': {
-      boxShadow: 'none',
-    },
-  },
-  focus: {/* Blank entry so the rule above has something to reference */},
   enabled: {
     color: theme.palette.text.secondary,
   },
-  buttonContainer: {
-    marginTop: theme.spacing(1),
-    '& .MuiIconButton-root': {
-      marginRight: theme.spacing(2),
-      padding: theme.spacing(0.375), // 3px
-    },
-  },
-  zoomButton: {
-    opacity: 0,
-    transition: 'opacity 0.25s linear',
-    '&$focus': { opacity: 1 },
-  },
-  zoomButtonLast: { marginRight: theme.spacing(2) }, // An extra half of a button's width
 }), { name: 'RequestGraphWidget' });
-
-// 0 is infinitely zoomed out; 1 is 100% / default zoom level.
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 10;
-
-// We perceive the difference between zoom levels relative to each other; multiplicative feels better than additive.
-function computeZoom(scale: number, adjust: number): number {
-  const newVal = adjust < 0 ? scale / 1.25 : scale * 1.25;
-  return Math.max(MIN_ZOOM, Math.min(newVal, MAX_ZOOM));
-}
 
 export const RequestGraphWidget = React.memo<RequestGraphProps>(({
   data, relation, display, propagatedArgs,
@@ -119,8 +73,6 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
   const [clusteredMode, setClusteredMode] = React.useState<boolean>(true);
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
   const [colorByLatency, setColorByLatency] = React.useState<boolean>(false);
-  const [focused, setFocused] = React.useState<boolean>(false);
-  const [zoomLevel, setZoomLevel] = React.useState(1);
 
   const theme = useTheme();
   /**
@@ -152,11 +104,6 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
     }
     return latencyColor;
   }), [graphMgr, getEdgeColoringFn]);
-
-  /**
-   * Toggle whether the graph is in focus.
-   */
-  const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
 
   /**
    * Load data when the data or display changes.
@@ -203,16 +150,6 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
       n.setOptions({ physics: false });
     });
 
-    // Limit the zoom level in both directions, and remember it so the buttons below can update it properly.
-    let lastScalePos = n.getViewPosition(); // One scale event behind, so it can restore smoothly when clamping
-    n.on('zoom', ({ scale }) => {
-      const clamped = Math.min(MAX_ZOOM, Math.max(scale, MIN_ZOOM));
-
-      if (clamped !== scale) n.moveTo({ position: lastScalePos, scale: clamped });
-      else lastScalePos = n.getViewPosition();
-
-      setZoomLevel(clamped);
-    });
     setNetwork(n);
   }, [graphMgr, clusteredMode, hierarchyEnabled, defaultGraphOpts]);
 
@@ -238,76 +175,37 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
     }
   }, [network, doubleClickCallback]);
 
-  // Note: network.getViewPosition and network.getScale yield wildly varying values between invocations, so instead
-  // we track zoomLevel directly from the on('zoom') handler above and let the position stay the same.
-  // The amount we change the zoom level by is nonlinear, because 4x zoom doesn't actually feel like it's 4x closer.
-
-  const zoomOut = React.useCallback(() => {
-    const scale = computeZoom(zoomLevel, -1);
-    setZoomLevel(scale);
-    network.moveTo({ scale });
-  }, [network, zoomLevel]);
-
-  const zoomIn = React.useCallback(() => {
-    const scale = computeZoom(zoomLevel, 1);
-    setZoomLevel(scale);
-    network.moveTo({ scale });
-  }, [network, zoomLevel]);
-
   const classes = useStyles();
   return (
-    <div className={classes.root} onFocus={toggleFocus} onBlur={toggleFocus}>
-      <div className={buildClass(classes.container, focused && classes.focus)} ref={ref} />
-      <div className={classes.buttonContainer}>
-        <Tooltip title='Zoom Out'>
-          <IconButton
-            className={buildClass(classes.zoomButton, focused && classes.focus)}
-            size='small'
-            onClick={zoomOut}
-            disabled={zoomLevel <= MIN_ZOOM}
-          >
-            <ZoomOutIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title='Zoom In'>
-          <IconButton
-            className={buildClass(classes.zoomButton, focused && classes.focus)}
-            size='small'
-            onClick={zoomIn}
-            disabled={zoomLevel >= MAX_ZOOM}
-          >
-            <ZoomInIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={colorByLatency ? 'Colored by latency' : 'Colored by Error Rate'}>
-          <IconButton
-            size='small'
-            onClick={toggleColor}
-            className={classes.enabled}
-          >
-            {colorByLatency ? <SpeedIcon /> : <ErrorOutlineIcon />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={hierarchyEnabled ? 'Hierarchy enabled' : 'Hierarchy disabled'}>
-          <IconButton
-            size='small'
-            onClick={toggleHierarchy}
-            className={hierarchyEnabled ? classes.enabled : ''}
-          >
-            <AccountTreeIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={clusteredMode ? 'Clustered by service' : 'Clustering disabled'}>
-          <IconButton
-            size='small'
-            onClick={toggleMode}
-            className={clusteredMode ? classes.enabled : ''}
-          >
-            <WorkspacesIcon />
-          </IconButton>
-        </Tooltip>
-      </div>
-    </div>
+    <GraphBase network={network} visRootRef={ref} showZoomButtons={true}>
+      <Tooltip title={colorByLatency ? 'Colored by latency' : 'Colored by Error Rate'}>
+        <IconButton
+          size='small'
+          onClick={toggleColor}
+          className={classes.enabled}
+        >
+          {colorByLatency ? <SpeedIcon /> : <ErrorOutlineIcon />}
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={hierarchyEnabled ? 'Hierarchy enabled' : 'Hierarchy disabled'}>
+        <IconButton
+          size='small'
+          onClick={toggleHierarchy}
+          className={hierarchyEnabled ? classes.enabled : ''}
+        >
+          <AccountTreeIcon />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={clusteredMode ? 'Clustered by service' : 'Clustering disabled'}>
+        <IconButton
+          size='small'
+          onClick={toggleMode}
+          className={clusteredMode ? classes.enabled : ''}
+        >
+          <WorkspacesIcon />
+        </IconButton>
+      </Tooltip>
+    </GraphBase>
   );
 });
 RequestGraphWidget.displayName = 'RequestGraphWidget';
