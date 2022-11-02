@@ -29,7 +29,7 @@ set_default_values() {
   MIN_NODES=1
   MAX_NODES=5
   MACHINE_TYPE=e2-standard-4
-  IMAGE_NAME=UBUNTU
+  IMAGE_NAME=ubuntu_containerd
   DISK_SIZE=100
   LABELS="k8s-dev-cluster="
 }
