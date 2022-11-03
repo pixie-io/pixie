@@ -28,12 +28,12 @@ py_library(
 )
 
 py_binary(
-    name = "privy_lstm_binary",
+    name = "privy_flair_ner",
     testonly = True,
     srcs = [
-        "lstm_binary.py",
+        "flair_ner.py",
     ],
-    main = "lstm_binary.py",
+    main = "flair_ner.py",
     srcs_version = "PY3",
     deps = [
         "//privy:privy_library",
