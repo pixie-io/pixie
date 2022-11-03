@@ -23,26 +23,37 @@ filegroup(
     srcs = glob(["**"]),
 )
 
-# In order to get the same build as the production bpftrace build, you should run the following
-# commands in the bpftrace local repo:
+# In order to use this rule, you should first follow the setup in local_dev/bcc.BUILD.
+# Then you should run the following in the pixie repo:
+#   export LIBCEREAL_INCLUDE_DIR=`bazel info output_base`/external/com_github_USCiLab_cereal/include
+# Then you should run the following at the top of the bcc repo:
+#   export BCC_INSTALL=`pwd`/build/install
+# Then run the following in the bpftrace repo:
 #
 #   mkdir -p build && cd build
-#   export BCC_INSTALL=/<BCC repo path>/build/install
-#   cmake -DCMAKE_INSTALL_PREFIX=install \
-#       -DBUILD_TESTING=OFF -DENABLE_BFD_DISABLE=OFF -DENABLE_LIBDW=OFF -DENABLE_MAN=OFF \
+#   cmake \
+#       -DCMAKE_INSTALL_PREFIX=install \
+#       -DBUILD_FUZZ=OFF \
+#       -DBUILD_TESTING=OFF \
+#       -DENABLE_BFD_DISABLE=OFF \
+#       -DENABLE_BPFTRACE_EXE=OFF \
+#       -DENABLE_LIBDW=OFF \
+#       -DENABLE_MAN=OFF \
+#       -DENABLE_SKB_OUTPUT=OFF \
 #       -DLIBBCC_BPF_LIBRARIES=$BCC_INSTALL/lib/libbcc_bpf.a \
 #       -DLIBBCC_INCLUDE_DIRS=$BCC_INSTALL/include \
 #       -DLIBBCC_LIBRARIES=$BCC_INSTALL/lib/libbcc.a \
 #       -DLIBBCC_LOADER_LIBRARY_STATIC=$BCC_INSTALL/lib/libbcc-loader-static.a \
+#       -DLIBBPF_INCLUDE_DIRS=$LIBBPF_PREFIX/libbpf/include \
+#       -DLIBBPF_LIBRARIES=$LIBBPF_PREFIX/libbpf/lib64/libbpf.a \
+#       -DLIBCEREAL_INCLUDE_DIRS=$LIBCEREAL_INCLUDE_DIR \
 #       -DCMAKE_BUILD_TYPE=Release ..
-#   make install
+#   make -j$(nproc) install
 #
 # Every time you make a local change to bcc and/or bpftrace you have to run make install
 # in the local repos.
 #
-# Note#1: you may need to install the ubuntu package `libcereal-dev` to get it to work.
-#
-# Note#2: The cmake definitions above should be consistent with `cache-entires` of
+# Note#1: The cmake definitions above should be consistent with `cache-entires` of
 # bazel/external/bpftrace.BUILD.
 local_cc(
     name = "bpftrace",
@@ -71,5 +82,6 @@ local_cc(
     deps = [
         "@com_github_USCiLab_cereal//:cereal",
         "@com_github_iovisor_bcc//:bcc",
+        "@com_github_libbpf_libbpf//:libbpf",
     ],
 )
