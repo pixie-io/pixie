@@ -94,6 +94,14 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--fake_persons_file_path",
+        "-fp",
+        required=False,
+        default="",
+        help="Absolute path to file containing fake person data downloaded from fakenamegenerator.com.",
+    )
+
+    parser.add_argument(
         "--multi_threaded",
         "-m",
         action="store_true",

@@ -25,22 +25,18 @@ class TestProviders(unittest.TestCase):
         self.provider_regions = [English_US(), German_DE()]
 
     def test_get_pii_provider(self):
+        def eval_provider(provider):
+            value = getattr(region.custom_faker, provider.template_name)()
+            self.assertTrue(
+                isinstance(value, provider.type_),
+                f"Provider {provider.template_name} should generate {provider.type_}, not {type(value)}",
+            )
+
         for region in self.provider_regions:
             for provider in region.pii_providers:
-                value = provider.generator()
-                self.assertTrue(
-                    isinstance(value, provider.type_),
-                    f"Provider {provider.template_name} should generate {provider.type_}, not {type(value)}",
-                )
-
-    def test_get_nonpii_provider(self):
-        for region in self.provider_regions:
+                eval_provider(provider)
             for provider in region.nonpii_providers:
-                value = provider.generator()
-                self.assertTrue(
-                    isinstance(value, provider.type_),
-                    f"Provider {provider.template_name} should generate {provider.type_}, not {type(value)}",
-                )
+                eval_provider(provider)
 
     def test_get_random_pii(self):
         for region in self.provider_regions:

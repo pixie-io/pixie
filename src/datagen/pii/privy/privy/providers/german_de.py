@@ -17,7 +17,6 @@ import string
 import random
 from privy.providers.english_us import English_US
 from faker.providers import BaseProvider
-from faker.providers.lorem.de_DE import Provider as LoremProvider
 
 
 # override gender provider from English_US
@@ -43,29 +42,11 @@ class DriversLicense(BaseProvider):
         return lic.join(random.sample(string.ascii_uppercase + string.digits, 7))
 
 
-class String(LoremProvider):
-    def string(self) -> str:
-        """generate a random string of characters, words, and numbers"""
-        def sample(text, low, high, space=False):
-            """sample randomly from input text with a minimum length of low and maximum length of high"""
-            space = " " if space else ""
-            return space.join(random.sample(text, random.randint(low, high)))
-
-        characters = sample(string.ascii_letters, 1, 10)
-        numbers = sample(string.digits, 1, 10)
-        characters_and_numbers = sample(
-            string.ascii_letters + string.digits, 1, 10)
-        combined = self.words(
-            nb=3) + [characters, numbers, characters_and_numbers]
-        return sample(combined, 0, 6, True)
-
-
 # German Germany - inherits methods from English_US
 class German_DE(English_US):
     def __init__(self, pii_types=None):
         # initialize English_US methods and providers, changing faker locale to de_DE
         super().__init__(pii_types, locale="de_DE")
-        self.f.add_provider(Gender)
-        self.f.add_provider(Passport)
-        self.f.add_provider(DriversLicense)
-        self.f.add_provider(String)
+        self.custom_faker.add_provider(Gender)
+        self.custom_faker.add_provider(Passport)
+        self.custom_faker.add_provider(DriversLicense)

@@ -80,7 +80,7 @@ class PayloadRoute:
                     writer.open_file.write(f"{converted_payload_template}\n")
                 if writer.file_type == PrivyFileType.SPANS:
                     for span in payload_spans:
-                        writer.open_file.write(f"{span.to_json()}\n")
+                        writer.open_file.write(f"{span.toJSON()}\n")
 
 
 class PayloadFuzzer:

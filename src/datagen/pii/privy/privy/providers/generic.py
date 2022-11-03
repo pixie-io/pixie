@@ -14,17 +14,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import dataclasses
 import random
 import string
 from abc import ABC
-from typing import Union, Optional, Type, Callable, Set
+from typing import Union, Optional, Type, Set
 from decimal import Decimal
 import baluhn
 from faker.providers import BaseProvider
 from faker.providers.lorem.en_US import Provider as LoremProvider
-from privy.providers.spans import PayloadSpans
+from presidio_evaluator.data_generator.faker_extensions.data_objects import FakerSpansResult
 
 
 @dataclasses.dataclass()
@@ -34,7 +33,6 @@ class Provider:
 
     template_name: str
     aliases: Set[str]
-    generator: Callable
     type_: Union[Type[str], Type[int], Type[float],
                  Type[Decimal], Type[bool]] = str
 
@@ -59,8 +57,6 @@ class GenericProvider(ABC):
             label.replace(" ", "-"),
             label.replace(" ", "_"),
             label.replace(" ", "__"),
-            label.replace(" ", "."),
-            label.replace(" ", ":"),
             label.replace(" ", ""),
         ]
         return label_delimited
@@ -105,29 +101,15 @@ class GenericProvider(ABC):
             pii_types = self.get_pii_types()
 
     def get_faker(self, faker_provider: str):
-        faker_generator = getattr(self.f, faker_provider)
+        faker_generator = getattr(self.f.faker, faker_provider)
         return faker_generator
 
-    def parse(self, template: str, template_id: int) -> PayloadSpans:
+    def parse(self, template: str, template_id: int) -> FakerSpansResult:
         """Parse payload template into a span, using data providers that match the template_names e.g. {{full_name}}"""
         return self.f.parse(template=template, template_id=template_id)
 
-    def add_provider_alias(self, provider: Callable, alias: str) -> None:
-        """Add copy of an existing provider, but under a different name"""
-        logging.getLogger("privy").debug(f"Adding alias {alias} for provider {provider}")
-        new_provider = BaseProvider(self.f)
-        setattr(new_provider, alias, provider)
-        self.f.add_provider(new_provider)
 
-    def set_provider_aliases(self):
-        """Set faker generator aliases for all providers to reduce mismatch between template_names and generators"""
-        for pii in self.pii_providers:
-            self.add_provider_alias(provider=pii.generator, alias=pii.template_name)
-        for nonpii in self.nonpii_providers:
-            self.add_provider_alias(provider=nonpii.generator, alias=nonpii.template_name)
-
-
-class MacAddress(BaseProvider):
+class MacAddressProvider(BaseProvider):
     def mac_address(self) -> str:
         pattern = random.choice(
             [
@@ -139,7 +121,7 @@ class MacAddress(BaseProvider):
         return self.hexify(pattern)
 
 
-class IMEI(BaseProvider):
+class IMEIProvider(BaseProvider):
     def imei(self) -> str:
         imei = self.numerify(text="##-######-######-#")
         while baluhn.verify(imei.replace("-", "")) is False:
@@ -147,24 +129,18 @@ class IMEI(BaseProvider):
         return imei
 
 
-class Gender(BaseProvider):
+class GenderProvider(BaseProvider):
     def gender(self) -> str:
         return random.choice(["Male", "Female", "Other"])
 
 
-class Passport(BaseProvider):
+class PassportProvider(BaseProvider):
     def passport(self) -> str:
         # US Passports consist of 1 letter or digit followed by 8-digits
         return self.bothify(text=random.choice(["?", "#"]) + "########")
 
 
-class DriversLicense(BaseProvider):
-    def drivers_license(self) -> str:
-        # US driver's licenses consist of 9 digits (patterns vary by state)
-        return self.numerify(text="### ### ###")
-
-
-class Alphanum(BaseProvider):
+class AlphanumProvider(BaseProvider):
     def alphanum(self) -> str:
         alphanumeric_string = "".join(
             [random.choice(["?", "#"])
@@ -173,7 +149,14 @@ class Alphanum(BaseProvider):
         return self.bothify(text=alphanumeric_string)
 
 
-class String(LoremProvider):
+class ITINProvider(BaseProvider):
+    def itin(self) -> str:
+        # US Individual Taxpayer Identification Number (ITIN).
+        # Nine digits that start with a "9" and contain a "7" or "8" as the 4 digit.
+        return f"9{self.numerify(text='##')}{random.choice(['7', '8'])}{self.numerify(text='#####')}"
+
+
+class StringProvider(LoremProvider):
     def string(self) -> str:
         """generate a random string of characters, words, and numbers"""
         def sample(text, low, high, space=False):
@@ -182,8 +165,7 @@ class String(LoremProvider):
             return space.join(random.sample(text, random.randint(low, high)))
 
         characters = sample(string.ascii_letters, 1, 10)
-        numbers = sample(string.digits, 1, 10)
         characters_and_numbers = sample(
             string.ascii_letters + string.digits, 1, 10)
-        combined = [characters, numbers, characters_and_numbers]
-        return sample(combined, 0, 3, True)
+        combined = [characters, characters, characters_and_numbers]
+        return sample(combined, 0, 3, space=True)
