@@ -41,6 +41,7 @@ cmake(
         "ENABLE_BPFTRACE_EXE": "OFF",
         "ENABLE_LIBDW": "OFF",
         "ENABLE_MAN": "OFF",
+        "ENABLE_SKB_OUTPUT": "OFF",
 
         # Provide paths to dependent binaries: libbpf, bcc and libcereal.
         # Notice that bcc and libceral are in the bazel deps below as well.
