@@ -13,8 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import requests
-import io
+import pkg_resources
 from pathlib import Path
 import datetime
 from decimal import Decimal
@@ -26,21 +25,21 @@ from presidio_evaluator.data_generator.faker_extensions.providers import (
     AgeProvider,
     AddressProviderNew,
     PhoneNumberProviderNew,
-    IpAddressProvider
+    IpAddressProvider,
+    OrganizationProvider,
+    UsDriverLicenseProvider,
+    ReligionProvider,
 )
 from presidio_evaluator.data_generator.faker_extensions import RecordsFaker
 from privy.providers.generic import (
     GenericProvider,
-    OrganizationProvider,
     Provider,
-    MacAddress,
-    IMEI,
-    Gender,
-    Passport,
-    DriversLicense,
-    String,
-    ITIN,
-    Religion,
+    MacAddressProvider,
+    IMEIProvider,
+    GenderProvider,
+    PassportProvider,
+    StringProvider,
+    ITINProvider,
 )
 
 
@@ -52,32 +51,35 @@ class English_US(GenericProvider):
         # read file with fake person data
         if fake_persons_file_path and Path(fake_persons_file_path).exists():
             fake_name_generator_df = pd.read_csv(fake_persons_file_path)
-            fake_name_generator_df = PresidioDataGenerator.update_fake_name_generator_df(fake_name_generator_df)
+            fake_name_generator_df = PresidioDataGenerator.update_fake_name_generator_df(
+                fake_name_generator_df)
             # initialize Faker instance with specific Faker locale
             # sample names, addresses etc. from one person-record to improve data quality
-            custom_faker = RecordsFaker(records=fake_name_generator_df, locale=locale)
-            f = PresidioDataGenerator(custom_faker=custom_faker, lower_case_ratio=0.05)
+            custom_faker = RecordsFaker(
+                records=fake_name_generator_df, locale=locale)
+            f = PresidioDataGenerator(
+                custom_faker=custom_faker, lower_case_ratio=0.05)
         else:
-            # read fake person data from PII data repo
-            url = "https://raw.githubusercontent.com/benkilimnik/pii-data/main/FakeNameGenerator.com_1000_American.csv"
-            download = requests.get(url).content
-            fake_name_generator_df = pd.read_csv(io.StringIO(download.decode('utf-8')))
-            custom_faker = RecordsFaker(records=fake_name_generator_df, locale=locale)
-            f = PresidioDataGenerator(custom_faker=custom_faker, lower_case_ratio=0.05)
+            # read fake person data from fork of presidio-research
+            fake_names_file = pkg_resources.resource_filename(
+                'presidio_evaluator', 'data_generator/raw_data/FakeNameGenerator.com_1000_American.csv')
+            fake_name_generator_df = pd.read_csv(fake_names_file)
+            custom_faker = RecordsFaker(
+                records=fake_name_generator_df, locale=locale)
+            f = PresidioDataGenerator(
+                custom_faker=custom_faker, lower_case_ratio=0.05)
 
-        # extend faker with custom providers
+        # extend faker with providers from privy and a fork of presidio-research
         custom_faker.add_provider(AirTravelProvider)
-        custom_faker.add_provider(MacAddress)
-        custom_faker.add_provider(IMEI)
-        custom_faker.add_provider(Gender)
-        custom_faker.add_provider(Passport)
-        custom_faker.add_provider(DriversLicense)
-        custom_faker.add_provider(String)
-        custom_faker.add_provider(ITIN)
+        custom_faker.add_provider(MacAddressProvider)
+        custom_faker.add_provider(IMEIProvider)
+        custom_faker.add_provider(GenderProvider)
+        custom_faker.add_provider(PassportProvider)
+        custom_faker.add_provider(StringProvider)
+        custom_faker.add_provider(ITINProvider)
         custom_faker.add_provider(OrganizationProvider)
-        custom_faker.add_provider(Religion)
-        custom_faker.add_provider(DriversLicense)
-        # providers by presidio-research
+        custom_faker.add_provider(ReligionProvider)
+        custom_faker.add_provider(UsDriverLicenseProvider)
         custom_faker.add_provider(NationalityProvider)
         custom_faker.add_provider(AgeProvider)
         custom_faker.add_provider(AddressProviderNew)

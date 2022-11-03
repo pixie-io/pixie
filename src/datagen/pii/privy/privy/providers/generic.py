@@ -14,24 +14,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import requests
-import io
-import logging
-import yaml
 import dataclasses
 import random
 import string
 from abc import ABC
 from typing import Union, Optional, Type, Set
 from decimal import Decimal
-import pandas as pd
 import baluhn
 from faker.providers import BaseProvider
 from faker.providers.lorem.en_US import Provider as LoremProvider
 from presidio_evaluator.data_generator.faker_extensions.data_objects import FakerSpansResult
-from presidio_evaluator.data_generator.faker_extensions import (
-    OrganizationProvider,
-)
 
 
 @dataclasses.dataclass()
@@ -117,7 +109,7 @@ class GenericProvider(ABC):
         return self.f.parse(template=template, template_id=template_id)
 
 
-class MacAddress(BaseProvider):
+class MacAddressProvider(BaseProvider):
     def mac_address(self) -> str:
         pattern = random.choice(
             [
@@ -129,7 +121,7 @@ class MacAddress(BaseProvider):
         return self.hexify(pattern)
 
 
-class IMEI(BaseProvider):
+class IMEIProvider(BaseProvider):
     def imei(self) -> str:
         imei = self.numerify(text="##-######-######-#")
         while baluhn.verify(imei.replace("-", "")) is False:
@@ -137,38 +129,18 @@ class IMEI(BaseProvider):
         return imei
 
 
-class Gender(BaseProvider):
+class GenderProvider(BaseProvider):
     def gender(self) -> str:
         return random.choice(["Male", "Female", "Other"])
 
 
-class Passport(BaseProvider):
+class PassportProvider(BaseProvider):
     def passport(self) -> str:
         # US Passports consist of 1 letter or digit followed by 8-digits
         return self.bothify(text=random.choice(["?", "#"]) + "########")
 
 
-class DriversLicense(BaseProvider):
-    def __init__(self, generator):
-        super().__init__(generator=generator)
-        # Download the license formats from repo containing PII data
-        url = "https://raw.githubusercontent.com/benkilimnik/pii-data/main/us_driver_license_format.yaml"
-        download = requests.get(url).content
-        us_driver_license_formats = io.StringIO(download.decode('utf-8'))
-        try:
-            formats = yaml.safe_load(us_driver_license_formats)
-            self.formats = formats['en']['faker']['driving_license']['usa']
-        except yaml.YAMLError as exc:
-            logging.getLogger("privy").warning(exc)
-
-    def driver_license(self) -> str:
-        # US driver's licenses patterns vary by state. Here we sample a random state and format
-        us_state = random.choice(list(self.formats))
-        us_state_format = random.choice(self.formats[us_state])
-        return self.bothify(text=us_state_format)
-
-
-class Alphanum(BaseProvider):
+class AlphanumProvider(BaseProvider):
     def alphanum(self) -> str:
         alphanumeric_string = "".join(
             [random.choice(["?", "#"])
@@ -177,14 +149,14 @@ class Alphanum(BaseProvider):
         return self.bothify(text=alphanumeric_string)
 
 
-class ITIN(BaseProvider):
+class ITINProvider(BaseProvider):
     def itin(self) -> str:
         # US Individual Taxpayer Identification Number (ITIN).
         # Nine digits that start with a "9" and contain a "7" or "8" as the 4 digit.
         return f"9{self.numerify(text='##')}{random.choice(['7', '8'])}{self.numerify(text='#####')}"
 
 
-class String(LoremProvider):
+class StringProvider(LoremProvider):
     def string(self) -> str:
         """generate a random string of characters, words, and numbers"""
         def sample(text, low, high, space=False):
@@ -197,22 +169,3 @@ class String(LoremProvider):
             string.ascii_letters + string.digits, 1, 10)
         combined = [characters, characters, characters_and_numbers]
         return sample(combined, 0, 3, space=True)
-
-
-class OrganizationProvider(OrganizationProvider):
-    def __init__(self, generator):
-        super().__init__(generator=generator)
-        # company names assembled from stock exchange listings (aex, bse, cnq, ger, lse, nasdaq, nse, nyse, par, tyo),
-        # US government websites like https://www.sec.gov/rules/other/4-460list.htm, and other sources
-        url = "https://raw.githubusercontent.com/benkilimnik/pii-data/main/companies_and_organizations.csv"
-        download = requests.get(url).content
-        self.orgs_and_companies = pd.read_csv(io.StringIO(download.decode('utf-8')))
-
-
-class Religion(BaseProvider):
-    def religion(self) -> str:
-        """Return a random (major) religion."""
-        url = "https://raw.githubusercontent.com/benkilimnik/pii-data/main/religions.csv"
-        download = requests.get(url).content
-        religions = io.StringIO(download.decode('utf-8')).readlines()
-        return random.choice(religions)
