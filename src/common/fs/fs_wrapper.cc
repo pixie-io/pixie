@@ -165,6 +165,16 @@ StatusOr<struct stat> Stat(const std::filesystem::path& path) {
   return sb;
 }
 
+StatusOr<int64_t> SpaceAvailableInBytes(const std::filesystem::path& path) {
+  std::error_code ec;
+  const std::filesystem::space_info si = std::filesystem::space(path, ec);
+  if (ec.value()) {
+    return error::InvalidArgument("Could not check space available $0 [ec=$1]", path.string(),
+                                  ec.message());
+  }
+  return si.available;
+}
+
 StatusOr<bool> IsEmpty(const std::filesystem::path& f) {
   std::error_code ec;
   bool val = std::filesystem::is_empty(f, ec);

@@ -155,5 +155,19 @@ TEST_F(FSWrapperTest, EnumerateParentPaths) {
                   PathSplit{"/a", "b/c/d"}, PathSplit{"/", "a/b/c/d"}));
 }
 
+// Tests that SpaceAvailableInBytes succeeds and returns a non-zero value.
+TEST_F(FSWrapperTest, SpaceAvailableInBytes) {
+  auto s = SpaceAvailableInBytes(tmp_dir_.path());
+  EXPECT_OK(s);
+  const int64_t space_available = s.ConsumeValueOrDie();
+  EXPECT_GT(space_available, 0);
+}
+
+// Tests that SpaceAvailableInBytes returns an error for a non-existent path.
+TEST_F(FSWrapperTest, SpaceAvailableInBytesError) {
+  const std::filesystem::path fake_path = tmp_dir_.path() / "non-existent";
+  EXPECT_NOT_OK(SpaceAvailableInBytes(fake_path));
+}
+
 }  // namespace fs
 }  // namespace px
