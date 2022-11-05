@@ -5,26 +5,24 @@ _Privy_ is a command line tool for generating synthetic protocol traces similar 
 - `HTML`
 - `Protobuf` (in progress)
 
-A full sample dataset is available on [huggingface](https://huggingface.co/datasets/beki/privy). This data may be used for demo purposes, to train PII detection models, and to evaluate existing PII identification systems.
+A full [sample dataset is available on huggingface](https://huggingface.co/datasets/beki/privy). This data may be used for demo purposes, to train PII detection models, and to evaluate existing PII identification systems.
 
-For instance, this [PII anonymizer demo hosted on huggingface](https://huggingface.co/spaces/beki/pii-anonymizer) and [on streamlit](https://detect.streamlitapp.com/) uses a [custom NLP model](https://huggingface.co/beki/en_spacy_pii_distilbert) trained on data from Privy.
+For instance, this [PII anonymizer demo](https://huggingface.co/spaces/beki/pii-anonymizer) ([backup link](https://detect.streamlitapp.com/)) uses a [custom NLP model](https://huggingface.co/beki/en_spacy_pii_distilbert) trained on data from Privy.
 
-![Detect PII in protocol trace data](sample_pii_json.png)
-
-For more information along with benchmarks, see this [blog post on PII detection in debugging data](https://blog.px.dev/detect-pii/).
+For more information, see this [blog post on PII detection in debugging data](https://blog.px.dev/detect-pii/).
 
 ![Privy schema parsing flow chart](privy_flowchart.png)
 
 # Quickstart
 
-1. Generate json data in bazel's sandboxed runtime directory, specifying a folder containing OpenAPI specs to generate data from. By default, privy downloads API specs from the [OpenAPI directory](https://github.com/APIs-guru/openapi-directory) to the path provided in `api_specs`. Privy checks if this folder already exists.
+1. Generate json data in bazel's sandboxed runtime directory. By default, privy downloads ~4000 API specs from the [OpenAPI directory](https://github.com/APIs-guru/openapi-directory) to generate data from.
 ```bazel
 bazel run //privy/run:privy_generate
 ```
 
 2. [Optional] Specify an absolute path to store synthetic data in with `--out_folder`, the type(s) of data to generate with `--generate`, and log priority level with `--logging`. For brevity, you can also use the first letter of each option.
 ```bazel
-bazel run //privy/run:privy_run -- --out_folder=/path/to/output/directory --generate json sql --logging=debug
+bazel run //privy/run:privy_generate -- --out_folder=/path/to/output/directory --generate json sql --logging=debug
 ```
 
 # Synthetic Data Formats
@@ -60,6 +58,26 @@ Privy produces three dataset files for each specified protocol type (e.g. json).
 
 **spans** → train a Named Entity Recognition model for token-wise classification (and redaction) of PII.
 
+## Train a sequence labelling model using [FlairNLP](https://github.com/flairNLP/flair)
+```
+bazel run //privy/train:privy_flair_ner -- --input=/path/to/input/spans.json
+```
+
+## Visualize PII distribution in generated synthetic data
+```
+bazel run //privy/generate:privy_visualize -- --input=path/to/input/data-payloads.csv
+```
+
+## Truncate protocol traces to a maximum number of characters per line like Pixie does
+```
+bazel run //privy/generate:privy_truncate -- --input=path/to/input/data-payloads.csv
+```
+
+## Run Tests
+```bazel
+bazel test ...
+```
+
 # More options
 ```
 options:
@@ -71,11 +89,9 @@ options:
   --logging {debug,info,warning,error}, -l {debug,info,warning,error}
                         logging level: debug, info, warning, error (default: info)
   --out_folder OUT_FOLDER, -o OUT_FOLDER
-                        Absolute path to output folder. By default, saves to bazel cache for this runtime. (default: /root/.cache/bazel/_bazel_root/1e2163ef914778199f0d3fcd135d9f2a/execroot/privy/bazel-
-                        out/k8-fastbuild/bin/privy/generate/privy_generate.runfiles/privy/privy/generate)
+                        Absolute path to output folder. By default, saves to bazel cache for this runtime.
   --api_specs API_SPECS, -a API_SPECS
-                        Absolute path to folder download openapi specs into. Privy checks if this folder already exists. (default:
-                        /root/.cache/bazel/_bazel_root/1e2163ef914778199f0d3fcd135d9f2a/execroot/privy/bazel-out/k8-fastbuild/bin/privy/generate/privy_generate.runfiles/privy/privy/generate)
+                        Absolute path to folder download openapi specs into. Privy checks if this folder already exists.
   --fake_persons_file_path FAKE_PERSONS_FILE_PATH, -fp FAKE_PERSONS_FILE_PATH
                         Absolute path to file containing fake person data downloaded from fakenamegenerator.com. (default: )
   --multi_threaded, -m  Generate data multithreaded (default: False)
@@ -93,19 +109,4 @@ options:
                         Number of (non-)PII spans (NER-compatible, token-wise labeled samples) to generate per unique payload template. (default: 10)
   --ignore_spec IGNORE_SPEC [IGNORE_SPEC ...], -ig IGNORE_SPEC [IGNORE_SPEC ...]
                         OpenAPI specs to ignore. If not specified, all specs will be matched. (default: ['stripe.com'])
-```
-
-## Visualize PII distribution in generated synthetic data
-```
-bazel run //privy/generate:privy_visualize -- --input=path/to/input/data-payloads.csv
-```
-
-## Truncate protocol traces to a maximum number of characters per line like Pixie does
-```
-bazel run //privy/generate:privy_truncate -- --input=path/to/input/data-payloads.csv
-```
-
-## Run Tests
-```bazel
-bazel test ...
 ```
