@@ -57,6 +57,7 @@ var remapRepos = map[string]string{
 	"pixie-io/dnsparser":    "packetzero/dnsparser",
 	"pixie-io/ELFIO":        "serge1/ELFIO",
 	"pixie-io/grpc":         "grpc/grpc",
+	"pixie-io/jattach":      "apangin/jattach",
 	"pixie-io/libpypa":      "vinzenz/libpypa",
 	"pixie-io/tdigest":      "derrickburns/tdigest",
 	"pixie-io/threadstacks": "thoughtspot/threadstacks",
