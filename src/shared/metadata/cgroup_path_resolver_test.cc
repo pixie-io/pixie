@@ -212,11 +212,9 @@ namespace {
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
 
 std::string GetPathToTestDataFile(const std::string& fname) {
-  
   return testing::BazelRunfilePath(std::string(kTestDataBasePath) + "/" + fname);
 }
-}  // namespace/home/noman/.cache/bazel/_bazel_noman/4c31fb537ca0f31ab15bbd6a8445d3b6/sandbox/processwrapper-sandbox/27/execroot/px/bazel-out/k8-fastbuild/bin/src/shared/metadata/cgroup_path_resolver_test.runfiles/px/src/shared/metadata/testdata/sysfs3/cgroup/
-
+}  // namespace
 
 TEST(LegacyCGroupPathResolverTest, GKEFormat) {
   ASSERT_OK_AND_ASSIGN(auto path_resolver,
@@ -303,10 +301,10 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
- 
   bool test_cgroup2_path = true;
   ASSERT_OK_AND_ASSIGN(auto path_resolver,
-                       LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3"), test_cgroup2_path));
+                       LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3"),
+                                                        test_cgroup2_path));
 
   EXPECT_EQ(
       GetPathToTestDataFile(
@@ -324,10 +322,9 @@ TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
           "kubepods-burstable-pod16de73f898f4460d96d28cf19ba8407f.slice/"
           "docker-23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba.scope/"
           "cgroup.procs"),
-      path_resolver->PodPath(PodQOSClass::kBurstable, "16de73f898f4460d96d28cf19ba8407f",                                               
+      path_resolver->PodPath(PodQOSClass::kBurstable, "16de73f898f4460d96d28cf19ba8407f",
                              "23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba",
-                             ContainerType::kDocker ));
-
+                             ContainerType::kDocker));
 }
 
 TEST(CGroupPathResolver, Cgroup2Format) {
@@ -360,7 +357,6 @@ TEST(CGroupPathResolver, Cgroup2Format) {
       "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
 }
-
 
 }  // namespace md
 }  // namespace px

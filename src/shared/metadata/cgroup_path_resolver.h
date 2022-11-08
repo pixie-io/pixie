@@ -134,7 +134,8 @@ class CGroupPathResolver {
  */
 class LegacyCGroupPathResolver {
  public:
-  static StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> Create(std::string_view sysfs_path, bool test_cgroup2_path = false) ;
+  static StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> Create(std::string_view sysfs_path,
+                                                                    bool test_cgroup2_path = false);
 
   std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
                       ContainerType container_type) const;
