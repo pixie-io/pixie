@@ -27,6 +27,8 @@
 #include "src/common/system/system.h"
 #include "src/shared/metadata/k8s_objects.h"
 
+DECLARE_bool(test_cgroup2_path);
+
 namespace px {
 namespace md {
 
@@ -81,7 +83,7 @@ struct CGroupTemplateSpec {
  * Typically, we rely on /sys/fs/cgroup/cpu,cpuacct, but we have run into systems
  * that don't have that path, which makes this function necessary.
  */
-StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path);
+StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path, bool test_cgroup2_path = false);
 
 /**
  * Finds the cgroup.procs file for the current process, assuming it is in a pod.
@@ -132,7 +134,7 @@ class CGroupPathResolver {
  */
 class LegacyCGroupPathResolver {
  public:
-  static StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> Create(std::string_view sysfs_path);
+  static StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> Create(std::string_view sysfs_path, bool test_cgroup2_path = false) ;
 
   std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
                       ContainerType container_type) const;
@@ -146,7 +148,7 @@ class LegacyCGroupPathResolver {
 
  private:
   LegacyCGroupPathResolver() = default;
-  Status Init(std::string_view sysfs_path);
+  Status Init(std::string_view sysfs_path, bool test_cgroup2_path);
 
   std::string cgroup_kubepod_guaranteed_path_template_;
   std::string cgroup_kubepod_besteffort_path_template_;

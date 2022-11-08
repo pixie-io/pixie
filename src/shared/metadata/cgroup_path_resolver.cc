@@ -20,30 +20,37 @@
 #include <regex>
 #include <string>
 #include <vector>
+#include <sys/vfs.h>
+
 
 #include <absl/strings/str_replace.h>
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
+#define S_MAGIC_CGROUP2FS   63677270
+DEFINE_bool(test_cgroup2_path, false,
+            "Flag to force assume cgroup2 fs for testing purposes");
+
 namespace px {
 namespace md {
 
-StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
+StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path, bool test_cgroup2_path) {
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
   const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
 
   for (const auto& cgroup_dir : cgroup_dirs) {
     std::filesystem::path dir;
+    struct statfs info;
 
     // Attempt assuming naming scheme #1.
     std::string base_path = absl::StrCat(sysfs_path, "/cgroup/", cgroup_dir);
-    std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup/");
+    std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup");
 
     if (fs::Exists(base_path)) {
       return base_path;
-    } else if (fs::Exists(cgv2_base_path)) {
-      return cgv2_base_path;
+    } else if (((statfs(cgv2_base_path.c_str(), &info) == 0) && ( info.f_type == S_MAGIC_CGROUP2FS)) || test_cgroup2_path ) { 
+        return cgv2_base_path;
     }
   }
 
@@ -62,7 +69,7 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
       }
     }
   }
-
+  
   return error::NotFound("Could not find self as a template.");
 }
 
@@ -199,21 +206,24 @@ std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view 
 // /sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/kubepods-besteffort-pod1544eb37_e4f7_49eb_8cc4_3d01c41be77b.slice:cri-containerd:8618d3540ce713dd59ed0549719643a71dd482c40c21685773e7ac1291b004f5/cgroup.procs
 
 StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> LegacyCGroupPathResolver::Create(
-    std::string_view sysfs_path) {
+    std::string_view sysfs_path, bool test_cgroup2_path) {
+  std::cout << "CReate wala" << test_cgroup2_path ;
+  std::cout << "\n";
   auto resolver = std::unique_ptr<LegacyCGroupPathResolver>(new LegacyCGroupPathResolver);
-  PL_RETURN_IF_ERROR(resolver->Init(sysfs_path));
+  PL_RETURN_IF_ERROR(resolver->Init(sysfs_path, test_cgroup2_path));
   return resolver;
 }
 
-Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
+Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path, bool test_cgroup2_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters:
   //  $0 = pod ID
   //  $1 = container ID
   //  $2 = container runtime
   // These template parameters are resolved by calls to PodPath.
-
+  std::cout << "Init wala" << test_cgroup2_path ;
+  std::cout << "\n";
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
-  PL_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path));
+  PL_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path, test_cgroup2_path));
 
   // Attempt assuming naming scheme #1.
   std::string cgroup_kubepods_base_path = absl::Substitute("$0/kubepods", cgroup_dir);
