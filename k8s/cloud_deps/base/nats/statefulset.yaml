@@ -86,6 +86,16 @@ spec:
   - name: gateways
     port: 7522
 ---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pl-nats-pdb
+spec:
+  minAvailable: 51%
+  selector:
+    matchLabels:
+      name: pl-nats
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
