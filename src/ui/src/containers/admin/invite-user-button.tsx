@@ -152,7 +152,7 @@ export const InviteUserButton = React.memo<InviteUserButtonProps>(({
     }
   }, [invitationLink, showSnackbar]);
 
-  if (OAUTH_PROVIDER !== 'auth0') return <></>;
+  if (OAUTH_PROVIDER !== 'auth0' && OAUTH_PROVIDER !== 'oidc') return <></>;
 
   return (
     <>
