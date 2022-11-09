@@ -15,7 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
+#include <linux/magic.h>
+#include <sys/vfs.h>
 #include <filesystem>
 #include <regex>
 #include <string>
@@ -25,6 +26,8 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
+
+DEFINE_bool(force_cgroup2_mode, true, "Flag to force assume cgroup2 fs for testing purposes");
 
 namespace px {
 namespace md {
@@ -38,10 +41,21 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
 
     // Attempt assuming naming scheme #1.
     std::string base_path = absl::StrCat(sysfs_path, "/cgroup/", cgroup_dir);
+
     if (fs::Exists(base_path)) {
       return base_path;
     }
   }
+
+  std::string cgv2_base_path = absl::StrCat(sysfs_path, "/cgroup");
+  struct statfs info;
+  auto fs_status = statfs(cgv2_base_path.c_str(), &info);
+  bool cgroupv2 = (fs_status == 0) && (info.f_type == CGROUP2_SUPER_MAGIC);
+
+  if (cgroupv2 || FLAGS_force_cgroup2_mode) {
+    return cgv2_base_path;
+  }
+  // (TODO): This check for cgroup2FS is eventually to be moved above the cgroupv1 check.
 
   return error::NotFound("Could not find CGroup base path");
 }
@@ -207,7 +221,6 @@ Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
   //  $1 = container ID
   //  $2 = container runtime
   // These template parameters are resolved by calls to PodPath.
-
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
   PL_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path));
 

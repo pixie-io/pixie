@@ -300,5 +300,62 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
                              ContainerType::kContainerd));
 }
 
+TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
+  ASSERT_OK_AND_ASSIGN(auto path_resolver,
+                       LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3")));
+
+  FLAGS_force_cgroup2_mode = true;
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs3/cgroup/kubepods.slice/kubepods-besteffort.slice/"
+          "kubepods-besteffort-pod47810e8e_b9cb_4ac6_b12d_9e0577fa8237.slice/"
+          "docker-28efca84cc7d707bdfbc5646144bba6c4417de2cf63f8583179603ce434d6dfe.scope/"
+          "cgroup.procs"),
+      path_resolver->PodPath(PodQOSClass::kBestEffort, "47810e8e_b9cb_4ac6_b12d_9e0577fa8237",
+                             "28efca84cc7d707bdfbc5646144bba6c4417de2cf63f8583179603ce434d6dfe",
+                             ContainerType::kDocker));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs3/cgroup/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod16de73f898f4460d96d28cf19ba8407f.slice/"
+          "docker-23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba.scope/"
+          "cgroup.procs"),
+      path_resolver->PodPath(PodQOSClass::kBurstable, "16de73f898f4460d96d28cf19ba8407f",
+                             "23ac1540f833b029f76af6a513c4861a54bb9b77a6e3648b6f8392b1a09686ba",
+                             ContainerType::kDocker));
+}
+
+TEST(CGroupPathResolver, Cgroup2Format) {
+  std::string cgroup_kubepod_path =
+      "/sys/fs/cgroup/kubepods.slice/"
+      "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"
+      "docker-14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d.scope/cgroup.procs";
+  ASSERT_OK_AND_ASSIGN(CGroupTemplateSpec spec,
+                       CreateCGroupTemplateSpecFromPath(cgroup_kubepod_path));
+  EXPECT_EQ(spec.templated_path,
+            "/sys/fs/cgroup/kubepods.slice/kubepods-$2-pod$0.slice/docker-$1.scope/"
+            "cgroup.procs");
+  EXPECT_EQ(spec.pod_id_separators.value_or('\0'), '_');
+  EXPECT_EQ(spec.qos_separator, '-');
+
+  CGroupPathResolver path_resolver(spec);
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+      "/sys/fs/cgroup/kubepods.slice/"
+      "kubepods-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      "/sys/fs/cgroup/kubepods.slice/"
+      "kubepods-besteffort-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
+      "/sys/fs/cgroup/kubepods.slice/"
+      "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+}
+
 }  // namespace md
 }  // namespace px
