@@ -301,10 +301,10 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
-  bool test_cgroup2_path = true;
+  bool force_cgroup2_mode = true;
   ASSERT_OK_AND_ASSIGN(auto path_resolver,
                        LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3"),
-                                                        test_cgroup2_path));
+                                                        force_cgroup2_mode));
 
   EXPECT_EQ(
       GetPathToTestDataFile(
