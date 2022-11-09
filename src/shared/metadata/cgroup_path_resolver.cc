@@ -73,7 +73,7 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
 }
 
 StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view path) {
-  // Pattern match for a pod ID.
+  // Pattern match for a pod ID
   // Examples:
   //   pod8dbc5577_d0e2_4706_8787_57d52c03ddf2
   //   pod8dbc5577-d0e2-4706-8787-57d52c03ddf2
