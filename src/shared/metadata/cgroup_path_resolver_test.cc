@@ -301,11 +301,10 @@ TEST(LegacyCGroupPathResolverTest, StandardFormat) {
 }
 
 TEST(LeagcyCGroupPathResolverTest, Cgroup2Format) {
-  bool force_cgroup2_mode = true;
   ASSERT_OK_AND_ASSIGN(auto path_resolver,
-                       LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3"),
-                                                        force_cgroup2_mode));
+                       LegacyCGroupPathResolver::Create(GetPathToTestDataFile("testdata/sysfs3")));
 
+  FLAGS_force_cgroup2_mode = true;
   EXPECT_EQ(
       GetPathToTestDataFile(
           "testdata/sysfs3/cgroup/kubepods.slice/kubepods-besteffort.slice/"
