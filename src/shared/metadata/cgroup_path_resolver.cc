@@ -55,6 +55,7 @@ StatusOr<std::string> CGroupBasePath(std::string_view sysfs_path) {
   if (cgroupv2 || FLAGS_force_cgroup2_mode) {
     return cgv2_base_path;
   }
+  // (TODO): This check for cgroup2FS is eventually to be moved above the cgroupv1 check.
 
   return error::NotFound("Could not find CGroup base path");
 }
@@ -76,7 +77,7 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
 }
 
 StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view path) {
-  // Pattern match for a pod ID
+  // Pattern match for a pod ID.
   // Examples:
   //   pod8dbc5577_d0e2_4706_8787_57d52c03ddf2
   //   pod8dbc5577-d0e2-4706-8787-57d52c03ddf2
