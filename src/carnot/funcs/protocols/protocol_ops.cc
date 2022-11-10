@@ -19,6 +19,7 @@
 #include "src/carnot/funcs/protocols/protocol_ops.h"
 
 #include "src/carnot/funcs/protocols/amqp.h"
+#include "src/carnot/funcs/protocols/cql.h"
 #include "src/carnot/funcs/protocols/dns.h"
 #include "src/carnot/funcs/protocols/http.h"
 #include "src/carnot/funcs/protocols/kafka.h"
@@ -42,6 +43,7 @@ void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<HTTPRespMessageUDF>("http_resp_message");
   registry->RegisterOrDie<KafkaAPIKeyNameUDF>("kafka_api_key_name");
   registry->RegisterOrDie<MySQLCommandNameUDF>("mysql_command_name");
+  registry->RegisterOrDie<CQLOpcodeNameUDF>("cql_opcode_name");
   registry->RegisterOrDie<AMQPFrameTypeUDF>("amqp_frame_type_name");
   registry->RegisterOrDie<AMQPMethodTypeUDF>("amqp_method_name");
   registry->RegisterOrDie<MuxFrameTypeUDF>("mux_frame_type_name");
@@ -71,6 +73,10 @@ types::StringValue AMQPMethodTypeUDF::Exec(FunctionContext*, Int64Value class_id
 
 types::StringValue MySQLCommandNameUDF::Exec(FunctionContext*, Int64Value api_key) {
   return mysql::CommandName(api_key.val);
+}
+
+types::StringValue CQLOpcodeNameUDF::Exec(FunctionContext*, Int64Value req_op) {
+  return cql::RequestOpcodeToName(req_op.val);
 }
 
 types::StringValue MuxFrameTypeUDF::Exec(FunctionContext*, Int64Value frame_type) {

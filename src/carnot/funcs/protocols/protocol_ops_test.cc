@@ -55,6 +55,13 @@ TEST(ProtocolOps, MySQLCommandNameUDF) {
   udf_tester.ForInput(9999).Expect("9999");
 }
 
+TEST(ProtocolOps, CQLOpcodeNameUDF) {
+  auto udf_tester = udf::UDFTester<CQLOpcodeNameUDF>();
+  udf_tester.ForInput(7).Expect("Query");
+  udf_tester.ForInput(0x05).Expect("Options");
+  udf_tester.ForInput(9999).Expect("9999");
+}
+
 TEST(ProtocolOps, AMQPFrameTypeUDF) {
   auto udf_tester = udf::UDFTester<AMQPFrameTypeUDF>();
   udf_tester.ForInput(1).Expect("Frame method");

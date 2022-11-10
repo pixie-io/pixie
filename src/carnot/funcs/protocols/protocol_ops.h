@@ -80,6 +80,19 @@ class MySQLCommandNameUDF : public px::carnot::udf::ScalarUDF {
   }
 };
 
+class CQLOpcodeNameUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value req_op);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a CQL op code to its name.")
+        .Details("UDF to convert CQL request opcodes into their corresponding names.")
+        .Arg("req_op", "A CQL opcode")
+        .Example("df.cmd = px.cql_opcode_name(df.req_op)")
+        .Returns("The request opcode's name.");
+  }
+};
+
 class AMQPFrameTypeUDF : public px::carnot::udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, Int64Value frame_type);
