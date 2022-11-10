@@ -80,6 +80,7 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).
   SubProcess sub_process;
+  DEFER(sub_process.Kill());
   const auto started = sub_process.Start({bazel_test_app_path});
   ASSERT_OK(started) << absl::StrFormat("Could not start Java app: %s.", kJavaAppName);
   const uint32_t child_pid = sub_process.child_pid();

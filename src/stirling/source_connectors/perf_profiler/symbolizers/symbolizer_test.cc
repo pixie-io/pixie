@@ -88,6 +88,10 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
   EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
 }
 
+// This test uses a "fake" Java binary that creates a pre-populated (canned) symbol file.
+// Because the fake Java process is named "java" the process is categorized as Java.
+// The symbolizer finds the pre-existing symbol file, and early exits the attach process.
+// This test expects to find known symbols at known addresses based on the canned symbol file.
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
@@ -97,6 +101,7 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   SubProcess fake_java_proc;
+  DEFER(fake_java_proc.Kill());
   const std::filesystem::path fake_java_bin_path =
       BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
   ASSERT_TRUE(fs::Exists(fake_java_bin_path)) << fake_java_bin_path.string();
@@ -159,6 +164,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
       << FLAGS_stirling_profiler_px_jattach_path;
   SubProcess java_proc_0;
+  DEFER(java_proc_0.Kill());
   ASSERT_OK(java_proc_0.Start({java_app_path}));
   constexpr uint64_t start_time_ns = 0;
   const uint32_t child_pid_0 = java_proc_0.child_pid();
@@ -182,6 +188,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   // Start a new Java sub-process.
   // We expect that it will not have a JVMTI symbolization agent injected.
   SubProcess java_proc_1;
+  DEFER(java_proc_1.Kill());
   ASSERT_OK(java_proc_1.Start({java_app_path}));
   const uint32_t child_pid_1 = java_proc_1.child_pid();
   const struct upid_t child_upid_1 = {{child_pid_1}, start_time_ns};
@@ -343,6 +350,7 @@ TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   SubProcess fake_java_proc;
+  DEFER(fake_java_proc.Kill());
   const std::filesystem::path fake_java_bin_path =
       BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/java");
   ASSERT_TRUE(fs::Exists(fake_java_bin_path));
