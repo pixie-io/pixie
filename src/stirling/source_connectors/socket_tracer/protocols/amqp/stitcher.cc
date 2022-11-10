@@ -65,12 +65,14 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
       entries.push_back(Record{.req = Frame{}, .resp = std::move(resp_frame)});
     } else {
       auto it = req_channel_map.find(resp_frame.channel);
+      // In AMQP, sometimes server sends message to client first, and then client responses.
+      // For example, server can send ConnectionStart or ConnectionTune, and client would respond
+      // ConnectionStart-Ok or ConnecionTune-Ok. In these cases, having responses precede requests
+      // is Ok.
       if (it == req_channel_map.end()) {
-        error_count += 1;
         continue;
       }
       if (req_channel_map[resp_frame.channel].size() == 0) {
-        error_count += 1;
         continue;
       }
       Frame* corresponding_req_frame = req_channel_map[resp_frame.channel].front();
@@ -81,16 +83,6 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
       entries.push_back(
           Record{.req = std::move(*corresponding_req_frame), .resp = std::move(resp_frame)});
     }
-  }
-
-  // Resp Frames left in the map don't have a matched request.
-  for (const auto& [channel, req_frames] : req_channel_map) {
-    if (req_frames.size() == 0) {
-      continue;
-    }
-    VLOG(1) << absl::Substitute("Did not find a request matching the response. channel ID = $0",
-                                channel);
-    error_count += req_frames.size();
   }
 
   auto it = req_frames->begin();

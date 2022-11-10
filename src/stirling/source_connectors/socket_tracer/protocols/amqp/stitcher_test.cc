@@ -145,11 +145,13 @@ TEST(AMQPFrameDecoderTest, BasicSyncMatching) {
   req_packets.push_back(GenFrame(message_type_t::kRequest, connection_tune_packet, 1));
 
   req_packets.push_back(GenFrame(message_type_t::kRequest, connection_tune_packet, 2));
-  req_packets.push_back(GenFrame(message_type_t::kRequest, connection_tune_packet, 2));
+  req_packets.push_back(
+      GenFrame(message_type_t::kRequest, connection_tune_packet, 2));  // left behind.
   req_packets.push_back(GenFrame(message_type_t::kRequest, connect_open_packet, 2));
 
   // Unmatched request test
-  req_packets.push_back(GenFrame(message_type_t::kRequest, connect_open_packet, 6));
+  req_packets.push_back(
+      GenFrame(message_type_t::kRequest, connect_open_packet, 6));  // left behind.
 
   resp_packets.push_back(GenFrame(message_type_t::kResponse, connection_start_packet, 1));
   resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_tune_ok_packet, 1));
@@ -157,15 +159,17 @@ TEST(AMQPFrameDecoderTest, BasicSyncMatching) {
   resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_tune_ok_packet, 1));
 
   resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_tune_ok_packet, 2));
-  resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_open_packet, 2));
+  resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_open_ok_packet, 2));
 
-  // Extraneous packets should be left in map and counted as error if no originating request
-  resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_open_packet, 7));
-  resp_packets.push_back(GenFrame(message_type_t::kResponse, connect_open_packet, 8));
+  // Extraneous packets should be left in map, but should not count as error.
+  resp_packets.push_back(
+      GenFrame(message_type_t::kResponse, connect_open_ok_packet, 7));  // left behind.
+  resp_packets.push_back(
+      GenFrame(message_type_t::kResponse, connect_open_ok_packet, 8));  // left behind.
 
   result = StitchFrames(&req_packets, &resp_packets);
   // All 10 packets added to solution
-  EXPECT_EQ(result.error_count, 4);
+  EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 6);
 
   EXPECT_EQ(req_packets.size(), 2);
