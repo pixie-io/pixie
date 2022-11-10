@@ -16,12 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <sys/mount.h>
+
 #include <gtest/gtest.h>
 
 #include <set>
 
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
@@ -33,6 +36,8 @@
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/symbolization.h"
 #include "src/stirling/utils/proc_tracker.h"
+
+DEFINE_string(java_image_name, "none", "Java docker image for test cases.");
 
 namespace test {
 // foo() & bar() are not used directly, but in this test,
@@ -205,6 +210,170 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   // Expect that JVMTI agent injection tracking includes sub-proc-0 but not sub-proc-1.
   EXPECT_TRUE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid_0));
   EXPECT_FALSE(JavaProfilingProcTracker::GetSingleton()->upids().contains(child_upid_1));
+}
+
+// Java symbolizer does not attach if not enough space is available.
+TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
+  // Sets the tmpfs size, for the tmpfs volume that we will mount to /tmp in the target container.
+  // This size is too small for our Java symbolization libraries.
+  char const* const tmpfs_size_arg = "size=500K";
+
+  // Populate locally scoped flags values that setup the test environment.
+  // Agent libs & px_jattach need to be found inside of the bazel env., populated via helper fns.
+  // We also ensure that Java symbolization is enabled.
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+
+  // Create a Java symbolizer.
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
+                       JavaSymbolizer::Create(std::move(symbolizer_)));
+
+  // Ensure necessary test collateral can be found using fs::Exists().
+  // We will need "px_jattach" and a containerized Java test app., from "FLAGS_java_image_name".
+  ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
+      << FLAGS_stirling_profiler_px_jattach_path;
+  ASSERT_TRUE(fs::Exists(FLAGS_java_image_name)) << FLAGS_java_image_name;
+
+  // Setup a tmpfs and mount it at /tmp/tmpfs-symbolizer-test-pid-<pid>.
+  // The tmpfs is sized according to "tmpfs_size_arg".
+  using fs_path = std::filesystem::path;
+  const pid_t pid = getpid();
+  const fs_path tmp_path = fs::TempDirectoryPath();
+  const fs_path sub_path = absl::Substitute("tmpfs-symbolizer-test-pid-$0", pid);
+  const fs_path tmpfs_path = fs::JoinPath({&tmp_path, &sub_path});
+  ASSERT_OK(fs::CreateDirectories(tmpfs_path));
+  LOG(INFO) << absl::Substitute("Mounting tmpfs $0 at $1.", tmpfs_size_arg, tmpfs_path.string());
+
+  // Mount a tmpfs at our freshly minted empty path.
+  ASSERT_EQ(0, mount("none", tmpfs_path.string().c_str(), "tmpfs", 0, tmpfs_size_arg));
+
+  // Cleanup steps are unmount and rmdir. To do this, we defer the actions.
+  // Note, the defer'd actions execute in reverse order.
+  DEFER(ASSERT_OK(fs::Remove(tmpfs_path)));
+  DEFER(umount(tmpfs_path.string().c_str()));
+
+  // Instantiate a ContainerRunner for our containerized test app.
+  static constexpr std::string_view kReadyMsg = "";
+  const std::filesystem::path image_tar_path(FLAGS_java_image_name);
+  static constexpr std::string_view container_name_pfx = "java";
+  ContainerRunner sub_process(image_tar_path, container_name_pfx, kReadyMsg);
+
+  // Start the container/sub-proc. Use "-v" arg. to mount our tmpfs into /tmp in that container.
+  const std::string tmpfs_mount_opt = absl::Substitute("$0:/tmp", tmpfs_path.string());
+  static constexpr auto timeout = std::chrono::seconds{600};
+  static constexpr bool kUseHostPidNamespace = false;
+  const std::vector<std::string> options = {"-v", tmpfs_mount_opt};
+  const std::vector<std::string> args;
+  sub_process.Run(timeout, options, args, kUseHostPidNamespace);
+
+  // Construct a upid (with a placeholder start time) for the sub-proc.
+  constexpr uint64_t start_time_ns = 0;
+  const uint32_t child_pid = sub_process.process_pid();
+  const struct upid_t child_upid = {{child_pid}, start_time_ns};
+
+  // Force an iteration "pre tick" event in the symbolizer. This resets the budget for the number
+  // of attach events allowed "per iteration" based on FLAGS_number_attach_attempts_per_iteration.
+  // A freshly minted symbolizer starts with its budget set to zero. We do this here so that
+  // the symbolizer can attempt (as many times as needed) a JVMTI symbolization agent attach.
+  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  symbolizer->IterationPreTick();
+
+  // Requesting the symbolization function kicks off the attach process, i.e. because the symbolizer
+  // will not have a cached symbolization function for this upid.
+  symbolizer->GetSymbolizerFn(child_upid);
+
+  // Give the attach process some time (more than enough time) to complete.
+  std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
+  // The symbols themselves will remain as "cacheable" i.e. handled by a normal non-Java symbolizer,
+  // because no JVMTI agents were attached because no space was available. Java symbols are
+  // considered uncacheable becasue the JVM is free to delete them
+  // and recompile them to a different location.
+  // Succinctly, this test expects JVMTI attach to abort because tmpfs was too small.
+  ASSERT_FALSE(symbolizer->Uncacheable(child_upid)) << "Symbolizer should fail to attach.";
+}
+
+// Show that test JavaNotEnoughSpaceAvailable passes specifically because
+// it was setup with not enough space available.
+TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
+  // Sets the tmpfs size, for the tmpfs volume that we will mount to /tmp in the target container.
+  // This size is enough for our Java symbolization libraries.
+  char const* const tmpfs_size_arg = "size=20M";
+
+  // Populate locally scoped flags values that setup the test environment.
+  // Agent libs & px_jattach need to be found inside of the bazel env., populated via helper fns.
+  // We also ensure that Java symbolization is enabled.
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+
+  // Create a Java symbolizer.
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
+                       JavaSymbolizer::Create(std::move(symbolizer_)));
+
+  // Ensure necessary test collateral can be found using fs::Exists().
+  // We will need "px_jattach" and a containerized Java test app., from "FLAGS_java_image_name".
+  ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
+      << FLAGS_stirling_profiler_px_jattach_path;
+  ASSERT_TRUE(fs::Exists(FLAGS_java_image_name)) << FLAGS_java_image_name;
+
+  // Setup a tmpfs and mount it at /tmp/tmpfs-symbolizer-test-pid-<pid>.
+  // The tmpfs is sized according to "tmpfs_size_arg".
+  using fs_path = std::filesystem::path;
+  const pid_t pid = getpid();
+  const fs_path tmp_path = fs::TempDirectoryPath();
+  const fs_path sub_path = absl::Substitute("tmpfs-symbolizer-test-pid-$0", pid);
+  const fs_path tmpfs_path = fs::JoinPath({&tmp_path, &sub_path});
+  ASSERT_OK(fs::CreateDirectories(tmpfs_path));
+  LOG(INFO) << absl::Substitute("Mounting tmpfs $0 at $1.", tmpfs_size_arg, tmpfs_path.string());
+
+  // Mount a tmpfs at our freshly minted empty path.
+  ASSERT_EQ(0, mount("none", tmpfs_path.string().c_str(), "tmpfs", 0, tmpfs_size_arg));
+
+  // Cleanup steps are unmount and rmdir. To do this, we defer the actions.
+  // Note, the defer'd actions execute in reverse order.
+  DEFER(ASSERT_OK(fs::Remove(tmpfs_path)));
+  DEFER(umount(tmpfs_path.string().c_str()));
+
+  // Instantiate a ContainerRunner for our containerized test app.
+  static constexpr std::string_view kReadyMsg = "";
+  const std::filesystem::path image_tar_path(FLAGS_java_image_name);
+  static constexpr std::string_view container_name_pfx = "java";
+  ContainerRunner sub_process(image_tar_path, container_name_pfx, kReadyMsg);
+
+  // Start the container/sub-proc. Use "-v" arg. to mount our tmpfs into /tmp in that container.
+  const std::string tmpfs_mount_opt = absl::Substitute("$0:/tmp", tmpfs_path.string());
+  static constexpr auto timeout = std::chrono::seconds{600};
+  static constexpr bool kUseHostPidNamespace = false;
+  const std::vector<std::string> options = {"-v", tmpfs_mount_opt};
+  const std::vector<std::string> args;
+  sub_process.Run(timeout, options, args, kUseHostPidNamespace);
+
+  // Construct a upid (with a placeholder start time) for the sub-proc.
+  constexpr uint64_t start_time_ns = 0;
+  const uint32_t child_pid = sub_process.process_pid();
+  const struct upid_t child_upid = {{child_pid}, start_time_ns};
+
+  // Force an iteration "pre tick" event in the symbolizer. This resets the budget for the number
+  // of attach events allowed "per iteration" based on FLAGS_number_attach_attempts_per_iteration.
+  // A freshly minted symbolizer starts with its budget set to zero. We do this here so that
+  // the symbolizer can attempt (as many times as needed) a JVMTI symbolization agent attach.
+  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  symbolizer->IterationPreTick();
+
+  // Requesting the symbolization function kicks off the attach process, i.e. because the symbolizer
+  // will not have a cached symbolization function for this upid.
+  symbolizer->GetSymbolizerFn(child_upid);
+
+  // Give the attach process some time (more than enough time) to complete.
+  std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
+  // Java symbols are considered uncacheable becasue the JVM is free to delete them
+  // and recompile them to a different location. We can infer successful JVMTI symbolization
+  // agent attach by the symbolizer reporting that the symbols are indeed uncacheable.
+  // Succinctly, this test expects JVMTI attach success because tmpfs had enough space.
+  ASSERT_TRUE(symbolizer->Uncacheable(child_upid)) << "Symbolizer did not attach.";
 }
 
 // Test the symbolizer with caching enabled and disabled.

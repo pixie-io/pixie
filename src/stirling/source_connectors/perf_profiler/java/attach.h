@@ -30,6 +30,7 @@ namespace java {
 
 std::filesystem::path AgentArtifactsPath(const struct upid_t& upid);
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid);
+std::filesystem::path StirlingTmpPathForUPID(const struct upid_t& upid);
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid);
 StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& upid);
 

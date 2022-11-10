@@ -62,6 +62,36 @@ prometheus::Counter& g_java_proc_attach_attempted_counter{
 prometheus::Counter& g_java_proc_attached_counter{BuildCounter(
     kJavaProcAttachedCounter, "Count of the Java processes that has profiling agent attached")};
 
+Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
+  const std::filesystem::path tmp_path = java::StirlingTmpPathForUPID(upid);
+  auto status_or_space_available = fs::SpaceAvailableInBytes(tmp_path);
+  if (!status_or_space_available.ok()) {
+    // Could not figure out how much storage capacity is available in tmp path for the target pid.
+    // Return the status. The symbolization agent attach process will abort.
+    const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+    const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
+    const std::string error_msg = absl::Substitute(
+        "For Java pid: $0, cmd: $1, could not determine space available in path $2.", upid.pid,
+        cmdline, tmp_path.string());
+    LOG(WARNING) << error_msg;
+    return error::Internal("$0: $1", error_msg, status_or_space_available.msg());
+  }
+  const int64_t space_available_in_bytes = status_or_space_available.ConsumeValueOrDie();
+  constexpr int64_t kMinimumBytesRequired = 16 * 1024 * 1024;
+  if (space_available_in_bytes < kMinimumBytesRequired) {
+    // Available capacity in "tmp" for the target process is less than the minimum required.
+    // Return an error to indicate "no space available." The agent attach process will abort.
+    const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+    const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
+    const std::string error_msg = absl::Substitute(
+        "For Java pid: $0, cmd: $1, found $2 bytes availabe in $3, but require $4 bytes to install "
+        "symbolization libs and symbol file.",
+        upid.pid, cmdline, space_available_in_bytes, tmp_path.string(), kMinimumBytesRequired);
+    LOG(WARNING) << error_msg;
+    return error::Internal(error_msg);
+  }
+  return Status::OK();
+}
 }  // namespace
 
 void JavaSymbolizationContext::RemoveArtifacts() const {
@@ -372,9 +402,9 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
 
   // Check java PreserveFramePointer flag in cmd for first time upids.
   if (symbolizer_functions_.find(upid) == symbolizer_functions_.end()) {
-    std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
+    const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
     if (!cmdline.empty()) {
-      size_t pos = cmdline.find(symbolization::kJavaPreserveFramePointerOption);
+      const size_t pos = cmdline.find(symbolization::kJavaPreserveFramePointerOption);
       if (pos == std::string::npos) {
         monitor_.AppendSourceStatusRecord(
             "perf_profiler",
@@ -410,14 +440,20 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
     return symbolizer_functions_[upid];
   }
 
-  // When we get here, we know that it is a Java process, and if we want symbols,
-  // we need to inject the JVMTI symbolization agent.
-
+  // If a problem was detected at runtime, the Java symbolization feature flag can be set to false.
   if (!FLAGS_stirling_profiler_java_symbols) {
     // The perf profile source connector was instantiated with Java symbolization enabled,
-    // but now it is disabled. The contract in this scenario is that we do not
-    // attempt to attach any more JVMTI agents.
+    // but now it is disabled. We will not attempt to attach any more JVMTI agents.
     LOG_FIRST_N(INFO, 1) << "New Java process detected, but Java symbols disabled.";
+    symbolizer_functions_[upid] = native_symbolizer_fn;
+    return native_symbolizer_fn;
+  }
+
+  // Check if the /tmp mount in the target container has storage capacity
+  // available for our symbolization libraries and symbol file.
+  const auto capacity_status = SpaceAvailableForAgentLibsAndSymbolFile(upid);
+  if (!capacity_status.ok()) {
+    monitor_.AppendSourceStatusRecord("perf_profiler", capacity_status, "Java Symbolization");
     symbolizer_functions_[upid] = native_symbolizer_fn;
     return native_symbolizer_fn;
   }

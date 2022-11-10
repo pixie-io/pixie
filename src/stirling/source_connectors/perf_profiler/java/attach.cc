@@ -50,6 +50,11 @@ std::filesystem::path AgentArtifactsPath(const struct upid_t& upid) {
   return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
 }
 
+std::filesystem::path StirlingTmpPathForUPID(const struct upid_t& upid) {
+  char const* const kPathTemplate = "/proc/$0/root/tmp";
+  return absl::Substitute(kPathTemplate, upid.pid);
+}
+
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid) {
   char const* const kPathTemplate = "/proc/$0/root/tmp/px-java-symbolization-artifacts-$0-$1-$2";
   return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
