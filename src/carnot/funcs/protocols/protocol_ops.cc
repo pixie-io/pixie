@@ -19,6 +19,7 @@
 #include "src/carnot/funcs/protocols/protocol_ops.h"
 
 #include "src/carnot/funcs/protocols/amqp.h"
+#include "src/carnot/funcs/protocols/dns.h"
 #include "src/carnot/funcs/protocols/http.h"
 #include "src/carnot/funcs/protocols/kafka.h"
 #include "src/carnot/funcs/protocols/mux.h"
@@ -44,6 +45,7 @@ void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<AMQPFrameTypeUDF>("amqp_frame_type_name");
   registry->RegisterOrDie<AMQPMethodTypeUDF>("amqp_method_name");
   registry->RegisterOrDie<MuxFrameTypeUDF>("mux_frame_type_name");
+  registry->RegisterOrDie<DNSRcodeNameUDF>("dns_rcode_name");
 }
 
 types::StringValue ProtocolNameUDF::Exec(FunctionContext*, Int64Value protocol) {
@@ -73,6 +75,10 @@ types::StringValue MySQLCommandNameUDF::Exec(FunctionContext*, Int64Value api_ke
 
 types::StringValue MuxFrameTypeUDF::Exec(FunctionContext*, Int64Value frame_type) {
   return mux::FrameTypeName(frame_type.val);
+}
+
+types::StringValue DNSRcodeNameUDF::Exec(FunctionContext*, Int64Value rcode) {
+  return dns::RcodeToName(rcode.val);
 }
 
 }  // namespace protocols

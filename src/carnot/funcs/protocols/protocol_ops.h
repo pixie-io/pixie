@@ -120,6 +120,19 @@ class MuxFrameTypeUDF : public px::carnot::udf::ScalarUDF {
   }
 };
 
+class DNSRcodeNameUDF : public px::carnot::udf::ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext*, Int64Value rcode);
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Convert a DNS rcode to its name.")
+        .Details("UDF to convert DNS rcodes into their corresponding names.")
+        .Arg("rcode", "A DNS rcode")
+        .Example("df.rcode_name = px.dns_rcode_name(df.rcode)")
+        .Returns("The request opcode's name.");
+  }
+};
+
 void RegisterProtocolOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace protocols

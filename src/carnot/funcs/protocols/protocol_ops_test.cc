@@ -75,6 +75,13 @@ TEST(ProtocolOps, MuxFrameTypeUDF) {
   udf_tester.ForInput(-68).Expect("Rinit");
 }
 
+TEST(ProtocolOps, DNSRcodeNameUDF) {
+  auto udf_tester = udf::UDFTester<DNSRcodeNameUDF>();
+  udf_tester.ForInput(0).Expect("NOERROR");
+  udf_tester.ForInput(3).Expect("NXDOMAIN");
+  udf_tester.ForInput(9999).Expect("9999");
+}
+
 }  // namespace protocols
 }  // namespace funcs
 }  // namespace carnot
