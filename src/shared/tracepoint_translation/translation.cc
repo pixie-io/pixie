@@ -40,7 +40,8 @@ void CopyDeploymentSpec(const carnot::planner::dynamic_tracing::ir::logical::Dep
     return;
   } else if (in.has_pod_process()) {
     auto pod_process = out->mutable_pod_process();
-    pod_process->set_pod(in.pod_process().pod());
+    // TODO(chengruizhe): Update pod process translation with Stirling proto change.
+    pod_process->set_pod(in.pod_process().pods(0));
     pod_process->set_process(in.pod_process().process());
     pod_process->set_container(in.pod_process().container());
     return;

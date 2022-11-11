@@ -25,6 +25,7 @@
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/planner.pb.h"
+#include "src/carnot/planner/probes/label_selector_target.h"
 #include "src/carnot/planner/probes/process_target.h"
 #include "src/carnot/planner/probes/shared_object.h"
 #include "src/common/uuid/uuid.h"
@@ -263,6 +264,17 @@ class MutationsIR {
    */
   StatusOr<TracepointDeployment*> CreateTracepointDeploymentOnProcessSpec(
       const std::string& tracepoint_name, const ProcessSpec& pod_name, int64_t ttl_ns);
+
+  /**
+   * @brief Create a TraceProgram for the MutationsIR w/ the specified Pod name.
+   *
+   * @param tracepoint_name
+   * @param spec
+   * @param ttl_ns
+   * @return StatusOr<TracepointDeployment*>
+   */
+  StatusOr<TracepointDeployment*> CreateTracepointDeploymentOnLabelSelectorSpec(
+      const std::string& tracepoint_name, const LabelSelectorSpec& spec, int64_t ttl_ns);
 
   StatusOr<TracepointDeployment*> CreateKProbeTracepointDeployment(
       const std::string& tracepoint_name, int64_t ttl_ns);

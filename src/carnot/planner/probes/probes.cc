@@ -147,11 +147,31 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnProcess
 
   carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec deployment_spec;
   auto pod_process = deployment_spec.mutable_pod_process();
-  pod_process->set_pod(process_spec.pod_name_);
+  pod_process->add_pods(process_spec.pod_name_);
   pod_process->set_container(process_spec.container_name_);
   pod_process->set_process(process_spec.process_);
   deployments_.emplace_back(deployment_spec, std::move(program));
+  return raw;
+}
 
+StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnLabelSelectorSpec(
+    const std::string& tracepoint_name, const LabelSelectorSpec& label_selector_spec,
+    int64_t ttl_ns) {
+  std::unique_ptr<TracepointDeployment> program =
+      std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
+  TracepointDeployment* raw = program.get();
+
+  carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec deployment_spec;
+  auto label_selector = deployment_spec.mutable_label_selector();
+  auto match_labels = label_selector->mutable_labels();
+  for (auto& label : label_selector_spec.labels_) {
+    (*match_labels)[label.first] = label.second;
+  }
+
+  label_selector->set_namespace_(label_selector_spec.namespace_);
+  label_selector->set_container(label_selector_spec.container_name_);
+  label_selector->set_process(label_selector_spec.process_);
+  deployments_.emplace_back(deployment_spec, std::move(program));
   return raw;
 }
 

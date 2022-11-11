@@ -132,12 +132,27 @@ message DeploymentSpec {
   }
   message PodProcess {
     // The name of the Pod.
-    string pod = 1;
+    repeated string pods = 1;
     // The name of the container inside the above Pod.
     string container = 2;
     // The application processes whose cmdline contains this regexp are selected.
     string process = 3;
   }
+
+  // Describes a map of K8s labels in a namespace that can be used to select a set of pods.
+  // Container and/or process can be set to select a target UPID when there are multiple containers
+  // or processes in the pods.
+  message LabelSelector {
+    // The set of label keys and values the target pods have.
+    map<string, string> labels = 1;
+    // The namespace the target pods are in.
+    string namespace = 2;
+    // The name of the container in the target pods.
+    string container = 3;
+    // The application process whose cmdline contains this regexp are selected.
+    string process = 4;
+  }
+
   oneof target_oneof {
     // The UPID of a running process.
     // Resolved to an executable.
@@ -146,6 +161,8 @@ message DeploymentSpec {
     SharedObject shared_object = 2;
     // Describes the target process to attach.
     PodProcess pod_process = 3;
+    // Describes pods matching a set of labels, and processes within them.
+    LabelSelector label_selector = 4;
   }
 }
 

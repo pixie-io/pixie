@@ -61,6 +61,7 @@ enum class QLObjectType {
   kSharedObjectTraceTarget,
   kKProbeTraceTarget,
   kProcessTarget,
+  kLabelSelectorTarget,
   kExporter,
   kOTelEndpoint,
   kOTelDataContainer,

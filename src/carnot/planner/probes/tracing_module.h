@@ -167,7 +167,7 @@ class TraceModule : public QLObject {
     table_name (str): The table name to write the results. The table is created
       if it does not exist. The table schema must match if the table does exist.
     probe_fn (px.ProbeFn): The tracepoint function.
-    target (Union[px.UPID,px.SharedObject,px.Pod,pxtrace.Process]): The process or shared object
+    target (Union[px.UPID,px.SharedObject,pxtrace.PodProcess,pxtrace.LabelSelector]): The process or shared object
       to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
       which it will be removed.
@@ -239,6 +239,30 @@ class TraceModule : public QLObject {
   Args:
     pod_name (str): The name of the pod running the target process. Must be of the format <namespace>/<pod>.
       You may also use the prefix of the pod name to avoid writing the kubernetes generated check-sum.
+    container_name (str, optional): The name of the container that's running the process.
+      Specify this argument if a pod has more than one containers. The compiler will error out
+      if a pod has multiple containers and this is not specified.
+    process_name (str, optional): A regexp that matches any substrings of the command line of
+      the target process. Specify this if a container has more than one process. The compiler will
+      error out if a container has multiple processes and this is not specified.
+
+  Returns:
+    ProcessTarget: A pointer to that Process that can be passed as a target
+    to UpsertTracepoint.
+  )doc";
+
+  inline static constexpr char kLabelSelectorTargetID[] = "LabelSelector";
+  inline static constexpr char kLabelSelectorTargetDocString[] = R"doc(
+  Creates a Tracepoint target for a process.
+
+  Defines a tracepoint target for a process based a set of k8s labels representing a set of pods matching all
+  of this labels. Optionally, a container and process can be provided.
+
+  :topic: tracepoint_fields
+
+  Args:
+    labels (dict<str, str>): The K8s labels that can be resolved to a set of pods. Must be of a dictionary of key value pairs.
+    namespace (str): The namespace that target pods are in.
     container_name (str, optional): The name of the container that's running the process.
       Specify this argument if a pod has more than one containers. The compiler will error out
       if a pod has multiple containers and this is not specified.

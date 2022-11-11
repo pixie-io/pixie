@@ -24,6 +24,7 @@
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/probes/kprobe_target.h"
+#include "src/carnot/planner/probes/label_selector_target.h"
 #include "src/carnot/planner/probes/process_target.h"
 
 namespace px {
@@ -73,6 +74,9 @@ class ReturnHandler {
 };
 StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
                                            ASTVisitor* visitor);
+
+StatusOr<QLObjectPtr> LabelSelectorTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                                 ASTVisitor* visitor);
 
 StatusOr<QLObjectPtr> LatencyHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                            const ParsedArgs&, ASTVisitor* visitor) {
@@ -191,6 +195,20 @@ Status TraceModule::Init() {
 
   PL_RETURN_IF_ERROR(process_target_constructor->SetDocString(kProcessTargetDocstring));
   AddMethod(kProcessTargetID, process_target_constructor);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> label_selector_target_constructor,
+      FuncObject::Create(kLabelSelectorTargetID,
+                         {"labels", "namespace", "container_name", "process_name"},
+                         {{"process_name", "''"}, {"container_name", "''"}},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(LabelSelectorTargetHandler, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+
+  PL_RETURN_IF_ERROR(
+      label_selector_target_constructor->SetDocString(kLabelSelectorTargetDocString));
+  AddMethod(kLabelSelectorTargetID, label_selector_target_constructor);
 
   return Status::OK();
 }
@@ -361,6 +379,12 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
         tp_deployment_name, process_target->target(), ttl_ns);
     PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
+  } else if (LabelSelectorTarget::IsLabelSelectorTarget(target)) {
+    auto label_selector_target = std::static_pointer_cast<LabelSelectorTarget>(target);
+    auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnLabelSelectorSpec(
+        tp_deployment_name, label_selector_target->target(), ttl_ns);
+    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (ExprObject::IsExprObject(target)) {
     auto expr_object = std::static_pointer_cast<ExprObject>(target);
     if (Match(expr_object->expr(), UInt128Value())) {
@@ -428,6 +452,33 @@ StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const Parsed
   PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
   return ProcessTarget::Create(ast, visitor, pod_name_ir->str(), container_name_ir->str(),
                                process_path_ir->str());
+}
+
+StatusOr<QLObjectPtr> LabelSelectorTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
+                                                 ASTVisitor* visitor) {
+  QLObjectPtr labels_ir = args.GetArg("labels");
+  if (!DictObject::IsDict(labels_ir)) {
+    return labels_ir->CreateError("Expected labels to be a dictionary, received $0",
+                                  labels_ir->name());
+  }
+  PL_ASSIGN_OR_RETURN(auto namespace_ir, GetArgAs<StringIR>(ast, args, "namespace"));
+  PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
+  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
+
+  // Parse Labels into a map.
+  auto labels_dict = static_cast<DictObject*>(labels_ir.get());
+  auto values = labels_dict->values();
+  auto keys = labels_dict->keys();
+  DCHECK_EQ(values.size(), keys.size());
+  absl::flat_hash_map<std::string, std::string> labels;
+  for (size_t i = 0; i < keys.size(); ++i) {
+    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keys[i], "label_key"));
+    PL_ASSIGN_OR_RETURN(auto value, GetArgAs<StringIR>(values[i], "label_value"));
+    labels[key->str()] = value->str();
+  }
+
+  return LabelSelectorTarget::Create(ast, visitor, labels, namespace_ir->str(),
+                                     container_name_ir->str(), process_path_ir->str());
 }
 
 }  // namespace compiler

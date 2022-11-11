@@ -141,9 +141,50 @@ programs {
 }
 )pxl";
 
+constexpr char kUProbeBPFTraceUpsertPxlTpl[] = R"pxl(
+import pxtrace
+import px
+
+program = """
+uprobe:/bin/bash:readline { printf("arg0: %d\n", arg0) };
+"""
+
+table_name = 'bin_bash'
+pxtrace.UpsertTracepoint('bin_bash_tracer',
+                          table_name,
+                          program,
+                          $0,
+                          "10m")
+df = px.DataFrame(table=table_name)
+)pxl";
+
+constexpr char kLabelSelectorDeploymentSpec[] = R"pxl(
+label_selector: {
+  labels {
+    key: "app"
+    value: "querybroker"
+  }
+  namespace: "pl"
+  container: "querybroker"
+  process: "/app/querybroker"
+}
+)pxl";
+
+constexpr char klabelSelectorDeploymentSpecDefaultNS[] = R"pxl(
+label_selector: {
+  labels {
+    key: "app"
+    value: "querybroker"
+  }
+  namespace: "default"
+  container: "querybroker"
+  process: "/app/querybroker"
+}
+)pxl";
+
 constexpr char kPodProcessDeploymentSpec[] = R"pxl(
 pod_process: {
-  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
+  pods: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
   container: "querybroker"
   process: "/app/querybroker"
 }
@@ -151,14 +192,14 @@ pod_process: {
 
 constexpr char kPodProcessDeploymentSpecNoProcessName[] = R"pxl(
 pod_process: {
-  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
+  pods: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
   container: "querybroker"
 }
 )pxl";
 
 constexpr char kPodProcessDeploymentSpecJustPod[] = R"pxl(
 pod_process: {
-  pod: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
+  pods: "pl/vizier-query-broker-85dc9bc4d-jzw4s"
 }
 )pxl";
 
@@ -270,6 +311,33 @@ TEST_F(ProbeCompilerTest, parse_single_probe_on_shared_object) {
   ASSERT_EQ(pb.mutations_size(), 1);
   EXPECT_THAT(pb.mutations()[0].trace(),
               testing::proto::EqualsProto(kSingleProbeUpsertSharedObjectProgramPb));
+}
+
+TEST_F(ProbeCompilerTest, parse_label_selector_spec_default_ns) {
+  std::string query = absl::Substitute(
+      kUProbeBPFTraceUpsertPxlTpl,
+      "pxtrace.LabelSelector({'app': 'querybroker'},"
+      "namespace='default', container_name='querybroker', process_name='/app/querybroker')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace().deployment_spec(),
+              testing::proto::EqualsProto(klabelSelectorDeploymentSpecDefaultNS));
+}
+
+TEST_F(ProbeCompilerTest, parse_label_selector_spec) {
+  std::string query = absl::Substitute(kUProbeBPFTraceUpsertPxlTpl,
+                                       "pxtrace.LabelSelector({'app': 'querybroker'},"
+                                       "'pl', 'querybroker', '/app/querybroker')");
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(query));
+
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+  EXPECT_THAT(pb.mutations()[0].trace().deployment_spec(),
+              testing::proto::EqualsProto(kLabelSelectorDeploymentSpec));
 }
 
 TEST_F(ProbeCompilerTest, parse_single_probe_in_func) {

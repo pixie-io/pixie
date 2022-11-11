@@ -22,6 +22,7 @@ pl_proto_library(
     name = "logical_pl_proto",
     srcs = ["logical.proto"],
     deps = [
+        "//src/shared/k8s/metadatapb:metadata_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -30,6 +31,7 @@ pl_cc_proto_library(
     name = "logical_pl_cc_proto",
     proto = ":logical_pl_proto",
     deps = [
+        "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
@@ -38,5 +40,5 @@ pl_go_proto_library(
     name = "logical_pl_go_proto",
     importpath = "px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb",
     proto = ":logical_pl_proto",
-    deps = [],
+    deps = ["//src/shared/k8s/metadatapb:metadata_pl_go_proto"],
 )

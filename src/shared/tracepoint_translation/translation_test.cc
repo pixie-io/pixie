@@ -165,7 +165,7 @@ deployment_spec {
 constexpr char kPlannerPodProcessDeployment[] = R"(
 deployment_spec {
   pod_process {
-    pod: "abcd"
+    pods: "abcd"
     container: "efgh"
     process: "12345"
   }
