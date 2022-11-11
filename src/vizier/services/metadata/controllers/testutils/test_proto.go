@@ -906,3 +906,50 @@ status {
 	}
 }
 `
+
+// TDLabelSelectorPb is a protobuf for a TracepointDeployment object with a LabelSelector.
+const TDLabelSelectorPb = `
+name: "test_probe"
+deployment_spec: {
+  label_selector: {
+    labels: {
+      key:"app"
+      value:"my_app"
+    }
+    namespace: "namespace1",
+    container: "container1",
+    process: "/app -80"
+  }
+},
+programs: [
+  {
+    table_name: "test",
+    bpftrace: {
+      program: "uretprobe:\"readline\" { printf(\"cmd: %s\", str(retval));}"
+    }
+  }
+]
+`
+
+// TDPodProcessPb is a protobuf for a TracepointDeployment object with a PodProcess.
+const TDPodProcessPb = `
+name: "test_probe"
+deployment_spec: {
+  pod_process : {
+    pods : [
+      "namespace1/pod1",
+      "namespace1/pod2"
+    ],
+    container: "container1",
+    process: "/app -80"
+  }
+},
+programs: [
+  {
+    table_name: "test",
+    bpftrace: {
+      program: "uretprobe:\"readline\" { printf(\"cmd: %s\", str(retval));}"
+    }
+  }
+]
+`

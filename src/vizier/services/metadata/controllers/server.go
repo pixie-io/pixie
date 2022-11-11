@@ -36,10 +36,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	"px.dev/pixie/src/vizier/services/metadata/metadataenv"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
@@ -56,6 +58,7 @@ const UnhealthyAgentThreshold = 30 * time.Second
 type Server struct {
 	env    metadataenv.MetadataEnv
 	ds     datastore.MultiGetterSetterDeleterCloser
+	pls    k8smeta.PodLabelStore
 	agtMgr agent.Manager
 	tpMgr  *tracepoint.Manager
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
@@ -65,10 +68,11 @@ type Server struct {
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, ds datastore.MultiGetterSetterDeleterCloser, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
+func NewServer(env metadataenv.MetadataEnv, ds datastore.MultiGetterSetterDeleterCloser, pls k8smeta.PodLabelStore, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
 	return &Server{
 		env:    env,
 		ds:     ds,
+		pls:    pls,
 		agtMgr: agtMgr,
 		tpMgr:  tpMgr,
 	}
@@ -346,6 +350,50 @@ func (s *Server) GetWithPrefixKey(ctx context.Context, req *metadatapb.WithPrefi
 	return resp, nil
 }
 
+// ConvertLabelsToPods fetches all the pods in the PodLabelStore that match the labels described in the input tp,
+// and then convert the LabelSelector to a PodProcess.
+func (s *Server) ConvertLabelsToPods(tp *logicalpb.TracepointDeployment) error {
+	ls := tp.GetDeploymentSpec().GetLabelSelector()
+	// If no label selector is provided, no change is needed.
+	if ls == nil {
+		return nil
+	}
+
+	namespace := ls.GetNamespace()
+
+	ml := ls.GetLabels()
+	if ml == nil {
+		return nil
+	}
+
+	// Fetch pods based on match_labels.
+	pods, err := s.pls.FetchPodsWithLabels(namespace, ml)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch pods using match labels.")
+		return err
+	}
+
+	if len(pods) == 0 {
+		return nil
+	}
+
+	// Add namespace to pod name, as needed in Stirling.
+	for i, pod := range pods {
+		pods[i] = namespace + "/" + pod
+	}
+
+	tp.DeploymentSpec = &logicalpb.DeploymentSpec{
+		TargetOneof: &logicalpb.DeploymentSpec_PodProcess_{
+			PodProcess: &logicalpb.DeploymentSpec_PodProcess{
+				Pods:      pods,
+				Container: ls.GetContainer(),
+				Process:   ls.GetProcess(),
+			},
+		},
+	}
+	return nil
+}
+
 // RegisterTracepoint is a request to register the tracepoints specified in the TracepointDeployment on all agents.
 func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.RegisterTracepointRequest) (*metadatapb.RegisterTracepointResponse, error) {
 	responses := make([]*metadatapb.RegisterTracepointResponse_TracepointStatus, len(req.Requests))
@@ -356,6 +404,12 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		if err != nil {
 			return nil, err
 		}
+
+		err = s.ConvertLabelsToPods(tp.TracepointDeployment)
+		if err != nil {
+			return nil, err
+		}
+
 		tracepointID, err := s.tpMgr.CreateTracepoint(tp.Name, tp.TracepointDeployment, ttl)
 		if err != nil && err != tracepoint.ErrTracepointAlreadyExists {
 			return nil, err

@@ -332,6 +332,8 @@ func (m *Datastore) FetchPodsWithLabelKey(namespace string, key string) ([]strin
 
 // FetchPodsWithLabels gets the names of all the pods whose labels match exactly all the labels provided.
 func (m *Datastore) FetchPodsWithLabels(namespace string, labels map[string]string) ([]string, error) {
+	// TODO(chengruizhe): Support resolving to pods in all namespaces if namespace is empty.
+
 	// pods records the number of label matches for all the pods with keys in labels.
 	pods := make(map[string]int)
 	var result []string

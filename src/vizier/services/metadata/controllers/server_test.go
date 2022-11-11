@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -164,7 +165,7 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -210,7 +211,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -239,7 +240,7 @@ func TestGetSchemas(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, nil)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, nil)
 
 	req := metadatapb.SchemaRequest{}
 
@@ -347,7 +348,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		{
@@ -472,7 +473,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		{
@@ -657,7 +658,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				t.Fatal("Failed to create api environment.")
 			}
 
-			s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
+			s := controllers.NewServer(env, nil, nil, mockAgtMgr, tracepointMgr)
 			req := metadatapb.GetTracepointInfoRequest{
 				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(tID)},
 			}
@@ -715,7 +716,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.RemoveTracepointRequest{
 		Names: []string{"test1", "test2"},
@@ -901,7 +902,7 @@ func TestGetAgentUpdates(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	srv := controllers.NewServer(mdEnv, nil, mockAgtMgr, nil)
+	srv := controllers.NewServer(mdEnv, nil, nil, mockAgtMgr, nil)
 
 	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
@@ -1062,7 +1063,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s := controllers.NewServer(env, nil, mockAgtMgr, tracepointMgr)
+	s := controllers.NewServer(env, nil, nil, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.UpdateConfigRequest{
 		AgentPodName: "pl/pem-1234",
@@ -1085,4 +1086,36 @@ func Test_Server_UpdateConfig(t *testing.T) {
 	resp, err = s.UpdateConfig(context.Background(), &invalidReq)
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
+}
+
+func Test_Server_ConvertLabelsToPods(t *testing.T) {
+	// Set up pod label store with associated pods and labels.
+	pls := &testutils.InMemoryPodLabelStore{
+		Store: make(map[string]string),
+	}
+	err := pls.SetPodLabels("namespace1", "pod1", map[string]string{"app": "my_app", "version": "v1"})
+	require.NoError(t, err)
+	err = pls.SetPodLabels("namespace1", "pod2", map[string]string{"app": "my_app", "version": "v2"})
+	require.NoError(t, err)
+
+	// Set up server.
+	env, err := metadataenv.New("vizier")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+	s := controllers.NewServer(env, nil, pls, nil, nil)
+
+	program := &logicalpb.TracepointDeployment{}
+	err = proto.UnmarshalText(testutils.TDLabelSelectorPb, program)
+	require.NoError(t, err)
+
+	err = s.ConvertLabelsToPods(program)
+	require.NoError(t, err)
+	sort.Strings(program.GetDeploymentSpec().GetPodProcess().GetPods())
+
+	expected := &logicalpb.TracepointDeployment{}
+	err = proto.UnmarshalText(testutils.TDPodProcessPb, expected)
+	require.NoError(t, err)
+
+	assert.True(t, proto.Equal(program, expected), fmt.Sprintf("expect: %s\nactual: %s", expected, program))
 }

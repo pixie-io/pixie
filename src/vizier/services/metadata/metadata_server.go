@@ -281,7 +281,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 	metrics.MustRegisterMetricsHandlerNoDefaultMetrics(mux)
 
-	svr := controllers.NewServer(env, dataStore, agtMgr, tracepointMgr)
+	svr := controllers.NewServer(env, dataStore, k8sMds, agtMgr, tracepointMgr)
 
 	csDs := cronscript.NewDatastore(dataStore)
 	cronScriptSvr := cronscript.New(csDs)
