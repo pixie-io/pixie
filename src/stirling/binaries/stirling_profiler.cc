@@ -51,7 +51,6 @@ struct Args {
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 ProcessStatsMonitor* g_process_stats_monitor = nullptr;
-absl::flat_hash_map<uint64_t, InfoClass> g_table_info_map;
 std::atomic<bool> g_data_received = false;
 Args g_args;
 
@@ -70,14 +69,8 @@ Status ParseArgs(int argc, char** argv) {
   return Status::OK();
 }
 
-Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
+Status StirlingWrapperCallback(uint64_t /* table_id */, TabletID /* tablet_id */,
                                std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
-  // Find the table info from the publications.
-  auto iter = g_table_info_map.find(table_id);
-  CHECK(iter != g_table_info_map.end());
-  const InfoClass& table_info = iter->second;
-  CHECK_EQ(table_info.schema().name(), "stack_traces.beta");
-
   auto& upid_col = (*record_batch)[px::stirling::kStackTraceUPIDIdx];
   auto& stack_trace_str_col = (*record_batch)[px::stirling::kStackTraceStackTraceStrIdx];
   auto& count_col = (*record_batch)[px::stirling::kStackTraceCountIdx];
@@ -132,11 +125,6 @@ int main(int argc, char** argv) {
 
   // Enable use of USR1/USR2 for controlling debug.
   stirling->RegisterUserDebugSignalHandlers();
-
-  // Get a publish proto message and subscribe to sources.
-  Publish publication;
-  stirling->GetPublishProto(&publication);
-  IndexPublication(publication, &g_table_info_map);
 
   // Start measuring process stats after init.
   ProcessStatsMonitor process_stats_monitor;
