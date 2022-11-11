@@ -18,7 +18,7 @@
 
 RELEASE_VERSION=0.5.2
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 pushd "${workspace}" || exit
 
 if [[ ! -d bazel-compilation-database-${RELEASE_VERSION} ]]; then

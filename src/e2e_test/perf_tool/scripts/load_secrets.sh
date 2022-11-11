@@ -17,7 +17,7 @@
 
 set -e
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 namespace="px-perf"
 credentials_path=${workspace}/private/credentials/dev_infra/perf_tool
 

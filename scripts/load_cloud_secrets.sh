@@ -24,7 +24,7 @@ fi
 namespace=$1
 secret_type=$2
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 credentials_path=${workspace}/private/credentials/k8s/${secret_type}
 monitoring_path=${workspace}/private/credentials/k8s/monitoring/${secret_type}
 

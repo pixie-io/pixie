@@ -25,7 +25,7 @@ resource_name="px-perf"
 # Should only need to change things above this line to deploy to a non-(Pixie core team) environment.
 resource_name_underscores="${resource_name//-/_}"
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 credentials_path="${workspace}/private/credentials/dev_infra/perf_tool"
 k8s_path="${workspace}/src/e2e_test/perf_tool/backend/k8s"
 

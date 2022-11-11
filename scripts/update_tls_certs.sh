@@ -61,7 +61,6 @@ if [ -z "${dir}" ]; then
   exit 1
 fi
 
-workspace=$(bazel info workspace 2> /dev/null)
 pushd "${dir}"
 bazel run //src/pixie_cli:px -- create-cloud-certs --namespace="$namespace" > certs.yaml
 sops --encrypt certs.yaml > service_tls_certs.yaml

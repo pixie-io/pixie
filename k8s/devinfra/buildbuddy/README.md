@@ -15,13 +15,13 @@ helm repo update
 
 ```shell
 kubectl create namespace buildbuddy
-sops -d $(bazel info workspace)/private/credentials/dev_infra/buildbuddy/sa_secret.yaml | kubectl apply -n buildbuddy -f -
+sops -d $(git rev-parse --show-toplevel)/private/credentials/dev_infra/buildbuddy/sa_secret.yaml | kubectl apply -n buildbuddy -f -
 ```
 
 ### Get the config
 
 ```shell
-sops -d $(bazel info workspace)/private/credentials/dev_infra/buildbuddy/config.yaml > config.yaml
+sops -d $(git rev-parse --show-toplevel)/private/credentials/dev_infra/buildbuddy/config.yaml > config.yaml
 ```
 
 ### Install

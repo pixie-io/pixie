@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 pushd "${workspace}" &> /dev/null || exit
 
 function label_to_path() {

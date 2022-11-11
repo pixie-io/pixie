@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-repo_path=$(bazel info workspace)
+repo_path=$(git rev-parse --show-toplevel)
 
 bazel run //bazel/external/ubuntu_packages:push_ubuntu_debs_to_gcs -- \
   --gcs-prefix "gs://pixie-dev-public/ubuntu-debs" \

@@ -20,7 +20,7 @@
 go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -pkg=complete -o=complete/bindata.gen.go .
 go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -ignore=^auth_schema.graphql -pkg=noauth -o=noauth/bindata.gen.go .
 
-tot=$(bazel info workspace)
+tot=$(git rev-parse --show-toplevel)
 pushd "${tot}/src/ui"
 # Note: this _should_ be schema.d.ts, not schema.ts. However, since we build the UI in isolatedModules mode, we must
 # also use normal enums instead of const enums (see https://www.typescriptlang.org/tsconfig#isolatedModules).

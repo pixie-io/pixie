@@ -35,7 +35,7 @@ if [ $# -lt 1 ]; then
 fi
 
 namespace=""
-repo_path=$(bazel info workspace)
+repo_path=$(git rev-parse --show-toplevel)
 versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 while true; do
     if [[ "$1" == "--help" ]]; then

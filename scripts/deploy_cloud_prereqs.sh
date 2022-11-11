@@ -25,7 +25,7 @@ fi
 namespace=$1
 secret_type=$2
 
-workspace=$(bazel info workspace 2> /dev/null)
+workspace=$(git rev-parse --show-toplevel)
 # shellcheck source=scripts/script_utils.sh
 source "${workspace}"/scripts/script_utils.sh
 
