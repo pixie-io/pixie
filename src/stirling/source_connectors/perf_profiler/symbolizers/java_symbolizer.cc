@@ -71,8 +71,8 @@ Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
     const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
     const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
     const std::string error_msg = absl::Substitute(
-        "For Java pid: $0, cmd: $1, could not determine space available in path $2.", upid.pid,
-        cmdline, tmp_path.string());
+        "Could not determine space available in path $0, for Java pid: $1, cmd: $2.",
+        tmp_path.string(), upid.pid, cmdline);
     LOG(WARNING) << error_msg;
     return error::Internal("$0: $1", error_msg, status_or_space_available.msg());
   }
@@ -84,9 +84,9 @@ Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
     const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
     const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
     const std::string error_msg = absl::Substitute(
-        "For Java pid: $0, cmd: $1, found $2 bytes availabe in $3, but require $4 bytes to install "
-        "symbolization libs and symbol file.",
-        upid.pid, cmdline, space_available_in_bytes, tmp_path.string(), kMinimumBytesRequired);
+        "Not enough tmp space available for Java symbolization libraries and symbol file. Found $0 "
+        "bytes available in $1 (but require $2 bytes), for Java pid: $3, cmd: $4.",
+        space_available_in_bytes, tmp_path.string(), kMinimumBytesRequired, upid.pid, cmdline);
     LOG(WARNING) << error_msg;
     return error::Internal(error_msg);
   }
