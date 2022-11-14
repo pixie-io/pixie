@@ -1337,6 +1337,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   size_t frame_type = std::max(entry.req.frame_type, entry.resp.frame_type);
   r.Append<r.ColIndex("frame_type")>(frame_type);
+  r.Append<r.ColIndex("channel")>(entry.req.channel);
   r.Append<r.ColIndex("req_class_id")>(entry.req.class_id);
   r.Append<r.ColIndex("req_method_id")>(entry.req.method_id);
 

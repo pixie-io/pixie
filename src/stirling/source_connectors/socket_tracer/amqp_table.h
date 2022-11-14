@@ -40,6 +40,12 @@ static constexpr DataElement kAMQPElements[] = {
         types::SemanticType::ST_NONE,
         types::PatternType::GENERAL
         },
+        {
+        "channel", "AMQP channel",
+        types::DataType::INT64,
+        types::SemanticType::ST_NONE,
+        types::PatternType::GENERAL
+        },
         {"req_class_id", "AMQP request for request class_id",
         types::DataType::INT64,
         types::SemanticType::ST_NONE,

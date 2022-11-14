@@ -82,6 +82,7 @@ class AMQPTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ 
 
 struct AMQPTraceRecord {
   uint8_t frame_type;
+  uint8_t channel_id;
   uint8_t req_class_id;
   uint8_t req_method_id;
   uint8_t resp_class_id;
@@ -96,6 +97,7 @@ struct AMQPTraceRecord {
 
 auto EqAMQPTraceRecord(const AMQPTraceRecord& x) {
   return AllOf(Field(&AMQPTraceRecord::frame_type, Eq(x.frame_type)),
+               Field(&AMQPTraceRecord::channel_id, Eq(x.channel_id)),
                Field(&AMQPTraceRecord::req_class_id, Eq(x.req_class_id)),
                Field(&AMQPTraceRecord::req_method_id, Eq(x.req_method_id)),
                Field(&AMQPTraceRecord::resp_class_id, Eq(x.resp_class_id)),
@@ -104,6 +106,7 @@ auto EqAMQPTraceRecord(const AMQPTraceRecord& x) {
 
 AMQPTraceRecord kConnectStartRecord = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPConnectionMethods::kAMQPConnectionStartOk),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
@@ -112,6 +115,7 @@ AMQPTraceRecord kConnectStartRecord = {
 
 AMQPTraceRecord kConnectTuneRecord = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPConnectionMethods::kAMQPConnectionTuneOk),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
@@ -120,6 +124,7 @@ AMQPTraceRecord kConnectTuneRecord = {
 
 AMQPTraceRecord kConnectOpen = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPConnectionMethods::kAMQPConnectionOpen),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kConnection),
@@ -128,6 +133,7 @@ AMQPTraceRecord kConnectOpen = {
 
 AMQPTraceRecord kChannelOpen = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kChannel),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPChannelMethods::kAMQPChannelOpen),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kChannel),
@@ -136,6 +142,7 @@ AMQPTraceRecord kChannelOpen = {
 
 AMQPTraceRecord kQueueDeclare = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kQueue),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPQueueMethods::kAMQPQueueDeclare),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kQueue),
@@ -144,6 +151,7 @@ AMQPTraceRecord kQueueDeclare = {
 
 AMQPTraceRecord kBasicConsume = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPBasicMethods::kAMQPBasicConsume),
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
@@ -152,6 +160,7 @@ AMQPTraceRecord kBasicConsume = {
 
 AMQPTraceRecord kBasicPublish = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
     .req_method_id = static_cast<uint8_t>(amqp::AMQPBasicMethods::kAMQPBasicPublish),
     .resp_class_id = 0,
@@ -159,6 +168,7 @@ AMQPTraceRecord kBasicPublish = {
 
 AMQPTraceRecord kBasicContentHeader = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameHeader),
+    .channel_id = 2,
     .req_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
     .req_method_id = 0,
     .resp_class_id = 0,
@@ -166,6 +176,7 @@ AMQPTraceRecord kBasicContentHeader = {
 
 AMQPTraceRecord kContentBody = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameBody),
+    .channel_id = 3,
     .req_class_id = 0,
     .req_method_id = 0,
     .resp_class_id = 0,
@@ -173,12 +184,14 @@ AMQPTraceRecord kContentBody = {
 
 AMQPTraceRecord kBasicRespContentHeader = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameHeader),
+    .channel_id = 2,
     .req_class_id = 0,
     .req_method_id = 0,
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
     .resp_method_id = 0};
 AMQPTraceRecord kBasicDeliver = {
     .frame_type = static_cast<uint8_t>(amqp::AMQPFrameTypes::kFrameMethod),
+    .channel_id = 1,
     .req_class_id = 0,
     .req_method_id = 0,
     .resp_class_id = static_cast<uint8_t>(amqp::AMQPClasses::kBasic),
@@ -191,6 +204,8 @@ std::vector<AMQPTraceRecord> GetAMQPTraceRecords(
     for (size_t record_idx = 0; record_idx < column_wrapper->Size(); ++record_idx) {
       uint8_t frame_type = static_cast<uint8_t>(
           record_batch[kAMQPFrameType]->Get<types::Int64Value>(record_idx).val);
+      uint8_t channel_id = static_cast<uint8_t>(
+          record_batch[kAMQPFrameType]->Get<types::Int64Value>(record_idx).val);
       uint8_t class_id = static_cast<uint8_t>(
           record_batch[kAMQPReqClassId]->Get<types::Int64Value>(record_idx).val);
       uint8_t method_id = static_cast<uint8_t>(
@@ -202,6 +217,7 @@ std::vector<AMQPTraceRecord> GetAMQPTraceRecords(
           record_batch[kAMQPRespMethodId]->Get<types::Int64Value>(record_idx).val);
       res.push_back(AMQPTraceRecord{
           .frame_type = frame_type,
+          .channel_id = channel_id,
           .req_class_id = class_id,
           .req_method_id = method_id,
           .resp_class_id = resp_class_id,
