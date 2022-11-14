@@ -454,7 +454,7 @@ spec:
       - env:
         - name: ZOOKEEPER_CLIENT_PORT
           value: "2181"
-        image: wurstmeister/zookeeper:3.4.6
+        image: wurstmeister/zookeeper:latest
         name: zookeeper
         ports:
         - containerPort: 2181
