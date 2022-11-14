@@ -1,0 +1,17 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: plugin-db-updater-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: updater
+        image: gcr.io/pixie-prod/cloud/plugin/load_db:0.0.1
+        env:
+        - name: PL_CRON_SCRIPT_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_CRON_SCRIPT_SERVICE

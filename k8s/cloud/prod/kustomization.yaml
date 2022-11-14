@@ -48,3 +48,7 @@ patches:
 - path: node_selector_patch.yaml
   target:
     kind: Deployment
+- path: plugin_job.yaml
+  target:
+    kind: Job
+    labelSelector: jobgroup=plugin-db-updater

@@ -42,3 +42,7 @@ patches:
   target:
     kind: Deployment
     labelSelector: db=pgsql
+- path: plugin_job.yaml
+  target:
+    kind: Job
+    labelSelector: jobgroup=plugin-db-updater
