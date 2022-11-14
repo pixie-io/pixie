@@ -1,0 +1,35 @@
+--- cc_toolchain_config.bzl	2022-11-17 14:42:44.331653224 -0800
++++ new.bzl	2022-11-17 14:43:59.155382400 -0800
+@@ -27,6 +27,7 @@
+     "with_feature_set",
+ )
+ load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
++load(":toolchain_features.bzl", "pl_toolchain_pre_features", "PL_EXTRA_CC_CONFIG_ATTRS", "pl_toolchain_post_features")
+ 
+ def layering_check_features(compiler):
+     if compiler != "clang":
+@@ -1294,6 +1295,7 @@
+             unfiltered_compile_flags_feature,
+         ] + layering_check_features(ctx.attr.compiler)
+ 
++    features = pl_toolchain_pre_features(ctx) + features + pl_toolchain_post_features(ctx)
+     return cc_common.create_cc_toolchain_config_info(
+         ctx = ctx,
+         features = features,
+@@ -1313,7 +1315,7 @@
+ 
+ cc_toolchain_config = rule(
+     implementation = _impl,
+-    attrs = {
++    attrs = dict({
+         "cpu": attr.string(mandatory = True),
+         "compiler": attr.string(mandatory = True),
+         "toolchain_identifier": attr.string(mandatory = True),
+@@ -1336,6 +1338,6 @@
+         "coverage_link_flags": attr.string_list(),
+         "supports_start_end_lib": attr.bool(),
+         "builtin_sysroot": attr.string(),
+-    },
++    }, **PL_EXTRA_CC_CONFIG_ATTRS),
+     provides = [CcToolchainConfigInfo],
+ )

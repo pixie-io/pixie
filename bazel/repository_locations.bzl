@@ -334,6 +334,12 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/pixie-io/bpftrace/archive/ad53050229186cb71021bf4d6617e8765c666a3c.tar.gz",
         ],
     ),
+    unix_cc_toolchain_config = dict(
+        sha256 = "2c1d60ef4d586909f138c28409780e102e2ebd619e7d462ded26dce43a8f9ffb",
+        urls = [
+            "https://raw.githubusercontent.com/bazelbuild/bazel/5.3.1/tools/cpp/unix_cc_toolchain_config.bzl",
+        ],
+    ),
 )
 
 # To modify one of the forked repos below:
