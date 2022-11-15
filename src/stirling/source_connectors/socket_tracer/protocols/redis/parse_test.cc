@@ -94,11 +94,11 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
         // clang-format off
         WellFormedTestCase{kSimpleStringMsg, "", "OK"},
-        WellFormedTestCase{kErrorMsg, "", "Error message"},
+        WellFormedTestCase{kErrorMsg, "", "-Error message"},
         WellFormedTestCase{kBulkStringMsg, "", "bulk string"},
         WellFormedTestCase{kEmptyBulkStringMsg, "", ""},
         WellFormedTestCase{kNullBulkStringMsg, "", "<NULL>"},
-        WellFormedTestCase{kArrayMsg, "", R"(["OK","Error message","bulk string"])"},
+        WellFormedTestCase{kArrayMsg, "", R"(["OK","-Error message","bulk string"])"},
         WellFormedTestCase{kCmdMsg, "ACL LOAD", R"([])", {message_type_t::kRequest}},
         WellFormedTestCase{kNullElemInArrayMsg, "", R"(["<NULL>"])"},
         WellFormedTestCase{kNullArrayMsg, "", "[NULL]"},

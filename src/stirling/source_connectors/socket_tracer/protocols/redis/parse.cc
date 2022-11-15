@@ -132,7 +132,8 @@ Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
     }
     case kErrorMarker: {
       PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
-      msg->payload = str;
+      // Append ErrorMarker in front to differentiate error messages from the rest.
+      msg->payload = absl::StrCat("-", str);
       break;
     }
     case kIntegerMarker: {
