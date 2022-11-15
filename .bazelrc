@@ -63,6 +63,8 @@ build:clang --action_env=CC=clang
 build:clang --host_action_env=CC=clang
 build:clang --action_env=CXX=clang++
 build:clang --host_action_env=CXX=clang++
+build:clang --//bazel/cc_toolchains:compiler=clang
+build:clang --//bazel/cc_toolchains:libc_version=gnu
 
 # Build for Clang using Libc++.
 build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
@@ -76,6 +78,9 @@ build:libc++ --define use_libcpp=1
 build:libc++ --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
 build:libc++ --build_tag_filters=-no_libcpp
 build:libc++ --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
+build:libc++ --//bazel/cc_toolchains:compiler=clang
+build:libc++ --//bazel/cc_toolchains:libc_version=gnu
+build:libc++ --features=libc++ --features=-libstdc++
 
 # Build for GCC.
 build:gcc --linkopt -fuse-ld=lld
@@ -97,6 +102,8 @@ build:gcc --copt -Wno-error=stringop-truncation
 build:gcc --copt -Wno-error=maybe-uninitialized
 build:gcc --build_tag_filters=-no_gcc
 build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled
+build:gcc --//bazel/cc_toolchains:compiler=gcc
+build:gcc --//bazel/cc_toolchains:libc_version=gnu
 
 # Default mac config. Same as clang except we can't statically link,
 # and mac does not use libstdc++.
@@ -128,6 +135,7 @@ build:asan --linkopt=-L/opt/clang-14.0/lib/clang/14.0.4/lib/linux
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone-x86_64.a
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone_cxx-x86_64.a
 build:asan --linkopt=-l:libclang_rt.builtins-x86_64.a
+build:asan --features=asan
 
 # bazel build --config msan
 build:msan --define PL_CONFIG_MSAN=1
@@ -139,6 +147,7 @@ build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf,-disabled
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --define tcmalloc=disabled
 build:msan --copt -DMEMORY_SANITIZER=1
+build:msan --features=msan
 
 # bazel build --config tsan
 build:tsan --config=clang
@@ -154,6 +163,7 @@ build:tsan --copt -DTHREAD_SANITIZER=1
 # This is needed to address false positive problem with abseil.
 # https://github.com/google/sanitizers/issues/953
 build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
+build:tsan --features=tsan
 
 # Note that we are lumping tests that require root into the BPF tests below
 # to minimize number of configs.

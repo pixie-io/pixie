@@ -17,6 +17,7 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//bazel/cc_toolchains:deps.bzl", "cc_toolchain_config_repo")
+load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
 
 # Make all contents of an external repository accessible under a filegroup.
@@ -222,6 +223,7 @@ def _pl_deps():
     _bazel_repo("com_google_googleapis")
 
     cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
+    pl_register_cc_toolchains()
 
     _com_llvm_lib()
     _cc_deps()

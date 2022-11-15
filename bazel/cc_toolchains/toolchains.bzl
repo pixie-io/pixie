@@ -13,16 +13,11 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-load("//bazel/cc_toolchains:clang.bzl", "clang_x86_64_gnu")
-load("//bazel/cc_toolchains:gcc.bzl", "gcc_x86_64_gnu")
-load("//bazel/cc_toolchains:settings.bzl", "settings")
 
-filegroup(
-    name = "empty",
-)
+def _pl_register_cc_toolchains():
+    native.register_toolchains(
+        "//bazel/cc_toolchains:cc-toolchain-gcc-x86_64-gnu",
+        "//bazel/cc_toolchains:cc-toolchain-clang-x86_64-gnu",
+    )
 
-settings()
-
-gcc_x86_64_gnu()
-
-clang_x86_64_gnu()
+pl_register_cc_toolchains = _pl_register_cc_toolchains
