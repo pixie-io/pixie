@@ -18,6 +18,26 @@ load("@rules_cc//cc:defs.bzl", "cc_toolchain")
 load("@unix_cc_toolchain_config//:cc_toolchain_config.bzl", "cc_toolchain_config")
 
 def _clang_x86_64_gnu():
+    _clang_x86_64_gnu_with_options(
+        extra_target_constraints = [
+            ":is_exec_false",
+        ],
+    )
+
+def _clang_exec():
+    _clang_x86_64_gnu_with_options(
+        suffix = "-exec",
+        enable_sanitizers = False,
+        extra_target_constraints = [
+            ":is_exec_true",
+        ],
+    )
+
+def _clang_x86_64_gnu_with_options(suffix = "", enable_sanitizers = True, extra_target_constraints = []):
+    toolchain_config_name = "clang_config_x86_64_gnu" + suffix
+    toolchain_identifier = "clang-x86_64-linux-gnu" + suffix
+    cc_toolchain_name = "cc-compiler-clang-x86_64-gnu" + suffix
+    toolchain_name = "cc-toolchain-clang-x86_64-gnu" + suffix
     tool_paths = {
         "ar": "/usr/bin/ar",
         "cpp": "/usr/bin/cpp",
@@ -32,10 +52,10 @@ def _clang_x86_64_gnu():
         "strip": "/usr/bin/strip",
     }
     cc_toolchain_config(
-        name = "clang_config_x86_64_gnu",
+        name = toolchain_config_name,
         cpu = "k8",
         compiler = "clang",
-        toolchain_identifier = "clang-x86_64-linux-gnu",
+        toolchain_identifier = toolchain_identifier,
         host_system_name = "x86_64-unknown-linux-gnu",
         target_system_name = "x86_64-unknown-linux-gnu",
         target_libc = "glibc_unknown",
@@ -95,12 +115,13 @@ def _clang_x86_64_gnu():
         coverage_link_flags = ["--coverage"],
         supports_start_end_lib = True,
         libclang_rt_path = "/opt/clang-14.0/lib/clang/14.0.4/lib/linux",
+        enable_sanitizers = enable_sanitizers,
     )
 
     cc_toolchain(
-        name = "cc-compiler-clang-x86_64-gnu",
-        toolchain_identifier = "clang-x86_64-linux-gnu",
-        toolchain_config = ":clang_config_x86_64_gnu",
+        name = cc_toolchain_name,
+        toolchain_identifier = toolchain_identifier,
+        toolchain_config = toolchain_config_name,
         # TODO(james): figure out what these files values do, and if we need them.
         all_files = ":empty",
         ar_files = ":empty",
@@ -115,7 +136,7 @@ def _clang_x86_64_gnu():
     )
 
     native.toolchain(
-        name = "cc-toolchain-clang-x86_64-gnu",
+        name = toolchain_name,
         exec_compatible_with = [
             "@platforms//cpu:x86_64",
             "@platforms//os:linux",
@@ -123,13 +144,14 @@ def _clang_x86_64_gnu():
         target_compatible_with = [
             "@platforms//cpu:x86_64",
             "@platforms//os:linux",
-        ],
+        ] + extra_target_constraints,
         target_settings = [
             ":compiler_clang",
             ":libc_version_gnu",
         ],
-        toolchain = ":cc-compiler-clang-x86_64-gnu",
+        toolchain = ":" + cc_toolchain_name,
         toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
     )
 
 clang_x86_64_gnu = _clang_x86_64_gnu
+clang_exec = _clang_exec

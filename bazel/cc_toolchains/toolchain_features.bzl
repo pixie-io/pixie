@@ -70,6 +70,7 @@ def pl_toolchain_post_features(ctx):
 
 PL_EXTRA_CC_CONFIG_ATTRS = dict(
     libclang_rt_path = attr.string(),
+    enable_sanitizers = attr.bool(),
 )
 
 all_compile_actions = [
@@ -161,10 +162,11 @@ def _libcpp(ctx):
 def _clang_features(ctx):
     features = []
     features += _libcpp(ctx)
-    if ctx.attr.libclang_rt_path != "":
-        features += _asan(ctx)
-    features += _msan(ctx)
-    features += _tsan(ctx)
+    if ctx.attr.enable_sanitizers:
+        if ctx.attr.libclang_rt_path != "":
+            features += _asan(ctx)
+        features += _msan(ctx)
+        features += _tsan(ctx)
     return features
 
 def _asan(ctx):

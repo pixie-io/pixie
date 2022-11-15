@@ -1,6 +1,7 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
 # This is to flush bazel cache for new version of clang/gcc.
+build --platforms=//bazel/cc_toolchains:linux-x86_64
 build --action_env=CLANG_COMPILER_VERSION=14.0_0
 build --host_action_env=CLANG_COMPILER_VERSION=14.0_0
 
@@ -45,34 +46,13 @@ build --strip=never
 # For more context, see: https://github.com/bazelbuild/bazel/issues/3236
 test --sandbox_tmpfs_path=/tmp
 
+build --incompatible_enable_cc_toolchain_resolution
+build --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 # Build for Clang:
-build:clang --linkopt -fuse-ld=lld
-build:clang --host_linkopt -fuse-ld=lld
-build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
-build:clang --host_action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
-build:clang --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
-build:clang --host_action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
-# We need this to ensure that external projects are built with
-# C++17 support. This is needed in some libraries like absl which
-# have different behavior with C++17.
-build:clang --action_env=BAZEL_CXXOPTS=-std=c++17:-fPIC
-build:clang --host_action_env=BAZEL_CXXOPTS=-std=c++17:-fPIC
-build:clang --action_env=BAZEL_COMPILER=clang
-build:clang --host_action_env=BAZEL_COMPILER=clang
-build:clang --action_env=CC=clang
-build:clang --host_action_env=CC=clang
-build:clang --action_env=CXX=clang++
-build:clang --host_action_env=CXX=clang++
 build:clang --//bazel/cc_toolchains:compiler=clang
 build:clang --//bazel/cc_toolchains:libc_version=gnu
 
 # Build for Clang using Libc++.
-build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
-build:libc++ --action_env=LDFLAGS=-stdlib=libc++
-build:libc++ --action_env=BAZEL_CXXOPTS=-std=c++17:-stdlib=libc++:-fPIC
-build:libc++ --action_env=BAZEL_LINKOPTS=-l%:libc++.a:-l%:libc++abi.a:-lm:-fPIC
-build:libc++ --action_env=CC=/opt/clang-14.0-libc++/bin/clang
-build:libc++ --action_env=CXX=/opt/clang-14.0-libc++/bin/clang++
 build:libc++ --define use_libcpp=1
 # TODO(zasgar): Remove this in next diff.
 build:libc++ --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
@@ -83,17 +63,6 @@ build:libc++ --//bazel/cc_toolchains:libc_version=gnu
 build:libc++ --features=libc++ --features=-libstdc++
 
 # Build for GCC.
-build:gcc --linkopt -fuse-ld=lld
-build:gcc --host_linkopt -fuse-ld=lld
-build:gcc --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
-build:gcc --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
-# We need this to ensure that external projects are built with
-# C++17 support. This is needed in some libraries like absl which
-# have different behavior with C++17.
-build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17
-build:gcc --action_env=BAZEL_COMPILER=gcc
-build:gcc --action_env=CC=/usr/bin/gcc-11
-build:gcc --action_env=CXX=/usr/bin/g++-11
 # These are copts because they apply to both c++ and c files.
 # In particular, upb is has issues with this that will hopefully be
 # fixed upstream soon.
@@ -109,57 +78,36 @@ build:gcc --//bazel/cc_toolchains:libc_version=gnu
 # and mac does not use libstdc++.
 build:macos --action_env=BAZEL_LINKLIBS
 build:macos --action_env=BAZEL_LINKOPTS
+build:macos --noincompatible_enable_cc_toolchain_resolution
 
 # bazel build --config asan ...
 build:asan --config=clang
+build:asan --features=asan
 build:asan --test_timeout="120,600,1800,3600"
 build:asan --define PL_CONFIG_ASAN=1
-build:asan --copt -DPL_CONFIG_ASAN
-build:asan --copt -D__SANITIZE_ADDRESS__
-build:asan --copt -fsanitize=address,undefined
-build:asan --linkopt -fsanitize=address,undefined
-build:asan --copt -fno-sanitize=vptr
-build:asan --linkopt -fno-sanitize=vptr
-build:asan --copt -fsanitize-recover=all
-build:asan --linkopt -ldl
 build:asan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_asan
 build:asan --test_tag_filters=-no_asan,-requires_root,-requires_bpf,-disabled
 build:asan --define signal_trace=disabled
-build:asan --copt -DADDRESS_SANITIZER=1
 build:asan --test_env=ASAN_SYMBOLIZER_PATH
 build:asan --test_env=ASAN_OPTIONS=handle_abort=1:allow_addr2line=true
 build:asan --test_env=UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 build:asan --define tcmalloc=disabled
-build:asan --linkopt=-L/opt/clang-14.0/lib/clang/14.0.4/lib/linux
-build:asan --linkopt=-l:libclang_rt.ubsan_standalone-x86_64.a
-build:asan --linkopt=-l:libclang_rt.ubsan_standalone_cxx-x86_64.a
-build:asan --linkopt=-l:libclang_rt.builtins-x86_64.a
-build:asan --features=asan
 
 # bazel build --config msan
 build:msan --define PL_CONFIG_MSAN=1
-build:msan --copt -fsanitize=memory
-build:msan --linkopt -fsanitize=memory
 build:msan --define tcmalloc=disabled
 build:msan --build_tag_filters=-no_msan
 build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf,-disabled
-build:msan --copt -fsanitize-memory-track-origins=2
-build:msan --define tcmalloc=disabled
-build:msan --copt -DMEMORY_SANITIZER=1
 build:msan --features=msan
 
 # bazel build --config tsan
 build:tsan --config=clang
 build:tsan --define PL_CONFIG_TSAN=1
-build:tsan --copt -fsanitize=thread
-build:tsan --copt -fsanitize-recover=all
-build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
 build:tsan --build_tag_filters=-no_tsan
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf,-disabled
 build:tsan --define tcmalloc=disabled
-build:tsan --copt -DTHREAD_SANITIZER=1
 # This is needed to address false positive problem with abseil.
 # https://github.com/google/sanitizers/issues/953
 build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
