@@ -13,6 +13,13 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load(
+    "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "feature",
+    "flag_group",
+    "flag_set",
+)
 
 # pl_toolchain_{pre,post}_features are used to extend the toolchain features of the default cc_toolchain_config.
 # The ctx parameter is the rule ctx for the following rule signature:
@@ -54,6 +61,216 @@ def pl_toolchain_pre_features(ctx):
 
 # pl_toolchain_post_features are added to the command line after all of the default features.
 def pl_toolchain_post_features(ctx):
-    return []
+    features = []
+    features += _libstdcpp(ctx)
+    if ctx.attr.compiler == "clang":
+        features += _clang_features(ctx)
 
-PL_EXTRA_CC_CONFIG_ATTRS = dict()
+    return features
+
+PL_EXTRA_CC_CONFIG_ATTRS = dict(
+    libclang_rt_path = attr.string(),
+)
+
+all_compile_actions = [
+    ACTION_NAMES.c_compile,
+    ACTION_NAMES.cpp_compile,
+    ACTION_NAMES.linkstamp_compile,
+    ACTION_NAMES.assemble,
+    ACTION_NAMES.preprocess_assemble,
+    ACTION_NAMES.cpp_header_parsing,
+    ACTION_NAMES.cpp_module_compile,
+    ACTION_NAMES.cpp_module_codegen,
+    ACTION_NAMES.clif_match,
+    ACTION_NAMES.lto_backend,
+]
+
+all_cpp_compile_actions = [
+    ACTION_NAMES.cpp_compile,
+    ACTION_NAMES.linkstamp_compile,
+    ACTION_NAMES.cpp_header_parsing,
+    ACTION_NAMES.cpp_module_compile,
+    ACTION_NAMES.cpp_module_codegen,
+    ACTION_NAMES.clif_match,
+]
+
+all_link_actions = [
+    ACTION_NAMES.cpp_link_executable,
+    ACTION_NAMES.cpp_link_dynamic_library,
+    ACTION_NAMES.cpp_link_nodeps_dynamic_library,
+]
+lto_index_actions = [
+    ACTION_NAMES.lto_index_for_executable,
+    ACTION_NAMES.lto_index_for_dynamic_library,
+    ACTION_NAMES.lto_index_for_nodeps_dynamic_library,
+]
+
+def _libstdcpp(ctx):
+    return [
+        feature(
+            name = "libstdc++",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-l:libstdc++.a",
+                                "-static-libgcc",
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+            provides = ["stdlib++"],
+        ),
+    ]
+
+def _libcpp(ctx):
+    return [
+        feature(
+            name = "libc++",
+            flag_sets = [
+                flag_set(
+                    actions = all_cpp_compile_actions + [ACTION_NAMES.lto_backend],
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-stdlib=libc++",
+                            ],
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-l:libc++.a",
+                                "-l:libc++abi.a",
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+            provides = ["stdlib++"],
+        ),
+    ]
+
+def _clang_features(ctx):
+    features = []
+    features += _libcpp(ctx)
+    if ctx.attr.libclang_rt_path != "":
+        features += _asan(ctx)
+    features += _msan(ctx)
+    features += _tsan(ctx)
+    return features
+
+def _asan(ctx):
+    return [
+        feature(
+            name = "asan",
+            flag_sets = [
+                flag_set(
+                    actions = all_compile_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-DPL_CONFIG_ASAN",
+                                "-D__SANITIZE_ADDRESS__",
+                                "-fsanitize=address,undefined",
+                                "-fno-sanitize=vptr",
+                                "-fsanitize-recover=all",
+                                "-DADDRESS_SANITIZER=1",
+                            ],
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-fsanitize=address,undefined",
+                                "-fno-sanitize=vptr",
+                                "-ldl",
+                                "-L" + ctx.attr.libclang_rt_path,
+                                "-l:libclang_rt.ubsan_standalone-x86_64.a",
+                                "-l:libclang_rt.ubsan_standalone_cxx-x86_64.a",
+                                "-l:libclang_rt.builtins-x86_64.a",
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+            provides = ["sanitizer"],
+            implies = ["libstdc++"],
+        ),
+    ]
+
+def _msan(ctx):
+    return [
+        feature(
+            name = "msan",
+            flag_sets = [
+                flag_set(
+                    actions = all_compile_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-fsanitize=memory",
+                                "-fsanitize-memory-track-origins=2",
+                                "-DMEMORY_SANITIZER=1",
+                            ],
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-fsanitize=memory",
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+            provides = ["sanitizer"],
+            implies = ["libstdc++"],
+        ),
+    ]
+
+def _tsan(ctx):
+    return [
+        feature(
+            name = "tsan",
+            flag_sets = [
+                flag_set(
+                    actions = all_compile_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-fsanitize=thread",
+                                "-fsanitize-recover=all",
+                                "-DTHREAD_SANITIZER=1",
+                            ],
+                        ),
+                    ],
+                ),
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                "-fsanitize=thread",
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+            provides = ["sanitizer"],
+            implies = ["libstdc++"],
+        ),
+    ]
