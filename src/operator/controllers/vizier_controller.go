@@ -199,6 +199,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			vzGet:             r.Get,
 			clientset:         r.Clientset,
 			vzSpecUpdate:      r.Update,
+			restConfig:        r.RestConfig,
 		}
 
 		cloudClient, err := getCloudClientConnection(vizier.Spec.CloudAddr, vizier.Spec.DevCloudNamespace, grpc.FailOnNonTempDialError(true), grpc.WithBlock())
@@ -233,6 +234,7 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 // updateVizier updates the vizier instance according to the spec.
 func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, vz *v1alpha1.Vizier) error {
 	log.Info("Updating Vizier...")
+
 	checksum, err := getSpecChecksum(vz)
 	if err != nil {
 		return err
@@ -503,10 +505,11 @@ func (r *VizierReconciler) upgradeNats(ctx context.Context, namespace string, vz
 	return r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
 }
 
-// TODO(michellenguyen): Add a goroutine
-// which checks when certs are about to expire. If they are about to expire,
-// we should generate new certs and bounce all pods.
 func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace string, vz *v1alpha1.Vizier) error {
+	return deployCerts(ctx, namespace, vz, r.Clientset, r.RestConfig, false)
+}
+
+func deployCerts(ctx context.Context, namespace string, vz *v1alpha1.Vizier, clientset kubernetes.Interface, restConfig *rest.Config, update bool) error {
 	log.Info("Generating certs")
 
 	// Assign JWT signing key.
@@ -515,13 +518,13 @@ func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace stri
 	if err != nil {
 		return err
 	}
-	s := k8s.GetSecret(r.Clientset, namespace, "pl-cluster-secrets")
+	s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
 	if s == nil {
 		return errors.New("pl-cluster-secrets does not exist")
 	}
 	s.Data[clusterSecretJWTKey] = []byte(fmt.Sprintf("%x", jwtSigningKey))
 
-	_, err = r.Clientset.CoreV1().Secrets(namespace).Update(ctx, s, metav1.UpdateOptions{})
+	_, err = clientset.CoreV1().Secrets(namespace).Update(ctx, s, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
@@ -542,7 +545,7 @@ func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace stri
 		}
 	}
 
-	return k8s.ApplyResources(r.Clientset, r.RestConfig, resources, namespace, nil, false)
+	return k8s.ApplyResources(clientset, restConfig, resources, namespace, nil, update)
 }
 
 // deployVizierConfigs deploys the secrets, configmaps, and certs that are necessary for running vizier.

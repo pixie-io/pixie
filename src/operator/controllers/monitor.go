@@ -21,6 +21,8 @@ package controllers
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -39,12 +41,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 const (
@@ -105,6 +109,7 @@ func (c *concurrentPodMap) write(nameLabel, k8sName string, p *podWrapper) {
 // for the overall Vizier instance.
 type VizierMonitor struct {
 	clientset   kubernetes.Interface
+	restConfig  *rest.Config
 	factory     informers.SharedInformerFactory
 	httpClient  HTTPClient
 	ctx         context.Context
@@ -118,6 +123,7 @@ type VizierMonitor struct {
 	podStates *concurrentPodMap
 	nodeState *vizierState
 	pvcState  *vizierState
+	certState *vizierState
 
 	vzUpdate     func(context.Context, client.Object, ...client.UpdateOption) error
 	vzGet        func(context.Context, types.NamespacedName, client.Object) error
@@ -136,11 +142,14 @@ func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) {
 
 	m.nodeState = okState()
 	m.pvcState = okState()
+	m.certState = okState()
 
 	m.factory = informers.NewSharedInformerFactoryWithOptions(m.clientset, 0, informers.WithNamespace(m.namespace))
 
 	// Watch for pod updates in the namespace.
 	go m.watchK8sPods()
+
+	m.watchCerts()
 
 	// Start PVC monitor.
 	pvcStateCh := make(chan *vizierState)
@@ -209,6 +218,48 @@ func (m *VizierMonitor) watchK8sPods() {
 		DeleteFunc: m.onDeletePod,
 	})
 	informer.Run(stopper)
+}
+
+func (m *VizierMonitor) watchCerts() {
+	err := m.checkCerts()
+	if err != nil {
+		log.WithError(err).Error("Failed to check certs")
+	}
+
+	timer := time.NewTicker(24 * time.Hour)
+	go func() {
+		for {
+			select {
+			case <-m.ctx.Done():
+				log.Info("Received cancel, stopping cert checker")
+				return
+			case <-timer.C:
+				err := m.checkCerts()
+				if err != nil {
+					log.WithError(err).Error("Failed to check certs")
+				}
+			}
+		}
+	}()
+}
+
+func (m *VizierMonitor) checkCerts() error {
+	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-certs", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	cert, _ := pem.Decode(tlsSecret.Data["server.crt"])
+	x509cert, err := x509.ParseCertificate(cert.Bytes)
+	if err != nil {
+		log.WithError(err).Error("failed to parse cert")
+		return err
+	}
+	if time.Now().Add(5 * 24 * time.Hour).After(x509cert.NotAfter) {
+		m.certState = &vizierState{Reason: status.TLSCertsExpired}
+		return nil
+	}
+	m.certState = okState()
+	return nil
 }
 
 // vizierState details the state of Vizier at a snapshot.
@@ -450,6 +501,10 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return vzVersionState
 	}
 
+	if !isOk(m.certState) {
+		return m.certState
+	}
+
 	if !vz.Spec.UseEtcdOperator && !isOk(m.pvcState) {
 		return m.pvcState
 	}
@@ -540,6 +595,25 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		}
 
 		log.Info("Successfully switched to etcd backed metadata store")
+	} else if state.Reason == status.TLSCertsExpired {
+		vz := &pixiev1alpha1.Vizier{}
+		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			return err
+		}
+
+		err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
+		if err != nil {
+			log.WithError(err).Error("Failed to update certs")
+		}
+		m.certState = okState()
+
+		log.Info("Bouncing Vizier pods to get certs update")
+		err = k8s.DeletePods(m.clientset, m.namespace, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

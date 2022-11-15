@@ -55,6 +55,7 @@ var reasonToMessageMap = map[VizierReason]string{
 		"If this problem persists, clobber and re-deploy your Pixie instance",
 	PEMsHighFailureRate: "PEMs are experiencing a high crash rate. Your Pixie experience will be degraded while this occurs. If PEMs are getting OOMKilled, increase your PEM memory limits using the `pemMemoryLimit` flag.",
 	PEMsAllFailing:      "PEMs are all crashing. If PEMs are getting OOMKilled, increase your PEM memory limits using the `pemMemoryLimit` flag. Otherwise, consider filing a bug so someone can address your problem: https://github.com/pixie-io/pixie",
+	TLSCertsExpired:     "Service TLS certs are expired. If using the operator, the certs will be auto-regenerated. Otherwise, please redeploy Vizier.",
 }
 
 // VizierReason is the reason that Vizier is in its current state.
@@ -131,4 +132,7 @@ const (
 	PEMsHighFailureRate VizierReason = "PEMsHighFailureRate"
 	// PEMsAllFailing occurs when a all PEMs are failing.
 	PEMsAllFailing VizierReason = "PEMsAllFailing"
+
+	// TLSCertsExpired occurs when the service TLS certs are expired or almost expired.
+	TLSCertsExpired VizierReason = "TLSCertsExpired"
 )
