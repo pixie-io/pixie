@@ -500,7 +500,7 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseTimeDocstring));
+  PL_RETURN_IF_ERROR(parse_time_fn->SetDocString(kParseTimeDocstring));
   AddMethod(kParseTimeOpID, parse_time_fn);
   return Status::OK();
 }
