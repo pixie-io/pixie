@@ -15,8 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 agent_libs = [
-    "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
-    "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
+    "//src/stirling/source_connectors/perf_profiler/java/agent:agent",
 ]
 
 px_jattach = "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach"

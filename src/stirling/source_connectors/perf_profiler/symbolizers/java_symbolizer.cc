@@ -33,9 +33,7 @@
 
 namespace {
 char const* const kLibsHelpMessage = "Comma separated list of Java symbolization agent lib files.";
-char const* const kPEMAgentLibs =
-    "/pl/lib-px-java-agent-musl.so,"
-    "/pl/lib-px-java-agent-glibc.so";
+char const* const kPEMAgentLibs = "/pl/libpx-java-agent.so";
 }  // namespace
 
 DEFINE_string(stirling_profiler_java_agent_libs, kPEMAgentLibs, kLibsHelpMessage);

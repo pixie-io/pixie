@@ -340,6 +340,20 @@ REPOSITORY_LOCATIONS = dict(
             "https://raw.githubusercontent.com/bazelbuild/bazel/5.3.1/tools/cpp/unix_cc_toolchain_config.bzl",
         ],
     ),
+    com_oracle_openjdk_18 = dict(
+        sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
+        strip_prefix = "jdk-18.0.2.1",
+        urls = [
+            "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz",
+        ],
+    ),
+    com_github_fmeum_rules_meta = dict(
+        sha256 = "ed3ed909e6e3f34a11d7c2adcc461535975a875fe434719540a4e6f63434a866",
+        strip_prefix = "rules_meta-0.0.4",
+        urls = [
+            "https://github.com/fmeum/rules_meta/archive/refs/tags/v0.0.4.tar.gz",
+        ],
+    ),
 )
 
 # To modify one of the forked repos below:

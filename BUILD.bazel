@@ -202,14 +202,7 @@ stirling_linux_timeconst_files = [
 # Used by stirling runtime to provide symbolization for Java application profiling.
 stirling_java_profiling_tools = [
     "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
-    # TODO(jps): Find a way to package the agent lib .so files w/ Stirling vs. PEM image.
-    #
-    # These 2 targets are used by Java profiling component. They are built inside container, and not
-    # cached by bazel, which means they are built repetitively. When building stirling_wrapper or
-    # any other binaries that do not need them, you can remove these 2 targets temporarily to
-    # accelerate the build.
-    "//src/stirling/source_connectors/perf_profiler/java/agent:musl",
-    "//src/stirling/source_connectors/perf_profiler/java/agent:glibc",
+    "//src/stirling/source_connectors/perf_profiler/java/agent:agent",
 ]
 
 # Use this binary to dynamically turn on/off Stirling runtime's debug logging.

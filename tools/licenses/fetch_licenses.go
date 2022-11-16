@@ -71,6 +71,9 @@ type dependency struct {
 	Version     string `json:"version"`
 	LicenseSPDX string `json:"spdxID,omitempty"`
 	LicenseText string `json:"licenseText,omitempty"`
+	// When a manual license is needed, which doesn't use a github URL, you should:
+	//  set Name to URL, and OutputName to the desired name.
+	OutputName string `json:"outputName,omitempty"`
 }
 
 func readData(filename string) (map[string]dependency, error) {
@@ -248,6 +251,15 @@ func tryFetchJSONManualLicense(dep *dependency, manual map[string]dependency) {
 		// Well, at this point someone needs to go add license info for this into
 		// the manual_licenses.json file.
 		return
+	}
+	if found.OutputName != "" {
+		dep.Name = found.OutputName
+	}
+	if found.Version != "" {
+		dep.Version = found.Version
+	}
+	if dep.URL == "" {
+		dep.URL = found.URL
 	}
 	dep.LicenseSPDX = found.LicenseSPDX
 	dep.LicenseText = found.LicenseText

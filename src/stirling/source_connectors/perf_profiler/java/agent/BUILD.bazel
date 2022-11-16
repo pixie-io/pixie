@@ -14,9 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_extract")
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:toolchain_transitions.bzl", "cc_static_musl_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -63,64 +62,22 @@ pl_cc_library(
     hdrs = glob(["*.h"]) + ["agent_hash.h"],
 )
 
-container_image(
-    name = "image-glibc",
-    base = "@openjdk-base-glibc//image",
-    directory = "/build",
-    files = agent_files + ["agent_hash.h"],
-)
-
-container_image(
-    name = "image-musl",
-    base = "@openjdk-base-musl//image",
-    directory = "/build",
-    files = agent_files + ["agent_hash.h"],
-)
-
-container_run_and_extract(
-    name = "build-glibc",
-    commands = [
-        "apt-get update",
-        "apt-get install -y lld",
-        "apt-get install -y make",
-        "apt-get install -y clang",
-        "export INNER_JDK_PATH=/usr/local/openjdk-18",
-        "make -C build -f Makefile.inner agent.so",
-        "cp build/agent.so /lib-px-java-agent-glibc.so",
+# If we don't statically link libc, then the .so file will fail to be loaded on systems with older libc versions than we built with.
+# glibc is a pain to link statically, so instead we link musl libc statically.
+cc_static_musl_binary(
+    name = "px-java-agent",
+    srcs = [
+        "agent.cc",
+        "agent_hash.h",
+        "raw_symbol_update.h",
     ],
-    extract_file = "/lib-px-java-agent-glibc.so",
-    image = ":image-glibc.tar",
-)
-
-container_run_and_extract(
-    name = "build-musl",
-    commands = [
-        "apk --no-cache add g++",
-        "apk --no-cache add lld",
-        "apk --no-cache add make",
-        "apk --no-cache add clang",
-        "export INNER_JDK_PATH=/opt/openjdk-18",
-        "make -C build -f Makefile.inner agent.so",
-        "cp build/agent.so /lib-px-java-agent-musl.so",
-    ],
-    extract_file = "/lib-px-java-agent-musl.so",
-    image = ":image-musl.tar",
+    linkshared = True,
+    deps = ["@com_oracle_openjdk_18//:jdk_includes"],
 )
 
 filegroup(
-    name = "glibc",
-    srcs = ["build-glibc/lib-px-java-agent-glibc.so"],
-    visibility = [
-        # Add visibility at top-level so that we can include
-        # the lib in the pem image.
-        "//:__pkg__",
-        "//src/stirling:__subpackages__",
-    ],
-)
-
-filegroup(
-    name = "musl",
-    srcs = ["build-musl/lib-px-java-agent-musl.so"],
+    name = "agent",
+    srcs = ["px-java-agent"],
     visibility = [
         # Add visibility at top-level so that we can include
         # the lib in the pem image.
@@ -136,7 +93,7 @@ pl_cc_test(
         "agent_test.cc",
     ],
     data = [
-        ":glibc",
+        ":agent",
         "//src/stirling/source_connectors/perf_profiler/testing/java:fib_with_agent",
     ],
     tags = [

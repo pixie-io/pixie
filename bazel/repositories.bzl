@@ -221,12 +221,15 @@ def _pl_deps():
     _bazel_repo("rules_python")
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("com_google_googleapis")
+    _bazel_repo("com_github_fmeum_rules_meta")
 
     cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
     pl_register_cc_toolchains()
 
     _com_llvm_lib()
     _cc_deps()
+
+    _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
 
 list_pl_deps = _list_pl_deps
 pl_deps = _pl_deps

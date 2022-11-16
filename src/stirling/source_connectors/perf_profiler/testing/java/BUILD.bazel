@@ -29,7 +29,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 # We build this up using so_path, symbol_file_path, and jvm_flags, below.
 
 # Construct the agent path portion of the command line arg.
-so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:glibc)"
+so_path = "-agentpath:$(location //src/stirling/source_connectors/perf_profiler/java/agent:agent)"
 
 # The agent_test will be create the symbol in directory "java-agent-test-<PX_JVMTI_AGENT_HASH>"
 # in the test cwd. The suffix "-<PX_JVMTI_AGENT_HASH>" is added by the agent itself.
@@ -42,7 +42,7 @@ java_binary(
     name = "fib_with_agent",
     srcs = ["Fib.java"],
     args = ["-XX:+PreserveFramePointer"],
-    data = ["//src/stirling/source_connectors/perf_profiler/java/agent:glibc"],
+    data = ["//src/stirling/source_connectors/perf_profiler/java/agent"],
     jvm_flags = jvm_flags,
     main_class = "JavaFib",
 )

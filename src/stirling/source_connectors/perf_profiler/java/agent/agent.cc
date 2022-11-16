@@ -31,11 +31,8 @@
 
 #include <mutex>
 
-// NOLINTNEXTLINE: build/include_subdir
-#include "raw_symbol_update.h"
-
-// NOLINTNEXTLINE: build/include_subdir
-#include "agent_hash.h"
+#include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
+#include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 
 #define PX_JVMTI_AGENT_RETURN_IF_ERROR(err)                                                    \
   if (err != JNI_OK) {                                                                         \
