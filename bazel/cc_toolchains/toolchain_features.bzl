@@ -57,7 +57,9 @@ load(
 
 # pl_toolchain_pre_features are added to the command line before any of the default features.
 def pl_toolchain_pre_features(ctx):
-    return []
+    features = []
+    features += _custom_c_runtime_path_pre(ctx)
+    return features
 
 # pl_toolchain_post_features are added to the command line after all of the default features.
 def pl_toolchain_post_features(ctx):
@@ -66,11 +68,21 @@ def pl_toolchain_post_features(ctx):
     if ctx.attr.compiler == "clang":
         features += _clang_features(ctx)
 
+    if len(ctx.attr.unfiltered_link_flags) > 0:
+        features += _unfiltered_link_flags(ctx)
+    features += _custom_c_runtime_path_post(ctx)
     return features
 
 PL_EXTRA_CC_CONFIG_ATTRS = dict(
     libclang_rt_path = attr.string(),
     enable_sanitizers = attr.bool(),
+    custom_c_runtime_paths = attr.string_dict(
+        default = {
+            "gcc": "",
+            "sysroot": "",
+        },
+    ),
+    unfiltered_link_flags = attr.string_list(),
 )
 
 all_compile_actions = [
@@ -274,5 +286,80 @@ def _tsan(ctx):
             ],
             provides = ["sanitizer"],
             implies = ["libstdc++"],
+        ),
+    ]
+
+def _unfiltered_link_flags(ctx):
+    return [
+        feature(
+            name = "unfiltered_link_flags",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = ctx.attr.unfiltered_link_flags,
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ]
+
+def _custom_c_runtime_path_pre(ctx):
+    enable = ctx.attr.custom_c_runtime_paths["sysroot"] != "" and ctx.attr.custom_c_runtime_paths["gcc"] != ""
+    return [
+        feature(
+            name = "c_runtime_flags_pre",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = [
+                        ACTION_NAMES.cpp_link_executable,
+                        ACTION_NAMES.lto_index_for_executable,
+                    ],
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                ctx.attr.custom_c_runtime_paths["sysroot"] + "/Scrt1.o",
+                            ],
+                        ),
+                    ] if enable else [],
+                ),
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                ctx.attr.custom_c_runtime_paths["sysroot"] + "/crti.o",
+                                ctx.attr.custom_c_runtime_paths["gcc"] + "/crtbeginS.o",
+                            ],
+                        ),
+                    ] if enable else [],
+                ),
+            ],
+        ),
+    ]
+
+def _custom_c_runtime_path_post(ctx):
+    enable = ctx.attr.custom_c_runtime_paths["sysroot"] != "" and ctx.attr.custom_c_runtime_paths["gcc"] != ""
+    return [
+        feature(
+            name = "c_runtime_flags_post",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = all_link_actions + lto_index_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = [
+                                ctx.attr.custom_c_runtime_paths["gcc"] + "/crtendS.o",
+                                ctx.attr.custom_c_runtime_paths["sysroot"] + "/crtn.o",
+                            ],
+                        ),
+                    ] if enable else [],
+                ),
+            ],
         ),
     ]

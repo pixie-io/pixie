@@ -22,12 +22,19 @@ def _settings():
         build_setting_default = "gnu",
         values = [
             "gnu",
+            "static_musl",
         ],
     )
     native.config_setting(
         name = "libc_version_gnu",
         flag_values = {
             "//bazel/cc_toolchains:libc_version": "gnu",
+        },
+    )
+    native.config_setting(
+        name = "libc_version_static_musl",
+        flag_values = {
+            "//bazel/cc_toolchains:libc_version": "static_musl",
         },
     )
 

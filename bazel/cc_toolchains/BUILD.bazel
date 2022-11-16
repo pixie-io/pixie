@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 load("//bazel/cc_toolchains:clang.bzl", "clang_exec", "clang_x86_64_gnu")
-load("//bazel/cc_toolchains:gcc.bzl", "gcc_x86_64_gnu")
+load("//bazel/cc_toolchains:gcc.bzl", "gcc_x86_64_gnu", "gcc_x86_64_static_musl")
 load("//bazel/cc_toolchains:settings.bzl", "settings")
 
 filegroup(
@@ -24,6 +24,8 @@ filegroup(
 settings()
 
 gcc_x86_64_gnu()
+
+gcc_x86_64_static_musl()
 
 clang_x86_64_gnu()
 
