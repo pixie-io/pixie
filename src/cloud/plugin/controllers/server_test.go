@@ -1363,6 +1363,69 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 	assert.Equal(t, "", script.ExportURL)
 }
 
+func TestServer_CreateRetentionScriptNameConflict(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockCSClient := mock_cronscriptpb.NewMockCronScriptServiceClient(ctrl)
+
+	orgConfig := map[string]string{
+		"license_key2": "12345",
+	}
+
+	config := &scripts.Config{
+		OtelEndpointConfig: &scripts.OtelEndpointConfig{
+			URL:      "https://localhost1:8080",
+			Headers:  orgConfig,
+			Insecure: true,
+		},
+	}
+
+	mConfig, err := yaml.Marshal(&config)
+	require.Nil(t, err)
+
+	mockCSClient.EXPECT().CreateScript(gomock.Any(), &cronscriptpb.CreateScriptRequest{
+		Script: "px.display()",
+		ClusterIDs: []*uuidpb.UUID{
+			utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		},
+		Configs:    string(mConfig),
+		FrequencyS: 20,
+		OrgID:      utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+		Disabled:   true,
+	}).Return(&cronscriptpb.CreateScriptResponse{
+		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+	}, nil)
+
+	mockCSClient.EXPECT().DeleteScript(gomock.Any(), &cronscriptpb.DeleteScriptRequest{
+		ID:    utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	}).Return(&cronscriptpb.DeleteScriptResponse{}, nil)
+
+	s := controllers.New(db, "test", mockCSClient)
+	_, err = s.CreateRetentionScript(createTestContext(), &pluginpb.CreateRetentionScriptRequest{
+		Script: &pluginpb.DetailedRetentionScript{
+			Script: &pluginpb.RetentionScript{
+				ScriptName:  "testScript",
+				Description: "This is a new script!",
+				FrequencyS:  20,
+				ClusterIDs: []*uuidpb.UUID{
+					utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
+				},
+				PluginId: "test-plugin",
+				Enabled:  false,
+				IsPreset: false,
+			},
+			Contents:  "px.display()",
+			ExportURL: "",
+		},
+		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+	})
+
+	require.Error(t, err)
+}
+
 func TestServer_UpdateRetentionScript(t *testing.T) {
 	mustLoadTestData(db)
 

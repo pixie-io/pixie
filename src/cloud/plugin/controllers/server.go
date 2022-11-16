@@ -845,10 +845,21 @@ func (s *Server) createRetentionScript(ctx context.Context, txn *sqlx.Tx, orgID 
 
 	query := `INSERT INTO plugin_retention_scripts (org_id, plugin_id, script_id, script_name, description, export_url, is_preset) VALUES ($1, $2, $3, $4, $5, PGP_SYM_ENCRYPT($6, $7), $8)`
 	_, err = txn.Exec(query, orgID, pluginID, utils.UUIDFromProtoOrNil(scriptID), rs.ScriptName, rs.Description, rs.ExportURL, s.dbKey, rs.IsPreset)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to create retention script")
+	if err == nil {
+		return scriptID, nil
 	}
-	return scriptID, nil
+
+	// Create failed, make sure we clean up the cron script.
+	_, delErr := s.cronScriptClient.DeleteScript(ctx, &cronscriptpb.DeleteScriptRequest{
+		ID:    scriptID,
+		OrgID: utils.ProtoFromUUID(orgID),
+	})
+	if delErr != nil {
+		log.WithError(delErr).Error("Failed to delete underlying cron script")
+		return nil, err
+	}
+
+	return nil, err
 }
 
 // CreateRetentionScript creates a script that is used for long-term data retention.
