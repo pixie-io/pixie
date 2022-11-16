@@ -454,7 +454,7 @@ spec:
       - env:
         - name: ZOOKEEPER_CLIENT_PORT
           value: "2181"
-        image: wurstmeister/zookeeper:latest
+        image: gcr.io/pixie-prod/demos/kafka/zookeeper:2.0
         name: zookeeper
         ports:
         - containerPort: 2181
