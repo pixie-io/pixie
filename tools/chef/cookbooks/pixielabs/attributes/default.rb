@@ -63,6 +63,7 @@ default['opm']                       = {}
 default['lego']                      = {}
 default['codecov']                   = {}
 default['gh']                        = {}
+default['gcc-musl']                  = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -172,6 +173,12 @@ if node[:platform] == 'ubuntu'
     'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz'
   default['gh']['sha256']        =
     '359ff9d759b67e174214098144a530a8afc4b0c9d738cd07c83ac84390cdc988'
+
+  default['gcc-musl']['deb']        =
+    'https://storage.googleapis.com/pixie-dev-public/gcc-musl-libs-11.2.0.deb'
+  default['gcc-musl']['deb_sha256'] =
+    'ba52df92bce02f3c2bc53604466e0fac8844f941ae6d2d44061e48403f5752fb'
+  default['gcc-musl']['version']    = "11.2.0"
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
