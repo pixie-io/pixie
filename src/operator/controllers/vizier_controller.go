@@ -207,7 +207,11 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			vizier.SetStatus(status.UnableToConnectToCloud)
 			err := r.Status().Update(ctx, &vizier)
 			if err != nil {
-				log.WithError(err).Error("Failed to update vizier status")
+				if strings.Contains(err.Error(), "timeout") {
+					log.WithError(err).Info("Timed out trying to update vizier status. K8s API server may be overloaded")
+				} else {
+					log.WithError(err).Error("Failed to update vizier status")
+				}
 			}
 			log.WithError(err).Error("Failed to connect to Pixie cloud")
 			return ctrl.Result{}, err
@@ -223,7 +227,11 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		vizier.Status.OperatorVersion = version.GetVersion().ToString()
 		err = r.Status().Update(ctx, &vizier)
 		if err != nil {
-			log.WithError(err).Error("Failed to update vizier status")
+			if strings.Contains(err.Error(), "timeout") {
+				log.WithError(err).Info("Timed out trying to update vizier status. K8s API server may be overloaded")
+			} else {
+				log.WithError(err).Error("Failed to update vizier status")
+			}
 		}
 	}
 
@@ -283,7 +291,11 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 		vz.SetStatus(status.UnableToConnectToCloud)
 		err := r.Status().Update(ctx, vz)
 		if err != nil {
-			log.WithError(err).Error("Failed to update vizier status")
+			if strings.Contains(err.Error(), "timeout") {
+				log.WithError(err).Info("Timed out trying to update vizier status. K8s API server may be overloaded")
+			} else {
+				log.WithError(err).Error("Failed to update vizier status")
+			}
 		}
 		log.WithError(err).Error("Failed to connect to Pixie cloud")
 		return err
@@ -317,7 +329,11 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		vz.SetStatus(status.UnableToConnectToCloud)
 		err := r.Status().Update(ctx, vz)
 		if err != nil {
-			log.WithError(err).Error("Failed to update vizier status")
+			if strings.Contains(err.Error(), "timeout") {
+				log.WithError(err).Info("Timed out trying to update vizier status. K8s API server may be overloaded")
+			} else {
+				log.WithError(err).Error("Failed to update vizier status")
+			}
 		}
 		log.WithError(err).Error("Failed to connect to Pixie cloud")
 		return err
@@ -416,7 +432,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
 	if err != nil {
-		log.WithError(err).Error("Failed to deploy Vizier core")
+		log.WithError(err).Info("Failed to deploy Vizier core")
 		return err
 	}
 
@@ -621,6 +637,7 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 
 	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap[vzYaml]))
 	if err != nil {
+		log.WithError(err).Error("Error getting resources from Vizier YAML")
 		return err
 	}
 
@@ -638,11 +655,13 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 	for _, r := range resources {
 		err = updateResourceConfiguration(r, vz)
 		if err != nil {
+			log.WithError(err).Error("Failed to update resource configuration for resources")
 			return err
 		}
 	}
 	err = retryDeploy(r.Clientset, r.RestConfig, namespace, resources, allowUpdate)
 	if err != nil {
+		log.WithError(err).Error("Retry deploy of Vizier failed")
 		return err
 	}
 
