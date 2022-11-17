@@ -88,6 +88,7 @@ func init() {
 	DeployCmd.Flags().StringArray("patches", []string{}, "Custom patches to apply to Pixie yamls, for example: 'vizier-pem:{\"spec\":{\"template\":{\"spec\":{\"nodeSelector\":{\"pixie\": \"allowed\"}}}}}'")
 	DeployCmd.Flags().String("pem_flags", "", "Flags to be set on the PEM.")
 	DeployCmd.Flags().String("registry", "", "The custom image registry to use rather than Pixie's default (gcr.io).")
+	DeployCmd.Flags().BoolP("disable_auto_update", "d", false, "Disable the auto-update feature for the vizier client.")
 
 	// Flags for deploying OLM.
 	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
@@ -127,6 +128,7 @@ var DeployCmd = &cobra.Command{
 		viper.BindPFlag("data_access", cmd.Flags().Lookup("data_access"))
 		viper.BindPFlag("datastream_buffer_size", cmd.Flags().Lookup("datastream_buffer_size"))
 		viper.BindPFlag("datastream_buffer_spike_size", cmd.Flags().Lookup("datastream_buffer_spike_size"))
+		viper.BindPFlag("disable_auto_update", cmd.Flags().Lookup("disable_auto_update"))
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		if cmd.Annotations["status"] != DeploySuccess {
@@ -236,6 +238,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
+	disableAutoUpdate, _ := cmd.Flags().GetBool("disable_auto_update")
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
@@ -426,7 +429,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			"deployKey":            deployKey,
 			"cloudAddr":            tmplCloudAddr,
 			"clusterName":          clusterName,
-			"disableAutoUpdate":    false,
+			"disableAutoUpdate":    disableAutoUpdate,
 			"useEtcdOperator":      useEtcdOperator,
 			"devCloudNamespace":    devCloudNS,
 			"pemMemoryLimit":       pemMemoryLimit,
