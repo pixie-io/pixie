@@ -217,10 +217,7 @@ const LiveViewEditor = React.memo<{ visible: boolean }>(({ visible }) => {
                     size='small'
                     disabled={!hasValidPlugins || isRunningExportScript}
                     onClick={generateOTelExportScriptMemo}
-                    // The spinner is only necessary while we support clusters that
-                    // might not have generateOTelExportScript. After November 8th,
-                    // we should probably remove the spinner.
-                    startIcon={!isRunningExportScript ? <Upload /> : <Spinner />}
+                    startIcon={<Upload />}
                   >
                     Export to Plugin
                   </Button>
