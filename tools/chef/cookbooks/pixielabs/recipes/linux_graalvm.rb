@@ -14,21 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@com_github_fmeum_rules_meta//meta:defs.bzl", "meta")
+remote_file '/tmp/graalvm-native-image.deb' do
+  source node['graalvm-native-image']['deb']
+  mode 0644
+  checksum node['graalvm-native-image']['deb_sha256']
+end
 
-cc_static_musl_binary = meta.wrap_with_transition(
-    native.cc_binary,
-    {
-        "@//bazel/cc_toolchains:compiler": meta.replace_with("gcc"),
-        "@//bazel/cc_toolchains:libc_version": meta.replace_with("static_musl"),
-    },
-    executable = True,
-)
+dpkg_package 'graalvm-native-image' do
+  source '/tmp/graalvm-native-image.deb'
+  action :install
+  version node['graalvm-native-image']['version']
+end
 
-java_graal_binary = meta.wrap_with_transition(
-    native.java_binary,
-    {
-        "java_runtime_version": meta.replace_with("openjdk_graal_17"),
-    },
-    executable = True,
-)
+file '/tmp/graalvm-native-image.deb' do
+  action :delete
+end

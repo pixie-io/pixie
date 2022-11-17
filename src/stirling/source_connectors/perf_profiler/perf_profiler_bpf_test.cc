@@ -445,14 +445,14 @@ TEST_F(PerfProfileBPFTest, DISABLED_PerfProfilerCppTest) {
 }
 
 TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
-  const std::string app_path = "graal-vm-aot/app/JavaFib";
+  const std::string app_path = "JavaFib";
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
-  constexpr std::string_view key2x = "JavaFib_fibs2x_e9d725b56c4649a7fcc1e66d45ab8624143a94c1";
-  constexpr std::string_view key1x = "JavaFib_fibs1x_080f663fe758fb767651ed8dec254a0a7ec4964a";
+  constexpr std::string_view key2x = "JavaFib_fibs2x_f162aa2400fb352efe4ef0783a97b3b7ea0a389c";
+  constexpr std::string_view key1x = "JavaFib_fibs1x_fe3e196dc35a74f6bb512ebf4d440d375075fc93";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);

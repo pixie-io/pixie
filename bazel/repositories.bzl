@@ -16,6 +16,7 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/jdk:local_java_repository.bzl", "local_java_repository")
 load("//bazel/cc_toolchains:deps.bzl", "cc_toolchain_config_repo")
 load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
@@ -183,6 +184,14 @@ def _cc_deps():
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive", patches = ["//bazel/external:libarchive.patch"], patch_args = ["-p1"])
 
+def _java_deps():
+    _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
+    local_java_repository(
+        name = "openjdk_graal",
+        version = "17",
+        java_home = "/opt/graalvm-ce-java17-22.3.0",
+    )
+
 def _list_pl_deps(name):
     repo_urls = list()
     for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
@@ -229,7 +238,7 @@ def _pl_deps():
     _com_llvm_lib()
     _cc_deps()
 
-    _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
+    _java_deps()
 
 list_pl_deps = _list_pl_deps
 pl_deps = _pl_deps

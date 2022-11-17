@@ -15,10 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
-load("@io_bazel_rules_docker//docker/util:run.bzl", "container_run_and_extract")
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("//bazel:toolchain_transitions.bzl", "java_graal_binary")
+load("//bazel/graal:rules.bzl", "graal_native_binary")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "jdk_names")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -101,28 +102,29 @@ jdk_symlinks = [symlinks_by_jdk[jdk_name] if jdk_name in symlinks_by_jdk else {}
     for jdk_name in jdk_names
 ]
 
-container_image(
-    name = "image-graal-vm-ce",
-    base = "@graal-vm-ce//image",
-    directory = "/app",
-    files = ["Fib.java"],
+java_graal_binary(
+    name = "graal_java_fib",
+    srcs = ["Fib.java"],
+    args = ["-XX:+PreserveFramePointer"],
+    main_class = "JavaFib",
 )
 
-container_run_and_extract(
-    name = "graal-vm-aot",
-    commands = [
-        "gu install native-image",
-        "javac Fib.java",
-        "jar cvf JavaFib.jar JavaFib.class",
-        "native-image --no-fallback -cp JavaFib.jar -H:Name=JavaFib -H:Class=JavaFib -H:-DeleteLocalSymbols -H:+PreserveFramePointer -H:+ReportUnsupportedElementsAtRuntime",
+graal_native_binary(
+    name = "graal_java_fib_aot",
+    extra_args = [
+        "--no-fallback",
+        "-H:Class=JavaFib",
+        "-H:-DeleteLocalSymbols",
+        "-H:+PreserveFramePointer",
+        "-H:+ReportUnsupportedElementsAtRuntime",
     ],
-    extract_file = "/app/JavaFib",
-    image = ":image-graal-vm-ce.tar",
+    java_binary = ":graal_java_fib",
+    output_name = "JavaFib",
 )
 
 filegroup(
     name = "graal-vm-aot-fib",
-    srcs = ["graal-vm-aot/app/JavaFib"],
+    srcs = [":graal_java_fib_aot"],
 )
 
 java_image(

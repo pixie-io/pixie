@@ -64,6 +64,7 @@ default['lego']                      = {}
 default['codecov']                   = {}
 default['gh']                        = {}
 default['gcc-musl']                  = {}
+default['graalvm-native-image']      = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -179,6 +180,12 @@ if node[:platform] == 'ubuntu'
   default['gcc-musl']['deb_sha256'] =
     'ba52df92bce02f3c2bc53604466e0fac8844f941ae6d2d44061e48403f5752fb'
   default['gcc-musl']['version']    = "11.2.0"
+
+  default['graalvm-native-image']['deb'] =
+    'https://storage.googleapis.com/pixie-dev-public/graalvm-native-image-22.3.0.deb'
+  default['graalvm-native-image']['deb_sha256'] =
+    '19c8e25511fd9a364ff301e34771abb262e34ab0df4ffef2df36497af4abe1b7'
+  default['graalvm-native-image']['version'] = "22.3.0"
 elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
