@@ -19,10 +19,13 @@
 package k8smeta
 
 import (
+	"context"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -73,12 +76,29 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 
 func podWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
-	return &informerWatcher{
+	iw := &informerWatcher{
 		convert: podConverter,
 		objType: resource,
 		ch:      ch,
 		inf:     factory.Core().V1().Pods().Informer(),
 	}
+	// We initialize ch with the current nodes to handle cold start race conditions.
+	list, err := clientset.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Errorf("Failed to init %s", resource)
+		// Still return the informer because the rest of the system can recover from this.
+		return iw
+	}
+
+	for _, obj := range list.Items {
+		item := obj
+		msg := iw.convert(&item)
+		if msg != nil {
+			iw.send(msg, watch.Added)
+		}
+	}
+
+	return iw
 }
 
 func serviceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
@@ -113,12 +133,29 @@ func endpointsWatcher(resource string, ch chan *K8sResourceMessage, clientset *k
 
 func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
-	return &informerWatcher{
+	iw := &informerWatcher{
 		convert: nodeConverter,
 		objType: resource,
 		ch:      ch,
 		inf:     factory.Core().V1().Nodes().Informer(),
 	}
+
+	// We initialize ch with the current nodes to handle cold start race conditions.
+	list, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Errorf("Failed to init %s", resource)
+		// Still return the informer because the rest of the system can recover from this.
+		return iw
+	}
+
+	for _, obj := range list.Items {
+		item := obj
+		msg := iw.convert(&item)
+		if msg != nil {
+			iw.send(msg, watch.Added)
+		}
+	}
+	return iw
 }
 
 func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
