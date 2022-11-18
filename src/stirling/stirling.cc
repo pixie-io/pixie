@@ -518,9 +518,9 @@ StatusOr<std::unique_ptr<SourceConnector>> CreateDynamicSourceConnector(
     std::string* script = tracepoint.mutable_bpftrace()->mutable_program();
 
     if (ContainsUProbe(*script)) {
-      // BPFTrace script contains uprobes/uretprobes. Insert target path after each `uprobe:` or
+      // BPFTrace script contains uprobes/uretprobes. Insert target paths after each `uprobe:` or
       // `uretprobe` based on deployment spec.
-      InsertUprobeTargetObjPath(tracepoint_deployment->deployment_spec(), script);
+      InsertUprobeTargetObjPaths(tracepoint_deployment->deployment_spec(), script);
     }
 
     return DynamicBPFTraceConnector::Create(source_name, tracepoint);
@@ -600,7 +600,6 @@ void StirlingImpl::RegisterTracepoint(
   // TODO(oazizi): Need to think of a better way of doing this.
   //               Need to differentiate errors caused by the binary not being on the host vs
   //               other errors. Also should consider races with binary creation/deletion.
-
   {
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
     std::string source_connector =
@@ -620,8 +619,9 @@ void StirlingImpl::RegisterTracepoint(
       return;
     }
 
-    Status s = dynamic_tracing::ResolveTargetObjPath(conn_ctx->GetK8SMetadata(),
-                                                     program->mutable_deployment_spec());
+    Status s = dynamic_tracing::ResolveTargetObjPaths(conn_ctx->GetK8SMetadata(),
+                                                      program->mutable_deployment_spec());
+
     if (!s.ok()) {
       LOG(ERROR) << s.ToString();
       // Most failures of ResolveTargetObjPath() are caused by incorrect/incomplete user input.

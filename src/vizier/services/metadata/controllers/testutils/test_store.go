@@ -92,3 +92,8 @@ func (s *InMemoryPodLabelStore) FetchPodsWithLabels(namespace string, labels map
 	}
 	return result, nil
 }
+
+// GetWithPrefix gets all keys and values with the given prefix, for debugging purposes.
+func (s *InMemoryPodLabelStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
+	return nil, nil, nil
+}

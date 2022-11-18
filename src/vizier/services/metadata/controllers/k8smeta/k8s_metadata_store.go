@@ -361,3 +361,8 @@ func (m *Datastore) FetchPodsWithLabels(namespace string, labels map[string]stri
 
 	return result, nil
 }
+
+// GetWithPrefix gets all keys and values with the given prefix, for debugging purposes.
+func (m *Datastore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
+	return m.ds.GetWithPrefix(prefix)
+}

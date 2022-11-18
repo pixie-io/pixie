@@ -154,10 +154,12 @@ deployment_spec {
 
 constexpr char kStirlingUPIDDeployment[] = R"(
 deployment_spec {
-  upid {
-    asid: 123
-    pid: 4567
-    ts_ns: 1234567890
+  upid_list {
+    upids {
+      asid: 123
+      pid: 4567
+      ts_ns: 1234567890
+    }
   }
 }
 )";
@@ -175,7 +177,7 @@ deployment_spec {
 constexpr char kStirlingPodProcessDeployment[] = R"(
 deployment_spec {
   pod_process {
-    pod: "abcd"
+    pods: "abcd"
     container: "efgh"
     process: "12345"
   }

@@ -81,7 +81,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
   void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    logical_program_.mutable_deployment_spec()->set_path(server_path_);
+    logical_program_.mutable_deployment_spec()->mutable_path_list()->add_paths(server_path_);
 
     ASSERT_OK_AND_ASSIGN(connector_,
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));
@@ -222,7 +222,8 @@ class CPPDynamicTraceTest : public ::testing::Test {
   void InitTestFixturesAndRunTestProgram(const std::string& text_pb) {
     CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
 
-    logical_program_.mutable_deployment_spec()->set_path(test_exe_fixture_.Path());
+    logical_program_.mutable_deployment_spec()->mutable_path_list()->add_paths(
+        test_exe_fixture_.Path());
 
     ASSERT_OK_AND_ASSIGN(connector_,
                          DynamicTraceConnector::Create("my_dynamic_source", &logical_program_));

@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/strings/ascii.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/str_replace.h>
 #include <absl/strings/str_split.h>
@@ -30,26 +31,57 @@ bool ContainsUProbe(const std::string& script) {
   return absl::StrContains(script, "uprobe") || absl::StrContains(script, "uretprobe");
 }
 
-void InsertUprobeTargetObjPath(const dynamic_tracing::ir::shared::DeploymentSpec& spec,
-                               std::string* script) {
+void FindProbesAndInsertPaths(const std::string_view probe_str,
+                              const dynamic_tracing::ir::shared::BinaryPathList& path_list,
+                              std::string* script) {
+  size_t paths_size = path_list.paths_size();
+
+  size_t pos = 0;
+  while ((pos = script->find(probe_str, pos)) != std::string::npos) {
+    // BPFTrace uprobe script follows the following formats:
+    // uprobe:<function_name>{...}
+    // uprobe:<function_name>,uprobe:<function_name>{...}
+    // Find the ending position of <function_name> by matching the next { or , character.
+    size_t function_ending_pos = script->find_first_of("{,", pos);
+    if (function_ending_pos == std::string::npos) {
+      VLOG(1) << "Unable to find end of function name when inserting target object paths.";
+      break;
+    }
+
+    // Get the function name.
+    std::string function_name =
+        script->substr(pos + probe_str.size(), function_ending_pos - pos - probe_str.size());
+    absl::StripTrailingAsciiWhitespace(&function_name);
+    const std::string_view function_name_strview(function_name);
+
+    // For each path, insert the path and the function name form "uprobe:<path>:<function_name>".
+    std::string uprobe_location;
+    for (size_t i = 0; i < paths_size; ++i) {
+      std::string ending_comma = (i == paths_size - 1) ? "" : ",\n";
+      uprobe_location.append(
+          absl::StrCat(probe_str, path_list.paths(i), ":", function_name_strview, ending_comma));
+    }
+    script->replace(pos, function_ending_pos - pos, uprobe_location);
+
+    pos += uprobe_location.size();
+  }
+}
+
+void InsertUprobeTargetObjPaths(const dynamic_tracing::ir::shared::DeploymentSpec& spec,
+                                std::string* script) {
   constexpr std::string_view kUProbeStr("uprobe:");
   constexpr std::string_view kURetProbeStr("uretprobe:");
 
-  // TODO(chengruizhe): Add support for multiple deployment specs.
+  size_t paths_size = spec.path_list().paths_size();
   // If path not specified, assume the user has put the path in the script already.
-  if (spec.path().empty()) {
+  if (paths_size == 0) {
     VLOG(1) << "No target binary path is provided when deploying BPFTrace Uprobe. No path is "
                "inserted after 'uprobe:' or 'uretprobe:'.";
     return;
   }
 
-  const std::string target = absl::StrCat(spec.path(), ":");
-  const std::string_view target_strview(target);
-
-  // Insert path after 'uprobe:' or 'uretprobe:'.
-  *script =
-      absl::StrReplaceAll(*script, {{kUProbeStr, absl::StrCat(kUProbeStr, target_strview)},
-                                    {kURetProbeStr, absl::StrCat(kURetProbeStr, target_strview)}});
+  FindProbesAndInsertPaths(kUProbeStr, spec.path_list(), script);
+  FindProbesAndInsertPaths(kURetProbeStr, spec.path_list(), script);
 
   // TODO(chengruizhe): Add integration with StirlingError.
 }

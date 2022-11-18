@@ -73,9 +73,9 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
   }
 
   if (detected_language != ir::shared::Language::LANG_UNKNOWN) {
-    LOG(INFO) << absl::Substitute("Using language $0 for object $1",
+    LOG(INFO) << absl::Substitute("Using language $0 for object $1 and others",
                                   magic_enum::enum_name(dwarf_reader->source_language()),
-                                  input_program->deployment_spec().path());
+                                  input_program->deployment_spec().path_list().paths(0));
 
     // Since we only support tracing of a single object, all tracepoints have the same language.
     for (auto& tracepoint : *input_program->mutable_tracepoints()) {
@@ -86,9 +86,9 @@ void DetectSourceLanguage(obj_tools::ElfReader* elf_reader, obj_tools::DwarfRead
     // This is so we can use things like function argument tracing even when other features may not
     // work.
     LOG(WARNING) << absl::Substitute(
-        "Language for object $0 is unknown or unsupported, so assuming C/C++ ABI. "
+        "Language for object $0 and others is unknown or unsupported, so assuming C/C++ ABI. "
         "Some dynamic tracing features may not work, or may produce unexpected results.",
-        input_program->deployment_spec().path());
+        input_program->deployment_spec().path_list().paths(0));
   }
 }
 namespace {

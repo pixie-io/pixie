@@ -32,7 +32,9 @@ using ::px::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -107,7 +109,9 @@ tracepoints {
 
 constexpr std::string_view kTransformedProgram = R"proto(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {

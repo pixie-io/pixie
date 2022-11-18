@@ -43,6 +43,14 @@ using ::testing::Field;
 using ::testing::HasSubstr;
 using ::testing::SizeIs;
 
+constexpr char kClientPath[] =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
+    "golang_1_16_grpc_client";
+
+constexpr char kClientPathExpected[] =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client/"
+    "client_/client";
+
 constexpr char kServerPath[] =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
     "golang_1_16_grpc_server";
@@ -56,8 +64,8 @@ constexpr char kPod0UpdateTxt[] = R"(
   name: "pod0"
   namespace: "ns0"
   start_timestamp_ns: 100
-  container_ids: "container0"
-  container_ids: "container1"
+  container_ids: "pod0_container0"
+  container_ids: "pod0_container1"
   container_names: "container0"
   container_names: "container1"
 )";
@@ -67,10 +75,12 @@ constexpr char kPod1UpdateTxt[] = R"(
   name: "pod1"
   namespace: "ns0"
   start_timestamp_ns: 100
+  container_ids: "pod1_container0"
+  container_names: "container0"
 )";
 
-constexpr char kContainer0UpdateTxt[] = R"(
-  cid: "container0"
+constexpr char kPod0Container0UpdateTxt[] = R"(
+  cid: "pod0_container0"
   name: "container0"
   namespace: "ns0"
   start_timestamp_ns: 100
@@ -78,8 +88,8 @@ constexpr char kContainer0UpdateTxt[] = R"(
   pod_name: "pod0"
 )";
 
-constexpr char kContainer1UpdateTxt[] = R"(
-  cid: "container1"
+constexpr char kPod0Container1UpdateTxt[] = R"(
+  cid: "pod0_container1"
   name: "container1"
   namespace: "ns0"
   start_timestamp_ns: 100
@@ -87,62 +97,110 @@ constexpr char kContainer1UpdateTxt[] = R"(
   pod_name: "pod0"
 )";
 
+constexpr char kPod1Container0UpdateTxt[] = R"(
+  cid: "pod1_container0"
+  name: "container0"
+  namespace: "ns0"
+  start_timestamp_ns: 100
+  pod_id: "pod1"
+  pod_name: "pod1"
+)";
+
 class ResolveTargetObjPathTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto server_path = px::testing::BazelRunfilePath(kServerPath).string();
-    ASSERT_OK(s_.Start({server_path, "--port=0"}));
+    auto client_path = px::testing::BazelRunfilePath(kClientPath).string();
+    ASSERT_OK(server_.Start({server_path, "--port=0"}));
+    sleep(2);
+
+    std::string port_str;
+    ASSERT_OK(server_.Stdout(&port_str));
+    ASSERT_TRUE(absl::SimpleAtoi(port_str, &s_port_));
+    ASSERT_NE(0, s_port_);
+
+    ASSERT_OK(client_.Start({client_path, "-name=PixieLabs", "-count=10000",
+                             absl::StrCat("-address=localhost:", s_port_)}));
 
     md::K8sMetadataState::PodUpdate pod0_update;
     md::K8sMetadataState::PodUpdate pod1_update;
-    md::K8sMetadataState::ContainerUpdate container0_update;
-    md::K8sMetadataState::ContainerUpdate container1_update;
+    md::K8sMetadataState::ContainerUpdate pod0_container0_update;
+    md::K8sMetadataState::ContainerUpdate pod0_container1_update;
+    md::K8sMetadataState::ContainerUpdate pod1_container0_update;
 
     ASSERT_TRUE(TextFormat::ParseFromString(kPod0UpdateTxt, &pod0_update));
     ASSERT_TRUE(TextFormat::ParseFromString(kPod1UpdateTxt, &pod1_update));
-    ASSERT_TRUE(TextFormat::ParseFromString(kContainer0UpdateTxt, &container0_update));
-    ASSERT_TRUE(TextFormat::ParseFromString(kContainer1UpdateTxt, &container1_update));
+    ASSERT_TRUE(TextFormat::ParseFromString(kPod0Container0UpdateTxt, &pod0_container0_update));
+    ASSERT_TRUE(TextFormat::ParseFromString(kPod0Container1UpdateTxt, &pod0_container1_update));
+    ASSERT_TRUE(TextFormat::ParseFromString(kPod1Container0UpdateTxt, &pod1_container0_update));
 
-    ASSERT_OK(k8s_mds_.HandleContainerUpdate(container0_update));
-    ASSERT_OK(k8s_mds_.HandleContainerUpdate(container1_update));
+    ASSERT_OK(k8s_mds_.HandleContainerUpdate(pod0_container0_update));
+    ASSERT_OK(k8s_mds_.HandleContainerUpdate(pod0_container1_update));
+    ASSERT_OK(k8s_mds_.HandleContainerUpdate(pod1_container0_update));
     ASSERT_OK(k8s_mds_.HandlePodUpdate(pod0_update));
     ASSERT_OK(k8s_mds_.HandlePodUpdate(pod1_update));
 
-    k8s_mds_.containers_by_id()["container0"]->mutable_active_upids()->emplace(
-        PIDToUPID(s_.child_pid()));
+    k8s_mds_.containers_by_id()["pod0_container0"]->mutable_active_upids()->emplace(
+        PIDToUPID(server_.child_pid()));
+    k8s_mds_.containers_by_id()["pod1_container0"]->mutable_active_upids()->emplace(
+        PIDToUPID(client_.child_pid()));
   }
 
   void TearDown() override {
-    s_.Kill();
-    EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
+    server_.Kill();
+    client_.Kill();
+    EXPECT_EQ(9, server_.Wait()) << "Server should have been killed.";
+    EXPECT_EQ(9, client_.Wait()) << "Client should have been killed.";
   }
 
-  SubProcess s_;
+  SubProcess server_;
+  SubProcess client_;
+  int s_port_;
   md::K8sMetadataState k8s_mds_;
 };
 
 TEST_F(ResolveTargetObjPathTest, ResolveUPID) {
   ir::shared::DeploymentSpec deployment_spec;
-  deployment_spec.mutable_upid()->set_pid(s_.child_pid());
+  auto upid = deployment_spec.mutable_upid_list()->add_upids();
+  upid->set_pid(server_.child_pid());
 
-  ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
-  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPathExpected));
-  EXPECT_TRUE(fs::Exists(deployment_spec.path()));
+  ASSERT_OK(ResolveTargetObjPaths(k8s_mds_, &deployment_spec));
+  EXPECT_THAT(deployment_spec.path_list().paths(0), EndsWith(kServerPathExpected));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path_list().paths(0)));
 }
 
 TEST_F(ResolveTargetObjPathTest, ResolvePodProcessSuccess) {
   ir::shared::DeploymentSpec deployment_spec;
   constexpr char kDeploymentSpecTxt[] = R"(
     pod_process {
-      pod: "ns0/pod0"
+      pods: ["ns0/pod0", "ns0/pod1"]
       container: "container0"
       process: "go_grpc_server"
     }
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
-  ASSERT_OK(ResolveTargetObjPath(k8s_mds_, &deployment_spec));
-  EXPECT_THAT(deployment_spec.path(), EndsWith(kServerPathExpected));
-  EXPECT_TRUE(fs::Exists(deployment_spec.path()));
+  ASSERT_OK(ResolveTargetObjPaths(k8s_mds_, &deployment_spec));
+  EXPECT_EQ(deployment_spec.path_list().paths_size(), 1);
+  EXPECT_THAT(deployment_spec.path_list().paths(0), EndsWith(kServerPathExpected));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path_list().paths(0)));
+}
+
+TEST_F(ResolveTargetObjPathTest, ResolveMultiplePodsInPodProcess) {
+  ir::shared::DeploymentSpec deployment_spec;
+  constexpr char kDeploymentSpecTxt[] = R"(
+    pod_process {
+      pods: ["ns0/pod0", "ns0/pod1"]
+      container: "container0"
+      process: "go*"
+    }
+  )";
+  TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
+  ASSERT_OK(ResolveTargetObjPaths(k8s_mds_, &deployment_spec));
+  EXPECT_EQ(deployment_spec.path_list().paths_size(), 2);
+  EXPECT_THAT(deployment_spec.path_list().paths(0), EndsWith(kServerPathExpected));
+  EXPECT_THAT(deployment_spec.path_list().paths(1), EndsWith(kClientPathExpected));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path_list().paths(0)));
+  EXPECT_TRUE(fs::Exists(deployment_spec.path_list().paths(1)));
 }
 
 // Tests that non-matching process regexp returns no UPID.
@@ -150,15 +208,15 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessNonMatchingProcessRegexp) {
   ir::shared::DeploymentSpec deployment_spec;
   constexpr char kDeploymentSpecTxt[] = R"(
     pod_process {
-      pod: "ns0/pod0"
+      pods: "ns0/pod0"
       container: "container0"
       process: "non-existent-regexp"
     }
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
-  EXPECT_THAT(
-      ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-      StatusIs(px::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs in Container: 'container0'")));
+  EXPECT_THAT(ResolveTargetObjPaths(k8s_mds_, &deployment_spec),
+              StatusIs(px::statuspb::FAILED_PRECONDITION,
+                       HasSubstr("Found no UPIDs in Container: 'container0'")));
 }
 
 // Tests that a given pod name prefix matches multiple Pods.
@@ -166,11 +224,11 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMultiplePods) {
   ir::shared::DeploymentSpec deployment_spec;
   constexpr char kDeploymentSpecTxt[] = R"(
     pod_process {
-      pod: "ns0/pod"
+      pods: "ns0/pod"
     }
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
-  EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
+  EXPECT_THAT(ResolveTargetObjPaths(k8s_mds_, &deployment_spec),
               StatusIs(px::statuspb::FAILED_PRECONDITION,
                        HasSubstr("Pod name 'ns0/pod' matches multiple Pods")));
 }
@@ -180,11 +238,11 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMissingContainerName) {
   ir::shared::DeploymentSpec deployment_spec;
   constexpr char kDeploymentSpecTxt[] = R"(
     pod_process {
-      pod: "ns0/pod0"
+      pods: "ns0/pod0"
     }
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
-  EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
+  EXPECT_THAT(ResolveTargetObjPaths(k8s_mds_, &deployment_spec),
               StatusIs(px::statuspb::FAILED_PRECONDITION,
                        HasSubstr("Container name not specified, but Pod 'pod0' has multiple "
                                  "containers 'container0,container1'")));
@@ -192,7 +250,9 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMissingContainerName) {
 
 constexpr std::string_view kLogicalProgramSpec = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {

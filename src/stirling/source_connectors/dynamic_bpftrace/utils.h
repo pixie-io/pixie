@@ -28,7 +28,7 @@ namespace stirling {
 bool ContainsUProbe(const std::string& script);
 
 // Inserts the path from the deployment spec after every occurance of `uprobe:` or `uretprobe:`.
-void InsertUprobeTargetObjPath(const dynamic_tracing::ir::shared::DeploymentSpec& spec,
-                               std::string* script);
+void InsertUprobeTargetObjPaths(const dynamic_tracing::ir::shared::DeploymentSpec& spec,
+                                std::string* script);
 }  // namespace stirling
 }  // namespace px

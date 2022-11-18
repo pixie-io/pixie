@@ -33,7 +33,9 @@ using ::px::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -74,7 +76,9 @@ tracepoints {
 
 constexpr std::string_view kEntryProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 language: GOLANG
 probes {
@@ -189,7 +193,9 @@ probes {
 
 constexpr std::string_view kReturnProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -214,7 +220,9 @@ tracepoints {
 
 constexpr std::string_view kReturnProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 language: GOLANG
 probes {
@@ -289,7 +297,9 @@ probes {
 
 constexpr std::string_view kImplicitNamedRetvalsIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -314,7 +324,9 @@ tracepoints {
 
 constexpr std::string_view kImplicitNamedRetvalsOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 language: GOLANG
 probes {
@@ -389,7 +401,9 @@ probes {
 
 constexpr std::string_view kNamedRetvalsIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -414,7 +428,9 @@ tracepoints {
 
 constexpr std::string_view kNamedRetvalsOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 language: GOLANG
 probes {
@@ -490,7 +506,9 @@ probes {
 
 constexpr std::string_view kNestedArgProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -515,7 +533,9 @@ tracepoints {
 
 constexpr std::string_view kNestedArgProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 language: GOLANG
 probes {
@@ -619,7 +639,9 @@ probes {
 
 constexpr std::string_view kActionProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -696,7 +718,9 @@ tracepoints {
 
 constexpr std::string_view kActionProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 structs {
   name: "my_stash_value_t"
@@ -1012,7 +1036,9 @@ arrays {
 
 constexpr std::string_view kStructProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -1041,7 +1067,9 @@ tracepoints {
 
 constexpr std::string_view kStructProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 structs {
   name: "out_table_value_t"
@@ -1201,7 +1229,9 @@ arrays {
 
 constexpr std::string_view kGolangErrorInterfaceProbeIn = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -1230,7 +1260,9 @@ tracepoints {
 
 constexpr std::string_view kGolangErrorInterfaceProbeOut = R"(
 deployment_spec {
-  path: "$0"
+  path_list {
+    paths: "$0"
+  }
 }
 structs {
   name: "out_table_value_t"

@@ -37,7 +37,9 @@ using ::px::stirling::obj_tools::ElfReader;
 
 constexpr std::string_view kInputProgram = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -54,7 +56,9 @@ tracepoints {
 
 constexpr std::string_view kProgramWithLanguage = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -72,7 +76,9 @@ tracepoints {
 
 constexpr std::string_view kProgramWithSymbol = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -90,7 +96,9 @@ tracepoints {
 
 constexpr std::string_view kAutoTraceExpansionOutput = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -235,7 +243,9 @@ INSTANTIATE_TEST_SUITE_P(ResolveProbeSymbolTestSuite, ResolveProbeSymbolTest,
 TEST_F(ResolveProbeSymbolTest, IncompleteSymbol) {
   constexpr std::string_view kInputProgramWithIncompleteSymbol = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {
@@ -259,7 +269,9 @@ tracepoints {
 TEST_F(ResolveProbeSymbolTest, AmbiguousSymbol) {
   constexpr std::string_view kInputProgramWithAmbiguousSymbol = R"(
 deployment_spec {
-  path: "$0"
+  path_list: {
+    paths: "$0"
+  }
 }
 tracepoints {
   program {

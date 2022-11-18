@@ -46,6 +46,7 @@ import (
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/bloomfilterpb"
+
 	sharedmetadatapb "px.dev/pixie/src/shared/metadatapb"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/server"
@@ -1103,6 +1104,7 @@ func Test_Server_ConvertLabelsToPods(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
+
 	s := controllers.NewServer(env, nil, pls, nil, nil)
 
 	program := &logicalpb.TracepointDeployment{}

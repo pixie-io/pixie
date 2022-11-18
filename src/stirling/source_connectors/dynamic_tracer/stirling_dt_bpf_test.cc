@@ -152,7 +152,9 @@ class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
 
   static constexpr std::string_view kTracepointDeploymentTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -283,7 +285,9 @@ TEST_F(DynamicTraceGolangTest, TraceLatencyOnly) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -325,7 +329,9 @@ TEST_F(DynamicTraceGolangTest, TraceString) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -378,7 +384,9 @@ TEST_F(DynamicTraceGolangTest, TraceLongString) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -427,7 +435,9 @@ TEST_F(DynamicTraceGolangTest, TraceStructBlob) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -497,7 +507,7 @@ TEST_P(ReturnedErrorInterfaceTest, TraceError) {
   ASSERT_TRUE(
       google::protobuf::TextFormat::ParseFromString(logical_program, tracepoint_deployment.get()));
 
-  tracepoint_deployment->mutable_deployment_spec()->set_path(kBinaryPath);
+  tracepoint_deployment->mutable_deployment_spec()->mutable_path_list()->add_paths(kBinaryPath);
 
   DeployTracepoint(std::move(tracepoint_deployment));
 
@@ -562,7 +572,9 @@ TEST_P(DynamicTraceGolangTestWithParam, TraceByteArray) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -632,7 +644,9 @@ TEST_F(DynamicTraceCppTest, BasicTypes) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -698,7 +712,9 @@ TEST_P(DynamicTraceCppTestWithParam, StructTypes) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -767,7 +783,9 @@ TEST_F(DynamicTraceCppTest, ArgsOnStackAndRegisters) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "$0"
+    path_list {
+      paths: "$0"
+    }
   }
   tracepoints {
     program {
@@ -893,7 +911,9 @@ TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfo) {
 
   constexpr std::string_view kProgramTxtPB = R"(
   deployment_spec {
-    path: "/lib/x86_64-linux-gnu/libc.so.6"
+    path_list {
+      paths: "/lib/x86_64-linux-gnu/libc.so.6"
+    }
   }
   tracepoints {
     table_name: "foo"
@@ -982,7 +1002,6 @@ TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfoInsideContainer) {
     }
   }
   )";
-
   auto trace_program = Prepare(kProgramTxtPB, std::to_string(trace_target_.process_pid()));
 
   DeployTracepoint(std::move(trace_program));

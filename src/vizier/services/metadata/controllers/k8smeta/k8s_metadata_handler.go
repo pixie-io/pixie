@@ -115,6 +115,9 @@ type PodLabelStore interface {
 	FetchPodsWithLabelKey(namespace string, key string) ([]string, error)
 	// FetchPodsWithLabels gets the names of all the pods whose labels match exactly all the labels provided.
 	FetchPodsWithLabels(namespace string, labels map[string]string) ([]string, error)
+
+	// GetWithPrefix gets all keys and values with the given prefix, for debugging purposes.
+	GetWithPrefix(prefix string) ([]string, [][]byte, error)
 }
 
 // An UpdateProcessor is responsible for processing an incoming update, such as determining what

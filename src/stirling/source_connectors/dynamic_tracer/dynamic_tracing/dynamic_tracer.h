@@ -29,17 +29,17 @@ namespace stirling {
 namespace dynamic_tracing {
 
 /**
- * Resolves the DeploymentSpec target into a path on the host.
+ * Resolves the DeploymentSpec target into paths on the host.
  *  - Resolves PIDs to executable paths.
  *  - Resolves SharedObjects to shared object paths.
  *
- * Successfully calling this function result into deployment_spec->path being overwritten with
- * the path of an existing executable file or a shared object file.
+ * Successfully calling this function result into deployment_spec->paths being overwritten with
+ * the paths of existing executable files or shared object files.
  *
  * This must be called before calling CompileProgram().
  */
-Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
-                            ir::shared::DeploymentSpec* deployment_spec);
+Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
+                             ir::shared::DeploymentSpec* deployment_spec);
 
 /**
  * Transforms any logical probes inside a program into entry and return probes.

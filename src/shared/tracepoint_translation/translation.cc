@@ -31,7 +31,7 @@ void CopyUPID(const carnot::planner::dynamic_tracing::ir::logical::UPID& in,
 void CopyDeploymentSpec(const carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec& in,
                         stirling::dynamic_tracing::ir::shared::DeploymentSpec* out) {
   if (in.has_upid()) {
-    CopyUPID(in.upid(), out->mutable_upid());
+    CopyUPID(in.upid(), out->mutable_upid_list()->add_upids());
     return;
   } else if (in.has_shared_object()) {
     auto shared_object = out->mutable_shared_object();
@@ -40,8 +40,9 @@ void CopyDeploymentSpec(const carnot::planner::dynamic_tracing::ir::logical::Dep
     return;
   } else if (in.has_pod_process()) {
     auto pod_process = out->mutable_pod_process();
-    // TODO(chengruizhe): Update pod process translation with Stirling proto change.
-    pod_process->set_pod(in.pod_process().pods(0));
+    for (const auto& pod : in.pod_process().pods()) {
+      pod_process->add_pods(pod);
+    }
     pod_process->set_process(in.pod_process().process());
     pod_process->set_container(in.pod_process().container());
     return;

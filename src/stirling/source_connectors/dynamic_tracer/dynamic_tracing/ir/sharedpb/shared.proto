@@ -136,6 +136,14 @@ message UPID {
   uint64 ts_ns = 3;
 }
 
+message BinaryPathList {
+  repeated string paths = 1;
+}
+
+message UPIDList {
+  repeated UPID upids = 1;
+}
+
 // Describes the target of attaching a Tracepoint.
 message DeploymentSpec {
   message SharedObject {
@@ -148,20 +156,23 @@ message DeploymentSpec {
     // Note, however, that the tracepoint is attached to the shared library; not just this process.
     UPID upid = 2;
   }
+
+  // TODO(chengruizhe): Consider adding a PodProcessList that contains a repeated field of
+  // PodProcesses.
   message PodProcess {
-    // The name of the Pod.
-    string pod = 1;
-    // The name of the container inside the above Pod.
+    // The names of the Pods.
+    repeated string pods = 1;
+    // The name of the container inside the above Pods.
     string container = 2;
     // The application processes whose cmdline contains this regexp are selected.
     string process = 3;
   }
   oneof target_oneof {
     // The path of the object file (may be executable or shared library).
-    string path = 1;
+    BinaryPathList path_list = 1;
     // The UPID of a running process.
     // Resolved to an executable.
-    UPID upid = 3;
+    UPIDList upid_list = 3;
     // An way to specify a shared object to be traced.
     SharedObject shared_object = 8;
     // Describes the target process to attach.

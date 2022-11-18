@@ -95,6 +95,10 @@ func (s *FakeStore) FetchPodsWithLabels(namespace string, labels map[string]stri
 	return nil, nil
 }
 
+func (s *FakeStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
+	return nil, nil, nil
+}
+
 func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 	tests := []struct {
 		name               string

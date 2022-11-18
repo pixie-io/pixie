@@ -107,7 +107,7 @@ struct ObjInfo {
 StatusOr<ObjInfo> Prepare(const ir::logical::TracepointDeployment& input_program) {
   ObjInfo obj_info;
 
-  const auto& binary_path = input_program.deployment_spec().path();
+  const auto& binary_path = input_program.deployment_spec().path_list().paths(0);
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0", binary_path);
 
   PL_ASSIGN_OR_RETURN(obj_info.elf_reader, ElfReader::Create(binary_path));
@@ -123,7 +123,7 @@ StatusOr<ObjInfo> Prepare(const ir::logical::TracepointDeployment& input_program
 }  // namespace
 
 StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_program) {
-  if (input_program->deployment_spec().path().empty()) {
+  if (input_program->deployment_spec().path_list().paths_size() == 0) {
     return error::InvalidArgument("Must have path resolved before compiling program");
   }
 
@@ -179,7 +179,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   bcc_program.code = std::move(bcc_code);
 
   const ir::shared::Language& language = physical_program.language();
-  const std::string& binary_path = physical_program.deployment_spec().path();
+  const std::string& binary_path = physical_program.deployment_spec().path_list().paths(0);
 
   // TODO(yzhao): deployment_spec.upid will be lost after calling ResolveTargetObjPath().
   // Consider adjust data structure such that both can be preserved.
@@ -218,13 +218,13 @@ Status CheckPIDStartTime(const ProcParser& proc_parser, int32_t pid, int64_t spe
   return Status::OK();
 }
 
-StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::DeploymentSpec& deployment_spec) {
-  uint32_t pid = deployment_spec.upid().pid();
+StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::UPID& upid) {
+  uint32_t pid = upid.pid();
   const auto& sysconfig = system::Config::GetInstance();
   const ProcParser proc_parser(sysconfig);
 
-  if (deployment_spec.upid().ts_ns() != 0) {
-    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, deployment_spec.upid().ts_ns()));
+  if (upid.ts_ns() != 0) {
+    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, upid.ts_ns()));
   }
 
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
@@ -243,9 +243,9 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   const std::string& lib_name = deployment_spec.shared_object().name();
   const auto& sysconfig = system::Config::GetInstance();
   const ProcParser proc_parser(sysconfig);
-
-  if (deployment_spec.upid().ts_ns() != 0) {
-    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, deployment_spec.upid().ts_ns()));
+  auto ts_ns = deployment_spec.shared_object().upid().ts_ns();
+  if (ts_ns != 0) {
+    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, ts_ns));
   }
 
   // Find the path to shared library, which may be inside a container.
@@ -294,9 +294,6 @@ ir::shared::UPID UPIDToProto(const md::UPID& upid) {
   return res;
 }
 
-// TODO(oazizi/yzhao): Support deployments rather than Pods. (1) make sure it is more sophisticated
-// than a prefix match (to avoid false matches), and (2) Allow deployments to multiple pods within
-// the same deployment.
 StatusOr<const md::PodInfo*> ResolvePod(const md::K8sMetadataState& k8s_mds,
                                         std::string_view pod_name) {
   PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
@@ -414,33 +411,50 @@ StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
   return upids.front();
 }
 
+#define PL_ASSIGN_OR_CONTINUE(lhs, rexpr, error_msgs) \
+  PL_ASSIGN_OR(lhs, rexpr, error_msgs.push_back(__s__.msg()); continue;)
+
 // Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
 // them into the input protobuf.
 Status ResolvePodProcess(const md::K8sMetadataState& k8s_mds,
                          dynamic_tracing::ir::shared::DeploymentSpec* deployment_spec) {
-  std::string_view pod_name = deployment_spec->pod_process().pod();
+  // Copy pod_process before setting deployment_spec to upid.
+  auto pod_process = deployment_spec->pod_process();
+  std::string_view container_name = pod_process.container();
+  std::string_view process_regexp = pod_process.process();
 
-  PL_ASSIGN_OR_RETURN(const md::PodInfo* pod_info, ResolvePod(k8s_mds, pod_name));
+  auto upid_list = deployment_spec->mutable_upid_list();
+  int pods_size = pod_process.pods_size();
 
-  std::string_view container_name = deployment_spec->pod_process().container();
+  if (pods_size == 0) {
+    return error::NotFound("No pods are provided in PodProcess.");
+  }
 
-  PL_ASSIGN_OR_RETURN(const md::ContainerInfo* container_info,
-                      ResolveContainer(k8s_mds, *pod_info, container_name));
+  std::vector<std::string> error_msgs;
+  for (int i = 0; i < pods_size; ++i) {
+    std::string_view pod_name(pod_process.pods(i));
+    // If a pod doesn't exist, then try other pods.
+    PL_ASSIGN_OR_CONTINUE(const md::PodInfo* pod_info, ResolvePod(k8s_mds, pod_name), error_msgs);
+    PL_ASSIGN_OR_CONTINUE(const md::ContainerInfo* container_info,
+                          ResolveContainer(k8s_mds, *pod_info, container_name), error_msgs);
+    PL_ASSIGN_OR_CONTINUE(const md::UPID upid, ResolveProcess(*container_info, process_regexp),
+                          error_msgs);
 
-  std::string_view process_regexp = deployment_spec->pod_process().process();
+    auto upid_ptr = upid_list->add_upids();
+    upid_ptr->CopyFrom(UPIDToProto(upid));
+  }
 
-  PL_ASSIGN_OR_RETURN(const md::UPID upid, ResolveProcess(*container_info, process_regexp));
-
-  // Target oneof now clears the pod.
-  deployment_spec->mutable_upid()->CopyFrom(UPIDToProto(upid));
+  if (upid_list->upids_size() == 0) {
+    return error::FailedPrecondition(absl::StrJoin(error_msgs, "\n"));
+  }
 
   return Status::OK();
 }
 
 }  // namespace
 
-Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
-                            ir::shared::DeploymentSpec* deployment_spec) {
+Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
+                             ir::shared::DeploymentSpec* deployment_spec) {
   // Write PodProcess to deployment_spec.upid.
   if (deployment_spec->has_pod_process()) {
     PL_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
@@ -448,21 +462,33 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
 
   std::filesystem::path target_obj_path;
 
-  // TODO(yzhao/oazizi): Consider removing switch statement, and changes into a sequential
+  // TODO(chengruizhe/oazizi): Consider removing switch statement, and changes into a sequential
   // processing workflow: Pod->UPID->Path.
   switch (deployment_spec->target_oneof_case()) {
-    // Already a path, so nothing to do.
-    case ir::shared::DeploymentSpec::TargetOneofCase::kPath:
-      target_obj_path = deployment_spec->path();
+    // Already paths, so nothing to do.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kPathList:
       break;
-    // Populate path based on UPID.
-    case ir::shared::DeploymentSpec::TargetOneofCase::kUpid: {
-      PL_ASSIGN_OR_RETURN(target_obj_path, ResolveUPID(*deployment_spec));
+    // Populate paths based on UPIDs.
+    case ir::shared::DeploymentSpec::TargetOneofCase::kUpidList: {
+      int upids_size = deployment_spec->upid_list().upids_size();
+      // Copy upid_list.
+      auto upid_list = deployment_spec->upid_list();
+
+      absl::flat_hash_set<std::string> inserted_paths;
+      for (int i = 0; i < upids_size; ++i) {
+        PL_ASSIGN_OR_RETURN(target_obj_path, ResolveUPID(upid_list.upids(i)));
+        // Deduplicate identical target paths before adding to deployment_spec.
+        if (inserted_paths.find(target_obj_path.string()) == inserted_paths.end()) {
+          inserted_paths.insert(target_obj_path.string());
+          deployment_spec->mutable_path_list()->add_paths(target_obj_path);
+        }
+      }
       break;
     }
-    // Populate path based on shared object identifier.
+    // Populate paths based on shared object identifier.
     case ir::shared::DeploymentSpec::TargetOneofCase::kSharedObject: {
       PL_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
+      deployment_spec->mutable_path_list()->add_paths(target_obj_path);
       break;
     }
     case ir::shared::DeploymentSpec::TargetOneofCase::kPodProcess: {
@@ -473,12 +499,11 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
       return error::InvalidArgument("Must specify target.");
   }
 
-  if (!fs::Exists(target_obj_path)) {
-    return error::Internal("Binary $0 not found.", target_obj_path.string());
+  for (auto& target_obj_path : deployment_spec->path_list().paths()) {
+    if (!fs::Exists(target_obj_path)) {
+      return error::Internal("Binary $0 not found.", target_obj_path);
+    }
   }
-
-  deployment_spec->set_path(target_obj_path.string());
-
   return Status::OK();
 }
 

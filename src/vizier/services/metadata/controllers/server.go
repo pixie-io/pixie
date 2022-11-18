@@ -322,7 +322,7 @@ func (s *Server) GetWithPrefixKey(ctx context.Context, req *metadatapb.WithPrefi
 			msg = reflect.New(t.Elem()).Interface().(proto.Message)
 		}
 	}
-	ks, vs, err := s.ds.GetWithPrefix(prefix)
+	ks, vs, err := s.pls.GetWithPrefix(prefix)
 	if err != nil {
 		return nil, err
 	}

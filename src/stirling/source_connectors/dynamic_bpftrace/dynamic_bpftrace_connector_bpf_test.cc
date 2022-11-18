@@ -458,25 +458,45 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
                HasSubstr("All printf statements must have exactly the same format string")));
 }
 
-constexpr std::string_view kServerPath =
+constexpr std::string_view kServerPath_1_16 =
     "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
     "golang_1_16_grpc_server";
+constexpr std::string_view kServerPath_1_17 =
+    "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server/"
+    "golang_1_17_grpc_server";
 
-TEST(DynamicBPFTraceConnectorTest, InsertUProbeObjPath) {
-  std::string target_binary_path = px::testing::BazelRunfilePath(kServerPath).string();
-  ASSERT_TRUE(fs::Exists(target_binary_path));
+TEST(DynamicBPFTraceConnectorTest, InsertUProbeTargetObjPaths) {
+  std::string go1_16_binary_path = px::testing::BazelRunfilePath(kServerPath_1_16).string();
+  std::string go1_17_binary_path = px::testing::BazelRunfilePath(kServerPath_1_17).string();
+
+  ASSERT_TRUE(fs::Exists(go1_16_binary_path));
+  ASSERT_TRUE(fs::Exists(go1_17_binary_path));
 
   DeploymentSpec spec;
-  spec.set_path(target_binary_path);
+  spec.mutable_path_list()->add_paths(go1_16_binary_path);
+  spec.mutable_path_list()->add_paths(go1_17_binary_path);
 
   std::string uprobe_script =
+      "// Deploys uprobes to trace http2 traffic.\n"
       "uprobe:\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
-      "{ printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }";
-  InsertUprobeTargetObjPath(spec, &uprobe_script);
-  EXPECT_EQ(uprobe_script,
-            absl::StrCat("uprobe:", target_binary_path,
-                         ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\"{ "
-                         "printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }"));
+      "{ printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }\n"
+      "uretprobe:\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
+      "{ printf(\"retval: %d\", retval); }";
+  InsertUprobeTargetObjPaths(spec, &uprobe_script);
+  EXPECT_EQ(
+      uprobe_script,
+      absl::StrCat("// Deploys uprobes to trace http2 traffic.\n", "uprobe:", go1_16_binary_path,
+                   ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\",\n"
+                   "uprobe:",
+                   go1_17_binary_path,
+                   ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
+                   "{ printf(\"stream_id: %d, end_stream: %d\", arg0, arg1); }\n",
+                   "uretprobe:", go1_16_binary_path,
+                   ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\",\n"
+                   "uretprobe:",
+                   go1_17_binary_path,
+                   ":\"golang.org/x/net/http2.(*Framer).WriteDataPadded\""
+                   "{ printf(\"retval: %d\", retval); }"));
 }
 
 class CPPDynamicBPFTraceTest : public ::testing::Test {
@@ -485,12 +505,13 @@ class CPPDynamicBPFTraceTest : public ::testing::Test {
     CHECK(TextFormat::ParseFromString(text_pb, &deployment_));
 
     ASSERT_TRUE(fs::Exists(test_exe_fixture_.Path()));
-    deployment_.mutable_deployment_spec()->set_path(test_exe_fixture_.Path().string());
+    deployment_.mutable_deployment_spec()->mutable_path_list()->add_paths(
+        test_exe_fixture_.Path().string());
 
     auto tracepoint = deployment_.tracepoints(0);
     std::string* script = tracepoint.mutable_bpftrace()->mutable_program();
     if (ContainsUProbe(*script)) {
-      InsertUprobeTargetObjPath(deployment_.deployment_spec(), script);
+      InsertUprobeTargetObjPaths(deployment_.deployment_spec(), script);
     }
 
     ASSERT_OK_AND_ASSIGN(connector_,
