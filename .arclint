@@ -62,6 +62,19 @@
       "script-and-regex.script": "./tools/linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<severity>)(?P<error>.*): (?P<message>.*)$/m"
     },
+    "build-denylist": {
+      "type": "script-and-regex",
+      "include": [
+        "(^WORKSPACE$)",
+        "(^third_party/BUILD\\.bazel$)",
+        "(\\.BUILD$)",
+        "(BUILD\\.bazel$)",
+        "(\\.bzl$)",
+        "(\\.sky$)"
+      ],
+      "script-and-regex.script": "./tools/linters/build_denylist.sh",
+      "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+):(?P<severity>.*):(?P<message>.*)$/m"
+    },
     "clang-format": {
       "type": "clang-format",
       "include": [
