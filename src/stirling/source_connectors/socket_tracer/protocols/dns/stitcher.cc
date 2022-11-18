@@ -135,32 +135,28 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
   rapidjson::Document d;
   d.SetObject();
 
-  // Since rapidjson only maintains references, we must pin the address strings in memory,
-  // until the final json is printed out. We do that with this vector.
-  std::vector<std::string> addr_strs;
-
   rapidjson::Value answers(rapidjson::kArrayType);
   for (const auto& r : resp_frame.records()) {
     const std::string& name = r.name;
-    std::string_view type_name;
-
     rapidjson::Value answer(rapidjson::kObjectType);
     answer.AddMember("name", rapidjson::StringRef(name.data(), name.size()), d.GetAllocator());
 
     if (!r.cname.empty()) {
-      type_name = "CNAME";
+      std::string_view type_name = "CNAME";
       answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
                        d.GetAllocator());
+
       answer.AddMember("cname", rapidjson::StringRef(r.cname.data(), r.cname.size()),
                        d.GetAllocator());
     } else {
-      addr_strs.push_back(r.addr.AddrStr());
-      const std::string& addr = addr_strs.back();
       std::string_view type_name = DNSRecordTypeName(r.addr.family);
-
       answer.AddMember("type", rapidjson::StringRef(type_name.data(), type_name.size()),
                        d.GetAllocator());
-      answer.AddMember("addr", rapidjson::StringRef(addr.data(), addr.size()), d.GetAllocator());
+
+      std::string addr = r.addr.AddrStr();
+      rapidjson::Value addr_str(rapidjson::kStringType);
+      addr_str.SetString(addr.data(), addr.size(), d.GetAllocator());
+      answer.AddMember("addr", addr_str, d.GetAllocator());
     }
 
     answers.PushBack(answer, d.GetAllocator());
