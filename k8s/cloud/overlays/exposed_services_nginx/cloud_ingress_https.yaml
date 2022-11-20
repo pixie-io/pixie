@@ -1,0 +1,37 @@
+## Replace all occurrences of pixie.example.com with the custom domain name you wish to use
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloud-ingress-https
+  namespace: plc
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - pixie.example.com
+    - work.pixie.example.com
+    secretName: cloud-proxy-tls-certs
+  rules:
+  - host: pixie.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 443
+  - host: work.pixie.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloud-proxy-service
+            port:
+              number: 443
