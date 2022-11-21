@@ -53,3 +53,13 @@ py_binary(
         requirement("fire"),
     ],
 )
+
+py_binary(
+    name = "amqp_test_code_gen",
+    srcs = ["amqp_test_code_gen.py"],
+    deps = [
+        ":amqp_code_gen",
+        requirement("fire"),
+        requirement("pyshark"),
+    ],
+)

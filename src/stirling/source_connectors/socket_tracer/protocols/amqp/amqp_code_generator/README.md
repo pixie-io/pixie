@@ -54,3 +54,21 @@ The XML holds relevant fields, method ids, and class ids. A sample snippet parse
       <response name="start-ok"/>
       <field name="version-major" domain="octet"/>
 ```
+
+
+## AMQP Test generation
+Since AMQP has many methods and classes, in `amqp_test_code_gen.py` a sample wireshark capture of AMQP traffic can be used to test the decoding of the different fields.
+
+This is done via:
+```
+bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_test_code_gen -- parse_packets
+
+bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_test_code_gen -- run
+
+cp generated_files/parse_decode_test.cc .
+```
+
+Note: There are some fields that are failed to be parsed by wireshark. These fields need to be manually edited when testing the wireshark code.
+Some properties such as:
+- Exchange key
+- Content Type
