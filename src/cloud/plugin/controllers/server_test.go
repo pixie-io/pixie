@@ -1363,7 +1363,7 @@ func TestServer_CreateRetentionScript(t *testing.T) {
 	assert.Equal(t, "", script.ExportURL)
 }
 
-func TestServer_CreateRetentionScriptNameConflict(t *testing.T) {
+func TestServer_CreateRetentionScriptNameDuplicatesAllowed(t *testing.T) {
 	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
@@ -1398,16 +1398,12 @@ func TestServer_CreateRetentionScriptNameConflict(t *testing.T) {
 		ID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
 	}, nil)
 
-	mockCSClient.EXPECT().DeleteScript(gomock.Any(), &cronscriptpb.DeleteScriptRequest{
-		ID:    utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"),
-		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-	}).Return(&cronscriptpb.DeleteScriptResponse{}, nil)
-
 	s := controllers.New(db, "test", mockCSClient)
 	_, err = s.CreateRetentionScript(createTestContext(), &pluginpb.CreateRetentionScriptRequest{
 		Script: &pluginpb.DetailedRetentionScript{
 			Script: &pluginpb.RetentionScript{
-				ScriptName:  "testScript",
+				// Duplicates the name of the script in the test data
+				ScriptName:  "testScript2",
 				Description: "This is a new script!",
 				FrequencyS:  20,
 				ClusterIDs: []*uuidpb.UUID{
@@ -1422,8 +1418,40 @@ func TestServer_CreateRetentionScriptNameConflict(t *testing.T) {
 		},
 		OrgID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 	})
+	require.NoError(t, err)
 
-	require.Error(t, err)
+	// Make sure that the script name is duplicated.
+	query := `SELECT script_name, description, is_preset, plugin_id, PGP_SYM_DECRYPT(export_url, $1::text) as export_url from plugin_retention_scripts WHERE org_id=$2 AND plugin_id=$3`
+	rows, err := db.Queryx(query, "test", uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000"), "test-plugin")
+	require.Nil(t, err)
+	defer rows.Close()
+
+	rs := make([]*controllers.RetentionScript, 0)
+	for rows.Next() {
+		var script controllers.RetentionScript
+		err = rows.StructScan(&script)
+		require.Nil(t, err)
+		script.ScriptID = utils.UUIDFromProtoOrNil(nil)
+		if script.ScriptName == "testScript2" {
+			rs = append(rs, &script)
+		}
+	}
+
+	assert.ElementsMatch(t, []*controllers.RetentionScript{
+		{
+			ScriptName:  "testScript2",
+			Description: "This is another script",
+			IsPreset:    true,
+			PluginID:    "test-plugin",
+			ExportURL:   "https://url",
+		}, {
+			ScriptName:  "testScript2",
+			Description: "This is a new script!",
+			IsPreset:    false,
+			PluginID:    "test-plugin",
+			ExportURL:   "",
+		},
+	}, rs)
 }
 
 func TestServer_UpdateRetentionScript(t *testing.T) {

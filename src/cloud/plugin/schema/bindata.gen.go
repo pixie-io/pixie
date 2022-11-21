@@ -22,6 +22,8 @@
 // 000010_add_retention_plugin_insecure.up.sql
 // 000011_add_retention_plugin_insecure_default.down.sql
 // 000011_add_retention_plugin_insecure_default.up.sql
+// 000012_drop_unique_name_constraint.down.sql
+// 000012_drop_unique_name_constraint.up.sql
 package schema
 
 import (
@@ -538,6 +540,46 @@ func _000011_add_retention_plugin_insecure_defaultUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000012_drop_unique_name_constraintDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xc8\x29\x4d\xcf\xcc\x8b\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\x56\x70\x74\x71\x51\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\xc1\xa9\x2e\x3e\xbf\x28\x3d\x3e\x33\x05\xca\x8d\xcf\x4b\xcc\x4d\x8d\xcf\x4e\xad\x54\x08\xf5\xf3\x0c\x0c\x75\x55\xd0\x80\x48\xeb\x28\x20\xc9\x6b\x5a\x73\x01\x02\x00\x00\xff\xff\x0c\x33\xa4\xf9\x82\x00\x00\x00")
+
+func _000012_drop_unique_name_constraintDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000012_drop_unique_name_constraintDownSql,
+		"000012_drop_unique_name_constraint.down.sql",
+	)
+}
+
+func _000012_drop_unique_name_constraintDownSql() (*asset, error) {
+	bytes, err := _000012_drop_unique_name_constraintDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000012_drop_unique_name_constraint.down.sql", size: 130, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000012_drop_unique_name_constraintUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xc8\x29\x4d\xcf\xcc\x8b\x2f\x4a\x2d\x49\xcd\x2b\xc9\xcc\xcf\x8b\x2f\x4e\x2e\xca\x2c\x28\x29\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\xc1\xa9\x30\x3e\xbf\x28\x3d\x3e\x33\x05\xca\x8d\xcf\x4b\xcc\x4d\x8d\xcf\x4e\xad\xb4\xe6\x02\x04\x00\x00\xff\xff\x09\x7e\xec\xc2\x66\x00\x00\x00")
+
+func _000012_drop_unique_name_constraintUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000012_drop_unique_name_constraintUpSql,
+		"000012_drop_unique_name_constraint.up.sql",
+	)
+}
+
+func _000012_drop_unique_name_constraintUpSql() (*asset, error) {
+	bytes, err := _000012_drop_unique_name_constraintUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000012_drop_unique_name_constraint.up.sql", size: 102, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -612,6 +654,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000010_add_retention_plugin_insecure.up.sql":           _000010_add_retention_plugin_insecureUpSql,
 	"000011_add_retention_plugin_insecure_default.down.sql": _000011_add_retention_plugin_insecure_defaultDownSql,
 	"000011_add_retention_plugin_insecure_default.up.sql":   _000011_add_retention_plugin_insecure_defaultUpSql,
+	"000012_drop_unique_name_constraint.down.sql":           _000012_drop_unique_name_constraintDownSql,
+	"000012_drop_unique_name_constraint.up.sql":             _000012_drop_unique_name_constraintUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -677,6 +721,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000010_add_retention_plugin_insecure.up.sql":           &bintree{_000010_add_retention_plugin_insecureUpSql, map[string]*bintree{}},
 	"000011_add_retention_plugin_insecure_default.down.sql": &bintree{_000011_add_retention_plugin_insecure_defaultDownSql, map[string]*bintree{}},
 	"000011_add_retention_plugin_insecure_default.up.sql":   &bintree{_000011_add_retention_plugin_insecure_defaultUpSql, map[string]*bintree{}},
+	"000012_drop_unique_name_constraint.down.sql":           &bintree{_000012_drop_unique_name_constraintDownSql, map[string]*bintree{}},
+	"000012_drop_unique_name_constraint.up.sql":             &bintree{_000012_drop_unique_name_constraintUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
