@@ -114,8 +114,20 @@ spec:
             - SYS_ADMIN
           privileged: true
         volumeMounts:
-        - name: host-root
-          mountPath: /host
+        - name: host-lib
+          mountPath: /host/lib
+          readOnly: true
+        - name: host-var
+          mountPath: /host/var
+          readOnly: true
+        - name: host-boot
+          mountPath: /host/boot
+          readOnly: true
+        - name: host-media
+          mountPath: /host/media
+          readOnly: true
+        - name: host-etc
+          mountPath: /host/etc
           readOnly: true
         - name: sys
           mountPath: /sys
@@ -127,9 +139,25 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       terminationGracePeriodSeconds: 10
       volumes:
-      - name: host-root
+      - name: host-lib
         hostPath:
-          path: /
+          path: /lib
+          type: Directory
+      - name: host-var
+        hostPath:
+          path: /var
+          type: Directory
+      - name: host-boot
+        hostPath:
+          path: /boot
+          type: Directory
+      - name: host-media
+        hostPath:
+          path: /media
+          type: Directory
+      - name: host-etc
+        hostPath:
+          path: /etc
           type: Directory
       - name: sys
         hostPath:
