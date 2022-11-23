@@ -53,8 +53,8 @@ func init() {
 	pflag.String("hydra_consent_path", "/oauth/auth/hydra/consent", "The path that hydra will send consent to.")
 	pflag.String("hydra_client_id", "auth-code-client", "Hydra OAuth2 client ID that is the only allowed client to use this flow.")
 
-	pflag.String("kratos_public_host", "http://kratos:4433", "The URL to access kratos internally.")
-	pflag.String("kratos_admin_host", "http://kratos:4434", "The URL to access kratos admin internally.")
+	pflag.String("kratos_public_host", "https://kratos:4433", "The URL to access kratos internally.")
+	pflag.String("kratos_admin_host", "https://kratos:4434", "The URL to access kratos admin internally.")
 	pflag.String("kratos_browser_url", "https://work.dev.withpixie.dev/oauth/kratos", "The URL for kratos available from the browser.")
 	pflag.String("kratos_recovery_link_lifetime", "12h", "How long a kratos invite/recovery link should remain valid")
 	pflag.String("kratos_schema_id", "default", "The ID of the Kratos Schema we want to use.")

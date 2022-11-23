@@ -75,6 +75,14 @@ spec:
         - name: DSN
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        - name: SERVE_PUBLIC_TLS_CERT_PATH
+          value: /certs/server.crt
+        - name: SERVE_PUBLIC_TLS_KEY_PATH
+          value: /certs/server.key
+        - name: SERVE_ADMIN_TLS_CERT_PATH
+          value: /certs/server.crt
+        - name: SERVE_ADMIN_TLS_KEY_PATH
+          value: /certs/server.key
         - name: LOG_LEVEL
           value: trace
         - name: PL_WORK_DOMAIN
@@ -84,7 +92,7 @@ spec:
         - name: FRONTEND_URL
           value: https://$(PL_WORK_DOMAIN)/auth/ossauth
         - name: ADMIN_URL
-          value: http://kratos:4434
+          value: https://kratos:4434
         - name: AUTH_LOGIN_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password-login
         - name: SERVE_PUBLIC_BASE_URL
@@ -121,6 +129,8 @@ spec:
         volumeMounts:
         - mountPath: /etc/config/kratos
           name: config
+        - name: certs
+          mountPath: /certs
       - name: admin-create-if-not-exists
         imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
@@ -136,7 +146,7 @@ spec:
         ']
         env:
         - name: ADMIN_URL
-          value: http://kratos:4434
+          value: https://kratos:4434
         - name: ADMIN_IDENTITY
           value: >-
             {
@@ -163,3 +173,6 @@ spec:
             path: kratos.yml
           - key: identity.schema.json
             path: identity.schema.json
+      - name: certs
+        secret:
+          secretName: service-tls-certs
