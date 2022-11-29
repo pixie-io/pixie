@@ -2717,7 +2717,6 @@ __metadata:
     assets: "link:./assets"
     axios: ^0.21.4
     babel-jest: ^27.3.1
-    babel-loader: ^8.2.3
     canvas: ^2.8.0
     case-sensitive-paths-webpack-plugin: ^2.1.2
     compression-webpack-plugin: ^4.0.0
@@ -2771,7 +2770,7 @@ __metadata:
     react-dom: ^18.1.0
     react-draggable: ^4.4.5
     react-grid-layout: ^0.18.2
-    react-hot-loader: ^4.13.0
+    react-hot-loader: ^4.13.1
     react-hotkeys: ^2.0.0
     react-monaco-editor: ^0.36.0
     react-resizable: ^1.10.1
@@ -4622,21 +4621,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"babel-loader@npm:^8.2.3":
-  version: 8.2.3
-  resolution: "babel-loader@npm:8.2.3"
-  dependencies:
-    find-cache-dir: ^3.3.1
-    loader-utils: ^1.4.0
-    make-dir: ^3.1.0
-    schema-utils: ^2.6.5
-  peerDependencies:
-    "@babel/core": ^7.0.0
-    webpack: ">=2"
-  checksum: 78e1e1a91954d644b6ce66366834d4d245febbc0fde33e4e2831725e83d6e760d12b3a78e9534ce92af69067bef1d9d9674df36d8c1f20ee127bc2354b2203ba
-  languageName: node
-  linkType: hard
-
 "babel-plugin-dynamic-import-node@npm:^2.3.3":
   version: 2.3.3
   resolution: "babel-plugin-dynamic-import-node@npm:2.3.3"
@@ -6299,9 +6283,9 @@ __metadata:
   linkType: hard
 
 "decode-uri-component@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "decode-uri-component@npm:0.2.0"
-  checksum: f3749344ab9305ffcfe4bfe300e2dbb61fc6359e2b736812100a3b1b6db0a5668cba31a05e4b45d4d63dbf1a18dfa354cd3ca5bb3ededddabb8cd293f4404f94
+  version: 0.2.2
+  resolution: "decode-uri-component@npm:0.2.2"
+  checksum: 95476a7d28f267292ce745eac3524a9079058bbb35767b76e3ee87d42e34cd0275d2eb19d9d08c3e167f97556e8a2872747f5e65cbebcac8b0c98d83e285f139
   languageName: node
   linkType: hard
 
@@ -10735,7 +10719,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"loader-utils@npm:^1.1.0, loader-utils@npm:^1.2.3, loader-utils@npm:^1.4.0":
+"loader-utils@npm:^1.2.3":
   version: 1.4.2
   resolution: "loader-utils@npm:1.4.2"
   dependencies:
@@ -10746,14 +10730,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"loader-utils@npm:^2.0.0, loader-utils@npm:~2.0.0":
-  version: 2.0.0
-  resolution: "loader-utils@npm:2.0.0"
+"loader-utils@npm:^2.0.0, loader-utils@npm:^2.0.3, loader-utils@npm:~2.0.0":
+  version: 2.0.4
+  resolution: "loader-utils@npm:2.0.4"
   dependencies:
     big.js: ^5.2.2
     emojis-list: ^3.0.0
     json5: ^2.1.2
-  checksum: 6856423131b50b6f5f259da36f498cfd7fc3c3f8bb17777cf87fdd9159e797d4ba4288d9a96415fd8da62c2906960e88f74711dee72d03a9003bddcd0d364a51
+  checksum: a5281f5fff1eaa310ad5e1164095689443630f3411e927f95031ab4fb83b4a98f388185bb1fe949e8ab8d4247004336a625e9255c22122b815bb9a4c5d8fc3b7
   languageName: node
   linkType: hard
 
@@ -12844,26 +12828,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-hot-loader@npm:^4.13.0":
-  version: 4.13.0
-  resolution: "react-hot-loader@npm:4.13.0"
+"react-hot-loader@npm:^4.13.1":
+  version: 4.13.1
+  resolution: "react-hot-loader@npm:4.13.1"
   dependencies:
     fast-levenshtein: ^2.0.6
     global: ^4.3.0
     hoist-non-react-statics: ^3.3.0
-    loader-utils: ^1.1.0
+    loader-utils: ^2.0.3
     prop-types: ^15.6.1
     react-lifecycles-compat: ^3.0.4
     shallowequal: ^1.1.0
     source-map: ^0.7.3
   peerDependencies:
-    "@types/react": "^15.0.0 || ^16.0.0 || ^17.0.0 "
-    react: "^15.0.0 || ^16.0.0 || ^17.0.0 "
-    react-dom: "^15.0.0 || ^16.0.0 || ^17.0.0 "
+    "@types/react": ^15.0.0 || ^16.0.0 || ^17.0.0
+    react: ^15.0.0 || ^16.0.0 || ^17.0.0
+    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: effdbf4644ce912ae20ad94be62083970c74b26a59fe24ed0024cf73190a5b3edf59650cb693bdd7b70791df8ab8530de273d73b895c4831a91da8a76683e3a3
+  checksum: f90890d5160dcb2bfae4022cba065d8e5c26b86f34c4604cbbdd39f5e4dfd82c05c317bb05ef3d4da2aa0be7e8e205c905daea1af40d3a7ef0d07c3d289da11c
   languageName: node
   linkType: hard
 
