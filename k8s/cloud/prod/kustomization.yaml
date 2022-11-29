@@ -40,6 +40,7 @@ patchesStrategicMerge:
 - script_bundles_config.yaml
 - scriptmgr_config.yaml
 - proxy_envoy.yaml
+- auth_deployment.yaml
 patches:
 - path: db_sidecar.yaml
   target:

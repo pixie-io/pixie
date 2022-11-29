@@ -45,6 +45,8 @@ spec:
         - configMapRef:
             name: pl-ory-service-config
         - configMapRef:
+            name: pl-oauth-config
+        - configMapRef:
             name: pl-errors-config
             optional: true
         env:
@@ -53,17 +55,17 @@ spec:
             secretKeyRef:
               name: cloud-auth-secrets
               key: jwt-signing-key
-        - name: PL_AUTH0_CLIENT_ID
+        - name: PL_OIDC_CLIENT_ID
           valueFrom:
             secretKeyRef:
-              name: cloud-auth0-secrets
-              key: auth0-client-id
+              name: cloud-oidc-secrets
+              key: oidc-client-id
               optional: true
-        - name: PL_AUTH0_CLIENT_SECRET
+        - name: PL_OIDC_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: cloud-auth0-secrets
-              key: auth0-client-secret
+              name: cloud-oidc-secrets
+              key: oidc-client-secret
               optional: true
         - name: PL_PROFILE_SERVICE
           valueFrom:
@@ -90,21 +92,11 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: PL_POSTGRES_PASSWORD
-        - name: PL_OAUTH_PROVIDER
-          valueFrom:
-            configMapKeyRef:
-              name: pl-oauth-config
-              key: PL_OAUTH_PROVIDER
         - name: PL_HYDRA_CLIENT_ID
           valueFrom:
             configMapKeyRef:
               name: pl-oauth-config
               key: PL_AUTH_CLIENT_ID
-        - name: PL_AUTH_URI
-          valueFrom:
-            configMapKeyRef:
-              name: pl-oauth-config
-              key: PL_AUTH_URI
         - name: PL_AUTH0_HOST
           value: https://$(PL_AUTH_URI)
         volumeMounts:
