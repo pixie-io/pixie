@@ -652,8 +652,8 @@ def pl_go_dependencies():
         name = "com_github_docker_docker",
         importpath = "github.com/docker/docker",
         replace = "github.com/moby/moby",
-        sum = "h1:aAQ5lDb+SDrhVDnoMbR3kSzswd+41X34pex8VRJXvHg=",
-        version = "v20.10.18+incompatible",
+        sum = "h1:LfdCNzNpDYtOTtlO5wxLcUEk0nyM3KqPyeIyXVdvl/U=",
+        version = "v20.10.21+incompatible",
     )
 
     go_repository(
