@@ -280,6 +280,8 @@ module.exports = (env, argv) => {
     PL_OIDC_METADATA_URL: oidcMetadataURL,
     PL_OIDC_CLIENT_ID: oidcClientID,
     PL_OIDC_ADDITIONAL_SCOPES: oidcAdditionalScopes,
+    PL_OIDC_SOCIAL_CONFIG_LOGIN: oidcSocialConfigLogin,
+    PL_OIDC_SOCIAL_CONFIG_SIGNUP: oidcSocialConfigSignup,
   } = yamls.oauth.data;
 
   webpackConfig.plugins.unshift(
@@ -298,6 +300,8 @@ module.exports = (env, argv) => {
       __CONFIG_OIDC_METADATA_URL__: JSON.stringify(oidcMetadataURL),
       __CONFIG_OIDC_CLIENT_ID__: JSON.stringify(oidcClientID),
       __CONFIG_OIDC_ADDITIONAL_SCOPES__: JSON.stringify(oidcAdditionalScopes),
+      __CONFIG_OIDC_SOCIAL_CONFIG_LOGIN__: JSON.stringify(oidcSocialConfigLogin),
+      __CONFIG_OIDC_SOCIAL_CONFIG_SIGNUP__: JSON.stringify(oidcSocialConfigSignup),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(yamls.domain.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(yamls.ld.data.PL_LD_CLIENT_ID),
       __CONFIG_SCRIPT_BUNDLE_URLS__: JSON.stringify(yamls.scriptBundle.data.SCRIPT_BUNDLE_URLS),

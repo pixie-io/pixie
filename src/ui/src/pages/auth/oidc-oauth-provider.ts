@@ -22,7 +22,10 @@ import { UserManager } from 'oidc-client';
 
 import { FormStructure } from 'app/components';
 import { OIDCButtons } from 'app/containers/auth/oidc-buttons';
-import { OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL, OIDC_ADDITIONAL_SCOPES } from 'app/containers/constants';
+import {
+  OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL, OIDC_ADDITIONAL_SCOPES,
+  OIDC_SOCIAL_CONFIG_LOGIN, OIDC_SOCIAL_CONFIG_SIGNUP,
+} from 'app/containers/constants';
 
 import { CallbackArgs, getLoginArgs, getSignupArgs } from './callback-url';
 
@@ -39,8 +42,9 @@ export const OIDCClient = {
     response_type: 'token id_token',
   }),
 
-  redirectToLogin(): void {
+  redirectToLogin(extraQueryParams: Record<string, any>): void {
     this.userManager.signinRedirect({
+      extraQueryParams,
       prompt: 'login',
       state: {
         redirectArgs: getLoginArgs(),
@@ -48,8 +52,9 @@ export const OIDCClient = {
     });
   },
 
-  redirectToSignup(): void {
+  redirectToSignup(extraQueryParams: Record<string, any>): void {
     this.userManager.signinRedirect({
+      extraQueryParams,
       prompt: 'login',
       state: {
         redirectArgs: getSignupArgs(),
@@ -94,16 +99,32 @@ export const OIDCClient = {
   },
 
   getLoginButtons(): React.ReactElement {
+    const defaultConfig = [{ buttonText: 'Login', extraParams: {} }];
+    let parsedConfig;
+    try {
+      parsedConfig = JSON.parse(OIDC_SOCIAL_CONFIG_LOGIN);
+    } catch {
+      // Do nothing, we'll just use default in this case.
+    }
+    const configs = Array.isArray(parsedConfig) ? parsedConfig : defaultConfig;
     return OIDCButtons({
-      loginButtonText: 'Login',
-      onLoginButtonClick: () => this.redirectToLogin(),
+      configs,
+      onButtonClick: (params) => this.redirectToLogin(params),
     });
   },
 
   getSignupButtons(): React.ReactElement {
+    const defaultConfig = [{ buttonText: 'Sign-Up', extraParams: {} }];
+    let parsedConfig;
+    try {
+      parsedConfig = JSON.parse(OIDC_SOCIAL_CONFIG_SIGNUP);
+    } catch {
+      // Do nothing, we'll just use default in this case.
+    }
+    const configs = Array.isArray(parsedConfig) ? parsedConfig : defaultConfig;
     return OIDCButtons({
-      loginButtonText: 'Sign-up',
-      onLoginButtonClick: () => this.redirectToSignup(),
+      configs,
+      onButtonClick: (params) => this.redirectToSignup(params),
     });
   },
 

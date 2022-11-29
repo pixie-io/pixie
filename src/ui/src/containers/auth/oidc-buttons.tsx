@@ -20,19 +20,26 @@ import * as React from 'react';
 
 import { LoginButton } from 'app/components';
 
-export interface OIDCButtonsProps {
-  loginButtonText: string;
-  onLoginButtonClick: () => void;
+interface SocialProps {
+  buttonText: string;
+  extraParams: Record<string, any>;
 }
 
-// eslint-disable-next-line react-memo/require-memo
+export interface OIDCButtonsProps {
+  configs: Array<SocialProps>;
+  onButtonClick: (params: Record<string, any>) => void;
+}
+
+/* eslint-disable react-memo/require-memo, react-memo/require-usememo */
 export const OIDCButtons: React.FC<OIDCButtonsProps> = ({
-  loginButtonText,
-  onLoginButtonClick,
+  configs,
+  onButtonClick,
 }) => (
-  <LoginButton
-    text={loginButtonText}
-    onClick={onLoginButtonClick}
-  />
+  <>
+    {configs.map((config, i) => <LoginButton key={i} text={config.buttonText} onClick={() => {
+      onButtonClick(config.extraParams);
+    }} />)}
+  </>
 );
+/* eslint-enable react-memo/require-memo, react-memo/require-usememo */
 OIDCButtons.displayName = 'OIDCButtons';
