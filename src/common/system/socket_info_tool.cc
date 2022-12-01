@@ -19,13 +19,13 @@
 #include "src/common/base/base.h"
 #include "src/common/base/inet_utils.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/socket_info.h"
 
 DEFINE_int32(pid, -1,
              "The network namespace to report, specified by any PID belonging to the namespace. If "
              "-1, current PID is used.");
 DEFINE_int32(fd, -1, "The FD to report. If -1, all sockets are reported.");
-DEFINE_string(proc_path, "/proc", "Path to proc filesystem");
 
 constexpr char kProgramDescription[] =
     "A tool that probes for the linux kernel for socket connections.\n"
