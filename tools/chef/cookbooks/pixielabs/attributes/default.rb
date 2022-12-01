@@ -179,7 +179,7 @@ if node[:platform] == 'ubuntu'
   default['gcc-musl']['deb_sha256'] =
     'ba52df92bce02f3c2bc53604466e0fac8844f941ae6d2d44061e48403f5752fb'
   default['gcc-musl']['version']    = "11.2.0"
-elsif node[:platform] == 'mac_os_x'
+elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
   default['bazel']['download_path'] =
     "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
   default['bazel']['sha256'] =
@@ -188,7 +188,7 @@ elsif node[:platform] == 'mac_os_x'
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.19.2.darwin-amd64.tar.gz'
   default['golang']['sha256'] =
-    '2633f62c0b259a8fa4fb1fc967d28817816acca50b1fc354364cb381e1ccd2e5'
+    '16f8047d7b627699b3773680098fbaf7cc962b7db02b3e02726f78c4db26dfde'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-darwin-amd64'

@@ -17,7 +17,7 @@
 ENV['PATH'] = "/opt/gsutil:#{ENV['PATH']}"
 
 case node['platform']
-when 'mac_os_x'
+when 'mac_os_x', 'macos'
   include_recipe 'pixielabs::mac_os_x'
   root_group = 'wheel'
   user = node['current_user']

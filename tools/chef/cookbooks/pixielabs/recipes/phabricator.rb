@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 case node['platform']
-when 'mac_os_x'
+when 'mac_os_x', 'macos'
   root_group = 'wheel'
   user = node['current_user']
 else

@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 case node['platform']
-when 'mac_os_x'
+when 'mac_os_x', 'macos'
   include_recipe 'pixielabs::mac_os_x_desktop'
 else
   include_recipe 'pixielabs::linux_desktop'
