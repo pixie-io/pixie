@@ -17,6 +17,7 @@
  */
 
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -28,6 +29,8 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
+
+DECLARE_string(proc_path);
 
 namespace px {
 namespace system {
@@ -64,6 +67,7 @@ class ProcParserTest : public ::testing::Test {
 };
 
 TEST_F(ProcParserTest, ParseNetworkStat) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::NetworkStats stats;
   PL_CHECK_OK(parser_->ParseProcPIDNetDev(123, &stats));
 
@@ -80,6 +84,7 @@ TEST_F(ProcParserTest, ParseNetworkStat) {
 }
 
 TEST_F(ProcParserTest, ParseStatIO) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::ProcessStats stats;
   PL_CHECK_OK(parser_->ParseProcPIDStatIO(123, &stats));
 
@@ -91,6 +96,7 @@ TEST_F(ProcParserTest, ParseStatIO) {
 }
 
 TEST_F(ProcParserTest, ParsePidStat) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::ProcessStats stats;
   PL_CHECK_OK(parser_->ParseProcPIDStat(123, bytes_per_page_, kernel_tick_time_ns_, &stats));
 
@@ -109,6 +115,7 @@ TEST_F(ProcParserTest, ParsePidStat) {
 }
 
 TEST_F(ProcParserTest, ParsePidStatLargePageSize) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   int64_t large_page_size = 2147483648;  // 2.1 GB (INT_MAX + 1)
   ProcParser::ProcessStats stats;
   PL_CHECK_OK(parser_->ParseProcPIDStat(123, large_page_size, kernel_tick_time_ns_, &stats));
@@ -128,11 +135,13 @@ TEST_F(ProcParserTest, ParsePidStatLargePageSize) {
 }
 
 TEST_F(ProcParserTest, ParsePSS) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   const size_t pss_bytes = parser_->ParseProcPIDPss(123).ConsumeValueOrDie();
   EXPECT_EQ(pss_bytes, 5936128);
 }
 
 TEST_F(ProcParserTest, ParseStat) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::SystemStats stats;
   PL_CHECK_OK(parser_->ParseProcStat(&stats));
 
@@ -142,6 +151,7 @@ TEST_F(ProcParserTest, ParseStat) {
 }
 
 TEST_F(ProcParserTest, ParseMemInfo) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::SystemStats stats;
   PL_CHECK_OK(parser_->ParseProcMemInfo(&stats));
 
@@ -159,6 +169,7 @@ TEST_F(ProcParserTest, ParseMemInfo) {
 }
 
 TEST_F(ProcParserTest, ParsePIDStatus) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::ProcessStatus stats;
   PL_CHECK_OK(parser_->ParseProcPIDStatus(789, &stats));
 
@@ -184,6 +195,7 @@ TEST_F(ProcParserTest, ParsePIDStatus) {
 }
 
 TEST_F(ProcParserTest, ParsePIDStatusBadUnit) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::ProcessStatus stats;
   PL_CHECK_OK(parser_->ParseProcPIDStatus(1, &stats));
 
@@ -200,6 +212,7 @@ TEST_F(ProcParserTest, ParsePIDStatusBadUnit) {
 }
 
 TEST_F(ProcParserTest, ParsePIDSMaps) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   std::vector<ProcParser::ProcessSMaps> stats;
   PL_CHECK_OK(parser_->ParseProcPIDSMaps(789, &stats));
 
@@ -260,15 +273,18 @@ TEST_F(ProcParserTest, ParsePIDSMaps) {
 }
 
 TEST_F(ProcParserTest, read_pid_start_time) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ASSERT_OK_AND_EQ(parser_->GetPIDStartTimeTicks(123), 14329);
 }
 
 TEST_F(ProcParserTest, read_pid_cmdline) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   EXPECT_THAT("/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1",
               parser_->GetPIDCmdline(123));
 }
 
 TEST_F(ProcParserTest, read_pid_metadata_null) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   EXPECT_THAT("/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session",
               parser_->GetPIDCmdline(456));
 }
@@ -276,6 +292,7 @@ TEST_F(ProcParserTest, read_pid_metadata_null) {
 // This test does not work because bazel uses symlinks itself,
 // which then causes ReadProcPIDFDLink to resolve the wrong link.
 TEST_F(ProcParserTest, read_proc_fd_link) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   {
     // Bazel doesn't copy symlink testdata as symlinks, so we create the missing symlink testdata
     // here.
@@ -307,6 +324,7 @@ TEST_F(ProcParserTest, read_proc_fd_link) {
 }
 
 TEST_F(ProcParserTest, ReadUIDs) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   ProcParser::ProcUIDs uids;
   ASSERT_OK(parser_->ReadUIDs(123, &uids));
   EXPECT_EQ("33", uids.real);
@@ -316,6 +334,7 @@ TEST_F(ProcParserTest, ReadUIDs) {
 }
 
 TEST_F(ProcParserTest, ReadNSPid) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   std::vector<std::string> ns_pids;
   ASSERT_OK(parser_->ReadNSPid(123, &ns_pids));
   EXPECT_THAT(ns_pids, ElementsAre("2578", "24", "25"));
@@ -326,6 +345,7 @@ bool operator==(const ProcParser::MountInfo& lhs, const ProcParser::MountInfo& r
 }
 
 TEST_F(ProcParserTest, ReadMountInfos) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   {
     std::vector<ProcParser::MountInfo> mount_infos;
     EXPECT_OK(parser_->ReadMountInfos(123, &mount_infos));
@@ -346,6 +366,7 @@ TEST_F(ProcParserTest, ReadMountInfos) {
 }
 
 TEST_F(ProcParserTest, GetMapPaths) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   {
     EXPECT_OK_AND_THAT(
         parser_->GetMapPaths(123),
@@ -358,6 +379,7 @@ TEST_F(ProcParserTest, GetMapPaths) {
 }
 
 TEST_F(ProcParserTest, GetExecutableMapEntry) {
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("testdata/proc"));
   {
     ProcParser::ProcessSMaps m;
     m.vmem_start = 0x565078f8c000;

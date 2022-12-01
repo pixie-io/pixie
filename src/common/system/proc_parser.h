@@ -391,11 +391,11 @@ class ProcParser {
 
   Status ParseProcMapsFile(int32_t pid, std::string filename, std::vector<ProcessSMaps>* out) const;
 
-  std::filesystem::path ProcPidPath(pid_t pid) const;
-
   std::string proc_base_path_;
 };
 
+// TODO(jps): Change to GetPIDStartTimeTicks(const pid_t pid), i.e. remove the version that
+// uses a filesystem path as an arg.
 StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path);
 
 }  // namespace system

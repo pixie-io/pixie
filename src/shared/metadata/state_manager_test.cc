@@ -26,6 +26,8 @@
 #include "src/shared/metadata/state_manager.h"
 #include "src/shared/metadata/test_utils.h"
 
+DECLARE_string(proc_path);
+
 namespace px {
 namespace md {
 
@@ -360,7 +362,8 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   FakePIDData md_reader;
   LOG(INFO) << metadata_state_.DebugString();
 
-  std::filesystem::path proc_path = testing::BazelRunfilePath("src/shared/metadata/testdata/proc");
+  const auto proc_path = testing::BazelRunfilePath("src/shared/metadata/testdata/proc");
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, proc_path.string());
   system::ProcParser proc_parser(proc_path.string());
   EXPECT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &events));
 

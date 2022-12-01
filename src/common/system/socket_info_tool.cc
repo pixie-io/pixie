@@ -95,7 +95,6 @@ int main(int argc, char** argv) {
   gflags::SetUsageMessage(kProgramDescription);
   px::EnvironmentGuard env_guard(&argc, argv);
 
-  const std::string kProcPath = FLAGS_proc_path;
   int32_t pid = FLAGS_pid;
   int32_t fd = FLAGS_fd;
 
@@ -105,7 +104,7 @@ int main(int argc, char** argv) {
   }
 
   PL_ASSIGN_OR_EXIT(std::unique_ptr<SocketInfoManager> socket_info_db,
-                    SocketInfoManager::Create(kProcPath, 0xfff));
+                    SocketInfoManager::Create(px::system::proc_path(), 0xfff));
 
   if (fd == -1) {
     std::cout << absl::Substitute("Querying network namespace of pid=$0 (all connections):", pid)
@@ -125,7 +124,7 @@ int main(int argc, char** argv) {
     }
   } else {
     std::cout << absl::Substitute("Querying pid=$0 fd=$1:", pid, fd) << std::endl;
-    std::string fd_path = absl::Substitute("$0/$1/fd/$2", kProcPath, pid, fd);
+    const auto fd_path = px::system::ProcPidPath(pid, "fd", std::to_string(fd));
     PL_ASSIGN_OR_EXIT(std::filesystem::path fd_link, px::fs::ReadSymlink(fd_path));
     PL_ASSIGN_OR_EXIT(uint32_t inode_num,
                       px::fs::ExtractInodeNum(px::fs::kSocketInodePrefix, fd_link.string()));

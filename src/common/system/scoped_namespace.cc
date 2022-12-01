@@ -25,6 +25,7 @@
 #include <string>
 
 #include "src/common/system/config.h"
+#include "src/common/system/proc_pid_path.h"
 
 namespace px {
 namespace system {
@@ -39,16 +40,14 @@ StatusOr<std::unique_ptr<ScopedNamespace>> ScopedNamespace::Create(int ns_pid,
 ScopedNamespace::~ScopedNamespace() { ExitNamespace(); }
 
 Status ScopedNamespace::EnterNamespace(int ns_pid, std::string_view ns_type) {
-  const auto& proc_path = system::Config::GetInstance().proc_path();
-
-  std::filesystem::path orig_ns_path = proc_path / "self/ns" / ns_type;
+  const std::filesystem::path orig_ns_path = ProcPath("self", "ns", ns_type);
   orig_ns_fd_ = open(orig_ns_path.string().c_str(), O_RDONLY);
   if (orig_ns_fd_ < 0) {
     return error::Internal("Could not access original namespace FD [path=$0]",
                            orig_ns_path.string());
   }
 
-  std::filesystem::path ns_path = proc_path / std::to_string(ns_pid) / "ns" / ns_type;
+  std::filesystem::path ns_path = ProcPidPath(ns_pid, "ns", ns_type);
   ns_fd_ = open(ns_path.string().c_str(), O_RDONLY);
   if (ns_fd_ < 0) {
     return error::Internal("Could not access target namespace FD [path=$0]", ns_path.string());

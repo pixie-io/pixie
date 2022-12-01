@@ -30,6 +30,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 
 namespace px {
 namespace system {
@@ -94,10 +95,6 @@ constexpr int kProcStatStartTimeField = 21;
 
 constexpr int kProcStatVSizeField = 22;
 constexpr int kProcStatRSSField = 23;
-
-std::filesystem::path ProcParser::ProcPidPath(pid_t pid) const {
-  return std::filesystem::path(proc_base_path_) / std::to_string(pid);
-}
 
 ProcParser::ProcParser(const system::Config& cfg) : ProcParser(cfg.proc_path()) {}
 
@@ -167,11 +164,11 @@ Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
    */
   DCHECK(out != nullptr);
 
-  std::string fpath = absl::Substitute("$0/$1/net/dev", proc_base_path_, pid);
+  const auto fpath = ProcPidPath(pid, "net", "dev");
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file: $0.", fpath.string());
   }
 
   // Ignore the first two lines since they are just headers;
@@ -214,12 +211,11 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
    * 140730842488200 140730842492896 0
    */
   DCHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
-
+  const auto fpath = ProcPidPath(pid, "stat");
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file: $0.", fpath.string());
   }
 
   std::string line;
@@ -228,14 +224,14 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
     std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
     // We check less than in case more fields are added later.
     if (split.size() < kProcStatNumFields) {
-      return error::Unknown("Incorrect number of fields in stat file: $0", fpath);
+      return error::Unknown("Incorrect number of fields in stat file: $0.", fpath.string());
     }
 
     // The name is surrounded by (). We remove it first.
     size_t open_paren_idx = line.find_first_of('(');
     size_t close_paren_idx = line.find_last_of(')');
     if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
-      return error::Internal("Invalid command name in file $0", fpath);
+      return error::Internal("Invalid command name in file $0.", fpath.string());
     }
     out->process_name = line.substr(open_paren_idx + 1, close_paren_idx - open_paren_idx - 1);
 
@@ -262,13 +258,13 @@ Status ProcParser::ParseProcPIDStat(int32_t pid, int64_t page_size_bytes,
     out->rss_bytes *= page_size_bytes;
 
   } else {
-    return error::Internal("Failed to read proc stat file: $0", fpath);
+    return error::Internal("Failed to read proc stat file: $0.", fpath.string());
   }
 
   if (!ok) {
     // This should never happen since it requires the file to be ill-formed
     // by the kernel.
-    return error::Internal("failed to parse stat file ($0). ATOI failed.", fpath);
+    return error::Internal("Failed to parse stat file: $0. ATOI failed.", fpath.string());
   }
   return Status::OK();
 }
@@ -285,7 +281,7 @@ Status ProcParser::ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const {
    *   cancelled_write_bytes: 192512
    */
   DCHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/$1/io", proc_base_path_, pid);
+  const auto fpath = ProcPidPath(pid, "io");
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessStats>::value);
@@ -308,11 +304,11 @@ Status ProcParser::ParseProcStat(SystemStats* out) const {
    * ...
    */
   CHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/stat", proc_base_path_);
+  const auto fpath = ProcPath("stat");
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file $0.", fpath.string());
   }
 
   std::string line;
@@ -349,7 +345,7 @@ Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
    * ...
    */
   CHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/meminfo", proc_base_path_);
+  const auto fpath = ProcPath("meminfo");
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<SystemStats>::value);
@@ -367,7 +363,8 @@ Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
   };
   // clang-format on
 
-  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out));
+  return ParseFromKeyValueFile(fpath.string(), field_name_to_offset_map,
+                               reinterpret_cast<uint8_t*>(out));
 }
 
 Status ProcParser::ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const {
@@ -386,7 +383,7 @@ Status ProcParser::ParseProcPIDStatus(int32_t pid, ProcessStatus* out) const {
    * ...
    */
   CHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/$1/status", proc_base_path_, pid);
+  const auto fpath = ProcPidPath(pid, "status");
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessStatus>::value);
@@ -425,12 +422,12 @@ StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
   constexpr uint32_t kPssValIdx = 1;
   constexpr uint32_t kUnitsIdx = 2;
 
-  const std::string fpath = absl::Substitute("$0/$1/smaps_rollup", proc_base_path_, pid);
+  const auto fpath = ProcPidPath(pid, "smaps_rollup");
 
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file $0.", fpath.string());
   }
 
   std::string line;
@@ -454,7 +451,7 @@ StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
 Status ProcParser::ParseProcMapsFile(int32_t pid, std::string filename,
                                      std::vector<ProcessSMaps>* out) const {
   CHECK(out != nullptr);
-  std::string fpath = absl::Substitute("$0/$1/$2", proc_base_path_, pid, filename);
+  const auto fpath = ProcPidPath(pid, filename);
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessSMaps>::value);
@@ -489,7 +486,7 @@ Status ProcParser::ParseProcMapsFile(int32_t pid, std::string filename,
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file: $0.", fpath.string());
   }
 
   std::string line;
@@ -512,7 +509,7 @@ Status ProcParser::ParseProcMapsFile(int32_t pid, std::string filename,
           absl::StrSplit(line, absl::MaxSplits(' ', kProcMapNumFields), absl::SkipWhitespace());
       // We might end up with 5 or 6 fields based on whether we have a pathname or not.
       if (split.size() < kProcMapNumFields - 1) {
-        return error::Internal("Failed to parse file $0", fpath);
+        return error::Internal("Failed to parse file: $0.", fpath.string());
       }
       std::vector<std::string_view> vmem =
           absl::StrSplit(split[0], absl::MaxSplits("-", 2), absl::SkipWhitespace());
@@ -585,7 +582,7 @@ Status ProcParser::ParseFromKeyValueFile(
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return error::Internal("Failed to open file $0.", fpath);
   }
 
   std::string line;
@@ -604,7 +601,7 @@ Status ProcParser::ParseFromKeyValueFile(
 }
 
 std::string ProcParser::GetPIDCmdline(int32_t pid) const {
-  std::string fpath = absl::Substitute("$0/$1/cmdline", proc_base_path_, pid);
+  const auto fpath = ProcPidPath(pid, "cmdline");
   std::ifstream ifs(fpath);
   if (!ifs) {
     return "";
@@ -629,28 +626,25 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-StatusOr<std::filesystem::path> ProcParser::GetExePath(int32_t pid) const {
-  auto exe_path = std::filesystem::path(proc_base_path_) / std::to_string(pid) / "exe";
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(exe_path));
-  if (proc_exe.empty() || proc_exe == "/") {
-    // Not sure what causes this, but sometimes get symlinks that point to "/".
-    // Seems to happen with PIDs that are short-lived, because I can never catch it in the act.
+StatusOr<std::filesystem::path> ProcParser::GetExePath(const int32_t pid) const {
+  const auto exe_link = ProcPidPath(pid, "exe");
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path host_exe, fs::ReadSymlink(exe_link));
+  if (host_exe.empty() || host_exe == "/") {
+    // Not sure what causes this, but some symlinks point to "/".
+    // Seems to happen with PIDs that are short-lived (we can never catch it in the act).
     // Suspect there is a race with the proc filesystem, with PID creation/destruction,
-    // but this is not confirmed. Would be nice to understand the root cause, but for now, just
-    // filter these out.
+    // Would be nice to understand the root cause, but for now, just filter these out.
     return error::Internal("Symlink appears malformed.");
   }
-  return proc_exe;
+  return host_exe;
 }
 
 StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
-  const std::filesystem::path proc_pid_path =
-      std::filesystem::path(proc_base_path_) / std::to_string(pid);
-  return ::px::system::GetPIDStartTimeTicks(proc_pid_path);
+  return ::px::system::GetPIDStartTimeTicks(ProcPidPath(pid));
 }
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
-  std::string fpath = absl::Substitute("$0/$1/fd/$2", proc_base_path_, pid, fd);
+  const auto fpath = ProcPidPath(pid, "fd", std::to_string(fd));
   PL_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));
   *out = std::move(link);
   return Status::OK();
@@ -675,8 +669,7 @@ std::string_view LineWithPrefix(std::string_view content, std::string_view prefi
 // Uid: 33 33 33 33
 // ...
 Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
-  std::filesystem::path proc_pid_status_path =
-      std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
+  const auto proc_pid_status_path = ProcPidPath(pid, "status");
   PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kUIDPrefix = "Uid:";
@@ -706,8 +699,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
 //
 // There may not be a second pid if the process is not running inside a namespace.
 Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const {
-  std::filesystem::path proc_pid_status_path =
-      std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
+  const auto proc_pid_status_path = ProcPidPath(pid, "status");
   PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kNSPidPrefix = "NStgid:";
@@ -726,8 +718,6 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
 
 StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
   const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
-  const std::string fpath = proc_pid_stat_path.string();
-
   std::string line;
 
   // It's usually a big no-no to ifdef based on compilation mode,
@@ -738,9 +728,9 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   // Why not just use the workaround version all the time?
   // Because it has a hard-coded constant which makes it less robust.
 #if defined(PL_CONFIG_ASAN)
-  std::FILE* fp = std::fopen(fpath.c_str(), "r");
+  std::FILE* fp = std::fopen(proc_pid_stat_path.string().c_str(), "r");
   if (fp == nullptr) {
-    return error::Internal("Could not open file $0", fpath);
+    return error::Internal("Could not open file: $0.", proc_pid_stat_path.string());
   }
 
   // A few quick runs show that /proc/<pid>/stat is <200 characters on my machine,
@@ -749,24 +739,24 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   constexpr int kMaxSupportedProcPIDStatLength = 4096;
   line.resize(kMaxSupportedProcPIDStatLength);
   if (std::fgets(line.data(), line.size(), fp) == nullptr) {
-    return error::Internal("Could not get line from file $0", fpath);
+    return error::Internal("Could not get line from file: $0.", proc_pid_stat_path.string());
   }
 #else
   std::ifstream ifs;
-  ifs.open(fpath);
+  ifs.open(proc_pid_stat_path);
   if (!ifs) {
-    return error::Internal("Could not open file $0", fpath);
+    return error::Internal("Could not open file: $0.", proc_pid_stat_path.string());
   }
 
   if (!std::getline(ifs, line)) {
-    return error::Internal("Could not get line from file $0", fpath);
+    return error::Internal("Could not get line from file: $0.", proc_pid_stat_path.string());
   }
 #endif
 
   size_t open_paren_idx = line.find_first_of('(');
   size_t close_paren_idx = line.find_last_of(')');
   if (open_paren_idx == std::string::npos || close_paren_idx == std::string::npos) {
-    return error::Internal("Invalid command name in file $0", fpath);
+    return error::Internal("Invalid command name in file: $0.", proc_pid_stat_path.string());
   }
 
   // When split_size > kProcStatNumFields, there are spaces in the command we need to handle.
@@ -777,13 +767,13 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
   // We check less than in case more fields are added later.
   if (split.size() < kProcStatNumFields) {
-    return error::Internal("Unexpected number of columns in file $0 [columns = $1].", fpath,
-                           split.size());
+    return error::Internal("Unexpected number of columns: $0, in file: $1.", split.size(),
+                           proc_pid_stat_path.string());
   }
 
   int64_t start_time_ticks;
   if (!absl::SimpleAtoi(split[kProcStatStartTimeField + command_offset], &start_time_ticks)) {
-    return error::Internal("Time value does not parse in file $0", fpath);
+    return error::Internal("Time value does not parse in file: $0.", proc_pid_stat_path.string());
   }
 
   return start_time_ticks;

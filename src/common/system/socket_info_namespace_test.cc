@@ -23,6 +23,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system/config.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/testing/test_utils/test_container.h"
 #include "src/common/testing/testing.h"
@@ -38,8 +39,7 @@ class NetNamespaceTest : public ::testing::Test {
 };
 
 TEST_F(NetNamespaceTest, NetNamespace) {
-  ASSERT_OK_AND_ASSIGN(uint32_t net_ns, NetNamespace(system::Config::GetInstance().proc_path(),
-                                                     container_.process_pid()));
+  ASSERT_OK_AND_ASSIGN(uint32_t net_ns, NetNamespace(proc_path(), container_.process_pid()));
   EXPECT_NE(net_ns, 0);
   EXPECT_NE(net_ns, -1);
 }
@@ -87,8 +87,7 @@ TEST_F(NetNamespaceTest, NetlinkSocketProber) {
 }
 
 TEST_F(NetNamespaceTest, SocketProberManager) {
-  std::map<uint32_t, std::vector<int>> pids_by_net_ns =
-      PIDsByNetNamespace(system::Config::GetInstance().proc_path());
+  std::map<uint32_t, std::vector<int>> pids_by_net_ns = PIDsByNetNamespace(proc_path());
 
   // At least two net namespaces: default, and the container we made during SetUp().
   EXPECT_GE(pids_by_net_ns.size(), 2);
@@ -135,12 +134,11 @@ TEST_F(NetNamespaceTest, SocketProberManager) {
 }
 
 TEST_F(NetNamespaceTest, SocketInfoManager) {
-  const std::string kProcPath = system::Config::GetInstance().proc_path();
   const int kPID = container_.process_pid();
 
   ASSERT_OK_AND_ASSIGN(
       std::unique_ptr<SocketInfoManager> socket_info_db,
-      SocketInfoManager::Create(kProcPath, kTCPEstablishedState | kTCPListeningState));
+      SocketInfoManager::Create(proc_path(), kTCPEstablishedState | kTCPListeningState));
   ASSERT_NE(socket_info_db.get(), nullptr);
 
   {
@@ -155,8 +153,8 @@ TEST_F(NetNamespaceTest, SocketInfoManager) {
     // Hacky: For the container in question, FD 6 is a valid socket FD.
     // If container is changed, or if the container is found to have races, this needs to be
     // updated. TOOD(oazizi): Make this more programmatic.
-    uint32_t kFD = 6;
-    std::string fd_path = absl::Substitute("$0/$1/fd/$2", kProcPath, kPID, kFD);
+    constexpr pid_t kFD = 6;
+    const auto fd_path = ProcPidPath(kPID, "fd", std::to_string(kFD));
     ASSERT_OK_AND_ASSIGN(std::filesystem::path fd_link, fs::ReadSymlink(fd_path));
     ASSERT_OK_AND_ASSIGN(uint32_t inode_num,
                          fs::ExtractInodeNum(fs::kSocketInodePrefix, fd_link.string()));

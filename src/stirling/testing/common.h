@@ -32,13 +32,6 @@
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/output.h"
 
-// A macro that sets a variable, but then restores it to its original value after the scope exits.
-// Useful for setting a flag for the duration of a test.
-#define PL_SET_FOR_SCOPE(var, val) \
-  auto var##__orig = var;          \
-  DEFER(var = var##__orig);        \
-  var = val;
-
 #define ASSERT_NOT_EMPTY_AND_GET_RECORDS(lhs, tablets) \
   ASSERT_EQ(tablets.size(), 1);                        \
   lhs = tablets[0].records;
