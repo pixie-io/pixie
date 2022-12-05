@@ -211,11 +211,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to start script runner")
 	}
 
-	err = sr.SyncScripts()
-	if err != nil {
-		log.WithError(err).Error("Failed to sync cron scripts")
-	}
-
+	// Load the scripts and start the background sync.
+	go func() {
+		err := sr.SyncScripts()
+		if err != nil {
+			log.WithError(err).Error("Failed to sync cron scripts")
+		}
+	}()
 	s.Start()
 	s.StopOnInterrupt()
 }

@@ -155,7 +155,7 @@ func (s *ScriptRunner) SyncScripts() error {
 			log.WithError(err).Error("Failed to upsert script, skipping...")
 		}
 	}
-	go s.processUpdates()
+	s.processUpdates()
 	return nil
 }
 

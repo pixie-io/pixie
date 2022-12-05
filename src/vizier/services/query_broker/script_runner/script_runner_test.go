@@ -751,9 +751,11 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 				err = nc.Publish(CronScriptUpdatesChannel, b)
 			}
 
-			err = sr.SyncScripts()
+			go func() {
+				err = sr.SyncScripts()
+				require.NoError(t, err)
+			}()
 			wg.Wait()
-			require.NoError(t, err)
 			assert.Equal(t, len(test.expectedScripts), len(fcs.scripts))
 			for k, v := range test.expectedScripts {
 				val, ok := fcs.scripts[uuid.FromStringOrNil(k)]
