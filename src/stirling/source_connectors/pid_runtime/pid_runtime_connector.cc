@@ -23,7 +23,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/macros.h"
 
-BPF_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
+OBJ_STRVIEW(pidruntime_bcc_script, pidruntime);
 
 namespace px {
 namespace stirling {

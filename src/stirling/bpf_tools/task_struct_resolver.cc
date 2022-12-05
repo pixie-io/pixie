@@ -36,7 +36,7 @@
 #include "src/stirling/bpf_tools/bcc_bpf_intf/types.h"
 
 // Creates a string_view to the BPF code loaded into memory.
-BPF_SRC_STRVIEW(bcc_script, task_struct_mem_read);
+OBJ_STRVIEW(bcc_script, task_struct_mem_read);
 
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant, but it must not be optimized away.

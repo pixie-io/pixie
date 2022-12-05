@@ -37,7 +37,7 @@
 // on the bazel target :stringifier_test_bpf_text.
 // The BPF program samples a call stack, and stores the resulting stack-id
 // into a shared BPF stack traces table.
-BPF_SRC_STRVIEW(stringifer_test_bcc_script, stringifier_test_bpf_text);
+OBJ_STRVIEW(stringifer_test_bcc_script, stringifier_test_bpf_text);
 
 using ::testing::AnyOfArray;
 using ::testing::StartsWith;

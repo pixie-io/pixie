@@ -28,7 +28,7 @@
 
 #include "src/stirling/bpf_tools/macros.h"
 
-BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
+OBJ_STRVIEW(profiler_bcc_script, profiler);
 
 DEFINE_string(stirling_profiler_symbolizer, "bcc",
               "Choice of which symbolizer to use. Options: bcc, elf");

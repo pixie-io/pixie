@@ -31,7 +31,7 @@
 #include "src/stirling/utils/detect_application.h"
 #include "src/stirling/utils/proc_tracker.h"
 
-BPF_SRC_STRVIEW(proc_exit_trace_bcc_script, proc_exit_trace);
+OBJ_STRVIEW(proc_exit_trace_bcc_script, proc_exit_trace);
 
 namespace px {
 namespace stirling {

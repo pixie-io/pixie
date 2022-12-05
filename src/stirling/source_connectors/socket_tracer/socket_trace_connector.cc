@@ -146,7 +146,7 @@ DEFINE_uint32(datastream_buffer_retention_size,
 DEFINE_uint64(max_body_bytes, gflags::Uint64FromEnv("PL_STIRLING_MAX_BODY_BYTES", 512),
               "The maximum number of bytes in the body of protocols like HTTP");
 
-BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
+OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace px {
 namespace stirling {

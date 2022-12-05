@@ -31,7 +31,7 @@ extern "C" {
 NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }
 }
 
-BPF_SRC_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
+OBJ_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
 
 namespace px {
 namespace stirling {
