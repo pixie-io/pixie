@@ -41,8 +41,10 @@ def _graal_native_binary_impl(ctx):
         "-o",
         out.path,
         "--native-compiler-path=" + cc_compiler_path,
-        # TODO(james): this should be changed to get all the correct copts/linkopts etc from the CcToolchainInfo.
-        "--native-compiler-options=-fuse-ld=lld",
+        # Add /usr/bin as prefix, so that `native-image` can find ld.
+        # The real solution would be to get `native-image` to work with the combination of lld and gcc.
+        # However, that has proved difficult so far.
+        "--native-compiler-options=-B/usr/bin",
         "--silent",
     ] + ctx.attr.extra_args
 
