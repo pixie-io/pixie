@@ -136,7 +136,7 @@
     "typeface-roboto-mono": "^0.0.75",
     "typeface-walter-turncoat": "^1.1.13",
     "universal-cookie": "^4.0.4",
-    "vega": "5.21.0",
+    "vega": "5.22.1",
     "vega-embed": "^6.15.0",
     "vega-lite": "4.17.0",
     "vega-scale": "^7.0.0",
@@ -169,6 +169,8 @@
     "jpeg-js": "^0.4.4",
     "multicast-dns": "7.2.3",
     "resize-img": "^2.0.0",
-    "sharp": "0.30.5"
+    "sharp": "0.30.5",
+    "vega-functions": "5.13.0",
+    "d3-interpolate": "3.0.1"
   }
 }

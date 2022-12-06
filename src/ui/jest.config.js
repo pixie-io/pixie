@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const esModules = ['@mui/material', '@babel/runtime/helpers/esm'].join('|');
+const esModules = ['@mui/material', '@babel/runtime/helpers/esm', 'd3-interpolate', 'd3-color'].join('|');
 
 module.exports = {
   testEnvironment: 'jsdom',
