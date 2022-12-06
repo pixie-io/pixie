@@ -104,11 +104,10 @@ PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
 // The default kernel should be the oldest supported kernel
 // to ensure that we don't have BPF compatibility regressions.
 BPF_DEFAULT_KERNEL='4.14'
-// A list of kernels to test. A jenkins worker with template
-// named `jenkins-worker-with-${kernel}-kernel` should exist.
-def BPF_KERNELS = ['4.14', '5.18.4']
+BPF_NEWEST_KERNEL='5.19'
+def BPF_KERNELS = ['4.14', '4.19', '5.4', '5.10', '5.15', '5.19']
 
-def BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL]
+def BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL, BPF_NEWEST_KERNEL]
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
@@ -203,12 +202,16 @@ def stashOnGCS(String name, String pattern, String excludes = '') {
   gsutilCopy(".archive/${destFile}", "gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${destFile}")
 }
 
-def unstashFromGCS(String name) {
+def fetchFromGCS(String name) {
   def srcFile = "${name}.tar.gz"
   sh 'mkdir -p .archive'
 
   gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
+}
 
+def unstashFromGCS(String name) {
+  def srcFile = "${name}.tar.gz"
+  fetchFromGCS(name)
   // Note: The tar extraction must use `--no-same-owner`.
   // Without this, the owner of some third_party files become invalid users,
   // which causes some cmake projects to fail with "failed to preserve ownership" messages.
@@ -362,47 +365,6 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
       unstashFromGCS(TARGETS_STASH_NAME)
     }
     body()
-  }
-}
-
-def WithSourceCodeAndTargetsBPFEnv(String stashName = SRC_STASH_NAME, String kernel = BPF_DEFAULT_KERNEL, Closure body) {
-  warnError('Script failed') {
-    WithSourceCodeFatalErrorBPFEnv(stashName, kernel, {
-      unstashFromGCS(TARGETS_STASH_NAME)
-      body()
-    })
-  }
-}
-
-/**
-  * This function checks out the source code and wraps the builds steps.
-  */
-def WithSourceCodeFatalErrorBPFEnv(String stashName = SRC_STASH_NAME, String kernel, Closure body) {
-  timeout(time: 90, unit: 'MINUTES') {
-    node("jenkins-worker-with-${kernel}-kernel") {
-      sh 'hostname'
-      deleteDir()
-      unstashFromGCS(stashName)
-      sh 'cp ci/bes-gce.bazelrc bes.bazelrc'
-      body()
-    }
-  }
-}
-
-/**
-  * Our default docker step :
-  *   3. Starts docker container.
-  *   4. Runs the passed in body.
-  */
-def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
-  docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-    jenkinsMnt = ' -v /mnt/jenkins/sharedDir:/mnt/jenkins/sharedDir'
-    dockerSock = ' -v /var/run/docker.sock:/var/run/docker.sock -v /var/lib/docker:/var/lib/docker'
-    // TODO(zasgar): We should be able to run this in isolated networks. We need --net=host
-    // because dockertest needs to be able to access sibling containers.
-    docker.image(dockerImage).inside(dockerConfig + dockerSock + jenkinsMnt + ' --net=host') {
-      body()
-    }
   }
 }
 
@@ -719,30 +681,52 @@ def buildGCC = {
   }
 }
 
-def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
+def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCompilationMode='opt',
+                       String targetsSuffix, String bazelRunExtraArgs='', String kernel=BPF_DEFAULT_KERNEL) {
+  def buildableFile = "bazel_buildables_${targetsSuffix}"
+  def testFile = "bazel_tests_${targetsSuffix}"
+  def bazelArgs = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
+  def stashName = "${name}-${kernel}-testlogs"
+
+  fetchFromGCS(SRC_STASH_NAME)
+  fetchFromGCS(TARGETS_STASH_NAME)
+
+  sh """
+  export BUILDABLE_FILE="${buildableFile}"
+  export TEST_FILE="${testFile}"
+  export BAZEL_ARGS="${bazelArgs}"
+  export STASH_NAME="${stashName}"
+  export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
+  export BUILD_TAG="${BUILD_TAG}"
+  export KERNEL_VERSION="${kernel}"
+  ./ci/bpf/00_create_instance.sh
+  """
+
+  stashList.add(stashName)
+}
 
 def buildAndTestBPFOpt = { kernel ->
-  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
-    })
-  })
+  WithSourceCodeAndTargetsK8s('build-bpf-opt') {
+    container('pxbuild') {
+      bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+    }
+  }
 }
 
 def buildAndTestBPFASAN = { kernel ->
-  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer')
-    })
-  })
+  WithSourceCodeAndTargetsK8s('build-bpf-asan') {
+    container('pxbuild') {
+      bazelCICmdBPFonGCE('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer', '', kernel)
+    }
+  }
 }
 
 def buildAndTestBPFTSAN = { kernel ->
-  WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
-    dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer')
-    })
-  })
+WithSourceCodeAndTargetsK8s('build-bpf-tsan') {
+    container('pxbuild') {
+      bazelCICmdBPFonGCE('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer', '', kernel)
+    }
+  }
 }
 
 def generateTestTargets = {
@@ -1026,11 +1010,11 @@ def BPFRegressionBuilders = [:]
 
 BPF_KERNELS.each { kernel ->
   BPFRegressionBuilders["Test (opt) ${kernel}"] = {
-    WithSourceCodeAndTargetsBPFEnv(SRC_STASH_NAME, kernel, {
-      dockerStep(dockerArgsForBPFTest, {
-        bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
-      })
-    })
+    WithSourceCodeAndTargetsK8s('build-bpf-opt') {
+      container('pxbuild') {
+        bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+      }
+    }
   }
 }
 
