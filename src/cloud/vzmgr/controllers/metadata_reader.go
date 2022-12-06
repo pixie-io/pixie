@@ -187,16 +187,19 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 
 	rows, err := m.db.Queryx(query)
 	if err != nil {
+		log.WithError(err).Error("Failed to query for connected viziers")
 		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		err := rows.StructScan(&val)
 		if err != nil {
+			log.WithError(err).Error("Failed to scan row")
 			return err
 		}
 		err = m.startVizierUpdates(val.VizierID, val.K8sUID)
 		if err != nil {
+			log.WithField("vz_id", val.VizierID).WithError(err).Error("Failed to start updates")
 			return err
 		}
 	}
@@ -253,6 +256,7 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 		vzState.liveCh <- msg
 	})
 	if err != nil {
+		log.WithError(err).Error("Failed to subscribe to JetStream")
 		vzState.stop()
 		return err
 	}
