@@ -477,6 +477,132 @@ func VizierStatusToStatus(s *vizierpb.Status) (*statuspb.Status, error) {
 	}, nil
 }
 
+func (r *runner) runScript(scriptPeriod time.Duration) {
+	claims := svcutils.GenerateJWTForService("query_broker", "vizier")
+	token, _ := svcutils.SignJWTClaims(claims, r.signingKey)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	var otelEndpoint *vizierpb.Configs_OTelEndpointConfig
+	if r.config != nil && r.config.OtelEndpointConfig != nil {
+		otelEndpoint = &vizierpb.Configs_OTelEndpointConfig{
+			URL:      r.config.OtelEndpointConfig.URL,
+			Headers:  r.config.OtelEndpointConfig.Headers,
+			Insecure: r.config.OtelEndpointConfig.Insecure,
+		}
+	}
+
+	// We set the time 1 second in the past to cover colletor latency and request latencies
+	// which can cause data overlaps or cause data to be missed.
+	startTime := r.lastRun.Add(-time.Second)
+	endTime := startTime.Add(scriptPeriod)
+	r.lastRun = time.Now()
+	execScriptClient, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
+		QueryStr: r.cronScript.Script,
+		Configs: &vizierpb.Configs{
+			OTelEndpointConfig: otelEndpoint,
+			PluginConfig: &vizierpb.Configs_PluginConfig{
+				StartTimeNs: startTime.UnixNano(),
+				EndTimeNs:   endTime.UnixNano(),
+			},
+		},
+		QueryName: "cron_" + r.scriptID.String(),
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed to execute cronscript")
+	}
+	for {
+		resp, err := execScriptClient.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			grpcStatus, _ := status.FromError(err)
+
+			tsPb, err := types.TimestampProto(startTime)
+			if err != nil {
+				log.WithError(err).Error("Error while creating timestamp proto")
+			}
+
+			_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
+				ScriptID:  utils.ProtoFromUUID(r.scriptID),
+				Timestamp: tsPb,
+				Result: &metadatapb.RecordExecutionResultRequest_Error{
+					Error: &statuspb.Status{
+						ErrCode: statuspb.Code(grpcStatus.Code()),
+						Msg:     grpcStatus.Message(),
+					},
+				},
+			})
+			if err != nil {
+				grpcStatus, ok := status.FromError(err)
+				if !ok || grpcStatus.Code() != codes.Unavailable {
+					log.WithError(err).Error("Error while recording cron script execution error")
+				}
+			}
+			break
+		}
+
+		if vzStatus := resp.GetStatus(); vzStatus != nil {
+			tsPb, err := types.TimestampProto(startTime)
+			if err != nil {
+				log.WithError(err).Error("Error while creating timestamp proto")
+			}
+			st, err := VizierStatusToStatus(vzStatus)
+			if err != nil {
+				log.WithError(err).Error("Error converting status")
+			}
+
+			_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
+				ScriptID:  utils.ProtoFromUUID(r.scriptID),
+				Timestamp: tsPb,
+				Result: &metadatapb.RecordExecutionResultRequest_Error{
+					Error: st,
+				},
+			})
+			if err != nil {
+				grpcStatus, ok := status.FromError(err)
+				if !ok || grpcStatus.Code() != codes.Unavailable {
+					log.WithError(err).Error("Error while recording cron script execution error")
+				}
+			}
+			break
+		}
+		if data := resp.GetData(); data != nil {
+			tsPb, err := types.TimestampProto(startTime)
+			if err != nil {
+				log.WithError(err).Error("Error while creating timestamp proto")
+			}
+			stats := data.GetExecutionStats()
+			if stats == nil {
+				continue
+			}
+			_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
+				ScriptID:  utils.ProtoFromUUID(r.scriptID),
+				Timestamp: tsPb,
+				Result: &metadatapb.RecordExecutionResultRequest_ExecutionStats{
+					ExecutionStats: &metadatapb.ExecutionStats{
+						ExecutionTimeNs:   stats.Timing.ExecutionTimeNs,
+						CompilationTimeNs: stats.Timing.CompilationTimeNs,
+						BytesProcessed:    stats.BytesProcessed,
+						RecordsProcessed:  stats.RecordsProcessed,
+					},
+				},
+			})
+			if err != nil {
+				grpcStatus, ok := status.FromError(err)
+				if !ok || grpcStatus.Code() != codes.Unavailable {
+					log.WithError(err).Error("Error recording execution stats")
+				}
+			}
+			break
+		}
+	}
+}
+
 func (r *runner) start() {
 	if r.cronScript.FrequencyS <= 0 {
 		return
@@ -492,128 +618,7 @@ func (r *runner) start() {
 			case <-r.done:
 				return
 			case <-ticker.C:
-				claims := svcutils.GenerateJWTForService("query_broker", "vizier")
-				token, _ := svcutils.SignJWTClaims(claims, r.signingKey)
-
-				ctx := context.Background()
-				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
-					fmt.Sprintf("bearer %s", token))
-
-				var otelEndpoint *vizierpb.Configs_OTelEndpointConfig
-				if r.config != nil && r.config.OtelEndpointConfig != nil {
-					otelEndpoint = &vizierpb.Configs_OTelEndpointConfig{
-						URL:      r.config.OtelEndpointConfig.URL,
-						Headers:  r.config.OtelEndpointConfig.Headers,
-						Insecure: r.config.OtelEndpointConfig.Insecure,
-					}
-				}
-
-				// We set the time 1 second in the past to cover colletor latency and request latencies
-				// which can cause data overlaps or cause data to be missed.
-				startTime := r.lastRun.Add(-time.Second)
-				endTime := startTime.Add(scriptPeriod)
-				r.lastRun = time.Now()
-				execScriptClient, err := r.vzClient.ExecuteScript(ctx, &vizierpb.ExecuteScriptRequest{
-					QueryStr: r.cronScript.Script,
-					Configs: &vizierpb.Configs{
-						OTelEndpointConfig: otelEndpoint,
-						PluginConfig: &vizierpb.Configs_PluginConfig{
-							StartTimeNs: startTime.UnixNano(),
-							EndTimeNs:   endTime.UnixNano(),
-						},
-					},
-					QueryName: "cron_" + r.scriptID.String(),
-				})
-				if err != nil {
-					log.WithError(err).Error("Failed to execute cronscript")
-				}
-				for {
-					resp, err := execScriptClient.Recv()
-					if err == io.EOF {
-						break
-					}
-					if err != nil {
-						grpcStatus, _ := status.FromError(err)
-
-						tsPb, err := types.TimestampProto(startTime)
-						if err != nil {
-							log.WithError(err).Error("Error while creating timestamp proto")
-						}
-
-						_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
-							ScriptID:  utils.ProtoFromUUID(r.scriptID),
-							Timestamp: tsPb,
-							Result: &metadatapb.RecordExecutionResultRequest_Error{
-								Error: &statuspb.Status{
-									ErrCode: statuspb.Code(grpcStatus.Code()),
-									Msg:     grpcStatus.Message(),
-								},
-							},
-						})
-						if err != nil {
-							grpcStatus, ok := status.FromError(err)
-							if !ok || grpcStatus.Code() != codes.Unavailable {
-								log.WithError(err).Error("Error while recording cron script execution error")
-							}
-						}
-						break
-					}
-
-					if vzStatus := resp.GetStatus(); vzStatus != nil {
-						tsPb, err := types.TimestampProto(startTime)
-						if err != nil {
-							log.WithError(err).Error("Error while creating timestamp proto")
-						}
-						st, err := VizierStatusToStatus(vzStatus)
-						if err != nil {
-							log.WithError(err).Error("Error converting status")
-						}
-
-						_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
-							ScriptID:  utils.ProtoFromUUID(r.scriptID),
-							Timestamp: tsPb,
-							Result: &metadatapb.RecordExecutionResultRequest_Error{
-								Error: st,
-							},
-						})
-						if err != nil {
-							grpcStatus, ok := status.FromError(err)
-							if !ok || grpcStatus.Code() != codes.Unavailable {
-								log.WithError(err).Error("Error while recording cron script execution error")
-							}
-						}
-						break
-					}
-					if data := resp.GetData(); data != nil {
-						tsPb, err := types.TimestampProto(startTime)
-						if err != nil {
-							log.WithError(err).Error("Error while creating timestamp proto")
-						}
-						stats := data.GetExecutionStats()
-						if stats == nil {
-							continue
-						}
-						_, err = r.csClient.RecordExecutionResult(ctx, &metadatapb.RecordExecutionResultRequest{
-							ScriptID:  utils.ProtoFromUUID(r.scriptID),
-							Timestamp: tsPb,
-							Result: &metadatapb.RecordExecutionResultRequest_ExecutionStats{
-								ExecutionStats: &metadatapb.ExecutionStats{
-									ExecutionTimeNs:   stats.Timing.ExecutionTimeNs,
-									CompilationTimeNs: stats.Timing.CompilationTimeNs,
-									BytesProcessed:    stats.BytesProcessed,
-									RecordsProcessed:  stats.RecordsProcessed,
-								},
-							},
-						})
-						if err != nil {
-							grpcStatus, ok := status.FromError(err)
-							if !ok || grpcStatus.Code() != codes.Unavailable {
-								log.WithError(err).Error("Error recording execution stats")
-							}
-						}
-						break
-					}
-				}
+				r.runScript(scriptPeriod)
 			}
 		}
 	}()
