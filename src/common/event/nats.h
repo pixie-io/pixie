@@ -150,6 +150,7 @@ class NATSConnector : public NATSConnectorBase {
     // We know that closure is of type NATSConnector.
     auto* connector = static_cast<NATSConnector<TMsg>*>(closure);
     connector->NATSMessageHandler(nc, sub, msg);
+    natsMsg_Destroy(msg);
   }
 
   natsSubscription* nats_subscription_ = nullptr;
