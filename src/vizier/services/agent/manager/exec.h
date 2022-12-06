@@ -21,6 +21,7 @@
 #include <memory>
 
 #include <absl/container/flat_hash_map.h>
+#include <prometheus/registry.h>
 #include "src/carnot/plan/plan.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
@@ -56,9 +57,10 @@ class ExecuteQueryMessageHandler : public Manager::MessageHandler {
   class ExecuteQueryTask;
 
   carnot::Carnot* carnot_;
-
   // Map from query_id -> Running query task.
   absl::flat_hash_map<sole::uuid, px::event::RunnableAsyncTaskUPtr> running_queries_;
+
+  prometheus::Gauge& num_queries_in_flight_;
 };
 
 }  // namespace agent

@@ -79,7 +79,13 @@ ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(px::event::Dispatcher* di
                                                        Info* agent_info,
                                                        Manager::VizierNATSConnector* nats_conn,
                                                        carnot::Carnot* carnot)
-    : MessageHandler(dispatcher, agent_info, nats_conn), carnot_(carnot) {}
+    : MessageHandler(dispatcher, agent_info, nats_conn),
+      carnot_(carnot),
+      num_queries_in_flight_(prometheus::BuildGauge()
+                                 .Name("num_queries_in_flight")
+                                 .Help("The number of queries currently running.")
+                                 .Register(GetMetricsRegistry())
+                                 .Add({})) {}
 
 Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   // Create a task and run it on the threadpool.
@@ -89,6 +95,7 @@ Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::Vizie
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));
   auto runnable_ptr = runnable.get();
   LOG(INFO) << "Queries in flight: " << running_queries_.size();
+  num_queries_in_flight_.Set(running_queries_.size());
   running_queries_[query_id] = std::move(runnable);
   runnable_ptr->Run();
 
