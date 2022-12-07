@@ -88,11 +88,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "grpc-1.46.3",
         urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.46.3.tar.gz"],
     ),
-    com_google_boringssl = dict(
-        sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",
-        strip_prefix = "boringssl-83da28a68f32023fd3b95a8ae94991a07b1f6c62",
+    boringssl = dict(
+        sha256 = "d11f382c25a3bea34ad8761d57828971c8b06e230ad99e1cbfd4253c419f4f9a",
+        strip_prefix = "boringssl-7b00d84b025dff0c392c2df5ee8aa6d3c63ad539",
         urls = ["https://github.com/google/boringssl/" +
-                "archive/83da28a68f32023fd3b95a8ae94991a07b1f6c6.tar.gz"],
+                "archive/7b00d84b025dff0c392c2df5ee8aa6d3c63ad539.tar.gz"],
     ),
     com_github_openssl_openssl = dict(
         sha256 = "9f54d42aed56f62889e8384895c968e24d57eae701012776d5f18fb9f2ae48b0",

@@ -124,6 +124,7 @@ def _cc_deps():
     _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf.patch", "//bazel/external:protobuf_gogo_hack.patch", "//bazel/external:protobuf_text_format.patch", "//bazel/external:protobuf_warning.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch", "//bazel/external:grpc_mirror.patch", "//bazel/external:grpc_go_toolchain.patch", "//bazel/external:grpc_test_visibility.patch", "//bazel/external:grpc_warnings.patch"], patch_args = ["-p1"])
 
+    _bazel_repo("boringssl")
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
     _bazel_repo("com_github_gflags_gflags")
@@ -134,7 +135,6 @@ def _cc_deps():
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_googlesource_code_re2", patches = ["//bazel/external:re2_warning.patch"], patch_args = ["-p1"])
-    _bazel_repo("com_google_boringssl")
     _bazel_repo("com_intel_tbb")
 
     # Remove the pull and push directory since they depends on civet and we don't
