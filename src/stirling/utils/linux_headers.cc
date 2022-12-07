@@ -45,6 +45,7 @@ namespace stirling {
 namespace utils {
 
 using px::system::ProcPath;
+using px::system::ProcPidRootPath;
 
 StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release_str) {
   KernelVersion kernel_version;
@@ -300,41 +301,35 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 //  - /boot/config-<uname>: Common place to store the config.
 //  - /lib/modules/<uname>/config: Used by RHEL8 CoreOS, and potentially other RHEL distros.
 StatusOr<std::filesystem::path> FindKernelConfig() {
-  const system::Config& sysconfig = system::Config::GetInstance();
+  const system::Config& syscfg = system::Config::GetInstance();
+  PL_ASSIGN_OR_RETURN(const std::string uname, GetUname());
 
-  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
-
-  // Search for /boot/config-<uname>
-  std::string boot_kconfig = absl::StrCat("/boot/config-", uname);
-
-  // Search for /lib/modules/<uname>/config
-  std::string lib_modules_config = absl::StrCat("/lib/modules/", uname, "/config");
-
-  std::vector<std::string> search_paths = {
+  const std::vector<std::filesystem::path> search_paths = {
       // Used when CONFIG_IKCONFIG=y is set.
-      "/proc/config",
+      ProcPath("config"),
       // Used when CONFIG_IKCONFIG_PROC=y is set.
-      "/proc/config.gz",
-      boot_kconfig,
-      lib_modules_config,
+      ProcPath("config.gz"),
+      // Search for /boot/config-<uname>
+      syscfg.ToHostPath(absl::StrCat("/boot/config-", uname)),
+      // Search for /lib/modules/<uname>/config
+      syscfg.ToHostPath(absl::StrCat("/lib/modules/", uname, "/config")),
       // TODO(yzhao): https://github.com/lima-vm/alpine-lima/issues/67 once this issue is resolved,
       // we might consider change these 2 paths into something recommended by rancher-desktop.
       // The path used by `alpine-lima` in "Live CD" boot mechanism.
-      "/media/sr0/boot/config-virt",
+      ProcPidRootPath(1, "media", "sr0", "boot", "config-virt"),
       // The path used by `alpine-lima` in "Live CD" boot mechanism on Mac machine.
-      "/media/vda/boot/config-virt",
+      ProcPidRootPath(1, "media", "vda", "boot", "config-virt"),
   };
-  for (const auto& path : search_paths) {
-    std::filesystem::path config_path = path;
-    std::filesystem::path host_path = sysconfig.ToHostPath(config_path);
-    if (fs::Exists(host_path)) {
-      LOG(INFO) << absl::Substitute("Found kernel config at $0", host_path.string());
-      return host_path;
-    }
-  }
+  std::vector<std::string> searched;
 
-  return error::NotFound("No kernel config found. Paths searched: $0",
-                         absl::StrJoin(search_paths, ","));
+  for (const auto& path : search_paths) {
+    if (fs::Exists(path)) {
+      LOG(INFO) << absl::Substitute("Found kernel config at: $0.", path.string());
+      return path;
+    }
+    searched.push_back(path.string());
+  }
+  return error::NotFound("No kernel config found. Searched: $0.", absl::StrJoin(searched, ","));
 }
 
 Status GenAutoConf(const std::filesystem::path& linux_headers_base,
