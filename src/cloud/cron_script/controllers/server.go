@@ -278,7 +278,7 @@ func (s *Server) HandleScriptsRequest(msg *cvmsgspb.V2CMessage) {
 	}
 	err = s.nc.Publish(vzshard.C2VTopic(fmt.Sprintf("%s:%s", cvmsgs.GetCronScriptsResponseChannel, req.Topic), vizierUUID), b)
 	if err != nil {
-		log.WithError(err).Error("Failed to publish script response")
+		log.WithError(err).WithField("vizierID", vizierUUID).WithField("numScripts", len(scriptMap)).Error("Failed to publish script response")
 		return
 	}
 }
