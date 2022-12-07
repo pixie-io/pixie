@@ -44,17 +44,21 @@ if [[ "${SHELL}" == *"zsh" ]]; then
     shell=/usr/bin/zsh
 fi
 
-pushd "${workspace_root}/tools/docker/user_dev_image" > /dev/null
-dev_image_name="px_dev_image:${version}"
-docker build -q -t "${dev_image_name}" \
-       --build-arg BASE_IMAGE="${docker_image_with_tag}" \
-       --build-arg USER_NAME="${USER}" \
-       --build-arg USER_ID="$(id -u)" \
-       --build-arg GROUP_ID="$(id -g)" \
-       --build-arg DOCKER_ID="${docker_host_gid}" \
-       --build-arg SHELL="${shell}" \
-       .
-popd > /dev/null
+if [[ "${PX_DOCKER_RUN_AS_ROOT}" != "True" ]]; then
+    pushd "${workspace_root}/tools/docker/user_dev_image" > /dev/null
+    dev_image_name="px_dev_image:${version}"
+    docker build -q -t "${dev_image_name}" \
+        --build-arg BASE_IMAGE="${docker_image_with_tag}" \
+        --build-arg USER_NAME="${USER}" \
+        --build-arg USER_ID="$(id -u)" \
+        --build-arg GROUP_ID="$(id -g)" \
+        --build-arg DOCKER_ID="${docker_host_gid}" \
+        --build-arg SHELL="${shell}" \
+        .
+    popd > /dev/null
+else
+    dev_image_name="${docker_image_with_tag}"
+fi
 
 # Check if build buddy cache exists. If so, add the appropriate arguments.
 build_buddy_args=()
