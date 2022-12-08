@@ -17,12 +17,14 @@
  */
 
 #include <iostream>
+#include <string>
 
+#include "src/e2e_test/vizier/planner/dump_schemas/dump_schemas.h"
 #include "src/shared/schema/utils.h"
 #include "src/stirling/stirling.h"
 #include "src/table_store/schema/schema.h"
 
-int main() {
+char* DumpSchemas(int* resultLen) {
   auto source_registry = px::stirling::CreateProdSourceRegistry();
   auto sources = source_registry->sources();
 
@@ -39,6 +41,13 @@ int main() {
   }
   px::table_store::schemapb::Schema schema_pb;
   PL_CHECK_OK(px::table_store::schema::Schema::ToProto(&schema_pb, rel_map));
-  schema_pb.SerializeToOstream(&std::cout);
-  return 0;
+  std::string output;
+  schema_pb.SerializeToString(&output);
+
+  *resultLen = output.size();
+  char* ret = new char[output.size()];
+  memcpy(ret, output.data(), output.size());
+  return ret;
 }
+
+void SchemaStrFree(char* str) { free(str); }

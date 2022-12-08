@@ -20,7 +20,6 @@ go_test(
     name = "planner_test",
     srcs = ["all_scripts_test.go"],
     data = [
-        "//src/e2e_test/vizier/planner/dump_schemas:schemas",
         "//src/pxl_scripts:preset_queries",
     ],
     tags = [
@@ -38,6 +37,7 @@ go_test(
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:service_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
+        "//src/e2e_test/vizier/planner/dump_schemas/godumpschemas",
         "//src/table_store/schemapb:schema_pl_go_proto",
         "//src/utils",
         "//src/vizier/funcs/go",

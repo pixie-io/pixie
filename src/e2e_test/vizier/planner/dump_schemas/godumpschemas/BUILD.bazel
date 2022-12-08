@@ -14,20 +14,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cgo_library")
 
 package(default_visibility = ["//src/e2e_test/vizier/planner:__subpackages__"])
 
-pl_cc_library(
-    name = "dump_schemas",
-    srcs = [
-        "dump_schemas.cc",
-        "dump_schemas.h",
-    ],
-    hdrs = ["dump_schemas.h"],
+# gazelle:ignore
+pl_cgo_library(
+    name = "godumpschemas",
+    srcs = ["dumpschemas.go"],
+    cdeps = ["//src/e2e_test/vizier/planner/dump_schemas:dump_schemas"],
+    cgo = True,
+    importpath = "px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/godumpschemas",
     deps = [
-        "//src/shared/schema:cc_library",
-        "//src/stirling:cc_library",
-        "//src/table_store/schema:cc_library",
+        "//src/table_store/schemapb:schema_pl_go_proto",
+        "@com_github_gogo_protobuf//proto",
     ],
 )
