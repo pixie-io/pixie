@@ -45,6 +45,11 @@ build --strip=never
 # For more context, see: https://github.com/bazelbuild/bazel/issues/3236
 test --sandbox_tmpfs_path=/tmp
 
+# This flag prevents rules_docker from transitioning the platform for our images.
+# Since our target platform is the same as the containers we use,
+# it doesn't make sense to transition, and results in duplicate builds of targets.
+build --@io_bazel_rules_docker//transitions:enable=false
+
 # This flag is equivalent to --config=linux on a linux machine, and --config=macos on a macos machine.
 build --enable_platform_specific_config
 

@@ -304,9 +304,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
-        sha256 = "27d53c1d646fc9537a70427ad7b034734d08a9c38924cc6357cc973fed300820",
-        strip_prefix = "rules_docker-0.24.0",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/refs/tags/v0.24.0.tar.gz"],
+        sha256 = "07ee8ca536080f5ebab6377fc6e8920e9a761d2ee4e64f0f6d919612f6ab56aa",
+        strip_prefix = "rules_docker-0.25.0",
+        urls = ["https://github.com/bazelbuild/rules_docker/archive/refs/tags/v0.25.0.tar.gz"],
     ),
     io_bazel_rules_go = dict(
         sha256 = "099a9fb96a376ccbbb7d291ed4ecbdfd42f6bc822ab77ae6f1b5cb9e914e94fa",
