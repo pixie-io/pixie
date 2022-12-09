@@ -1051,15 +1051,9 @@ int probe_grpc_chttp2_data_parser_parse(struct pt_regs* ctx) {
     }
   }
 
-  // Get the data.
-  read_data->slice.length = slice_length;
-  u32 length_to_read = slice_length;
-  if (length_to_read > GRPC_C_SLICE_SIZE) {
-    length_to_read = GRPC_C_SLICE_SIZE;
-  }
-  if (0 != bpf_probe_read(read_data->slice.bytes, length_to_read, (void*)(slice_bytes))) {
-    return -1;
-  }
+  uint32_t length_to_read = min_uint32_t(slice_length, GRPC_C_SLICE_SIZE);
+  read_data->slice.length = length_to_read;
+  bpf_probe_read(read_data->slice.bytes, length_to_read, slice_bytes);
 
   // Fill the position of the data slice.
   // We fill the absolute position, even if we did not copy all the data because the data
