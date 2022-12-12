@@ -30,7 +30,7 @@ import { Box } from '@mui/material';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
-import { PixieCommandIcon as ScriptIcon, PlayIcon } from 'app/components';
+import { PixieCommandIcon as ScriptIcon } from 'app/components';
 import { parse } from 'app/components/command-palette/parser';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import {
@@ -43,6 +43,7 @@ import { highlightMatch, normalize } from 'app/utils/string-search';
 
 import { useEmptyInputScriptProvider } from '.';
 import { CommandCompletion, CommandProvider } from '../command-provider';
+import { getScriptCommandCta } from './script-provider-cta';
 
 // A hacky solution until we check by type rather than by arg name in a later change.
 enum CommonArgNames {
@@ -303,7 +304,6 @@ export const useScriptCommandProvider: CommandProvider = () => {
     if (!input.trim().length) {
       return emptyInputProvider(input, selection);
     }
-    const parsed = parse(input, selection);
     const newPromise = makeCancellable(
       getAutocompleteSuggestions(input, selection, clusterUID, client, scripts ?? new Map()),
     );
@@ -317,20 +317,7 @@ export const useScriptCommandProvider: CommandProvider = () => {
       providerName: 'PxL',
       hasAdditionalMatches: result.hasAdditionalMatches,
       completions: result.completions,
-      cta: {
-        label: (
-          // eslint-disable-next-line react-memo/require-usememo
-          <Box sx={{ display: 'flex', gap: 1, flexFlow: 'row nowrap' }}>
-            <PlayIcon />
-            <strong>Run</strong>
-          </Box>
-        ),
-        action: () => {
-          alert('Not Yet Implemented. This CTA came from ScriptCommandProvider.');
-        },
-        disabled: !(parsed.kvMap?.get('script')?.length > 0),
-        tooltip: 'NYI',
-      },
+      cta: getScriptCommandCta(input, selection, scripts),
     };
   }, [clusterUID, client, scripts, emptyInputProvider]);
 };
