@@ -1,8 +1,10 @@
+{{ if not (eq .Values.olmOperatorNamespace .Release.Namespace) }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Values.olmOperatorNamespace }}
+{{ end }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup

@@ -1,9 +1,11 @@
 {{if .Values.deployOLM}}
+{{ if not (eq .Values.olmNamespace .Release.Namespace) }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .Values.olmNamespace }}
+{{ end }}
 ---
 kind: ServiceAccount
 apiVersion: v1
