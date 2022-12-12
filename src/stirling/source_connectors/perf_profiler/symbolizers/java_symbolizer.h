@@ -62,7 +62,6 @@ class JavaSymbolizationContext {
   SymbolMapType symbol_map_;
   profiler::SymbolizerFn native_symbolizer_fn_;
   std::unique_ptr<std::ifstream> symbol_file_;
-  bool host_artifacts_path_resolved_ = false;
   std::filesystem::path host_artifacts_path_;
 };
 

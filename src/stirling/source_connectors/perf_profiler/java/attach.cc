@@ -30,6 +30,7 @@
 #include "src/common/base/logging.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/scoped_namespace.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
@@ -39,38 +40,35 @@
 DEFINE_string(stirling_profiler_px_jattach_path, "/pl/px_jattach", "Path to px_jattach app.");
 
 namespace px {
+
+using system::ProcPidRootPath;
+
 namespace stirling {
 namespace java {
+
+namespace {
+char const* const kSuffix = "px-java-symbolization-artifacts-$0-$1-$2";
+}
 
 std::filesystem::path AgentArtifactsPath(const struct upid_t& upid) {
   // This is the full agent artifacts path. Stirling needs to know this to:
   // 1. Resolve the agent artifacts path for cleanup.
   // 2. Test libs using dlopen inside of the target process mount namespace.
-  char const* const kPathTemplate = "/tmp/px-java-symbolization-artifacts-$0-$1-$2";
-  return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
+  const auto p = absl::Substitute(kSuffix, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
+  return std::filesystem::path("/tmp") / p;
 }
 
 std::filesystem::path StirlingTmpPathForUPID(const struct upid_t& upid) {
-  char const* const kPathTemplate = "/proc/$0/root/tmp";
-  return absl::Substitute(kPathTemplate, upid.pid);
+  return ProcPidRootPath(upid.pid, "tmp");
 }
 
 std::filesystem::path StirlingArtifactsPath(const struct upid_t& upid) {
-  char const* const kPathTemplate = "/proc/$0/root/tmp/px-java-symbolization-artifacts-$0-$1-$2";
-  return absl::Substitute(kPathTemplate, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
+  const auto p = absl::Substitute(kSuffix, upid.pid, upid.start_time_ticks, PX_JVMTI_AGENT_HASH);
+  return ProcPidRootPath(upid.pid, "tmp", p);
 }
 
 std::filesystem::path StirlingSymbolFilePath(const struct upid_t& upid) {
   return StirlingArtifactsPath(upid) / kBinSymbolFileName;
-}
-
-StatusOr<std::filesystem::path> ResolveHostArtifactsPath(const struct upid_t& upid) {
-  // TODO(jps): To avoid repeated accesses to /proc, investigate if we can reuse the
-  // results of this call into ResolvePath. e.g., if we need to resolve the /tmp mount
-  // in some other stirling component.
-  const std::filesystem::path artifacts_path = java::AgentArtifactsPath(upid);
-  PL_ASSIGN_OR_RETURN(auto fp_resolver, FilePathResolver::Create(upid.pid));
-  return fp_resolver->ResolvePath(artifacts_path);
 }
 
 bool AgentAttacher::Finished() {

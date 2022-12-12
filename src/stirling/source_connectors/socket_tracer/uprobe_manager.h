@@ -631,6 +631,7 @@ class UProbeManager {
   // Key is python gRPC module's md5 hash, value is the corresponding version enum's numeric value.
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, uint64_t>> grpc_c_versions_map_;
 
+  const system::Config& syscfg_ = system::Config::GetInstance();
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
 };
 

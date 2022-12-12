@@ -42,13 +42,10 @@ TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
       "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
   ContainerRunner node_server(px::testing::BazelRunfilePath(kNode15_0ImageTar), "node_server", "");
   ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
-  pid_t node_server_pid = node_server.process_pid();
 
   ProcParser proc_parser;
-  LazyLoadedFPResolver fp_resolver;
 
-  ASSERT_OK_AND_ASSIGN(const std::filesystem::path proc_exe_path,
-                       ProcExe(node_server_pid, &proc_parser, &fp_resolver));
+  ASSERT_OK_AND_ASSIGN(const auto proc_exe_path, proc_parser.GetExePath(node_server.process_pid()));
   ASSERT_OK_AND_THAT(px::Exec(absl::StrCat(proc_exe_path.string(), " --version")),
                      StrEq("v15.0.1\n"));
 }

@@ -501,7 +501,7 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // Consruct the names of the artifacts paths and expect that they exist.
   for (const auto& upid : sub_processes_->struct_upids()) {
-    ASSERT_OK_AND_ASSIGN(const auto artifacts_path, java::ResolveHostArtifactsPath(upid));
+    const auto artifacts_path = java::StirlingArtifactsPath(upid);
     EXPECT_TRUE(fs::Exists(artifacts_path));
     if (fs::Exists(artifacts_path)) {
       artifacts_paths.push_back(artifacts_path);

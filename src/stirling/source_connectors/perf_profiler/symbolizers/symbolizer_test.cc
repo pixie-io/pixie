@@ -147,7 +147,7 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
     constexpr std::string_view kExpected = "[j] long qux.foo::compute(double)";
     EXPECT_EQ(kExpected, symbolize(i));
   }
-  ASSERT_OK_AND_ASSIGN(const auto artifacts_path, java::ResolveHostArtifactsPath(child_upid));
+  const auto artifacts_path = java::AgentArtifactsPath(child_upid);
   EXPECT_TRUE(fs::Exists(artifacts_path));
   symbolizer->DeleteUPID(child_upid);
   EXPECT_FALSE(fs::Exists(artifacts_path));
@@ -180,7 +180,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   std::this_thread::sleep_for(std::chrono::milliseconds{500});
 
   ASSERT_TRUE(symbolizer->Uncacheable(child_upid_0)) << "Should have found symbol file by now.";
-  ASSERT_OK_AND_ASSIGN(const auto artifacts_path_0, java::ResolveHostArtifactsPath(child_upid_0));
+  const auto artifacts_path_0 = java::AgentArtifactsPath(child_upid_0);
   EXPECT_TRUE(fs::Exists(artifacts_path_0));
 
   // Disable java symbolization.
@@ -204,7 +204,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
   // Expect the symbols remain cacheable (non-Java).
   // Expect to *not* find the Java symbolization artifacts.
   EXPECT_FALSE(symbolizer->Uncacheable(child_upid_1));
-  ASSERT_OK_AND_ASSIGN(const auto artifacts_path_1, java::ResolveHostArtifactsPath(child_upid_1));
+  const auto artifacts_path_1 = java::AgentArtifactsPath(child_upid_1);
   EXPECT_FALSE(fs::Exists(artifacts_path_1));
 
   // Expect that JVMTI agent injection tracking includes sub-proc-0 but not sub-proc-1.

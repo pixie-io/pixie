@@ -24,6 +24,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/metrics/metrics.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
 #include "src/stirling/source_connectors/perf_profiler/java/demangle.h"
 #include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
@@ -93,16 +94,14 @@ Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
 }  // namespace
 
 void JavaSymbolizationContext::RemoveArtifacts() const {
-  if (host_artifacts_path_resolved_) {
-    // Remove the host artifacts path entirely; this cleans up all the files (and the subdir) we
-    // created inside of the target container mount namespace.
-    const auto& sysconfig = system::Config::GetInstance();
-    const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
-    if (fs::Exists(host_artifacts_path)) {
-      const Status s = fs::RemoveAll(host_artifacts_path);
-      char const* const warn = "Could not remove host artifacts path: $0, $1.";
-      LOG_IF(WARNING, !s.ok()) << absl::Substitute(warn, host_artifacts_path_.string(), s.msg());
-    }
+  // Remove the host artifacts path entirely; this cleans up all the files (and the subdir) we
+  // created inside of the target container mount namespace.
+  const auto& sysconfig = system::Config::GetInstance();
+  const std::filesystem::path host_artifacts_path = sysconfig.ToHostPath(host_artifacts_path_);
+  if (fs::Exists(host_artifacts_path)) {
+    const Status s = fs::RemoveAll(host_artifacts_path);
+    char const* const warn = "Could not remove host artifacts path: $0, $1.";
+    LOG_IF(WARNING, !s.ok()) << absl::Substitute(warn, host_artifacts_path_.string(), s.msg());
   }
 }
 
@@ -185,15 +184,7 @@ JavaSymbolizationContext::JavaSymbolizationContext(const struct upid_t& target_u
   DCHECK(symbol_file_->good());
   UpdateSymbolMap();
 
-  auto status_or_host_artifacts_path = java::ResolveHostArtifactsPath(target_upid);
-
-  if (!status_or_host_artifacts_path.ok()) {
-    char const* const fmt = "Could not resolve host path for symbolization artifacts. pid: $0. $1.";
-    LOG(WARNING) << absl::Substitute(fmt, target_upid.pid, status_or_host_artifacts_path.msg());
-    return;
-  }
-  host_artifacts_path_ = status_or_host_artifacts_path.ConsumeValueOrDie();
-  host_artifacts_path_resolved_ = true;
+  host_artifacts_path_ = java::AgentArtifactsPath(target_upid);
 }
 
 JavaSymbolizationContext::~JavaSymbolizationContext() { symbol_file_->close(); }
