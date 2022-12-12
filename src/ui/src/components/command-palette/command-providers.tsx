@@ -21,7 +21,11 @@ import * as React from 'react';
 import { makeCancellable } from 'app/utils/cancellable-promise';
 
 import { CommandProvider, CommandProviderResult } from './providers/command-provider';
-import { useScriptCommandProvider } from './providers/script-command-provider';
+import { useScriptCommandProvider } from './providers/script';
+
+function isFulfilled<T>(res: PromiseSettledResult<T>): res is PromiseFulfilledResult<T> {
+  return res.status === 'fulfilled';
+}
 
 /** Hook to passively update suggestions as the input and selection change in the command palette. */
 export const useCommandProviders: (
@@ -43,9 +47,11 @@ export const useCommandProviders: (
   const [out, setOut] = React.useState<CommandProviderResult[]>([]);
 
   React.useEffect(() => {
-    const cancellable = makeCancellable(Promise.all(promises));
+    const cancellable = makeCancellable(Promise.allSettled(promises));
     cancellable.then((results) => {
-      setOut(results.filter(({ completions }) => completions.length));
+      setOut(results
+        .filter(isFulfilled) // Ignore providers that threw errors; we're updating too often to worry about them.
+        .map(res => res.value));
     });
     return () => cancellable.cancel();
   }, [promises]);

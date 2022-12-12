@@ -136,6 +136,23 @@ const invalidInputResults: ParseResult[] = [
     ],
     kvMap: new Map([['quotes', '']]),
   },
+  {
+    input: 'foo:bar foo:duplicate',
+    selection: [0, 0],
+    tokens: [
+      { type: 'key', index: 0, text: 'foo', value: 'foo', start: 0, end: 3, relatedToken: expect.objectContaining({ value: 'bar' }) },
+      { type: 'eq', index: 1, text: ':', value: '', start: 3, end: 4, relatedToken: expect.objectContaining({ index: 0 }) },
+      { type: 'value', index: 2, text: 'bar', value: 'bar', start: 4, end: 7, relatedToken: expect.objectContaining({ index: 0 }) },
+      { type: 'none', index: 3, text: ' ', value: '', start: 7, end: 8 },
+      { type: 'error', index: 4, text: 'foo', value: 'foo', start: 8, end: 11 },
+      { type: 'error', index: 5, text: ':', value: '', start: 11, end: 12 },
+      { type: 'error', index: 6, text: 'duplicate', value: 'duplicate', start: 12, end: 21 },
+    ],
+    selectedTokens: [
+      { token: { type: 'key', index: 0, text: 'foo', value: 'foo', start: 0, end: 3, relatedToken: expect.anything() }, selectionStart: 0, selectionEnd: 0 },
+    ],
+    kvMap: new Map([['foo', 'bar']]),
+  },
 ];
 /* eslint-disable max-len */
 

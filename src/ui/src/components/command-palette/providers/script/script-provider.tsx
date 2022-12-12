@@ -41,7 +41,7 @@ import { CancellablePromise, makeCancellable } from 'app/utils/cancellable-promi
 import { Script } from 'app/utils/script-bundle';
 import { highlightMatch, normalize } from 'app/utils/string-search';
 
-import { CommandCompletion, CommandProvider } from './command-provider';
+import { CommandCompletion, CommandProvider } from '../command-provider';
 
 // A hacky solution until we check by type rather than by arg name in a later change.
 enum CommonArgNames {

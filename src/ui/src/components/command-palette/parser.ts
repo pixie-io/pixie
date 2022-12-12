@@ -296,25 +296,37 @@ const recentParses: ParseResult[] = [];
 function parseNoCache(input: string, selection: [start: number, end: number]): ParseResult {
   const tokens = tokenize(input);
 
-  // Link key-value pairs of tokens together.
-  // TODO(nick): Mark errors on this pass. `foo:bar :baz` or `foo::bar` don't make sense. Must have `key`, `:`, `val?`.
-  const kvPairs: [string, string][] = [];
+  // Link key-value pairs of tokens together. Show errors if the same key appears twice.
+  // TODO(nick): More error checks. `foo:bar :baz` or `foo::bar` don't make sense. Must have `key`, `:`, `val?`.
+  const kvMap: Map<string, string> = new Map();
   let i = 0;
   while (i < tokens.length) {
     const next = [i, i + 1, i + 2].map(j => tokens[j]);
     if (next[0].type === 'value' && next[1]?.type === 'eq') {
-      tokens[i].type = 'key'; // Update the syntax highlighting while we're here
       const hasValue = next[2]?.type === 'value';
-      if (hasValue) {
-        kvPairs.push([next[0].value, next[2].value]);
-        next[0].relatedToken = next[2];
-        next[1].relatedToken = next[0];
-        next[2].relatedToken = next[0];
-        i += 3;
-      } else {
-        kvPairs.push([next[0].value, '']);
-        next[1].relatedToken = next[0];
+
+      // If we run into the same key twice, that's an error
+      if (kvMap.has(next[0].value)) {
+        next[0].type = 'error';
+        next[1].type = 'error';
         i += 2;
+        if (hasValue) {
+          next[2].type = 'error';
+          i += 1;
+        }
+      } else {
+        tokens[i].type = 'key'; // Update the syntax highlighting while we're here
+        if (hasValue) {
+          kvMap.set(next[0].value, next[2].value);
+          next[0].relatedToken = next[2];
+          next[1].relatedToken = next[0];
+          next[2].relatedToken = next[0];
+          i += 3;
+        } else {
+          kvMap.set(next[0].value, '');
+          next[1].relatedToken = next[0];
+          i += 2;
+        }
       }
     } else {
       i += 1;
@@ -326,7 +338,7 @@ function parseNoCache(input: string, selection: [start: number, end: number]): P
     selection,
     tokens,
     selectedTokens: getSelectedTokens(tokens, Math.min(...selection), Math.max(...selection)),
-    kvMap: kvPairs.length ? new Map(kvPairs) : null,
+    kvMap: kvMap.size > 0 ? kvMap : null,
   };
 }
 
