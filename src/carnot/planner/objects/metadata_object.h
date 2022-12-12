@@ -47,9 +47,12 @@ class MetadataObject : public QLObject {
   Available keys (and any aliases) as well as the source columns.
   * container_id (): Sources: "upid"
   * service_id: Sources: "upid","service_name"
-  * pod_id: Sources: "upid","pod_name"
   * service_name ("service"): Sources: "upid","service_id"
+  * pod_id: Sources: "upid","pod_name"
   * pod_name ("pod"): Sources: "upid","pod_id"
+  * deployment_id: Sources: "deployment_name","pod_id","pod_name","replicaset_name"
+  * deployment_name ("deployment"): Sources: "upid","deployment_id","pod_id","pod_name","replicaset_name"
+  * replicaset_name ("replica_set", "replicaset"): Sources: "upid","pod_id","pod_name"
   * namespace: Sources: "upid"
   * node_name ("node"): Sources: "upid"
   * hostname ("host"): Sources: "upid"
