@@ -48,6 +48,9 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
       MetadataType::DEPLOYMENT_ID, {},
       {MetadataType::UPID, MetadataType::DEPLOYMENT_NAME, MetadataType::POD_ID,
        MetadataType::POD_NAME, MetadataType::REPLICASET_ID, MetadataType::REPLICASET_NAME});
+  handler->AddObject<IdMetadataProperty>(MetadataType::REPLICASET_ID, {"replica_set_id"},
+                                         {MetadataType::UPID, MetadataType::POD_ID,
+                                          MetadataType::POD_NAME, MetadataType::REPLICASET_NAME});
   handler->AddObject<NameMetadataProperty>(
       MetadataType::SERVICE_NAME, {"service"},
       {MetadataType::UPID, MetadataType::SERVICE_ID, MetadataType::POD_ID, MetadataType::POD_NAME});

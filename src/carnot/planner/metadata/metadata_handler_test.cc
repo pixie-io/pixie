@@ -27,23 +27,6 @@
 namespace px {
 namespace carnot {
 namespace planner {
-TEST(MetadataPropertyTests, retrieval) {
-  auto md_handle = MetadataHandler::Create();
-  EXPECT_TRUE(md_handle->HasProperty("service_name"));
-  EXPECT_TRUE(md_handle->HasProperty("pod_name"));
-  EXPECT_TRUE(md_handle->HasProperty("container_name"));
-  EXPECT_TRUE(md_handle->HasProperty("pid"));
-  EXPECT_TRUE(md_handle->HasProperty("deployment"));
-  EXPECT_TRUE(md_handle->HasProperty("deployment_name"));
-  EXPECT_TRUE(md_handle->HasProperty("deployment_id"));
-  EXPECT_OK(md_handle->GetProperty("pod_name"));
-  EXPECT_OK(md_handle->GetProperty("service_name"));
-  EXPECT_OK(md_handle->GetProperty("pid"));
-  EXPECT_OK(md_handle->GetProperty("replica_set"));
-  EXPECT_OK(md_handle->GetProperty("deployment"));
-  EXPECT_OK(md_handle->GetProperty("deployment_name"));
-  EXPECT_OK(md_handle->GetProperty("deployment_id"));
-}
 
 TEST(MetadataPropertyTests, types) {
   auto md_handle = MetadataHandler::Create();
@@ -75,8 +58,9 @@ TEST_P(MetadataGetPropertyTests, has_property) {
 }
 
 std::vector<std::string> metadata_strs = {
-    "service_name", "service_id",    "pod_name",        "pod_id",         "container_id",
-    "deployment",   "deployment_id", "deployment_name", "container_name", "replica_set"};
+    "service_name",  "service_id",     "pod_name",        "pod_id",         "container_id",
+    "deployment",    "deployment_id",  "deployment_name", "container_name", "replica_set",
+    "replicaset_id", "replica_set_id", "replicaset_name", "replicaset",     "replicaset_name"};
 
 INSTANTIATE_TEST_SUITE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
                          ::testing::ValuesIn(metadata_strs));
