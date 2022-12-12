@@ -42,6 +42,9 @@ default['bazel']['zsh_completions']  =
   "https://raw.githubusercontent.com/bazelbuild/bazel/#{default['bazel']['version']}/scripts/zsh_completion/_bazel"
 default['bazel']['zcomp_sha256']     = '4094dc84add2f23823bc341186adf6b8487fbd5d4164bd52d98891c41511eba4'
 
+default["graalvm-native-image"]         = {}
+default["graalvm-native-image"]["path"] = "/opt/graalvm-ce-java17-22.3.0"
+
 default['skaffold']                  = {}
 default['kubectl']                   = {}
 default['golang']                    = {}
@@ -64,7 +67,6 @@ default['lego']                      = {}
 default['codecov']                   = {}
 default['gh']                        = {}
 default['gcc-musl']                  = {}
-default['graalvm-native-image']      = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =

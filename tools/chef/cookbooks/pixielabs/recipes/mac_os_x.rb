@@ -22,3 +22,10 @@ homebrew_package 'libtool'
 homebrew_package 'postgresql@14'
 homebrew_package 'pyenv'
 homebrew_package 'php'
+
+directory node['graalvm-native-image']['path'] do
+  owner user
+  group root_group
+  mode '0755'
+  action :create
+end
