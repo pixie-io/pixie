@@ -41,6 +41,7 @@ import { CancellablePromise, makeCancellable } from 'app/utils/cancellable-promi
 import { Script } from 'app/utils/script-bundle';
 import { highlightMatch, normalize } from 'app/utils/string-search';
 
+import { useEmptyInputScriptProvider } from '.';
 import { CommandCompletion, CommandProvider } from '../command-provider';
 
 // A hacky solution until we check by type rather than by arg name in a later change.
@@ -279,17 +280,8 @@ async function getAutocompleteSuggestions(
     // Don't suggest anything in this case.
     return { completions: [], hasAdditionalMatches: false };
   } else {
-    // Empty input. Suggest some common scripts.
-    // TODO(nick): Suggest several common options here.
-    return {
-      completions: [{
-        key: GQLAutocompleteEntityKind.AEK_SCRIPT,
-        label: 'script:px/cluster',
-        description: 'Read the high-level status of your cluster: namespaces, pods, performance metrics, etc.',
-        onSelect: () => ['script:px/cluster start_time:-5m', 32],
-      }],
-      hasAdditionalMatches: false,
-    };
+    // Empty input. Handled elsewhere.
+    return { completions: [], hasAdditionalMatches: false };
   }
 }
 
@@ -305,7 +297,12 @@ export const useScriptCommandProvider: CommandProvider = () => {
   const [, setPromise] = React.useState<CancellablePromise<{
     completions: CommandCompletion[], hasAdditionalMatches: boolean }>>(null);
 
+  const emptyInputProvider = useEmptyInputScriptProvider();
+
   return React.useCallback(async (input: string, selection: [start: number, end: number]) => {
+    if (!input.trim().length) {
+      return emptyInputProvider(input, selection);
+    }
     const parsed = parse(input, selection);
     const newPromise = makeCancellable(
       getAutocompleteSuggestions(input, selection, clusterUID, client, scripts ?? new Map()),
@@ -335,5 +332,5 @@ export const useScriptCommandProvider: CommandProvider = () => {
         tooltip: 'NYI',
       },
     };
-  }, [clusterUID, client, scripts]);
+  }, [clusterUID, client, scripts, emptyInputProvider]);
 };

@@ -42,7 +42,7 @@ export interface CommandCompletion {
    * If this returns a [string, number] pair, the input is changed to the string and the caret moves to the number.
    * Otherwise, there are no extra side effects.
    */
-  onSelect: () => [string, number] | void;
+  onSelect: () => [newInput: string, newSelection: number] | void;
   cta?: CommandCta;
 }
 
