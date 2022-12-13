@@ -34,6 +34,7 @@
 #include "src/common/base/utils.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
 #include "src/stirling/obj_tools/go_syms.h"
@@ -59,6 +60,7 @@ using ::px::stirling::obj_tools::ElfReader;
 using ::px::stirling::utils::GetKernelVersion;
 using ::px::stirling::utils::KernelVersion;
 using ::px::stirling::utils::KernelVersionOrder;
+using ::px::system::ProcPidRootPath;
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
@@ -216,13 +218,11 @@ enum class HostPathForPIDPathSearchType { kSearchTypeEndsWith, kSearchTypeContai
 // "/usr/lib/mount/abc...def/usr/lib/libcrypto.so.1.1"}
 StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
     const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
-    LazyLoadedFPResolver* fp_resolver, HostPathForPIDPathSearchType search_type) {
+    HostPathForPIDPathSearchType search_type) {
   // TODO(jps): use a mutable map<string, path> as the function argument.
   // i.e. mapping from lib_name to lib_path.
   // This would relieve the caller of the burden of tracking which entry
   // in the vector belonged to which library it wanted to find.
-
-  PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
 
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
                       proc_parser->GetMapPaths(pid));
@@ -253,20 +253,12 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
       }
 
       // We found a mapped_lib_path that matches to the desired lib_name.
-      // First, get the containerized file path using ResolvePath().
-      StatusOr<std::filesystem::path> container_lib_status =
-          fp_resolver->ResolvePath(mapped_lib_path);
-
-      if (!container_lib_status.ok()) {
-        VLOG(1) << absl::Substitute("Unable to resolve $0 path. Message: $1", lib_name,
-                                    container_lib_status.msg());
-        continue;
-      }
+      const auto container_lib_path = ProcPidRootPath(pid, mapped_lib_path);
 
       // Assign the resolved path into the output vector at the appropriate index.
       // Update found status,
       // and continue to search current set of mapped libs for next desired lib.
-      container_libs[lib_idx] = container_lib_status.ValueOrDie();
+      container_libs[lib_idx] = container_lib_path;
       found_vector[lib_idx] = true;
       VLOG(1) << absl::Substitute("Resolved lib $0 to $1", lib_name,
                                   container_libs[lib_idx].string());
@@ -277,9 +269,8 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
 }
 
 StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
-    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser,
-    LazyLoadedFPResolver* fp_resolver) {
-  return FindHostPathForPIDLibs(lib_names, pid, proc_parser, fp_resolver,
+    const std::vector<std::string_view>& lib_names, uint32_t pid, system::ProcParser* proc_parser) {
+  return FindHostPathForPIDLibs(lib_names, pid, proc_parser,
                                 HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
@@ -310,8 +301,6 @@ static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
-  const system::Config& sysconfig = system::Config::GetInstance();
-
   for (auto ssl_library_match : kLibSSLMatchers) {
     const auto libssl = ssl_library_match.libssl;
     const auto libcrypto = ssl_library_match.libcrypto;
@@ -320,9 +309,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     const auto search_type = ssl_library_match.search_type;
 
     // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
-    PL_ASSIGN_OR_RETURN(
-        const std::vector<std::filesystem::path> container_lib_paths,
-        FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_, search_type));
+    PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
+                        FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), search_type));
 
     std::filesystem::path container_libssl = container_lib_paths[0];
     std::filesystem::path container_libcrypto = container_lib_paths[1];
@@ -335,8 +323,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     }
 
     // Convert to host path, in case we're running inside a container ourselves.
-    container_libssl = sysconfig.ToHostPath(container_libssl);
-    container_libcrypto = sysconfig.ToHostPath(container_libcrypto);
+    container_libssl = ProcPidRootPath(pid, container_libssl);
+    container_libcrypto = ProcPidRootPath(pid, container_libcrypto);
 
     if (!fs::Exists(container_libssl)) {
       return error::Internal("libssl not found [path = $0]", container_libssl.string());
@@ -393,30 +381,17 @@ StatusOr<std::array<UProbeTmpl, 6>> UProbeManager::GetNodeOpensslUProbeTmpls(con
   return iter->second;
 }
 
-StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
+StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
 
   if (DetectApplication(proc_exe) != Application::kNode) {
     return 0;
   }
 
-  std::string proc_exe_str = proc_exe.string();
-  PL_ASSIGN_OR_RETURN(
-      const std::vector<std::filesystem::path> proc_exe_paths,
-      FindHostPathForPIDLibs({proc_exe_str}, pid, proc_parser_.get(), &fp_resolver_));
+  const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);
 
-  if (proc_exe_paths.size() != 1) {
-    return error::Internal(
-        "Expect get exactly 1 host path for pid path $0, got [$1]", proc_exe_str,
-        absl::StrJoin(proc_exe_paths, ",", [](std::string* s, const std::filesystem::path& p) {
-          s->append(p.string());
-        }));
-  }
-
-  std::filesystem::path host_proc_exe = system::Config::GetInstance().ToHostPath(proc_exe_paths[0]);
-
-  auto result = nodejs_binaries_.insert(host_proc_exe.string());
-  if (!result.second) {
+  const auto [_, inserted] = nodejs_binaries_.insert(host_proc_exe.string());
+  if (!inserted) {
     // This is not a new binary, so nothing more to do.
     return 0;
   }
@@ -484,7 +459,7 @@ namespace {
 
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
-    const absl::flat_hash_set<md::UPID>& upids, LazyLoadedFPResolver* fp_resolver) {
+    const absl::flat_hash_set<md::UPID>& upids) {
   const system::Config& sysconfig = system::Config::GetInstance();
   const system::ProcParser proc_parser(sysconfig);
 
@@ -493,17 +468,9 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
   for (const auto& upid : upids) {
     // TODO(yzhao): Might need to check the start time.
-    PL_ASSIGN_OR(std::filesystem::path proc_exe, proc_parser.GetExePath(upid.pid()), continue);
+    PL_ASSIGN_OR(const auto exe_path, proc_parser.GetExePath(upid.pid()), continue);
+    const auto host_exe_path = ProcPidRootPath(upid.pid(), exe_path);
 
-    Status s = fp_resolver->SetMountNamespace(upid.pid());
-    if (!s.ok()) {
-      VLOG(1) << absl::Substitute("Could not set pid namespace. Did the pid terminate?");
-      continue;
-    }
-
-    PL_ASSIGN_OR(std::filesystem::path exe_path, fp_resolver->ResolvePath(proc_exe), continue);
-
-    std::filesystem::path host_exe_path = sysconfig.ToHostPath(exe_path);
     if (!fs::Exists(host_exe_path)) {
       continue;
     }
@@ -631,11 +598,9 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   static constexpr std::string_view kGrpcCPythonLibPrefix = "cygrpc.cpython";
   const std::vector<std::string_view> lib_names = {kGrpcCPythonLibPrefix};
 
-  const system::Config& sysconfig = system::Config::GetInstance();
-
   // Find path to grpc-c shared object, if it's used (i.e. mapped).
   PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
-                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), &fp_resolver_,
+                      FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(),
                                              HostPathForPIDPathSearchType::kSearchTypeContains));
 
   std::filesystem::path container_libgrpcc = container_lib_paths[0];
@@ -646,7 +611,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   }
 
   // Convert to host path, in case we're running inside a container ourselves.
-  container_libgrpcc = sysconfig.ToHostPath(container_libgrpcc);
+  container_libgrpcc = ProcPidRootPath(pid, container_libgrpcc);
   if (!fs::Exists(container_libgrpcc)) {
     return error::Internal("grpc-c library not found [path=$0 pid=$1]", container_libgrpcc.string(),
                            pid);
@@ -737,7 +702,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
   static int32_t kPID = getpid();
 
-  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids, &fp_resolver_)) {
+  for (const auto& [binary, pid_vec] : ConvertPIDsListToMap(pids)) {
     // Don't bother rescanning binaries that have been scanned before to avoid unnecessary work.
     if (!scanned_binaries_.insert(binary).second) {
       continue;
@@ -882,9 +847,6 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
   CleanupPIDMaps(proc_tracker_.deleted_upids());
-
-  // Refresh our file path resolver so it is aware of all new mounts.
-  fp_resolver_.Refresh();
 
   int uprobe_count = 0;
 

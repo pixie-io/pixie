@@ -21,9 +21,12 @@
 #include <fstream>
 
 #include "src/common/base/base.h"
+#include "src/common/system/proc_pid_path.h"
 
 namespace px {
 namespace stirling {
+
+using px::system::ProcPath;
 
 // Temporary data source for M2. We plan to remove this data source
 // once the ebpf version is available.
@@ -31,10 +34,10 @@ namespace stirling {
 Status ProcStatConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
-
-  std::ifstream input_file(kProcStatFileName);
+  const auto proc_stat_path = ProcPath("stat");
+  std::ifstream input_file(proc_stat_path);
   if (!input_file.good()) {
-    return error::NotFound("[$0] Unable to access $1", name(), kProcStatFileName.string());
+    return error::NotFound("[$0] Unable to access path: $1.", name(), proc_stat_path.string());
   }
 
   auto parsed_str = GetProcParams();
@@ -42,7 +45,7 @@ Status ProcStatConnector::InitImpl() {
 }
 
 std::vector<std::string> ProcStatConnector::GetProcParams() {
-  std::ifstream input_file(kProcStatFileName);
+  std::ifstream input_file(ProcPath("stat"));
   std::vector<std::string> parsed_str;
   if (input_file.good()) {
     // Parse the first line in proc stat.

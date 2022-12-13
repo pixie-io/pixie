@@ -95,7 +95,6 @@ class ProcStatConnector : public SourceConnector {
 
   CPUUsage cpu_usage_ = {0, 0.0, 0.0, 0.0};
   CPUStat prev_cpu_usage_ = {0, 0, 0, 0};
-  const std::filesystem::path kProcStatFileName = sysconfig_.proc_path() / "stat";
   const int kUserIdx = 1;
   const int kIdleIdx = 4;
   const int kIOWaitIdx = 5;

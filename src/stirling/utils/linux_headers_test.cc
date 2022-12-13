@@ -22,9 +22,18 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/linux_headers.h"
 
+DECLARE_string(proc_path);
+
 namespace px {
 namespace stirling {
 namespace utils {
+
+namespace {
+std::string GetPathToTestDataFile(const std::string_view fname) {
+  constexpr char kTestDataBasePath[] = "src/stirling/utils/testdata";
+  return testing::BazelRunfilePath(std::filesystem::path(kTestDataBasePath) / fname);
+}
+}  // namespace
 
 using ::px::testing::TempDir;
 using ::testing::EndsWith;
@@ -81,38 +90,24 @@ TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
 
 TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
   // Setup: Point to a custom /proc filesystem.
-  std::string orig_host_path = system::Config::GetInstance().host_path();
-  system::FLAGS_host_path =
-      testing::BazelRunfilePath("src/stirling/utils/testdata/sample_host_ubuntu");
-  system::Config::ResetInstance();
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_ubuntu/proc"));
 
   // Main test.
   StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x050441);
-
-  // Restore config for other tests.
-  system::FLAGS_host_path = orig_host_path;
-  system::Config::ResetInstance();
 }
 
 TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
   // Setup: Point to a custom /proc filesystem.
-  std::string orig_host_path = system::Config::GetInstance().host_path();
-  system::FLAGS_host_path =
-      testing::BazelRunfilePath("src/stirling/utils/testdata/sample_host_debian");
-  system::Config::ResetInstance();
+  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_debian/proc"));
 
   // Main test.
   StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);
   ASSERT_OK(kernel_version_status);
   KernelVersion kernel_version = kernel_version_status.ValueOrDie();
   EXPECT_EQ(kernel_version.code(), 0x041398);
-
-  // Restore config for other tests.
-  system::FLAGS_host_path = orig_host_path;
-  system::Config::ResetInstance();
 }
 
 TEST(LinuxHeadersUtils, KernelHeadersDistance) {

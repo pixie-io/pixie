@@ -35,6 +35,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/common/json/json.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bpf_tools/macros.h"
@@ -151,7 +152,9 @@ OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 namespace px {
 namespace stirling {
 
-using ::px::utils::ToJSONString;
+using px::system::ProcPath;
+using px::system::ProcPidPath;
+using px::utils::ToJSONString;
 
 // Most HTTP servers support 8K headers, so we truncate after that.
 // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
@@ -461,9 +464,8 @@ Status SocketTraceConnector::InitImpl() {
 
   PL_RETURN_IF_ERROR(InitBPF());
 
-  StatusOr<std::unique_ptr<system::SocketInfoManager>> s =
-      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path(),
-                                        system::kTCPEstablishedState | system::kTCPListeningState);
+  auto s = system::SocketInfoManager::Create(
+      ProcPath(), system::kTCPEstablishedState | system::kTCPListeningState);
   if (!s.ok()) {
     LOG(WARNING) << absl::Substitute("Failed to set up SocketInfoManager. Message: $0", s.msg());
   } else {
@@ -1579,9 +1581,8 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 
     // Check for pids that may have died.
     if (!active_upid && !activity) {
-      const auto& sysconfig = system::Config::GetInstance();
-      std::filesystem::path pid_file = sysconfig.proc_path() / std::to_string(key.upid.pid);
-      if (!fs::Exists(pid_file)) {
+      const auto proc_pid_path = ProcPidPath(key.upid.pid);
+      if (!fs::Exists(proc_pid_path)) {
         agg_stats.erase(iter++);
         continue;
       }

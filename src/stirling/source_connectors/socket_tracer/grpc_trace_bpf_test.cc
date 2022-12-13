@@ -26,6 +26,7 @@
 #include <thread>
 
 #include "src/common/exec/subprocess.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/greeter_server.h"
@@ -40,6 +41,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::system::ProcPidPath;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
 using ::testing::AnyOf;
@@ -47,9 +49,7 @@ using ::testing::HasSubstr;
 using ::testing::StrEq;
 
 StatusOr<md::UPID> ToUPID(uint32_t pid) {
-  std::filesystem::path proc_pid_path =
-      system::Config::GetInstance().proc_path() / std::to_string(pid);
-  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(proc_pid_path));
+  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(ProcPidPath(pid)));
   return md::UPID{/* asid */ 0, pid, pid_start_time};
 }
 

@@ -20,11 +20,14 @@
 
 #include <absl/functional/bind_front.h>
 
+#include "src/common/base/base.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 using ::px::stirling::obj_tools::ElfReader;
+using ::px::system::ProcPidRootPath;
 
 namespace px {
 namespace stirling {
@@ -38,17 +41,11 @@ StatusOr<std::unique_ptr<Symbolizer>> ElfSymbolizer::Create() {
 void ElfSymbolizer::DeleteUPID(const struct upid_t& upid) { symbolizers_.erase(upid); }
 
 StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const struct upid_t& upid) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
-                      FilePathResolver::Create(upid.pid));
-  // TODO(yzhao): Might need to check the start time.
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe,
-                      system::ProcParser(system::Config::GetInstance()).GetExePath(upid.pid));
-  PL_ASSIGN_OR_RETURN(std::filesystem::path host_proc_exe, fp_resolver->ResolvePath(proc_exe));
-  host_proc_exe = system::Config::GetInstance().ToHostPath(host_proc_exe);
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(host_proc_exe));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader::Symbolizer> upid_symbolizer,
-                      elf_reader->GetSymbolizer());
-  return upid_symbolizer;
+  const pid_t pid = upid.pid;
+  const system::ProcParser proc_parser(system::Config::GetInstance());
+  PL_ASSIGN_OR_RETURN(const auto proc_exe, proc_parser.GetExePath(pid));
+  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(ProcPidRootPath(pid, proc_exe.string())));
+  return elf_reader->GetSymbolizer();
 }
 
 std::string_view EmptySymbolizerFn(const uintptr_t addr) {

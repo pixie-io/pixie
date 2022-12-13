@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/system.h"
 
 #include "src/shared/metadata/k8s_objects.h"
@@ -52,6 +53,7 @@ using ::px::stirling::bpf_tools::UProbeSpec;
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
 using ::px::system::ProcParser;
+using ::px::system::ProcPidRootPath;
 
 namespace {
 
@@ -219,7 +221,7 @@ Status CheckPIDStartTime(const ProcParser& proc_parser, int32_t pid, int64_t spe
 }
 
 StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::UPID& upid) {
-  uint32_t pid = upid.pid();
+  const uint32_t pid = upid.pid();
   const auto& sysconfig = system::Config::GetInstance();
   const ProcParser proc_parser(sysconfig);
 
@@ -227,14 +229,13 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::UPID& upid) {
     PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, upid.ts_ns()));
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
-  PL_ASSIGN_OR_RETURN(std::filesystem::path pid_binary, fp_resolver->ResolvePath(proc_exe));
-  pid_binary = sysconfig.ToHostPath(pid_binary);
-  if (!fs::Exists(pid_binary)) {
-    return error::Internal("Binary $0 not found.", pid_binary.string());
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
+  const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);
+
+  if (!fs::Exists(host_proc_exe)) {
+    return error::Internal("Binary not found: $0.", host_proc_exe.string());
   }
-  return pid_binary;
+  return host_proc_exe;
 }
 
 StatusOr<std::filesystem::path> ResolveSharedObject(
@@ -251,24 +252,21 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   // Find the path to shared library, which may be inside a container.
   PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
-
   for (const auto& lib : libs_status) {
     // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
     // The name is assumed to end with either a '.' or a '-'.
     std::string lib_path_filename = std::filesystem::path(lib).filename().string();
     if (absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, ".")) ||
         absl::StartsWith(lib_path_filename, absl::StrCat(lib_name, "-"))) {
-      PL_ASSIGN_OR_RETURN(std::filesystem::path lib_path, fp_resolver->ResolvePath(lib));
-      lib_path = sysconfig.ToHostPath(lib_path);
+      const auto lib_path = ProcPidRootPath(pid, lib);
       if (!fs::Exists(lib_path)) {
-        return error::Internal("Lib path $0 not found.", lib_path.string());
+        return error::Internal("Lib path not found: $0.", lib_path.string());
       }
       return lib_path;
     }
   }
 
-  return error::Internal("Could not find shared library $0 in context of PID $1.", lib_name, pid);
+  return error::Internal("Shared library not found: $0, PID: $1.", lib_name, pid);
 }
 
 using K8sNameIdentView = ::px::md::K8sMetadataState::K8sNameIdentView;
@@ -470,9 +468,9 @@ Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
       break;
     // Populate paths based on UPIDs.
     case ir::shared::DeploymentSpec::TargetOneofCase::kUpidList: {
-      int upids_size = deployment_spec->upid_list().upids_size();
+      const int upids_size = deployment_spec->upid_list().upids_size();
       // Copy upid_list.
-      auto upid_list = deployment_spec->upid_list();
+      const auto upid_list = deployment_spec->upid_list();
 
       absl::flat_hash_set<std::string> inserted_paths;
       for (int i = 0; i < upids_size; ++i) {

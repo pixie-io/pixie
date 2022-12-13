@@ -144,6 +144,17 @@ class ResolveTargetObjPathTest : public ::testing::Test {
         PIDToUPID(server_.child_pid()));
     k8s_mds_.containers_by_id()["pod1_container0"]->mutable_active_upids()->emplace(
         PIDToUPID(client_.child_pid()));
+
+    // On some machines, apparently it can take some time for /proc/<pid>/cmdline
+    // to be populated. We will wait here to make sure that it is populated before letting
+    // the tests run. We started hitting a bug (where an empty cmdline caused test failure)
+    // after improving proc parser code (perhaps previous code was slow enough to not win the race).
+    sleep(2);
+    const system::ProcParser proc_parser(system::Config::GetInstance());
+    const std::string server_cmd = proc_parser.GetPIDCmdline(server_.child_pid());
+    const std::string client_cmd = proc_parser.GetPIDCmdline(client_.child_pid());
+    const bool cmdlines_found = server_cmd.size() > 0 && client_cmd.size() > 0;
+    ASSERT_TRUE(cmdlines_found);
   }
 
   void TearDown() override {

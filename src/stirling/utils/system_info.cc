@@ -23,6 +23,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
+#include "src/common/system/proc_pid_path.h"
 
 namespace px {
 namespace system {
@@ -38,19 +39,20 @@ void LogFileContents(std::filesystem::path file) {
 
 void LogSystemInfo() {
   const system::Config& sysconfig = system::Config::GetInstance();
-  LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig.proc_path().string());
+  LOG(INFO) << absl::StrCat("Location of proc: ", ProcPath().string());
   LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig.sysfs_path().string());
   LOG(INFO) << absl::StrCat("Number of CPUs: ", get_nprocs_conf());
 
   // Log /proc/version.
-  LogFileContents(sysconfig.proc_path() / "version");
+  LogFileContents(ProcPath("version"));
 
   // Log /etc/*-release (e.g. /etc/lsb-release, /etc/os-release).
-  std::filesystem::path etc_path("/etc");
-  std::filesystem::path host_etc_path = sysconfig.ToHostPath(etc_path);
-  for (auto& p : std::filesystem::directory_iterator(host_etc_path)) {
-    if (absl::EndsWith(p.path().string(), "-release")) {
-      LogFileContents(p);
+  const std::filesystem::path host_etc_path = sysconfig.ToHostPath("/etc");
+  if (fs::Exists(host_etc_path)) {
+    for (auto& p : std::filesystem::directory_iterator(host_etc_path)) {
+      if (absl::EndsWith(p.path().string(), "-release")) {
+        LogFileContents(p);
+      }
     }
   }
 }

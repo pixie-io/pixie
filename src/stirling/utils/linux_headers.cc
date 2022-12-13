@@ -37,11 +37,14 @@
 #include "src/common/fs/temp_file.h"
 #include "src/common/minitar/minitar.h"
 #include "src/common/system/config.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/zlib/zlib_wrapper.h"
 
 namespace px {
 namespace stirling {
 namespace utils {
+
+using px::system::ProcPath;
 
 StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release_str) {
   KernelVersion kernel_version;
@@ -93,8 +96,7 @@ StatusOr<std::string> GetUname() {
 }
 
 StatusOr<std::string> GetProcVersionSignature() {
-  std::filesystem::path version_signature_path =
-      system::Config::GetInstance().proc_path() / "version_signature";
+  const auto version_signature_path = ProcPath("version_signature");
   PL_ASSIGN_OR_RETURN(std::string version_signature, ReadFileToString(version_signature_path));
 
   LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
@@ -113,9 +115,8 @@ StatusOr<std::string> GetProcVersionSignature() {
 }
 
 StatusOr<std::string> GetProcSysKernelVersion() {
-  std::filesystem::path proc_sys_kernel_version =
-      system::Config::GetInstance().proc_path() / "sys/kernel/version";
-  PL_ASSIGN_OR_RETURN(std::string version_string, ReadFileToString(proc_sys_kernel_version));
+  const auto proc_sys_kernel_version = ProcPath("sys", "kernel", "version");
+  PL_ASSIGN_OR_RETURN(const std::string version_string, ReadFileToString(proc_sys_kernel_version));
 
   LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
                                 proc_sys_kernel_version.string(), version_string);
@@ -510,18 +511,22 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
   // This is a loose check that we don't clobber what we *think* should the output directory.
   // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
   if (fs::Exists(expected_directory)) {
-    return error::Internal("Refusing to clobber existing directory");
+    return error::Internal("Refusing to clobber existing directory: $0.", expected_directory);
   }
 
   // Extract the files.
   ::px::tools::Minitar minitar(headers_package->path.string());
   PL_RETURN_IF_ERROR(minitar.Extract("/"));
 
+  // Check that the expected path was created.
+  if (!fs::Exists(expected_directory)) {
+    return error::Internal(
+        "Package extraction did not result in the expected headers directory: $0.",
+        expected_directory);
+  }
+
   // Update the path to the extracted copy.
   headers_package->path = expected_directory;
-  if (!fs::Exists(headers_package->path)) {
-    return error::Internal("Package extraction did not result in the expected headers directory");
-  }
 
   return Status::OK();
 }

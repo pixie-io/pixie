@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 #include "src/shared/upid/upid.h"
@@ -109,9 +110,8 @@ class AgentContext : public ConnectorContext {
  */
 class StandaloneContext : public ConnectorContext {
  public:
-  explicit StandaloneContext(
-      absl::flat_hash_set<md::UPID> upids,
-      const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path());
+  explicit StandaloneContext(absl::flat_hash_set<md::UPID> upids,
+                             const std::filesystem::path& proc_path = ::px::system::ProcPath());
 
   uint32_t GetASID() const override { return 0; }
 
@@ -144,7 +144,7 @@ class StandaloneContext : public ConnectorContext {
 class SystemWideStandaloneContext : public StandaloneContext {
  public:
   explicit SystemWideStandaloneContext(
-      const std::filesystem::path& proc_path = system::Config::GetInstance().proc_path());
+      const std::filesystem::path& proc_path = ::px::system::ProcPath());
 };
 
 }  // namespace stirling

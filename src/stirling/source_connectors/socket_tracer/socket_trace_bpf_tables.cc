@@ -19,6 +19,7 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -41,6 +42,8 @@ NO_OPT_ATTR void ConnInfoMapCleanupTrigger(int n, struct conn_id_t* conn_id_vec)
 
 namespace px {
 namespace stirling {
+
+using px::system::ProcPidPath;
 
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
     : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
@@ -78,8 +81,6 @@ void ConnInfoMapManager::Disable(struct conn_id_t conn_id) {
 }
 
 void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_mgr) {
-  const auto& sysconfig = system::Config::GetInstance();
-
   for (const auto& [pid_fd, conn_info] : conn_info_map_.get_table_offline()) {
     uint32_t pid = pid_fd >> 32;
     int32_t fd = pid_fd;
@@ -90,10 +91,9 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
       continue;
     }
 
-    std::filesystem::path fd_file =
-        sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
+    const auto fd_file_path = ProcPidPath(pid, "fd", std::to_string(fd));
 
-    if (fs::Exists(fd_file)) {
+    if (fs::Exists(fd_file_path)) {
       continue;
     }
 

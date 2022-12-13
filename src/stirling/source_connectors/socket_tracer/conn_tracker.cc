@@ -33,6 +33,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/inet_utils.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
@@ -62,6 +63,7 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::utils::EnumMap;
+using ::px::system::ProcPidPath;
 
 // Parse failure rate threshold, after which a connection tracker will be disabled.
 constexpr double kParseFailureRateThreshold = 0.4;
@@ -826,11 +828,9 @@ void ConnTracker::IterationPostTick() {
 }
 
 void ConnTracker::CheckProcForConnClose() {
-  const auto& sysconfig = system::Config::GetInstance();
-  std::filesystem::path fd_file = sysconfig.proc_path() / std::to_string(conn_id().upid.pid) /
-                                  "fd" / std::to_string(conn_id().fd);
+  const auto fd_file_path = ProcPidPath(conn_id().upid.pid, "fd", std::to_string(conn_id().fd));
 
-  if (!fs::Exists(fd_file)) {
+  if (!fs::Exists(fd_file_path)) {
     MarkForDeath(0);
   }
 }

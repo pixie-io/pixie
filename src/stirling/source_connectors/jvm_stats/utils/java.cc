@@ -29,6 +29,7 @@
 #include "src/common/base/statusor.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/uid.h"
 #include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -39,6 +40,7 @@ namespace java {
 
 using ::px::stirling::java::hsperf::ParseHsperfData;
 using ::px::system::ProcParser;
+using ::px::system::ProcPidRootPath;
 using ::px::utils::LEndianBytesToInt;
 
 Stats::Stats(std::vector<Stat> stats) : stats_(std::move(stats)) {}
@@ -106,7 +108,6 @@ uint64_t Stats::SumStatsForSuffixes(const std::vector<std::string_view>& suffixe
 
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   const system::Config& sysconfig = system::Config::GetInstance();
-  const std::filesystem::path& host_path = sysconfig.host_path();
   ProcParser parser(sysconfig);
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
@@ -119,8 +120,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
     return error::InvalidArgument("Invalid uid: '$0'", uids.effective);
   }
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path passwd_path, fp_resolver->ResolvePath("/etc/passwd"));
-  passwd_path = fs::JoinPath({&host_path, &passwd_path});
+  const std::filesystem::path passwd_path = ProcPidRootPath(pid, "etc", "passwd");
 
   PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
   std::map<uid_t, std::string> uid_user_map = ParsePasswd(passwd_content);
@@ -133,15 +133,15 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
 
   std::vector<std::string> ns_pids;
   PL_RETURN_IF_ERROR(parser.ReadNSPid(pid, &ns_pids));
-  const char kHspefdataPrefix[] = "hsperfdata_";
   // The right-most pid is the PID of the same process inside the most-nested namespace.
   // That will be the filename chosen by the running process.
   const std::string& ns_pid = ns_pids.back();
-  std::filesystem::path hsperf_data_path =
-      std::filesystem::path("/tmp") / absl::StrCat(kHspefdataPrefix, effective_user) / ns_pid;
-
-  PL_ASSIGN_OR_RETURN(hsperf_data_path, fp_resolver->ResolvePath(hsperf_data_path));
-  return fs::JoinPath({&host_path, &hsperf_data_path});
+  const std::string hsperf_user = absl::Substitute("hsperfdata_$0", effective_user);
+  const auto hsperf_data_path = ProcPidRootPath(pid, "tmp", hsperf_user, ns_pid);
+  if (!fs::Exists(hsperf_data_path)) {
+    return error::NotFound("Could find hsperf data file path: $0.", hsperf_data_path.string());
+  }
+  return hsperf_data_path;
 }
 
 }  // namespace java
