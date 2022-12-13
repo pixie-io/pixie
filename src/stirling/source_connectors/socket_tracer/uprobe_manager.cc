@@ -63,7 +63,7 @@ using ::px::stirling::utils::KernelVersionOrder;
 using ::px::system::ProcPidRootPath;
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
-  proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+  proc_parser_ = std::make_unique<system::ProcParser>();
 }
 
 void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
@@ -460,8 +460,7 @@ namespace {
 // Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
 std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     const absl::flat_hash_set<md::UPID>& upids) {
-  const system::Config& sysconfig = system::Config::GetInstance();
-  const system::ProcParser proc_parser(sysconfig);
+  const system::ProcParser proc_parser;
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::map<std::string, std::vector<int32_t>> pids;

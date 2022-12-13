@@ -113,7 +113,7 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   void StartAll() override {
     ASSERT_TRUE(fs::Exists(binary_path_));
     ASSERT_TRUE(fs::Exists(kTasksetBinPath));
-    system::ProcParser proc_parser(system::Config::GetInstance());
+    const system::ProcParser proc_parser;
 
     for (size_t i = 0; i < kNumSubProcesses; ++i) {
       sub_processes_.push_back(std::make_unique<SubProcess>());
@@ -159,7 +159,7 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
   ~ContainerSubProcesses() { KillAll(); }
 
   void StartAll() override {
-    system::ProcParser proc_parser(system::Config::GetInstance());
+    const system::ProcParser proc_parser;
     const auto timeout = std::chrono::seconds{2 * FLAGS_test_run_time};
     const std::vector<std::string> options;
     const std::vector<std::string> args;

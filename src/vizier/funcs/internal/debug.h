@@ -175,8 +175,7 @@ class AgentProcStatusUDTF final : public carnot::udf::UDTF<AgentProcStatusUDTF> 
   }
 
   bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
-    const auto& sysconfig = Config::GetInstance();
-    const ProcParser proc_parser(sysconfig);
+    const ProcParser proc_parser;
 
     ProcParser::ProcessStatus stats;
     auto status = proc_parser.ParseProcPIDStatus(ctx->metadata_state()->pid(), &stats);
@@ -271,8 +270,7 @@ class AgentProcSMapsUDTF final : public carnot::udf::UDTF<AgentProcSMapsUDTF> {
   }
 
   Status Init(FunctionContext* ctx) {
-    const auto& sysconfig = Config::GetInstance();
-    const ProcParser proc_parser(sysconfig);
+    const ProcParser proc_parser;
     return proc_parser.ParseProcPIDSMaps(ctx->metadata_state()->pid(), &stats_);
   }
 

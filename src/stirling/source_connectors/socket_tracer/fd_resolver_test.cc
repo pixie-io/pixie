@@ -30,9 +30,7 @@ namespace stirling {
 
 class FDResolverTest : public ::testing::Test {
  protected:
-  void SetUp() {
-    proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
-  }
+  void SetUp() { proc_parser_ = std::make_unique<system::ProcParser>(); }
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 };

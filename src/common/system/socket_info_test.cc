@@ -127,7 +127,7 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
   ASSERT_NE(-1, server_accept_fd) << absl::Substitute("accept() failed with errno=$0", errno);
 
   // Extract inode numbers.
-  auto proc_parser = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+  auto proc_parser = std::make_unique<system::ProcParser>();
   std::string server_socket_id;
   ASSERT_OK(proc_parser->ReadProcPIDFDLink(getpid(), server_accept_fd, &server_socket_id));
 

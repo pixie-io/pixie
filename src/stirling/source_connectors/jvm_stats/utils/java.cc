@@ -107,8 +107,7 @@ uint64_t Stats::SumStatsForSuffixes(const std::vector<std::string_view>& suffixe
 }
 
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
-  const system::Config& sysconfig = system::Config::GetInstance();
-  ProcParser parser(sysconfig);
+  ProcParser parser;
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver, FilePathResolver::Create(pid));
 

@@ -526,7 +526,7 @@ TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
   ASSERT_OK(fake_java_proc.Start({fake_java_bin_path}));
   const uint32_t child_pid = fake_java_proc.child_pid();
 
-  system::ProcParser parser(system::Config::GetInstance());
+  const system::ProcParser parser;
   ASSERT_OK_AND_ASSIGN(const uint64_t start_time_ns, parser.GetPIDStartTimeTicks(child_pid));
 
   const struct upid_t child_upid = {{child_pid}, start_time_ns};

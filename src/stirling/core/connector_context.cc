@@ -58,7 +58,7 @@ Status StandaloneContext::SetClusterCIDR(std::string_view cidr_str) {
 }
 
 StandaloneContext::StandaloneContext(absl::flat_hash_set<md::UPID> upids,
-                                     const std::filesystem::path& proc_path)
+                                     const std::filesystem::path& /*proc_path*/)
     : upids_(std::move(upids)) {
   // Cannot be empty, otherwise stirling will wait indefinitely. Since StandaloneContext is used
   // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
@@ -66,7 +66,7 @@ StandaloneContext::StandaloneContext(absl::flat_hash_set<md::UPID> upids,
   // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
   PL_CHECK_OK(SetClusterCIDR("0.0.0.1/32"));
 
-  system::ProcParser proc_parser(proc_path);
+  system::ProcParser proc_parser;
   for (auto upid : upids_) {
     std::string exe_path = proc_parser.GetExePath(upid.pid()).ValueOr("");
     std::string cmdline = proc_parser.GetPIDCmdline(upid.pid());

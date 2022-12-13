@@ -165,7 +165,7 @@ constexpr size_t kMaxPBStringLen = 64;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), conn_stats_(&conn_trackers_mgr_), uprobe_mgr_(this) {
-  proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+  proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
 }
 

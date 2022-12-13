@@ -364,7 +364,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
 
   const auto proc_path = testing::BazelRunfilePath("src/shared/metadata/testdata/proc");
   PL_SET_FOR_SCOPE(FLAGS_proc_path, proc_path.string());
-  system::ProcParser proc_parser(proc_path.string());
+  system::ProcParser proc_parser;
   EXPECT_OK(ProcessPIDUpdates(1000, proc_parser, &metadata_state_, &md_reader, &events));
 
   std::unique_ptr<PIDStatusEvent> event;

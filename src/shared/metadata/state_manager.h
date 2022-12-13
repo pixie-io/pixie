@@ -124,7 +124,6 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
                                 AgentMetadataFilter* metadata_filter, sole::uuid vizier_id,
                                 std::string vizier_name)
       : pod_name_(pod_name),
-        proc_parser_(config),
         collects_data_(collects_data),
         metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);

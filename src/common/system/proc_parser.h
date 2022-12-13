@@ -39,17 +39,7 @@ namespace system {
  */
 class ProcParser {
  public:
-  ProcParser() = delete;
   ~ProcParser() = default;
-
-  /**
-   * ProcParser constructor.
-   * @param cfg a reference to the system config. Only needs to be valid for the
-   * duration of the constructor call.
-   * @param proc_base_path The base path to the proc files.
-   */
-  explicit ProcParser(const system::Config& cfg);
-  explicit ProcParser(std::string proc_path);
 
   /**
    * NetworkStats is a struct used to store aggregated network statistics.
@@ -390,8 +380,6 @@ class ProcParser {
       uint8_t* out_base);
 
   Status ParseProcMapsFile(int32_t pid, std::string filename, std::vector<ProcessSMaps>* out) const;
-
-  std::string proc_base_path_;
 };
 
 // TODO(jps): Change to GetPIDStartTimeTicks(const pid_t pid), i.e. remove the version that

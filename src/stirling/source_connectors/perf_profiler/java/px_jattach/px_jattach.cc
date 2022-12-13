@@ -30,6 +30,7 @@
 #include "src/common/base/logging.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/common/system/scoped_namespace.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/agent_hash.h"
 #include "src/stirling/source_connectors/perf_profiler/java/agent/raw_symbol_update.h"
@@ -48,7 +49,7 @@ namespace java {
 
 namespace {
 StatusOr<uint32_t> GetNSPid(const int pid) {
-  const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+  const system::ProcParser proc_parser;
   std::vector<std::string> ns_pids;
   PL_RETURN_IF_ERROR(proc_parser.ReadNSPid(pid, &ns_pids));
   const std::string& ns_pid_string = ns_pids.back();

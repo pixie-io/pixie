@@ -44,7 +44,7 @@ TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
   ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
   pid_t node_server_pid = node_server.process_pid();
 
-  ProcParser proc_parser(system::Config::GetInstance());
+  ProcParser proc_parser;
   LazyLoadedFPResolver fp_resolver;
 
   ASSERT_OK_AND_ASSIGN(const std::filesystem::path proc_exe_path,
@@ -62,7 +62,7 @@ TEST(AlpineNodeExecTest, MountNSSubprocessWorks) {
   ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
   pid_t node_server_pid = node_server.process_pid();
 
-  ProcParser proc_parser(system::Config::GetInstance());
+  ProcParser proc_parser;
   ASSERT_OK_AND_ASSIGN(std::filesystem::path exe, proc_parser.GetExePath(node_server_pid));
 
   SubProcess proc(node_server_pid);

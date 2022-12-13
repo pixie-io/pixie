@@ -42,7 +42,7 @@ void ElfSymbolizer::DeleteUPID(const struct upid_t& upid) { symbolizers_.erase(u
 
 StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const struct upid_t& upid) {
   const pid_t pid = upid.pid;
-  const system::ProcParser proc_parser(system::Config::GetInstance());
+  const system::ProcParser proc_parser;
   PL_ASSIGN_OR_RETURN(const auto proc_exe, proc_parser.GetExePath(pid));
   PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(ProcPidRootPath(pid, proc_exe.string())));
   return elf_reader->GetSymbolizer();

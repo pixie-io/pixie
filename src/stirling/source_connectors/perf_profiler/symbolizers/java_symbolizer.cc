@@ -66,7 +66,7 @@ Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
   if (!status_or_space_available.ok()) {
     // Could not figure out how much storage capacity is available in tmp path for the target pid.
     // Return the status. The symbolization agent attach process will abort.
-    const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+    const system::ProcParser proc_parser;
     const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
     const std::string error_msg = absl::Substitute(
         "Could not determine space available in path $0, for Java pid: $1, cmd: $2.",
@@ -79,7 +79,7 @@ Status SpaceAvailableForAgentLibsAndSymbolFile(const struct upid_t& upid) {
   if (space_available_in_bytes < kMinimumBytesRequired) {
     // Available capacity in "tmp" for the target process is less than the minimum required.
     // Return an error to indicate "no space available." The agent attach process will abort.
-    const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+    const system::ProcParser proc_parser;
     const std::string cmdline = proc_parser.GetPIDCmdline(upid.pid);
     const std::string error_msg = absl::Substitute(
         "Not enough tmp space available for Java symbolization libraries and symbol file. Found $0 "
@@ -374,7 +374,7 @@ profiler::SymbolizerFn JavaSymbolizer::GetSymbolizerFn(const struct upid_t& upid
   auto native_symbolizer_fn = native_symbolizer_->GetSymbolizerFn(upid);
 
   using fs_path = std::filesystem::path;
-  const auto& proc_parser = system::ProcParser(system::Config::GetInstance());
+  const system::ProcParser proc_parser;
   auto status_or_exe_path = proc_parser.GetExePath(upid.pid);
 
   if (!status_or_exe_path.ok()) {

@@ -58,7 +58,7 @@ class NetworkStatsConnector : public SourceConnector {
  protected:
   explicit NetworkStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables) {
-    proc_parser_ = std::make_unique<system::ProcParser>(sysconfig_);
+    proc_parser_ = std::make_unique<system::ProcParser>();
   }
 
  private:

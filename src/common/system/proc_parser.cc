@@ -96,10 +96,6 @@ constexpr int kProcStatStartTimeField = 21;
 constexpr int kProcStatVSizeField = 22;
 constexpr int kProcStatRSSField = 23;
 
-ProcParser::ProcParser(const system::Config& cfg) : ProcParser(cfg.proc_path()) {}
-
-ProcParser::ProcParser(std::string proc_path) : proc_base_path_(std::move(proc_path)) {}
-
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
     const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
   DCHECK(out != nullptr);

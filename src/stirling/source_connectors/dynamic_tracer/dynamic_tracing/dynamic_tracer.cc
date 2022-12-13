@@ -222,8 +222,7 @@ Status CheckPIDStartTime(const ProcParser& proc_parser, int32_t pid, int64_t spe
 
 StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::UPID& upid) {
   const uint32_t pid = upid.pid();
-  const auto& sysconfig = system::Config::GetInstance();
-  const ProcParser proc_parser(sysconfig);
+  const ProcParser proc_parser;
 
   if (upid.ts_ns() != 0) {
     PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, upid.ts_ns()));
@@ -242,8 +241,7 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
     const ir::shared::DeploymentSpec& deployment_spec) {
   const uint32_t& pid = deployment_spec.shared_object().upid().pid();
   const std::string& lib_name = deployment_spec.shared_object().name();
-  const auto& sysconfig = system::Config::GetInstance();
-  const ProcParser proc_parser(sysconfig);
+  const ProcParser proc_parser;
   auto ts_ns = deployment_spec.shared_object().upid().ts_ns();
   if (ts_ns != 0) {
     PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, ts_ns));
@@ -383,7 +381,7 @@ StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
   }
 
   std::vector<md::UPID> upids;
-  system::ProcParser proc_parser(system::Config::GetInstance());
+  system::ProcParser proc_parser;
 
   for (const auto& upid : container_info.active_upids()) {
     if (!process_regexp.empty()) {

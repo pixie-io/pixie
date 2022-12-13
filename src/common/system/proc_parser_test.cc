@@ -56,7 +56,7 @@ std::string GetPathToTestDataFile(std::string_view fname) {
 class ProcParserTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    parser_ = std::make_unique<ProcParser>(GetPathToTestDataFile("testdata/proc"));
+    parser_ = std::make_unique<ProcParser>();
     bytes_per_page_ = 4096;
     kernel_tick_time_ns_ = 100;
   }
@@ -396,7 +396,7 @@ TEST(ProcParserGetExePathTest, CheckTestProcess) {
   // Since bazel prepares test files as symlinks, creating testdata/proc/123/exe symlink would
   // result into bazel creating another symlink to it. So instead we just use the actual system
   // config to read the actual exe path of this test process.
-  ProcParser parser(system::Config::GetInstance());
+  ProcParser parser;
   const std::string kExpectedPathRegex = ".*/src/common/system/proc_parser_test";
   ASSERT_OK_AND_ASSIGN(std::filesystem::path proc_exe, parser.GetExePath(getpid()));
   EXPECT_THAT(proc_exe.string(), MatchesRegex(kExpectedPathRegex));

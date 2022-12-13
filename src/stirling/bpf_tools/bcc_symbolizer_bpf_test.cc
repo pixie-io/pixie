@@ -62,8 +62,8 @@ TEST(BCCSymbolizer, ModuleName) {
   std::vector<system::ProcParser::ProcessSMaps> smaps;
 
   const pid_t pid = getpid();
-  auto parser_ = std::make_unique<system::ProcParser>("/proc");
-  ASSERT_OK(parser_->ParseProcPIDSMaps(pid, &smaps));
+  const system::ProcParser proc_parser;
+  ASSERT_OK(proc_parser.ParseProcPIDSMaps(pid, &smaps));
 
   for (const auto& entry : smaps) {
     if (entry.pathname == "[vdso]") {

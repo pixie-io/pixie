@@ -150,7 +150,7 @@ class ResolveTargetObjPathTest : public ::testing::Test {
     // the tests run. We started hitting a bug (where an empty cmdline caused test failure)
     // after improving proc parser code (perhaps previous code was slow enough to not win the race).
     sleep(2);
-    const system::ProcParser proc_parser(system::Config::GetInstance());
+    const system::ProcParser proc_parser;
     const std::string server_cmd = proc_parser.GetPIDCmdline(server_.child_pid());
     const std::string client_cmd = proc_parser.GetPIDCmdline(client_.child_pid());
     const bool cmdlines_found = server_cmd.size() > 0 && client_cmd.size() > 0;

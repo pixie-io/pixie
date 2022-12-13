@@ -155,7 +155,7 @@ inline const std::string& AccessRecordBatch<std::string>(
 }
 
 inline md::UPID PIDToUPID(pid_t pid) {
-  system::ProcParser proc_parser(system::Config::GetInstance());
+  system::ProcParser proc_parser;
   return md::UPID{/*asid*/ 0, static_cast<uint32_t>(pid),
                   proc_parser.GetPIDStartTimeTicks(pid).ValueOrDie()};
 }

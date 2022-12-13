@@ -145,9 +145,9 @@ Status PEMManager::InitClockConverters() {
 
 void PEMManager::StartNodeMemoryCollector() {
   node_memory_timer_ = dispatcher()->CreateTimer([this]() {
-    px::system::ProcParser proc(px::system::Config::GetInstance());
+    px::system::ProcParser proc_parser;
     px::system::ProcParser::SystemStats stats;
-    auto s = proc.ParseProcMemInfo(&stats);
+    auto s = proc_parser.ParseProcMemInfo(&stats);
     LOG_IF(ERROR, !s.ok()) << "Failed to parse /proc/meminfo " << s.msg();
     if (s.ok()) {
       node_total_memory_.Set(stats.mem_total_bytes);

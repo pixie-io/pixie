@@ -41,7 +41,6 @@ DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
 Config::Config(std::unique_ptr<ClockConverter> clock_converter)
     : host_path_(FLAGS_host_path),
       sysfs_path_(FLAGS_sysfs_path),
-      proc_path_(absl::StrCat(FLAGS_host_path, "/proc")),
       clock_converter_(std::move(clock_converter)) {}
 
 int64_t Config::PageSizeBytes() const { return sysconf(_SC_PAGESIZE); }

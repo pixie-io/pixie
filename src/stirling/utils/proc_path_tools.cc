@@ -103,7 +103,7 @@ StatusOr<std::unique_ptr<FilePathResolver>> FilePathResolver::Create(pid_t pid) 
 Status FilePathResolver::Init() {
   constexpr int kRootPID = 1;
 
-  system::ProcParser proc_parser(system::Config::GetInstance());
+  system::ProcParser proc_parser;
 
   // In case Init() gets called as part of re-initialization in the future,
   // make sure we start with a clean slate.
@@ -124,7 +124,7 @@ Status FilePathResolver::Init() {
 }
 
 Status FilePathResolver::SetMountNamespace(pid_t pid) {
-  system::ProcParser proc_parser(system::Config::GetInstance());
+  system::ProcParser proc_parser;
 
   if (pid_ == pid) {
     return Status::OK();
@@ -162,7 +162,7 @@ StatusOr<std::filesystem::path> FilePathResolver::ResolvePath(const std::filesys
 
 StatusOr<std::filesystem::path> GetSelfPath() {
   const system::Config& sysconfig = system::Config::GetInstance();
-  ::px::system::ProcParser proc_parser(sysconfig);
+  ::px::system::ProcParser proc_parser;
   PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, proc_parser.GetExePath(getpid()));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
                       FilePathResolver::Create(getpid()));

@@ -17,6 +17,7 @@
  */
 
 #include "src/common/exec/subprocess.h"
+#include "src/common/system/proc_pid_path.h"
 
 #include <fcntl.h>
 #include <sys/wait.h>
@@ -50,19 +51,17 @@ SubProcess::~SubProcess() {
 
 namespace {
 
-std::string MountNamespacePath(int pid) {
-  return system::Config::GetInstance()
-      .ToHostPath(absl::Substitute("/proc/$0/ns/mnt", pid))
-      .string();
+std::filesystem::path MountNamespacePath(int pid) {
+  return px::system::ProcPidPath(pid, "ns", "mnt");
 }
 
 Status SetMountNS(int pid) {
   DCHECK_GE(pid, 0);
 
-  const std::string mnt_ns_path = MountNamespacePath(pid);
+  const auto mnt_ns_path = MountNamespacePath(pid);
   int fd = open(mnt_ns_path.c_str(), O_RDONLY);
   if (fd == -1) {
-    return error::Internal("Could not open mount namespace path '$0'", mnt_ns_path);
+    return error::Internal("Could not open mount namespace path: $0.", mnt_ns_path.string());
   }
   if (setns(fd, 0) != 0) {
     return error::Internal("setns() failed");
@@ -152,7 +151,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // Wait until the execution has started.
     // Test code might still want to wait for the child process actually initiated and one can
     // interact with it.
-    system::ProcParser proc_parser(system::Config::GetInstance());
+    system::ProcParser proc_parser;
 
     // Wait until the exe path changes. The contract of Start() is such that after the call,
     // the child process already started. We use the change of child process' exe path as the signal

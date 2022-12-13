@@ -79,7 +79,6 @@ class Config : public NotCopyable {
 
   const std::filesystem::path& host_path() const { return host_path_; }
   const std::filesystem::path& sysfs_path() const { return sysfs_path_; }
-  const std::filesystem::path& proc_path() const { return proc_path_; }
   clock::ClockConverter* clock_converter() const { return clock_converter_.get(); }
 
  private:
@@ -87,7 +86,6 @@ class Config : public NotCopyable {
 
   const std::filesystem::path host_path_;
   const std::filesystem::path sysfs_path_;
-  const std::filesystem::path proc_path_;
   std::unique_ptr<clock::ClockConverter> clock_converter_;
 };
 
