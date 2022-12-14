@@ -30,4 +30,7 @@ bpf_flags=(--privileged \
   "--pid=host" \
   --env "PL_HOST_PATH=/host")
 
-PX_RUN_DOCKER_EXTRA_ARGS="${bpf_flags[*]}"  "${run_docker_script}" "$@"
+# Carry along any previously set PX_RUN_DOCKER_EXTRA_ARGS but prepend the bpf_flags to them.
+export PX_RUN_DOCKER_EXTRA_ARGS="${bpf_flags[*]} ${PX_RUN_DOCKER_EXTRA_ARGS}"
+
+"${run_docker_script}" "$@"
