@@ -74,6 +74,10 @@ static constexpr DataElement kAMQPElements[] = {
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
+        {"latency", "AMQP latency",
+         types::DataType::INT64,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL},
 };
 // clang-format on
 
@@ -84,6 +88,7 @@ DEFINE_PRINT_TABLE(AMQP)
 constexpr int kAMQPTimeIdx = kAMQPTable.ColIndex("time_");
 constexpr int kAMQPUUIDIdx = kAMQPTable.ColIndex("upid");
 constexpr int kAMQPFrameType = kAMQPTable.ColIndex("frame_type");
+constexpr int kAMQPLatencyIdx = kAMQPTable.ColIndex("latency");
 
 constexpr int kAMQPReqClassId = kAMQPTable.ColIndex("req_class_id");
 constexpr int kAMQPReqMethodId = kAMQPTable.ColIndex("req_method_id");
