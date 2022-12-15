@@ -488,6 +488,15 @@ TEST_F(MetadataOpsTest, upid_to_pid) {
   EXPECT_EQ(udf.Exec(nullptr, upid2.value()), 123);
 }
 
+TEST_F(MetadataOpsTest, upid_to_start_ts) {
+  UPIDToStartTSUDF udf;
+  auto upid1 = md::UPID(123, 567, 89101);
+  EXPECT_EQ(udf.Exec(nullptr, upid1.value()), 89101);
+
+  auto upid2 = md::UPID(255, 123, 11111);
+  EXPECT_EQ(udf.Exec(nullptr, upid2.value()), 11111);
+}
+
 TEST_F(MetadataOpsTest, pod_id_to_start_time) {
   PodIDToPodStartTimeUDF udf;
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);

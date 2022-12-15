@@ -112,6 +112,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<UPIDToNamespaceUDF>("upid_to_namespace");
   registry->RegisterOrDie<UPIDToNodeNameUDF>("upid_to_node_name");
   registry->RegisterOrDie<UPIDToPIDUDF>("upid_to_pid");
+  registry->RegisterOrDie<UPIDToStartTSUDF>("upid_to_start_ts");
   registry->RegisterOrDie<UPIDToPodIDUDF>("upid_to_pod_id");
   registry->RegisterOrDie<UPIDToPodNameUDF>("upid_to_pod_name");
   registry->RegisterOrDie<UPIDToPodQoSUDF>("upid_to_pod_qos");

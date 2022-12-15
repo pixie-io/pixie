@@ -2459,6 +2459,24 @@ class UPIDToPIDUDF : public ScalarUDF {
   }
 };
 
+class UPIDToStartTSUDF : public ScalarUDF {
+ public:
+  Time64NSValue Exec(FunctionContext*, UInt128Value upid_value) {
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    auto upid = md::UPID(upid_uint128);
+    return static_cast<int64_t>(upid.start_ts());
+  }
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the starting timestamp of the process for the given UPID.")
+        .Details(
+            "Get the starting timestamp for the process referred to by the Unique Process ID "
+            "(UPID). ")
+        .Example("df.timestamp = px.upid_to_start_ts(df.upid)")
+        .Arg("upid", "The unique process ID of the process to get the starting timestamp for.")
+        .Returns("The starting timestamp for the UPID passed in.");
+  }
+};
+
 class PodIDToPodStartTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_id) {
