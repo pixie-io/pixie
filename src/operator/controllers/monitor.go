@@ -37,6 +37,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/informers"
@@ -614,8 +615,96 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		if err != nil {
 			return err
 		}
-	}
+	} else if state.Reason == status.ControlPlanePodsPending || state.Reason == status.ControlPlaneFailedToSchedule {
+		// This repair state attempts to clean-up an auto-repair state that was not successful.
+		// In this state, the operator tried to switch a pvc based metadata store to etcd, but failed because
+		// we didn't properly clean up the metadata statefulset and didn't properly setup the etcd deployment.
+		// The failed state thus has two different types of metadata running: the pvc based metadata and the
+		// etc based metadata, and one of them is not operational.
 
+		// This code tries to reconcile that failure: if the pvc-metadata is  functioning, then we
+		// force the system to use the pvc-metadata deployment. If the pvc-metadata is not functional,
+		// then we force the system to use the etcd-metadata deployment.
+		_, err := m.clientset.AppsV1().Deployments(m.namespace).Get(m.ctx, "vizier-metadata", metav1.GetOptions{})
+		// No deployment found, so we are not in the failed repair state.
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizer-metadata deployment")
+			return err
+		}
+		_, err = m.clientset.AppsV1().StatefulSets(m.namespace).Get(m.ctx, "vizier-metadata", metav1.GetOptions{})
+		// No statefulset found, so we are not in the failed repair state.
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizer-metadata statefulset")
+			return err
+		}
+		// Now this means both the deployment and statefulset exist, so we are in the failed repair state.
+		// We need to determine whether the pvc-metadata is functioning or not, and then force the system
+		// to use the functioning metadata store.
+		metadataStatefulsetIsRunning := false
+		// Get the pods owned by the deployment.
+		podList, err := m.clientset.CoreV1().Pods(m.namespace).List(m.ctx, metav1.ListOptions{
+			LabelSelector: "name=vizier-metadata",
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to list pods that belong to vizier-metadata")
+			return err
+		}
+		for _, pod := range podList.Items {
+			for _, ownerRef := range pod.OwnerReferences {
+				if !(ownerRef.Kind == "StatefulSet" && ownerRef.Name == "vizier-metadata") {
+					continue
+				}
+				metadataStatefulsetIsRunning = pod.Status.Phase == v1.PodRunning
+				break
+			}
+			if metadataStatefulsetIsRunning {
+				break
+			}
+		}
+		log.Infof("Discovered a failed repair state, forcing a %s-based metadata store", func() string {
+			if metadataStatefulsetIsRunning {
+				return "pvc"
+			}
+			return "etcd"
+		}())
+
+		// Update the spec to use etcd operator and clear the checksum
+		// so we force an auto-update.
+		vz := &pixiev1alpha1.Vizier{}
+		err = m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			return err
+		}
+		newEtcdOperatorState := !metadataStatefulsetIsRunning
+
+		// If the statefulset is not running but we're using the etcd operator, we should
+		// force a re-run of the deployment to clean up extra state.
+		if vz.Spec.UseEtcdOperator == newEtcdOperatorState {
+			if len(vz.Status.Checksum) > 2 {
+				vz.Status.Checksum = vz.Status.Checksum[2:]
+			}
+			err = m.vzUpdate(context.Background(), vz)
+			if err != nil {
+				log.WithError(err).Error("Failed to update status with empty checksum")
+				return err
+			}
+		} else {
+			// If the statefulset is running, then we should not use the etcd operator.
+			vz.Spec.UseEtcdOperator = newEtcdOperatorState
+			err = m.vzSpecUpdate(context.Background(), vz)
+			if err != nil {
+				log.WithError(err).Error("Failed to update spec to use etcd metadata")
+				return err
+			}
+		}
+	}
 	return nil
 }
 

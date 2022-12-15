@@ -467,7 +467,6 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 			log.Info("Deleted vizier-metadata deployment")
 		}
 	}
-
 	err = r.deployVizierCore(ctx, req.Namespace, vz, yamlMap, update)
 	if err != nil {
 		log.WithError(err).Info("Failed to deploy Vizier core")

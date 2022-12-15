@@ -29,6 +29,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -270,7 +271,7 @@ func TestMonitor_repairVizier_NATS(t *testing.T) {
 				switch action := action.(type) {
 				case k8stesting.DeleteActionImpl:
 					// Records name of the pod sent to the delete function
-					deleteCall = test.podName
+					deleteCall = action.Name
 					return false, nil, nil
 
 				default:
@@ -285,9 +286,8 @@ func TestMonitor_repairVizier_NATS(t *testing.T) {
 				assert.ErrorContains(t, err, test.expectedError)
 			} else {
 				assert.Nil(t, err)
+				assert.Regexp(t, test.expectedDeleteCall, deleteCall)
 			}
-
-			assert.Regexp(t, test.expectedDeleteCall, deleteCall)
 		})
 	}
 }
@@ -1068,6 +1068,207 @@ func TestMonitor_getPEMCrashingState(t *testing.T) {
 			state := getPEMCrashingState(pems)
 			assert.Equal(t, test.expectedReason, state.Reason)
 			assert.Equal(t, test.expectedVizierPhase, v1alpha1.ReasonToPhase(state.Reason))
+		})
+	}
+}
+
+func makePod(name string, phase v1.PodPhase, ownerKind string) *v1.Pod {
+	return &v1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: "pl",
+			Labels: map[string]string{
+				"name": "vizier-metadata",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       ownerKind,
+					Name:       "vizier-metadata",
+				},
+			},
+		},
+		Status: v1.PodStatus{
+			Phase: phase,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:            "nginx",
+					Image:           "nginx",
+					ImagePullPolicy: "Always",
+				},
+			},
+		},
+	}
+}
+
+func TestMonitor_repairVizier_consolidateVizierDeployments(t *testing.T) {
+	tests := []struct {
+		name  string
+		state *vizierState
+		pods  []runtime.Object
+		// hasEtcdOperator is the state of the metadata backed system before the repair.
+		hasEtcdOperator bool
+		// repairCallsUpdate is used to check if the vizier deployment should be updated by repairVizier.
+		repairCallsUpdate bool
+		// forceUpdate is used to force the update of the vizier deployment by setting status.
+		forceUpdate bool
+	}{
+		{
+			name:  "UseEtcdOperator - persistent running defaults to persistent",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-0", v1.PodRunning, "StatefulSet"),
+				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
+			},
+			hasEtcdOperator:   true,
+			repairCallsUpdate: true,
+			forceUpdate:       false,
+		},
+		{
+			name:  "UseEtcdOperator - persistent not running leads to etcd",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-0", v1.PodPending, "StatefulSet"),
+				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
+			},
+			hasEtcdOperator:   true,
+			repairCallsUpdate: true,
+			forceUpdate:       true,
+		},
+		{
+			name:  "!UseEtcdOperator - persistent running defaults to persistent",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-0", v1.PodRunning, "StatefulSet"),
+				makePod("vizier-metadata-9dk39aj", v1.PodRunning, "Deployment"),
+			},
+			hasEtcdOperator:   false,
+			repairCallsUpdate: true,
+			forceUpdate:       true,
+		},
+		{
+			name:  "!UseEtcdOperator - persistent not running leads to etcd",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-0", v1.PodPending, "StatefulSet"),
+				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
+			},
+			hasEtcdOperator:   false,
+			repairCallsUpdate: true,
+			forceUpdate:       false,
+		},
+		{
+			name:  "no problems if only stateful",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-0", v1.PodPending, "StatefulSet"),
+			},
+			hasEtcdOperator:   true,
+			repairCallsUpdate: false,
+			forceUpdate:       false,
+		},
+		{
+			name:  "no problems if only deployment",
+			state: &vizierState{Reason: status.ControlPlanePodsPending},
+			pods: []runtime.Object{
+				&appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vizier-metadata",
+						Namespace: "pl",
+					},
+				},
+				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
+			},
+			hasEtcdOperator:   true,
+			repairCallsUpdate: false,
+			forceUpdate:       false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cs := testclient.NewSimpleClientset(test.pods...)
+			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object) error {
+				vz := obj.(*v1alpha1.Vizier)
+				vz.Spec.UseEtcdOperator = test.hasEtcdOperator
+				vz.Status.Checksum = []byte("1234")
+				return nil
+			}
+			callsSpecUpdate := false
+			callsStatusUpdate := false
+			specUpdate := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+				callsSpecUpdate = true
+				return nil
+			}
+			statusUpdate := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+				callsStatusUpdate = true
+				return nil
+			}
+			monitor := &VizierMonitor{clientset: cs, vzGet: get, vzSpecUpdate: specUpdate, vzUpdate: statusUpdate, namespace: "pl"}
+			err := monitor.repairVizier(test.state)
+			assert.Equal(t, test.repairCallsUpdate, callsSpecUpdate || callsStatusUpdate)
+			assert.Equal(t, test.forceUpdate, callsStatusUpdate)
+			assert.Nil(t, err)
 		})
 	}
 }

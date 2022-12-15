@@ -71,6 +71,7 @@ go_test(
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",
         "@com_github_stretchr_testify//assert",
+        "@io_k8s_api//apps/v1:apps",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_api//storage/v1:storage",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
