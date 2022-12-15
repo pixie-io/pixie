@@ -39,7 +39,6 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 // There is a conflicting name in status.h in protobuf.
 #undef EXPECT_OK
 #endif
-// TODO(yzhao): Consider rename to PL_EXPECT_OK.
 #define EXPECT_OK(value) EXPECT_TRUE(IsOK(::px::StatusAdapter(value)))
 #define EXPECT_NOT_OK(value) EXPECT_FALSE(IsOK(::px::StatusAdapter(value)))
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::px::StatusAdapter(value)))

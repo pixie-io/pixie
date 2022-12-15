@@ -191,11 +191,10 @@ TEST(BCCWrapperTest, TestMapClearingAPIs) {
   ASSERT_THAT(alphabet.get_table_offline(), IsEmpty());
 }
 
-// Tests that BCCWrapper can load XDP program.
-TEST(BCCWrapperTest, LoadXDP) {
+// Tests that BCCWrapper can load and attach UPD filter defined in the XDP program.
+TEST(BCCWrapperTest, LoadUPDFilterWithXDP) {
   bpf_tools::BCCWrapper bcc_wrapper;
 
-  // TODO(yzhao): Changing to TCP does not work as expected. Needs more research.
   std::string_view xdp_program = R"bcc(
       #include <linux/bpf.h>
       #include <linux/if_ether.h>
