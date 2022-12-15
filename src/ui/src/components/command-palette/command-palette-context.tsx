@@ -43,24 +43,25 @@ export interface CommandPaletteContextProps {
 
 export const CommandPaletteContext = React.createContext<CommandPaletteContextProps>({
   open: false,
-  setOpen: () => {},
+  setOpen: () => { throw new Error('CommandPaletteContext is not in scope'); },
   inputValue: '',
-  setInputValue: () => {},
+  setInputValue: () => { throw new Error('CommandPaletteContext is not in scope'); },
   selection: [0, 0],
-  setSelection: () => {},
+  setSelection: () => { throw new Error('CommandPaletteContext is not in scope'); },
   tokens: [],
   selectedTokens: [],
   completions: [],
   highlightedCompletion: null,
-  setHighlightedCompletion: () => {},
-  activateCompletion: () => {},
+  setHighlightedCompletion: () => { throw new Error('CommandPaletteContext is not in scope'); },
+  activateCompletion: () => { throw new Error('CommandPaletteContext is not in scope'); },
   cta: null,
 });
 
-export const CommandPaletteContextProvider = React.memo<WithChildren>(({
+const CommandPaletteContextProviderInner = React.memo<WithChildren>(({
   children,
 }) => {
-  const [open, setOpen] = React.useState(false);
+  // These need to be available to suggesters and CTAs, so they're defined in a wrapper that sets them up
+  const { open, setOpen } = React.useContext(CommandPaletteContext);
   const [inputValue, setInputValue] = React.useState('');
   const [selection, setSelection] = React.useState<[start: number, end: number]>([0, 0]);
   const [highlightedCompletion, setHighlightedCompletion] = React.useState<CommandCompletion>(null);
@@ -71,7 +72,7 @@ export const CommandPaletteContextProvider = React.memo<WithChildren>(({
   const allCompletions = React.useMemo(() => groupedCompletions.map(g => g.completions).flat(), [groupedCompletions]);
 
   const activateCompletion = React.useCallback((option: CommandCompletion) => {
-    if (typeof option === 'string' || !option.key) {
+    if (typeof option === 'string' || !option?.key) {
       // This happens if pressing Enter while no option is highlighted.
       // We could activate the provider's action here, but the user probably doesn't want that.
       return;
@@ -121,10 +122,25 @@ export const CommandPaletteContextProvider = React.memo<WithChildren>(({
     activateCompletion,
     cta,
   }), [
-    open, inputValue, selection,
+    open, setOpen, inputValue, selection,
     tokens, selectedTokens, cta,
     allCompletions, highlightedCompletion, activateCompletion,
   ]);
   return <CommandPaletteContext.Provider value={ctx}>{children}</CommandPaletteContext.Provider>;
 });
-CommandPaletteContextProvider.displayName = 'CommandPaletteContextProvider';
+CommandPaletteContextProviderInner.displayName = 'CommandPaletteContextProviderInner';
+
+// Wraps the real provider in order to provide things like open/setOpen to the command completion providers' CTAs.
+export const CommandPaletteContextProvider = React.memo<WithChildren>(({ children }) => {
+  const defaults = React.useContext(CommandPaletteContext);
+  const [open, setOpen] = React.useState(false);
+  const ctx = React.useMemo(() => ({ ...defaults, open, setOpen }), [defaults, open, setOpen]);
+  return (
+    <CommandPaletteContext.Provider value={ctx}>
+      <CommandPaletteContextProviderInner>
+        {children}
+      </CommandPaletteContextProviderInner>
+    </CommandPaletteContext.Provider>
+  );
+});
+CommandPaletteContextProvider.displayName = 'CommandPaletteContextProviderOuter';

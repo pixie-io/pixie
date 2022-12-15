@@ -20,7 +20,6 @@ import * as React from 'react';
 
 import { ScriptContext } from 'app/context/script-context';
 
-import { CommandPaletteContextProvider } from './command-palette-context';
 import { CommandPaletteTrigger } from './command-palette-trigger';
 
 export const CommandPalette = React.memo(() => {
@@ -45,10 +44,6 @@ export const CommandPalette = React.memo(() => {
     return parts.join(' ');
   }, [script, args]);
 
-  return (
-    <CommandPaletteContextProvider>
-      <CommandPaletteTrigger text={text} />
-    </CommandPaletteContextProvider>
-  );
+  return <CommandPaletteTrigger text={text} />;
 });
 CommandPalette.displayName = 'CommandPalette';

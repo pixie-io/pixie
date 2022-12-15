@@ -31,6 +31,7 @@ import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { EditIcon, Footer, scrollbarStyles } from 'app/components';
 import { CommandPalette } from 'app/components/command-palette';
+import { CommandPaletteContextProvider } from 'app/components/command-palette/command-palette-context';
 import { Spinner } from 'app/components/spinner/spinner';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
@@ -289,7 +290,7 @@ const Nav: React.FC<{
   setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
 }> = React.memo(({ widgetsMoveable, setWidgetsMoveable }) => {
   const classes = useStyles();
-  const { commandPalettePreview: showCommandPalette } = useFlags();
+  const { showCommandPalette } = useFlags();
 
   if (isPixieEmbedded()) {
     return <></>;
@@ -496,10 +497,12 @@ const ContextualizedLiveView: React.FC = () => (
       <DataDrawerContextProvider>
         <ResultsContextProvider>
           <ScriptContextProvider>
-            <EditorContextProvider>
-              <ScriptLoader />
-              <LiveView />
-            </EditorContextProvider>
+            <CommandPaletteContextProvider>
+              <EditorContextProvider>
+                <ScriptLoader />
+                <LiveView />
+              </EditorContextProvider>
+            </CommandPaletteContextProvider>
           </ScriptContextProvider>
         </ResultsContextProvider>
       </DataDrawerContextProvider>

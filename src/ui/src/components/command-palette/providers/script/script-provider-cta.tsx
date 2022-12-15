@@ -63,11 +63,22 @@ export function getScriptCommandCta(
   input: string,
   selection: [start: number, end: number],
   scripts: Map<string, Script>,
+  setScriptAndArgs: (script: Script, args: Record<string, string | string[]>) => void,
+  closeFn: () => void,
 ): CommandCta {
   if (!input.length) return null;
 
   const parsed = parse(input, selection);
   const valid = isScriptCommandValid(parsed.kvMap ?? new Map(), scripts ?? new Map());
+
+  let script: Script = null;
+  const args: Record<string, string | string[]> = {};
+  if (valid) {
+    script = scripts.get(parsed.kvMap.get('script'));
+    for (const arg of script.vis.variables) {
+      args[arg.name] = parsed.kvMap.get(arg.name) ?? arg.defaultValue ?? '';
+    }
+  }
 
   return {
     label: (
@@ -78,9 +89,13 @@ export function getScriptCommandCta(
       </Box>
     ),
     action: () => {
-      alert('Not Yet Implemented. This CTA came from ScriptCommandProvider.');
+      if (!valid || !script) return;
+      // Closing the dialog first makes sure it visually goes away before the main thread focuses on running the script.
+      // Otherwise, there's a noticeable delay before the dialog hides, which feels clunkier.
+      closeFn();
+      setScriptAndArgs(script, args);
     },
     disabled: !valid,
-    tooltip: 'NYI',
+    tooltip: valid ? `Run "${script.id}" with these arguments` : 'Need a valid script command to run.',
   };
 }

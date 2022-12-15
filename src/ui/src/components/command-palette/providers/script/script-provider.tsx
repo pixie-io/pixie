@@ -33,6 +33,7 @@ import {
   CommandProviderResult,
 } from 'app/components/command-palette/providers/command-provider';
 import { ScriptsContext } from 'app/containers/App/scripts-context';
+import { ScriptContext } from 'app/context/script-context';
 import {
   GQLAutocompleteFieldResult,
   GQLAutocompleteEntityKind,
@@ -43,6 +44,7 @@ import {
   useEmptyInputScriptProvider,
   useMissingScriptProvider,
 } from '.';
+import { CommandPaletteContext } from '../../command-palette-context';
 import {
   CompletionLabel,
   getFieldSuggestions,
@@ -211,6 +213,10 @@ function useSuggestFromKeyedValue() {
  */
 export const useScriptCommandProvider: CommandProvider = () => {
   const scripts = React.useContext(ScriptsContext)?.scripts;
+  const { setScriptAndArgs } = React.useContext(ScriptContext);
+
+  const { setOpen } = React.useContext(CommandPaletteContext);
+
   const emptyInputProvider = useEmptyInputScriptProvider();
   const missingScriptProvider = useMissingScriptProvider();
   const bareValueProvider = useSuggestFromValue();
@@ -226,7 +232,7 @@ export const useScriptCommandProvider: CommandProvider = () => {
     const script = scripts?.get(parsed.kvMap?.get('script') ?? '') ?? null;
     const commandFullyFilled = isScriptCommandValid(parsed.kvMap ?? new Map(), scripts ?? new Map());
 
-    const cta = getScriptCommandCta(input, selection, scripts);
+    const cta = getScriptCommandCta(input, selection, scripts, setScriptAndArgs, () => setOpen(false));
     if (!input.trim().length) {
       // With a blank input, offer common fully-filled commands to try.
       return emptyInputProvider(input, selection);
@@ -253,5 +259,8 @@ export const useScriptCommandProvider: CommandProvider = () => {
       const res = await bareValueProvider(parsed.input, parsed.selection);
       return { ...res, cta };
     }
-  }, [bareValueProvider, emptyInputProvider, missingScriptProvider, keyedValueProvider, scripts]);
+  }, [
+    bareValueProvider, emptyInputProvider, missingScriptProvider, keyedValueProvider,
+    scripts, setScriptAndArgs, setOpen,
+  ]);
 };
