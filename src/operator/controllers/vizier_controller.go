@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -418,15 +419,52 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 			return err
 		}
 
-		err = r.deployVizierDeps(ctx, req.Namespace, vz, yamlMap)
+		err = r.deployNATSStatefulset(ctx, req.Namespace, vz, yamlMap)
 		if err != nil {
-			log.WithError(err).Error("Failed to deploy Vizier deps")
+			log.WithError(err).Error("Failed to deploy NATS")
 			return err
 		}
 	} else {
 		err = r.upgradeNats(ctx, req.Namespace, vz, yamlMap)
 		if err != nil {
 			log.WithError(err).Warning("Failed to upgrade nats")
+		}
+	}
+
+	if vz.Spec.UseEtcdOperator {
+		err := r.Clientset.AppsV1().StatefulSets(req.Namespace).Delete(ctx, "vizier-metadata", metav1.DeleteOptions{})
+		if err != nil && k8serrors.IsNotFound(err) {
+			log.Debug("vizier-metadata statefulset not found, skipping deletion")
+		} else if err != nil {
+			log.WithError(err).Error("Failed to delete vizier-metadata statefulset")
+			return err
+		} else {
+			log.Info("Deleted vizier-metadata statefulset")
+		}
+		err = r.deployEtcdStatefulset(ctx, req.Namespace, vz, yamlMap)
+		if err != nil {
+			log.WithError(err).Error("Failed to deploy etcd")
+			return err
+		}
+	} else {
+		// Delete the etcd statefulset if it exists.
+		err := r.Clientset.AppsV1().StatefulSets(req.Namespace).Delete(ctx, "pl-etcd", metav1.DeleteOptions{})
+		if err != nil && k8serrors.IsNotFound(err) {
+			log.Debug("pl-etcd statefulset not found, skipping deletion")
+		} else if err != nil {
+			log.WithError(err).Error("Failed to delete pl-etcd statefulset")
+			return err
+		} else {
+			log.Info("Deleted pl-etcd statefulset")
+		}
+		err = r.Clientset.AppsV1().Deployments(req.Namespace).Delete(ctx, "vizier-metadata", metav1.DeleteOptions{})
+		if err != nil && k8serrors.IsNotFound(err) {
+			log.Debug("vizier-metadata deployment not found, skipping deletion")
+		} else if err != nil {
+			log.WithError(err).Error("Failed to delete metadata deployment")
+			return err
+		} else {
+			log.Info("Deleted vizier-metadata deployment")
 		}
 	}
 
@@ -610,20 +648,6 @@ func (r *VizierReconciler) deployEtcdStatefulset(ctx context.Context, namespace 
 		}
 	}
 	return retryDeploy(r.Clientset, r.RestConfig, namespace, resources, false)
-}
-
-// deployVizierDeps deploys the vizier deps to the given namespace. This includes deploying deps like etcd and nats.
-func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace string, vz *v1alpha1.Vizier, yamlMap map[string]string) error {
-	err := r.deployNATSStatefulset(ctx, namespace, vz, yamlMap)
-	if err != nil {
-		return err
-	}
-
-	if !vz.Spec.UseEtcdOperator {
-		return nil
-	}
-
-	return r.deployEtcdStatefulset(ctx, namespace, vz, yamlMap)
 }
 
 // deployVizierCore deploys the core pods and services for running vizier.
