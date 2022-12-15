@@ -63,6 +63,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   contents: {
     display: 'flex',
     flex: 1,
+    minWidth: 0,
     paddingRight: theme.spacing(4),
     paddingLeft: theme.spacing(4),
     height: '100%',

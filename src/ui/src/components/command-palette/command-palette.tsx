@@ -21,7 +21,7 @@ import * as React from 'react';
 import { ScriptContext } from 'app/context/script-context';
 
 import { CommandPaletteContextProvider } from './command-palette-context';
-import { CommandTextField } from './command-text-field';
+import { CommandPaletteTrigger } from './command-palette-trigger';
 
 export const CommandPalette = React.memo(() => {
   const { script, args } = React.useContext(ScriptContext);
@@ -47,7 +47,7 @@ export const CommandPalette = React.memo(() => {
 
   return (
     <CommandPaletteContextProvider>
-      <CommandTextField text={text} />
+      <CommandPaletteTrigger text={text} />
     </CommandPaletteContextProvider>
   );
 });

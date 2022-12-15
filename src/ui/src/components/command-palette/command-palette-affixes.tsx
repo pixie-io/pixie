@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 import { Close as CloseIcon } from '@mui/icons-material';
-import { Button, IconButton, InputAdornment, Tooltip } from '@mui/material';
+import { Button, IconButton, Tooltip } from '@mui/material';
 
 import { CommandPaletteContext } from './command-palette-context';
 
@@ -31,33 +31,33 @@ export const CommandPaletteSuffix = React.memo(() => {
   }, [setInputValue]);
 
   return (
-    <InputAdornment position='end' variant='filled'>
+    <>
       {inputValue.length > 0 && (
         <IconButton onClick={onClear}><CloseIcon /></IconButton>
       )}
-      { cta && (
-        <Tooltip title={cta.tooltip}>
-          <span> {/* Required for the tooltip to show up when the button is disabled */}
-            <Button
-              size='small'
-              variant='contained'
-              disabled={cta.disabled === true}
-              // eslint-disable-next-line react-memo/require-usememo
-              sx={{
-                // Push the edges of the button to the edges of the input, and square its left side
-                p: (t) => t.spacing(1),
-                mr: (t) => `calc(${t.spacing(-3 / 4)})`,
-                borderTopLeftRadius: 0,
-                borderBottomLeftRadius: 0,
-              }}
-              onClick={cta.action}
-            >
-                {cta.label}
-            </Button>
-          </span>
-        </Tooltip>
-      )}
-    </InputAdornment>
+
+      <Tooltip title={cta?.tooltip ?? ''}>
+        <span> {/* Required for the tooltip to show up when the button is disabled */}
+          <Button
+            size='small'
+            variant='contained'
+            disabled={(cta?.disabled ?? true) === true }
+            // eslint-disable-next-line react-memo/require-usememo
+            sx={{
+              // Push the edges of the button to the edges of the input, and square its left side
+              p: 1,
+              mb: 0.25,
+              borderRadius: 0,
+              minWidth: (t) => t.spacing(10),
+              boxShadow: 'none',
+            }}
+            onClick={cta?.action ?? (() => {})}
+          >
+              {cta?.label ?? '...'}
+          </Button>
+        </span>
+      </Tooltip>
+    </>
   );
 });
 CommandPaletteSuffix.displayName = 'CommandPaletteSuffix';

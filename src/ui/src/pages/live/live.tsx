@@ -104,6 +104,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2),
+    minWidth: 0,
   },
   execute: {
     display: 'flex',

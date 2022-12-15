@@ -18,18 +18,11 @@
 
 import * as React from 'react';
 
-import {
-  Autocomplete,
-  Paper,
-  PaperProps,
-  Popper,
-  PopperProps,
-  TextField,
-} from '@mui/material';
-import { Theme, useTheme } from '@mui/material/styles';
+import { useAutocomplete, alpha } from '@mui/material';
+import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { buildClass, PixieCommandIcon } from 'app/components';
+import { PixieCommandIcon } from 'app/components';
 
 import { CommandPaletteSuffix } from './command-palette-affixes';
 import { CommandPaletteContext } from './command-palette-context';
@@ -38,39 +31,67 @@ import { CommandCompletion } from './providers/command-provider';
 
 const useFieldStyles = makeStyles((theme: Theme) => createStyles({
   root: {
+    height: '100%',
     position: 'relative',
+    display: 'flex',
+    flexFlow: 'column nowrap',
+    justifyContent: 'stretch',
+    alignItems: 'stretch',
+    overflow: 'hidden',
+  },
+  topContainer: {
+    flex: '0 0 auto',
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'stretch',
+    alignItems: 'center',
+    height: theme.spacing(5),
+
+    backgroundColor: alpha(theme.palette.background.default, .25),
+    borderBottom: theme.palette.border.unFocused,
+    '&:hover, &:focus': {
+      backgroundColor: alpha(theme.palette.background.default, .5),
+    },
+
+    '& > *': { flex: '0 0 auto' },
+    '& > label': {
+      display: 'flex', // To fix vertical alignment
+      paddingLeft: theme.spacing(1),
+      paddingRight: theme.spacing(1),
+    },
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    flex: '1 1 auto',
+    height: '100%',
+    overflow: 'hidden',
+
+    // The overlay colors text and may replace symbols. Don't show the plain text, but do show the caret.
+    '& input': {
+      ...theme.typography.body1,
+      background: 'transparent',
+      border: 'none',
+      color: 'transparent',
+      caretColor: theme.palette.text.primary,
+      width: '100%',
+      padding: 0,
+    },
   },
   overlay: {
     position: 'absolute',
     top: 0,
-    left: theme.spacing(1.5 + 3), // left padding + startAdornment total width
-    lineHeight: theme.spacing(5),
-    maxWidth: `calc(100% - ${theme.spacing(3)})`,
+    left: 0,
+    lineHeight: theme.spacing(4.875), // One pixel shy to match the input exactly
+    width: '100%',
     pointerEvents: 'none',
     overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    // No `text-overflow: ellipsis` here, because it doesn't look/feel right on an input.
   },
-  input: {
-    background: 'transparent',
-
-    // TODO(nick): Only apply this border-radius if the autocomplete is open and visible
-    '.Mui-focused &': {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-    },
-
-    // The overlay colors text and may replace symbols. Don't show the plain text, but do show the caret.
-    '& input': {
-      color: 'transparent',
-      caretColor: theme.palette.text.primary,
-    },
-  },
+  ctaWrapper: {},
   paper: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    // TODO(nick): Update this border to match that of the input (multiple focus+active states)
-    border: `${theme.spacing(0.25)} ${theme.palette.primary.main} solid`,
-    borderTopWidth: 0,
-
+    flex: '1 1 auto',
     display: 'flex',
     flexFlow: 'row nowrap',
     justifyContent: 'stretch',
@@ -80,69 +101,32 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
       flex: '6 0 60%',
     },
   },
+  optionsContainer: {
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+    '& > li': {
+      cursor: 'pointer',
+      padding: theme.spacing(1),
+
+      '&.Mui-focused': {
+        backgroundColor: theme.palette.background.two,
+      },
+    },
+  },
   paperDetails: {
     flex: '4 0 40%',
     display: 'flex',
     flexFlow: 'column nowrap',
-    borderLeft: theme.palette.border.focused,
+    borderLeft: theme.palette.border.unFocused,
     padding: theme.spacing(1),
-    height: theme.spacing(30),
+    height: '100%',
     overflowY: 'auto',
   },
   centerDetails: {
     margin: 'auto',
   },
-  popper: { /* Keep for reference */ },
 }), { name: 'CommandTextField' });
-
-const CommandTextFieldPaper = React.memo<PaperProps>(({ children, ...props }) => {
-  const classes = useFieldStyles();
-  const { completions, highlightedCompletion } = React.useContext(CommandPaletteContext);
-  return (
-    <Paper {...props} className={buildClass(classes.paper, props.className)}>
-      {children}
-      <div className={classes.paperDetails}>
-        {(completions.length && highlightedCompletion?.description) || (
-          <div className={classes.centerDetails}>
-            {completions.length ? 'Select an option on the left.' : 'No results.'}
-          </div>
-        )}
-      </div>
-    </Paper>
-  );
-});
-CommandTextFieldPaper.displayName = 'CommandTextFieldPaper';
-
-const CommandTextFieldPopper = React.memo<PopperProps>(({ children, className, style, ...props }) => {
-  const theme = useTheme();
-  const classes = useFieldStyles();
-
-  // Overlap the bottom border of the input
-  const popperOptions = React.useMemo(() => ({
-    modifiers: [{
-      name: 'offset',
-      options: { offset: [0, parseInt(theme.spacing(-0.25))] },
-    }],
-  }), [theme]);
-
-  // TODO(nick): Left side of the popper is 0.5px too far to the right. Tweaking width or offset here both overshoot?
-  const wider = React.useMemo(() => ({
-    ...style,
-    // width: (style.width as number) + 0.25,
-  }), [style]);
-
-  return (
-    <Popper
-      {...props}
-      className={buildClass(classes.popper, className)}
-      popperOptions={popperOptions}
-      style={wider}
-    >
-      {children}
-    </Popper>
-  );
-});
-CommandTextFieldPopper.displayName = 'CommandTextFieldPopper';
 
 export interface CommandTextFieldProps {
   text: string;
@@ -154,96 +138,130 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
   const classes = useFieldStyles();
 
   const {
-    setOpen,
     inputValue,
     setInputValue,
     selection,
     setSelection,
     tokens,
     completions,
+    highlightedCompletion,
     setHighlightedCompletion,
     activateCompletion,
   } = React.useContext(CommandPaletteContext);
 
+  const {
+    getRootProps,
+    getInputLabelProps,
+    getInputProps,
+    getListboxProps,
+    getOptionProps,
+    groupedOptions,
+  } = useAutocomplete({
+    id: 'command-palette-autocomplete',
+    open: true,
+    autoHighlight: true,
+    options: completions,
+    freeSolo: true,
+    disableCloseOnSelect: true,
+    getOptionLabel: (o: CommandCompletion) => o?.key ?? '',
+    filterOptions: (opts) => opts, // They're already filtered, but when renderOption exists, so must this.
+    onChange: (_, option: CommandCompletion) => { // Takes event, option, reason, details (in case we need them)
+      activateCompletion(option);
+    },
+    onHighlightChange: (_, option: CommandCompletion) => {
+      setHighlightedCompletion(option);
+    },
+    inputValue: inputValue,
+    onInputChange: (e) => {
+      const t = e?.target as HTMLInputElement;
+      if (typeof t?.value === 'string') {
+        setInputValue(t.value);
+        setSelection([t.selectionStart, t.selectionEnd]);
+      }
+    },
+  });
+
   React.useEffect(() => setInputValue(text), [text, setInputValue]);
 
   const [inputEl, setInputEl] = React.useState<HTMLInputElement>(null);
-  const setInputRef = React.useCallback((el: HTMLInputElement) => setInputEl(el), []);
+  const setInputRef = React.useCallback((el: HTMLInputElement) => {
+    setInputEl(el);
+    // Need both references to be set so that useAutocomplete above knows where to attach stuff
+    (getInputProps() as { ref: React.MutableRefObject<HTMLInputElement> }).ref.current = el;
+  }, [getInputProps]);
+  const overlayRef = React.useRef<HTMLDivElement>(null);
+
+  const onInputScroll = React.useCallback(() => {
+    setTimeout(() => {
+      if (overlayRef.current && inputEl) {
+        overlayRef.current.scrollLeft = inputEl.scrollLeft;
+      }
+    });
+  }, [inputEl]);
+
+  // On open, we want to focus the input. Need to wait a moment for the text to propagate.
+  React.useEffect(() => {
+    setTimeout(() => {
+      inputEl?.focus();
+      const l = inputEl?.value.length ?? 0;
+      inputEl?.setSelectionRange(l, l);
+      onInputScroll();
+    });
+  }, [inputEl, onInputScroll]);
 
   // If a completion moves the selection, wait for the value to update and then move the real caret.
   React.useEffect(() => {
     if (!inputEl || inputEl.value !== inputValue) return;
     if (selection[0] !== inputEl.selectionStart || selection[1] !== inputEl.selectionEnd) {
       inputEl.setSelectionRange(selection[0], selection[1]);
+      onInputScroll();
     }
-  }, [inputEl, inputValue, selection]);
+  }, [inputEl, inputValue, selection, onInputScroll]);
 
   // If the user moves the caret themselves, update the internal representation.
   const onTextSelect = React.useCallback((event: React.SyntheticEvent) => {
     const t = event.target as HTMLInputElement;
     setSelection((prev) => {
       if (prev[0] !== t.selectionStart || prev[1] !== t.selectionEnd) {
+        onInputScroll();
         return [t.selectionStart, t.selectionEnd];
       } else return prev;
     });
-  }, [setSelection]);
+  }, [setSelection, onInputScroll]);
 
-  /* eslint-disable react-memo/require-usememo */
   return (
     <div className={classes.root}>
-      <Autocomplete
-        size='small'
-        freeSolo
-        openOnFocus
-        fullWidth
-        disableClearable // The button this would create clears the Autocomplete selection, not the input (misleading).
-        disableCloseOnSelect
-        loadingText='Loading...'
-        options={completions}
-        getOptionLabel={(o: CommandCompletion) => o?.key ?? ''}
-        noOptionsText='No results'
-        onFocus={() => { setOpen(true); }}
-        onBlur={() => { setOpen(false); }}
-        filterOptions={(opts) => opts} // They're already filtered, but when renderOption exists, so must this.
-        renderOption={(optProps, option: CommandCompletion) => <li {...optProps}>{option.label}</li>}
-        onChange={(_, option: CommandCompletion) => { // Takes event, option, reason, details (in case we need them)
-          activateCompletion(option);
-        }}
-        onHighlightChange={(_, option: CommandCompletion) => {
-          setHighlightedCompletion(option);
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            inputRef={setInputRef}
-            onSelect={onTextSelect}
-            InputProps={{
-              ...params.InputProps,
-              type: 'search',
-              className: buildClass(params.InputProps.className, classes.input),
-              startAdornment: <PixieCommandIcon />,
-              endAdornment: <CommandPaletteSuffix />,
-            }}
-          />
-        )}
-        inputValue={inputValue}
-        onInputChange={(e) => {
-          const t = e?.target as HTMLInputElement;
-          if (typeof t?.value === 'string') {
-            setInputValue(t.value);
-            setSelection([t.selectionStart, t.selectionEnd]);
-          }
-        }}
-        PaperComponent={CommandTextFieldPaper}
-        PopperComponent={CommandTextFieldPopper}
-      />
-      <div className={classes.overlay} aria-hidden>
-        {tokens.map((token, i) => (
-          <CommandInputToken key={i} token={token} />
-        ))}
+      <div className={classes.topContainer} {...getRootProps()}>
+        <label {...getInputLabelProps()}>
+          <PixieCommandIcon />
+        </label>
+        <div className={classes.inputWrapper}>
+          <input {...getInputProps()} ref={setInputRef} onSelect={onTextSelect} onScroll={onInputScroll} />
+          <div className={classes.overlay} ref={overlayRef} aria-hidden>
+            {tokens.map((token, i) => (
+              <CommandInputToken key={i} token={token} />
+            ))}
+          </div>
+        </div>
+        <div className={classes.ctaWrapper}>
+          <CommandPaletteSuffix />
+        </div>
+      </div>
+      <div className={classes.paper}>
+        <ul {...getListboxProps()} className={classes.optionsContainer}>
+          {groupedOptions.map((option, index) => (
+            <li key={index} {...getOptionProps({ option, index })}>{option.label}</li>
+          ))}
+        </ul>
+        <div className={classes.paperDetails}>
+          {(completions.length && highlightedCompletion?.description) || (
+            <div className={classes.centerDetails}>
+              {completions.length ? 'Select an option on the left.' : 'No results.'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-  /* eslint-enable react-memo/require-usememo */
 });
 CommandTextField.displayName = 'CommandTextField';
