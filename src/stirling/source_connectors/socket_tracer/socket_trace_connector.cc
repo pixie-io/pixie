@@ -1088,6 +1088,21 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
   return latency_ns;
 }
 
+int64_t AMQPCalculateLatency(const int64_t req_timestamp_ns, const int64_t resp_timestamp_ns,
+                             const bool req_synchronous, const bool resp_synchronous) {
+  if (!req_synchronous || !resp_synchronous) {
+    return 0;
+  }
+
+  if (req_timestamp_ns <= 0 || resp_timestamp_ns <= 0) {
+    return 0;
+  }
+
+  const int64_t latency_ns =
+      std::max(req_timestamp_ns, resp_timestamp_ns) - std::min(req_timestamp_ns, resp_timestamp_ns);
+  return latency_ns;
+}
+
 template <typename TRecordType>
 std::string PXInfoString(const ConnTracker& conn_tracker, const TRecordType& record) {
   return absl::Substitute("conn_tracker=$0 record=$1", conn_tracker.ToString(), record.ToString());
@@ -1348,6 +1363,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   r.Append<r.ColIndex("req_msg")>(entry.req.msg);
   r.Append<r.ColIndex("resp_msg")>(entry.resp.msg);
+  r.Append<r.ColIndex("latency")>(
+      AMQPCalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns, entry.req.synchronous,
+                           entry.resp.synchronous));
 }
 
 namespace {
