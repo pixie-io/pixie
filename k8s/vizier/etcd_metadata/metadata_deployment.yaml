@@ -61,7 +61,6 @@ spec:
         # yamllint disable rule:indentation rule:line-length
         command: ['sh', '-c', 'set -xe;
           ETCD_PATH="${PL_MD_ETCD_SERVER}";
-          if [ ! ${ETCD_PATH} ]; then ETCD_PATH="${DEFAULT_ETCD_PATH}"; fi;
           URL="${ETCD_PATH}${HEALTH_PATH}";
           until [ $(curl --cacert /certs/ca.crt --key /certs/client.key --cert /certs/client.crt -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
@@ -71,12 +70,12 @@ spec:
         env:
         - name: HEALTH_PATH
           value: "/health"
-        - name: DEFAULT_ETCD_PATH
-          value: "https://pl-etcd-client.pl.svc:2379"
-        envFrom:
-        - configMapRef:
-            name: pl-cluster-config
-            optional: true
+        - name: PL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PL_MD_ETCD_SERVER
+          value: "https://pl-etcd-client.$(PL_POD_NAMESPACE).svc:2379"
         volumeMounts:
         - mountPath: /certs
           name: certs
@@ -97,12 +96,13 @@ spec:
           value: "2000"
         - name: PL_RENEW_PERIOD
           value: "7500"
+        - name: PL_MD_ETCD_SERVER
+          value: "https://pl-etcd-client.$(PL_POD_NAMESPACE).svc:2379"
+        - name: PL_ETCD_OPERATOR_ENABLED
+          value: "true"
         envFrom:
         - configMapRef:
             name: pl-tls-config
-        - configMapRef:
-            name: pl-cluster-config
-            optional: true
         volumeMounts:
         - mountPath: /certs
           name: certs

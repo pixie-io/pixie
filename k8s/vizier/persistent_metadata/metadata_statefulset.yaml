@@ -9,6 +9,8 @@ spec:
   selector:
     matchLabels:
       name: vizier-metadata
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -74,12 +76,11 @@ spec:
           value: "2000"
         - name: PL_RENEW_PERIOD
           value: "7500"
+        - name: PL_ETCD_OPERATOR_ENABLED
+          value: "false"
         envFrom:
         - configMapRef:
             name: pl-tls-config
-        - configMapRef:
-            name: pl-cluster-config
-            optional: true
         volumeMounts:
         - mountPath: /certs
           name: certs
