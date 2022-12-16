@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
@@ -203,6 +204,170 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 	}
 }
 
+// The following is a test for getStatefulMetadataPendingState.
+// It should test the following cases:
+// 1. Vizier metadata pod with statefulset is pending and initContainers are complete: MetadataStatefulSetPodPending
+// 2. Vizier metadata pod with statefulset is pending and initContainers are not complete: empty
+// 3. Vizier metadata pod with statefulset is not pending: empty
+// 4. Vizier metadata pod is owned by a replicaset: empty
+
+func TestMonitor_getStatefulMetadataPendingState(t *testing.T) {
+	tests := []struct {
+		name           string
+		pod            *v1.Pod
+		lastTime       time.Time
+		expectedReason status.VizierReason
+	}{
+		{
+			name: "Vizier metadata pod with statefulset is pending and initContainers are complete",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: 0,
+								},
+							},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "StatefulSet",
+						},
+					},
+				},
+			},
+			lastTime:       time.Now().Add(-10 * time.Minute),
+			expectedReason: status.MetadataStatefulSetPodPending,
+		},
+		{
+			name: "Vizier metadata pod with statefulset is pending and initContainers are complete, but timeout not hit",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: 0,
+								},
+							},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "StatefulSet",
+						},
+					},
+				},
+			},
+			lastTime:       time.Now(),
+			expectedReason: "",
+		},
+		{
+			name: "Vizier metadata pod with statefulset is pending and initContainers are not complete",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: 1,
+								},
+							},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "StatefulSet",
+						},
+					},
+				},
+			},
+			lastTime:       time.Now().Add(-10 * time.Minute),
+			expectedReason: "",
+		},
+		{
+			name: "Vizier metadata pod with statefulset is not pending",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: 0,
+								},
+							},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "StatefulSet",
+						},
+					},
+				},
+			},
+			lastTime:       time.Now().Add(-10 * time.Minute),
+			expectedReason: "",
+		},
+		{
+			name: "Vizier metadata pod with statefulset is not pending",
+			pod: &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					InitContainerStatuses: []v1.ContainerStatus{
+						{
+							State: v1.ContainerState{
+								Terminated: &v1.ContainerStateTerminated{
+									ExitCode: 0,
+								},
+							},
+						},
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind: "Replicaset",
+						},
+					},
+				},
+			},
+			lastTime:       time.Now().Add(-10 * time.Minute),
+			expectedReason: "",
+		},
+	}
+
+	for _, test := range tests {
+		pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
+		pods.write(
+			"vizier-metadata",
+			"vizier-metadata-0",
+			&podWrapper{
+				pod: test.pod,
+			})
+		lastTime := metav1.NewTime(test.lastTime)
+		state := getStatefulMetadataPendingState(pods, &v1alpha1.Vizier{
+			Status: v1alpha1.VizierStatus{
+				LastReconciliationPhaseTime: &lastTime,
+			},
+		})
+		assert.Equal(t, test.expectedReason, state.Reason)
+	}
+}
+
 func TestMonitor_repairVizier_NATS(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -311,6 +476,11 @@ func TestMonitor_repairVizier_PVC(t *testing.T) {
 		{
 			name:         "MetadataPVCPendingBinding",
 			state:        &vizierState{Reason: status.MetadataPVCPendingBinding},
+			updateCalled: true,
+		},
+		{
+			name:         "MetadataStatefulSetPodPending",
+			state:        &vizierState{Reason: status.MetadataStatefulSetPodPending},
 			updateCalled: true,
 		},
 		{

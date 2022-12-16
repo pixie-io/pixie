@@ -37,7 +37,8 @@ var reasonToMessageMap = map[VizierReason]string{
 		"If this status persists, ensure that PersistentVolumes may be mounted in your cluster and clobber and re-deploy your Pixie instance.",
 	MetadataPVCStorageClassUnavailable: "The PVC requested by Pixie cannot be created successfully: cluster lacks PersistentVolumes or dynamic storage provisioning. " +
 		"See https://kubernetes.io/docs/concepts/storage/persistent-volumes/#lifecycle-of-a-volume-and-claim for info on setting up this feature on the cluster.",
-	MetadataPVCPendingBinding: "The PVC requested by Pixie is still Pending. If stuck in this status, investigate the status of PVC in the Vizier namespace (default `pl`) using `kubectl describe`.",
+	MetadataPVCPendingBinding:     "The PVC requested by Pixie is still Pending. If stuck in this status, investigate the status of PVC in the Vizier namespace (default `pl`) using `kubectl describe`.",
+	MetadataStatefulSetPodPending: "The vizier-metadata pod is still Pending. This likely means that the PVC is unable to be mounted. Try switching to useEtcdOperator to fix this problem.",
 	ControlPlaneFailedToScheduleBecauseOfTaints: "The Vizier control plane could not be scheduled because taints exist on " +
 		"every node. Consider removing taints from some nodes or manually adding tolerations to each deployment in Vizier using the `patches` or `nodeSelector` flags.",
 	ControlPlaneFailedToSchedule: "Vizier control plane pods failed to schedule. Investigate the failures of non-Ready pods in the Vizier namespace (default `pl`) using `kubectl describe`. Refer to https://docs.px.dev/troubleshooting/ for troubleshooting recommendations.",
@@ -99,6 +100,8 @@ const (
 	MetadataPVCStorageClassUnavailable VizierReason = "MetadataPVCStorageClassUnavailable"
 	// MetadataPVCPendingBinding occurs when the Metadata PVC is still pending, but the spec is requesting a valid Storage class.
 	MetadataPVCPendingBinding VizierReason = "MetadataPVCPendingBinding"
+	// MetadataStatefulSetPodPending occurs when the stateful metadata pod is stuck pending.
+	MetadataStatefulSetPodPending VizierReason = "MetadataStatefulSetPodPending"
 
 	// ControlPlanePodsPending occurs when one or more control plane pods are pending.
 	ControlPlanePodsPending VizierReason = "ControlPlanePodsPending"

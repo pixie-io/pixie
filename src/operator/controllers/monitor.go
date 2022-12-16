@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -57,6 +58,10 @@ const (
 	cloudConnName = "vizier-cloud-connector"
 	// The name label for PEMs.
 	vizierPemLabel = "vizier-pem"
+	// The name label for metadata pods.
+	vizierMetadataLabel = "vizier-metadata"
+	// The timeout for pending metadata pods.
+	vizierMetadataTimeout = 5 * time.Minute
 	// The name label for nats pods.
 	natsLabel = "pl-nats"
 	// The name of the nats pod.
@@ -350,6 +355,45 @@ func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
+// getStatefulMetadataPendingState returns whether the stateful metadata pod is pending.
+func getStatefulMetadataPendingState(pods *concurrentPodMap, vz *v1alpha1.Vizier) *vizierState {
+	// We wait for a timeout because pvc provisioning can take some time.
+	if vz.Status.LastReconciliationPhaseTime == nil || time.Since(vz.Status.LastReconciliationPhaseTime.Time) < vizierMetadataTimeout {
+		return okState()
+	}
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+	labelMap, ok := pods.unsafeMap[vizierMetadataLabel]
+	// This should be covered in another state.
+	if !ok || len(labelMap) == 0 {
+		return okState()
+	}
+	for _, metadataPod := range labelMap {
+		for _, ownerRef := range metadataPod.pod.OwnerReferences {
+			if !(ownerRef.Kind == "StatefulSet") {
+				continue
+			}
+			if metadataPod.pod.Status.Phase != v1.PodPending {
+				return okState()
+			}
+			// The following checks whether the pod is waiting for the initcontainers to finish:
+			// Check whether all of the initContainers have completed
+			allInitContainersCompleted := true
+			for _, initContainerStatus := range metadataPod.pod.Status.InitContainerStatuses {
+				if initContainerStatus.State.Terminated == nil || initContainerStatus.State.Terminated.ExitCode != 0 {
+					allInitContainersCompleted = false
+					break
+				}
+			}
+			if allInitContainersCompleted {
+				return &vizierState{Reason: status.MetadataStatefulSetPodPending}
+			}
+		}
+	}
+
+	return okState()
+}
+
 // getControlPlanePodState determines the state of control plane pods,
 // returning a pending state if the pods are stuck
 func getControlPlanePodState(pods *concurrentPodMap) *vizierState {
@@ -510,6 +554,12 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return m.pvcState
 	}
 
+	// Only show the metadata state if etcd is not being used.
+	ssMetadataState := getStatefulMetadataPendingState(m.podStates, vz)
+	if !vz.Spec.UseEtcdOperator && !isOk(ssMetadataState) {
+		return ssMetadataState
+	}
+
 	if !isOk(m.nodeState) {
 		return m.nodeState
 	}
@@ -578,8 +628,8 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		}
 
 		log.Info("NATS pod was successfully deleted")
-	} else if state.Reason == status.MetadataPVCMissing || state.Reason == status.MetadataPVCStorageClassUnavailable || state.Reason == status.MetadataPVCPendingBinding {
-		log.Info("Switching to etcd backed metadata store")
+	} else if state.Reason == status.MetadataPVCMissing || state.Reason == status.MetadataPVCStorageClassUnavailable || state.Reason == status.MetadataPVCPendingBinding || state.Reason == status.MetadataStatefulSetPodPending {
+		log.WithField("reason", state.Reason).Info("Switching to etcd backed metadata store")
 
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
