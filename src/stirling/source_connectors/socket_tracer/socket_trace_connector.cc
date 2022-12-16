@@ -1100,9 +1100,6 @@ int64_t AMQPCalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns
   if (req_timestamp_ns > 0 && resp_timestamp_ns > 0) {
     latency_ns = std::max(resp_timestamp_ns, req_timestamp_ns) -
                  std::min(resp_timestamp_ns, resp_timestamp_ns);
-    LOG_IF_EVERY_N(WARNING, latency_ns < 0, 100)
-        << absl::Substitute("Negative latency implies req resp mismatch [t_req=$0, t_resp=$1].",
-                            req_timestamp_ns, resp_timestamp_ns);
   }
 
   return latency_ns;
