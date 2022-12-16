@@ -73,6 +73,26 @@ IFS=' '
 # us to use an array access in the later command.
 read -ra PX_RUN_DOCKER_EXTRA_ARGS <<< "${PX_RUN_DOCKER_EXTRA_ARGS}"
 
+# We can't tell IFS to ignore spaces in quotes so here is a very janky
+# parser to recombine things that were quoted. :(
+# This should probably not be in bash!
+CLEANED_ARGS=()
+CURRENT=""
+for arg in "${PX_RUN_DOCKER_EXTRA_ARGS[@]}"; do
+    if [[ $CURRENT ]]; then
+        CURRENT="${CURRENT} ${arg}"
+        CURRENT="${CURRENT//\'/}"
+        if [[ $arg = *"'" ]]; then
+            CLEANED_ARGS+=("${CURRENT}")
+            CURRENT=""
+        fi
+    elif [[ $arg = *"'"* && $arg != *"'"*"'" ]]; then
+        CURRENT="${arg}"
+    else
+        CLEANED_ARGS+=("${arg//\'/}")
+    fi
+done
+
 configs=(
     # Mount the home directory.
     -v "${HOME}:/home/${USER}"
@@ -126,6 +146,6 @@ docker run \
   "${container_args[@]}" \
   "${configs[@]}" \
   "${build_buddy_args[@]}" \
-  "${PX_RUN_DOCKER_EXTRA_ARGS[@]}" \
+  "${CLEANED_ARGS[@]}" \
   "${dev_image_name}" \
   "${exec_cmd[@]}"
