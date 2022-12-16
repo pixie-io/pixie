@@ -18,15 +18,9 @@
 
 import * as React from 'react';
 
-import {
-  Badge as NamespaceIcon,
-  DryCleaning as ServiceIcon,
-  GridView as NodeIcon,
-  Inventory as PodIcon,
-} from '@mui/icons-material';
-
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
+import { ClusterIcon, NamespaceIcon, PodIcon, ServiceIcon } from 'app/components';
 import { parse, ParseResult, Token } from 'app/components/command-palette/parser';
 import {
   CommandProvider,
@@ -157,7 +151,7 @@ async function suggestFromKey(
         break;
       case 'PX_NODE':
         heading = 'Nodes';
-        icon = <NodeIcon />;
+        icon = <ClusterIcon />;
         result = await getFieldSuggestions(
           valueToken?.text || '', GQLAutocompleteEntityKind.AEK_NODE, clusterUID, client);
         break;
