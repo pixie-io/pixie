@@ -74,10 +74,7 @@ static constexpr DataElement kAMQPElements[] = {
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"latency", "AMQP latency",
-         types::DataType::INT64,
-         types::SemanticType::ST_NONE,
-         types::PatternType::GENERAL},
+        canonical_data_elements::kLatencyNS,
 };
 // clang-format on
 

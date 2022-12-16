@@ -38,6 +38,7 @@ def amqp_data(start_time: str, source_filter: str, destination_filter: str):
         "resp_msg",
         "source",
         "destination",
+        "latency",
     ]
     return df
 
