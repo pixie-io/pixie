@@ -1098,8 +1098,8 @@ int64_t AMQPCalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns
   }
 
   if (req_timestamp_ns > 0 && resp_timestamp_ns > 0) {
-    latency_ns = std::max(resp_timestamp_ns, req_timestamp_ns) -
-                 std::min(resp_timestamp_ns, resp_timestamp_ns);
+    latency_ns = std::max(req_timestamp_ns, resp_timestamp_ns) -
+                 std::min(req_timestamp_ns, resp_timestamp_ns);
   }
 
   return latency_ns;
