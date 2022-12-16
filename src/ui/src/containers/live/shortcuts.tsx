@@ -21,7 +21,7 @@ import * as React from 'react';
 import { Card, Modal } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { configure, GlobalHotKeys } from 'react-hotkeys';
+import { configure, HotKeys } from 'react-hotkeys';
 
 import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-context';
 import { isMac } from 'app/utils/detect-os';
@@ -31,6 +31,7 @@ type LiveHotKeyAction =
   'show-help' |
   'toggle-editor' |
   'toggle-data-drawer' |
+  'toggle-command-palette' |
   'execute';
 
 interface LiveViewShortcutsProps {
@@ -52,6 +53,10 @@ export function getKeyMap(): KeyMap<LiveHotKeyAction> {
     'toggle-data-drawer': {
       ...withPrefix('d'),
       description: 'Show/hide data drawer',
+    },
+    'toggle-command-palette': {
+      ...withPrefix('k'),
+      description: 'Show/hide command palette',
     },
     execute: {
       ...withPrefix('enter'),
@@ -239,14 +244,16 @@ const LiveViewShortcutsProvider: React.FC<WithChildren<LiveViewShortcutsProps>> 
     },
   }), {}) as ShortcutsContextProps<LiveHotKeyAction>, [wrappedHandlers, keyMap]);
 
+  // HotKeys makes an element, and that element needs to not interfere with the CSS surrounding it
+  const wrapStyle = React.useMemo(() => ({ width: '100%', height: '100%' }), []);
   return (
-    <>
-      <GlobalHotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges />
+    // eslint-disable-next-line react-memo/require-usememo
+    <HotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges style={wrapStyle}>
       <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
       <LiveShortcutsContext.Provider value={context}>
         {children}
       </LiveShortcutsContext.Provider>
-    </>
+    </HotKeys>
   );
 });
 LiveViewShortcutsProvider.displayName = 'LiveViewShortcutsProvider';

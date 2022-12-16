@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 
-import { KeyboardArrowRight } from '@mui/icons-material';
+import { Search as SearchIcon } from '@mui/icons-material';
 import { Dialog, DialogContent } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { PixieCommandIcon } from 'app/components';
+import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
 
 import { CommandPaletteContext } from './command-palette-context';
 import { CommandTextField } from './command-text-field';
@@ -49,12 +49,9 @@ const useTriggerStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
   },
   leftIcon: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-  },
-  rightIcon: {
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
+    marginLeft: theme.spacing(.5),
+    marginRight: theme.spacing(.5),
+    fontSize: '1rem',
   },
   info: {
     flex: '1 1 auto',
@@ -62,6 +59,19 @@ const useTriggerStyles = makeStyles((theme: Theme) => createStyles({
     ...theme.typography.caption,
     opacity: 0.8,
     fontStyle: 'italic',
+    textAlign: 'left',
+    paddingLeft: theme.spacing(0.5),
+  },
+  hotKey: {
+    display: 'inline-block',
+    padding: `0 ${theme.spacing(0.5)}`,
+    fontSize: '0.75rem',
+    ...theme.typography.body1,
+    ...theme.typography.monospace,
+    borderRadius: theme.shape.borderRadius,
+    border: theme.palette.border.unFocused,
+    opacity: 0.8,
+    textTransform: 'lowercase',
   },
 }), { name: 'CommandPaletteTrigger' });
 
@@ -85,6 +95,7 @@ const useModalStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'CommandPaletteModal' });
 
 const TriggerWrapper = React.memo(() => {
+  const { 'toggle-command-palette': { displaySequence } } = React.useContext(LiveShortcutsContext);
   const { setOpen } = React.useContext(CommandPaletteContext);
   const classes = useTriggerStyles();
 
@@ -95,10 +106,15 @@ const TriggerWrapper = React.memo(() => {
   }, [setOpen]);
 
   return (
-    <button className={classes.root} type='button' onClick={onClick} aria-label='Open Command Palette'>
-      <PixieCommandIcon className={classes.leftIcon} />
+    <button
+      className={classes.root}
+      type='button'
+      onClick={onClick}
+      aria-label={`Open command palette (shortcut: ${[displaySequence].flat().join('+')}`}
+    >
+      <SearchIcon className={classes.leftIcon} />
       <span className={classes.info}>Run a command...</span>
-      <KeyboardArrowRight className={classes.rightIcon} />
+      <kbd className={classes.hotKey}>{[displaySequence].flat().join('+')}</kbd>
     </button>
   );
 });

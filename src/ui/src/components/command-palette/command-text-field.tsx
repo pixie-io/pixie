@@ -21,8 +21,10 @@ import * as React from 'react';
 import { useAutocomplete, alpha } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import { HotKeys } from 'react-hotkeys';
 
 import { PixieCommandIcon } from 'app/components';
+import { isMac } from 'app/utils/detect-os';
 
 import { CommandPaletteSuffix } from './command-palette-affixes';
 import { CommandPaletteContext } from './command-palette-context';
@@ -30,6 +32,10 @@ import { CommandInputToken } from './command-tokens';
 import { CommandCompletion } from './providers/command-provider';
 
 const useFieldStyles = makeStyles((theme: Theme) => createStyles({
+  hotKeyWrapper: {
+    height: '100%',
+    width: '100%',
+  },
   root: {
     height: '100%',
     position: 'relative',
@@ -90,6 +96,18 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     // No `text-overflow: ellipsis` here, because it doesn't look/feel right on an input.
   },
   ctaWrapper: {},
+  hints: {
+    flex: '0 0 auto',
+    display: 'flex',
+    justifyContent: 'space-between',
+    borderBottom: theme.palette.border.unFocused,
+    ...theme.typography.caption,
+    fontStyle: 'italic',
+    padding: `0 ${theme.spacing(0.5)}`,
+  },
+  hintSpacer: {
+    flexGrow: 1,
+  },
   paper: {
     flex: '1 1 auto',
     display: 'flex',
@@ -138,6 +156,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
   const classes = useFieldStyles();
 
   const {
+    setOpen,
     inputValue,
     setInputValue,
     selection,
@@ -147,6 +166,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     highlightedCompletion,
     setHighlightedCompletion,
     activateCompletion,
+    cta,
   } = React.useContext(CommandPaletteContext);
 
   const {
@@ -229,39 +249,77 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     });
   }, [setSelection, onInputScroll]);
 
+  const onMaybeEscapePress: React.KeyboardEventHandler = React.useCallback((event) => {
+    if (event.key === 'Escape' && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      setOpen(false);
+    }
+  }, [setOpen]);
+
+  const hotKeyMap = React.useMemo(() => {
+    const seqPrefix = isMac() ? 'Meta' : 'Control';
+    return {
+      'command-palette-cta': `${seqPrefix}+enter`,
+    };
+  }, []);
+
+  const hotKeyHandlers = React.useMemo(() => ({
+    'command-palette-cta': (e: KeyboardEvent) => {
+      // We cancel the event even if the button is disabled, so that the shortcut doesn't do something under the dialog.
+      e.preventDefault();
+      e.stopPropagation();
+      if (!cta?.disabled && cta?.action) cta.action();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [cta, cta?.disabled, cta?.action]);
+
   return (
-    <div className={classes.root}>
-      <div className={classes.topContainer} {...getRootProps()}>
-        <label {...getInputLabelProps()}>
-          <PixieCommandIcon />
-        </label>
-        <div className={classes.inputWrapper}>
-          <input {...getInputProps()} ref={setInputRef} onSelect={onTextSelect} onScroll={onInputScroll} />
-          <div className={classes.overlay} ref={overlayRef} aria-hidden>
-            {tokens.map((token, i) => (
-              <CommandInputToken key={i} token={token} />
-            ))}
+    <HotKeys keyMap={hotKeyMap} handlers={hotKeyHandlers} className={classes.hotKeyWrapper} allowChanges>
+      <div className={classes.root}>
+        {/* Top: the input itself and the CTA */}
+        <div className={classes.topContainer} {...getRootProps()}>
+          <label {...getInputLabelProps()}>
+            <PixieCommandIcon />
+          </label>
+          <div className={classes.inputWrapper}>
+            <input
+              {...getInputProps()}
+              ref={setInputRef}
+              onSelect={onTextSelect}
+              onScroll={onInputScroll}
+              onKeyDown={onMaybeEscapePress}
+            />
+            <div className={classes.overlay} ref={overlayRef} aria-hidden>
+              {tokens.map((token, i) => (
+                <CommandInputToken key={i} token={token} />
+              ))}
+            </div>
+          </div>
+          <div className={classes.ctaWrapper}>
+            <CommandPaletteSuffix />
           </div>
         </div>
-        <div className={classes.ctaWrapper}>
-          <CommandPaletteSuffix />
+        {/* Hints: keyboard shortcuts, error state, relevant one-line extras that don't go in the suggestions */}
+        <div className={classes.hints}>
+          <div className={classes.hintSpacer}>&nbsp;</div>
+          <code>{isMac() ? 'cmd+enter' : 'ctrl+enter'}</code>
+        </div>
+        {/* Main area: the suggestions themselves on the left; descriptions on the right */}
+        <div className={classes.paper}>
+          <ul {...getListboxProps()} className={classes.optionsContainer}>
+            {groupedOptions.map((option, index) => (
+              <li key={index} {...getOptionProps({ option, index })}>{option.label}</li>
+            ))}
+          </ul>
+          <div className={classes.paperDetails}>
+            {(completions.length && highlightedCompletion?.description) || (
+              <div className={classes.centerDetails}>
+                {completions.length ? 'Select an option on the left.' : 'No results.'}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div className={classes.paper}>
-        <ul {...getListboxProps()} className={classes.optionsContainer}>
-          {groupedOptions.map((option, index) => (
-            <li key={index} {...getOptionProps({ option, index })}>{option.label}</li>
-          ))}
-        </ul>
-        <div className={classes.paperDetails}>
-          {(completions.length && highlightedCompletion?.description) || (
-            <div className={classes.centerDetails}>
-              {completions.length ? 'Select an option on the left.' : 'No results.'}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    </HotKeys>
   );
 });
 CommandTextField.displayName = 'CommandTextField';

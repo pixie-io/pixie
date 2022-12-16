@@ -31,7 +31,10 @@ import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { EditIcon, Footer, scrollbarStyles } from 'app/components';
 import { CommandPalette } from 'app/components/command-palette';
-import { CommandPaletteContextProvider } from 'app/components/command-palette/command-palette-context';
+import {
+  CommandPaletteContext,
+  CommandPaletteContextProvider,
+} from 'app/components/command-palette/command-palette-context';
 import { Spinner } from 'app/components/spinner/spinner';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
@@ -360,13 +363,15 @@ const LiveView = React.memo(() => {
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
   const { embedState: { widget } } = React.useContext(LiveRouteContext);
+  const { setOpen: setCommandPaletteOpen } = React.useContext(CommandPaletteContext);
   const isEmbedded = isPixieEmbedded();
 
   const hotkeyHandlers = React.useMemo(() => ({
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
+    'toggle-command-palette': () => setCommandPaletteOpen((paletteOpen) => !paletteOpen),
     execute: () => saveEditor(),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-  }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen]);
+  }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen, setCommandPaletteOpen]);
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
@@ -440,8 +445,8 @@ const LiveView = React.memo(() => {
     (loadingCluster && willRun) || tables.size || loadingResults || streamingResults || error || mutationInfo);
 
   return (
-    <div className={classes.root}>
-      <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+    <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+      <div className={classes.root}>
         <Nav
           widgetsMoveable={widgetsMoveable}
           setWidgetsMoveable={setWidgetsMoveable}
@@ -484,8 +489,8 @@ const LiveView = React.memo(() => {
             </div>}
           </div>
         </EditorSplitPanel>
-      </LiveViewShortcutsProvider>
-    </div>
+      </div>
+    </LiveViewShortcutsProvider>
   );
 });
 LiveView.displayName = 'LiveView';
