@@ -918,10 +918,10 @@ builders['Lint & Docs'] = {
       sh 'arc lint --trace'
     }
 
-    if (shFileExists('run_doxygen')) {
+    if (shFileExists('bazel_run_doxygen')) {
       def stashName = 'doxygen-docs'
       container('pxbuild') {
-        sh 'doxygen'
+        sh 'LD_LIBRARY_PATH="" doxygen'
       }
       container('gcloud') {
         stashOnGCS(stashName, 'docs/html')

@@ -97,7 +97,7 @@ done
 
 targets=()
 function compute_targets() {
-  if [ "${all_targets}" = "true" ]; then
+  if [[ "${all_targets}" = "true" ]]; then
     targets=("//...")
     return 0
   fi
@@ -176,7 +176,7 @@ ${bazel_query} "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
 ${bazel_query} "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
 ${bazel_query} "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
 
-if [ "${run_bpf_targets}" = "true" ]; then
+if [[ "${run_bpf_targets}" = "true" ]]; then
   # BPF.
   ${bazel_query} "${bpf_buildables}" > bazel_buildables_bpf 2>/dev/null
   ${bazel_query} "${bpf_tests}" > bazel_tests_bpf 2>/dev/null
@@ -204,6 +204,6 @@ ${bazel_query} "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/de
 
 # Should we run doxygen?
 bazel_cc_touched=$(${bazel_query} "${cc_buildables} union ${cc_tests}" 2>/dev/null)
-if [ "${all_targets}" = "true" ] || [[ -z $bazel_cc_touched ]]; then
-  touch run_doxygen
+if [[ "${all_targets}" = "true" || -n $bazel_cc_touched ]]; then
+  touch bazel_run_doxygen
 fi
