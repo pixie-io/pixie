@@ -1086,22 +1086,18 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
   return latency_ns;
 }
 
-int64_t AMQPCalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns,
-                             bool req_synchronous, bool resp_synchronous) {
-  int64_t latency_ns = 0;
-  if (!req_synchronous) {
-    return latency_ns;
+int64_t AMQPCalculateLatency(const int64_t req_timestamp_ns, const int64_t resp_timestamp_ns,
+                             const bool req_synchronous, const bool resp_s ynchronous) {
+
+  if(!req_synchronous || !resp_syncrhonous) {
+    return 0;
   }
 
-  if (!resp_synchronous) {
-    return latency_ns;
+  if(req_timestamp_ns <= 0 || resp_timestamp_ns <= 0) {
+    return 0;
   }
-
-  if (req_timestamp_ns > 0 && resp_timestamp_ns > 0) {
-    latency_ns = std::max(req_timestamp_ns, resp_timestamp_ns) -
-                 std::min(req_timestamp_ns, resp_timestamp_ns);
-  }
-
+  
+  latency_ns = std::max(req_timestamp_ns, resp_timestamp_ns) - std::min(req_timestamp_ns, resp_timestamp_ns);
   return latency_ns;
 }
 
