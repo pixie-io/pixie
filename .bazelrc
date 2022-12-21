@@ -9,6 +9,11 @@ test --remote_download_minimal
 run --remote_download_outputs=all
 coverage --build_runfile_links
 
+# Needed by rules_meta.
+# Follow https://github.com/fmeum/rules_meta/issues/1#issuecomment-1255828109
+# for updates.
+common --incompatible_remove_rule_name_parameter=false
+
 build:clang --action_env=CC
 build:clang --host_action_env=CC
 build:clang --action_env=CXX
