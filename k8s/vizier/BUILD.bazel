@@ -15,9 +15,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//bazel:images.bzl", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
 
 package(default_visibility = ["//visibility:public"])

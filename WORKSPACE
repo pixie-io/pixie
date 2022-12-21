@@ -88,6 +88,10 @@ load("@ubuntu_package_deps//:requirements.bzl", ubuntu_packages_install_deps = "
 
 ubuntu_packages_install_deps()
 
+load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
+
+rules_pkg_dependencies()
+
 # The docker images can't be loaded until all pip_deps are satisfied.
 pl_container_images()
 

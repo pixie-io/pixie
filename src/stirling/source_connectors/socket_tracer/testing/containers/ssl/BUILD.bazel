@@ -14,8 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_layer")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 

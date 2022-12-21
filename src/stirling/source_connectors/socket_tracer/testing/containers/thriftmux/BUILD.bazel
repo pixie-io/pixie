@@ -14,13 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_docker//java:image.bzl", "DEFAULT_JAVA_BASE")
 load("@io_bazel_rules_docker//scala:image.bzl", "scala_image")
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_binary", "scala_library")
 load("@io_bazel_rules_scala//thrift:thrift.bzl", "thrift_library")
 load("@io_bazel_rules_scala//twitter_scrooge:twitter_scrooge.bzl", "scrooge_scala_library")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
