@@ -118,7 +118,7 @@ tf_workspace2()
 
 load("@org_tensorflow//tensorflow:workspace1.bzl", "tf_workspace1")
 
-tf_workspace1()
+tf_workspace1(with_rules_cc = False)
 
 load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
 

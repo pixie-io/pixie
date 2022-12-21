@@ -255,18 +255,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/farmhash/archive/2f0e005b81e296fa6963e395626137cf729b710c.tar.gz"],
     ),
     com_google_flatbuffers = dict(
-        sha256 = "9ddb9031798f4f8754d00fca2f1a68ecf9d0f83dfac7239af1311e4fd9a565c4",
-        strip_prefix = "flatbuffers-2.0.0",
-        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.0.tar.gz"],
-    ),
-    # To workaround issues in TF 2.9.1 bazel workspace setup, we directly load this library that tensorflow should have loaded itself.
-    com_google_googleapis = dict(
-        sha256 = "5bb6b0253ccf64b53d6c7249625a7e3f6c3bc6402abd52d3778bfa48258703a0",
-        strip_prefix = "googleapis-2f9af297c84c55c8b871ba4495e01ade42476c92",
-        urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/googleapis/googleapis/archive/2f9af297c84c55c8b871ba4495e01ade42476c92.tar.gz",
-            "https://github.com/googleapis/googleapis/archive/2f9af297c84c55c8b871ba4495e01ade42476c92.tar.gz",
-        ],
+        sha256 = "e2dc24985a85b278dd06313481a9ca051d048f9474e0f199e372fea3ea4248c9",
+        strip_prefix = "flatbuffers-2.0.6",
+        urls = ["https://github.com/google/flatbuffers/archive/refs/tags/v2.0.6.tar.gz"],
     ),
     com_google_googletest = dict(
         sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
@@ -337,9 +328,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rules_scala-4ba3780fcba8d26980daff4639abc6f18517308b",
     ),
     org_tensorflow = dict(
-        sha256 = "6eaf86ead73e23988fe192da1db68f4d3828bcdd0f3a9dc195935e339c95dbdc",
-        strip_prefix = "tensorflow-2.9.1",
-        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.9.1.tar.gz"],
+        sha256 = "99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48",
+        strip_prefix = "tensorflow-2.11.0",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.11.0.tar.gz"],
     ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
