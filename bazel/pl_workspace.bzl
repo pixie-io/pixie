@@ -60,7 +60,7 @@ def pl_workspace_setup():
     container_deps()
 
     k8s_repositories()
-    k8s_go_deps()
+    k8s_go_deps(go_version = None)
 
 def pl_container_images():
     _package_manager_setup()

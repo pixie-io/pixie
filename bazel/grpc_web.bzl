@@ -54,6 +54,7 @@ def _generate_grpc_web_srcs(
         actions,
         protoc,
         protoc_gen_grpc_web,
+        protoc_gen_js,
         mode,
         well_known_proto_files,
         well_known_proto_arguments,
@@ -112,6 +113,7 @@ def _generate_grpc_web_srcs(
         out_dir = out_dir.replace(basepath, "")
 
         args = proto_include_paths + [
+            "--plugin=protoc-gen-js={}".format(protoc_gen_js.path),
             "--plugin=protoc-gen-grpc-web={}".format(protoc_gen_grpc_web.path),
             "--js_out=import_style=commonjs,binary:{path}".format(
                 path = out_dir,
@@ -124,7 +126,7 @@ def _generate_grpc_web_srcs(
         ]
 
         actions.run(
-            tools = [protoc_gen_grpc_web],
+            tools = [protoc_gen_grpc_web, protoc_gen_js],
             inputs = all_sources + well_known_proto_files,
             outputs = files,
             executable = protoc,
@@ -142,24 +144,17 @@ def _grpc_web_library_impl(ctx):
 
     # create a list of well known proto files if the argument is non-None
     well_known_proto_files = []
-    f = ctx.attr.well_known_protos.files.to_list()[0].dirname
-    if f != "external/com_google_protobuf/src/google/protobuf":
-        print(
-            "Error: Only @com_google_protobuf//:well_known_protos is supported",
-        )
-    else:
-        # f points to "external/com_google_protobuf/src/google/protobuf"
-        # add -I argument to protoc so it knows where to look for the proto files.
-        arguments.append("-I{0}".format(f + "/../.."))
-        well_known_proto_files = [
-            f
-            for f in ctx.attr.well_known_protos.files.to_list()
-        ]
+    arguments.append("-Iexternal/com_google_protobuf/src")
+    well_known_proto_files = [
+        f
+        for f in ctx.attr.well_known_protos.files.to_list()
+    ]
 
     srcs = _generate_grpc_web_srcs(
         actions = ctx.actions,
         protoc = ctx.executable._protoc,
         protoc_gen_grpc_web = ctx.executable._protoc_gen_grpc_web,
+        protoc_gen_js = ctx.executable._protoc_gen_js,
         mode = ctx.attr.mode,
         well_known_proto_files = well_known_proto_files,
         well_known_proto_arguments = arguments,
@@ -195,6 +190,11 @@ pl_grpc_web_library = rule(
         ),
         "_protoc_gen_grpc_web": attr.label(
             default = Label("//third_party/protoc-gen-grpc-web:protoc-gen-grpc-web"),
+            executable = True,
+            cfg = "host",
+        ),
+        "_protoc_gen_js": attr.label(
+            default = Label("@com_google_protobuf_javascript//generator:protoc-gen-js"),
             executable = True,
             cfg = "host",
         ),

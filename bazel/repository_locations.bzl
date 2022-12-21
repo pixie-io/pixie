@@ -109,9 +109,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "d6cbf22cb5007af71b61c6be316a79397469c58c82a942552a62e708bce60964",
-        strip_prefix = "grpc-1.46.3",
-        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.46.3.tar.gz"],
+        sha256 = "b55696fb249669744de3e71acc54a9382bea0dce7cd5ba379b356b12b82d4229",
+        strip_prefix = "grpc-1.51.1",
+        urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.51.1.tar.gz"],
     ),
     # August 19, 2020.
     com_github_google_sentencepiece = dict(
@@ -269,16 +269,23 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     com_google_googletest = dict(
-        sha256 = "b4870bf121ff7795ba20d20bcdd8627b8e088f2d1dab299a031c1034eddc93d5",
-        strip_prefix = "googletest-release-1.11.0",
-        urls = ["https://github.com/google/googletest/archive/release-1.11.0.tar.gz"],
+        sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
+        strip_prefix = "googletest-release-1.12.1",
+        urls = ["https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"],
     ),
     com_google_protobuf = dict(
-        sha256 = "bab1685f92cc4ea5b6420026eef6c7973ae96fc21f4f1a3ee626dc6ca6d77c12",
-        strip_prefix = "protobuf-22d0e265de7d2b3d2e9a00d071313502e7d4cccf",
+        sha256 = "63c5539a8506dc6bccd352a857cea106e0a389ce047a3ff0a78fe3f8fede410d",
+        strip_prefix = "protobuf-24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb",
         urls = [
-            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/22d0e265de7d2b3d2e9a00d071313502e7d4cccf.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/22d0e265de7d2b3d2e9a00d071313502e7d4cccf.tar.gz",
+            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/24487dd1045c7f3d64a21f38a3f0c06cc4cf2edb.tar.gz",
+        ],
+    ),
+    com_google_protobuf_javascript = dict(
+        sha256 = "35bca1729532b0a77280bf28ab5937438e3dcccd6b31a282d9ae84c896b6f6e3",
+        strip_prefix = "protobuf-javascript-3.21.2",
+        urls = [
+            "https://github.com/protocolbuffers/protobuf-javascript/archive/refs/tags/v3.21.2.tar.gz",
         ],
     ),
     com_googlesource_code_re2 = dict(
@@ -316,10 +323,10 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     io_bazel_rules_k8s = dict(
-        sha256 = "a08850199d6900328ef899906717fb1dfcc6cde62701c63725748b2e6ca1d5d9",
-        strip_prefix = "rules_k8s-d05cbea5c56738ef02c667c10951294928a1d64a",
+        sha256 = "ce5b9bc0926681e2e7f2147b49096f143e6cbc783e71bc1d4f36ca76b00e6f4a",
+        strip_prefix = "rules_k8s-0.7",
         urls = [
-            "https://github.com/bazelbuild/rules_k8s/archive/d05cbea5c56738ef02c667c10951294928a1d64a.tar.gz",
+            "https://github.com/bazelbuild/rules_k8s/archive/refs/tags/v0.7.tar.gz",
         ],
     ),
     io_bazel_rules_scala = dict(
@@ -360,6 +367,15 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "2c1d60ef4d586909f138c28409780e102e2ebd619e7d462ded26dce43a8f9ffb",
         urls = [
             "https://raw.githubusercontent.com/bazelbuild/bazel/5.3.1/tools/cpp/unix_cc_toolchain_config.bzl",
+        ],
+    ),
+    # GRPC and Protobuf pick different versions. Pick the newer one.
+    upb = dict(
+        sha256 = "017a7e8e4e842d01dba5dc8aa316323eee080cd1b75986a7d1f94d87220e6502",
+        strip_prefix = "upb-e4635f223e7d36dfbea3b722a4ca4807a7e882e2",
+        urls = [
+            "https://storage.googleapis.com/grpc-bazel-mirror/github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
+            "https://github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
         ],
     ),
 )

@@ -1,5 +1,5 @@
 diff --git a/src/google/protobuf/stubs/strutil.cc b/src/google/protobuf/stubs/strutil.cc
-index 6bead9ad7..0ca8de0a3 100644
+index 594c8eac6..c7ef9437b 100644
 --- a/src/google/protobuf/stubs/strutil.cc
 +++ b/src/google/protobuf/stubs/strutil.cc
 @@ -592,7 +592,7 @@ void CEscapeAndAppend(StringPiece src, std::string *dest) {
@@ -12,7 +12,7 @@ index 6bead9ad7..0ca8de0a3 100644
    CEscapeAndAppend(src, &dest);
    return dest;
 diff --git a/src/google/protobuf/stubs/strutil.h b/src/google/protobuf/stubs/strutil.h
-index 84fc2323b..ff61868ba 100644
+index 9658abf90..9cf9cae83 100644
 --- a/src/google/protobuf/stubs/strutil.h
 +++ b/src/google/protobuf/stubs/strutil.h
 @@ -328,7 +328,7 @@ PROTOBUF_EXPORT std::string UnescapeCEscapeString(const std::string& src);
@@ -25,10 +25,10 @@ index 84fc2323b..ff61868ba 100644
  // ----------------------------------------------------------------------
  // CEscapeAndAppend()
 diff --git a/src/google/protobuf/text_format.cc b/src/google/protobuf/text_format.cc
-index 8b20d76df..d91b63270 100644
+index 19110499d..0d116ee7e 100644
 --- a/src/google/protobuf/text_format.cc
 +++ b/src/google/protobuf/text_format.cc
-@@ -83,6 +83,18 @@ inline bool IsOctNumber(const std::string& str) {
+@@ -81,6 +81,18 @@ inline bool IsOctNumber(const std::string& str) {
            (str[1] >= '0' && str[1] < '8'));
  }
  
@@ -47,7 +47,7 @@ index 8b20d76df..d91b63270 100644
  }  // namespace
  
  namespace internal {
-@@ -2537,20 +2549,22 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
+@@ -2555,20 +2567,22 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
                ? reflection->GetRepeatedStringReference(message, field, index,
                                                         &scratch)
                : reflection->GetStringReference(message, field, &scratch);
@@ -81,7 +81,7 @@ index 8b20d76df..d91b63270 100644
        }
        break;
      }
-@@ -2690,7 +2704,14 @@ void TextFormat::Printer::PrintUnknownFields(
+@@ -2708,7 +2722,14 @@ void TextFormat::Printer::PrintUnknownFields(
            // This field is not parseable as a Message (or we ran out of
            // recursion budget). So it is probably just a plain string.
            generator->PrintMaybeWithMarker(": ", "\"");

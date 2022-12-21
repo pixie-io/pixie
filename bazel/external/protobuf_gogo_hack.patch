@@ -1,8 +1,8 @@
-diff --git a/src/google/protobuf/compiler/python/python_generator.cc b/src/google/protobuf/compiler/python/python_generator.cc
-index 9ad7a33b2..8d85ad974 100644
---- a/src/google/protobuf/compiler/python/python_generator.cc
-+++ b/src/google/protobuf/compiler/python/python_generator.cc
-@@ -334,6 +334,12 @@ bool Generator::Generate(const FileDescriptor* file,
+diff --git a/src/google/protobuf/compiler/python/generator.cc b/src/google/protobuf/compiler/python/generator.cc
+index d8d6d7492..211fef038 100644
+--- a/src/google/protobuf/compiler/python/generator.cc
++++ b/src/google/protobuf/compiler/python/generator.cc
+@@ -252,6 +252,12 @@ bool Generator::Generate(const FileDescriptor* file,
      pure_python_workable_ = true;
    }
  

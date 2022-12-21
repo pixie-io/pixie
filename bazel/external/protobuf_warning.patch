@@ -1,8 +1,8 @@
 diff --git a/src/google/protobuf/compiler/command_line_interface.cc b/src/google/protobuf/compiler/command_line_interface.cc
-index bfc6b0552..0adbe3551 100644
+index 5e9a2c418..f95684bd1 100644
 --- a/src/google/protobuf/compiler/command_line_interface.cc
 +++ b/src/google/protobuf/compiler/command_line_interface.cc
-@@ -1729,8 +1729,8 @@ CommandLineInterface::InterpretArgument(const std::string& name,
+@@ -1730,8 +1730,8 @@ CommandLineInterface::InterpretArgument(const std::string& name,
        if (access(disk_path.c_str(), F_OK) < 0) {
          // Try the original path; it may have just happened to have a '=' in it.
          if (access(parts[i].c_str(), F_OK) < 0) {
@@ -14,10 +14,10 @@ index bfc6b0552..0adbe3551 100644
            virtual_path = "";
            disk_path = parts[i];
 diff --git a/src/google/protobuf/descriptor.cc b/src/google/protobuf/descriptor.cc
-index c8ce218a9..f54791103 100644
+index 5f3427dc7..ab049c7c6 100644
 --- a/src/google/protobuf/descriptor.cc
 +++ b/src/google/protobuf/descriptor.cc
-@@ -7854,10 +7854,11 @@ void DescriptorBuilder::LogUnusedDependency(const FileDescriptorProto& proto,
+@@ -8161,10 +8161,11 @@ void DescriptorBuilder::LogUnusedDependency(const FileDescriptorProto& proto,
        if (is_error) {
          AddError((*it)->name(), proto, DescriptorPool::ErrorCollector::IMPORT,
                   error_message);
