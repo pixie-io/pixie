@@ -17,7 +17,6 @@ resources:
 - metadata_role.yaml
 - metadata_service.yaml
 - node_view_cluster_role.yaml
-- pem_daemonset.yaml
 - query_broker_deployment.yaml
 - query_broker_service.yaml
 - query_broker_role.yaml

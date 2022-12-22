@@ -1,10 +1,9 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: pl
 commonLabels:
   app: pl-monitoring
   component: vizier
+kind: Kustomization
+namespace: pl
 resources:
-- base
-- ../pem
+- pem_daemonset.yaml

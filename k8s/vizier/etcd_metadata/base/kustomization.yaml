@@ -6,5 +6,5 @@ commonLabels:
   app: pl-monitoring
   component: vizier
 resources:
-- base
-- ../pem
+- ../../base
+- metadata_deployment.yaml

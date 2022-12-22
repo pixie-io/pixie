@@ -66,7 +66,7 @@ def generate_vizier_yamls(name, srcs, out, image_map, replace):
     native.genrule(
         name = name,
         srcs = srcs,
-        outs = [out],
+        outs = [out + "/base.yaml", out + "/autopilot.yaml"],
         cmd = """
         T=`mktemp -d`
         cp -aL k8s/vizier $$T
@@ -75,9 +75,18 @@ def generate_vizier_yamls(name, srcs, out, image_map, replace):
         pushd $$T/vizier/etcd_metadata &>/dev/null
         {0}
         popd &>/dev/null
+        pushd $$T/vizier/etcd_metadata/autopilot &>/dev/null
+        {0}
+        popd &>/dev/null
 
-        kustomize build $$T/vizier/etcd_metadata -o $@
-        """.format(merged_edits),
+        for i in $(OUTS); do
+          if [[ $$i == *"autopilot"* ]]; then
+            kustomize build $$T/vizier/etcd_metadata/autopilot -o $$i
+          else
+            kustomize build $$T/vizier/etcd_metadata -o $$i
+          fi
+        done
+	""".format(merged_edits),
     )
 
 def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
@@ -92,7 +101,7 @@ def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
     native.genrule(
         name = name,
         srcs = srcs,
-        outs = [out],
+        outs = [out + "/base.yaml", out + "/autopilot.yaml"],
         cmd = """
         T=`mktemp -d`
         cp -aL k8s/vizier $$T
@@ -101,7 +110,16 @@ def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
         pushd $$T/vizier/persistent_metadata &>/dev/null
         {0}
         popd &>/dev/null
+        pushd $$T/vizier/persistent_metadata/autopilot &>/dev/null
+        {0}
+        popd &>/dev/null
 
-        kustomize build $$T/vizier/persistent_metadata -o $@
+        for i in $(OUTS); do
+          if [[ $$i == *"autopilot"* ]]; then
+            kustomize build $$T/vizier/persistent_metadata/autopilot -o $$i
+          else
+            kustomize build $$T/vizier/persistent_metadata -o $$i
+          fi
+        done
         """.format(merged_edits),
     )

@@ -6,6 +6,5 @@ commonLabels:
   app: pl-monitoring
   component: vizier
 resources:
-- ../base
-- metadata_statefulset.yaml
-- metadata_claim.yaml
+- base
+- ../pem

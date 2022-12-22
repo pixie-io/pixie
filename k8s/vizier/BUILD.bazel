@@ -39,7 +39,7 @@ dev_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "$(DEV_VIZIER_IMAGE_PREFI
 generate_vizier_yamls(
     name = "public_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_etcd_metadata_prod.yaml",
+    out = "public_vizier_etcd_metadata_prod",
     image_map = VIZIER_IMAGE_MAP,
     replace = public_image_replacement,
 )
@@ -47,7 +47,7 @@ generate_vizier_yamls(
 generate_vizier_yamls(
     name = "private_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_etcd_metadata_prod.yaml",
+    out = "private_vizier_etcd_metadata_prod",
     image_map = VIZIER_IMAGE_MAP,
     replace = {},
 )
@@ -55,7 +55,7 @@ generate_vizier_yamls(
 generate_vizier_yamls(
     name = "vizier_etcd_metadata_dev",
     srcs = glob(["**/*.yaml"]),
-    out = "vizier_etcd_metadata_dev.yaml",
+    out = "vizier_etcd_metadata_dev",
     image_map = VIZIER_IMAGE_MAP,
     replace = dev_image_replacement,
 )
@@ -63,7 +63,7 @@ generate_vizier_yamls(
 generate_vizier_metadata_persist_yamls(
     name = "public_vizier_metadata_persist_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_metadata_persist_prod.yaml",
+    out = "public_vizier_metadata_persist_prod",
     image_map = VIZIER_IMAGE_MAP,
     replace = public_image_replacement,
 )
@@ -71,7 +71,7 @@ generate_vizier_metadata_persist_yamls(
 generate_vizier_metadata_persist_yamls(
     name = "private_vizier_metadata_persist_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_metadata_persist_prod.yaml",
+    out = "private_vizier_metadata_persist_prod",
     image_map = VIZIER_IMAGE_MAP,
     replace = {},
 )
@@ -79,7 +79,7 @@ generate_vizier_metadata_persist_yamls(
 generate_vizier_metadata_persist_yamls(
     name = "vizier_metadata_persist_dev",
     srcs = glob(["**/*.yaml"]),
-    out = "vizier_metadata_persist_dev.yaml",
+    out = "vizier_metadata_persist_dev",
     image_map = VIZIER_IMAGE_MAP,
     replace = dev_image_replacement,
 )
@@ -137,13 +137,13 @@ genrule(
     name = "vizier_etcd_image_list",
     srcs = select({
         ":dev": [
-            "//k8s/vizier:vizier_etcd_metadata_dev.yaml",
+            "//k8s/vizier:vizier_etcd_metadata_dev/base.yaml",
         ],
         ":public": [
-            "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
+            "//k8s/vizier:public_vizier_etcd_metadata_prod/base.yaml",
         ],
         "//conditions:default": [
-            "//k8s/vizier:private_vizier_etcd_metadata_prod.yaml",
+            "//k8s/vizier:private_vizier_etcd_metadata_prod/base.yaml",
         ],
     }) + [
         "//k8s/vizier_deps:nats_prod",
@@ -161,13 +161,13 @@ genrule(
     name = "vizier_image_list",
     srcs = select({
         ":dev": [
-            "//k8s/vizier:vizier_metadata_persist_dev.yaml",
+            "//k8s/vizier:vizier_metadata_persist_dev/base.yaml",
         ],
         ":public": [
-            "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
+            "//k8s/vizier:public_vizier_metadata_persist_prod/base.yaml",
         ],
         "//conditions:default": [
-            "//k8s/vizier:private_vizier_metadata_persist_prod.yaml",
+            "//k8s/vizier:private_vizier_metadata_persist_prod/base.yaml",
         ],
     }) + [
         "//k8s/vizier_deps:nats_prod",
@@ -185,16 +185,22 @@ pkg_tar(
     srcs =
         select({
             ":dev": [
-                "//k8s/vizier:vizier_etcd_metadata_dev.yaml",
-                "//k8s/vizier:vizier_metadata_persist_dev.yaml",
+                "//k8s/vizier:vizier_etcd_metadata_dev/base.yaml",
+                "//k8s/vizier:vizier_metadata_persist_dev/base.yaml",
+                "//k8s/vizier:vizier_etcd_metadata_dev/autopilot.yaml",
+                "//k8s/vizier:vizier_metadata_persist_dev/autopilot.yaml",
             ],
             ":public": [
-                "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
-                "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
+                "//k8s/vizier:public_vizier_etcd_metadata_prod/base.yaml",
+                "//k8s/vizier:public_vizier_metadata_persist_prod/base.yaml",
+                "//k8s/vizier:public_vizier_etcd_metadata_prod/autopilot.yaml",
+                "//k8s/vizier:public_vizier_metadata_persist_prod/autopilot.yaml",
             ],
             "//conditions:default": [
-                "//k8s/vizier:private_vizier_etcd_metadata_prod.yaml",
-                "//k8s/vizier:private_vizier_metadata_persist_prod.yaml",
+                "//k8s/vizier:private_vizier_etcd_metadata_prod/base.yaml",
+                "//k8s/vizier:private_vizier_metadata_persist_prod/base.yaml",
+                "//k8s/vizier:private_vizier_etcd_metadata_prod/autopilot.yaml",
+                "//k8s/vizier:private_vizier_metadata_persist_prod/autopilot.yaml",
             ],
         }) + [
             "//k8s/vizier_deps:nats_prod",
@@ -205,15 +211,21 @@ pkg_tar(
         ],
     package_dir = "/yamls",
     remap_paths = {
-        "/vizier/private_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
-        "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/private_vizier_etcd_metadata_prod/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/private_vizier_etcd_metadata_prod/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/private_vizier_metadata_persist_prod/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
+        "/vizier/private_vizier_metadata_persist_prod/base.yaml": "vizier/vizier_metadata_persist_prod.yaml",
         "/vizier/public/secrets.yaml": "vizier/secrets.yaml",
-        "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
-        "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public_vizier_etcd_metadata_prod/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/public_vizier_etcd_metadata_prod/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/public_vizier_metadata_persist_prod/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
+        "/vizier/public_vizier_metadata_persist_prod/base.yaml": "vizier/vizier_metadata_persist_prod.yaml",
         "/vizier/vizier_etcd_image_list.txt": "images/vizier_etcd_image_list.txt",
-        "/vizier/vizier_etcd_metadata_dev.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/vizier_etcd_metadata_dev/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/vizier_etcd_metadata_dev/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/vizier_image_list.txt": "images/vizier_image_list.txt",
         "/vizier/vizier_metadata_persist_dev.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/vizier_metadata_persist_dev/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
     },
     strip_prefix = "/k8s",
 )

@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vizier-pem
+spec:
+  selector:
+    matchLabels:
+      name: vizier-pem
+  template:
+    spec:
+      containers:
+      - name: pem
+        volumeMounts:
+        - name: host-lib
+          mountPath: /host/lib
+          readOnly: true
+        - name: host-var
+          mountPath: /host/var
+          readOnly: true
+        - name: host-boot
+          mountPath: /host/boot
+          readOnly: true
+        - name: host-etc
+          mountPath: /host/etc
+          readOnly: true
+      volumes:
+      - name: host-root
+        hostPath:
+          path: /lib
+          type: Directory
+      - name: host-var
+        hostPath:
+          path: /var
+          type: Directory
+      - name: host-boot
+        hostPath:
+          path: /boot
+          type: Directory
+      - name: host-etc
+        hostPath:
+          path: /etc
+          type: Directory

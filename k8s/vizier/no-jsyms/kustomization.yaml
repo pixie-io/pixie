@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: pl
 resources:
 - ../base
+- ../pem
 patches:
 # yamllint disable rule:indentation
 - patch: |-
