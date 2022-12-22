@@ -144,9 +144,9 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     com_github_jupp0r_prometheus_cpp = dict(
-        urls = ["https://github.com/jupp0r/prometheus-cpp/archive/refs/tags/v0.13.0.tar.gz"],
-        strip_prefix = "prometheus-cpp-0.13.0",
-        sha256 = "5319b77d6dc73af34bc256e7b18a7e0da50c787ef6f9e32785d045428b6473cc",
+        sha256 = "b4eff62bcdba10efd6210b9fa8a5b2505ad8ea6c211968be79aeb2c4c2f97338",
+        strip_prefix = "prometheus-cpp-81e208c250748657f1d5dab247e82c4429a931af",
+        urls = ["https://github.com/jupp0r/prometheus-cpp/archive/81e208c250748657f1d5dab247e82c4429a931af.tar.gz"],
     ),
     com_github_libbpf_libbpf = dict(
         sha256 = "3d6afde67682c909e341bf194678a8969f17628705af25f900d5f68bd299cb03",
