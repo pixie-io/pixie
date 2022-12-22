@@ -1,12 +1,14 @@
 diff --git a/tensorflow/lite/build_def.bzl b/tensorflow/lite/build_def.bzl
-index b9bf02b373d..2e8b262c6d3 100644
+index b9bf02b373d..9bcf61c6217 100644
 --- a/tensorflow/lite/build_def.bzl
 +++ b/tensorflow/lite/build_def.bzl
-@@ -16,6 +16,7 @@ def tflite_copts():
+@@ -16,6 +16,9 @@ def tflite_copts():
      """Defines common compile time flags for TFLite libraries."""
      copts = [
          "-DFARMHASH_NO_CXX_STRING",
 +        "-Wno-unused-but-set-variable",
++        "-Wno-deprecated-declarations",
++        "-Wno-gnu-inline-cpp-without-extern",
      ] + select({
          clean_dep("//tensorflow:android_arm"): [
              "-mfpu=neon",
