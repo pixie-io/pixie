@@ -285,9 +285,9 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "cd8c950b528f413e02c12970dce62a7b6f37733d7f68807e73a2d9bc9db79bc8",
     ),
     com_intel_tbb = dict(
-        sha256 = "8bc2bc624fd382f5262adb62ff25cb218a6ec1a20330dc6e90f0c166f65b3b81",
-        strip_prefix = "oneTBB-2021.6.0-rc1",
-        urls = ["https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0-rc1.tar.gz"],
+        sha256 = "91eab849ab1442db72317f8c968c5a1010f8546ca35f26086201262096c8a8a9",
+        strip_prefix = "oneTBB-e6104c9599f7f10473caf545199f7468c0a8e52f",
+        urls = ["https://github.com/oneapi-src/oneTBB/archive/e6104c9599f7f10473caf545199f7468c0a8e52f.tar.gz"],
     ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
