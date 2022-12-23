@@ -200,9 +200,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/r-lyeh-archived/sole/archive/refs/tags/1.0.2.tar.gz"],
     ),
     com_github_serge1_elfio = dict(
-        sha256 = "f1e2edddec556ac61705b931b5d59f1c89440442d5be522d3ae7d317b917e2d9",
-        strip_prefix = "ELFIO-b8d2a419b0edf185cfd7dc49a837d8d97001a7ba",
-        urls = ["https://github.com/pixie-io/ELFIO/archive/b8d2a419b0edf185cfd7dc49a837d8d97001a7ba.tar.gz"],
+        sha256 = "de0bb37885cc041a00e3b27353125361716fc4a49bd6ce6ed5782a1e8d4ee137",
+        strip_prefix = "ELFIO-2bdb28ae5d02db994a32cda401489e68c2887a4d",
+        urls = ["https://github.com/pixie-io/ELFIO/archive/2bdb28ae5d02db994a32cda401489e68c2887a4d.tar.gz"],
     ),
     com_github_simdutf_simdutf = dict(
         urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v1.0.0.tar.gz"],

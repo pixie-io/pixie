@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <unistd.h>
+#include <chrono>
+#include <thread>
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 #include "src/common/fs/fs_wrapper.h"
@@ -137,9 +140,14 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
 
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
+  int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string(), self_pid));
+
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
-  uint64_t symbol_addr = reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger);
+  ASSERT_OK_AND_ASSIGN(
+      uint64_t symbol_addr,
+      elf_reader->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger)));
 
   UProbeSpec uprobe{.binary_path = self_path,
                     .symbol = {},  // Keep GCC happy.

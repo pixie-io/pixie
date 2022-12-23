@@ -48,11 +48,21 @@ using px::system::ProcPidPath;
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
     : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
       conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {
+  std::filesystem::path self_path = GetSelfPath().ValueOrDie();
+  int64_t pid = getpid();
+  auto elf_reader_or_s = obj_tools::ElfReader::Create(self_path.string(), pid);
+  if (!elf_reader_or_s.ok()) {
+    LOG(FATAL) << "Failed to create ElfReader for self probe";
+  }
+  auto elf_reader = elf_reader_or_s.ConsumeValueOrDie();
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
-  uint64_t symbol_addr = reinterpret_cast<uint64_t>(&ConnInfoMapCleanupTrigger);
-
-  std::filesystem::path self_path = GetSelfPath().ValueOrDie();
+  auto symbol_addr_or_s =
+      elf_reader->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&ConnInfoMapCleanupTrigger));
+  if (!symbol_addr_or_s.ok()) {
+    LOG(FATAL) << "Failed to convert virtual address to binary address for self probe";
+  }
+  uint64_t symbol_addr = symbol_addr_or_s.ConsumeValueOrDie();
 
   bpf_tools::UProbeSpec uprobe{.binary_path = self_path,
                                .symbol = {},  // Keep GCC happy.

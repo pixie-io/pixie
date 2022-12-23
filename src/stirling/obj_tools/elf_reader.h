@@ -46,13 +46,26 @@ class ElfReader {
    */
   static StatusOr<std::unique_ptr<ElfReader>> Create(
       const std::string& binary_path,
-      const std::filesystem::path& debug_file_dir = "/usr/lib/debug");
+      const std::filesystem::path& debug_file_dir = "/usr/lib/debug", int64_t pid = -1);
+
+  static StatusOr<std::unique_ptr<ElfReader>> Create(const std::string& binary_path, int64_t pid) {
+    return Create(binary_path, "/usr/lib/debug", pid);
+  }
+  using TestOnlyUseZeroOffset = bool;
+  static StatusOr<std::unique_ptr<ElfReader>> Create(const std::string& binary_path,
+                                                     TestOnlyUseZeroOffset) {
+    PL_ASSIGN_OR_RETURN(auto elf_reader, Create(binary_path));
+    elf_reader->virtual_to_binary_addr_offset_ = 0;
+    return elf_reader;
+  }
 
   std::filesystem::path& debug_symbols_path() { return debug_symbols_path_; }
 
   struct SymbolInfo {
     std::string name;
     int type = -1;
+    // SymbolInfo always contains the so called "binary" address of the symbol (i.e. what `nm` would
+    // return for the symbol).
     uint64_t address = -1;
     uint64_t size = -1;
 
@@ -98,7 +111,7 @@ class ElfReader {
   /**
    * Looks up the symbol for an address.
    *
-   * @param addr The symbol address to lookup.
+   * @param addr The symbol address to lookup. This should be the virtual address of the symbol.
    * @return Symbol name if address was found in the symbol table.
    *         std::nullopt if search completed by address was not found.
    *         Error if search failed to run as expected.
@@ -111,7 +124,7 @@ class ElfReader {
    * Unlike AddrToSymbol, this function covers the entirety of the function body.
    * Any address in the body of the function is resolved, not just where the symbol is located.
    *
-   * @param addr The symbol address to lookup.
+   * @param addr The symbol address to lookup. This should be the virtual address of the symbol.
    * @return Symbol name if address was found in the symbol table.
    *         std::nullopt if search completed by address was not found.
    *         Error if search failed to run as expected.
@@ -127,7 +140,8 @@ class ElfReader {
     void AddEntry(uintptr_t addr, size_t size, std::string name);
 
     /**
-     * Lookup the symbol for the specified address.
+     * Lookup the symbol for the specified address. The address should be a virtual address (as
+     * opposed to a "binary" address).
      */
     std::string_view Lookup(uintptr_t addr) const;
 
@@ -153,6 +167,9 @@ class ElfReader {
    */
   StatusOr<px::utils::u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
 
+  StatusOr<uint64_t> VirtualAddrToBinaryAddr(uint64_t virtual_addr);
+  StatusOr<uint64_t> BinaryAddrToVirtualAddr(uint64_t binary_addr);
+
  private:
   ElfReader() = default;
 
@@ -177,12 +194,23 @@ class ElfReader {
    */
   StatusOr<px::utils::u8string> FuncByteCode(const SymbolInfo& func_symbol);
 
+  /**
+   * Calculates the offset between virtual and binary addresses and stores it in
+   * virtual_to_binary_addr_offset_ Such that: binary_addr = virtual_addr +
+   * virtual_to_bianry_addr_offset_
+   */
+  Status CalculateVirtToBinaryAddrConversion();
+  Status EnsureVirtToBinaryCalculated();
+
   std::string binary_path_;
 
   std::filesystem::path debug_symbols_path_;
 
   // Set up an elf reader, so we can extract debug symbols.
   ELFIO::elfio elf_reader_;
+
+  int64_t pid_;
+  std::optional<uint64_t> virtual_to_binary_addr_offset_ = std::nullopt;
 };
 
 }  // namespace obj_tools

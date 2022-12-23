@@ -27,6 +27,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/shared/symbolization.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
@@ -179,10 +180,14 @@ class StringifierTest : public ::testing::Test {
 };
 
 TEST_F(StringifierTest, MemoizationTest) {
-  // Values used in creating the [u|k] probe specs.
-  const uint64_t foo_addr = reinterpret_cast<uint64_t>(&::test::Foo);
-  const uint64_t bar_addr = reinterpret_cast<uint64_t>(&::test::Bar);
   const std::filesystem::path self_path = GetSelfPath().ValueOrDie();
+  int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string(), self_pid));
+  // Values used in creating the [u|k] probe specs.
+  ASSERT_OK_AND_ASSIGN(const uint64_t foo_addr, elf_reader->VirtualAddrToBinaryAddr(
+                                                    reinterpret_cast<uint64_t>(&::test::Foo)));
+  ASSERT_OK_AND_ASSIGN(const uint64_t bar_addr, elf_reader->VirtualAddrToBinaryAddr(
+                                                    reinterpret_cast<uint64_t>(&::test::Bar)));
 
   // uprobe specs, for Foo() and Bar(). We invoke our BPF program,
   // stack_trace_sampler, when Foo() or Bar() is called.

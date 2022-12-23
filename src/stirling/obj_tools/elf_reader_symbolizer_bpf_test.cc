@@ -96,7 +96,8 @@ TEST(SymbolizerTest, InstrAddrToSymbol) {
 
   // Create an ELF reader to symbolize the addresses.
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
-  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
+  int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string(), self_pid));
 
   // Use the ELF reader to symbolize the stack trace addresses.
   std::vector<std::string> symbols;
@@ -157,7 +158,8 @@ TEST(SymbolizerTest, GetSymbolizer) {
 
   // Create an ELF reader to symbolize the addresses.
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
-  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
+  int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string(), self_pid));
 
   // Use the ELF reader to symbolize the stack trace addresses.
   ASSERT_OK_AND_ASSIGN(auto symbolizer, elf_reader->GetSymbolizer());
