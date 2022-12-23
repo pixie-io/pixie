@@ -84,14 +84,15 @@ DEFINE_PRINT_TABLE(AMQP)
 
 constexpr int kAMQPTimeIdx = kAMQPTable.ColIndex("time_");
 constexpr int kAMQPUUIDIdx = kAMQPTable.ColIndex("upid");
-constexpr int kAMQPFrameType = kAMQPTable.ColIndex("frame_type");
+constexpr int kAMQPFrameTypeIdx = kAMQPTable.ColIndex("frame_type");
+constexpr int kAMQPChannelIdx = kAMQPTable.ColIndex("channel");
 constexpr int kAMQPLatencyIdx = kAMQPTable.ColIndex("latency");
 
-constexpr int kAMQPReqClassId = kAMQPTable.ColIndex("req_class_id");
-constexpr int kAMQPReqMethodId = kAMQPTable.ColIndex("req_method_id");
+constexpr int kAMQPReqClassIdx = kAMQPTable.ColIndex("req_class_id");
+constexpr int kAMQPReqMethodIdx = kAMQPTable.ColIndex("req_method_id");
 
-constexpr int kAMQPRespClassId = kAMQPTable.ColIndex("resp_class_id");
-constexpr int kAMQPRespMethodId = kAMQPTable.ColIndex("resp_method_id");
+constexpr int kAMQPRespClassIdx = kAMQPTable.ColIndex("resp_class_id");
+constexpr int kAMQPRespMethodIdx = kAMQPTable.ColIndex("resp_method_id");
 
 }  // namespace stirling
 }  // namespace px
