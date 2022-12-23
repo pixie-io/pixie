@@ -17,11 +17,13 @@
  */
 
 #include <memory>
+#include <utility>
 
 #include <absl/functional/bind_front.h>
 
 #include "src/common/base/base.h"
 #include "src/common/system/proc_pid_path.h"
+#include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/elf_symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
@@ -40,12 +42,18 @@ StatusOr<std::unique_ptr<Symbolizer>> ElfSymbolizer::Create() {
 
 void ElfSymbolizer::DeleteUPID(const struct upid_t& upid) { symbolizers_.erase(upid); }
 
-StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const struct upid_t& upid) {
+StatusOr<std::unique_ptr<ElfSymbolizer::SymbolizerWithConverter>> CreateUPIDSymbolizer(
+    const struct upid_t& upid) {
   const pid_t pid = upid.pid;
   const system::ProcParser proc_parser;
   PL_ASSIGN_OR_RETURN(const auto proc_exe, proc_parser.GetExePath(pid));
   PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(ProcPidRootPath(pid, proc_exe.string())));
-  return elf_reader->GetSymbolizer();
+
+  PL_ASSIGN_OR_RETURN(auto symbolizer, elf_reader->GetSymbolizer());
+  PL_ASSIGN_OR_RETURN(auto converter,
+                      obj_tools::ElfAddressConverter::Create(elf_reader.get(), pid));
+  return std::make_unique<ElfSymbolizer::SymbolizerWithConverter>(std::move(symbolizer),
+                                                                  std::move(converter));
 }
 
 std::string_view EmptySymbolizerFn(const uintptr_t addr) {
@@ -62,20 +70,24 @@ profiler::SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid)
     return profiler::SymbolizerFn(&(BogusKernelSymbolizerFn));
   }
 
-  std::unique_ptr<ElfReader::Symbolizer>& upid_symbolizer = symbolizers_[upid];
-  if (upid_symbolizer == nullptr) {
-    StatusOr<std::unique_ptr<ElfReader::Symbolizer>> upid_symbolizer_status =
-        CreateUPIDSymbolizer(upid);
+  std::unique_ptr<SymbolizerWithConverter>& symbolizer_with_converter = symbolizers_[upid];
+  if (symbolizer_with_converter == nullptr) {
+    auto upid_symbolizer_status = CreateUPIDSymbolizer(upid);
     if (!upid_symbolizer_status.ok()) {
       VLOG(1) << absl::Substitute("Failed to create Symbolizer function for $0 [error=$1]",
                                   upid.pid, upid_symbolizer_status.ToString());
       return profiler::SymbolizerFn(&(EmptySymbolizerFn));
     }
-
-    upid_symbolizer = upid_symbolizer_status.ConsumeValueOrDie();
+    symbolizer_with_converter = upid_symbolizer_status.ConsumeValueOrDie();
   }
 
-  return absl::bind_front(&ElfReader::Symbolizer::Lookup, upid_symbolizer.get());
+  return absl::bind_front(&ElfSymbolizer::SymbolizerWithConverter::Lookup,
+                          symbolizer_with_converter.get());
+}
+
+std::string_view ElfSymbolizer::SymbolizerWithConverter::Lookup(uint64_t virtual_addr) const {
+  auto binary_addr = converter_->VirtualAddrToBinaryAddr(virtual_addr);
+  return symbolizer_->Lookup(binary_addr);
 }
 
 }  // namespace stirling

@@ -31,6 +31,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/types.h"
@@ -163,13 +164,15 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
                       ::px::system::GetPIDStartTimeTicks("/proc/self"));
 
   PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, GetSelfPath());
-  int64_t pid = getpid();
-  PL_ASSIGN_OR_RETURN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string(), pid));
+  PL_ASSIGN_OR_RETURN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
+  const int64_t pid = getpid();
+  PL_ASSIGN_OR_RETURN(auto converter,
+                      obj_tools::ElfAddressConverter::Create(elf_reader.get(), pid));
 
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
-  PL_ASSIGN_OR_RETURN(uint64_t symbol_addr, elf_reader->VirtualAddrToBinaryAddr(
-                                                reinterpret_cast<uint64_t>(&StirlingProbeTrigger)));
+  uint64_t symbol_addr =
+      converter->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&StirlingProbeTrigger));
 
   UProbeSpec uprobe{.binary_path = self_path,
                     .symbol = {},  // Keep GCC happy.

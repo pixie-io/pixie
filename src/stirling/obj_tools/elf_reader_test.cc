@@ -138,8 +138,7 @@ TEST(ElfReaderTest, AddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(path, ElfReader::TestOnlyUseZeroOffset{}));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
     ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
@@ -160,8 +159,7 @@ TEST(ElfReaderTest, InstrAddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(path, ElfReader::TestOnlyUseZeroOffset{}));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
     ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,

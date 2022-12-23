@@ -30,7 +30,6 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/utils.h"
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/init.h"
 
 namespace px {
@@ -160,15 +159,13 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
 }
 
 // TODO(oazizi): Consider changing binary_path to std::filesystem::path.
-StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path,
-                                                       const std::filesystem::path& debug_file_dir,
-                                                       int64_t pid) {
+StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
+    const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
   VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
                               debug_file_dir.string());
   auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
 
   elf_reader->binary_path_ = binary_path;
-  elf_reader->pid_ = pid;
 
   if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
@@ -332,8 +329,6 @@ StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
 
-  PL_ASSIGN_OR_RETURN(sym_addr, VirtualAddrToBinaryAddr(sym_addr));
-
   // Call ELFIO to get symbol by address.
   // ELFIO looks up the symbol and then populates name, size, type, etc.
   // We only care about the name, but need to declare the other variables as well.
@@ -357,8 +352,6 @@ StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
 //               are ordered.
 StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
-
-  PL_ASSIGN_OR_RETURN(sym_addr, VirtualAddrToBinaryAddr(sym_addr));
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
   for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
@@ -402,7 +395,6 @@ StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
     if (type == ELFIO::STT_FUNC) {
-      PL_ASSIGN_OR_RETURN(addr, BinaryAddrToVirtualAddr(addr));
       symbolizer->AddEntry(addr, size, llvm::demangle(name));
     }
   }
@@ -564,62 +556,7 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
   return byte_code;
 }
 
-StatusOr<uint64_t> ElfReader::VirtualAddrToBinaryAddr(uint64_t virtual_addr) {
-  PL_RETURN_IF_ERROR(EnsureVirtToBinaryCalculated());
-  return virtual_addr + *virtual_to_binary_addr_offset_;
-}
-
-StatusOr<uint64_t> ElfReader::BinaryAddrToVirtualAddr(uint64_t binary_addr) {
-  PL_RETURN_IF_ERROR(EnsureVirtToBinaryCalculated());
-  return binary_addr - *virtual_to_binary_addr_offset_;
-}
-
-Status ElfReader::EnsureVirtToBinaryCalculated() {
-  if (virtual_to_binary_addr_offset_.has_value()) {
-    return Status::OK();
-  }
-  return CalculateVirtToBinaryAddrConversion();
-}
-
-/**
- * The calculated offset is used to convert between virtual addresses (eg. the address you
- * would get from a function pointer) and "binary" addresses (i.e. the address that `nm` would
- * display for a given function).
- *
- * This conversion is non-trivial and requires information from both the ELF file of the binary in
- * question, as well as the /proc/PID/maps file for the PID of the process in question.
- *
- * For non-PIE executables, this conversion is trivial as the virtual addresses in the ELF file are
- * used directly when loading.
- *
- * However, for PIE, the loaded virtual address can be whatever. So to calculate the offset we look
- * at the first loadable segment in the ELF file and compare it to the first entry in the
- *  /proc/PID/maps file to see how the loader changed the virtual address. This works because the
- * loader guarantees that the relative offsets of the different segments remain the same, regardless
- * of where in virtual address space it ends up putting the segment.
- *
- **/
-Status ElfReader::CalculateVirtToBinaryAddrConversion() {
-  if (pid_ == -1) {
-    return {statuspb::INVALID_ARGUMENT,
-            "Must specify PID to use symbol resolution functions in ElfReader"};
-  }
-  system::ProcParser parser;
-  std::vector<system::ProcParser::ProcessSMaps> map_entries;
-  // This is a little inefficient as we only need the first entry.
-  PL_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid_, &map_entries));
-  if (map_entries.size() < 1) {
-    return {statuspb::INTERNAL, "Failed to parse /proc/$pid/maps to work out address conversion"};
-  }
-  auto mapped_virt_addr = map_entries[0].vmem_start;
-  uint64_t mapped_offset;
-  if (!absl::SimpleHexAtoi(map_entries[0].offset, &mapped_offset)) {
-    return {statuspb::INTERNAL,
-            "Failed to parse offset in /proc/$pid/maps to work out address conversion"};
-  }
-
-  uint64_t mapped_segment_start = mapped_virt_addr - mapped_offset;
-
+StatusOr<uint64_t> ElfReader::GetVirtualAddrAtOffsetZero() {
   const ELFIO::segment* first_loadable_segment = nullptr;
   for (int i = 0; i < elf_reader_.segments.size(); i++) {
     ELFIO::segment* segment = elf_reader_.segments[i];
@@ -630,17 +567,14 @@ Status ElfReader::CalculateVirtToBinaryAddrConversion() {
   }
 
   if (first_loadable_segment == nullptr) {
-    return {statuspb::INTERNAL,
-            "Calculating virtual to binary offset failed because there are no loadable segments in "
-            "elf file"};
+    return Status(statuspb::INTERNAL, "No loadable segments in ELF file");
   }
-  uint64_t elf_virt_addr = first_loadable_segment->get_virtual_address();
-  uint64_t elf_offset = first_loadable_segment->get_offset();
-  uint64_t elf_segment_start = elf_virt_addr - elf_offset;
-
-  virtual_to_binary_addr_offset_ = elf_segment_start - mapped_segment_start;
-  return Status::OK();
+  uint64_t virt_addr = first_loadable_segment->get_virtual_address();
+  uint64_t offset = first_loadable_segment->get_offset();
+  return virt_addr - offset;
 }
+
+ELFIO::Elf_Half ElfReader::ELFType() { return elf_reader_.get_type(); }
 
 }  // namespace obj_tools
 }  // namespace stirling

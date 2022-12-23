@@ -24,6 +24,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
 using px::stirling::obj_tools::ElfReader;
@@ -96,13 +97,16 @@ TEST(SymbolizerTest, InstrAddrToSymbol) {
 
   // Create an ELF reader to symbolize the addresses.
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
-  int64_t self_pid = getpid();
-  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string(), self_pid));
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
+  const int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto converter,
+                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), self_pid));
 
   // Use the ELF reader to symbolize the stack trace addresses.
   std::vector<std::string> symbols;
   for (const auto addr : addrs) {
-    ASSERT_OK_AND_ASSIGN(auto sym, elf_reader->InstrAddrToSymbol(addr));
+    auto binary_addr = converter->VirtualAddrToBinaryAddr(addr);
+    ASSERT_OK_AND_ASSIGN(auto sym, elf_reader->InstrAddrToSymbol(binary_addr));
     symbols.push_back(sym.value_or("-"));
   }
 
@@ -158,14 +162,17 @@ TEST(SymbolizerTest, GetSymbolizer) {
 
   // Create an ELF reader to symbolize the addresses.
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
-  int64_t self_pid = getpid();
-  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string(), self_pid));
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
+  const int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto converter,
+                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), self_pid));
 
   // Use the ELF reader to symbolize the stack trace addresses.
   ASSERT_OK_AND_ASSIGN(auto symbolizer, elf_reader->GetSymbolizer());
   std::vector<std::string> symbols;
   for (const auto addr : addrs) {
-    std::string_view sym = symbolizer->Lookup(addr);
+    auto binary_addr = converter->VirtualAddrToBinaryAddr(addr);
+    std::string_view sym = symbolizer->Lookup(binary_addr);
     symbols.push_back(absl::StartsWith(sym, "0x") ? "-" : std::string(sym));
   }
 

@@ -19,7 +19,9 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
+#include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 
 namespace px {
@@ -37,13 +39,23 @@ class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
   void DeleteUPID(const struct upid_t& upid) override;
   bool Uncacheable(const struct upid_t& /*upid*/) override { return false; }
 
+  class SymbolizerWithConverter {
+   public:
+    SymbolizerWithConverter(std::unique_ptr<obj_tools::ElfReader::Symbolizer> symbolizer,
+                            std::unique_ptr<obj_tools::ElfAddressConverter> converter)
+        : symbolizer_(std::move(symbolizer)), converter_(std::move(converter)) {}
+    std::string_view Lookup(uintptr_t addr) const;
+
+   private:
+    std::unique_ptr<obj_tools::ElfReader::Symbolizer> symbolizer_;
+    std::unique_ptr<obj_tools::ElfAddressConverter> converter_;
+  };
+
  private:
   ElfSymbolizer() = default;
 
   // A symbolizer per UPID.
-  absl::flat_hash_map<struct upid_t,
-                      std::unique_ptr<px::stirling::obj_tools::ElfReader::Symbolizer>>
-      symbolizers_;
+  absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolizerWithConverter>> symbolizers_;
 };
 
 }  // namespace stirling
