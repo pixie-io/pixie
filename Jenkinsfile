@@ -10,40 +10,35 @@ import jenkins.model.Jenkins
   */
 class PhabConnector {
   def jenkinsCtx
-  def URL
+  def url
   def repository
   def apiToken
   def phid
 
-  PhabConnector(jenkinsCtx, URL, repository, apiToken, phid) {
+  PhabConnector(jenkinsCtx, url, repository, apiToken, phid) {
     this.jenkinsCtx = jenkinsCtx
-    this.URL = URL
+    this.url = url
     this.repository = repository
     this.apiToken = apiToken
     this.phid = phid
   }
 
   def harborMasterUrl(method) {
-    def url = "${URL}/api/${method}?api.token=${apiToken}" +
-            "&buildTargetPHID=${phid}"
-    return url
+    return "${url}/api/${method}?api.token=${apiToken}&buildTargetPHID=${phid}"
   }
 
-  def sendBuildStatus(build_status) {
-    def url = this.harborMasterUrl('harbormaster.sendmessage')
-    def body = "type=${build_status}"
+  def sendBuildStatus(buildStatus) {
     jenkinsCtx.httpRequest consoleLogResponseBody: true,
       contentType: 'APPLICATION_FORM',
       httpMode: 'POST',
-      requestBody: body,
+      requestBody: "type=${buildStatus}",
       responseHandle: 'NONE',
-      url: url,
+      url: this.harborMasterUrl('harbormaster.sendmessage'),
       validResponseCodes: '200'
   }
 
   def addArtifactLink(linkURL, artifactKey, artifactName) {
     def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-    def url = this.harborMasterUrl('harbormaster.createartifact')
     def body = ''
     body += "&buildTargetPHID=${phid}"
     body += "&artifactKey=${artifactKey}"
@@ -57,7 +52,7 @@ class PhabConnector {
       httpMode: 'POST',
       requestBody: body,
       responseHandle: 'NONE',
-      url: url,
+      url: this.harborMasterUrl('harbormaster.createartifact'),
       validResponseCodes: '200'
   }
 }
@@ -105,9 +100,8 @@ PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
 // to ensure that we don't have BPF compatibility regressions.
 BPF_DEFAULT_KERNEL='4.14'
 BPF_NEWEST_KERNEL='5.19'
-def BPF_KERNELS = ['4.14', '4.19', '5.4', '5.10', '5.15', '5.19']
-
-def BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL, BPF_NEWEST_KERNEL]
+BPF_KERNELS = ['4.14', '4.19', '5.4', '5.10', '5.15', '5.19']
+BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL, BPF_NEWEST_KERNEL]
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
@@ -153,51 +147,30 @@ buildTagBPFBuild = false
 // Enable BPF build across all tested kernels.
 buildTagBPFBuildAllKernels = false
 
-def WithGCloud(Closure body) {
-  if (env.KUBERNETES_SERVICE_HOST) {
-    container('gcloud') {
-      body()
-    }
-  } else {
-    docker.image(GCLOUD_DOCKER_IMAGE).inside {
-      body()
-    }
-  }
-}
-
 def gsutilCopy(String src, String dest) {
-  WithGCloud {
-    sh """
-    gsutil -o GSUtil:parallel_composite_upload_threshold=150M cp ${src} ${dest}
-    """
+  container('gcloud') {
+    sh "gsutil -o GSUtil:parallel_composite_upload_threshold=150M cp ${src} ${dest}"
   }
 }
 
 def bbLinks() {
-    def linkURL = "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})"
-    if (isPhabricatorTriggeredBuild()) {
-      def phabricator_link = ''
-      if (params.REVISION) {
-        phabricator_link = "${phabConnector.URL}/D${REVISION}"
-      } else {
-        phabricator_link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
-      }
-      linkURL += ",[Phabricator](${phabricator_link})"
+  def linkURL = "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})"
+  if (isPhabricatorTriggeredBuild()) {
+    def phabricatorLink = ''
+    if (params.REVISION) {
+      phabricatorLink = "${phabConnector.url}/D${REVISION}"
+    } else {
+      phabricatorLink = "${phabConnector.url}/r${phabConnector.repository}${env.PHAB_COMMIT}"
     }
-    linkURL += "'"
-    return linkURL
+    linkURL += ",[Phabricator](${phabricatorLink})"
+  }
+  linkURL += "'"
+  return linkURL
 }
 
-def stashOnGCS(String name, String pattern, String excludes = '') {
-  def extraExcludes = ''
-  if (excludes.length() != 0) {
-    extraExcludes = '--exclude=${excludes}'
-  }
-
+def stashOnGCS(String name, String pattern) {
   def destFile = "${name}.tar.gz"
-  sh """
-    mkdir -p .archive && tar --exclude=.archive ${extraExcludes} -czf .archive/${destFile} ${pattern}
-  """
+  sh "mkdir -p .archive && tar --exclude=.archive -czf .archive/${destFile} ${pattern}"
 
   gsutilCopy(".archive/${destFile}", "gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${destFile}")
 }
@@ -244,10 +217,10 @@ def addBuildInfo = {
   if (params.REVISION) {
     def revisionId = "D${REVISION}"
     text = revisionId
-    link = "${phabConnector.URL}/${revisionId}"
+    link = "${phabConnector.url}/${revisionId}"
   } else {
     text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
+    link = "${phabConnector.url}/r${phabConnector.repository}${env.PHAB_COMMIT}"
   }
   addShortText(
     text: text,
@@ -281,48 +254,17 @@ def codeReviewPostBuild = {
   phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
 }
 
-def writeBazelRCFile() {
-  sh 'cp ci/jenkins.bazelrc jenkins.bazelrc'
-  if (!isMainRun) {
-    // Don't upload to remote cache if this is not running main.
-    sh '''
-    echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
-    echo "build --build_metadata=ROLE=DEV" >> jenkins.bazelrc
-    '''
-  } else {
-    // Only set ROLE=CI if this is running on main. This controls the whether this
-    // run contributes to the test matrix at https://bb.corp.pixielabs.ai/tests/
-    sh '''
-    echo "build --build_metadata=ROLE=CI" >> jenkins.bazelrc
-    '''
-  }
-  withCredentials([
-    string(
-      credentialsId: 'buildbuddy-api-key',
-      variable: 'BUILDBUDDY_API_KEY'
-    ),
-    string(
-      credentialsId: 'github-license-ratelimit',
-      variable: 'GH_API_KEY'
-    )
-  ]) {
-    def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
-    sh "echo \"build ${bbAPIArg}\" >> jenkins.bazelrc"
-
-    def ghAPIEnv = '--action_env=GH_API_KEY=${GH_API_KEY}'
-    sh "echo \"build ${ghAPIEnv}\" >> jenkins.bazelrc"
-  }
-}
-
 def createBazelStash(String stashName) {
-  sh 'rm -rf bazel-testlogs-archive'
-  sh 'mkdir -p bazel-testlogs-archive'
-  sh 'cp -a bazel-testlogs/ bazel-testlogs-archive || true'
+  sh '''
+  rm -rf bazel-testlogs-archive
+  mkdir -p bazel-testlogs-archive
+  cp -a bazel-testlogs/ bazel-testlogs-archive || true
+  '''
   stashOnGCS(stashName, 'bazel-testlogs-archive/**')
   stashList.add(stashName)
 }
 
-def RetryOnK8sDownscale(Closure body, int times=5) {
+def retryOnK8sDownscale(Closure body, int times=5) {
   for (int retryCount = 0; retryCount < times; retryCount++) {
     try {
       body()
@@ -340,14 +282,12 @@ def RetryOnK8sDownscale(Closure body, int times=5) {
   }
 }
 
-def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
+def withSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
   warnError('Script failed') {
-    DefaultBuildPodTemplate(suffix) {
+    defaultBuildPodTemplate(suffix) {
       timeout(time: timeoutMinutes, unit: 'MINUTES') {
         container('pxbuild') {
-          sh '''
-            git config --global --add safe.directory `pwd`
-          '''
+          sh 'git config --global --add safe.directory `pwd`'
         }
         container('gcloud') {
           unstashFromGCS(SRC_STASH_NAME)
@@ -359,8 +299,8 @@ def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinut
   }
 }
 
-def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
-  WithSourceCodeK8s(suffix) {
+def withSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
+  withSourceCodeK8s(suffix) {
     container('gcloud') {
       unstashFromGCS(TARGETS_STASH_NAME)
     }
@@ -483,11 +423,22 @@ def postBuildActions = {
   }
 }
 
-def InitializeRepoState(String stashName = SRC_STASH_NAME) {
+def initializeRepoState() {
   sh './ci/save_version_info.sh'
   sh './ci/save_diff_info.sh'
 
-  writeBazelRCFile()
+  withCredentials([
+    string(
+      credentialsId: 'buildbuddy-api-key',
+      variable: 'BUILDBUDDY_API_KEY'
+    ),
+    string(
+      credentialsId: 'github-license-ratelimit',
+      variable: 'GH_API_KEY'
+    )
+  ]) {
+    sh './ci/write_bazelrc.sh'
+  }
 
   // Get docker image tag.
   def properties = readProperties file: 'docker.properties'
@@ -497,8 +448,8 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   stashOnGCS(SRC_STASH_NAME, '.')
 }
 
-def DefaultGitPodTemplate(String suffix, Closure body) {
-  RetryOnK8sDownscale {
+def defaultGitPodTemplate(String suffix, Closure body) {
+  retryOnK8sDownscale {
     def label = "worker-git-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'git', image: 'bitnami/git:2.33.0', command: 'cat', ttyEnabled: true)
@@ -510,8 +461,8 @@ def DefaultGitPodTemplate(String suffix, Closure body) {
   }
 }
 
-def DefaultGCloudPodTemplate(String suffix, Closure body) {
-  RetryOnK8sDownscale {
+def defaultGCloudPodTemplate(String suffix, Closure body) {
+  retryOnK8sDownscale {
     def label = "worker-gcloud-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
@@ -523,8 +474,8 @@ def DefaultGCloudPodTemplate(String suffix, Closure body) {
   }
 }
 
-def DefaultCopybaraPodTemplate(String suffix, Closure body) {
-  RetryOnK8sDownscale {
+def defaultCopybaraPodTemplate(String suffix, Closure body) {
+  retryOnK8sDownscale {
     def label = "worker-copybara-${env.BUILD_TAG}-${suffix}"
     podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
       containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
@@ -536,8 +487,8 @@ def DefaultCopybaraPodTemplate(String suffix, Closure body) {
   }
 }
 
-def DefaultBuildPodTemplate(String suffix, Closure body) {
-  RetryOnK8sDownscale {
+def defaultBuildPodTemplate(String suffix, Closure body) {
+  retryOnK8sDownscale {
     def label = "worker-${env.BUILD_TAG}-${suffix}"
     podTemplate(
       label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
@@ -577,11 +528,11 @@ spec:
  * Checkout the source code, record git info and stash sources.
  */
 def checkoutAndInitialize() {
-  DefaultGCloudPodTemplate('init') {
+  defaultGCloudPodTemplate('init') {
     container('gcloud') {
       deleteDir()
       checkout scm
-      InitializeRepoState()
+      initializeRepoState()
       if(isPhabricatorTriggeredBuild()) {
         def logMessage = sh (
           script: "git log origin/main..",
@@ -610,7 +561,7 @@ def preBuild = [:]
 def builders = [:]
 
 def buildAndTestOptWithUI = {
-  WithSourceCodeAndTargetsK8s('build-opt') {
+  withSourceCodeAndTargetsK8s('build-opt') {
     container('pxbuild') {
       withCredentials([
         file(
@@ -624,7 +575,7 @@ def buildAndTestOptWithUI = {
 }
 
 def buildClangTidy = {
-  WithSourceCodeK8s('clang-tidy') {
+  withSourceCodeK8s('clang-tidy') {
     container('pxbuild') {
       def stashName = 'build-clang-tidy-logs'
       if (isMainRun) {
@@ -642,7 +593,7 @@ def buildClangTidy = {
 }
 
 def buildDbg = {
-  WithSourceCodeAndTargetsK8s('build-dbg') {
+  withSourceCodeAndTargetsK8s('build-dbg') {
     container('pxbuild') {
       bazelCICmd('build-dbg', 'clang', 'dbg', 'clang_dbg', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
     }
@@ -650,7 +601,7 @@ def buildDbg = {
 }
 
 def buildGoRace = {
-  WithSourceCodeAndTargetsK8s('build-go-race') {
+  withSourceCodeAndTargetsK8s('build-go-race') {
     container('pxbuild') {
       bazelCICmd('build-go-race', 'go_race', 'opt', 'go_race')
     }
@@ -658,7 +609,7 @@ def buildGoRace = {
 }
 
 def buildASAN = {
-  WithSourceCodeAndTargetsK8s('build-san') {
+  withSourceCodeAndTargetsK8s('build-san') {
     container('pxbuild') {
       bazelCICmd('build-asan', 'asan', 'dbg', 'sanitizer')
     }
@@ -666,7 +617,7 @@ def buildASAN = {
 }
 
 def buildTSAN = {
-  WithSourceCodeAndTargetsK8s('build-san') {
+  withSourceCodeAndTargetsK8s('build-san') {
     container('pxbuild') {
       bazelCICmd('build-tsan', 'tsan', 'dbg', 'sanitizer')
     }
@@ -674,7 +625,7 @@ def buildTSAN = {
 }
 
 def buildGCC = {
-  WithSourceCodeAndTargetsK8s('build-gcc-opt') {
+  withSourceCodeAndTargetsK8s('build-gcc-opt') {
     container('pxbuild') {
       bazelCICmd('build-gcc-opt', 'gcc', 'opt', 'gcc_opt')
     }
@@ -706,7 +657,7 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
 }
 
 def buildAndTestBPFOpt = { kernel ->
-  WithSourceCodeAndTargetsK8s('build-bpf-opt') {
+  withSourceCodeAndTargetsK8s('build-bpf-opt') {
     container('pxbuild') {
       bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
     }
@@ -714,7 +665,7 @@ def buildAndTestBPFOpt = { kernel ->
 }
 
 def buildAndTestBPFASAN = { kernel ->
-  WithSourceCodeAndTargetsK8s('build-bpf-asan') {
+  withSourceCodeAndTargetsK8s('build-bpf-asan') {
     container('pxbuild') {
       bazelCICmdBPFonGCE('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer', '', kernel)
     }
@@ -722,7 +673,7 @@ def buildAndTestBPFASAN = { kernel ->
 }
 
 def buildAndTestBPFTSAN = { kernel ->
-WithSourceCodeAndTargetsK8s('build-bpf-tsan') {
+withSourceCodeAndTargetsK8s('build-bpf-tsan') {
     container('pxbuild') {
       bazelCICmdBPFonGCE('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer', '', kernel)
     }
@@ -778,7 +729,7 @@ def generateTestTargets = {
 }
 
 preBuild['Process Dependencies'] = {
-  WithSourceCodeK8s('process-deps') {
+  withSourceCodeK8s('process-deps') {
     container('pxbuild') {
       def forceAll = ''
       def enableBPF = ''
@@ -816,7 +767,7 @@ if (isMainRun || isOSSMainRun) {
   }
   // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
-    WithSourceCodeAndTargetsK8s('coverage') {
+    withSourceCodeAndTargetsK8s('coverage') {
       container('pxbuild') {
         warnError('Coverage command failed') {
           withCredentials([
@@ -840,7 +791,7 @@ def buildScriptForOSSCloudRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      WithSourceCodeK8s {
+      withSourceCodeK8s {
         container('pxbuild') {
           sh './ci/cloud_build_release.sh -p'
         }
@@ -859,7 +810,7 @@ def buildScriptForOSSCloudRelease = {
 if (isMainRun) {
   // Only run LSIF on main runs.
   builders['LSIF (sourcegraph)'] = {
-    WithSourceCodeAndTargetsK8s('lsif') {
+    withSourceCodeAndTargetsK8s('lsif') {
       container('pxbuild') {
         warnError('LSIF command failed') {
           withCredentials([
@@ -877,7 +828,7 @@ if (isMainRun) {
 
   // Only run FOSSA on main runs.
   builders['FOSSA'] = {
-    WithSourceCodeAndTargetsK8s('fossa') {
+    withSourceCodeAndTargetsK8s('fossa') {
       container('pxbuild') {
         warnError('FOSSA command failed') {
           withCredentials([
@@ -895,7 +846,7 @@ if (isMainRun) {
 }
 
 builders['Lint & Docs'] = {
-  WithSourceCodeAndTargetsK8s('lint') {
+  withSourceCodeAndTargetsK8s('lint') {
     container('pxbuild') {
       // Prototool relies on having a main branch in this checkout, so create one tracking origin/main
       sh 'git branch main --track origin/main'
@@ -920,7 +871,7 @@ builders['Lint & Docs'] = {
  *****************************************************************************/
 
 def archiveBuildArtifacts = {
-  DefaultGCloudPodTemplate('archive') {
+  defaultGCloudPodTemplate('archive') {
     container('gcloud') {
       // Unstash the build artifacts.
       stashList.each({ stashName ->
@@ -948,7 +899,7 @@ def archiveBuildArtifacts = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  DefaultGCloudPodTemplate('root') {
+  defaultGCloudPodTemplate('root') {
     if (isMainRun || isOSSMainRun) {
       def namePrefix = 'pixie-main'
       if (isOSSMainRun) {
@@ -1006,11 +957,11 @@ def buildScriptForCommits = {
  * REGRESSION_BUILDERS: This sections defines all the test regressions steps
  * that will happen in parallel.
  *****************************************************************************/
-def BPFRegressionBuilders = [:]
+def bpfRegressionBuilders = [:]
 
 BPF_KERNELS.each { kernel ->
-  BPFRegressionBuilders["Test (opt) ${kernel}"] = {
-    WithSourceCodeAndTargetsK8s('build-bpf-opt') {
+  bpfRegressionBuilders["Test (opt) ${kernel}"] = {
+    withSourceCodeAndTargetsK8s('build-bpf-opt') {
       container('pxbuild') {
         bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
       }
@@ -1028,7 +979,7 @@ def regressionBuilders = [:]
 TEST_ITERATIONS = 5
 
 regressionBuilders['Test (opt)'] = {
-  WithSourceCodeAndTargetsK8s {
+  withSourceCodeAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test -c opt --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_clang_opt", 'opt', 1)
@@ -1038,7 +989,7 @@ regressionBuilders['Test (opt)'] = {
 }
 
 regressionBuilders['Test (ASAN)'] = {
-  WithSourceCodeAndTargetsK8s {
+  withSourceCodeAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test --config asan --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_sanitizer", 'asan', 1)
@@ -1048,7 +999,7 @@ regressionBuilders['Test (ASAN)'] = {
 }
 
 regressionBuilders['Test (TSAN)'] = {
-  WithSourceCodeAndTargetsK8s {
+  withSourceCodeAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test --config tsan --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_sanitizer", 'tsan', 1)
@@ -1251,7 +1202,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
 
   return {
-    WithSourceCodeK8s('stirling-perf-eval', timeoutMinutes) {
+    withSourceCodeK8s('stirling-perf-eval', timeoutMinutes) {
       container('pxbuild') {
 
         // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
@@ -1411,7 +1362,7 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
 }
 
 buildAndPushPemImagesForPerfEval = {
-  WithSourceCodeK8s('pem-build-push') {
+  withSourceCodeK8s('pem-build-push') {
     container('pxbuild') {
       // We will need the repo, fail fast here if it is not available.
       assert fileExists('.git')
@@ -1492,7 +1443,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
       parallel(testjobs)
     }
     stage('Archive') {
-      DefaultGCloudPodTemplate('archive') {
+      defaultGCloudPodTemplate('archive') {
         container('gcloud') {
           // Unstash the build artifacts.
           stashList.each({ stashName ->
@@ -1522,7 +1473,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
 }
 
 def updateVersionsDB(String credsName, String clusterURL, String namespace) {
-  WithSourceCodeK8s {
+  withSourceCodeK8s {
     container('pxbuild') {
       unstashFromGCS('versions')
       withKubeConfig([
@@ -1536,8 +1487,8 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
   }
 }
 
-def  buildScriptForCLIRelease = {
-  DefaultGCloudPodTemplate('root') {
+def buildScriptForCLIRelease = {
+  defaultGCloudPodTemplate('root') {
     withCredentials([
       string(
         credentialsId: 'docker_access_token',
@@ -1557,7 +1508,7 @@ def  buildScriptForCLIRelease = {
           checkoutAndInitialize()
         }
         stage('Build & Push Artifacts') {
-          WithSourceCodeK8s {
+          withSourceCodeK8s {
             container('pxbuild') {
               withCredentials([
                 file(
@@ -1599,7 +1550,7 @@ def  buildScriptForCLIRelease = {
         }
         stage('Upload Signed Binary') {
           node('macos') {
-            WithSourceCodeK8s {
+            withSourceCodeK8s {
               container('pxbuild') {
                 withCredentials([
                   file(
@@ -1636,20 +1587,10 @@ def  buildScriptForCLIRelease = {
   }
 }
 
-def updatePxlDocs() {
-  WithSourceCodeK8s {
-    container('pxbuild') {
-      def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
-      sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
-      sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
-    }
-  }
-}
-
 def vizierReleaseBuilders = [:]
 
 vizierReleaseBuilders['Build & Push Artifacts'] = {
-  WithSourceCodeK8s {
+  withSourceCodeK8s {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: K8S_PROD_CREDS,
@@ -1664,7 +1605,13 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
 }
 
 vizierReleaseBuilders['Build & Export Docs'] = {
-  updatePxlDocs()
+  withSourceCodeK8s {
+    container('pxbuild') {
+      def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
+      sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
+      sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
+    }
+  }
 }
 
 def buildScriptForVizierRelease = {
@@ -1701,7 +1648,7 @@ def buildScriptForOperatorRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      WithSourceCodeK8s {
+      withSourceCodeK8s {
         container('pxbuild') {
           withKubeConfig([
             credentialsId: K8S_PROD_CREDS,
@@ -1735,7 +1682,7 @@ def buildScriptForOperatorRelease = {
 }
 
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
-  WithSourceCodeK8s {
+  withSourceCodeK8s {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: clusterCreds,
@@ -1797,7 +1744,7 @@ def buildScriptForCloudProdRelease = {
 }
 
 def copybaraTemplate(String name, String copybaraFile) {
-  DefaultCopybaraPodTemplate(name) {
+  defaultCopybaraPodTemplate(name) {
     deleteDir()
     checkout scm
     container('copybara') {
@@ -1826,7 +1773,7 @@ def buildScriptForCopybaraPublic() {
       copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
     }
     stage('Copy tags') {
-      DefaultGitPodTemplate('public-copy-tags') {
+      defaultGitPodTemplate('public-copy-tags') {
         container('git') {
           deleteDir()
           checkout([
@@ -1911,7 +1858,7 @@ def buildScriptForStirlingPerfEval = {
 if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression(regressionBuilders)
 } else if (isNightlyBPFTestRegressionRun) {
-  buildScriptForNightlyTestRegression(BPFRegressionBuilders)
+  buildScriptForNightlyTestRegression(bpfRegressionBuilders)
 } else if (isCLIBuildRun) {
   buildScriptForCLIRelease()
 } else if (isVizierBuildRun) {
