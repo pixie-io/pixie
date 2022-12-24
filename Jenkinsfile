@@ -1472,18 +1472,25 @@ def buildScriptForNightlyTestRegression = { testjobs ->
   postBuildActions()
 }
 
-def updateVersionsDB(String credsName, String clusterURL, String namespace) {
+def updateAllVersionsDB(String credsName, String clusterURL, String namespace) {
   withSourceCodeK8s {
     container('pxbuild') {
       unstashFromGCS('versions')
-      withKubeConfig([
-        credentialsId: credsName,
-        serverUrl: clusterURL,
-        namespace: namespace
-      ]) {
-        sh './ci/update_artifact_db.sh'
-      }
+      sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
+      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
+      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
+      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
     }
+  }
+}
+
+def updateVersionsDB(String credsName, String clusterURL, String namespace) {
+  withKubeConfig([
+    credentialsId: credsName,
+    serverUrl: clusterURL,
+    namespace: namespace
+  ]) {
+    sh './ci/update_artifact_db.sh'
   }
 }
 
@@ -1565,14 +1572,8 @@ def buildScriptForCLIRelease = {
             }
           }
         }
-        stage('Update versions database (testing)') {
-          updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
-        }
-        stage('Update versions database (staging)') {
-          updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
-        }
-        stage('Update versions database (prod)') {
-          updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
+        stage('Update versions databases') {
+          updateAllVersionsDB()
         }
       }
       catch (err) {
@@ -1622,14 +1623,8 @@ def buildScriptForVizierRelease = {
     stage('Build & Push Artifacts') {
       parallel(vizierReleaseBuilders)
     }
-    stage('Update versions database (testing)') {
-      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
-    }
-    stage('Update versions database (staging)') {
-      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
-    }
-    stage('Update versions database (prod)') {
-      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
+    stage('Update versions databases') {
+      updateAllVersionsDB()
     }
   }
   catch (err) {
@@ -1661,14 +1656,8 @@ def buildScriptForOperatorRelease = {
         }
       }
     }
-    stage('Update versions database (testing)') {
-      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
-    }
-    stage('Update versions database (staging)') {
-      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
-    }
-    stage('Update versions database (prod)') {
-      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
+    stage('Update versions databases') {
+      updateAllVersionsDB()
     }
   }
   catch (err) {

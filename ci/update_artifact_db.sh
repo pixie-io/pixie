@@ -18,15 +18,18 @@
 
 set -ex
 
-versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+manifest_file="artifact_db_updater_job.yaml"
+versions_file="src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+
+if [[ ! -f $manifest_file ]]; then
+  echo "Missing manifest file"
+  exit 1
+fi
 
 # Print out the versions file so we can inspect.
 jq -C -r . "${versions_file}"
 
-bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > manifest.yaml
-
-kubectl apply -f manifest.yaml
-
+kubectl apply -f "${manifest_file}"
 kubectl wait --for=condition=complete --timeout=60s job/artifact-db-updater-job
 
 # Remove this after feature is enabled: https://kubernetes.io/docs/concepts/workloads/\
