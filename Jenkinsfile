@@ -60,7 +60,6 @@ class PhabConnector {
 /**
   * We expect the following parameters to be defined (for code review builds):
   *    PHID: Which should be the buildTargetPHID from Harbormaster.
-  *    INITIATOR_PHID: Which is the PHID of the initiator (ie. Differential)
   *    API_TOKEN: The api token to use to communicate with Phabricator
   *    REVISION: The revision ID of the Differential.
   */
@@ -72,9 +71,8 @@ phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai'
 
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
-DEV_DOCKER_IMAGE = 'pixie-oss/pixie-dev-public/dev_image_with_extras'
-DEV_DOCKER_IMAGE_EXTRAS = 'pixie-oss/pixie-dev-public/dev_image_with_extras'
-GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
+DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
+GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
@@ -115,7 +113,6 @@ runBPFWithASAN = false
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
-devDockerImageExtrasWithTag = ''
 
 stashList = []
 
@@ -291,6 +288,7 @@ def withSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinut
         }
         container('gcloud') {
           unstashFromGCS(SRC_STASH_NAME)
+          sh 'git config --global --add safe.directory `pwd`'
           sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
         }
         body()
@@ -424,6 +422,7 @@ def postBuildActions = {
 }
 
 def initializeRepoState() {
+  sh 'git config --global --add safe.directory $(pwd)'
   sh './ci/save_version_info.sh'
   sh './ci/save_diff_info.sh'
 
@@ -443,7 +442,6 @@ def initializeRepoState() {
   // Get docker image tag.
   def properties = readProperties file: 'docker.properties'
   devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
-  devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
 
   stashOnGCS(SRC_STASH_NAME, '.')
 }
@@ -493,7 +491,7 @@ def defaultBuildPodTemplate(String suffix, Closure body) {
     podTemplate(
       label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
         containerTemplate(
-          name: 'pxbuild', image: 'gcr.io/' + devDockerImageWithTag,
+          name: 'pxbuild', image: devDockerImageWithTag,
           command: 'cat', ttyEnabled: true,
           resourceRequestMemory: '58368Mi',
           resourceRequestCpu: '30000m',
@@ -673,7 +671,7 @@ def buildAndTestBPFASAN = { kernel ->
 }
 
 def buildAndTestBPFTSAN = { kernel ->
-withSourceCodeAndTargetsK8s('build-bpf-tsan') {
+  withSourceCodeAndTargetsK8s('build-bpf-tsan') {
     container('pxbuild') {
       bazelCICmdBPFonGCE('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer', '', kernel)
     }
