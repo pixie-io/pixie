@@ -30,12 +30,18 @@ ENV CC=clang
 ENV CXX=clang++
 
 WORKDIR /llvm_all
-RUN git clone --branch llvmorg-14.0.4 --depth 1 https://github.com/llvm/llvm-project.git
+RUN git clone --branch llvmorg-15.0.6 --depth 1 https://github.com/llvm/llvm-project.git
+
+COPY zdebug.15.0.6.patch zdebug.patch
+RUN cd llvm-project && git apply ../zdebug.patch
+
 
 WORKDIR /llvm_all/build
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-14.0 \
+  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0 \
+    -DMSVC=OFF \
+    -DLLVM_BUILD_DOCS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_BUILD_32_BITS=OFF \
     -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
@@ -56,7 +62,7 @@ RUN make -j $(nproc) runtimes
 RUN make install
 
 ## We need libclang.a, but the clang build system excludes it during make install.
-#RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-14.0/lib
+#RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-15.0/lib
 
 
 #######################################################
@@ -66,15 +72,17 @@ RUN make install
 # need it to be built with the same underlying C++
 # library.
 #######################################################
-ENV PATH=/opt/clang-14.0/bin:${PATH}
+ENV PATH=/opt/clang-15.0/bin:${PATH}
 ENV CC=clang
 ENV CXX=clang++
+ENV CXXFLAGS="-stdlib=libc++"
 
 WORKDIR /llvm_all/build_libc++
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-    CXXFLAGS="-stdlib=libc++" \
-    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-14.0-libc++ \
+  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0-libc++ \
+    -DMSVC=OFF \
+    -DLLVM_BUILD_DOCS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
     -DLLVM_BUILD_32_BITS=OFF \
     -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
@@ -86,26 +94,26 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;polly;lld;lldb;openmp;libcxx;libcxxabi;compiler-rt" \
+    -DLLVM_ENABLE_PROJECTS="clang;polly;lld;openmp;libcxx;libcxxabi;compiler-rt" \
   ../llvm-project/llvm
 
 RUN make -j $(nproc)
 RUN make -j $(nproc) runtimes
 RUN make install
 
-# LSIF is broken with clang-14
+# LSIF is broken with clang-15
 # # Add clang-lsif for our image. This needs to be patched for the version of clang being used.
 # WORKDIR /tmp
 # RUN git clone https://github.com/pixie-io/lsif-clang.git
 #
 # WORKDIR /tmp/lsif-clang
 # RUN git checkout llvm-11
-# RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-14.0
+# RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0
 # RUN make -C build -j $(nproc)
 # RUN make -C build install
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-14.0-pl1.deb
+ENV deb_name clang-15.0-pl1.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-14.0 -v 14.0-pl1 --prefix /opt clang-14.0 clang-14.0-libc++"]
+        -s dir -t deb -n clang-15.0 -v 15.0-pl1 --prefix /opt clang-15.0 clang-15.0-libc++"]

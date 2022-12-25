@@ -49,6 +49,12 @@ def download_ubuntu_packages():
         downloaded_file_path = "out.deb",
     )
     http_file(
+        name = "libunwind8",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/libunwind8_1.3.2-2build2_amd64.deb"],
+        sha256 = "d257e00e37886bd38040f0a79a79e961ffbf774119d63bfaebe46bf372003f19",
+        downloaded_file_path = "out.deb",
+    )
+    http_file(
         name = "zlib1g",
         urls = ["https://storage.googleapis.com/pixie-dev-public/ubuntu-debs/1655507056/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb"],
         sha256 = "da0ef2adaece0ba09a40d169872136e98d1917adbb13099dfcaee72d9ec1f8d8",
@@ -61,5 +67,6 @@ packages = {
     "libelf1": "@libelf1//file:out.deb",
     "liblzma5": "@liblzma5//file:out.deb",
     "libtinfo6": "@libtinfo6//file:out.deb",
+    "libunwind8": "@libunwind8//file:out.deb",
     "zlib1g": "@zlib1g//file:out.deb",
 }

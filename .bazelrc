@@ -1,8 +1,8 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
 # This is to flush bazel cache for new version of clang/gcc.
-build --action_env=CLANG_COMPILER_VERSION=14.0_0
-build --host_action_env=CLANG_COMPILER_VERSION=14.0_0
+build --action_env=CLANG_COMPILER_VERSION=15.0_2
+build --host_action_env=CLANG_COMPILER_VERSION=15.0_2
 
 build --remote_download_minimal
 test --remote_download_minimal

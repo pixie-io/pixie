@@ -18,6 +18,8 @@
 
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/Config/llvm-config.h>
+#include <llvm/DebugInfo/DWARF/DWARFExpression.h>
+#include <llvm/Support/ScopedPrinter.h>
 
 #include "src/stirling/obj_tools/dwarf_reader.h"
 
@@ -820,7 +822,7 @@ StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
 
     // For now, we use the first location, assuming that it is valid for the function entry.
     const llvm::DWARFLocationExpression& loc = location_expr_vec->front();
-    VLOG(1) << to_string(loc);
+    VLOG(1) << llvm::to_string(loc);
 
     return llvm::ArrayRef<uint8_t>(loc.Expr);
   }

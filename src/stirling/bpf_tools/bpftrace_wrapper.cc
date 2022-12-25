@@ -19,7 +19,6 @@
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 #include <aot/aot.h>
-#include <ast/bpforc/bpforc.h>
 #include <ast/pass_manager.h>
 #include <ast/passes/codegen_llvm.h>
 #include <ast/passes/field_analyser.h>
@@ -191,6 +190,8 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
     return error::Internal(ERR_MSG "failed to parse: $0", err_msg);
   }
 
+  bpftrace_.parse_btf(driver.list_modules());
+
   // This collects the error messages emitted during the FieldAnalyser's analysis.
   std::ostringstream field_analyser_oss;
   bpftrace::ast::FieldAnalyser fields(driver.root.get(), bpftrace_, field_analyser_oss);
@@ -238,8 +239,7 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   bpftrace::ast::CodegenLLVM llvm(ast_root.get(), bpftrace_);
   llvm.generate_ir();
   llvm.optimize();
-  std::unique_ptr<bpftrace::BpfOrc> bpforc = llvm.emit();
-  bytecode_ = bpforc->getBytecode();
+  bytecode_ = llvm.emit();
 
   compiled_ = true;
 

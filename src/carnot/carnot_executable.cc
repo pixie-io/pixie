@@ -119,7 +119,6 @@ std::shared_ptr<px::table_store::Table> GetTableFromCsv(const std::string& filen
   // Get the columns types and names.
   auto row_idx = 0;
   for (auto& row : parser) {
-    auto col_idx = 0;
     for (auto& field : row) {
       if (row_idx == 0) {
         auto type = GetTypeFromHeaderString(field).ConsumeValueOrDie();
@@ -128,7 +127,6 @@ std::shared_ptr<px::table_store::Table> GetTableFromCsv(const std::string& filen
       } else if (row_idx == 1) {  // Reading second row, should be the names of columns.
         names.push_back(field);
       }
-      col_idx++;
     }
     row_idx++;
     if (row_idx > 1) {

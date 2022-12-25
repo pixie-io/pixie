@@ -37,6 +37,7 @@ cmake(
         "ENABLE_TESTS": "OFF",
         "LIBBPF_INCLUDE_DIR": "$EXT_BUILD_DEPS/libbpf/include",
         "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
+        "LLVM_ROOT": "/opt/clang-15.0",
     },
     includes = [
         "bcc/compat",

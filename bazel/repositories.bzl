@@ -109,13 +109,13 @@ def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
         build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-14.0",
+        path = "/opt/clang-15.0",
     )
 
     native.new_local_repository(
         name = "com_llvm_lib_libcpp",
         build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-14.0-libc++",
+        path = "/opt/clang-15.0-libc++",
     )
 
 def _cc_deps():

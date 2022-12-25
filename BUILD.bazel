@@ -119,6 +119,7 @@ pl_cc_base_packages = [
     packages["libelf1"],
     packages["liblzma5"],
     packages["libtinfo6"],
+    packages["libunwind8"],
     packages["zlib1g"],
 ]
 

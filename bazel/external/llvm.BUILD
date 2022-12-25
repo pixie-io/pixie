@@ -30,6 +30,7 @@ cc_library(
         "lib/libclangDriver.a",
         "lib/libclangParse.a",
         "lib/libclangSema.a",
+        "lib/libclangSupport.a",
         "lib/libclangAnalysis.a",
         "lib/libclangEdit.a",
         "lib/libclangAST.a",
@@ -95,6 +96,7 @@ cc_library(
         "lib/libLLVMJITLink.a",
         "lib/libLLVMOrcTargetProcess.a",
         "lib/libLLVMOrcShared.a",
+        "lib/libLLVMWindowsDriver.a",
 
         # AArch64 libs.
         "lib/libLLVMAArch64AsmParser.a",

@@ -30,12 +30,12 @@ file '/tmp/clang.deb' do
   action :delete
 end
 
-ENV['PATH'] = "/opt/clang-14.0/bin:#{ENV['PATH']}"
-ENV['LD_LIBRARY_PATH'] = "/opt/clang-14.0/lib:#{ENV['LD_LIBRARY_PATH']}"
+ENV['PATH'] = "/opt/clang-15.0/bin:#{ENV['PATH']}"
+ENV['LD_LIBRARY_PATH'] = "/opt/clang-15.0/lib:#{ENV['LD_LIBRARY_PATH']}"
 ENV['CC'] = "clang"
 ENV['CXX'] = "clang++"
 
 # Provide LLD as a system linker.
 execute 'lld alternatives selection' do
-  command 'update-alternatives --install "/usr/bin/ld.lld" "lld" "/opt/clang-14.0/bin/lld" 10'
+  command 'update-alternatives --install "/usr/bin/ld.lld" "lld" "/opt/clang-15.0/bin/lld" 10'
 end

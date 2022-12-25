@@ -53,6 +53,8 @@ cmake(
         "LIBBPF_INCLUDE_DIRS": "$EXT_BUILD_DEPS/libbpf/include",
         "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
         "LIBCEREAL_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
+        "LLVM_REQUESTED_VERSION": "15.0.6",
+        "LLVM_ROOT": "/opt/clang-15.0",
     },
     lib_source = ":bpftrace_source",
     linkopts = [
@@ -64,7 +66,6 @@ cmake(
         "libaot.a",
         "libast.a",
         "libruntime.a",
-        "libbpforc.a",
         "libast_defs.a",
         "libparser.a",
         "libresources.a",
@@ -77,5 +78,6 @@ cmake(
         "@com_github_USCiLab_cereal//:cereal",
         "@com_github_iovisor_bcc//:bcc",
         "@com_github_libbpf_libbpf//:libbpf",
+        "@com_llvm_lib//:llvm",
     ],
 )

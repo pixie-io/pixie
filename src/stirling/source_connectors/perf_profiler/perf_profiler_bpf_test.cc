@@ -444,7 +444,8 @@ TEST_F(PerfProfileBPFTest, DISABLED_PerfProfilerCppTest) {
       CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
-TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
+// TODO(jps/oazizi): This test is flaky.
+TEST_F(PerfProfileBPFTest, DISABLED_GraalVM_AOT_Test) {
   const std::string app_path = "JavaFib";
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);

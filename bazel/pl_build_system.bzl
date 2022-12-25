@@ -80,7 +80,7 @@ def pl_common_linkopts():
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [
             "-pthread",
-            "-l:libunwind.a",
+            "-lunwind",
             "-llzma",
             "-lrt",
             "-ldl",

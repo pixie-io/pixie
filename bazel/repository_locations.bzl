@@ -130,17 +130,17 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/h2o/picohttpparser/archive/1d2b8a184e7ebe6651c30dcede37ba1d89691351.tar.gz"],
     ),
     com_github_iovisor_bcc = dict(
-        sha256 = "0fe8e9f0ebac749db7bdc96dfc532fdf34f4f804a2103e4840a5160651ed3bf5",
-        strip_prefix = "bcc-b9cc317740d943173a493f2941f716679c560fa8",
+        sha256 = "46eac44c0cf68a94bafe01088081b71606982936ccdfe2808fcd28e0cc131ba8",
+        strip_prefix = "bcc-6bfdb074c276be69ace19da376a689d1dbb4963f",
         urls = [
-            "https://github.com/pixie-io/bcc/archive/b9cc317740d943173a493f2941f716679c560fa8.tar.gz",
+            "https://github.com/pixie-io/bcc/archive/6bfdb074c276be69ace19da376a689d1dbb4963f.tar.gz",
         ],
     ),
     com_github_iovisor_bpftrace = dict(
-        sha256 = "b8ebddb930aca0293f4f0f9ffaf3b550eba6e14a5ba3f0f3abbb3028873e5554",
-        strip_prefix = "bpftrace-ad53050229186cb71021bf4d6617e8765c666a3c",
+        sha256 = "92138b530a222efbe7506b337b91694f994d2bee1723263cb740766297be2156",
+        strip_prefix = "bpftrace-460adf093c226a3013ff389cf9a2d84834018b9b",
         urls = [
-            "https://github.com/pixie-io/bpftrace/archive/ad53050229186cb71021bf4d6617e8765c666a3c.tar.gz",
+            "https://github.com/pixie-io/bpftrace/archive/460adf093c226a3013ff389cf9a2d84834018b9b.tar.gz",
         ],
     ),
     com_github_jupp0r_prometheus_cpp = dict(
