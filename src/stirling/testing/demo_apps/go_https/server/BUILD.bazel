@@ -57,24 +57,28 @@ go_binary(
 go_cross_binary(
     name = "golang_1_16_server_binary",
     sdk_version = "1.16",
+    tags = ["manual"],
     target = ":server",
 )
 
 go_cross_binary(
     name = "golang_1_17_server_binary",
     sdk_version = "1.17",
+    tags = ["manual"],
     target = ":server",
 )
 
 go_cross_binary(
     name = "golang_1_18_server_binary",
     sdk_version = "1.18",
+    tags = ["manual"],
     target = ":server",
 )
 
 go_cross_binary(
     name = "golang_1_19_server_binary",
     sdk_version = "1.19",
+    tags = ["manual"],
     target = ":server",
 )
 

@@ -99,6 +99,7 @@ def _pl_ui_test_impl(ctx):
     if ctx.configuration.coverage_enabled:
         test_cmd = [
             "yarn coverage_ci",
+            "sed -i \"s|SF:src|SF:src/ui/src|g\" coverage/lcov.info",
             "cp coverage/lcov.info ${COVERAGE_OUTPUT_FILE}",
         ]
 

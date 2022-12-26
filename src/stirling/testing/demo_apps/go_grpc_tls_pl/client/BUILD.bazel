@@ -47,24 +47,28 @@ go_binary(
 go_cross_binary(
     name = "golang_1_16_grpc_tls_client_binary",
     sdk_version = "1.16",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_17_grpc_tls_client_binary",
     sdk_version = "1.17",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_18_grpc_tls_client_binary",
     sdk_version = "1.18",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_19_grpc_tls_client_binary",
     sdk_version = "1.19",
+    tags = ["manual"],
     target = ":client",
 )
 

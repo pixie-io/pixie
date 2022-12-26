@@ -141,23 +141,10 @@ print_config
 cd $(bazel info workspace)
 
 # Get coverage from bazel targets.
-bazel coverage --remote_download_outputs=all //src/...
+bazel coverage --remote_download_outputs=all --combined_report=lcov //src/...
 
-# Fixup paths for the UI coverage output
-sed -i "s|SF:src|SF:src/ui/src|g" bazel-testlogs/src/ui/ui-tests/coverage.dat
-
-# This finds all the valid coverage files and then creates a list of them
-# prefixed by -a, which allows up to add them to the lcov output.
-file_merge_args=()
-for file in bazel-out/**/coverage.dat; do
-  # Only consider valid files.
-  if [ -s "${file}" ]; then
-    file_merge_args+=("-a" "${file}")
-  fi
-done
-
-# Merge all the files.
-lcov "${file_merge_args[@]}" -o ${COVERAGE_FILE}
+# Copy the output file
+cp "$(bazel info output_path)/_coverage/_coverage_report.dat" ${COVERAGE_FILE}
 
 # Print out the summary.
 lcov --summary ${COVERAGE_FILE}

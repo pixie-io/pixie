@@ -38,24 +38,28 @@ go_binary(
 go_cross_binary(
     name = "golang_1_16_client_binary",
     sdk_version = "1.16",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_17_client_binary",
     sdk_version = "1.17",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_18_client_binary",
     sdk_version = "1.18",
+    tags = ["manual"],
     target = ":client",
 )
 
 go_cross_binary(
     name = "golang_1_19_client_binary",
     sdk_version = "1.19",
+    tags = ["manual"],
     target = ":client",
 )
 

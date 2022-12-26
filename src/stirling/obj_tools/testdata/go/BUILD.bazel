@@ -39,24 +39,28 @@ go_binary(
 go_cross_binary(
     name = "test_go_1_16_binary",
     sdk_version = "1.16",
+    tags = ["manual"],
     target = ":test_go_binary",
 )
 
 go_cross_binary(
     name = "test_go_1_17_binary",
     sdk_version = "1.17",
+    tags = ["manual"],
     target = ":test_go_binary",
 )
 
 go_cross_binary(
     name = "test_go_1_18_binary",
     sdk_version = "1.18",
+    tags = ["manual"],
     target = ":test_go_binary",
 )
 
 go_cross_binary(
     name = "test_go_1_19_binary",
     sdk_version = "1.19",
+    tags = ["manual"],
     target = ":test_go_binary",
 )
 
