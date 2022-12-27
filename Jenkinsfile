@@ -298,30 +298,6 @@ def fetchSourceAndTargetsK8s(Closure body) {
   }
 }
 
-def pxbuildWithSourceK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
-  warnError('Script failed') {
-    defaultBuildPodTemplate(suffix) {
-      timeout(time: timeoutMinutes, unit: 'MINUTES') {
-        container('pxbuild') {
-          sh 'git config --global --add safe.directory `pwd`'
-        }
-        fetchSourceK8s {
-          body()
-        }
-      }
-    }
-  }
-}
-
-def pxbuildWithSourceAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
-  pxbuildWithSourceK8s(suffix) {
-    container('gcloud') {
-      unstashFromGCS(TARGETS_STASH_NAME)
-    }
-    body()
-  }
-}
-
 def runBazelCmd(String f, String targetConfig, int retries = 5) {
   def retval = sh(
     script: "bazel ${f} ${bbLinks()} --build_metadata=CONFIG=${targetConfig}",
@@ -475,6 +451,28 @@ def copybaraContainer() {
   containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
+def pxdevContainer() {
+  containerTemplate(name: 'pxdev', image: devDockerImageWithTag, command: 'cat', ttyEnabled: true)
+}
+
+def pxbuildContainer() {
+  containerTemplate(
+    name: 'pxbuild', image: devDockerImageWithTag, command: 'cat', ttyEnabled: true,
+    resourceRequestMemory: '3072Mi', resourceRequestCpu: '1000m',
+  )
+}
+
+pxbuildPodPatch = '''
+spec:
+  dnsPolicy: ClusterFirstWithHostNet
+  containers:
+    - name: pxbuild
+      securityContext:
+        capabilities:
+          add:
+            - SYS_PTRACE
+'''
+
 def retryPodTemplate(String suffix, List<org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate> containers, Closure body) {
   warnError('Script failed') {
     retryOnK8sDownscale {
@@ -488,37 +486,47 @@ def retryPodTemplate(String suffix, List<org.csanchez.jenkins.plugins.kubernetes
   }
 }
 
-def defaultBuildPodTemplate(String suffix, Closure body) {
-  retryOnK8sDownscale {
-    def label = "worker-${env.BUILD_TAG}-${suffix}"
-    podTemplate(
-      label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
-        containerTemplate(
-          name: 'pxbuild', image: devDockerImageWithTag,
-          command: 'cat', ttyEnabled: true,
-          resourceRequestMemory: '58368Mi',
-          resourceRequestCpu: '30000m',
-        ),
-        containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
-      ],
-      yaml:'''
-spec:
-  dnsPolicy: ClusterFirstWithHostNet
-  containers:
-    - name: pxbuild
-      securityContext:
-        capabilities:
-          add:
-            - SYS_PTRACE
-''',
-      yamlMergeStrategy: merge(),
-      hostNetwork: true,
-      volumes: [
-        hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
-        hostPathVolume(mountPath: '/var/lib/docker', hostPath: '/var/lib/docker'),
-        hostPathVolume(mountPath: '/mnt/jenkins/sharedDir', hostPath: '/mnt/jenkins/sharedDir')
-      ]) {
-      node(label) {
+def pxbuildRetryPodTemplate(String suffix, Closure body) {
+  warnError('Script failed') {
+    retryOnK8sDownscale {
+      def label = "worker-${env.BUILD_TAG}-${suffix}"
+      podTemplate(
+        label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
+          pxbuildContainer(), gcloudContainer(),
+        ],
+        yaml: pxbuildPodPatch,
+        yamlMergeStrategy: merge(),
+        hostNetwork: true,
+        volumes: [
+          hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
+          hostPathVolume(mountPath: '/var/lib/docker', hostPath: '/var/lib/docker'),
+          hostPathVolume(mountPath: '/mnt/jenkins/sharedDir', hostPath: '/mnt/jenkins/sharedDir')
+        ]) {
+        node(label) {
+          container('pxbuild') {
+            sh 'git config --global --add safe.directory `pwd`'
+          }
+          body()
+        }
+      }
+    }
+  }
+}
+
+def pxbuildWithSourceK8s(String suffix, Integer timeoutMinutes=90, Closure body) {
+  pxbuildRetryPodTemplate(suffix) {
+    fetchSourceK8s {
+      timeout(time: timeoutMinutes, unit: 'MINUTES') {
+        body()
+      }
+    }
+  }
+}
+
+def pxbuildWithSourceAndTargetsK8s(String suffix, Integer timeoutMinutes=90, Closure body) {
+  pxbuildRetryPodTemplate(suffix) {
+    fetchSourceAndTargetsK8s {
+      timeout(time: timeoutMinutes, unit: 'MINUTES') {
         body()
       }
     }
@@ -736,31 +744,34 @@ def generateTestTargets = {
 }
 
 preBuild['Process Dependencies'] = {
-  pxbuildWithSourceK8s('process-deps') {
-    container('pxbuild') {
-      def forceAll = ''
-      def enableBPF = ''
+  retryPodTemplate('process-deps', [gcloudContainer(), pxdevContainer()]) {
+    fetchSourceK8s {
+      container('pxdev') {
+        sh 'git config --global --add safe.directory `pwd`'
+        def forceAll = ''
+        def enableBPF = ''
 
-      if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun || isNightlyBPFTestRegressionRun) {
-        forceAll = '-a'
-        enableBPF = '-b'
+        if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun || isNightlyBPFTestRegressionRun) {
+          forceAll = '-a'
+          enableBPF = '-b'
+        }
+
+        if (buildTagBPFBuild || buildTagBPFBuildAllKernels) {
+          enableBPF = '-b'
+        }
+
+        sh """
+        ./ci/bazel_build_deps.sh ${forceAll} ${enableBPF}
+        wc -l bazel_*
+        """
+
+        if (buildTagBPFBuildAllKernels) {
+          BPF_KERNELS_TO_TEST = BPF_KERNELS
+        }
+
+        stashOnGCS(TARGETS_STASH_NAME, 'bazel_*')
+        generateTestTargets()
       }
-
-      if (buildTagBPFBuild || buildTagBPFBuildAllKernels) {
-        enableBPF = '-b'
-      }
-
-      sh """
-      ./ci/bazel_build_deps.sh ${forceAll} ${enableBPF}
-      wc -l bazel_*
-      """
-
-      if (buildTagBPFBuildAllKernels) {
-        BPF_KERNELS_TO_TEST = BPF_KERNELS
-      }
-
-      stashOnGCS(TARGETS_STASH_NAME, 'bazel_*')
-      generateTestTargets()
     }
   }
 }
@@ -835,16 +846,19 @@ if (isMainRun) {
 
   // Only run FOSSA on main runs.
   builders['FOSSA'] = {
-    pxbuildWithSourceAndTargetsK8s('fossa') {
-      container('pxbuild') {
-        warnError('FOSSA command failed') {
-          withCredentials([
-            string(
-              credentialsId: 'fossa-api-key',
-              variable: 'FOSSA_API_KEY'
-            )
-          ]) {
-            sh 'fossa analyze --branch main'
+    retryPodTemplate('fossa', [gcloudContainer(), pxdevContainer()]) {
+      fetchSourceK8s {
+        container('pxdev') {
+          warnError('FOSSA command failed') {
+            withCredentials([
+              string(
+                credentialsId: 'fossa-api-key',
+                variable: 'FOSSA_API_KEY'
+              )
+            ]) {
+              sh 'git config --global --add safe.directory `pwd`'
+              sh 'fossa analyze --branch main'
+            }
           }
         }
       }
@@ -1566,16 +1580,18 @@ def buildScriptForCLIRelease = {
         }
         stage('Upload Signed Binary') {
           node('macos') {
-            pxbuildWithSourceK8s {
-              container('pxbuild') {
-                withCredentials([
-                  file(
-                    credentialsId: 'buildbot-private-key-asc',
-                    variable: 'BUILDBOT_GPG_KEY_FILE'
-                  )
-                ]) {
-                  unstash 'cli_darwin_signed'
-                  sh './ci/cli_upload_signed.sh'
+            retryPodTemplate(suffix, [gcloudContainer(), pxdevContainer()]) {
+              fetchSourceK8s {
+                container('pxdev') {
+                  withCredentials([
+                    file(
+                      credentialsId: 'buildbot-private-key-asc',
+                      variable: 'BUILDBOT_GPG_KEY_FILE'
+                    )
+                  ]) {
+                    unstash 'cli_darwin_signed'
+                    sh './ci/cli_upload_signed.sh'
+                  }
                 }
               }
             }
