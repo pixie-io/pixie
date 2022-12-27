@@ -42,8 +42,11 @@ NAME="bpf-runner-${KERNEL_VERSION//./-}-${BUILD_TAG}"
 
 printenv
 
+gcloud components install beta --quiet
+
 gcloud beta compute instances create \
   "${NAME}" \
+  --quiet \
   --project=pl-dev-infra \
   --zone=us-west1-b \
   --machine-type=c2-standard-16 \

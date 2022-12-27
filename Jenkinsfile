@@ -280,26 +280,41 @@ def retryOnK8sDownscale(Closure body, int times=5) {
   }
 }
 
-def withSourceCodeK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
+def fetchSourceK8s(Closure body) {
+  container('gcloud') {
+    unstashFromGCS(SRC_STASH_NAME)
+    sh 'git config --global --add safe.directory `pwd`'
+    sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+  }
+  body()
+}
+
+def fetchSourceAndTargetsK8s(Closure body) {
+  fetchSourceK8s {
+    container('gcloud') {
+      unstashFromGCS(TARGETS_STASH_NAME)
+    }
+    body()
+  }
+}
+
+def pxbuildWithSourceK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
   warnError('Script failed') {
     defaultBuildPodTemplate(suffix) {
       timeout(time: timeoutMinutes, unit: 'MINUTES') {
         container('pxbuild') {
           sh 'git config --global --add safe.directory `pwd`'
         }
-        container('gcloud') {
-          unstashFromGCS(SRC_STASH_NAME)
-          sh 'git config --global --add safe.directory `pwd`'
-          sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+        fetchSourceK8s {
+          body()
         }
-        body()
       }
     }
   }
 }
 
-def withSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
-  withSourceCodeK8s(suffix) {
+def pxbuildWithSourceAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure body) {
+  pxbuildWithSourceK8s(suffix) {
     container('gcloud') {
       unstashFromGCS(TARGETS_STASH_NAME)
     }
@@ -547,7 +562,7 @@ def preBuild = [:]
 def builders = [:]
 
 def buildAndTestOptWithUI = {
-  withSourceCodeAndTargetsK8s('build-opt') {
+  pxbuildWithSourceAndTargetsK8s('build-opt') {
     container('pxbuild') {
       withCredentials([
         file(
@@ -561,7 +576,7 @@ def buildAndTestOptWithUI = {
 }
 
 def buildClangTidy = {
-  withSourceCodeK8s('clang-tidy') {
+  pxbuildWithSourceK8s('clang-tidy') {
     container('pxbuild') {
       def stashName = 'build-clang-tidy-logs'
       if (isMainRun) {
@@ -579,7 +594,7 @@ def buildClangTidy = {
 }
 
 def buildDbg = {
-  withSourceCodeAndTargetsK8s('build-dbg') {
+  pxbuildWithSourceAndTargetsK8s('build-dbg') {
     container('pxbuild') {
       bazelCICmd('build-dbg', 'clang', 'dbg', 'clang_dbg', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
     }
@@ -587,7 +602,7 @@ def buildDbg = {
 }
 
 def buildGoRace = {
-  withSourceCodeAndTargetsK8s('build-go-race') {
+  pxbuildWithSourceAndTargetsK8s('build-go-race') {
     container('pxbuild') {
       bazelCICmd('build-go-race', 'go_race', 'opt', 'go_race')
     }
@@ -595,7 +610,7 @@ def buildGoRace = {
 }
 
 def buildASAN = {
-  withSourceCodeAndTargetsK8s('build-san') {
+  pxbuildWithSourceAndTargetsK8s('build-san') {
     container('pxbuild') {
       bazelCICmd('build-asan', 'asan', 'dbg', 'sanitizer')
     }
@@ -603,7 +618,7 @@ def buildASAN = {
 }
 
 def buildTSAN = {
-  withSourceCodeAndTargetsK8s('build-san') {
+  pxbuildWithSourceAndTargetsK8s('build-san') {
     container('pxbuild') {
       bazelCICmd('build-tsan', 'tsan', 'dbg', 'sanitizer')
     }
@@ -611,7 +626,7 @@ def buildTSAN = {
 }
 
 def buildGCC = {
-  withSourceCodeAndTargetsK8s('build-gcc-opt') {
+  pxbuildWithSourceAndTargetsK8s('build-gcc-opt') {
     container('pxbuild') {
       bazelCICmd('build-gcc-opt', 'gcc', 'opt', 'gcc_opt')
     }
@@ -643,25 +658,31 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
 }
 
 def buildAndTestBPFOpt = { kernel ->
-  withSourceCodeAndTargetsK8s('build-bpf-opt') {
-    container('pxbuild') {
-      bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+  retryPodTemplate('build-bpf-opt', [gcloudContainer()]) {
+    fetchSourceAndTargetsK8s {
+      container('gcloud') {
+        bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+      }
     }
   }
 }
 
 def buildAndTestBPFASAN = { kernel ->
-  withSourceCodeAndTargetsK8s('build-bpf-asan') {
-    container('pxbuild') {
-      bazelCICmdBPFonGCE('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer', '', kernel)
+  retryPodTemplate('build-bpf-asan', [gcloudContainer()]) {
+    fetchSourceAndTargetsK8s {
+      container('gcloud') {
+        bazelCICmdBPFonGCE('build-bpf-asan', 'bpf_asan', 'dbg', 'bpf_sanitizer', '', kernel)
+      }
     }
   }
 }
 
 def buildAndTestBPFTSAN = { kernel ->
-  withSourceCodeAndTargetsK8s('build-bpf-tsan') {
-    container('pxbuild') {
-      bazelCICmdBPFonGCE('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer', '', kernel)
+  retryPodTemplate('build-bpf-tsan', [gcloudContainer()]) {
+    fetchSourceAndTargetsK8s {
+      container('gcloud') {
+        bazelCICmdBPFonGCE('build-bpf-tsan', 'bpf_tsan', 'dbg', 'bpf_sanitizer', '', kernel)
+      }
     }
   }
 }
@@ -715,7 +736,7 @@ def generateTestTargets = {
 }
 
 preBuild['Process Dependencies'] = {
-  withSourceCodeK8s('process-deps') {
+  pxbuildWithSourceK8s('process-deps') {
     container('pxbuild') {
       def forceAll = ''
       def enableBPF = ''
@@ -753,7 +774,7 @@ if (isMainRun || isOSSMainRun) {
   }
   // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
-    withSourceCodeAndTargetsK8s('coverage') {
+    pxbuildWithSourceAndTargetsK8s('coverage') {
       container('pxbuild') {
         warnError('Coverage command failed') {
           withCredentials([
@@ -777,7 +798,7 @@ def buildScriptForOSSCloudRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      withSourceCodeK8s {
+      pxbuildWithSourceK8s {
         container('pxbuild') {
           sh './ci/cloud_build_release.sh -p'
         }
@@ -796,7 +817,7 @@ def buildScriptForOSSCloudRelease = {
 if (isMainRun) {
   // Only run LSIF on main runs.
   builders['LSIF (sourcegraph)'] = {
-    withSourceCodeAndTargetsK8s('lsif') {
+    pxbuildWithSourceAndTargetsK8s('lsif') {
       container('pxbuild') {
         warnError('LSIF command failed') {
           withCredentials([
@@ -814,7 +835,7 @@ if (isMainRun) {
 
   // Only run FOSSA on main runs.
   builders['FOSSA'] = {
-    withSourceCodeAndTargetsK8s('fossa') {
+    pxbuildWithSourceAndTargetsK8s('fossa') {
       container('pxbuild') {
         warnError('FOSSA command failed') {
           withCredentials([
@@ -832,7 +853,7 @@ if (isMainRun) {
 }
 
 builders['Lint & Docs'] = {
-  withSourceCodeAndTargetsK8s('lint') {
+  pxbuildWithSourceAndTargetsK8s('lint') {
     container('pxbuild') {
       // Prototool relies on having a main branch in this checkout, so create one tracking origin/main
       sh 'git branch main --track origin/main'
@@ -947,9 +968,11 @@ def bpfRegressionBuilders = [:]
 
 BPF_KERNELS.each { kernel ->
   bpfRegressionBuilders["Test (opt) ${kernel}"] = {
-    withSourceCodeAndTargetsK8s('build-bpf-opt') {
-      container('pxbuild') {
-        bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+    retryPodTemplate('build-bpf-opt', [gcloudContainer()]) {
+      fetchSourceAndTargetsK8s {
+        container('gcloud') {
+          bazelCICmdBPFonGCE('build-bpf', 'bpf', 'opt', 'bpf', '', kernel)
+        }
       }
     }
   }
@@ -965,7 +988,7 @@ def regressionBuilders = [:]
 TEST_ITERATIONS = 5
 
 regressionBuilders['Test (opt)'] = {
-  withSourceCodeAndTargetsK8s {
+  pxbuildWithSourceAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test -c opt --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_clang_opt", 'opt', 1)
@@ -975,7 +998,7 @@ regressionBuilders['Test (opt)'] = {
 }
 
 regressionBuilders['Test (ASAN)'] = {
-  withSourceCodeAndTargetsK8s {
+  pxbuildWithSourceAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test --config asan --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_sanitizer", 'asan', 1)
@@ -985,7 +1008,7 @@ regressionBuilders['Test (ASAN)'] = {
 }
 
 regressionBuilders['Test (TSAN)'] = {
-  withSourceCodeAndTargetsK8s {
+  pxbuildWithSourceAndTargetsK8s {
     container('pxbuild') {
       runBazelCmd("test --config tsan --runs_per_test ${TEST_ITERATIONS} \
         --target_pattern_file bazel_tests_sanitizer", 'tsan', 1)
@@ -1188,7 +1211,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
 
   return {
-    withSourceCodeK8s('stirling-perf-eval', timeoutMinutes) {
+    pxbuildWithSourceK8s('stirling-perf-eval', timeoutMinutes) {
       container('pxbuild') {
 
         // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
@@ -1348,7 +1371,7 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
 }
 
 buildAndPushPemImagesForPerfEval = {
-  withSourceCodeK8s('pem-build-push') {
+  pxbuildWithSourceK8s('pem-build-push') {
     container('pxbuild') {
       // We will need the repo, fail fast here if it is not available.
       assert fileExists('.git')
@@ -1459,7 +1482,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
 }
 
 def updateAllVersionsDB(String credsName, String clusterURL, String namespace) {
-  withSourceCodeK8s {
+  pxbuildWithSourceK8s {
     container('pxbuild') {
       unstashFromGCS('versions')
       sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
@@ -1501,7 +1524,7 @@ def buildScriptForCLIRelease = {
           checkoutAndInitialize()
         }
         stage('Build & Push Artifacts') {
-          withSourceCodeK8s {
+          pxbuildWithSourceK8s {
             container('pxbuild') {
               withCredentials([
                 file(
@@ -1543,7 +1566,7 @@ def buildScriptForCLIRelease = {
         }
         stage('Upload Signed Binary') {
           node('macos') {
-            withSourceCodeK8s {
+            pxbuildWithSourceK8s {
               container('pxbuild') {
                 withCredentials([
                   file(
@@ -1577,7 +1600,7 @@ def buildScriptForCLIRelease = {
 def vizierReleaseBuilders = [:]
 
 vizierReleaseBuilders['Build & Push Artifacts'] = {
-  withSourceCodeK8s {
+  pxbuildWithSourceK8s {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: K8S_PROD_CREDS,
@@ -1592,7 +1615,7 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
 }
 
 vizierReleaseBuilders['Build & Export Docs'] = {
-  withSourceCodeK8s {
+  pxbuildWithSourceK8s {
     container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
       sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
@@ -1629,7 +1652,7 @@ def buildScriptForOperatorRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      withSourceCodeK8s {
+      pxbuildWithSourceK8s {
         container('pxbuild') {
           withKubeConfig([
             credentialsId: K8S_PROD_CREDS,
@@ -1657,7 +1680,7 @@ def buildScriptForOperatorRelease = {
 }
 
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
-  withSourceCodeK8s {
+  pxbuildWithSourceK8s {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: clusterCreds,
