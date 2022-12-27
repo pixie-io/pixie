@@ -5,6 +5,7 @@ metadata:
   name: cloud-proxy-service
   annotations:
     cloud.google.com/load-balancer-type: internal
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 spec:
   type: LoadBalancer
   ports:
