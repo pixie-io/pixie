@@ -117,6 +117,11 @@ def _default_internal_deps():
         "//src/common/perf:cc_library",
     ]
 
+def pl_default_features():
+    return [
+        "-external_dep",
+    ]
+
 # PL C++ library targets should be specified with this function.
 def pl_cc_library_internal(
         name,
@@ -157,6 +162,7 @@ def pl_cc_library_internal(
         defines = pl_defines() + defines,
         testonly = testonly,
         strip_include_prefix = strip_include_prefix,
+        features = pl_default_features(),
     )
 
 def pl_cc_library(**kwargs):
@@ -199,6 +205,7 @@ def pl_cc_binary(
         tags = tags,
         deps = deps + _default_external_deps() + _default_internal_deps(),
         defines = pl_defines() + defines,
+        features = pl_default_features(),
     )
 
 # PL C++ test targets should be specified with this function.
@@ -248,6 +255,7 @@ def pl_cc_test(
         timeout = timeout,
         local = local,
         flaky = flaky,
+        features = pl_default_features(),
     )
 
 # PL C++ test related libraries (that want gtest, gmock) should be specified
@@ -279,6 +287,7 @@ def pl_cc_test_library(
         visibility = visibility,
         alwayslink = 1,
         linkstatic = 1,
+        features = pl_default_features(),
     )
 
 # PL C++ mock targets should be specified with this function.

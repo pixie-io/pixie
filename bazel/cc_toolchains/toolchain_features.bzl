@@ -68,6 +68,8 @@ def pl_toolchain_post_features(ctx):
     if ctx.attr.compiler == "clang":
         features += _clang_features(ctx)
 
+    features += _external_dep(ctx)
+
     if len(ctx.attr.unfiltered_link_flags) > 0:
         features += _unfiltered_link_flags(ctx)
     features += _custom_c_runtime_path_post(ctx)
@@ -359,6 +361,26 @@ def _custom_c_runtime_path_post(ctx):
                             ],
                         ),
                     ] if enable else [],
+                ),
+            ],
+        ),
+    ]
+
+def _external_dep(ctx):
+    clang_disable_warnings = ["-Wno-everything"]
+    gcc_disable_warnings = ["-w"]
+    return [
+        feature(
+            name = "external_dep",
+            enabled = True,
+            flag_sets = [
+                flag_set(
+                    actions = all_compile_actions,
+                    flag_groups = [
+                        flag_group(
+                            flags = clang_disable_warnings if ctx.attr.compiler == "clang" else gcc_disable_warnings,
+                        ),
+                    ],
                 ),
             ],
         ),

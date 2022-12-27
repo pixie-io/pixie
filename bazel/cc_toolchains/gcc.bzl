@@ -56,7 +56,6 @@ def _gcc_x86_64_gnu():
             "-fstack-protector",
             "-Wall",
             "-Wunused-but-set-parameter",
-            "-Wno-free-nonheap-object",
             "-fno-omit-frame-pointer",
         ],
         cxx_flags = ["-std=c++17"],
