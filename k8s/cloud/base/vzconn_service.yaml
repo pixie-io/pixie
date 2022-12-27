@@ -6,6 +6,7 @@ metadata:
   annotations:
     cloud.google.com/load-balancer-type: internal
     cloud.google.com/app-protocols: '{"tcp-http2":"HTTP2"}'
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 spec:
   type: LoadBalancer
   ports:
