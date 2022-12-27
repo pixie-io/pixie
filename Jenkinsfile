@@ -72,8 +72,9 @@ phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai'
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
-GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
+GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
+GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
@@ -446,40 +447,27 @@ def initializeRepoState() {
   stashOnGCS(SRC_STASH_NAME, '.')
 }
 
-def defaultGitPodTemplate(String suffix, Closure body) {
-  retryOnK8sDownscale {
-    def label = "worker-git-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
-      containerTemplate(name: 'git', image: 'bitnami/git:2.33.0', command: 'cat', ttyEnabled: true)
-    ]) {
-      node(label) {
-        body()
-      }
-    }
-  }
+// K8s related helpers
+def gcloudContainer() {
+  containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
-def defaultGCloudPodTemplate(String suffix, Closure body) {
-  retryOnK8sDownscale {
-    def label = "worker-gcloud-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
-      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
-    ]) {
-      node(label) {
-        body()
-      }
-    }
-  }
+def gitContainer() {
+  containerTemplate(name: 'git', image: GIT_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
-def defaultCopybaraPodTemplate(String suffix, Closure body) {
-  retryOnK8sDownscale {
-    def label = "worker-copybara-${env.BUILD_TAG}-${suffix}"
-    podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
-      containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
-    ]) {
-      node(label) {
-        body()
+def copybaraContainer() {
+  containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
+}
+
+def retryPodTemplate(String suffix, List<org.csanchez.jenkins.plugins.kubernetes.ContainerTemplate> containers, Closure body) {
+  warnError('Script failed') {
+    retryOnK8sDownscale {
+      def label = "worker-${env.BUILD_TAG}-${suffix}"
+      podTemplate(label: label, cloud: 'devinfra-cluster-usw1-0', containers: containers) {
+        node(label) {
+          body()
+        }
       }
     }
   }
@@ -526,7 +514,7 @@ spec:
  * Checkout the source code, record git info and stash sources.
  */
 def checkoutAndInitialize() {
-  defaultGCloudPodTemplate('init') {
+  retryPodTemplate('init', [gcloudContainer()]) {
     container('gcloud') {
       deleteDir()
       checkout scm
@@ -869,7 +857,7 @@ builders['Lint & Docs'] = {
  *****************************************************************************/
 
 def archiveBuildArtifacts = {
-  defaultGCloudPodTemplate('archive') {
+  retryPodTemplate('archive', [gcloudContainer()]) {
     container('gcloud') {
       // Unstash the build artifacts.
       stashList.each({ stashName ->
@@ -897,7 +885,7 @@ def archiveBuildArtifacts = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  defaultGCloudPodTemplate('root') {
+  retryPodTemplate('archive', [gcloudContainer()]) {
     if (isMainRun || isOSSMainRun) {
       def namePrefix = 'pixie-main'
       if (isOSSMainRun) {
@@ -1441,7 +1429,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
       parallel(testjobs)
     }
     stage('Archive') {
-      defaultGCloudPodTemplate('archive') {
+      retryPodTemplate('archive', [gcloudContainer()]) {
         container('gcloud') {
           // Unstash the build artifacts.
           stashList.each({ stashName ->
@@ -1493,7 +1481,7 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
 }
 
 def buildScriptForCLIRelease = {
-  defaultGCloudPodTemplate('root') {
+  retryPodTemplate('root', [gcloudContainer()]) {
     withCredentials([
       string(
         credentialsId: 'docker_access_token',
@@ -1731,7 +1719,7 @@ def buildScriptForCloudProdRelease = {
 }
 
 def copybaraTemplate(String name, String copybaraFile) {
-  defaultCopybaraPodTemplate(name) {
+  retryPodTemplate(name, [copybaraContainer()]) {
     deleteDir()
     checkout scm
     container('copybara') {
@@ -1754,45 +1742,35 @@ def copybaraTemplate(String name, String copybaraFile) {
   }
 }
 
+def checkoutForCopybara(String url, String relativeTargetDir, String credentialsId) {
+  checkout([
+    changelog: false,
+    poll: false,
+    scm: [
+      $class: 'GitSCM',
+      branches: [[name: 'main']],
+      extensions: [
+        [$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir],
+        [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
+      ],
+      userRemoteConfigs: [
+        [credentialsId: credentialsId, url: url]
+      ]
+    ]
+  ])
+}
+
 def buildScriptForCopybaraPublic() {
   try {
     stage('Copybara it') {
       copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
     }
     stage('Copy tags') {
-      defaultGitPodTemplate('public-copy-tags') {
+      retryPodTemplate('public-copy-tags', [gitContainer()]) {
         container('git') {
           deleteDir()
-          checkout([
-            changelog: false,
-            poll: false,
-            scm: [
-              $class: 'GitSCM',
-              branches: [[name: 'main']],
-              extensions: [
-                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-private'],
-                [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-              ],
-              userRemoteConfigs: [
-                [credentialsId: 'build-bot-ro', url: 'git@github.com:pixie-labs/pixielabs.git']
-              ]
-            ]
-          ])
-          checkout([
-            changelog: false,
-            poll: false,
-            scm: [
-              $class: 'GitSCM',
-              branches: [[name: 'main']],
-              extensions: [
-                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'pixie-oss'],
-                [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-              ],
-              userRemoteConfigs: [
-                [credentialsId: 'pixie-copybara-git', url: 'git@github.com:pixie-io/pixie.git']
-              ]
-            ]
-          ])
+          checkoutForCopybara('git@github.com:pixie-labs/pixielabs.git', 'pixie-private', 'build-bot-ro')
+          checkoutForCopybara('git@github.com:pixie-io/pixie.git', 'pixie-oss', 'pixie-copybara-git')
           dir('pixie-private') {
             sshagent (credentials: ['pixie-copybara-git']) {
               sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
