@@ -14,7 +14,9 @@ spec:
   cloudAddr: {{ .Values.cloudAddr }}
   disableAutoUpdate: {{ .Values.disableAutoUpdate }}
   useEtcdOperator: {{ .Values.useEtcdOperator }}
-  {{- if .Values.clusterName }}
+  {{- if .Values.global.cluster }}
+  clusterName: {{ .Values.global.cluster }}
+  {{- else if .Values.clusterName }}
   clusterName: {{ .Values.clusterName }}
   {{- end }}
   {{- if .Values.devCloudNamespace }}
