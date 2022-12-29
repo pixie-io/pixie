@@ -30,10 +30,12 @@ import (
 )
 
 const (
-	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
-	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
-	etcdYAMLPath                  = "./yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
+	vizierEtcdYAMLPath                     = "yamls/vizier/vizier_etcd_metadata_prod.yaml"
+	vizierMetadataPersistYAMLPath          = "yamls/vizier/vizier_metadata_persist_prod.yaml"
+	vizierEtcdAutopilotYAMLPath            = "yamls/vizier/vizier_etcd_metadata_autopilot_prod.yaml"
+	vizierMetadataPersistAutopilotYAMLPath = "yamls/vizier/vizier_metadata_persist_autopilot_prod.yaml"
+	etcdYAMLPath                           = "yamls/vizier_deps/etcd_prod.yaml"
+	natsYAMLPath                           = "/yamls/vizier_deps/nats_prod.yaml"
 	// Note: if you update this value, make sure you also update defaultUncappedTableStoreSizeMB in
 	// src/cloud/config_manager/controllers/server.go, because we want to make
 	// sure that the table store size is about 60% of the total requested memory.
@@ -182,12 +184,12 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 		return nil, err
 	}
 
-	etcdVzYAML, persistentVzYAML, err := generateVzYAMLs(clientset, yamlMap)
+	vzYAMLs, err := generateVzYAMLs(clientset, yamlMap)
 	if err != nil {
 		return nil, err
 	}
 
-	return []*yamls.YAMLFile{
+	return append([]*yamls.YAMLFile{
 		{
 			Name: "secrets",
 			YAML: secretsYAML,
@@ -200,15 +202,7 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 			Name: "etcd",
 			YAML: etcdYAML,
 		},
-		{
-			Name: "vizier_etcd",
-			YAML: etcdVzYAML,
-		},
-		{
-			Name: "vizier_persistent",
-			YAML: persistentVzYAML,
-		},
-	}, nil
+	}, vzYAMLs...), nil
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
@@ -339,9 +333,9 @@ func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]str
 	return natsYAML, wrappedEtcd, nil
 }
 
-func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
+func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 	if _, ok := yamlMap[vizierMetadataPersistYAMLPath]; !ok {
-		return "", "", fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
+		return nil, fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
 	}
 
 	tmplOptions := append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
@@ -464,7 +458,7 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 	persistentYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], tmplOptions)
 
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	// The persistent YAML should only be applied if --use_etcd_operator is false. The entire YAML should be wrapped in a template.
 	wrappedPersistent := fmt.Sprintf(
@@ -475,7 +469,7 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 
 	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierEtcdYAMLPath], tmplOptions)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	// The etcd version of Vizier should only be applied if --use_etcd_operator is true. The entire YAML should be wrapped in a template.
 	wrappedEtcd := fmt.Sprintf(
@@ -484,7 +478,35 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 {{- end}}`,
 		etcdYAML)
 
-	return wrappedEtcd, wrappedPersistent, nil
+	persistentAutopilotYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistAutopilotYAMLPath], tmplOptions)
+
+	if err != nil {
+		return nil, err
+	}
+
+	etcdAutopilotYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierEtcdAutopilotYAMLPath], tmplOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*yamls.YAMLFile{
+		{
+			Name: "vizier_etcd",
+			YAML: wrappedEtcd,
+		},
+		{
+			Name: "vizier_persistent",
+			YAML: wrappedPersistent,
+		},
+		{
+			Name: "vizier_etcd_ap",
+			YAML: etcdAutopilotYAML,
+		},
+		{
+			Name: "vizier_persistent_ap",
+			YAML: persistentAutopilotYAML,
+		},
+	}, nil
 }
 
 const secretsYAML string = `

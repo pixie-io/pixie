@@ -513,7 +513,7 @@ def pxbuildRetryPodTemplate(String suffix, Closure body) {
   }
 }
 
-def pxbuildWithSourceK8s(String suffix, Integer timeoutMinutes=90, Closure body) {
+def pxbuildWithSourceK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
   pxbuildRetryPodTemplate(suffix) {
     fetchSourceK8s {
       timeout(time: timeoutMinutes, unit: 'MINUTES') {
@@ -1495,7 +1495,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
   postBuildActions()
 }
 
-def updateAllVersionsDB(String credsName, String clusterURL, String namespace) {
+def updateAllVersionsDB() {
   pxbuildWithSourceK8s {
     container('pxbuild') {
       unstashFromGCS('versions')
