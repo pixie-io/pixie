@@ -74,6 +74,8 @@ message VizierSpec {
   // "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest" should be pushed to
   // "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".
   string registry = 18;
+  // Autopilot should be set if running Pixie on GKE Autopilot.
+  bool autopilot = 19;
 }
 
 // PodPolicyReq defines the policy for creating Vizier pods.

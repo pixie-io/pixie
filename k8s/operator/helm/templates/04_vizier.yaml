@@ -39,6 +39,9 @@ spec:
   {{- else if .Values.registry }}
   registry: {{ .Values.registry }}
   {{- end}}
+  {{- if .Values.autopilot }}
+  autopilot: {{ .Values.autopilot }}
+  {{- end}}
   {{- if .Values.dataCollectorParams }}
   dataCollectorParams:
     {{- if .Values.dataCollectorParams.datastreamBufferSize }}

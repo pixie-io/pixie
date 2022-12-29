@@ -79,6 +79,8 @@ type VizierSpec struct {
 	// Pixie's image paths are replaced with a "-". For example: "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest"
 	// should be pushed to "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".
 	Registry string `json:"registry,omitempty"`
+	// Autopilot should be set if running Pixie on GKE Autopilot.
+	Autopilot bool `json:"autopilot,omitempty"`
 }
 
 // DataAccessLevel defines the levels of data access that can be used when executing a script on a cluster.

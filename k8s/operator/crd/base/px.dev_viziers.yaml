@@ -36,6 +36,9 @@ spec:
           spec:
             description: VizierSpec defines the desired state of Vizier
             properties:
+              autopilot:
+                description: Autopilot should be set if running Pixie on GKE Autopilot.
+                type: boolean
               clockConverter:
                 description: ClockConverter specifies which routine to use for converting
                   timestamps to a synced reference time.
