@@ -38,7 +38,7 @@ else
   IMAGE_TO_USE="${DEFAULT_IMAGE}"
 fi
 
-NAME="bpf-runner-${KERNEL_VERSION//./-}-${BUILD_TAG}"
+NAME="bpf-${KERNEL_VERSION//./-}-${BUILD_TAG/jenkins-/}"
 
 printenv
 
