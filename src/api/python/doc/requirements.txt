@@ -1,7 +1,1 @@
-astunparse==1.6.3
-Jinja2==3.0.3
-MarkupSafe==2.0.1
-pdoc==8.2.0
-Pygments==2.11.2
-six==1.16.0
-wheel==0.37.1
+pdoc==12.3.0

@@ -150,7 +150,7 @@ vizier_api_install_deps()
 
 pip_parse(
     name = "pxapi_python_doc_deps",
-    requirements_lock = "//src/api/python/doc:requirements.txt",
+    requirements_lock = "//src/api/python/doc:requirements.bazel.txt",
 )
 
 load("@pxapi_python_doc_deps//:requirements.bzl", pxapi_py_doc_install_deps = "install_deps")
