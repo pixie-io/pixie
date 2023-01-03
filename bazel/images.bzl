@@ -46,9 +46,9 @@ def generate_cloud_yamls(name, srcs, out, image_map, yaml_dir, replace):
         cp -aL k8s/cloud $$T
 
         # Update the bundle versions.
-        pushd $$T/cloud/{0}
+        pushd $$T/cloud/{0} &>/dev/null
         {1}
-        popd
+        popd &>/dev/null
 
         kustomize build $$T/cloud/{0} -o $@
         """.format(yaml_dir, merged_edits),
