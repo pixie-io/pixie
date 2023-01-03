@@ -1004,9 +1004,7 @@ TEST_ITERATIONS = 5
 regressionBuilders['Test (opt)'] = {
   pxbuildWithSourceAndTargetsK8s('test-opt') {
     container('pxbuild') {
-      runBazelCmd("test -c opt --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_clang_opt", 'opt', 1)
-      createBazelStash('build-opt-testlogs')
+      bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', "--runs_per_test ${TEST_ITERATIONS}")
     }
   }
 }
@@ -1014,9 +1012,7 @@ regressionBuilders['Test (opt)'] = {
 regressionBuilders['Test (ASAN)'] = {
   pxbuildWithSourceAndTargetsK8s('test-asan') {
     container('pxbuild') {
-      runBazelCmd("test --config asan --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_sanitizer", 'asan', 1)
-      createBazelStash('build-asan-testlogs')
+      bazelCICmd('build-asan', 'asan', 'dbg', 'sanitizer', "--runs_per_test ${TEST_ITERATIONS}")
     }
   }
 }
@@ -1024,9 +1020,7 @@ regressionBuilders['Test (ASAN)'] = {
 regressionBuilders['Test (TSAN)'] = {
   pxbuildWithSourceAndTargetsK8s('test-tsan') {
     container('pxbuild') {
-      runBazelCmd("test --config tsan --runs_per_test ${TEST_ITERATIONS} \
-        --target_pattern_file bazel_tests_sanitizer", 'tsan', 1)
-      createBazelStash('build-tsan-testlogs')
+      bazelCICmd('build-tsan', 'tsan', 'dbg', 'sanitizer', "--runs_per_test ${TEST_ITERATIONS}")
     }
   }
 }
