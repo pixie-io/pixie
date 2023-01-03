@@ -49,7 +49,12 @@ func startNATS() (*server.Server, *nats.Conn, error) {
 	opts.ServerName = "test_nats_js"
 	opts.JetStream = true
 	opts.Port = port
-	opts.StoreDir = os.TempDir()
+	dir, err := os.MkdirTemp("", "nats")
+	if err != nil {
+		return nil, nil, err
+	}
+	opts.StoreDir = dir
+
 	gnatsd := test.RunServer(&opts)
 	if gnatsd == nil {
 		return nil, nil, errors.New("Could not run NATS server")
@@ -91,7 +96,9 @@ func MustStartTestNATS(t *testing.T) (*nats.Conn, func()) {
 	}
 
 	cleanup := func() {
+		dir := gnatsd.StoreDir()
 		gnatsd.Shutdown()
+		os.RemoveAll(dir)
 		conn.Close()
 	}
 

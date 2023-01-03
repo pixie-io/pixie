@@ -19,6 +19,7 @@
 package controllers_test
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -460,6 +461,21 @@ func TestListenForUnexpectedIndexerMessages(t *testing.T) {
 	defer natsCleanup()
 
 	js := msgbus.MustConnectJetStream(nc)
+	_, err := js.StreamInfo("MetadataIndex")
+	if errors.Is(err, nats.ErrStreamNotFound) {
+		// Create stream if it doesn't exist.
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name: "MetadataIndex",
+			Subjects: []string{
+				"v2c.*.*.*",
+				"MetadataIndex.*",
+			},
+			MaxAge: time.Minute * 2,
+		})
+		require.NoError(t, err)
+	} else {
+		require.NoError(t, err)
+	}
 
 	idxCh := make(chan *nats.Msg)
 	indexerSub, err := js.Subscribe("MetadataIndex.test", func(msg *nats.Msg) {
