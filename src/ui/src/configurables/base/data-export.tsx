@@ -63,3 +63,8 @@ export function customizeDetailedRetentionScript(script: GQLDetailedRetentionScr
 export function customizeScriptList(scripts: GQLRetentionScript[]): GQLRetentionScript[] {
   return scripts;
 }
+
+/** Like customizeScriptList, environments with special rules for retention scripts may alter them. */
+export function customizeRetentionScript<T extends GQLRetentionScript | GQLDetailedRetentionScript>(script: T): T {
+  return script;
+}
