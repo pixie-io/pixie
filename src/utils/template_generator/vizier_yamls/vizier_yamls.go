@@ -35,7 +35,7 @@ const (
 	vizierEtcdAutopilotYAMLPath            = "yamls/vizier/vizier_etcd_metadata_autopilot_prod.yaml"
 	vizierMetadataPersistAutopilotYAMLPath = "yamls/vizier/vizier_metadata_persist_autopilot_prod.yaml"
 	etcdYAMLPath                           = "yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath                           = "/yamls/vizier_deps/nats_prod.yaml"
+	natsYAMLPath                           = "yamls/vizier_deps/nats_prod.yaml"
 	// Note: if you update this value, make sure you also update defaultUncappedTableStoreSizeMB in
 	// src/cloud/config_manager/controllers/server.go, because we want to make
 	// sure that the table store size is about 60% of the total requested memory.
