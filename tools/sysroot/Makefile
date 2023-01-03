@@ -31,8 +31,8 @@ upload_sysroots: upload_$(DIST)_arm64_sysroot upload_$(DIST)_amd64_sysroot
 
 .PHONY:
 upload_$(DIST)_%_sysroot: $(OUTDIR)/sysroot_$(DIST)_%.tar.gz $(OUTDIR)/sysroot_$(DIST)_%.tar.gz.sha256
-	$(GSUTIL) cp $< $(sysroot_path)/$<
-	$(GSUTIL) cp $<.sha256 $(sysroot_path)/$<.sha256
+	$(GSUTIL) cp $< $(sysroot_path)/$(notdir $<)
+	$(GSUTIL) cp $<.sha256 $(sysroot_path)/$(notdir $<).sha256
 
 	@echo "SHA: $(shell cat $<.sha256)"
 
