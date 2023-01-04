@@ -1,4 +1,0 @@
-{
-   "run_list": [ "role[pl_desktop]" ],
-   "env": "base"
-}

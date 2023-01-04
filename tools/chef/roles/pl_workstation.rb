@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name 'pl_base_dev'
+name 'pl_workstation'
 description 'The base workstation setup (without GUI apps)'
 
 run_list(
