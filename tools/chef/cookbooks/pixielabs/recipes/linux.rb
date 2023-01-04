@@ -28,6 +28,7 @@ apt_pkg_list = [
   'git',
   'graphviz',
   'lcov',
+  'libncurses5',
   'php',
   'php-curl',
   'php-xml',
