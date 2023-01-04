@@ -64,6 +64,7 @@ DNS.3   = *.pl-nats
 DNS.4   = pl-nats
 DNS.5   = *.local
 DNS.6   = localhost
+DNS.7   = kratos
 EOS
 
 openssl genrsa -out ca.key 4096

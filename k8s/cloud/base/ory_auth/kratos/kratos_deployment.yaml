@@ -137,11 +137,12 @@ spec:
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           URL="${ADMIN_URL}/admin/health/ready";
-          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" --cacert /certs/ca.crt ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}";
             sleep 2;
           done;
-          curl -s -H "Content-Type: application/json" --data "${ADMIN_IDENTITY}" "${ADMIN_URL}/admin/identities";
+          curl --cacert /certs/ca.crt -s -H "Content-Type: application/json"
+            --data "${ADMIN_IDENTITY}" "${ADMIN_URL}/admin/identities";
           sleep infinity;
         ']
         env:
@@ -162,6 +163,11 @@ spec:
                 }
               }
             }
+        volumeMounts:
+        - mountPath: /etc/config/kratos
+          name: config
+        - name: certs
+          mountPath: /certs
       restartPolicy: Always
       serviceAccountName: ""
       volumes:
