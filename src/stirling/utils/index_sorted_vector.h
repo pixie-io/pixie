@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <vector>
 
 namespace px {
@@ -50,28 +52,48 @@ std::vector<size_t> SortedIndexes(const std::vector<T>& v) {
 template <typename T>
 class IndexedVectorIterator {
  public:
-  typedef int difference_type;
-  typedef T value_type;
-  typedef const T& reference;
-  typedef const T* pointer;
-  typedef std::forward_iterator_tag iterator_category;
+  using difference_type = int;
+  using value_type = T;
+  using reference = const T&;
+  using pointer = const T*;
+  using iterator_category = std::random_access_iterator_tag;
 
   IndexedVectorIterator(const std::vector<T>& data, std::vector<size_t>::const_iterator index_iter)
       : data_(&data), iter_(index_iter) {}
 
   IndexedVectorIterator operator++() {
-    IndexedVectorIterator i = *this;
-    iter_++;
-    return i;
-  }
-
-  IndexedVectorIterator operator++(int) {
-    iter_++;
+    ++iter_;
     return *this;
   }
 
-  IndexedVectorIterator operator+(int n) {
-    iter_ = iter_ + n;
+  IndexedVectorIterator operator++(int) {
+    IndexedVectorIterator i = *this;
+    ++iter_;
+    return i;
+  }
+
+  IndexedVectorIterator operator+(int n) { return IndexedVectorIterator(data_, iter_ + n); }
+
+  IndexedVectorIterator operator+=(int n) {
+    iter_ += n;
+    return *this;
+  }
+
+  IndexedVectorIterator operator--() {
+    --iter_;
+    return *this;
+  }
+
+  IndexedVectorIterator operator--(int) {
+    IndexedVectorIterator i = *this;
+    --iter_;
+    return i;
+  }
+
+  IndexedVectorIterator operator-(int n) { return IndexedVectorIterator(data_, iter_ - n); }
+
+  IndexedVectorIterator operator-=(int n) {
+    iter_ -= n;
     return *this;
   }
 
@@ -97,7 +119,7 @@ class IndexedVectorIterator {
 // Uses std::lower_bound, which is a binary search for efficiency.
 template <size_t N, typename T>
 std::array<size_t, N> SplitSortedVector(const std::vector<T>& vec,
-                                        const std::vector<size_t> sort_indexes,
+                                        const std::vector<size_t>& sort_indexes,
                                         std::array<T, N> split_vals) {
   std::array<size_t, N> out;
 
