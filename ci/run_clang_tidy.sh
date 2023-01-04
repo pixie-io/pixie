@@ -16,14 +16,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-diff_mode=false
 diff_file=""
 build=true
 
 # Print out the usage information and exit.
 usage() {
   echo "Usage $0 [-d] [-h] [-f file_name] [-n]" 1>&2;
-  echo "   -d    Run only diff against main branch"
   echo "   -f    Use a diff file"
   echo "   -n    Don't run the build"
   echo "   -h    Print help and exit"
@@ -33,16 +31,12 @@ usage() {
 parse_args() {
   local OPTIND
   # Process the command line arguments.
-  while getopts "df:hn" opt; do
+  while getopts "f:hn" opt; do
     case ${opt} in
-      d)
-        diff_mode=true
-        ;;
       n)
         build=false
         ;;
       f)
-        diff_mode=true
         diff_file=$OPTARG
         ;;
       :)
@@ -61,72 +55,50 @@ parse_args() {
 
 parse_args "$@"
 
-if [[ "${diff_mode}" = true && ! -z "${diff_file}" && ! -s "${diff_file}" ]]; then
-    echo "Diff file is empty, exiting"
-    echo "Diff file ${diff_file} empty" > clang_tidy.log
-    exit 0
+if [[ -n "${diff_file}" && ! -s "${diff_file}" ]]; then
+  echo "Diff file is empty, exiting"
+  echo "Diff file ${diff_file} empty" > clang_tidy.log
+  exit 0
 fi
-
-
-# We can have the Clang tidy script in a few different places. Check them in priority
-# order.
-clang_tidy_full_scripts=(
-    "/opt/clang-13.0/share/clang/run-clang-tidy.py"
-    "/usr/local/opt/llvm/share/clang/run-clang-tidy.py")
 
 clang_tidy_diff_scripts=(
-    "/opt/clang-13.0/share/clang/clang-tidy-diff.py"
-    "/usr/local/opt/llvm/share/clang/clang-tidy-diff.py")
-
-search_scripts="${clang_tidy_full_scripts[@]}"
-if [ "$diff_mode" = true ] ; then
-  search_scripts="${clang_tidy_diff_scripts[@]}"
-fi
-
+  "/opt/clang-15.0/share/clang/clang-tidy-diff.py"
+  "/usr/local/opt/llvm/share/clang/clang-tidy-diff.py"
+)
 
 clang_tidy_script=""
-for script_option in ${search_scripts}
-do
-    echo $script_option
-    if [ -f "${script_option}" ]; then
-        clang_tidy_script=${script_option}
-        break
-    fi
+for script_option in "${clang_tidy_diff_scripts[@]}"; do
+  echo "Looking for ${script_option}"
+  if [ -f "${script_option}" ]; then
+    clang_tidy_script=${script_option}
+    break
+  fi
 done
 
 if [ -z "${clang_tidy_script}" ]; then
-    echo "Failed to find a valid clang tidy script runner (check LLVM/Clang install)"
-    exit 1
+  echo "Failed to find a valid clang tidy script runner (check LLVM/Clang install)"
+  exit 1
 fi
 
 echo "Selected: ${clang_tidy_script}"
 
-SRCDIR=$(bazel info workspace)
+pushd "$(bazel info workspace)" &>/dev/null
 echo "Generating compilation database..."
-pushd $SRCDIR
 
-# This is a bit ugly, but limits the bazel build targets to only C++ code.
-bazel_targets=$(bazel query 'kind("cc_(binary|test) rule",//... -//third_party/...)
-               except attr("tags", "manual", //...)')
-
-flags="--include_headers"
+flags=("--include_headers")
 if [ "$build" = true ] ; then
-  flags="$flags --run_bazel_build"
+  flags+=("--run_bazel_build")
 fi
 
 # Bazel build need to be run to setup virtual includes, generating files which are consumed
 # by clang-tidy.
-"${SRCDIR}/scripts/gen_compilation_database.py" ${flags} ${bazel_targets}
+./scripts/gen_compilation_database.py "${flags[@]}"
 
 # Actually invoke clang-tidy.
-if [ "$diff_mode" = true ] ; then
-    if [ -z "$diff_file" ] ; then
-        git diff -U0 origin/main -- src | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
-    else
-        cat ${diff_file} | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
-    fi
+if [ -z "$diff_file" ] ; then
+  git diff -U0 origin/main -- src | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
 else
-    "${clang_tidy_script}" -j $(nproc) src 2>&1 | tee clang_tidy.log
+  "${clang_tidy_script}" -p1 2>&1 < "${diff_file}" | tee clang_tidy.log
 fi
 
-popd
+popd &>/dev/null
