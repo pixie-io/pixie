@@ -18,11 +18,14 @@
 DOCKER := docker
 
 ## Clang deb parameters
-CLANG_DEB_IMAGE_VERSION := 15.0-pl1
+CLANG_VERSION := 15.0
+CLANG_SUFFIX := pl2
+CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
-clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
-clang_deb_gs_path :=  gs://pixie-dev-public/$(clang_deb_fname)
-clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
+clang_deb_fname := "clang-$(CLANG_TAG).deb"
+clang_linters_deb_fname := "clang-linters-$(CLANG_TAG).deb"
+clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
+clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 
 ## Clang deb parameters
 GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl2
@@ -59,11 +62,17 @@ build_clang_deb_image:
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
-	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v $(PWD):/image $(clang_deb_image_tag)
-	gsutil cp $(clang_deb_fname) $(clang_deb_gs_path)
-	@echo "SHA: "
+	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD):/image $(clang_deb_image_tag)
+	gsutil cp $(clang_deb_fname) $(clang_gs_path)/$(clang_deb_fname)
+	gsutil cp $(clang_linters_deb_fname) $(clang_gs_path)/$(clang_linters_deb_fname)
+
+	@echo "SHAs: "
 	sha256sum $(clang_deb_fname)
+	sha256sum $(clang_linters_deb_fname)
+
 	rm -f $(clang_deb_fname)
+	rm -f $(clang_linters_deb_fname)
+
 
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:

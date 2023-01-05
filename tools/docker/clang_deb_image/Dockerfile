@@ -14,20 +14,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:22.04
+FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing
 RUN apt-get install -y ruby ruby-dev rubygems build-essential
 RUN gem install --no-document fpm
 
-RUN apt-get install -y bison build-essential cmake flex git libedit-dev \
-  clang libclang-dev llvm llvm-dev \
-  python3 python3-distutils swig libncurses5-dev zlib1g-dev libelf-dev subversion \
-  gcc-multilib
+RUN apt-get install -y bison build-essential flex git libedit-dev lsb \
+  python3 python3-distutils swig libncurses5-dev zlib1g-dev libelf-dev subversion gpg \
+  gcc-multilib software-properties-common ninja-build
 
-ENV CC=clang
-ENV CXX=clang++
+# We need a newer version of cmake to compile the latest llvm.
+RUN curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+
+# We need a newer version of clang to compile the latest llvm.
+RUN apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && \
+  add-apt-repository ppa:ubuntu-toolchain-r/test && \
+  add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-14 main"
+
+RUN apt update
+RUN apt-get install -y kitware-archive-keyring \
+  cmake \
+  clang-14
+
+ENV CC=clang-14
+ENV CXX=clang++-14
 
 WORKDIR /llvm_all
 RUN git clone --branch llvmorg-15.0.6 --depth 1 https://github.com/llvm/llvm-project.git
@@ -38,7 +51,7 @@ RUN cd llvm-project && git apply ../zdebug.patch
 
 WORKDIR /llvm_all/build
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0 \
     -DMSVC=OFF \
     -DLLVM_BUILD_DOCS=OFF \
@@ -57,9 +70,8 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     ../llvm-project/llvm
 
 
-RUN make -j $(nproc)
-RUN make -j $(nproc) runtimes
-RUN make install
+RUN ninja -j $(nproc)
+RUN ninja install
 
 ## We need libclang.a, but the clang build system excludes it during make install.
 #RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-15.0/lib
@@ -79,7 +91,7 @@ ENV CXXFLAGS="-stdlib=libc++"
 
 WORKDIR /llvm_all/build_libc++
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0-libc++ \
     -DMSVC=OFF \
     -DLLVM_BUILD_DOCS=OFF \
@@ -97,12 +109,11 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLLVM_ENABLE_PROJECTS="clang;polly;lld;openmp;libcxx;libcxxabi;compiler-rt" \
   ../llvm-project/llvm
 
-RUN make -j $(nproc)
-RUN make -j $(nproc) runtimes
-RUN make install
+RUN ninja -j $(nproc)
+RUN ninja install
 
 WORKDIR /opt
 VOLUME /image
-ENV deb_name clang-15.0-pl1.deb
-CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-15.0 -v 15.0-pl1 --prefix /opt clang-15.0 clang-15.0-libc++"]
+COPY create_packages.sh /opt
+
+CMD ["/opt/create_packages.sh"]
