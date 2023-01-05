@@ -826,24 +826,6 @@ def buildScriptForOSSCloudRelease = {
 }
 
 if (isMainRun) {
-  // Only run LSIF on main runs.
-  builders['LSIF (sourcegraph)'] = {
-    pxbuildWithSourceAndTargetsK8s('lsif') {
-      container('pxbuild') {
-        warnError('LSIF command failed') {
-          withCredentials([
-            string(
-              credentialsId: 'sourcegraph-api-token',
-              variable: 'SOURCEGRAPH_TOKEN'
-            )
-          ]) {
-            sh 'ci/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`'
-          }
-        }
-      }
-    }
-  }
-
   // Only run FOSSA on main runs.
   builders['FOSSA'] = {
     retryPodTemplate('fossa', [gcloudContainer(), pxdevContainer()]) {

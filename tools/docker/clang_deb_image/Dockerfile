@@ -101,17 +101,6 @@ RUN make -j $(nproc)
 RUN make -j $(nproc) runtimes
 RUN make install
 
-# LSIF is broken with clang-15
-# # Add clang-lsif for our image. This needs to be patched for the version of clang being used.
-# WORKDIR /tmp
-# RUN git clone https://github.com/pixie-io/lsif-clang.git
-#
-# WORKDIR /tmp/lsif-clang
-# RUN git checkout llvm-11
-# RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0
-# RUN make -C build -j $(nproc)
-# RUN make -C build install
-
 WORKDIR /opt
 VOLUME /image
 ENV deb_name clang-15.0-pl1.deb

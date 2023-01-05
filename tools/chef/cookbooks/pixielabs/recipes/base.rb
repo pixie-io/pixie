@@ -37,7 +37,7 @@ include_recipe 'pixielabs::golang'
 
 execute 'install node packages' do
   command %(/opt/node/bin/npm install -g \
-            jshint@2.11.0 yarn@1.22.4 @sourcegraph/lsif-tsc@0.6.8 protobufjs@6.11.2)
+            jshint@2.11.0 yarn@1.22.4 protobufjs@6.11.2)
 end
 
 execute 'install pbjs/pbts deps' do
@@ -140,12 +140,6 @@ remote_file '/opt/pixielabs/bin/src' do
   source node['src']['download_path']
   mode 0755
   checksum node['src']['sha256']
-end
-
-remote_file '/opt/pixielabs/bin/lsif-go' do
-  source node['lsif-go']['download_path']
-  mode 0755
-  checksum node['lsif-go']['sha256']
 end
 
 remote_file '/tmp/golangci-lint.tar.gz' do
