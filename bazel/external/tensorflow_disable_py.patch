@@ -1,0 +1,44 @@
+diff --git a/tensorflow/tensorflow.bzl b/tensorflow/tensorflow.bzl
+index 72bd0bcb94a..72c8987fc49 100644
+--- a/tensorflow/tensorflow.bzl
++++ b/tensorflow/tensorflow.bzl
+@@ -2797,7 +2797,6 @@ _local_genrule_internal = rule(
+ def _local_genrule(**kwargs):
+     _local_genrule_internal(
+         exec_compatible_with = [
+-            "@local_execution_config_platform//:platform_constraint",
+         ],
+         **kwargs
+     )
+diff --git a/tensorflow/workspace1.bzl b/tensorflow/workspace1.bzl
+index fb72d54e4d6..2f74e928d5a 100644
+--- a/tensorflow/workspace1.bzl
++++ b/tensorflow/workspace1.bzl
+@@ -14,7 +14,7 @@ def workspace(with_rules_cc = True):
+     Args:
+       with_rules_cc: whether to load and patch rules_cc repository.
+     """
+-    native.register_toolchains("@local_config_python//:py_toolchain")
++    # native.register_toolchains("@local_config_python//:py_toolchain")
+     rules_cuda_dependencies(with_rules_cc)
+     rules_pkg_dependencies()
+ 
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+index 18b63ab47fb..0874cdd9150 100644
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -81,11 +81,11 @@ def _initialize_third_party():
+ 
+ # Toolchains & platforms required by Tensorflow to build.
+ def _tf_toolchains():
+-    native.register_execution_platforms("@local_execution_config_platform//:platform")
+-    native.register_toolchains("@local_execution_config_python//:py_toolchain")
++    # native.register_execution_platforms("@local_execution_config_platform//:platform")
++    # native.register_toolchains("@local_execution_config_python//:py_toolchain")
+ 
+     # Loads all external repos to configure RBE builds.
+-    initialize_rbe_configs()
++    # initialize_rbe_configs()
+ 
+     # Note that we check the minimum bazel version in WORKSPACE.
+     clang6_configure(name = "local_config_clang6")

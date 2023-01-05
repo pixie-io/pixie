@@ -1,15 +1,3 @@
-diff --git a/tensorflow/workspace1.bzl b/tensorflow/workspace1.bzl
-index fb72d54e4d6..0ece61ce702 100644
---- a/tensorflow/workspace1.bzl
-+++ b/tensorflow/workspace1.bzl
-@@ -14,7 +14,6 @@ def workspace(with_rules_cc = True):
-     Args:
-       with_rules_cc: whether to load and patch rules_cc repository.
-     """
--    native.register_toolchains("@local_config_python//:py_toolchain")
-     rules_cuda_dependencies(with_rules_cc)
-     rules_pkg_dependencies()
- 
 diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
 index 18b63ab47fb..92993d7c341 100644
 --- a/tensorflow/workspace2.bzl
@@ -45,16 +33,3 @@ index a6c2c5c5835..3866493fcc9 100644
  
  # Alias so it can be loaded without assigning to a different symbol to prevent
  # shadowing previous loads and trigger a buildifier warning.
-diff --git a/third_party/repo.bzl b/third_party/repo.bzl
-index bda9e9518b4..4b55b5cff41 100644
---- a/third_party/repo.bzl
-+++ b/third_party/repo.bzl
-@@ -129,8 +129,6 @@ def tf_http_archive(name, sha256, urls, **kwargs):
-              "along shortly thereafter and mirror the file.")
- 
-     if native.existing_rule(name):
--        print("\n\033[1;33mWarning:\033[0m skipping import of repository '" +
--              name + "' because it already exists.\n")
-         return
- 
-     _tf_http_archive(

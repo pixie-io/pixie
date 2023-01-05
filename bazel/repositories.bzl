@@ -123,7 +123,7 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("com_google_flatbuffers")
-    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow.patch"], patch_args = ["-p1"])
+    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_llvm.patch", "//bazel/external:tensorflow_disable_mirrors.patch", "//bazel/external:tensorflow_disable_py.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_googlesource_code_re2", patches = ["//bazel/external:re2_warning.patch"], patch_args = ["-p1"])
