@@ -658,6 +658,10 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 		vzYaml = "vizier_etcd"
 	}
 
+	if vz.Spec.Autopilot {
+		vzYaml = fmt.Sprintf("%s_ap", vzYaml)
+	}
+
 	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap[vzYaml]))
 	if err != nil {
 		log.WithError(err).Error("Error getting resources from Vizier YAML")
