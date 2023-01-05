@@ -47,7 +47,7 @@ def addArtifactLink(String linkURL, String artifactKey, String artifactName) {
 
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
-DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
+DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image'
 COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'

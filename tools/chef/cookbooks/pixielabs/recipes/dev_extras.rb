@@ -92,12 +92,6 @@ execute 'configure docker-credential-gcr' do
   action :run
 end
 
-remote_file '/usr/local/bin/skaffold' do
-  source node['skaffold']['download_path']
-  mode 0755
-  checksum node['skaffold']['sha256']
-end
-
 remote_file '/usr/local/bin/minikube' do
   source node['minikube']['download_path']
   mode 0755

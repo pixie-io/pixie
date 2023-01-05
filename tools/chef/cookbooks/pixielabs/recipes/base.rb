@@ -237,6 +237,12 @@ file '/tmp/lego.tar.gz' do
   action :delete
 end
 
+remote_file '/usr/local/bin/skaffold' do
+  source node['skaffold']['download_path']
+  mode 0755
+  checksum node['skaffold']['sha256']
+end
+
 remote_file '/opt/pixielabs/bin/codecov' do
   source node['codecov']['download_path']
   mode 0755

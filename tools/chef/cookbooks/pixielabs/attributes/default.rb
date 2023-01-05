@@ -29,8 +29,8 @@ default['gperftools']['deb_sha256'] =
 default['gperftools']['version']    = "2.7-pl2"
 
 default['gsutil']                  = {}
-default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
-default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
+default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_5.17.tar.gz'
+default['gsutil']['sha256']        = 'cd9495eb0437e47210c19087bf0e81c72b669102193132e5c0d72a807cc27d55'
 
 default['antlr'] = {}
 default['antlr']['download_path'] = 'https://www.antlr.org/download/antlr-4.9-complete.jar'
