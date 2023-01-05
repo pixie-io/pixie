@@ -104,12 +104,6 @@ remote_file '/opt/pixielabs/bin/kustomize' do
   checksum node['kustomize']['sha256']
 end
 
-remote_file '/opt/pixielabs/bin/sops' do
-  source node['sops']['download_path']
-  mode 0755
-  checksum node['sops']['sha256']
-end
-
 remote_file '/tmp/shellcheck.tar.xz' do
   source node['shellcheck']['download_path']
   mode 0755
@@ -215,26 +209,6 @@ end
 
 file '/tmp/fossa.tar.gz' do
   action :delete
-end
-
-remote_file '/tmp/lego.tar.gz' do
-  source node['lego']['download_path']
-  mode 0755
-  checksum node['lego']['sha256']
-end
-
-execute 'install lego' do
-  command 'tar xf /tmp/lego.tar.gz -C /opt/pixielabs/bin lego'
-end
-
-file '/tmp/lego.tar.gz' do
-  action :delete
-end
-
-remote_file '/usr/local/bin/skaffold' do
-  source node['skaffold']['download_path']
-  mode 0755
-  checksum node['skaffold']['sha256']
 end
 
 remote_file '/opt/pixielabs/bin/codecov' do

@@ -30,18 +30,18 @@ if node[:platform] == 'ubuntu'
     action :upgrade
   end
 
-  remote_file '/usr/share/zsh/vendor-completions/_bazel' do
-    source node['bazel']['zsh_completions']
-    mode 0644
-    checksum node['bazel']['zcomp_sha256']
-  end
-
   include_recipe 'pixielabs::linux_gperftools'
 elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
   homebrew_package 'emacs'
   homebrew_package 'vim'
   homebrew_package 'jq'
   homebrew_package 'gperftools'
+end
+
+remote_file '/usr/share/zsh/vendor-completions/_bazel' do
+  source node['bazel']['zsh_completions']
+  mode 0644
+  checksum node['bazel']['zcomp_sha256']
 end
 
 execute 'install gcloud' do
@@ -90,6 +90,32 @@ end
 execute 'configure docker-credential-gcr' do
   command 'docker-credential-gcr configure-docker'
   action :run
+end
+
+remote_file '/opt/pixielabs/bin/sops' do
+  source node['sops']['download_path']
+  mode 0755
+  checksum node['sops']['sha256']
+end
+
+remote_file '/tmp/lego.tar.gz' do
+  source node['lego']['download_path']
+  mode 0755
+  checksum node['lego']['sha256']
+end
+
+execute 'install lego' do
+  command 'tar xf /tmp/lego.tar.gz -C /opt/pixielabs/bin lego'
+end
+
+file '/tmp/lego.tar.gz' do
+  action :delete
+end
+
+remote_file '/usr/local/bin/skaffold' do
+  source node['skaffold']['download_path']
+  mode 0755
+  checksum node['skaffold']['sha256']
 end
 
 remote_file '/usr/local/bin/minikube' do
