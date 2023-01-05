@@ -48,6 +48,7 @@ def addArtifactLink(String linkURL, String artifactKey, String artifactName) {
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image'
+DEV_DOCKER_IMAGE_EXTRAS = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
 COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
@@ -90,6 +91,7 @@ runBPFWithASAN = false
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
+devDockerImageExtrasWithTag = ''
 
 stashList = []
 
@@ -410,6 +412,7 @@ def initializeRepoState() {
   // Get docker image tag.
   def properties = readProperties file: 'docker.properties'
   devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
+  devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
 
   stashOnGCS(SRC_STASH_NAME, '.')
 }
@@ -427,13 +430,15 @@ def copybaraContainer() {
   containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
-def pxdevContainer() {
-  containerTemplate(name: 'pxdev', image: devDockerImageWithTag, command: 'cat', ttyEnabled: true)
+def pxdevContainer(boolean needExtras=false) {
+  def image = needExtras ? devDockerImageExtrasWithTag : devDockerImageWithTag
+  containerTemplate(name: 'pxdev', image: image, command: 'cat', ttyEnabled: true)
 }
 
-def pxbuildContainer() {
+def pxbuildContainer(boolean needExtras=false) {
+  def image = needExtras ? devDockerImageExtrasWithTag : devDockerImageWithTag
   containerTemplate(
-    name: 'pxbuild', image: devDockerImageWithTag, command: 'cat', ttyEnabled: true,
+    name: 'pxbuild', image: image, command: 'cat', ttyEnabled: true,
     resourceRequestMemory: '3072Mi', resourceRequestCpu: '1000m',
   )
 }
@@ -462,13 +467,13 @@ def retryPodTemplate(String suffix, List<org.csanchez.jenkins.plugins.kubernetes
   }
 }
 
-def pxbuildRetryPodTemplate(String suffix, Closure body) {
+def pxbuildRetryPodTemplate(String suffix, boolean needExtras=false, Closure body) {
   warnError('Script failed') {
     retryOnK8sDownscale {
       def label = "worker-${env.BUILD_TAG}-${suffix}"
       podTemplate(
         label: label, cloud: 'devinfra-cluster-usw1-0', containers: [
-          pxbuildContainer(), gcloudContainer(),
+          pxbuildContainer(needExtras), gcloudContainer(),
         ],
         yaml: pxbuildPodPatch,
         yamlMergeStrategy: merge(),
@@ -489,20 +494,20 @@ def pxbuildRetryPodTemplate(String suffix, Closure body) {
   }
 }
 
-def pxbuildWithSourceK8s(String suffix="${UUID.randomUUID()}", Integer timeoutMinutes=90, Closure body) {
-  pxbuildRetryPodTemplate(suffix) {
+def pxbuildWithSourceK8s(String suffix, boolean needExtras=false, Closure body) {
+  pxbuildRetryPodTemplate(suffix, needExtras) {
     fetchSourceK8s {
-      timeout(time: timeoutMinutes, unit: 'MINUTES') {
+      timeout(time: 90, unit: 'MINUTES') {
         body()
       }
     }
   }
 }
 
-def pxbuildWithSourceAndTargetsK8s(String suffix, Integer timeoutMinutes=90, Closure body) {
-  pxbuildRetryPodTemplate(suffix) {
+def pxbuildWithSourceAndTargetsK8s(String suffix, boolean needExtras=false, Closure body) {
+  pxbuildRetryPodTemplate(suffix, needExtras) {
     fetchSourceAndTargetsK8s {
-      timeout(time: timeoutMinutes, unit: 'MINUTES') {
+      timeout(time: 90, unit: 'MINUTES') {
         body()
       }
     }
@@ -785,7 +790,7 @@ def buildScriptForOSSCloudRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      pxbuildWithSourceK8s {
+      pxbuildWithSourceK8s('build-and-push-oss-cloud', true) {
         container('pxbuild') {
           sh './ci/cloud_build_release.sh -p'
         }
@@ -1176,54 +1181,58 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   int timeoutMinutes = margin * (clusterCreationMinutes + pixieDeployMinutes + warmupMinutes + evalMinutes)
 
   return {
-    pxbuildWithSourceK8s('stirling-perf-eval', timeoutMinutes) {
-      container('pxbuild') {
-        // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
-        // In more detail, here, we start with a fresh fully up-to-date source tree. The "as built" repo
-        // state will often be different (e.g. a particular diff or local experiment).
-        // That state is only known inside of buildAndPushPemImagesForPerfEval. Because we need that
-        // information, buildAndPushPemImagesForPerfEval is responsible for stashing the info on GCS,
-        // and here, we recover the saved state (in file 'logs/perf_eval_repo_info.bin').
-        // The stash on GCS is needed because file system state is volatile in these build stages.
-        unstashFromGCS('perf-eval-repo-info')
-        assert fileExists('logs/perf_eval_repo_info.bin')
-        assert fileExists('logs/pod_resource_usage')
+    pxbuildRetryPodTemplate('stirling-perf-eval') {
+      fetchSourceK8s {
+        timeout(time: timeoutMinutes, unit: 'MINUTES') {
+          container('pxbuild') {
+            // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
+            // In more detail, here, we start with a fresh fully up-to-date source tree. The "as built" repo
+            // state will often be different (e.g. a particular diff or local experiment).
+            // That state is only known inside of buildAndPushPemImagesForPerfEval. Because we need that
+            // information, buildAndPushPemImagesForPerfEval is responsible for stashing the info on GCS,
+            // and here, we recover the saved state (in file 'logs/perf_eval_repo_info.bin').
+            // The stash on GCS is needed because file system state is volatile in these build stages.
+            unstashFromGCS('perf-eval-repo-info')
+            assert fileExists('logs/perf_eval_repo_info.bin')
+            assert fileExists('logs/pod_resource_usage')
 
-        if (newClusterNeeded) {
-          // Default behavior: create a new cluster for this perf eval.
-          stage('Create cluster.') {
-            createCluster(clusterName)
-          }
-        } else {
-          // A pre-existing cluster name was supplied to the build.
-          stage('Use cluster.') {
-            echo "clusterName: ${clusterName}."
-            useCluster(clusterName)
-          }
-        }
-        stage('Deploy pixie.') {
-          pxDeployForStirlingPerfEval()
-        }
-        stage('Warmup.') {
-          sh "sleep ${60 * warmupMinutes}"
-        }
-        stage('Evaluate.') {
-          sh "sleep ${60 * evalMinutes}"
-        }
-        stage('Collect.') {
-          pxCollectPerfInfo(getCurrentClusterName(), evalIdx, evalMinutes, profilerMinutes)
-        }
-        stage('Insert records to perf db.') {
-          insertRecordsToPerfDB(evalIdx)
-        }
-        if (newClusterNeeded) {
-          // Earlier, we had created a new cluster for this perf eval.
-          // Here, we clean up.
-          stage('Delete cluster.') {
-            if (cleanupClusters) {
-              deleteCluster(getCurrentClusterName())
+            if (newClusterNeeded) {
+              // Default behavior: create a new cluster for this perf eval.
+              stage('Create cluster.') {
+                createCluster(clusterName)
+              }
             } else {
-              sh 'echo skipping cluster cleanup.'
+              // A pre-existing cluster name was supplied to the build.
+              stage('Use cluster.') {
+                echo "clusterName: ${clusterName}."
+                useCluster(clusterName)
+              }
+            }
+            stage('Deploy pixie.') {
+              pxDeployForStirlingPerfEval()
+            }
+            stage('Warmup.') {
+              sh "sleep ${60 * warmupMinutes}"
+            }
+            stage('Evaluate.') {
+              sh "sleep ${60 * evalMinutes}"
+            }
+            stage('Collect.') {
+              pxCollectPerfInfo(getCurrentClusterName(), evalIdx, evalMinutes, profilerMinutes)
+            }
+            stage('Insert records to perf db.') {
+              insertRecordsToPerfDB(evalIdx)
+            }
+            if (newClusterNeeded) {
+              // Earlier, we had created a new cluster for this perf eval.
+              // Here, we clean up.
+              stage('Delete cluster.') {
+                if (cleanupClusters) {
+                  deleteCluster(getCurrentClusterName())
+                } else {
+                  sh 'echo skipping cluster cleanup.'
+                }
+              }
             }
           }
         }
@@ -1445,7 +1454,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
 }
 
 def updateAllVersionsDB() {
-  pxbuildWithSourceK8s {
+  pxbuildWithSourceK8s('update-versions-db') {
     container('pxbuild') {
       unstashFromGCS('versions')
       sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
@@ -1487,7 +1496,7 @@ def buildScriptForCLIRelease = {
           checkoutAndInitialize()
         }
         stage('Build & Push Artifacts') {
-          pxbuildWithSourceK8s {
+          pxbuildWithSourceK8s('build-and-push-cli', true) {
             container('pxbuild') {
               withCredentials([
                 file(
@@ -1565,7 +1574,7 @@ def buildScriptForCLIRelease = {
 def vizierReleaseBuilders = [:]
 
 vizierReleaseBuilders['Build & Push Artifacts'] = {
-  pxbuildWithSourceK8s {
+  pxbuildWithSourceK8s('build-and-push-vizier', true) {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: K8S_PROD_CREDS,
@@ -1580,7 +1589,7 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
 }
 
 vizierReleaseBuilders['Build & Export Docs'] = {
-  pxbuildWithSourceK8s {
+  pxbuildWithSourceK8s('build-and-export-docs') {
     container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
       sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
@@ -1617,7 +1626,7 @@ def buildScriptForOperatorRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      pxbuildWithSourceK8s {
+      pxbuildWithSourceK8s('build-and-push-operator', true) {
         container('pxbuild') {
           withKubeConfig([
             credentialsId: K8S_PROD_CREDS,
@@ -1645,7 +1654,7 @@ def buildScriptForOperatorRelease = {
 }
 
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
-  pxbuildWithSourceK8s {
+  pxbuildWithSourceK8s('build-and-push-cloud', true) {
     container('pxbuild') {
       withKubeConfig([
         credentialsId: clusterCreds,
