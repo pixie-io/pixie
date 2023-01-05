@@ -1,73 +1,49 @@
 /**
  * Jenkins build definition. This file defines the entire build pipeline.
  */
-import java.net.URLEncoder
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import jenkins.model.Jenkins
 
-/**
-  * PhabConnector handles all communication with phabricator if the build
-  * was triggered by a phabricator run.
-  */
-class PhabConnector {
-  def jenkinsCtx
-  def url
-  def repository
-  def apiToken
-  def phid
+PHAB_URL = 'https://phab.corp.pixielabs.ai'
+PHAB_REPO = 'PLM'
 
-  PhabConnector(jenkinsCtx, url, repository, apiToken, phid) {
-    this.jenkinsCtx = jenkinsCtx
-    this.url = url
-    this.repository = repository
-    this.apiToken = apiToken
-    this.phid = phid
-  }
-
-  def harborMasterUrl(method) {
-    return "${url}/api/${method}?api.token=${apiToken}&buildTargetPHID=${phid}"
-  }
-
-  def sendBuildStatus(buildStatus) {
-    jenkinsCtx.httpRequest consoleLogResponseBody: true,
-      contentType: 'APPLICATION_FORM',
-      httpMode: 'POST',
-      requestBody: "type=${buildStatus}",
-      responseHandle: 'NONE',
-      url: this.harborMasterUrl('harbormaster.sendmessage'),
-      validResponseCodes: '200'
-  }
-
-  def addArtifactLink(linkURL, artifactKey, artifactName) {
-    def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-    def body = ''
-    body += "&buildTargetPHID=${phid}"
-    body += "&artifactKey=${artifactKey}"
-    body += '&artifactType=uri'
-    body += "&artifactData[uri]=${encodedDisplayUrl}"
-    body += "&artifactData[name]=${artifactName}"
-    body += '&artifactData[ui.external]=true'
-
-    jenkinsCtx.httpRequest consoleLogResponseBody: true,
-      contentType: 'APPLICATION_FORM',
-      httpMode: 'POST',
-      requestBody: body,
-      responseHandle: 'NONE',
-      url: this.harborMasterUrl('harbormaster.createartifact'),
-      validResponseCodes: '200'
-  }
+def harborMasterUrl(String method) {
+  return "${PHAB_URL}/api/${method}?api.token=${params.API_TOKEN}&buildTargetPHID=${params.PHID}"
 }
 
-/**
-  * We expect the following parameters to be defined (for code review builds):
-  *    PHID: Which should be the buildTargetPHID from Harbormaster.
-  *    API_TOKEN: The api token to use to communicate with Phabricator
-  *    REVISION: The revision ID of the Differential.
-  */
+def sendBuildStatus(String buildStatus) {
+  httpRequest(
+    consoleLogResponseBody: true,
+    contentType: 'APPLICATION_FORM',
+    httpMode: 'POST',
+    requestBody: "type=${buildStatus}",
+    responseHandle: 'NONE',
+    url: harborMasterUrl('harbormaster.sendmessage'),
+    validResponseCodes: '200'
+  )
+}
 
-// NOTE: We use these without a def/type because that way Groovy will treat these as
-// global variables.
-phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
-                                          'PLM' /*repository*/, params.API_TOKEN, params.PHID)
+def addArtifactLink(String linkURL, String artifactKey, String artifactName) {
+  def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
+  def body = ''
+  body += "&buildTargetPHID=${params.PHID}"
+  body += "&artifactKey=${artifactKey}"
+  body += '&artifactType=uri'
+  body += "&artifactData[uri]=${encodedDisplayUrl}"
+  body += "&artifactData[name]=${artifactName}"
+  body += '&artifactData[ui.external]=true'
+
+  httpRequest(
+    consoleLogResponseBody: true,
+    contentType: 'APPLICATION_FORM',
+    httpMode: 'POST',
+    requestBody: body,
+    responseHandle: 'NONE',
+    url: harborMasterUrl('harbormaster.createartifact'),
+    validResponseCodes: '200'
+  )
+}
 
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
@@ -97,8 +73,8 @@ PXL_DOCS_GCS_PATH = "gs://${PXL_DOCS_BUCKET}/${PXL_DOCS_FILE}"
 // BPF Setup.
 // The default kernel should be the oldest supported kernel
 // to ensure that we don't have BPF compatibility regressions.
-BPF_DEFAULT_KERNEL='4.14'
-BPF_NEWEST_KERNEL='5.19'
+BPF_DEFAULT_KERNEL = '4.14'
+BPF_NEWEST_KERNEL = '5.19'
 BPF_KERNELS = ['4.14', '4.19', '5.4', '5.10', '5.15', '5.19']
 BPF_KERNELS_TO_TEST = [BPF_DEFAULT_KERNEL, BPF_NEWEST_KERNEL]
 
@@ -156,9 +132,9 @@ def bbLinks() {
   if (isPhabricatorTriggeredBuild()) {
     def phabricatorLink = ''
     if (params.REVISION) {
-      phabricatorLink = "${phabConnector.url}/D${REVISION}"
+      phabricatorLink = "${PHAB_URL}/D${REVISION}"
     } else {
-      phabricatorLink = "${phabConnector.url}/r${phabConnector.repository}${env.PHAB_COMMIT}"
+      phabricatorLink = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
     }
     linkURL += ",[Phabricator](${phabricatorLink})"
   }
@@ -207,7 +183,7 @@ def shFileEmpty(String f) {
   * @brief Add build info to harbormaster and badge to Jenkins.
   */
 def addBuildInfo = {
-  phabConnector.addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
+  addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
 
   def text = ''
   def link = ''
@@ -215,10 +191,10 @@ def addBuildInfo = {
   if (params.REVISION) {
     def revisionId = "D${REVISION}"
     text = revisionId
-    link = "${phabConnector.url}/${revisionId}"
+    link = "${PHAB_URL}/${revisionId}"
   } else {
     text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${phabConnector.url}/r${phabConnector.repository}${env.PHAB_COMMIT}"
+    link = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
   }
   addShortText(
     text: text,
@@ -239,17 +215,17 @@ def isPhabricatorTriggeredBuild() {
 }
 
 def codeReviewPreBuild = {
-  phabConnector.sendBuildStatus('work')
+  sendBuildStatus('work')
   addBuildInfo()
 }
 
 def codeReviewPostBuild = {
   if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
-    phabConnector.sendBuildStatus('pass')
+    sendBuildStatus('pass')
   } else {
-    phabConnector.sendBuildStatus('fail')
+    sendBuildStatus('fail')
   }
-  phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
+  addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
 }
 
 def createBazelStash(String stashName) {
@@ -365,11 +341,11 @@ def processBazelLogs(String logBase) {
 }
 
 def processAllExtractedBazelLogs() {
-  stashList.each({ stashName ->
+  stashList.each { stashName ->
     if (stashName.endsWith('testlogs')) {
       processBazelLogs(stashName)
     }
-  })
+  }
 }
 
 def publishDoxygenDocs() {
@@ -542,13 +518,13 @@ def checkoutAndInitialize() {
       deleteDir()
       checkout scm
       initializeRepoState()
-      if(isPhabricatorTriggeredBuild()) {
-        def logMessage = sh (
-          script: "git log origin/main..",
+      if (isPhabricatorTriggeredBuild()) {
+        def logMessage = sh(
+          script: 'git log origin/main..',
           returnStdout: true,
         ).trim()
 
-        def hasTag = {log, tag -> (log ==~ "(?s).*#ci:${tag}(\\s|\$).*")}
+        def hasTag = { log, tag -> (log ==~ "(?s).*#ci:${tag }(\\s|\$).*") }
 
         buildTagBPFBuild = hasTag(logMessage, 'bpf-build')
         buildTagBPFBuildAllKernels = hasTag(logMessage, 'bpf-build-all-kernels')
@@ -877,11 +853,11 @@ def archiveBuildArtifacts = {
   retryPodTemplate('archive', [gcloudContainer()]) {
     container('gcloud') {
       // Unstash the build artifacts.
-      stashList.each({ stashName ->
+      stashList.each { stashName ->
         dir(stashName) {
           unstashFromGCS(stashName)
         }
-      })
+      }
 
       // Remove the tests attempts directory because it
       // causes the test publisher to mark as failed.
@@ -974,7 +950,6 @@ BPF_KERNELS.each { kernel ->
   }
 }
 
-
 /*****************************************************************************
  * REGRESSION_BUILDERS: This sections defines all the test regressions steps
  * that will happen in parallel.
@@ -1030,8 +1005,8 @@ String imageTagForPerfEval = 'none'
 def stirlingPerfBuilders = [:]
 
 String getClusterNameDateString() {
-  date = new Date()
-  return date.format('yyyy-MM-dd--HHmm-ss')
+  date = LocalDateTime.now()
+  return date.format(DateTimeFormatter.ofPattern('yyyy-MM-dd-HH-mm-ss'))
 }
 
 useCluster = { String clusterName ->
@@ -1064,7 +1039,7 @@ createCluster = { String clusterName ->
   // the currying becomes wrong and different evals will wrongly all pick up the same cluster name.
   retryUniqueClusterName = null
 
-  createClusterScript = "scripts/create_gke_cluster.sh"
+  createClusterScript = 'scripts/create_gke_cluster.sh'
   sh 'hostname'
   sh 'gcloud components update'
   sh 'gcloud --version'
@@ -1179,7 +1154,7 @@ insertRecordsToPerfDB = { int evalIdx ->
   }
 }
 
-def getCurrentClusterName(String clusterName) {
+def getCurrentClusterName() {
   def currentClusterName = sh(
     script: 'kubectl config current-context',
     returnStdout: true,
@@ -1203,7 +1178,6 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
   return {
     pxbuildWithSourceK8s('stirling-perf-eval', timeoutMinutes) {
       container('pxbuild') {
-
         // Unstash the "as built" repo info (see buildAndPushPemImagesForPerfEval).
         // In more detail, here, we start with a fresh fully up-to-date source tree. The "as built" repo
         // state will often be different (e.g. a particular diff or local experiment).
@@ -1217,12 +1191,12 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
 
         if (newClusterNeeded) {
           // Default behavior: create a new cluster for this perf eval.
-          stage("Create cluster.") {
+          stage('Create cluster.') {
             createCluster(clusterName)
           }
         } else {
           // A pre-existing cluster name was supplied to the build.
-          stage("Use cluster.") {
+          stage('Use cluster.') {
             echo "clusterName: ${clusterName}."
             useCluster(clusterName)
           }
@@ -1237,7 +1211,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
           sh "sleep ${60 * evalMinutes}"
         }
         stage('Collect.') {
-          pxCollectPerfInfo(getCurrentClusterName(clusterName), evalIdx, evalMinutes, profilerMinutes)
+          pxCollectPerfInfo(getCurrentClusterName(), evalIdx, evalMinutes, profilerMinutes)
         }
         stage('Insert records to perf db.') {
           insertRecordsToPerfDB(evalIdx)
@@ -1245,11 +1219,11 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
         if (newClusterNeeded) {
           // Earlier, we had created a new cluster for this perf eval.
           // Here, we clean up.
-          stage("Delete cluster.") {
-            if(cleanupClusters) {
-              deleteCluster(getCurrentClusterName(clusterName))
+          stage('Delete cluster.') {
+            if (cleanupClusters) {
+              deleteCluster(getCurrentClusterName())
             } else {
-              sh "echo skipping cluster cleanup."
+              sh 'echo skipping cluster cleanup.'
             }
           }
         }
@@ -1259,7 +1233,7 @@ oneEval = { int evalIdx, String clusterName, boolean newClusterNeeded ->
 }
 
 def savePodResourceUsagePxlScript() {
-  pod_resource_usage_path = "src/pxl_scripts/private/b7ca1b62-6c9f-4a3f-a45d-a5bdffbcae6a/pod_resource_usage"
+  pod_resource_usage_path = 'src/pxl_scripts/private/b7ca1b62-6c9f-4a3f-a45d-a5bdffbcae6a/pod_resource_usage'
   assert fileExists(pod_resource_usage_path)
   sh 'mkdir -p logs/pod_resource_usage'
   sh "cp ${pod_resource_usage_path}/* logs/pod_resource_usage"
@@ -1294,7 +1268,7 @@ def checkIfRequiredImagesExist() {
   // Use the artifacts.json file and jq to build a list of all required images.
   def requiredImages = []
 
-  for( int i=0; i < numImages; i++ ) {
+  for (int i = 0; i < numImages; i++) {
     imageNameAndTag = sh(script: "cat artifacts.json | jq '.builds[${i}].tag'", returnStdout: true, returnStatus: false).trim()
     requiredImages.add(imageNameAndTag)
   }
@@ -1317,7 +1291,7 @@ def checkIfRequiredImagesExist() {
   }
 
   if (allRequiredImagesExist) {
-    sep = "\n... "
+    sep = '\n... '
     echo "All images found:${sep}${requiredImages.join(sep)}"
   }
   return allRequiredImagesExist
@@ -1327,7 +1301,7 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
   // Log out initial repo state.
   sh 'echo "Starting repo state:" && git rev-parse HEAD'
 
-  if (params.DIFF_ID != "") {
+  if (params.DIFF_ID != '') {
     sshagent(['build-bot-ro']) {
       // DIFF_ID branch.
       // Specifying DIFF_ID (from Phab) enables a perf eval on an unmerged branch that resides in phab.
@@ -1337,7 +1311,7 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
       sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
       sh 'git config remote.staging.url ssh://git@github.com/pixie-labs/pixielabs-staging.git'
       sh "git fetch --tags --force -q -- ssh://git@github.com/pixie-labs/pixielabs-staging.git refs/tags/phabricator/diff/${diffId}"
-      gitHashForPerfEval = sh(script: "git rev-parse HEAD", returnStdout: true, returnStatus: false).trim()
+      gitHashForPerfEval = sh(script: 'git rev-parse HEAD', returnStdout: true, returnStatus: false).trim()
       def targetHash = sh(script: "git rev-parse refs/tags/phabricator/diff/${diffId}^{commit}", returnStdout: true, returnStatus: false).trim()
       echo "Merging based on DIFF_ID: ${diffId}, found targetHash: ${targetHash}."
       sh "git merge --ff ${targetHash}"
@@ -1390,14 +1364,14 @@ buildAndPushPemImagesForPerfEval = {
       allRequiredImagesExist = checkIfRequiredImagesExist()
 
       if (!allRequiredImagesExist) {
-        echo "Building all images."
+        echo 'Building all images.'
         sh "skaffold build -p opt -t ${imageTagForPerfEval} -f skaffold/skaffold_vizier.yaml"
       }
     }
   }
 }
 
-if(clusterNames[0].size()) {
+if (clusterNames[0].size()) {
   // Useful for:
   // ... debugging
   // ... faster runs or iterations
@@ -1417,7 +1391,7 @@ if(clusterNames[0].size()) {
   // Default path: no cluster names supplied to the build.
   // The perf evals will create clusters.
   boolean newClusterNeeded = true
-  for( int i=0; i < numPerfEvals; i++ ) {
+  for (int i = 0; i < numPerfEvals; i++) {
     clusterName = 'stirling-perf-' + getClusterNameDateString() + '-' + String.format('%02d', i)
     title = "Eval ${i}."
     perfEvaluator = oneEval.curry(i).curry(clusterName).curry(newClusterNeeded)
@@ -1428,7 +1402,6 @@ if(clusterNames[0].size()) {
 /*****************************************************************************
  * END STIRLING PERF BUILDERS
  *****************************************************************************/
-
 
 def buildScriptForNightlyTestRegression = { testjobs ->
   try {
@@ -1445,11 +1418,11 @@ def buildScriptForNightlyTestRegression = { testjobs ->
       retryPodTemplate('archive', [gcloudContainer()]) {
         container('gcloud') {
           // Unstash the build artifacts.
-          stashList.each({ stashName ->
+          stashList.each { stashName ->
             dir(stashName) {
               unstashFromGCS(stashName)
             }
-          })
+          }
 
           // Remove the tests attempts directory because it
           // causes the test publisher to mark as failed.
@@ -1738,7 +1711,7 @@ def copybaraTemplate(String name, String copybaraFile) {
     deleteDir()
     checkout scm
     container('copybara') {
-      sshagent (credentials: ['pixie-copybara-git']) {
+      sshagent(credentials: ['pixie-copybara-git']) {
         withCredentials([
           file(
             credentialsId: 'copybara-private-key-asc',
@@ -1787,7 +1760,7 @@ def buildScriptForCopybaraPublic() {
           checkoutForCopybara('git@github.com:pixie-labs/pixielabs.git', 'pixie-private', 'build-bot-ro')
           checkoutForCopybara('git@github.com:pixie-io/pixie.git', 'pixie-oss', 'pixie-copybara-git')
           dir('pixie-private') {
-            sshagent (credentials: ['pixie-copybara-git']) {
+            sshagent(credentials: ['pixie-copybara-git']) {
               sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
               ./ci/copy_release_tags.sh ../pixie-oss"
             }

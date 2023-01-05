@@ -1,0 +1,20 @@
+{
+  "extends": "recommended-jenkinsfile",
+  "rules": {
+    "DuplicateNumberLiteral": {
+      "enabled": false
+    },
+    "DuplicateStringLiteral": {
+      "enabled": false
+    },
+    "LineLength": {
+      "enabled": false
+    },
+    "PrintStackTrace": {
+      "enabled": false
+    },
+    "formatting.Indentation": {
+      "spacesPerIndentLevel": 2
+    }
+  }
+}
