@@ -39,17 +39,16 @@ def _clang_x86_64_gnu_with_options(suffix = "", enable_sanitizers = True, extra_
     cc_toolchain_name = "cc-compiler-clang-x86_64-gnu" + suffix
     toolchain_name = "cc-toolchain-clang-x86_64-gnu" + suffix
     tool_paths = {
-        "ar": "/usr/bin/ar",
-        "cpp": "/usr/bin/cpp",
-        "dwp": "/usr/bin/dwp",
+        "ar": "/opt/clang-15.0/bin/llvm-ar",
+        "cpp": "/opt/clang-15.0/bin/clang-cpp",
+        "dwp": "/opt/clang-15.0/bin/llvm-dwp",
         "gcc": "/opt/clang-15.0/bin/clang-15",
-        "gcov": "/usr/bin/gcov",
-        "ld": "/usr/bin/ld",
+        "ld": "/opt/clang-15.0/bin/ld.lld",
         "llvm-cov": "/opt/clang-15.0/bin/llvm-cov",
-        "nm": "/usr/bin/nm",
-        "objcopy": "/usr/bin/objcopy",
-        "objdump": "/usr/bin/objdump",
-        "strip": "/usr/bin/strip",
+        "nm": "/opt/clang-15.0/bin/llvm-nm",
+        "objcopy": "/opt/clang-15.0/bin/llvm-objcopy",
+        "objdump": "/opt/clang-15.0/bin/llvm-objdump",
+        "strip": "/opt/clang-15.0/bin/llvm-strip",
     }
     cc_toolchain_config(
         name = toolchain_config_name,

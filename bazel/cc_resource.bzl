@@ -69,7 +69,7 @@ def pl_cc_resource_impl(
               # TODO(yzhao): This command would fail if pl_cc_resource_impl() is used directly,
               # not through pl_cc_resource() and pl_bpf_cc_preprocess().
               "cp {0} {1} && ".format(src, name) +
-              "$(OBJCOPY) --input binary --output elf64-x86-64 " +
+              "$(OBJCOPY) -I binary -O elf64-x86-64 " +
               "--binary-architecture i386:x86-64 {0} {1};".format(name, object_file),
         **kwargs
     )

@@ -29,6 +29,7 @@ genrule(
     # -Wl,--build-id: This tells the linker to include a build-id,
     #                 which is useful for locating external debug symbols.
     cmd = "clang++ -O0 -g -Wl,--build-id -o $@ $<",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
 cc_library(
@@ -64,7 +65,8 @@ genrule(
     outs = [
         "test_exe_stripped",
     ],
-    cmd = "objcopy --strip-all $(location :test_exe) $(location test_exe_stripped)",
+    cmd = "$(OBJCOPY) --strip-all $(location :test_exe) $(location test_exe_stripped)",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
 genrule(
@@ -73,7 +75,8 @@ genrule(
     outs = [
         "test_exe.debug",
     ],
-    cmd = "objcopy --only-keep-debug $(location :test_exe) $(location test_exe.debug)",
+    cmd = "$(OBJCOPY) --only-keep-debug $(location :test_exe) $(location test_exe.debug)",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
 genrule(
@@ -85,7 +88,8 @@ genrule(
     outs = [
         "test_exe_debuglink",
     ],
-    cmd = "objcopy --strip-all --add-gnu-debuglink=$(location :test_exe_debug_target) $(location :test_exe) $(location test_exe_debuglink)",
+    cmd = "$(OBJCOPY) --strip-all --add-gnu-debuglink=$(location :test_exe_debug_target) $(location :test_exe) $(location test_exe_debuglink)",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
 )
 
 filegroup(
