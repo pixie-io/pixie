@@ -25,7 +25,7 @@ spec:
           mountPath: /host/etc
           readOnly: true
       volumes:
-      - name: host-root
+      - name: host-lib
         hostPath:
           path: /lib
           type: Directory
