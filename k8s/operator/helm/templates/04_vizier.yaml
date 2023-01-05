@@ -14,7 +14,7 @@ spec:
   cloudAddr: {{ .Values.cloudAddr }}
   disableAutoUpdate: {{ .Values.disableAutoUpdate }}
   useEtcdOperator: {{ .Values.useEtcdOperator }}
-  {{- if .Values.global.cluster }}
+  {{- if (.Values.global).cluster }}
   clusterName: {{ .Values.global.cluster }}
   {{- else if .Values.clusterName }}
   clusterName: {{ .Values.clusterName }}
@@ -34,7 +34,7 @@ spec:
   {{- if .Values.patches }}
   patches: {{ .Values.patches | toYaml | nindent 4 }}
   {{- end }}
-  {{- if .Values.global.images.registry }}
+  {{- if ((.Values.global).images).registry }}
   registry: {{ .Values.global.images.registry }}
   {{- else if .Values.registry }}
   registry: {{ .Values.registry }}
