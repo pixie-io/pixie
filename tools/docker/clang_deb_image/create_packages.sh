@@ -16,10 +16,30 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
+set -x
 
 CLANG_TAG="${CLANG_VERSION}-${CLANG_SUFFIX}"
 CLANG_DEB_IMAGE_NAME="clang-${CLANG_TAG}.deb"
 CLANG_LINTER_DEB_IMAGE_NAME="clang-linters-${CLANG_TAG}.deb"
+
+LIBCXX_TAR_FILE="libcxx-${CLANG_TAG}.tar.gz"
+LLVM_LIBSTDCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}.tar.gz"
+LLVM_LIBCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}-libcxx.tar.gz"
+
+pushd "/opt/libcxx-${CLANG_VERSION}"
+tar -czf "/image/${LIBCXX_TAR_FILE}" lib include
+popd
+
+tar_args=('--exclude=*.so'
+	  '--exclude=*.so.*')
+
+pushd "/opt/llvm-${CLANG_VERSION}-libstdc++"
+tar "${tar_args[@]}" -czf "/image/${LLVM_LIBSTDCXX_LIBS_TAR_FILE}" lib include
+popd
+
+pushd "/opt/llvm-${CLANG_VERSION}-libcxx"
+tar "${tar_args[@]}" -czf "/image/${LLVM_LIBCXX_LIBS_TAR_FILE}" lib include
+popd
 
 # Create the make deb file hosting clang.
 fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
@@ -27,7 +47,7 @@ fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
     -t deb \
     -n "clang-${CLANG_VERSION}" \
     -v "${CLANG_TAG}" \
-    --prefix /opt "clang-${CLANG_VERSION}" "clang-${CLANG_VERSION}-libc++"
+    --prefix /opt "clang-${CLANG_VERSION}"
 
 tmpdir=$(mktemp -d)
 cp -a /opt/"clang-${CLANG_VERSION}"/bin/clang-format "${tmpdir}"

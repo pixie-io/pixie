@@ -19,7 +19,7 @@ DOCKER := docker
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
-CLANG_SUFFIX := pl2
+CLANG_SUFFIX := pl3
 CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
 clang_deb_fname := "clang-$(CLANG_TAG).deb"
@@ -62,17 +62,15 @@ build_clang_deb_image:
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
-	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD):/image $(clang_deb_image_tag)
-	gsutil cp $(clang_deb_fname) $(clang_gs_path)/$(clang_deb_fname)
-	gsutil cp $(clang_linters_deb_fname) $(clang_gs_path)/$(clang_linters_deb_fname)
+	rm -rf .build
+	mkdir .build
+	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/.build:/image $(clang_deb_image_tag)
 
-	@echo "SHAs: "
-	sha256sum $(clang_deb_fname)
-	sha256sum $(clang_linters_deb_fname)
+	sha256sum .build/* > .build/sha256sums
+	gsutil cp .build/* $(clang_gs_path)/
 
-	rm -f $(clang_deb_fname)
-	rm -f $(clang_linters_deb_fname)
-
+	cat .build/sha256sums
+	rm -rf .build
 
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:

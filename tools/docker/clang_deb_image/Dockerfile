@@ -66,33 +66,16 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;polly;lld;lldb;openmp;libcxx;libcxxabi;compiler-rt" \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;polly;lld;lldb;compiler-rt" \
     ../llvm-project/llvm
-
 
 RUN ninja -j $(nproc)
 RUN ninja install
 
-## We need libclang.a, but the clang build system excludes it during make install.
-#RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-15.0/lib
-
-
-#######################################################
-# This installs Clang/LLVM with libc++.
-#
-# Since we link Clang/LLVM with our own source code we
-# need it to be built with the same underlying C++
-# library.
-#######################################################
-ENV PATH=/opt/clang-15.0/bin:${PATH}
-ENV CC=clang
-ENV CXX=clang++
-ENV CXXFLAGS="-stdlib=libc++"
-
-WORKDIR /llvm_all/build_libc++
+WORKDIR /llvm_all/build_libcxx_only
 RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
   cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0-libc++ \
+    -DCMAKE_INSTALL_PREFIX=/opt/libcxx-15.0 \
     -DMSVC=OFF \
     -DLLVM_BUILD_DOCS=OFF \
     -DLLVM_INCLUDE_EXAMPLES=OFF \
@@ -106,7 +89,80 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;polly;lld;openmp;libcxx;libcxxabi;compiler-rt" \
+    -DLLVM_ENABLE_PROJECTS="libcxx;libcxxabi" \
+    ../llvm-project/llvm
+
+
+RUN ninja -j $(nproc) cxx cxxabi
+RUN ninja install-cxx install-cxxabi
+
+
+#######################################################
+# This builds all the clang/LLVM libs that we can package for our code in a source file.
+#
+# Since we link Clang/LLVM with our own source code we
+# need it to be built with the same underlying C++
+# library.
+#######################################################
+
+#--------------------------------------------------------
+# The libstdc++ version
+#--------------------------------------------------------
+ENV PATH=/opt/clang-15.0/bin:${PATH}
+ENV CC=clang
+ENV CXX=clang++
+
+WORKDIR /llvm_all/build_llvm_libstdc++
+RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
+  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/llvm-15.0-libstdc++ \
+    -DMSVC=OFF \
+    -DLLVM_BUILD_DOCS=OFF \
+    -DLLVM_BUILD_TOOLS=OFF \
+    -DLLVM_INCLUDE_EXAMPLES=OFF \
+    -DLLVM_BUILD_32_BITS=OFF \
+    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
+    -DLLVM_ENABLE_SPHINX=OFF \
+    -DLLVM_ENABLE_DOXYGEN=OFF \
+    -DLLVM_ENABLE_RTTI=ON \
+    -DCLANG_INCLUDE_TESTS=OFF \
+    -DLIBCLANG_BUILD_STATIC=ON \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
+    -DLLVM_ENABLE_PROJECTS="clang;llvm" \
+  ../llvm-project/llvm
+
+RUN ninja -j $(nproc)
+RUN ninja install
+
+#--------------------------------------------------------
+# The libcxx version
+#--------------------------------------------------------
+ENV PATH=/opt/clang-15.0/bin:${PATH}
+ENV CC=clang
+ENV CXX=clang++
+ENV CXXFLAGS="-fPIC -stdlib=libc++ -L/opt/libcxx-15.0/lib -isystem /opt/libcxx-15.0/include/c++/v1 -Wl,-rpath,/opt/libcxx-15.0/lib"
+
+WORKDIR /llvm_all/build_llvm_libcxx
+RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
+  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/llvm-15.0-libcxx \
+    -DMSVC=OFF \
+    -DLLVM_BUILD_DOCS=OFF \
+    -DLLVM_BUILD_TOOLS=OFF \
+    -DLLVM_INCLUDE_EXAMPLES=OFF \
+    -DLLVM_BUILD_32_BITS=OFF \
+    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
+    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
+    -DLLVM_ENABLE_SPHINX=OFF \
+    -DLLVM_ENABLE_DOXYGEN=OFF \
+    -DLLVM_ENABLE_RTTI=ON \
+    -DCLANG_INCLUDE_TESTS=OFF \
+    -DLIBCLANG_BUILD_STATIC=ON \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
+    -DLLVM_ENABLE_PROJECTS="clang;llvm" \
   ../llvm-project/llvm
 
 RUN ninja -j $(nproc)
