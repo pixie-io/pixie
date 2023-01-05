@@ -106,17 +106,8 @@ def _include_all_repo(name, **kwargs):
     _http_archive_repo_impl(name, **kwargs)
 
 def _com_llvm_lib():
-    native.new_local_repository(
-        name = "com_llvm_lib",
-        build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-15.0",
-    )
-
-    native.new_local_repository(
-        name = "com_llvm_lib_libcpp",
-        build_file = "bazel/external/llvm.BUILD",
-        path = "/opt/clang-15.0-libc++",
-    )
+    _bazel_repo("com_llvm_lib", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp", build_file = "//bazel/external:llvm.BUILD")
 
 def _cc_deps():
     # Dependencies with native bazel build files.

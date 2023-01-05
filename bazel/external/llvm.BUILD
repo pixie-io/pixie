@@ -52,8 +52,6 @@ cc_library(
         "lib/libLLVMRemarks.a",
         "lib/libLLVMGlobalISel.a",
         "lib/libLLVMPasses.a",
-        "lib/libPolly.a",
-        "lib/libPollyISL.a",
         "lib/libLLVMipo.a",
         "lib/libLLVMAggressiveInstCombine.a",
         "lib/libLLVMVectorize.a",

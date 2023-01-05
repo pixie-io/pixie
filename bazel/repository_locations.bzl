@@ -289,6 +289,16 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "oneTBB-e6104c9599f7f10473caf545199f7468c0a8e52f",
         urls = ["https://github.com/oneapi-src/oneTBB/archive/e6104c9599f7f10473caf545199f7468c0a8e52f.tar.gz"],
     ),
+    com_llvm_lib = dict(
+        sha256 = "af503fd8660bbd29455588d1fa87ad8cc0cd2bf6e4f3c59c8d738c2f934c8140",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl3/llvm-15.0-pl3.tar.gz"],
+    ),
+    com_llvm_lib_libcpp = dict(
+        sha256 = "4d904ae1df7e0ba8546cf901509034da2a129805ef0720cb10b6a8a41ae44a29",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl3/llvm-15.0-pl3-libcxx.tar.gz"],
+    ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
         strip_prefix = "jdk-18.0.2.1",
