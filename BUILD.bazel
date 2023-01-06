@@ -172,25 +172,7 @@ container_image(
 # Trimmed versions are ~8MB compressed and ~110MB uncompressed.
 # These are all trimmed versions, so we have 8 * 12 = 96 MB of headers.
 stirling_linux_headers_tarballs = [
-    "@linux_headers_4_14_176_tar_gz//file:file",
-    "@linux_headers_4_15_18_tar_gz//file:file",
-    "@linux_headers_4_16_18_tar_gz//file:file",
-    "@linux_headers_4_17_19_tar_gz//file:file",
-    "@linux_headers_4_18_20_tar_gz//file:file",
-    "@linux_headers_4_19_118_tar_gz//file:file",
-    "@linux_headers_4_20_17_tar_gz//file:file",
-    "@linux_headers_5_0_21_tar_gz//file:file",
-    "@linux_headers_5_1_21_tar_gz//file:file",
-    "@linux_headers_5_2_21_tar_gz//file:file",
-    "@linux_headers_5_3_18_tar_gz//file:file",
-    "@linux_headers_5_4_35_tar_gz//file:file",
-    "@linux_headers_5_5_19_tar_gz//file:file",
-    "@linux_headers_5_6_19_tar_gz//file:file",
-    "@linux_headers_5_7_19_tar_gz//file:file",
-    "@linux_headers_5_8_18_tar_gz//file:file",
-    "@linux_headers_5_9_16_tar_gz//file:file",
-    "@linux_headers_5_10_34_tar_gz//file:file",
-    "@linux_headers_5_11_18_tar_gz//file:file",
+    "@linux_headers_merged_tar_gz//file:file",
 ]
 
 # Used by stirling runtime to replace the on-the-fly installed Linux headers from
@@ -216,13 +198,14 @@ stirling_ctrl = [
     "//src/stirling/binaries:stirling_ctrl",
 ]
 
-stirling_collateral = stirling_linux_headers_tarballs + stirling_linux_timeconst_files + stirling_ctrl + stirling_java_profiling_tools
+stirling_collateral = stirling_linux_timeconst_files + stirling_ctrl + stirling_java_profiling_tools
 
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
     directory = "/pl",
     files = stirling_collateral,
+    tars = stirling_linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 
@@ -231,6 +214,7 @@ container_image(
     base = ":pl_cc_base_debug_image",
     directory = "/pl",
     files = stirling_collateral,
+    tars = stirling_linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 

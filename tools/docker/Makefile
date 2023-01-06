@@ -16,6 +16,7 @@
 
 # Commands.
 DOCKER := docker
+BUILD_DIR ?= .build
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
@@ -34,14 +35,32 @@ gperftools_deb_gs_path :=  gs://pixie-dev-public/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
 ## Linux image parameters
-LINUX_MAJOR_VERSION ?= 5
-LINUX_KERNEL_VERSION ?= 5.3.18
-LINUX_HEADERS_REV ?= pl2
-linux_headers_image_tag := "gcr.io/pixie-oss/pixie-dev-public:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
-linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
-linux_headers_gs_path := gs://pixie-dev-public/$(linux_headers_fname)
-linux_headers_trimmed_fname := linux-headers-$(LINUX_KERNEL_VERSION)-trimmed-$(LINUX_HEADERS_REV).tar.gz
-linux_headers_trimmed_gs_path := gs://pixie-dev-public/$(linux_headers_trimmed_fname)
+LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
+LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
+LINUX_KERNEL_VERSIONS := 4.14.176 \
+	4.15.18 \
+	4.16.18 \
+	4.17.19 \
+	4.18.20 \
+	4.19.118 \
+	4.20.17 \
+	5.0.21 \
+	5.1.21 \
+	5.2.21 \
+	5.3.18 \
+	5.4.35 \
+	5.5.19 \
+	5.6.19 \
+	5.7.19 \
+	5.8.18 \
+	5.9.16 \
+	5.10.34 \
+	5.11.18
+
+LINUX_HEADER_TEMPLATE := linux-headers-%.tar.gz
+LINUX_HEADER_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
+LINUX_HEADERS_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-$(LINUX_HEADERS_REV).tar.gz
+LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV)
 
 ## Curl image parameters.
 CURL_IMAGE_VERSION := 1.0
@@ -62,15 +81,13 @@ build_clang_deb_image:
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
-	rm -rf .build
-	mkdir .build
-	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/.build:/image $(clang_deb_image_tag)
+	mkdir -p $(BUILD_DIR)
+	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(BUILD_DIR)/image $(clang_deb_image_tag)
 
-	sha256sum .build/* > .build/sha256sums
-	gsutil cp .build/* $(clang_gs_path)/
+	sha256sum $(BUILD_DIR)/* > $(BUILD_DIR)/sha256sums
+	gsutil cp $(BUILD_DIR)/* $(clang_gs_path)/
 
-	cat .build/sha256sums
-	rm -rf .build
+	cat $(BUILD_DIR)/sha256sums
 
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
@@ -84,26 +101,22 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 	sha256sum $(gperftools_deb_fname)
 	rm -f $(gperftools_deb_fname)
 
-.PHONY: build_linux_headers_image
-build_linux_headers_image:
-	$(DOCKER) build --build-arg KERN_VERSION=${LINUX_KERNEL_VERSION} --build-arg KERN_MAJ=${LINUX_MAJOR_VERSION} linux_headers_image -t $(linux_headers_image_tag)
+$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/config
+ifndef LINUX_HEADERS_REV
+	$(error set LINUX_HEADERS_REV to a valid value)
+endif
+	@mkdir -p $(@D)
+	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
+	$(DOCKER) build --build-arg KERN_VERSION=$* linux_headers_image -t "$${linux_headers_image_tag}" && \
+	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
+
+$(LINUX_HEADERS_MERGED_FILE): $(LINUX_HEADER_TARGETS)
+	tar -czf $@ -C $(LINUX_HEADER_ASSETS_BUILD_DIR) $(^F)
 
 .PHONY: upload_linux_headers
-upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
-	# Extract headers from build containers.
-	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
-	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION)-trimmed.tar.gz $(linux_headers_trimmed_fname)
-	# Print SHAs for convenience.
-	@echo "SHA: "
-	sha256sum $(linux_headers_fname)
-	@echo "SHA: "
-	sha256sum $(linux_headers_trimmed_fname)
-	# Upload.
-	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
-	gsutil cp $(linux_headers_trimmed_fname) $(linux_headers_trimmed_gs_path)
-	# Cleanup.
-	rm -f $(linux_headers_fname)
-	rm -f $(linux_headers_trimmed_fname)
+upload_linux_headers:  $(LINUX_HEADERS_MERGED_FILE) $(LINUX_HEADER_TARGETS)  ## Target to build and upload linux headers image
+	gsutil cp $< $(LINUX_HEADERS_GS_PATH)/$(<F)
+	sha256sum $<
 
 .PHONY: build_and_upload_curl_image
 build_and_upload_curl_image:
@@ -119,6 +132,9 @@ build_and_upload_copybara_image:
 build_and_upload_elasticsearch_image:
 	$(DOCKER) build elasticsearch -t $(elasticsearch_image_tag)
 	$(DOCKER) push $(elasticsearch_image_tag)
+
+clean:
+	@rm -rf $(BUILD_DIR)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
