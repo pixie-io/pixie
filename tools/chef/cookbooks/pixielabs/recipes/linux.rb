@@ -19,6 +19,7 @@ apt_update 'update'
 apt_pkg_list = [
   'autoconf',
   'bash-completion',
+  'bc',
   'build-essential',
   'checkstyle',
   'curl',
@@ -34,6 +35,7 @@ apt_pkg_list = [
   'python3-pip',
   'python3.10',
   'python3.10-dev',
+  'sudo',
   'systemd',
   'unzip',
   'virtualenvwrapper',
@@ -57,8 +59,6 @@ apt_pkg_list = [
   # Needed by ANTLR4.
   'pkg-config',
   'uuid-dev',
-
-  "sudo",
 ]
 
 apt_package apt_pkg_list do
