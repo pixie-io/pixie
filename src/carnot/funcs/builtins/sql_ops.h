@@ -48,16 +48,19 @@ class NormalizePostgresSQLUDF : public udf::ScalarUDF {
             "Outputs the normalized query along with the values of the parameters")
         .Example(R"doc(
         | # Normalize the SQL query.
-        | df.normalized_sql_json = px.normalize_pgsql(df.sql_query_string)
+        | df.normalized_sql_json = px.normalize_pgsql('SELECT * FROM test WHERE prop='abcd', 'Query')
         | # Pluck the relevant values from the json.
+        | # Value: 'SELECT * FROM test WHERE prop=$1'
         | df.normed_query = px.pluck(df.normalized_sql_json, 'query')
+        | # Value: ['abcd']
         | df.params = px.pluck(df.normalized_sql_json, 'params')
         )doc")
         .Arg("sql_string", "The PostgresSQL query string")
         .Arg("cmd_code", "The PostgresSQL command tag for this sql request.")
         .Returns(
             "The normalized query with the values of the parameters in the query "
-            "as JSON.");
+            "as JSON. Available keys: ['query', 'params', 'error']. Error will be non-empty if "
+            "the query could not be normalized.");
   }
 };
 
@@ -73,16 +76,20 @@ class NormalizeMySQLUDF : public udf::ScalarUDF {
             "Outputs the normalized query along with the values of the parameters")
         .Example(R"doc(
         | # Normalize the SQL query.
-        | df.normalized_sql_json = px.normalize_mysql(df.sql_query_string)
+        | # px.mysql_command_code(3) == 'Query'
+        | df.normalized_sql_json = px.normalize_mysql("SELECT * FROM test WHERE prop=@a AND prop2='abcd'", 3)
         | # Pluck the relevant values from the json.
+        | # Value: 'SELECT * FROM test WHERE prop=@a AND prop2=?'
         | df.normed_query = px.pluck(df.normalized_sql_json, 'query')
+        | # Value: ['abcd']
         | df.params = px.pluck(df.normalized_sql_json, 'params')
         )doc")
         .Arg("sql_string", "The MySQL query string")
         .Arg("cmd_code", "The MySQL command code for this sql request.")
         .Returns(
             "The normalized query with the values of the parameters in the query "
-            "as JSON.");
+            "as JSON. Available keys: ['query', 'params', 'error']. Error will be non-empty if "
+            "the query could not be normalized.");
   }
 };
 
