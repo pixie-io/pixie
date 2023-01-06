@@ -1,0 +1,27 @@
+diff --git a/clang/tools/clang-shlib/CMakeLists.txt b/clang/tools/clang-shlib/CMakeLists.txt
+index 9c1f8ea45..208833b63 100644
+--- a/clang/tools/clang-shlib/CMakeLists.txt
++++ b/clang/tools/clang-shlib/CMakeLists.txt
+@@ -3,6 +3,8 @@ if (NOT LLVM_ENABLE_PIC)
+   return()
+ endif()
+ 
++return()
++
+ get_property(clang_libs GLOBAL PROPERTY CLANG_STATIC_LIBS)
+ 
+ foreach (lib ${clang_libs})
+diff --git a/clang/tools/libclang/CMakeLists.txt b/clang/tools/libclang/CMakeLists.txt
+index c6b3b44a7..8f1f8f289 100644
+--- a/clang/tools/libclang/CMakeLists.txt
++++ b/clang/tools/libclang/CMakeLists.txt
+@@ -111,7 +111,8 @@ if (LLVM_EXPORTED_SYMBOL_FILE)
+ endif()
+ 
+ if(LLVM_ENABLE_PIC OR (WIN32 AND NOT LIBCLANG_BUILD_STATIC))
+-  set(ENABLE_SHARED SHARED)
++  #  set(ENABLE_SHARED SHARED)
++  unset(ENABLE_SHARED)
+ endif()
+ 
+ if(NOT LLVM_ENABLE_PIC OR LIBCLANG_BUILD_STATIC)

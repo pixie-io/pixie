@@ -290,24 +290,23 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/oneapi-src/oneTBB/archive/e6104c9599f7f10473caf545199f7468c0a8e52f.tar.gz"],
     ),
     com_llvm_clang_15 = dict(
-        sha256 = "5e773e118930bb057acd904f20692d6fde730d8b46409b9f1bb286d0a72ef99f",
-        strip_prefix = "clang-15.0",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/clang-15.0-pl5.tar.gz"],
+        sha256 = "05a90a191cbbbdffe3b0dd98e1a9ea9e64c5d87d2d9ff4eb6f44ac1d171bdb81",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl6/clang-min-15.0-pl6.tar.gz"],
     ),
     com_llvm_lib = dict(
-        sha256 = "e2cdc560be2469f376558164ce51d75669e4ff0585712f04face168fa597740f",
+        sha256 = "cb33354e47e98ba3b63054cf9d3e4c18952f0d0d3a79424c362c2d41ee94808e",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/llvm-15.0-pl5.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl6/llvm-15.0-pl6.tar.gz"],
     ),
     com_llvm_lib_libcpp = dict(
-        sha256 = "1bd0b9d41a2cbc34d9abc64b1017cf08a956200bb41c14b6fe3e1ddb29d1ca6b",
+        sha256 = "fa7d91bc811295f6838fd87d362cc5fd40a9d6321de1a157fafe49f0145ca5e0",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/llvm-15.0-pl5-libcxx.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl6/llvm-15.0-pl6-libcxx.tar.gz"],
     ),
     com_llvm_libcxx = dict(
-        sha256 = "7381c10111cdf3c0136fd0395f69111c8a942807e30d697a73315b302bccf004",
+        sha256 = "31f23e9bde5114b6b66a079f80909087e413c683040b5e34373ac8327bbcbf19",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/libcxx-15.0-pl5.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl6/libcxx-15.0-pl6.tar.gz"],
     ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",

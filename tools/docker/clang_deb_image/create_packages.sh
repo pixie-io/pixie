@@ -26,6 +26,8 @@ LIBCXX_TAR_FILE="libcxx-${CLANG_TAG}.tar.gz"
 LLVM_LIBSTDCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}.tar.gz"
 LLVM_LIBCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}-libcxx.tar.gz"
 
+MIN_CLANG_TAR_FILE_NAME="clang-min-${CLANG_TAG}.tar.gz"
+
 pushd "/opt/libcxx-${CLANG_VERSION}"
 tar -czf "/image/${LIBCXX_TAR_FILE}" lib include
 popd
@@ -70,3 +72,5 @@ fpm -p "/image/${CLANG_LINTER_DEB_IMAGE_NAME}" \
     --prefix /opt/px-dev/bin .
 
 popd
+
+cp "/opt/clang-15.0-min.tar.gz" "/image/${MIN_CLANG_TAR_FILE_NAME}"

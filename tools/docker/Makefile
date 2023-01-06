@@ -20,7 +20,8 @@ BUILD_DIR ?= .build
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
-CLANG_SUFFIX := pl5
+CLANG_SUFFIX := pl6
+
 CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
 clang_deb_fname := "clang-$(CLANG_TAG).deb"

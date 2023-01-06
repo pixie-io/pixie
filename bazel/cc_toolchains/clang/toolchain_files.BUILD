@@ -94,7 +94,6 @@ filegroup(
     name = "lld",
     srcs = [
         "{toolchain_path}/bin/ld.lld",
-        "{toolchain_path}/bin/ld64.lld",
         "{toolchain_path}/bin/lld",
     ],
 )

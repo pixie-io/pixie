@@ -1,0 +1,26 @@
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
+index 9077e8f9f..4a371d225 100644
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
+@@ -160,7 +160,7 @@ else()
+   set(MAYBE_REQUIRED)
+ endif()
+ if(LLVM_ENABLE_TERMINFO)
+-  find_library(COMPILER_RT_TERMINFO_LIB NAMES terminfo tinfo curses ncurses ncursesw ${MAYBE_REQUIRED})
++  find_library(COMPILER_RT_TERMINFO_LIB NAMES libterminfo.a libtinfo.a terminfo tinfo curses ncurses ncursesw ${MAYBE_REQUIRED})
+ endif()
+ if(COMPILER_RT_TERMINFO_LIB)
+   set(LLVM_ENABLE_TERMINFO 1)
+diff --git a/llvm/cmake/modules/FindTerminfo.cmake b/llvm/cmake/modules/FindTerminfo.cmake
+index eef1f9585..1daad5a51 100644
+--- a/llvm/cmake/modules/FindTerminfo.cmake
++++ b/llvm/cmake/modules/FindTerminfo.cmake
+@@ -11,7 +11,7 @@
+ # Additionally, the following import target will be defined:
+ # Terminfo::terminfo
+ 
+-find_library(Terminfo_LIBRARIES NAMES terminfo tinfo curses ncurses ncursesw)
++find_library(Terminfo_LIBRARIES NAMES libterminfo.a libtinfo.a terminfo tinfo curses ncurses ncursesw)
+ 
+ if(Terminfo_LIBRARIES)
+   include(CMakePushCheckState)
