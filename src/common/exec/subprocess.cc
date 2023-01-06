@@ -34,10 +34,6 @@ namespace px {
 SubProcess::SubProcess(int mnt_ns_pid) : mnt_ns_pid_(mnt_ns_pid) {}
 
 SubProcess::~SubProcess() {
-  // close() might fail, but won't affect anything, so just ignore the results.
-  close(pipefd_[kRead]);
-  close(pipefd_[kWrite]);
-
   // One thought is to call Kill() here to avoid forgetting call Kill() explicitly.
   //
   // That creates confusions on its effect when dtor is invoked by the child process.
@@ -75,20 +71,20 @@ void SubProcess::SetupChild(StartOptions options) {
   DCHECK_EQ(child_pid_, 0) << "SetupChild() can only be called inside child process";
 
   // Redirect STDOUT to pipe
-  if (dup2(pipefd_[kWrite], STDOUT_FILENO) == -1) {
+  if (dup2(pipe_.WriteFd(), STDOUT_FILENO) == -1) {
     LOG(ERROR) << "Could not redirect STDOUT to pipe";
     exit(1);
   }
 
   if (options.stderr_to_stdout) {
-    if (dup2(pipefd_[kWrite], STDERR_FILENO) == -1) {
+    if (dup2(pipe_.WriteFd(), STDERR_FILENO) == -1) {
       LOG(ERROR) << "Could not redirect STDERR to pipe";
       exit(1);
     }
   }
 
-  close(pipefd_[kRead]);   // Close read end, as read is done by parent.
-  close(pipefd_[kWrite]);  // Close after being duplicated.
+  pipe_.CloseRead();   // Close read end, as read is done by parent.
+  pipe_.CloseWrite();  // Close after being duplicated.
 
   if (mnt_ns_pid_ != -1) {
     auto status = SetMountNS(mnt_ns_pid_);
@@ -118,11 +114,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
   }
   exec_args.push_back(nullptr);
 
-  // Create the pipe, see `man pipe2` for how these 2 file descriptors are used.
-  // Also set the pipe to be non-blocking, so when reading from pipe won't block.
-  if (pipe2(pipefd_, O_NONBLOCK) == -1) {
-    return error::Internal("Could not create pipe.");
-  }
+  PL_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
 
   child_pid_ = fork();
   if (child_pid_ < 0) {
@@ -161,7 +153,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    close(pipefd_[kWrite]);  // Close write end, as write is done by child.
+    pipe_.CloseWrite();  // Close write end, as write is done by child.
     return Status::OK();
   }
   return Status::OK();
@@ -174,11 +166,7 @@ Status SubProcess::Start(const std::function<int()>& fn, StartOptions options) {
   }
   started_ = true;
 
-  // Create the pipe, see `man pipe2` for how these 2 file descriptors are used.
-  // Also set the pipe to be non-blocking, so when reading from pipe won't block.
-  if (pipe2(pipefd_, O_NONBLOCK) == -1) {
-    return error::Internal("Could not create pipe.");
-  }
+  PL_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
 
   child_pid_ = fork();
   if (child_pid_ < 0) {
@@ -192,7 +180,7 @@ Status SubProcess::Start(const std::function<int()>& fn, StartOptions options) {
   }
 
   // Close write end, as write is done by child.
-  close(pipefd_[kWrite]);
+  pipe_.CloseWrite();
   return Status::OK();
 }
 
@@ -231,7 +219,7 @@ int SubProcess::Wait(bool close_pipe) {
   if (close_pipe) {
     // Close the read endpoint of the pipe. This must happen after waitpid(), otherwise the
     // process will exits abnormally because it's STDOUT cannot be written.
-    close(pipefd_[kRead]);
+    pipe_.CloseRead();
   }
   return status;
 }
@@ -249,7 +237,7 @@ Status SubProcess::Stdout(std::string* out) {
   // Try to deplete all available data from the pipe. But still proceed if there is no more data.
   int len;
   do {
-    len = read(pipefd_[kRead], &buffer, sizeof(buffer));
+    len = read(pipe_.ReadFd(), &buffer, sizeof(buffer));
 
     // Don't treat EAGAIN or EWOULDBLOCK as errors,
     // Treat them as if we've grabbed all the available data, since a future call will succeed.
@@ -264,6 +252,34 @@ Status SubProcess::Stdout(std::string* out) {
   } while (len == sizeof(buffer));
 
   return Status::OK();
+}
+
+SubProcess::Pipe::~Pipe() {
+  CloseIfNotClosed(ReadDirection);
+  CloseIfNotClosed(WriteDirection);
+}
+Status SubProcess::Pipe::Open(int flags) {
+  // Create the pipe, see `man pipe2` for how these 2 file descriptors are used.
+  // Also set the pipe to be non-blocking, so when reading from pipe won't block.
+  if (pipe2(fd_, flags) == -1) {
+    return error::Internal("Could not create pipe.");
+  }
+  return Status::OK();
+}
+
+int SubProcess::Pipe::ReadFd() { return fd_[ReadDirection]; }
+
+int SubProcess::Pipe::WriteFd() { return fd_[WriteDirection]; }
+
+void SubProcess::Pipe::CloseRead() { CloseIfNotClosed(ReadDirection); }
+void SubProcess::Pipe::CloseWrite() { CloseIfNotClosed(WriteDirection); }
+
+void SubProcess::Pipe::CloseIfNotClosed(PipeDirection direction) {
+  if (fd_[direction] == -1) {
+    return;
+  }
+  close(fd_[direction]);
+  fd_[direction] = -1;
 }
 
 }  // namespace px
