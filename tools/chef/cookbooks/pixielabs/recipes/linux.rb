@@ -21,7 +21,6 @@ apt_pkg_list = [
   'bash-completion',
   'bc',
   'build-essential',
-  'checkstyle',
   'curl',
   # Not the newest docker CE from official docker repository, but should suffice.
   'docker.io',
@@ -47,6 +46,9 @@ apt_pkg_list = [
   'flex',
   'libedit-dev',
   'libelf-dev',
+
+  # Needed by rules_jvm_external to run coursier.
+  'openjdk-11-jre-headless',
 
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',

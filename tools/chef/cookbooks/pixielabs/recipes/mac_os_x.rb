@@ -16,7 +16,6 @@
 
 homebrew_package 'autoconf'
 homebrew_package 'automake'
-homebrew_package 'checkstyle'
 homebrew_package 'clang-format'
 homebrew_package 'libtool'
 homebrew_package 'postgresql@14'
