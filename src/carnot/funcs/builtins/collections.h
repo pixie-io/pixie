@@ -39,6 +39,19 @@ inline types::StringValue SerializeScalar(types::StringValue* value) {
   return *value;
 }
 
+struct UInt128 {
+  uint64_t high;
+  uint64_t low;
+};
+template <>
+inline types::StringValue SerializeScalar(types::UInt128Value* value) {
+  UInt128 val{
+      value->High64(),
+      value->Low64(),
+  };
+  return types::StringValue(reinterpret_cast<char*>(&val), sizeof(val));
+}
+
 template <typename T>
 T DeserializeScalar(const types::StringValue& data) {
   return *reinterpret_cast<const typename types::ValueTypeTraits<T>::native_type*>(data.data());
@@ -47,6 +60,11 @@ T DeserializeScalar(const types::StringValue& data) {
 template <>
 inline types::StringValue DeserializeScalar(const types::StringValue& data) {
   return data;
+}
+template <>
+inline types::UInt128Value DeserializeScalar(const types::StringValue& data) {
+  auto* val = reinterpret_cast<const UInt128*>(data.data());
+  return types::UInt128Value(val->high, val->low);
 }
 
 template <typename TArg>
