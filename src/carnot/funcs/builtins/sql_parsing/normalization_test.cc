@@ -51,7 +51,7 @@ TEST_P(NormPGSQLTest, basic) {
 
   EXPECT_EQ(result.normalized_query, test_case.expected_result.normalized_query);
   EXPECT_EQ(result.params, test_case.expected_result.params);
-  EXPECT_EQ(result.errmsg, test_case.expected_result.errmsg);
+  EXPECT_EQ(result.error, test_case.expected_result.error);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -155,7 +155,7 @@ TEST_P(NormMySQLTest, basic) {
 
   EXPECT_EQ(result.normalized_query, test_case.expected_result.normalized_query);
   EXPECT_EQ(result.params, test_case.expected_result.params);
-  EXPECT_EQ(result.errmsg, test_case.expected_result.errmsg);
+  EXPECT_EQ(result.error, test_case.expected_result.error);
 }
 
 INSTANTIATE_TEST_SUITE_P(

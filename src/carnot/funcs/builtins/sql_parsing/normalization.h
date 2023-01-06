@@ -126,7 +126,7 @@ class ParserRuleFragmentListener : public antlr4::tree::ParseTreeListener {
 struct NormalizeResult {
   std::string normalized_query;
   std::vector<std::string> params;
-  std::string errmsg = "";
+  std::string error = "";
 
   static inline constexpr char kErrorKey[] = "error";
   static inline constexpr char kQueryKey[] = "query";

@@ -63,14 +63,14 @@ types::StringValue NormalizePostgresSQLUDF::Exec(FunctionContext*, StringValue s
     auto status = ParseExecuteCommand(sql_str, &query, &param_values);
     if (!status.ok()) {
       sql_parsing::NormalizeResult result;
-      result.errmsg = status.msg();
+      result.error = status.msg();
       return result.ToJSON();
     }
   } else if (cmd_code.compare(kPgQueryCmdCode) == 0) {
     query = sql_str;
   } else {
     sql_parsing::NormalizeResult result;
-    result.errmsg =
+    result.error =
         absl::Substitute("cmd_code must be one of '$0' or '$1'", kPgQueryCmdCode, kPgExecCmdCode);
     return result.ToJSON();
   }
@@ -78,7 +78,7 @@ types::StringValue NormalizePostgresSQLUDF::Exec(FunctionContext*, StringValue s
   auto result_or_s = sql_parsing::normalize_pgsql(query, param_values);
   if (!result_or_s.ok()) {
     sql_parsing::NormalizeResult result;
-    result.errmsg = result_or_s.status().msg();
+    result.error = result_or_s.status().msg();
     return result.ToJSON();
   }
   return result_or_s.ConsumeValueOrDie().ToJSON();
@@ -93,22 +93,22 @@ types::StringValue NormalizeMySQLUDF::Exec(FunctionContext*, StringValue sql_str
     auto status = ParseExecuteCommand(sql_str, &query, &param_values);
     if (!status.ok()) {
       sql_parsing::NormalizeResult result;
-      result.errmsg = status.msg();
+      result.error = status.msg();
       return result.ToJSON();
     }
   } else if (cmd_code == kMySQLQueryCmdCode) {
     query = sql_str;
   } else {
     sql_parsing::NormalizeResult result;
-    result.errmsg = absl::Substitute("cmd_code must be one of '$0' or '$1'", kMySQLQueryCmdCode,
-                                     kMySQLExecuteCmdCode);
+    result.error = absl::Substitute("cmd_code must be one of '$0' or '$1'", kMySQLQueryCmdCode,
+                                    kMySQLExecuteCmdCode);
     return result.ToJSON();
   }
 
   auto result_or_s = sql_parsing::normalize_mysql(query, param_values);
   if (!result_or_s.ok()) {
     sql_parsing::NormalizeResult result;
-    result.errmsg = result_or_s.status().msg();
+    result.error = result_or_s.status().msg();
     return result.ToJSON();
   }
   return result_or_s.ConsumeValueOrDie().ToJSON();
