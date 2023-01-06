@@ -18,34 +18,11 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
 # Linux headers are bundled in PEM image for PEM to setup the BPF runtime.
 def linux_headers():
-    # timeconst_<config_hz>.h headers are used by BCC runtime for compilation. But it's part of
-    # generated headers not in the original linux source. So we pack them into separately.
     http_file(
-        name = "timeconst_100",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_100.h"],
-        sha256 = "082496c45ab93af811732da56000caf5ffc9e6734ff633a2b348291f160ceb7e",
-        downloaded_file_path = "timeconst_100.h",
-    )
-
-    http_file(
-        name = "timeconst_250",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_250.h"],
-        sha256 = "0db01d74b846e39dca3612d96dee8b8f6addfaeb738cc4f5574086828487c2b9",
-        downloaded_file_path = "timeconst_250.h",
-    )
-
-    http_file(
-        name = "timeconst_300",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_300.h"],
-        sha256 = "91c6499df71695699a296b2fdcbb8c30e9bf35d024e048fa6d2305a8ac2af9ab",
-        downloaded_file_path = "timeconst_300.h",
-    )
-
-    http_file(
-        name = "timeconst_1000",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_1000.h"],
-        sha256 = "da0ba6765f2969482bf8eaf21249552557fe4d6831749d9cfe4c25f4661f8726",
-        downloaded_file_path = "timeconst_1000.h",
+        name = "timeconst_bc",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_v4.20.bc"],
+        sha256 = "99bc07f850094c7fa78eff91867841957fab8080400a17f1b70ca5544c0d1b51",
+        downloaded_file_path = "timeconst.bc",
     )
 
     http_file(
@@ -53,4 +30,23 @@ def linux_headers():
         urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl4/linux-headers-merged-pl4.tar.gz"],
         sha256 = "484e3ddf21bf4474c34f17e5862758cc3552045cc9a1dd746203518eb298d876",
         downloaded_file_path = "linux-headers-merged.tar.gz",
+    )
+
+def gen_timeconst_file(name, const):
+    native.genrule(
+        name = "timeconst_%d" % const,
+        srcs = ["@timeconst_bc//file"],
+        outs = ["timeconst_%d.h" % const],
+        cmd = "echo %d | bc $< > $(@D)/timeconst_%d.h" % (const, const),
+    )
+
+def gen_timeconst(name):
+    hzs = [100, 250, 300, 1000]
+    for hz in hzs:
+        gen_timeconst_file("timeconst_%d" % hz, hz)
+
+    srcs = ["timeconst_%d" % hz for hz in hzs]
+    native.filegroup(
+        name = name,
+        srcs = srcs,
     )

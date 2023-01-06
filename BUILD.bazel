@@ -17,6 +17,7 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("//bazel:linux_headers.bzl", "gen_timeconst")
 load("//bazel:repositories.bzl", "list_pl_deps")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
@@ -179,12 +180,7 @@ stirling_linux_headers_tarballs = [
 # stirling_linux_headers_tarballs, in order to match the host's actual configs.
 #
 # See GenTimeConst() in src/stirling/utils/linux_headers.h for more details.
-stirling_linux_timeconst_files = [
-    "@timeconst_100//file:file",
-    "@timeconst_250//file:file",
-    "@timeconst_300//file:file",
-    "@timeconst_1000//file:file",
-]
+gen_timeconst(name = "stirling_linux_timeconst_files")
 
 # Used by stirling runtime to provide symbolization for Java application profiling.
 stirling_java_profiling_tools = [
@@ -198,7 +194,7 @@ stirling_ctrl = [
     "//src/stirling/binaries:stirling_ctrl",
 ]
 
-stirling_collateral = stirling_linux_timeconst_files + stirling_ctrl + stirling_java_profiling_tools
+stirling_collateral = [":stirling_linux_timeconst_files"] + stirling_ctrl + stirling_java_profiling_tools
 
 container_image(
     name = "pl_cc_bpf_image",
