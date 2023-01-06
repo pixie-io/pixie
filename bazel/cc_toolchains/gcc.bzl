@@ -69,6 +69,7 @@ def _gcc_x86_64_gnu():
         ],
         dbg_compile_flags = ["-g"],
         link_flags = [
+            "-static-libgcc",
             "-fuse-ld=lld",
             "-Wl,-no-as-needed",
             "-Wl,-z,relro,-z,now",

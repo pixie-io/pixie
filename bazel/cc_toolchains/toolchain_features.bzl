@@ -132,7 +132,6 @@ def _libstdcpp(ctx):
                         flag_group(
                             flags = [
                                 "-l:libstdc++.a",
-                                "-static-libgcc",
                             ],
                         ),
                     ],
