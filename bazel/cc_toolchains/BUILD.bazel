@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-load("//bazel/cc_toolchains:clang.bzl", "clang_exec", "clang_x86_64_gnu")
 load("//bazel/cc_toolchains:gcc.bzl", "gcc_x86_64_gnu", "gcc_x86_64_static_musl")
 load("//bazel/cc_toolchains:settings.bzl", "settings")
 
@@ -27,23 +26,22 @@ gcc_x86_64_gnu()
 
 gcc_x86_64_static_musl()
 
-clang_x86_64_gnu()
-
-clang_exec()
-
 constraint_setting(
     name = "is_exec",
     default_constraint_value = ":is_exec_true",
+    visibility = ["//visibility:public"],
 )
 
 constraint_value(
     name = "is_exec_true",
     constraint_setting = ":is_exec",
+    visibility = ["//visibility:public"],
 )
 
 constraint_value(
     name = "is_exec_false",
     constraint_setting = ":is_exec",
+    visibility = ["//visibility:public"],
 )
 
 # This is the platform we currently target. All builds for other platforms will use the default value of `is_exec` which is `is_exec_true`.

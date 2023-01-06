@@ -289,6 +289,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "oneTBB-e6104c9599f7f10473caf545199f7468c0a8e52f",
         urls = ["https://github.com/oneapi-src/oneTBB/archive/e6104c9599f7f10473caf545199f7468c0a8e52f.tar.gz"],
     ),
+    com_llvm_clang_15 = dict(
+        sha256 = "5e773e118930bb057acd904f20692d6fde730d8b46409b9f1bb286d0a72ef99f",
+        strip_prefix = "clang-15.0",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/clang-15.0-pl5.tar.gz"],
+    ),
     com_llvm_lib = dict(
         sha256 = "e2cdc560be2469f376558164ce51d75669e4ff0585712f04face168fa597740f",
         strip_prefix = "",
@@ -298,6 +303,11 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "1bd0b9d41a2cbc34d9abc64b1017cf08a956200bb41c14b6fe3e1ddb29d1ca6b",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/llvm-15.0-pl5-libcxx.tar.gz"],
+    ),
+    com_llvm_libcxx = dict(
+        sha256 = "7381c10111cdf3c0136fd0395f69111c8a942807e30d697a73315b302bccf004",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl5/libcxx-15.0-pl5.tar.gz"],
     ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",

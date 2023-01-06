@@ -14,143 +14,90 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_cc//cc:defs.bzl", "cc_toolchain")
-load("@unix_cc_toolchain_config//:cc_toolchain_config.bzl", "cc_toolchain_config")
+load("//bazel:repository_locations.bzl", "REPOSITORY_LOCATIONS")
 
-def _clang_x86_64_gnu():
-    _clang_x86_64_gnu_with_options(
-        extra_target_constraints = [
-            ":is_exec_false",
-        ],
+def _download_repo(rctx, repo_name, output):
+    loc = REPOSITORY_LOCATIONS[repo_name]
+    rctx.download_and_extract(
+        output = output,
+        url = loc["urls"],
+        sha256 = loc["sha256"],
+        stripPrefix = loc.get("strip_prefix", ""),
     )
 
-def _clang_exec():
-    _clang_x86_64_gnu_with_options(
-        suffix = "-exec",
-        enable_sanitizers = False,
-        extra_target_constraints = [
-            ":is_exec_true",
-        ],
+def _clang_toolchain_impl(rctx):
+    # Unfortunately, we have to download any files that the toolchain uses within this rule.
+    toolchain_path = "toolchain"
+    _download_repo(rctx, rctx.attr.toolchain_repo, toolchain_path)
+    libcxx_path = "libcxx"
+    _download_repo(rctx, rctx.attr.libcxx_repo, libcxx_path)
+
+    libcxx_build = rctx.read(Label("@px//bazel/cc_toolchains/clang:libcxx.BUILD"))
+    toolchain_files_build = rctx.read(Label("@px//bazel/cc_toolchains/clang:toolchain_files.BUILD"))
+
+    # First combine all of the build file templates into one file.
+    rctx.template(
+        "BUILD.bazel.tpl",
+        Label("@px//bazel/cc_toolchains/clang:toolchain.BUILD"),
+        substitutions = {
+            "{libcxx_build}": libcxx_build,
+            "{toolchain_files_build}": toolchain_files_build,
+        },
     )
 
-def _clang_x86_64_gnu_with_options(suffix = "", enable_sanitizers = True, extra_target_constraints = []):
-    toolchain_config_name = "clang_config_x86_64_gnu" + suffix
-    toolchain_identifier = "clang-x86_64-linux-gnu" + suffix
-    cc_toolchain_name = "cc-compiler-clang-x86_64-gnu" + suffix
-    toolchain_name = "cc-toolchain-clang-x86_64-gnu" + suffix
-    tool_paths = {
-        "ar": "/opt/clang-15.0/bin/llvm-ar",
-        "cpp": "/opt/clang-15.0/bin/clang-cpp",
-        "dwp": "/opt/clang-15.0/bin/llvm-dwp",
-        "gcc": "/opt/clang-15.0/bin/clang-15",
-        "ld": "/opt/clang-15.0/bin/ld.lld",
-        "llvm-cov": "/opt/clang-15.0/bin/llvm-cov",
-        "nm": "/opt/clang-15.0/bin/llvm-nm",
-        "objcopy": "/opt/clang-15.0/bin/llvm-objcopy",
-        "objdump": "/opt/clang-15.0/bin/llvm-objdump",
-        "strip": "/opt/clang-15.0/bin/llvm-strip",
-    }
-    cc_toolchain_config(
-        name = toolchain_config_name,
-        cpu = "k8",
-        compiler = "clang",
-        toolchain_identifier = toolchain_identifier,
-        host_system_name = "x86_64-unknown-linux-gnu",
-        target_system_name = "x86_64-unknown-linux-gnu",
-        target_libc = "glibc_unknown",
-        abi_version = "clang",
-        abi_libc_version = "glibc_unknown",
-        cxx_builtin_include_directories = [
-            "/opt/clang-15.0/lib/clang/15.0.6/include",
-            "/usr/local/include",
-            "/usr/include/x86_64-linux-gnu",
-            "/usr/include",
-            "/opt/clang-15.0/lib/clang/15.0.6/share",
-            "/usr/include/c++/11",
-            "/usr/include/x86_64-linux-gnu/c++/11",
-            "/usr/include/c++/11/backward",
-            "/opt/clang-15.0/include/c++/v1",
-        ],
-        tool_paths = tool_paths,
-        compile_flags = [
-            "-fstack-protector",
-            "-Wall",
-            "-Wthread-safety",
-            "-Wself-assign",
-            "-Wunused-but-set-parameter",
-            "-fcolor-diagnostics",
-            "-fno-omit-frame-pointer",
-        ],
-        opt_compile_flags = [
-            "-g0",
-            "-O2",
-            "-D_FORTIFY_SOURCE=1",
-            "-DNDEBUG",
-            "-ffunction-sections",
-            "-fdata-sections",
-        ],
-        dbg_compile_flags = ["-g"],
-        cxx_flags = [
-            "-std=c++17",
-            "-fPIC",
-        ],
-        link_flags = [
-            "-static-libgcc",
-            "-fuse-ld=lld",
-            "-Wl,-no-as-needed",
-            "-Wl,-z,relro,-z,now",
-            "-B/opt/clang-15.0/bin",
-            "-lm",
-        ],
-        opt_link_flags = ["-Wl,--gc-sections"],
-        unfiltered_compile_flags = [
-            "-no-canonical-prefixes",
-            "-Wno-builtin-macro-redefined",
-            "-D__DATE__=\"redacted\"",
-            "-D__TIMESTAMP__=\"redacted\"",
-            "-D__TIME__=\"redacted\"",
-        ],
-        coverage_compile_flags = ["--coverage"],
-        coverage_link_flags = ["--coverage"],
-        supports_start_end_lib = True,
-        libclang_rt_path = "/opt/clang-15.0/lib/clang/15.0.6/lib/linux",
-        enable_sanitizers = enable_sanitizers,
+    # Then substitute in parameters into the combined template.
+    rctx.template(
+        "BUILD.bazel",
+        "BUILD.bazel.tpl",
+        substitutions = {
+            "{clang_major_version}": rctx.attr.clang_version.split(".")[0],
+            "{clang_version}": rctx.attr.clang_version,
+            "{host_arch}": rctx.attr.host_arch,
+            "{host_libc_version}": rctx.attr.host_libc_version,
+            "{libc_version}": rctx.attr.libc_version,
+            "{libcxx_path}": libcxx_path,
+            "{target_arch}": rctx.attr.target_arch,
+            "{this_repo}": rctx.attr.name,
+            "{toolchain_path}": toolchain_path,
+            "{use_for_host_tools}": str(rctx.attr.use_for_host_tools),
+        },
     )
 
-    cc_toolchain(
-        name = cc_toolchain_name,
-        toolchain_identifier = toolchain_identifier,
-        toolchain_config = toolchain_config_name,
-        # TODO(james): figure out what these files values do, and if we need them.
-        all_files = ":empty",
-        ar_files = ":empty",
-        as_files = ":empty",
-        compiler_files = ":empty",
-        dwp_files = ":empty",
-        linker_files = ":empty",
-        objcopy_files = ":empty",
-        strip_files = ":empty",
-        supports_param_files = 1,
-        module_map = None,
-    )
+clang_toolchain = repository_rule(
+    _clang_toolchain_impl,
+    attrs = dict(
+        toolchain_repo = attr.string(mandatory = True),
+        libcxx_repo = attr.string(mandatory = True),
+        target_arch = attr.string(mandatory = True),
+        libc_version = attr.string(mandatory = True),
+        host_arch = attr.string(mandatory = True),
+        host_libc_version = attr.string(mandatory = True),
+        clang_version = attr.string(mandatory = True),
+        use_for_host_tools = attr.bool(mandatory = True),
+    ),
+)
 
-    native.toolchain(
-        name = toolchain_name,
-        exec_compatible_with = [
-            "@platforms//cpu:x86_64",
-            "@platforms//os:linux",
-        ],
-        target_compatible_with = [
-            "@platforms//cpu:x86_64",
-            "@platforms//os:linux",
-        ] + extra_target_constraints,
-        target_settings = [
-            ":compiler_clang",
-            ":libc_version_gnu",
-        ],
-        toolchain = ":" + cc_toolchain_name,
-        toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+def _clang_register_toolchain(
+        name,
+        toolchain_repo,
+        libcxx_repo,
+        target_arch,
+        clang_version,
+        libc_version = "gnu",
+        host_arch = "x86_64",
+        host_libc_version = "gnu",
+        use_for_host_tools = False):
+    clang_toolchain(
+        name = name,
+        toolchain_repo = toolchain_repo,
+        libcxx_repo = libcxx_repo,
+        target_arch = target_arch,
+        libc_version = libc_version,
+        host_arch = host_arch,
+        host_libc_version = host_libc_version,
+        clang_version = clang_version,
+        use_for_host_tools = use_for_host_tools,
     )
+    native.register_toolchains("@{name}//:toolchain".format(name = name))
 
-clang_x86_64_gnu = _clang_x86_64_gnu
-clang_exec = _clang_exec
+clang_register_toolchain = _clang_register_toolchain

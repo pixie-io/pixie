@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 def _graal_native_binary_impl(ctx):
-    cc_compiler_path = ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"].cc.compiler_executable
+    cc_toolchain_info = ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"].cc
 
     # TODO(james): this is a bit of a hack because bazel's JavaInfo doesn't currently have starlark definitions,
     # so its hard to traverse.
@@ -40,7 +40,7 @@ def _graal_native_binary_impl(ctx):
         jar.path,
         "-o",
         out.path,
-        "--native-compiler-path=" + cc_compiler_path,
+        "--native-compiler-path=" + cc_toolchain_info.compiler_executable,
         # Add /usr/bin as prefix, so that `native-image` can find ld.
         # The real solution would be to get `native-image` to work with the combination of lld and gcc.
         # However, that has proved difficult so far.
@@ -50,7 +50,12 @@ def _graal_native_binary_impl(ctx):
 
     ctx.actions.run(
         outputs = [out],
-        inputs = [jar],
+        inputs = depset(
+            [jar],
+            transitive = [
+                cc_toolchain_info.all_files,
+            ],
+        ),
         executable = graal_runtime.java_home + "/bin/native-image",
         arguments = args,
         tools = [graal_runtime.files],

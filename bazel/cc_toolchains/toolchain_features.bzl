@@ -85,6 +85,7 @@ PL_EXTRA_CC_CONFIG_ATTRS = dict(
         },
     ),
     unfiltered_link_flags = attr.string_list(),
+    libcxx_path = attr.string(),
 )
 
 all_compile_actions = [
@@ -152,6 +153,7 @@ def _libcpp(ctx):
                         flag_group(
                             flags = [
                                 "-stdlib=libc++",
+                                "-isystem{libcxx_path}/include/c++/v1".format(libcxx_path = ctx.attr.libcxx_path),
                             ],
                         ),
                     ],
@@ -161,6 +163,7 @@ def _libcpp(ctx):
                     flag_groups = [
                         flag_group(
                             flags = [
+                                "-L{libcxx_path}/lib".format(libcxx_path = ctx.attr.libcxx_path),
                                 "-l:libc++.a",
                                 "-l:libc++abi.a",
                             ],

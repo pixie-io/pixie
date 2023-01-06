@@ -14,12 +14,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("//bazel/cc_toolchains:clang.bzl", "clang_register_toolchain")
+
 def _pl_register_cc_toolchains():
+    clang_register_toolchain(
+        name = "clang-15.0",
+        toolchain_repo = "com_llvm_clang_15",
+        libcxx_repo = "com_llvm_libcxx",
+        target_arch = "x86_64",
+        clang_version = "15.0.6",
+    )
+    clang_register_toolchain(
+        name = "clang-15.0-exec",
+        toolchain_repo = "com_llvm_clang_15",
+        libcxx_repo = "com_llvm_libcxx",
+        target_arch = "x86_64",
+        clang_version = "15.0.6",
+        use_for_host_tools = True,
+    )
+
     native.register_toolchains(
         "//bazel/cc_toolchains:cc-toolchain-gcc-x86_64-gnu",
         "//bazel/cc_toolchains:cc-toolchain-gcc-x86_64-static-musl",
-        "//bazel/cc_toolchains:cc-toolchain-clang-x86_64-gnu",
-        "//bazel/cc_toolchains:cc-toolchain-clang-x86_64-gnu-exec",
     )
 
 pl_register_cc_toolchains = _pl_register_cc_toolchains

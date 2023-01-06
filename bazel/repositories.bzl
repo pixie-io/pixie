@@ -18,7 +18,6 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 load("//bazel/cc_toolchains:deps.bzl", "cc_toolchain_config_repo")
-load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
 
 # Make all contents of an external repository accessible under a filegroup.
@@ -217,8 +216,11 @@ def _list_pl_deps(name):
         visibility = ["//visibility:public"],
     )
 
-def _pl_deps():
+def _pl_cc_toolchain_deps():
     _bazel_repo("bazel_skylib")
+    cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
+
+def _pl_deps():
     _bazel_repo("bazel_gazelle")
     _bazel_repo("io_bazel_rules_go")
     _bazel_repo("io_bazel_rules_scala")
@@ -233,9 +235,6 @@ def _pl_deps():
     _bazel_repo("com_github_fmeum_rules_meta")
     _bazel_repo("com_google_protobuf_javascript", patches = ["//bazel/external:protobuf_javascript.patch"], patch_args = ["-p1"])
 
-    cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
-    pl_register_cc_toolchains()
-
     _com_llvm_lib()
     _cc_deps()
 
@@ -243,3 +242,4 @@ def _pl_deps():
 
 list_pl_deps = _list_pl_deps
 pl_deps = _pl_deps
+pl_cc_toolchain_deps = _pl_cc_toolchain_deps

@@ -62,14 +62,15 @@ def pl_cc_resource_impl(
         # This is because the preprocessed files are now in Bazel's rule dir and $(location)
         # will return the path of the source file, not the preprocessed file. So we cd into
         # $(RULEDIR) and use the original file name to find the files.
-        cmd = "cd $(RULEDIR) && " +
+        cmd = "objcopy_abs_path=$$(realpath $(OBJCOPY));" +
+              "cd $(RULEDIR) && " +
               # Objcopy's source file determines the symbol name, to make them identical to the rule
               # name, copy the input source to a file named after the rule name.
               #
               # TODO(yzhao): This command would fail if pl_cc_resource_impl() is used directly,
               # not through pl_cc_resource() and pl_bpf_cc_preprocess().
               "cp {0} {1} && ".format(src, name) +
-              "$(OBJCOPY) -I binary -O elf64-x86-64 " +
+              "$${objcopy_abs_path} -I binary -O elf64-x86-64 " +
               "--binary-architecture i386:x86-64 {0} {1};".format(name, object_file),
         **kwargs
     )
