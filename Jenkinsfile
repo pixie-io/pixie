@@ -858,7 +858,7 @@ def archiveBuildArtifacts = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  retryPodTemplate('archive', [gcloudContainer()]) {
+  retryPodTemplate('root', [gcloudContainer()]) {
     if (isMainRun || isOSSMainRun) {
       def namePrefix = 'pixie-main'
       if (isOSSMainRun) {
