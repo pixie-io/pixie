@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@px//bazel:llvm_cmake.bzl", "add_llvm_cache_entries", "llvm_build_data_deps")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 licenses(["notice"])
@@ -30,15 +31,15 @@ cmake(
         "-j`nproc`",
         "-l`nproc`",
     ],
-    cache_entries = {
+    build_data = llvm_build_data_deps(),
+    cache_entries = add_llvm_cache_entries({
         "CMAKE_USE_LIBBPF_PACKAGE": "ON",
         "ENABLE_EXAMPLES": "OFF",
         "ENABLE_MAN": "OFF",
         "ENABLE_TESTS": "OFF",
         "LIBBPF_INCLUDE_DIR": "$EXT_BUILD_DEPS/libbpf/include",
         "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
-        "LLVM_ROOT": "/opt/clang-15.0",
-    },
+    }),
     includes = [
         "bcc/compat",
     ],
@@ -65,5 +66,8 @@ cmake(
         "clang_frontend",
     ],
     visibility = ["//visibility:public"],
-    deps = ["@com_github_libbpf_libbpf//:libbpf"],
+    deps = [
+        "@com_github_libbpf_libbpf//:libbpf",
+        "@px//:llvm",
+    ],
 )

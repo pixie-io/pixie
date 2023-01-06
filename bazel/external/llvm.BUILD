@@ -132,3 +132,9 @@ cc_library(
     visibility = ["//visibility:public"],
     alwayslink = 1,
 )
+
+filegroup(
+    name = "cmake",
+    srcs = glob(["lib/cmake/llvm/**"]),
+    visibility = ["//visibility:public"],
+)
