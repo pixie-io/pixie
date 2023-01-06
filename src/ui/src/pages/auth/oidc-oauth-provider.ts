@@ -43,21 +43,33 @@ export const OIDCClient = {
   }),
 
   redirectToLogin(extraQueryParams: Record<string, any>): void {
+    const args = getLoginArgs();
+
+    if (args.invite_token) {
+      extraQueryParams.invite = true;
+    }
+
     this.userManager.signinRedirect({
       extraQueryParams,
       prompt: 'login',
       state: {
-        redirectArgs: getLoginArgs(),
+        redirectArgs: args,
       },
     });
   },
 
   redirectToSignup(extraQueryParams: Record<string, any>): void {
+    const args = getSignupArgs();
+
+    if (args.invite_token) {
+      extraQueryParams.invite = true;
+    }
+
     this.userManager.signinRedirect({
       extraQueryParams,
       prompt: 'login',
       state: {
-        redirectArgs: getSignupArgs(),
+        redirectArgs: args,
       },
     });
   },
