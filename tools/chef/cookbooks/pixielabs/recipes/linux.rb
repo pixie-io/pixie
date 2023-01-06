@@ -88,7 +88,6 @@ execute 'python alternatives selection' do
   command 'update-alternatives --install /usr/bin/python python /usr/bin/python3 100'
 end
 
-include_recipe 'pixielabs::linux_java'
 include_recipe 'pixielabs::linux_clang'
 include_recipe 'pixielabs::linux_gcc_musl'
 include_recipe 'pixielabs::linux_graalvm'
