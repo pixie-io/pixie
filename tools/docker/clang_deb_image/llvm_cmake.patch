@@ -1,0 +1,28 @@
+diff --color -Naur a/lib/cmake/llvm/LLVMExports.cmake b/lib/cmake/llvm/LLVMExports.cmake
+--- a/lib/cmake/llvm/LLVMExports.cmake	2023-01-05 19:47:39.000000000 -0800
++++ b/lib/cmake/llvm/LLVMExports.cmake	2023-01-06 11:20:18.207801706 -0800
+@@ -740,24 +740,6 @@
+ # Cleanup temporary variables.
+ set(_IMPORT_PREFIX)
+ 
+-# Loop over all imported files and verify that they actually exist
+-foreach(_cmake_target IN LISTS _cmake_import_check_targets)
+-  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
+-    if(NOT EXISTS "${_cmake_file}")
+-      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
+-   \"${_cmake_file}\"
+-but this file does not exist.  Possible reasons include:
+-* The file was deleted, renamed, or moved to another location.
+-* An install or uninstall procedure did not complete successfully.
+-* The installation package was faulty and contained
+-   \"${CMAKE_CURRENT_LIST_FILE}\"
+-but not all the files it references.
+-")
+-    endif()
+-  endforeach()
+-  unset(_cmake_file)
+-  unset("_cmake_import_check_files_for_${_cmake_target}")
+-endforeach()
+ unset(_cmake_target)
+ unset(_cmake_import_check_targets)
+ 

@@ -171,5 +171,6 @@ RUN ninja install
 WORKDIR /opt
 VOLUME /image
 COPY create_packages.sh /opt
+COPY llvm_cmake.patch /opt
 
 CMD ["/opt/create_packages.sh"]

@@ -33,11 +33,18 @@ popd
 tar_args=('--exclude=*.so'
 	  '--exclude=*.so.*')
 
+
+patch_llvm_cmake() {
+  patch -p1 < /opt/llvm_cmake.patch
+}
+
 pushd "/opt/llvm-${CLANG_VERSION}-libstdc++"
+patch_llvm_cmake
 tar "${tar_args[@]}" -czf "/image/${LLVM_LIBSTDCXX_LIBS_TAR_FILE}" lib include
 popd
 
 pushd "/opt/llvm-${CLANG_VERSION}-libcxx"
+patch_llvm_cmake
 tar "${tar_args[@]}" -czf "/image/${LLVM_LIBCXX_LIBS_TAR_FILE}" lib include
 popd
 
