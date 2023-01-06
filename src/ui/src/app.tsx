@@ -25,6 +25,7 @@ import Axios from 'axios';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import * as QueryString from 'query-string';
 import { createRoot } from 'react-dom/client';
+import { configure as configureReactHotKeys, GlobalHotKeys } from 'react-hotkeys';
 import { useLocation } from 'react-router';
 import {
   Redirect, RedirectProps, Route, Router, Switch,
@@ -322,9 +323,17 @@ const ThemedApp: React.FC = () => {
 };
 ThemedApp.displayName = 'ThemedApp';
 
+// This has to happen before React starts up, to make sure it's done before anything from this library mounts
+configureReactHotKeys({
+  // Defaults to ignore events from within ['input', 'select', 'textarea'].
+  // We have a more nuanced ignore handler in shortcuts.tsx that only blocks shortcuts that would edit text.
+  ignoreTags: ['select'],
+});
+
 const root = createRoot(document.getElementById('root'));
 root.render(
   <ErrorBoundary name='Root'>
+    <GlobalHotKeys /> {/* Only here to always close hotkey combinations from other HotKeys elements */}
     <StyledEngineProvider injectFirst>
       <AuthContextProvider>
         <EmbedContextProvider>

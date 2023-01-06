@@ -21,7 +21,7 @@ import * as React from 'react';
 import { useAutocomplete, alpha } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { HotKeys } from 'react-hotkeys';
+import { GlobalHotKeys } from 'react-hotkeys';
 
 import { PixieCommandIcon } from 'app/components';
 import { isMac } from 'app/utils/detect-os';
@@ -273,7 +273,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
   }), [cta, cta?.disabled, cta?.action]);
 
   return (
-    <HotKeys keyMap={hotKeyMap} handlers={hotKeyHandlers} className={classes.hotKeyWrapper} allowChanges>
+    <GlobalHotKeys keyMap={hotKeyMap} handlers={hotKeyHandlers} className={classes.hotKeyWrapper} allowChanges>
       <div className={classes.root}>
         {/* Top: the input itself and the CTA */}
         <div className={classes.topContainer} {...getRootProps()}>
@@ -319,7 +319,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
           </div>
         </div>
       </div>
-    </HotKeys>
+    </GlobalHotKeys>
   );
 });
 CommandTextField.displayName = 'CommandTextField';

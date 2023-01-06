@@ -21,7 +21,7 @@ import * as React from 'react';
 import { Card, Modal } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import { configure, HotKeys } from 'react-hotkeys';
+import { GlobalHotKeys } from 'react-hotkeys';
 
 import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-context';
 import { isMac } from 'app/utils/detect-os';
@@ -35,10 +35,10 @@ type LiveHotKeyAction =
   'execute';
 
 interface LiveViewShortcutsProps {
-  handlers: Omit<Handlers<LiveHotKeyAction>, 'show-help'>;
+  handlers: Partial<Handlers<LiveHotKeyAction>>;
 }
 
-export function getKeyMap(): KeyMap<LiveHotKeyAction> {
+export function getKeyMap(): KeyMap<LiveHotKeyAction | 'command-palette-cta'> {
   const seqPrefix = isMac() ? 'Meta' : 'Control';
   const displayPrefix = isMac() ? 'Cmd' : 'Ctrl';
   const withPrefix = (key: string) => ({
@@ -57,6 +57,25 @@ export function getKeyMap(): KeyMap<LiveHotKeyAction> {
     'toggle-command-palette': {
       ...withPrefix('k'),
       description: 'Show/hide command palette',
+    },
+    /*
+      This one is a bit special.
+      Normally, we would not use <GlobalHotKeys> because override behavior is not great there.
+      However, we HAVE to use <GlobalHotKeys> instead of <HotKeys>, because the editor (Monaco) creates elements and key
+      handlers and focus that lives outside of React. <HotKeys> doesn't pay attention outside of React.
+
+      Since we're stuck with <GlobalHotKeys>, we can still get the desired override behavior by defining two actions
+      with the same shortcut and only defining an action for one of them at a time (see pages/live/live.tsx for that).
+      This also requires the Command Palette to use a <GlobalHotKeys> for it to all work.
+
+      This is all so that we can have two features working at the same time:
+      - Ctrl/Cmd+Enter works while the editor is open and focused
+      - If the Command Palette is open, it hijacks what Ctrl/Cmd+Enter does for itself
+    */
+    'command-palette-cta': {
+      ...withPrefix('enter'),
+      // No description -> filtered out of the help menu (this one is an implementation detail, after all)
+      description: '',
     },
     execute: {
       ...withPrefix('enter'),
@@ -124,7 +143,7 @@ const LiveViewShortcutsHelp = React.memo<LiveViewShortcutsHelpProps>(({ open, on
   const classes = useShortcutHelpStyles();
   const makeKey = (key) => <div className={classes.key} key={key}>{key}</div>;
 
-  const shortcuts = Object.keys(keyMap).map((action) => {
+  const shortcuts = Object.keys(keyMap).filter(k => keyMap[k].description.length > 0).map((action) => {
     const shortcut = keyMap[action];
     let sequence: React.ReactNode;
     if (Array.isArray(shortcut.displaySequence)) {
@@ -204,15 +223,6 @@ const LiveViewShortcutsProvider: React.FC<WithChildren<LiveViewShortcutsProps>> 
   handlers,
   children,
 }) => {
-  // Run this setup once.
-  React.useEffect(() => {
-    configure({
-      // React hotkeys defaults to ignore events from within ['input', 'select', 'textarea'].
-      // We want the Pixie command to work from anywhere.
-      ignoreTags: ['select'],
-    });
-  }, []);
-
   const [openHelp, setOpenHelp] = React.useState(false);
   const toggleOpenHelp = React.useCallback(() => setOpenHelp((cur) => !cur), []);
 
@@ -225,8 +235,8 @@ const LiveViewShortcutsProvider: React.FC<WithChildren<LiveViewShortcutsProps>> 
     return map;
   }, [keyMap]);
 
-  const wrappedHandlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
-    const wrapped: Handlers<LiveHotKeyAction> = {
+  const wrappedHandlers: Partial<Handlers<LiveHotKeyAction>> = React.useMemo(() => {
+    const wrapped: Partial<Handlers<LiveHotKeyAction>> = {
       'show-help': handlerWrapper(toggleOpenHelp),
       ...Object.keys(handlers).reduce((result, action) => ({
         ...result,
@@ -244,16 +254,16 @@ const LiveViewShortcutsProvider: React.FC<WithChildren<LiveViewShortcutsProps>> 
     },
   }), {}) as ShortcutsContextProps<LiveHotKeyAction>, [wrappedHandlers, keyMap]);
 
-  // HotKeys makes an element, and that element needs to not interfere with the CSS surrounding it
+  // react-hotkeys makes an element, and that element needs to not interfere with the CSS surrounding it
   const wrapStyle = React.useMemo(() => ({ width: '100%', height: '100%' }), []);
   return (
     // eslint-disable-next-line react-memo/require-usememo
-    <HotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges style={wrapStyle}>
+    <GlobalHotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges style={wrapStyle}>
       <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
       <LiveShortcutsContext.Provider value={context}>
         {children}
       </LiveShortcutsContext.Provider>
-    </HotKeys>
+    </GlobalHotKeys>
   );
 });
 LiveViewShortcutsProvider.displayName = 'LiveViewShortcutsProvider';

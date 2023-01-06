@@ -363,15 +363,19 @@ const LiveView = React.memo(() => {
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
   const { embedState: { widget } } = React.useContext(LiveRouteContext);
-  const { setOpen: setCommandPaletteOpen } = React.useContext(CommandPaletteContext);
+  const { open: isCommandPaletteOpen, setOpen: setCommandPaletteOpen } = React.useContext(CommandPaletteContext);
   const isEmbedded = isPixieEmbedded();
 
   const hotkeyHandlers = React.useMemo(() => ({
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     'toggle-command-palette': () => setCommandPaletteOpen((paletteOpen) => !paletteOpen),
-    execute: () => saveEditor(),
+    // See shortcuts.tsx for why this one is conditionally defined.
+    // Short version, only one of 'execute' | 'command-palette-cta' can have an action or else the wrong one "wins".
+    ...(isCommandPaletteOpen ? {} : {
+      execute: () => saveEditor(),
+    }),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-  }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen, setCommandPaletteOpen]);
+  }), [setEditorPanelOpen, saveEditor, setDataDrawerOpen, isCommandPaletteOpen, setCommandPaletteOpen]);
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
