@@ -17,7 +17,6 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("//bazel:linux_headers.bzl", "gen_timeconst")
 load("//bazel:repositories.bzl", "list_pl_deps")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
@@ -164,53 +163,6 @@ container_image(
         "//:embedding.proto",
         "//:sentencepiece.proto",
     ],
-    visibility = ["//visibility:public"],
-)
-
-# Used by stirling runtime to install linux headers on hosts having no Linux headers pre-installed.
-#
-# Note that each linux header tarball is ~15MB compressed and ~230MB uncompressed.
-# Trimmed versions are ~8MB compressed and ~110MB uncompressed.
-# These are all trimmed versions, so we have 8 * 12 = 96 MB of headers.
-stirling_linux_headers_tarballs = [
-    "@linux_headers_merged_tar_gz//file:file",
-]
-
-# Used by stirling runtime to replace the on-the-fly installed Linux headers from
-# stirling_linux_headers_tarballs, in order to match the host's actual configs.
-#
-# See GenTimeConst() in src/stirling/utils/linux_headers.h for more details.
-gen_timeconst(name = "stirling_linux_timeconst_files")
-
-# Used by stirling runtime to provide symbolization for Java application profiling.
-stirling_java_profiling_tools = [
-    "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
-    "//src/stirling/source_connectors/perf_profiler/java/agent:agent",
-]
-
-# Use this binary to dynamically turn on/off Stirling runtime's debug logging.
-# See src/stirling/e2e_tests/stirling_signal_test.sh for its usage.
-stirling_ctrl = [
-    "//src/stirling/binaries:stirling_ctrl",
-]
-
-stirling_collateral = [":stirling_linux_timeconst_files"] + stirling_ctrl + stirling_java_profiling_tools
-
-container_image(
-    name = "pl_cc_bpf_image",
-    base = ":pl_cc_base_image",
-    directory = "/pl",
-    files = stirling_collateral,
-    tars = stirling_linux_headers_tarballs,
-    visibility = ["//visibility:public"],
-)
-
-container_image(
-    name = "pl_cc_bpf_debug_image",
-    base = ":pl_cc_base_debug_image",
-    directory = "/pl",
-    files = stirling_collateral,
-    tars = stirling_linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 
