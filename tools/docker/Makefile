@@ -82,7 +82,7 @@ build_clang_deb_image:
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
 	mkdir -p $(BUILD_DIR)
-	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(BUILD_DIR)/image $(clang_deb_image_tag)
+	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(BUILD_DIR):/image $(clang_deb_image_tag)
 
 	sha256sum $(BUILD_DIR)/* > $(BUILD_DIR)/sha256sums
 	gsutil cp $(BUILD_DIR)/* $(clang_gs_path)/
