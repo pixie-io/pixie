@@ -227,7 +227,6 @@ def codeReviewPostBuild = {
   } else {
     sendBuildStatus('fail')
   }
-  addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
 }
 
 def createBazelStash(String stashName) {
@@ -348,17 +347,6 @@ def processAllExtractedBazelLogs() {
       processBazelLogs(stashName)
     }
   }
-}
-
-def publishDoxygenDocs() {
-  publishHTML([
-    allowMissing: true,
-    alwaysLinkToLastBuild: true,
-    keepAll: true,
-    reportDir: 'doxygen-docs/docs/html',
-    reportFiles: 'index.html',
-    reportName: 'doxygen'
-  ])
 }
 
 def sendSlackNotification() {
@@ -836,17 +824,6 @@ builders['Lint & Docs'] = {
       sh 'git branch main --track origin/main'
       sh 'arc lint --trace'
     }
-
-    if (shFileExists('bazel_run_doxygen')) {
-      def stashName = 'doxygen-docs'
-      container('pxbuild') {
-        sh 'LD_LIBRARY_PATH="" doxygen'
-      }
-      container('gcloud') {
-        stashOnGCS(stashName, 'docs/html')
-        stashList.add(stashName)
-      }
-    }
   }
 }
 
@@ -867,8 +844,6 @@ def archiveBuildArtifacts = {
       // Remove the tests attempts directory because it
       // causes the test publisher to mark as failed.
       sh 'find . -name test_attempts -type d -exec rm -rf {} +'
-
-      publishDoxygenDocs()
 
       // Archive clang-tidy logs.
       archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true, allowEmptyArchive: true

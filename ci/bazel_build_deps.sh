@@ -201,9 +201,3 @@ ${bazel_query} "${cc_tests}" > bazel_tests_clang_tidy 2>/dev/null
 # Should we run golang race detection?
 ${bazel_query} "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race 2>/dev/null
 ${bazel_query} "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/dev/null
-
-# Should we run doxygen?
-bazel_cc_touched=$(${bazel_query} "${cc_buildables} union ${cc_tests}" 2>/dev/null)
-if [[ "${all_targets}" = "true" || -n $bazel_cc_touched ]]; then
-  touch bazel_run_doxygen
-fi

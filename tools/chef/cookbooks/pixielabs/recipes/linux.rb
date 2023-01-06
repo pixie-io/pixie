@@ -24,7 +24,6 @@ apt_pkg_list = [
   'curl',
   # Not the newest docker CE from official docker repository, but should suffice.
   'docker.io',
-  'doxygen',
   'git',
   'graphviz',
   'lcov',
