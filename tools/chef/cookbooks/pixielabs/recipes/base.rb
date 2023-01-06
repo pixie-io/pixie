@@ -136,12 +136,6 @@ remote_file '/opt/pixielabs/bin/yq' do
   checksum node['yq']['sha256']
 end
 
-remote_file '/opt/pixielabs/bin/src' do
-  source node['src']['download_path']
-  mode 0755
-  checksum node['src']['sha256']
-end
-
 remote_file '/tmp/golangci-lint.tar.gz' do
   source node['golangci-lint']['download_path']
   mode 0755

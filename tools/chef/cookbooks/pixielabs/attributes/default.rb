@@ -57,7 +57,6 @@ default['shellcheck']                = {}
 default['sentry']                    = {}
 default['prototool']                 = {}
 default['yq']                        = {}
-default['src']                       = {}
 default['fossa']                     = {}
 default['golangci-lint']             = {}
 default['helm']                      = {}
@@ -127,11 +126,6 @@ if node[:platform] == 'ubuntu'
     'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_linux_amd64'
   default['yq']['sha256']        =
     '11092943c548232bc670504303807e5f4b68adc9690fae74069c1c7f5dff0f3f'
-
-  default['src']['download_path'] =
-    'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_linux_amd64'
-  default['src']['sha256']        =
-    '4bf9cf9756bc2b117eccbd4bb259a8187066833bf9babf9086577907563bbaec'
 
   default['golangci-lint']['download_path'] =
     'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-linux-amd64.tar.gz'
@@ -240,11 +234,6 @@ elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
     'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_darwin_amd64'
   default['yq']['sha256']        =
     '17ab1aa6589f5be6398c60acc875426f4f64faeaba6ee581f700b0a9f47da19e'
-
-  default['src']['download_path'] =
-    'https://github.com/sourcegraph/src-cli/releases/download/3.22.3/src_darwin_amd64'
-  default['src']['sha256']        =
-    '6d3ff2d9222b90248ca8311f6ffbcd050a3a7484fd94b71f49ecf2866a38b315'
 
   default['golangci-lint']['download_path'] =
     'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-darwin-amd64.tar.gz'
