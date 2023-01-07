@@ -247,19 +247,20 @@ controller:
   - ansicolor:1.0.2
   - configuration-as-code:1569.vb_72405b_80249
   - embeddable-build-status:312.vf2de01b_051d0
-  - git:4.14.2
+  - git:5.0.0
   - github:1.36.0
   - http_request:1.16
   - jackson2-api:2.14.1-313.v504cdd45c18b
   - junit:1166.va_436e268e972
   - kubernetes:3734.v562b_b_a_627ea_c
   - material-theme:0.5.2-rc100.6121925fe229
-  - scm-api:621.vda_a_b_055e58f7
+  - scm-api:631.v9143df5b_e4a_a
   - workflow-aggregator:590.v6a_d052e5a_a_b_5
-
-  - blueocean:1.25.8
-  - blueocean-dashboard:1.25.8
-  - blueocean-web:1.25.8
+  - github-oauth:0.39
+  - blueocean:1.27.0
+  - blueocean-dashboard:1.27.0
+  - blueocean-web:1.27.0
+  - matrix-auth:3.0
 
   # Set to false to download the minimum required version of all dependencies.
   installLatestPlugins: true
@@ -309,13 +310,13 @@ controller:
   # existingSecret existing secret "secret-credentials" and a key inside it named "github-username"
   # should be used in Jcasc as ${github-username}.
   # When using existingSecret no need to specify the keyName under additionalExistingSecrets.
-  existingSecret:
+  existingSecret: ""
 
-  additionalExistingSecrets: []
-  #  - name: secret-name-1
-  #    keyName: username
-  #  - name: secret-name-1
-  #    keyName: password
+  additionalExistingSecrets:
+  - name: jenkins-secrets
+    keyName: client-id
+  - name: jenkins-secrets
+    keyName: client-secret
 
   additionalSecrets: []
   #  - name: nameOfSecret
@@ -365,17 +366,18 @@ controller:
     # Ignored if securityRealm is defined in controller.JCasC.configScripts
     # yamllint disable rule:indentation
     securityRealm: |-
-      local:
-        allowsSignup: false
-        enableCaptcha: false
-        users:
-        - id: "${chart-admin-username}"
-          name: "Jenkins Admin"
-          password: "${chart-admin-password}"
+      github:
+        clientID: "${jenkins-secrets-client-id}"
+        clientSecret: "${jenkins-secrets-client-secret}"
+        githubApiUri: "https://api.github.com"
+        githubWebUri: "https://github.com"
+        oauthScopes: "read:org,user:email"
     # Ignored if authorizationStrategy is defined in controller.JCasC.configScripts
     authorizationStrategy: |-
-      loggedInUsersCanDoAnything:
-        allowAnonymousRead: false
+      globalMatrix:
+        permissions:
+        - "USER:Overall/Read:authenticated"
+        - "GROUP:Overall/Administer:pixie-io*admin"
   # Optionally specify additional init-containers
   customInitContainers: []
   # - name: custom-init
