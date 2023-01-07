@@ -95,6 +95,7 @@ def _clang_x86_64_gnu_with_options(suffix = "", enable_sanitizers = True, extra_
             "-fPIC",
         ],
         link_flags = [
+            "-static-libgcc",
             "-fuse-ld=lld",
             "-Wl,-no-as-needed",
             "-Wl,-z,relro,-z,now",
