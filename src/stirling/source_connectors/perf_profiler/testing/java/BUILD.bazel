@@ -118,6 +118,7 @@ graal_native_binary(
         "-H:+PreserveFramePointer",
         "-H:+ReportUnsupportedElementsAtRuntime",
     ],
+    graal_runtime = "@remotejdk_openjdk_graal_17//:jdk",
     java_binary = ":graal_java_fib",
     output_name = "JavaFib",
 )

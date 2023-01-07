@@ -16,7 +16,7 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/jdk:local_java_repository.bzl", "local_java_repository")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 load("//bazel/cc_toolchains:deps.bzl", "cc_toolchain_config_repo")
 load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
@@ -178,10 +178,18 @@ def _cc_deps():
 
 def _java_deps():
     _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
-    local_java_repository(
-        name = "openjdk_graal",
+    remote_java_repository(
+        name = "remotejdk_openjdk_graal_17",
         version = "17",
-        java_home = "/opt/graalvm-ce-java17-22.3.0",
+        prefix = "remotejdk_openjdk_graal",
+        target_compatible_with = [
+            "@platforms//os:linux",
+            "@platforms//cpu:x86_64",
+        ],
+        sha256 = "102db28b450ff5eb8c497aacaececc5263a4e50e64b7cdc5c7baa8b216e73531",
+        urls = [
+            "https://storage.googleapis.com/pixie-dev-public/graalvm-native-image-22.3.0-pl1.tar.gz",
+        ],
     )
 
 def _list_pl_deps(name):

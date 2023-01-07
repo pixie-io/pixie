@@ -13,27 +13,3 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-
-load("//bazel/graal:toolchain.bzl", "graal_native_toolchain")
-
-toolchain_type(
-    name = "toolchain_type",
-)
-
-graal_native_toolchain(
-    name = "graal_native_image_compiler",
-    graal_path = "/opt/graalvm-ce-java17-22.3.0",
-)
-
-toolchain(
-    name = "graal-native-image-linux",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
-    target_compatible_with = [
-        "@platforms//os:linux",
-    ],
-    toolchain = ":graal_native_image_compiler",
-    toolchain_type = ":toolchain_type",
-)

@@ -28,11 +28,17 @@ clang_linters_deb_fname := "clang-linters-$(CLANG_TAG).deb"
 clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 
-## Clang deb parameters
+## gperftools parameters
 GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl2
 gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
 gperftools_deb_gs_path :=  gs://pixie-dev-public/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
+
+## graalvm parameters
+GRAALVM_IMAGE_VERSION := pl1
+GRAALVM_ARCHIVE_IMAGE_TAG := graalvm-$(GRAALVM_IMAGE_VERSION)
+GRAALVM_ARCHIVE_FNAME := graalvm-native-image-22.3.0.tar.gz
+GRAALVM_ARCHIVE_GS_PATH := gs://pixie-dev-public/graalvm-native-image-22.3.0-$(GRAALVM_IMAGE_VERSION).tar.gz
 
 ## Linux image parameters
 LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
@@ -100,6 +106,18 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 	@echo "SHA: "
 	sha256sum $(gperftools_deb_fname)
 	rm -f $(gperftools_deb_fname)
+
+.PHONY: build_graalvm_archive_image
+build_graalvm_archive_image:
+	$(DOCKER) build graalvm_archive_image -t $(GRAALVM_ARCHIVE_IMAGE_TAG)
+
+.PHONY: upload_graalvm_archive
+upload_graalvm_archive: build_graalvm_archive_image
+	mkdir -p $(BUILD_DIR)
+	$(DOCKER) run --rm -v $(PWD)/$(BUILD_DIR):/archive $(GRAALVM_ARCHIVE_IMAGE_TAG)
+	gsutil cp $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME) $(GRAALVM_ARCHIVE_GS_PATH)
+	@echo "SHA: "
+	sha256sum $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME)
 
 $(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/config
 ifndef LINUX_HEADERS_REV

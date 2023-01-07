@@ -28,7 +28,7 @@ cc_static_musl_binary = meta.wrap_with_transition(
 java_graal_binary = meta.wrap_with_transition(
     native.java_binary,
     {
-        "java_runtime_version": meta.replace_with("openjdk_graal_17"),
+        "java_runtime_version": meta.replace_with("remotejdk_openjdk_graal_17"),
     },
     executable = True,
 )

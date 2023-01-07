@@ -244,7 +244,3 @@ pip_parse(
 load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
 
 ampq_bpf_test_install_deps()
-
-load("//bazel/graal:toolchain.bzl", "register_graal_toolchains")
-
-register_graal_toolchains()

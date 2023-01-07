@@ -92,4 +92,3 @@ end
 
 include_recipe 'pixielabs::linux_clang'
 include_recipe 'pixielabs::linux_gcc_musl'
-include_recipe 'pixielabs::linux_graalvm'

@@ -18,8 +18,7 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing
-RUN apt-get install -y binutils ruby ruby-dev rubygems curl
-RUN gem install --no-document fpm
+RUN apt-get install -y curl
 
 WORKDIR /data
 RUN curl -L https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.0/graalvm-ce-java17-linux-amd64-22.3.0.tar.gz --output dist.tar.gz
@@ -29,7 +28,5 @@ RUN tar -xzf /data/dist.tar.gz
 RUN /opt/graalvm-ce-java17-22.3.0/bin/gu install native-image
 
 WORKDIR /opt
-VOLUME /image
-ENV deb_name graalvm-native-image-22.3.0.deb
-CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n graalvm-native-image -v 22.3.0 --prefix=/opt graalvm-ce-java17-22.3.0"]
+VOLUME /archive
+CMD ["sh", "-c", "tar -C graalvm-ce-java17-22.3.0 -czf /archive/graalvm-native-image-22.3.0.tar.gz ."]

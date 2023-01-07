@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 def _graal_native_binary_impl(ctx):
-    native_image_binary_path = ctx.toolchains["//bazel/graal:toolchain_type"].graal_native.native_image_binary_path
     cc_compiler_path = ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"].cc.compiler_executable
 
     # TODO(james): this is a bit of a hack because bazel's JavaInfo doesn't currently have starlark definitions,
@@ -35,6 +34,7 @@ def _graal_native_binary_impl(ctx):
 
     out = ctx.actions.declare_file(out_name)
 
+    graal_runtime = ctx.attr.graal_runtime[java_common.JavaRuntimeInfo]
     args = [
         "-cp",
         jar.path,
@@ -51,8 +51,9 @@ def _graal_native_binary_impl(ctx):
     ctx.actions.run(
         outputs = [out],
         inputs = [jar],
-        executable = native_image_binary_path,
+        executable = graal_runtime.java_home + "/bin/native-image",
         arguments = args,
+        tools = [graal_runtime.files],
     )
 
     return [
@@ -68,13 +69,16 @@ graal_native_binary = rule(
     implementation = _graal_native_binary_impl,
     attrs = {
         "extra_args": attr.string_list(),
+        "graal_runtime": attr.label(
+            providers = [java_common.JavaRuntimeInfo],
+            allow_files = True,
+        ),
         "java_binary": attr.label(
             providers = [JavaInfo, DefaultInfo],
         ),
         "output_name": attr.string(),
     },
     toolchains = [
-        "//bazel/graal:toolchain_type",
         "@bazel_tools//tools/cpp:toolchain_type",
     ],
     executable = True,
