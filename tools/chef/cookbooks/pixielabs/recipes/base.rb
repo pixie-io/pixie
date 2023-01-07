@@ -28,7 +28,8 @@ else
 end
 
 execute 'install_python_packages' do
-  command 'python3 -m pip install flake8 flake8-mypy yamllint'
+  command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir'
+  command 'python3 -m pip cache purge'
 end
 
 include_recipe 'pixielabs::phabricator'
@@ -74,6 +75,7 @@ execute 'install go binaries' do
             go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
             go install k8s.io/code-generator/cmd/client-gen@v0.20.6 && \
             go install github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible)
+  command 'go clean --cache'
 end
 
 template '/opt/pixielabs/plenv.inc' do
