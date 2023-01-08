@@ -24,3 +24,10 @@ dirs.each do |path|
     action :create
   end
 end
+
+include_recipe 'px_dev::golang'
+include_recipe 'px_dev::nodejs'
+include_recipe 'px_dev::php'
+include_recipe 'px_dev::python'
+
+include_recipe 'px_dev::phabricator'

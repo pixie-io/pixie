@@ -24,6 +24,12 @@ default['clang']['deb']        =
 default['clang']['deb_sha256'] =
   '32549362100f3759a0b50b3e1993f58086568696839bbdd88c11602bd3e994e2'
 
+default['clang-linters']['version']    = '15.0-pl7'
+default['clang-linters']['deb']        =
+  "https://storage.googleapis.com/pixie-dev-public/clang/#{default['clang-linters']['version']}/clang-linters-#{default['clang-linters']['version']}.deb"
+default['clang-linters']['deb_sha256'] =
+  'b17b42694e1edf408a31d68ba04b33708e6c3fb2fbcbd8749697f3ca10996916'
+
 default['gcc-musl']['version'] = '11.2.0'
 default['gcc-musl']['deb'] =
   "https://storage.googleapis.com/pixie-dev-public/gcc-musl-libs-#{default['gcc-musl']['version']}.deb"

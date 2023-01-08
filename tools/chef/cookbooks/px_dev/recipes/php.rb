@@ -14,34 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-directory '/opt/node' do
-  owner node['owner']
-  group node['group']
-  mode '0755'
-  action :create
+
+if node.platform_family?('debian')
+  apt_package ['php', 'php-curl', 'php-xml'] do
+    action :upgrade
+  end
 end
 
-remote_file '/tmp/nodejs.tar.gz' do
-  source node['nodejs']['download_path']
-  mode 0644
-  checksum node['nodejs']['sha256']
-end
-
-execute 'install_node' do
-   command 'tar xf /tmp/nodejs.tar.gz -C /opt/node --strip-components 1'
-   action :run
- end
-
-file '/tmp/nodejs.tar.gz' do
-  action :delete
-end
-
-ENV['PATH'] = "/opt/node/bin:#{ENV['PATH']}"
-
-execute 'install node packages' do
-  command '/opt/node/bin/npm install -g yarn@1.22.4 protobufjs@6.11.2'
-end
-
-execute 'install pbjs/pbts deps' do
-  command '/opt/node/bin/pbjs || true'
+if node.platform_family?('mac_os_x')
+  homebrew_package 'php' do
+    action :upgrade
+  end
 end

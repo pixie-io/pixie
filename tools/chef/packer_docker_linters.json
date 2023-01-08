@@ -1,0 +1,67 @@
+{
+  "builders": [
+    {
+      "changes": [
+        "ENV PATH /opt/golang/bin:/opt/px_dev/bin:/opt/clang-15.0/bin:/px/bin:/opt/google-cloud-sdk/bin:/opt/gsutil:/opt/node/bin:/opt/phab/arcanist/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV LD_LIBRARY_PATH /opt/clang-15.0/lib",
+        "ENV GOPATH /px",
+        "ENV CC clang",
+        "ENV CXX clang++",
+        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-15.0/bin/llvm-symbolizer",
+        "WORKDIR /px/src/px.dev/pixie",
+        "ENTRYPOINT [\"\"]",
+        "CMD [\"\"]"
+      ],
+      "commit": true,
+      "image": "{{ user `base_image_and_tag` }}",
+      "type": "docker"
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "repository": "{{ user `generated_image_repository` }}",
+        "tags": [
+          "{{ user `generated_image_tag` }}"
+        ],
+        "type": "docker-tag"
+      },
+      "docker-push"
+    ]
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "apt-get -y update; DEBIAN_FRONTEND=noninteractive apt-get install -y curl git xz-utils"
+      ],
+      "type": "shell"
+    },
+    {
+      "cookbook_paths": [
+        "cookbooks"
+      ],
+      "prevent_sudo": true,
+      "roles_path": "roles",
+      "run_list": [
+        "recipe[px_dev::setup]",
+        "recipe[px_dev::linters]",
+        "recipe[px_dev::docker_extras]"
+      ],
+      "type": "chef-solo",
+      "version": "17.8.25"
+    },
+    {
+      "inline": [
+        "rm -rf /tmp/*",
+        "rm -rf /root/.npm",
+        "rm -rf /var/lib/apt/lists/*"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "base_image_and_tag": "",
+    "generated_image_repository": "",
+    "generated_image_tag": ""
+  }
+}

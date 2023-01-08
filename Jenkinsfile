@@ -823,7 +823,7 @@ builders['Lint & Docs'] = {
     container('pxbuild') {
       // Prototool relies on having a main branch in this checkout, so create one tracking origin/main
       sh 'git branch main --track origin/main'
-      sh 'arc lint --trace'
+      sh 'arc lint --trace --never-apply-patches'
     }
   }
 }

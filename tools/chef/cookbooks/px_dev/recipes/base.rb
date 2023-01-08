@@ -14,8 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-include_recipe 'px_dev::setup'
-
 if platform_family?('debian')
   include_recipe 'px_dev::linux'
 end
@@ -24,34 +22,8 @@ if platform_family?('mac_os_x')
   include_recipe 'px_dev::mac_os_x'
 end
 
-execute 'install_python_packages' do
-  command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir && python3 -m pip cache purge'
-end
-
-include_recipe 'px_dev::phabricator'
-include_recipe 'px_dev::nodejs'
-include_recipe 'px_dev::golang'
-
-execute 'install node packages' do
-  command %(/opt/node/bin/npm install -g \
-            jshint@2.11.0 yarn@1.22.4 protobufjs@6.11.2)
-end
-
-execute 'install pbjs/pbts deps' do
-  command '/opt/node/bin/pbjs || true'
-end
-
-execute 'install go binaries' do
-  ENV['GOPATH'] = "/opt/px_dev/gopath"
-  command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
-            go install golang.org/x/tools/cmd/goimports@v0.1.2 && \
-            go install github.com/golang/mock/mockgen@v1.5.0 && \
-            go install github.com/cheekybits/genny@v1.0.0 && \
-            go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 && \
-            go install k8s.io/code-generator/cmd/client-gen@v0.20.6 && \
-            go install github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible && \
-            go clean -cache)
-end
+include_recipe 'px_dev::setup'
+include_recipe 'px_dev::linters'
 
 template '/opt/px_dev/pxenv.inc' do
   source 'pxenv.inc.erb'
@@ -59,18 +31,6 @@ template '/opt/px_dev/pxenv.inc' do
   group node['group']
   mode '0644'
   action :create
-end
-
-template '/opt/px_dev/bin/bazel' do
-  source 'bazel.erb'
-  owner node['owner']
-  group node['group']
-  mode '0755'
-  action :create
-end
-
-remote_bin 'bazel' do
-  bin_name 'bazel_core'
 end
 
 remote_bin 'codecov'
@@ -85,15 +45,7 @@ remote_tar_bin 'gh' do
   strip_components 1
 end
 
-remote_tar_bin 'golangci-lint' do
-  strip_components 1
-end
-
 remote_tar_bin 'helm' do
-  strip_components 1
-end
-
-remote_tar_bin 'shellcheck' do
   strip_components 1
 end
 

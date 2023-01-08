@@ -28,12 +28,6 @@ apt_pkg_list = [
   'graphviz',
   'lcov',
   'libncurses5',
-  'php',
-  'php-curl',
-  'php-xml',
-  'python3-pip',
-  'python3.10',
-  'python3.10-dev',
   'sudo',
   'systemd',
   'unzip',
@@ -70,10 +64,6 @@ end
 execute 'enable docker' do
   command 'systemctl enable docker'
   action :run
-end
-
-execute 'python alternatives selection' do
-  command 'update-alternatives --install /usr/bin/python python /usr/bin/python3 100'
 end
 
 include_recipe 'px_dev::linux_clang'

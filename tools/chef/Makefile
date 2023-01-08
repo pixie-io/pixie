@@ -42,6 +42,12 @@ build_and_push_base_image:
 .PHONY: build_and_push_dev_images
 build_and_push_dev_images:
 	$(PACKER) build \
+		-var "base_image_and_tag=ubuntu:22.04" \
+		-var "generated_image_repository=$(REPOSITORY)/linter_image" \
+		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
+		packer_docker_linters.json
+
+	$(PACKER) build \
 		-var "base_image_and_tag=$(REPOSITORY)/base_image:$(LATEST_BASE_IMAGE)" \
 		-var "generated_image_repository=$(REPOSITORY)/dev_image" \
 		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
