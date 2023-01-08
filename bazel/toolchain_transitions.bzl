@@ -32,3 +32,11 @@ java_graal_binary = meta.wrap_with_transition(
     },
     executable = True,
 )
+
+cc_clang_binary = meta.wrap_with_transition(
+    native.cc_binary,
+    {
+        "@//bazel/cc_toolchains:compiler": meta.replace_with("clang"),
+    },
+    executable = True,
+)

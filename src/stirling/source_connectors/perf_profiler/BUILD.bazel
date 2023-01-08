@@ -48,7 +48,7 @@ pl_cc_test(
     args = stirling_profiler_java_args,
     data = agent_libs + image_tars + [
         px_jattach,
-        "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib_cpp",
+        "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib",
         "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
         "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-fib",
     ],

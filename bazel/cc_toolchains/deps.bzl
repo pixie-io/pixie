@@ -24,7 +24,7 @@ def _config_repo_impl(repository_ctx):
     )
     repository_ctx.file("BUILD.bazel", content = 'exports_files(["cc_toolchain_config.bzl"])')
     repository_ctx.symlink(repository_ctx.attr.toolchain_features, "toolchain_features.bzl")
-    repository_ctx.patch(repository_ctx.attr.patch)
+    repository_ctx.patch(repository_ctx.attr.patch, strip = 1)
 
 cc_toolchain_config_repository = repository_rule(
     implementation = _config_repo_impl,

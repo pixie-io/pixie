@@ -31,7 +31,7 @@ namespace obj_tools {
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
-constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe";
+constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
 
 class DwarfReaderTest : public ::testing::Test {
  protected:

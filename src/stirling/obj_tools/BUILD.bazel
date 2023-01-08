@@ -130,7 +130,7 @@ pl_cc_test(
     name = "raw_fptr_manager_test",
     srcs = ["raw_fptr_manager_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/c:library",
+        "//src/stirling/obj_tools/testdata/c:library.so",
     ],
     deps = [
         ":cc_library",

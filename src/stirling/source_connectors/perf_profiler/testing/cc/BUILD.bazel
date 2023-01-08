@@ -14,15 +14,27 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("//bazel:toolchain_transitions.bzl", "cc_clang_binary")
+
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # We build this target with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
-genrule(
-    name = "profiler_test_app_fib_cpp",
+cc_clang_binary(
+    name = "profiler_test_app_fib",
     srcs = ["profiler_test_app_fib.cc"],
-    outs = ["profiler_test_app_fib"],
     # -O0: Disables optimization which in turn disables inlining.
     # -g: Produces dwarf information.
-    cmd = "clang++ -O0 -g -o $@ $<",
+    copts = [
+        "-O0",
+        "-g",
+    ],
+    features = [
+        # disable the default optimization flags so we can set our own for this target.
+        "-default_opt_level_flags",
+        # disable sanitiziers so that the binary is deterministic regardless of bazel config.
+        "-asan",
+        "-msan",
+        "-tsan",
+    ],
 )

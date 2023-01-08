@@ -30,7 +30,7 @@ namespace obj_tools {
 // Holds a reference to the :test_exe, so that it's easier for tests to invoke the binary.
 class TestExeFixture {
  public:
-  static constexpr char kTestExePath[] = "src/stirling/obj_tools/testdata/cc/test_exe";
+  static constexpr char kTestExePath[] = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
 
   const std::filesystem::path& Path() const { return test_exe_path_; }
 
