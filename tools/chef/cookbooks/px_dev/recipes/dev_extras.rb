@@ -30,7 +30,7 @@ if node[:platform] == 'ubuntu'
     action :upgrade
   end
 
-  include_recipe 'pixielabs::linux_gperftools'
+  include_recipe 'px_dev::linux_gperftools'
 elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
   homebrew_package 'emacs'
   homebrew_package 'vim'

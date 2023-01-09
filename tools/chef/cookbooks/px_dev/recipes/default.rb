@@ -14,4 +14,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-include_recipe 'pixielabs::base'
+include_recipe 'px_dev::base'

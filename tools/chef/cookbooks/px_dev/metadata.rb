@@ -14,8 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name 'pixielabs'
+name 'px_dev'
 maintainer       'Zain Asgar'
 maintainer_email 'zasgar@pixielabs.ai'
-description      'Setup for pixielabs machines'
-version          '0.1.0'
+description      'Setup for pixie dev/ci machines'
+version          '0.2.0'

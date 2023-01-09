@@ -18,6 +18,6 @@ name 'pl_workstation'
 description 'The base workstation setup (without GUI apps)'
 
 run_list(
-  'recipe[pixielabs]',
-  'recipe[pixielabs::dev_extras]'
+  'recipe[px_dev]',
+  'recipe[px_dev::dev_extras]'
 )

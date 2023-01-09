@@ -44,7 +44,7 @@
       "roles_path": "roles",
       "run_list": [
         "role[pl_base_dev]",
-        "recipe[pixielabs::docker_extras]"
+        "recipe[px_dev::docker_extras]"
       ],
       "type": "chef-solo",
       "version": "17.8.25"

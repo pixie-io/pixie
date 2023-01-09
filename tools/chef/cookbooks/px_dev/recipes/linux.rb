@@ -90,5 +90,5 @@ execute 'python alternatives selection' do
   command 'update-alternatives --install /usr/bin/python python /usr/bin/python3 100'
 end
 
-include_recipe 'pixielabs::linux_clang'
-include_recipe 'pixielabs::linux_gcc_musl'
+include_recipe 'px_dev::linux_clang'
+include_recipe 'px_dev::linux_gcc_musl'

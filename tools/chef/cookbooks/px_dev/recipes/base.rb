@@ -18,11 +18,11 @@ ENV['PATH'] = "/opt/gsutil:#{ENV['PATH']}"
 
 case node['platform']
 when 'mac_os_x', 'macos'
-  include_recipe 'pixielabs::mac_os_x'
+  include_recipe 'px_dev::mac_os_x'
   root_group = 'wheel'
   user = node['current_user']
 else
-  include_recipe 'pixielabs::linux'
+  include_recipe 'px_dev::linux'
   root_group = 'root'
   user = 'root'
 end
@@ -32,9 +32,9 @@ execute 'install_python_packages' do
   command 'python3 -m pip cache purge'
 end
 
-include_recipe 'pixielabs::phabricator'
-include_recipe 'pixielabs::nodejs'
-include_recipe 'pixielabs::golang'
+include_recipe 'px_dev::phabricator'
+include_recipe 'px_dev::nodejs'
+include_recipe 'px_dev::golang'
 
 execute 'install node packages' do
   command %(/opt/node/bin/npm install -g \

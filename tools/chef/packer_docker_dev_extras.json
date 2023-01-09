@@ -42,7 +42,7 @@
       "prevent_sudo": true,
       "roles_path": "roles",
       "run_list": [
-        "recipe[pixielabs::dev_extras]"
+        "recipe[px_dev::dev_extras]"
       ],
       "type": "chef-solo",
       "version": "17.8.25"
