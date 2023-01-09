@@ -24,7 +24,7 @@ cd "$(git rev-parse --show-toplevel)" || exit
 bazel_query="bazel query --keep_going --noshow_progress"
 
 # A list of patterns that will trigger a full build.
-poison_patterns=('^Jenkinsfile' '^bazel\/' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel')
+poison_patterns=('^Jenkinsfile' '^bazel\/' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel'  '^docker.properties')
 
 # A list of patterns that will guard BPF targets.
 # We won't run BPF targets unless there are changes to these patterns.
