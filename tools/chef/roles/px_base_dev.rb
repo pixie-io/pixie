@@ -14,10 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name 'pl_workstation'
-description 'The base workstation setup (without GUI apps)'
+name 'px_base_dev'
+description 'This role installs all relevant developer desktop apps'
 
 run_list(
   'recipe[px_dev]',
-  'recipe[px_dev::dev_extras]'
 )
