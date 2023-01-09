@@ -100,50 +100,26 @@ remote_file '/opt/pixielabs/bin/bazel_core' do
   checksum node['bazel']['sha256']
 end
 
-remote_file '/opt/pixielabs/bin/kustomize' do
-  source node['kustomize']['download_path']
-  mode 0755
-  checksum node['kustomize']['sha256']
+remote_bin 'codecov'
+remote_bin 'faq'
+remote_bin 'kustomize'
+remote_bin 'opm'
+remote_bin 'prototool'
+remote_bin 'yq'
+
+remote_tar_bin 'fossa'
+remote_tar_bin 'gh'
+
+remote_tar_bin 'golangci-lint' do
+  strip_components 1
 end
 
-remote_file '/tmp/shellcheck.tar.xz' do
-  source node['shellcheck']['download_path']
-  mode 0755
-  checksum node['shellcheck']['sha256']
+remote_tar_bin 'helm' do
+  strip_components 1
 end
 
-execute 'install shellcheck' do
-  command 'tar xf /tmp/shellcheck.tar.xz -C /opt/pixielabs/bin --strip-components 1'
-end
-
-file '/tmp/shellcheck.tar.xz' do
-  action :delete
-end
-
-remote_file '/opt/pixielabs/bin/prototool' do
-  source node['prototool']['download_path']
-  mode 0755
-  checksum node['prototool']['sha256']
-end
-
-remote_file '/opt/pixielabs/bin/yq' do
-  source node['yq']['download_path']
-  mode 0755
-  checksum node['yq']['sha256']
-end
-
-remote_file '/tmp/golangci-lint.tar.gz' do
-  source node['golangci-lint']['download_path']
-  mode 0755
-  checksum node['golangci-lint']['sha256']
-end
-
-execute 'install golangci-lint' do
-  command 'tar xf /tmp/golangci-lint.tar.gz -C /opt/pixielabs/bin --strip-components 1'
-end
-
-file '/tmp/golangci-lint.tar.gz' do
-  action :delete
+remote_tar_bin 'shellcheck' do
+  strip_components 1
 end
 
 remote_file '/tmp/gsutil.tar.gz' do
@@ -160,20 +136,6 @@ file '/tmp/gsutil.tar.gz' do
   action :delete
 end
 
-remote_file '/tmp/helm.tar.gz' do
-  source node['helm']['download_path']
-  mode 0755
-  checksum node['helm']['sha256']
-end
-
-execute 'install helm' do
-  command 'tar xf /tmp/helm.tar.gz -C /opt/pixielabs/bin --strip-components 1'
-end
-
-file '/tmp/helm.tar.gz' do
-  action :delete
-end
-
 directory '/opt/antlr' do
   owner user
   group root_group
@@ -185,46 +147,4 @@ remote_file '/opt/antlr/antlr-4.9-complete.jar' do
   source node['antlr']['download_path']
   mode 0644
   checksum node['antlr']['sha256']
-end
-
-remote_file '/opt/pixielabs/bin/opm' do
-  source node['opm']['download_path']
-  mode 0755
-  checksum node['opm']['sha256']
-end
-
-remote_file '/opt/pixielabs/bin/faq' do
-  source node['faq']['download_path']
-  mode 0755
-  checksum node['faq']['sha256']
-end
-
-remote_file '/tmp/fossa.tar.gz' do
-  source node['fossa']['download_path']
-  mode 0755
-  checksum node['fossa']['sha256']
-end
-
-execute 'install fossa' do
-  command 'tar xf /tmp/fossa.tar.gz -C /opt/pixielabs/bin fossa'
-end
-
-file '/tmp/fossa.tar.gz' do
-  action :delete
-end
-
-remote_file '/opt/pixielabs/bin/codecov' do
-  source node['codecov']['download_path']
-  mode 0755
-  checksum node['codecov']['sha256']
-end
-
-remote_file '/tmp/gh.tar.gz' do
-  source node['gh']['download_path']
-  mode 0755
-  checksum node['gh']['sha256']
-end
-
-execute 'install gh' do
-  command 'tar xf /tmp/gh.tar.gz -C /opt/pixielabs --strip-components 1'
 end

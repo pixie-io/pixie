@@ -50,11 +50,7 @@ execute 'install gcloud' do
   action :run
 end
 
-remote_file '/opt/pixielabs/bin/kubectl' do
-  source node['kubectl']['download_path']
-  mode 0755
-  checksum node['kubectl']['sha256']
-end
+remote_bin 'kubectl'
 
 execute 'update gcloud' do
   command 'gcloud components update'
@@ -92,37 +88,17 @@ execute 'configure docker-credential-gcr' do
   action :run
 end
 
-remote_file '/opt/pixielabs/bin/sops' do
-  source node['sops']['download_path']
-  mode 0755
-  checksum node['sops']['sha256']
+remote_bin 'minikube' do
+  bin_dir = '/usr/local/bin'
 end
 
-remote_file '/tmp/lego.tar.gz' do
-  source node['lego']['download_path']
-  mode 0755
-  checksum node['lego']['sha256']
+remote_bin 'sops'
+
+remote_bin 'skaffold' do
+  bin_dir = '/usr/local/bin'
 end
 
-execute 'install lego' do
-  command 'tar xf /tmp/lego.tar.gz -C /opt/pixielabs/bin lego'
-end
-
-file '/tmp/lego.tar.gz' do
-  action :delete
-end
-
-remote_file '/usr/local/bin/skaffold' do
-  source node['skaffold']['download_path']
-  mode 0755
-  checksum node['skaffold']['sha256']
-end
-
-remote_file '/usr/local/bin/minikube' do
-  source node['minikube']['download_path']
-  mode 0755
-  checksum node['minikube']['sha256']
-end
+remote_tar_bin 'lego'
 
 remote_file '/tmp/packer.zip' do
   source node['packer']['download_path']
