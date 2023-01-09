@@ -1429,7 +1429,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
 }
 
 def updateAllVersionsDB() {
-  pxbuildWithSourceK8s('update-versions-db') {
+  pxbuildWithSourceK8s('update-versions-db', true) {
     container('pxbuild') {
       unstashFromGCS('versions')
       sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
@@ -1564,7 +1564,7 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
 }
 
 vizierReleaseBuilders['Build & Export Docs'] = {
-  pxbuildWithSourceK8s('build-and-export-docs') {
+  pxbuildWithSourceK8s('build-and-export-docs', true) {
     container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
       sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
