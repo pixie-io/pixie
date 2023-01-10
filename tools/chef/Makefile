@@ -21,16 +21,28 @@ DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
 DOCKER := docker
 PACKER := packer
 
-## The base dev image version, defaults to the datestamp.
+BASE_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
+BASE_IMAGE_VERSION_FILE := base_image_version.txt
+LATEST_BASE_IMAGE 	    := $(shell cat $(BASE_IMAGE_VERSION_FILE))
+
 DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 
 ## The repository where the images are stored.
 REPOSITORY := gcr.io/pixie-oss/pixie-dev-public
 
+.PHONY: build_and_push_base_image
+build_and_push_base_image:
+	$(PACKER) build \
+		-var "base_image_and_tag=ubuntu:22.04" \
+		-var "generated_image_repository=$(REPOSITORY)/base_image" \
+		-var "generated_image_tag=$(BASE_IMAGE_VERSION)" \
+		packer_docker_base.json
+	echo $(BASE_IMAGE_VERSION) > $(BASE_IMAGE_VERSION_FILE)
+
 .PHONY: build_and_push_dev_images
 build_and_push_dev_images:
 	$(PACKER) build \
-		-var "base_image_and_tag=ubuntu:22.04" \
+		-var "base_image_and_tag=$(REPOSITORY)/base_image:$(LATEST_BASE_IMAGE)" \
 		-var "generated_image_repository=$(REPOSITORY)/dev_image" \
 		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
 		packer_docker_dev.json
