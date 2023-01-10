@@ -43,7 +43,7 @@ execute 'install pbjs/pbts deps' do
 end
 
 execute 'install go binaries' do
-  ENV['GOPATH'] = "/opt/pixielabs/gopath"
+  ENV['GOPATH'] = "/opt/px_dev/gopath"
   command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
             go install golang.org/x/tools/cmd/goimports@v0.1.2 && \
             go install github.com/golang/mock/mockgen@v1.5.0 && \
@@ -54,15 +54,15 @@ execute 'install go binaries' do
             go clean -cache)
 end
 
-template '/opt/pixielabs/plenv.inc' do
-  source 'plenv.inc.erb'
+template '/opt/px_dev/pxenv.inc' do
+  source 'pxenv.inc.erb'
   owner node['owner']
   group node['group']
   mode '0644'
   action :create
 end
 
-template '/opt/pixielabs/bin/bazel' do
+template '/opt/px_dev/bin/bazel' do
   source 'bazel.erb'
   owner node['owner']
   group node['group']

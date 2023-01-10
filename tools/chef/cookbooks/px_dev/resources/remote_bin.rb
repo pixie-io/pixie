@@ -23,7 +23,7 @@ property :bin_name, String, default: ''
 default_action :create
 
 action :create do
-  tool_dir = "/opt/pixielabs/tools/#{new_resource.name}"
+  tool_dir = "/opt/px_dev/tools/#{new_resource.name}"
 
   directory tool_dir do
     owner node['owner']
@@ -40,9 +40,9 @@ action :create do
     checksum node[new_resource.name]['sha256']
   end
 
-  link_path = "/opt/pixielabs/bin/#{new_resource.name}"
+  link_path = "/opt/px_dev/bin/#{new_resource.name}"
   if ! new_resource.bin_name.empty?
-    link_path = "/opt/pixielabs/bin/#{new_resource.bin_name}"
+    link_path = "/opt/px_dev/bin/#{new_resource.bin_name}"
   end
 
   link link_path do

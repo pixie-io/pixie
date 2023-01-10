@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-dirs = ['/opt/pixielabs', '/opt/pixielabs/bin', '/opt/pixielabs/gopath', '/opt/pixielabs/tools']
+dirs = ['/opt/px_dev', '/opt/px_dev/bin', '/opt/px_dev/gopath', '/opt/px_dev/tools']
 
 dirs.each do |path|
   directory path do
