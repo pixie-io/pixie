@@ -63,7 +63,7 @@ func setUpUpdater(t *testing.T) (*controllers.Updater, *nats.Conn, *sqlx.DB, *mo
 		Artifact: []*versionspb.Artifact{{
 			VersionStr: "0.4.1",
 		}},
-	}, nil)
+	}, nil).AnyTimes()
 
 	updater, _ := controllers.NewUpdater(db, mockArtifactTrackerClient, nc)
 
