@@ -47,6 +47,9 @@ apt_pkg_list = [
   'libedit-dev',
   'libelf-dev',
 
+  'gcc-12',
+  'g++-12',
+
   # Needed by rules_jvm_external to run coursier.
   'openjdk-11-jre-headless',
 
@@ -70,20 +73,6 @@ end
 execute 'enable docker' do
   command 'systemctl enable docker'
   action :run
-end
-
-# Enable this if you want to access newer ubuntu toolchains.
-# apt_repository 'ubuntu-toolchain-ppa' do
-#   uri         'ppa:ubuntu-toolchain-r/ppa'
-#   distribution 'focal'
-# end
-
-apt_update 'update packages' do
-  action :update
-end
-
-apt_package ['gcc-11','g++-11'] do
-  action :upgrade
 end
 
 execute 'python alternatives selection' do
