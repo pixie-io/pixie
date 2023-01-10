@@ -108,7 +108,10 @@ remote_bin 'prototool'
 remote_bin 'yq'
 
 remote_tar_bin 'fossa'
-remote_tar_bin 'gh'
+
+remote_tar_bin 'gh' do
+  strip_components 2
+end
 
 remote_tar_bin 'golangci-lint' do
   strip_components 1
