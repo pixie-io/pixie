@@ -18,14 +18,38 @@ unified_mode true
 provides :remote_bin
 
 property :name, String, name_property: true
-property :bin_dir, String, default: '/opt/pixielabs/bin'
+property :bin_name, String, default: ''
 
 default_action :create
 
 action :create do
-  remote_file "#{new_resource.bin_dir}/#{new_resource.name}" do
+  tool_dir = "/opt/pixielabs/tools/#{new_resource.name}"
+
+  directory tool_dir do
+    owner node['owner']
+    group node['group']
+    mode '0755'
+    action :create
+  end
+
+  tool_path = "#{tool_dir}/#{new_resource.name}"
+
+  remote_file tool_path do
     source node[new_resource.name]['download_path']
-    mode 0755
+    mode '0755'
     checksum node[new_resource.name]['sha256']
+  end
+
+  link_path = "/opt/pixielabs/bin/#{new_resource.name}"
+  if ! new_resource.bin_name.empty?
+    link_path = "/opt/pixielabs/bin/#{new_resource.bin_name}"
+  end
+
+  link link_path do
+    to tool_path
+    link_type :symbolic
+    owner node['owner']
+    group node['group']
+    action :create
   end
 end

@@ -15,6 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 directory '/opt/node' do
+  owner node['owner']
+  group node['group']
   mode '0755'
   action :create
 end

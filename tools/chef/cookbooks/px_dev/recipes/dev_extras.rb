@@ -44,13 +44,18 @@ remote_file '/usr/share/zsh/vendor-completions/_bazel' do
   checksum node['bazel']['zcomp_sha256']
 end
 
+remote_bin 'kubectl'
+remote_bin 'minikube'
+remote_bin 'skaffold'
+remote_bin 'sops'
+
+remote_tar_bin 'lego'
+
 execute 'install gcloud' do
   command 'curl https://sdk.cloud.google.com | bash'
   creates '/opt/google-cloud-sdk'
   action :run
 end
-
-remote_bin 'kubectl'
 
 execute 'update gcloud' do
   command 'gcloud components update'
@@ -87,18 +92,6 @@ execute 'configure docker-credential-gcr' do
   command 'docker-credential-gcr configure-docker'
   action :run
 end
-
-remote_bin 'minikube' do
-  bin_dir = '/usr/local/bin'
-end
-
-remote_bin 'sops'
-
-remote_bin 'skaffold' do
-  bin_dir = '/usr/local/bin'
-end
-
-remote_tar_bin 'lego'
 
 remote_file '/tmp/packer.zip' do
   source node['packer']['download_path']

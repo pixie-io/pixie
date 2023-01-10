@@ -18,7 +18,8 @@ unified_mode true
 provides :remote_tar_bin
 
 property :name, String, name_property: true
-property :bin_dir, String, default: '/opt/pixielabs/bin'
+property :bin_name, String, default: ''
+property :tool_loc, String, default: ''
 property :strip_components, Integer, default: 0
 
 default_action :create
@@ -28,19 +29,45 @@ action :create do
 
   remote_file archive_path do
     source node[new_resource.name]['download_path']
-    mode 0644
+    mode '0644'
     checksum node[new_resource.name]['sha256']
   end
 
-  flags = []
-  flags << "-C #{new_resource.bin_dir}"
-  if new_resource.strip_components > 0
-    flags << "--strip-components #{new_resource.strip_components}"
-  end
-  flags << '--no-anchored'
+  tool_dir = "/opt/pixielabs/tools/#{new_resource.name}"
 
-  execute "install #{new_resource.name}" do
-    command "tar xf #{archive_path} #{flags.join(' ')} #{new_resource.name}"
+  directory tool_dir do
+    owner node['owner']
+    group node['group']
+    mode '0755'
+    action :create
+  end
+
+  cmd = ['tar', 'xf', archive_path, '-C', tool_dir]
+  if new_resource.strip_components > 0
+    cmd << '--strip-components'
+    cmd << "#{new_resource.strip_components}"
+  end
+
+  execute "unpack #{new_resource.name}" do
+    command cmd
+  end
+
+  tool_path = "#{tool_dir}/#{new_resource.name}"
+  if ! new_resource.tool_loc.empty?
+    tool_path = "#{tool_dir}/#{new_resource.tool_loc}"
+  end
+
+  link_path = "/opt/pixielabs/bin/#{new_resource.name}"
+  if ! new_resource.bin_name.empty?
+    link_path = "/opt/pixielabs/bin/#{new_resource.bin_name}"
+  end
+
+  link link_path do
+    to tool_path
+    link_type :symbolic
+    owner node['owner']
+    group node['group']
+    action :create
   end
 
   file archive_path do

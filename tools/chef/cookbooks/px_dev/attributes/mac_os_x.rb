@@ -18,6 +18,11 @@ if ! platform_family?('mac_os_x')
   return
 end
 
+# Use the current user but the wheel group when creating
+# resources on macOS. This avoids the need to run as sudo.
+default['owner'] = node['current_user']
+default['group'] = 'wheel'
+
 default['bazel']['download_path'] =
   "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-darwin-x86_64"
 default['bazel']['sha256'] =

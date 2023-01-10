@@ -14,17 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-ENV['PATH'] = "/opt/gsutil:#{ENV['PATH']}"
+include_recipe 'px_dev::setup'
 
-case node['platform']
-when 'mac_os_x', 'macos'
-  include_recipe 'px_dev::mac_os_x'
-  root_group = 'wheel'
-  user = node['current_user']
-else
+if platform_family?('debian')
   include_recipe 'px_dev::linux'
-  root_group = 'root'
-  user = 'root'
+end
+
+if platform_family?('mac_os_x')
+  include_recipe 'px_dev::mac_os_x'
 end
 
 execute 'install_python_packages' do
@@ -45,27 +42,6 @@ execute 'install pbjs/pbts deps' do
   command '/opt/node/bin/pbjs || true'
 end
 
-directory '/opt/pixielabs' do
-  owner user
-  group root_group
-  mode '0755'
-  action :create
-end
-
-directory '/opt/pixielabs/bin' do
-  owner user
-  group root_group
-  mode '0755'
-  action :create
-end
-
-directory '/opt/pixielabs/gopath' do
-  owner user
-  group root_group
-  mode '0755'
-  action :create
-end
-
 execute 'install go binaries' do
   ENV['GOPATH'] = "/opt/pixielabs/gopath"
   command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
@@ -80,24 +56,22 @@ end
 
 template '/opt/pixielabs/plenv.inc' do
   source 'plenv.inc.erb'
-  owner user
-  group root_group
+  owner node['owner']
+  group node['group']
   mode '0644'
   action :create
 end
 
 template '/opt/pixielabs/bin/bazel' do
   source 'bazel.erb'
-  owner user
-  group root_group
+  owner node['owner']
+  group node['group']
   mode '0755'
   action :create
 end
 
-remote_file '/opt/pixielabs/bin/bazel_core' do
-  source node['bazel']['download_path']
-  mode 0555
-  checksum node['bazel']['sha256']
+remote_bin 'bazel' do
+  bin_name 'bazel_core'
 end
 
 remote_bin 'codecov'
@@ -110,11 +84,16 @@ remote_bin 'yq'
 remote_tar_bin 'fossa'
 
 remote_tar_bin 'gh' do
-  strip_components 2
+  tool_loc 'bin/gh'
+  strip_components 1
 end
 
 remote_tar_bin 'golangci-lint' do
   strip_components 1
+end
+
+remote_tar_bin 'gsutil' do
+  strip_components 2
 end
 
 remote_tar_bin 'helm' do
@@ -123,19 +102,5 @@ end
 
 remote_tar_bin 'shellcheck' do
   strip_components 1
-end
-
-remote_file '/tmp/gsutil.tar.gz' do
-  source node['gsutil']['download_path']
-  mode 0755
-  checksum node['gsutil']['sha256']
-end
-
-execute 'install gsutil' do
-  command 'tar xf /tmp/gsutil.tar.gz -C /opt'
-end
-
-file '/tmp/gsutil.tar.gz' do
-  action :delete
 end
 

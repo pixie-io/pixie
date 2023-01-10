@@ -20,6 +20,8 @@ directory '/opt/golang' do
 end
 
 directory '/opt/golang' do
+  owner node['owner']
+  group node['group']
   mode '0755'
   action :create
 end

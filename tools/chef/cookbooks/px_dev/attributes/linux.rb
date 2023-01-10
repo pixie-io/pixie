@@ -18,6 +18,10 @@ if ! platform_family?('debian')
   return
 end
 
+# Resources created by chef on linux are owned by root:root
+default['owner'] = 'root'
+default['group'] = 'root'
+
 default['bazel']['download_path'] =
   "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-linux-x86_64"
 default['bazel']['sha256'] =

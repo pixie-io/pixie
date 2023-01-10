@@ -14,16 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-directory '/opt/phab' do
-  owner node['owner']
-  group node['group']
-  mode '0755'
-  action :create
-end
+dirs = ['/opt/pixielabs', '/opt/pixielabs/bin', '/opt/pixielabs/gopath', '/opt/pixielabs/tools']
 
-git '/opt/phab/arcanist' do
-  repository 'https://github.com/phacility/arcanist.git'
-  revision 'stable'
-  action :sync
+dirs.each do |path|
+  directory path do
+    owner node['owner']
+    group node['group']
+    mode '0755'
+    action :create
+  end
 end
-ENV['PATH'] = "/opt/phab/arcanist/bin:#{ENV['PATH']}"
