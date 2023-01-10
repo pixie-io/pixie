@@ -28,26 +28,42 @@ To set up the developer environment required to start building Pixie's component
 
 Pixie Cloud manages users, authentication, and proxying “passthrough” mode. If you want to make changes to Pixie Cloud, then you will need to spin up a self-hosted version in development mode to test those changes. If you aren't changing Pixie Cloud, feel free to use officially released Pixie Cloud options listed in our Install Guides.
 
+1. Create the `plc` namespace.
+
+   ```bash
+    kubectl create namespace plc
+   ```
+
 1. Load the config maps and secrets.
 
     ```bash
-    ./scripts/deploy_cloud_prereqs.sh plc-dev dev
+    ./scripts/create_cloud_secrets.sh
     ```
 
-1. Deploy the Pixie Cloud services and deployments. Note to add profile flags for whether you're running a dev build, minikube env, or want to use ory_auth in place of auth0.
+1. Deploy the dependencies.
 
     ```bash
-    # note: Profile args are not exclusive.
-    # -p dev enables the dev profile
-    # -p minikube enables the minikube profile
-    # -p ory_auth enables the ory authentication deployment. Not including this uses auth0 by default.
-    skaffold run -f skaffold/skaffold_cloud.yaml (-p dev) (-p minikube) (-p ory_auth)
+    kustomize build k8s/cloud_deps/base/elastic/operator | kubectl apply -f -
+    kustomize build k8s/cloud_deps/public | kubectl apply -f -
     ```
 
-1. Load basic artifacts into the database.
+1. Modify the kustomize file so that `skaffold` can replace the correct image tags.
 
     ```bash
-    ./scripts/load_dev_db.sh plc-dev
+    perl -pi -e "s|newTag: latest|newTag: \"\"|g" k8s/cloud/public/kustomization.yaml
+    perl -pi -e "s|pixie-prod|pixie-dev|g" k8s/cloud/public/kustomization.yaml
+    ```
+
+1. Point skaffold to your own image resistry.
+
+    ```bash
+    skaffold config set default-repo <your registry>
+    ```
+
+1. Deploy the Pixie Cloud services and deployments. This will build the cloud images using changes in the current branch.
+
+    ```bash
+    skaffold run -f skaffold/skaffold_cloud.yaml (-p public)
     ```
 
 1. Update `/etc/hosts` so that it knows to point `dev.withpixie.dev` to your running dev cloud instance. The `dev_dns_updater` will do this process for you.

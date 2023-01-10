@@ -141,3 +141,8 @@ profiles:
     value: [k8s/cloud/prod]
   activation:
   - env: PL_BUILD_TYPE=prod
+- name: public
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/public]
