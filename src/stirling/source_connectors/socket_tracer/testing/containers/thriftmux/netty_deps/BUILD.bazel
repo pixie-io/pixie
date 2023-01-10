@@ -43,6 +43,6 @@ java_import(
     deps = [
         ":io_netty_netty_tcnative_boringssl_static_linux_aarch_64",
         ":io_netty_netty_tcnative_boringssl_static_linux_x86_64",
-        "@maven//:io_netty_netty_tcnative_classes",
+        "@thrift_deps//:io_netty_netty_tcnative_classes",
     ],
 )

@@ -172,6 +172,10 @@ fetch_netty_tcnative_jars(netty_tcnative_version)
 
 thrift_deps(scala_version = scala_version)
 
+load("@thrift_deps//:defs.bzl", thrift_pinned_maven_install = "pinned_maven_install")
+
+thrift_pinned_maven_install()
+
 # twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
 # These bind statements ensure that the correct versions of finagle libthrift, scrooge core
 # and scrooge generator are used to ensure successful compilation.
@@ -244,3 +248,19 @@ pip_parse(
 load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
 
 ampq_bpf_test_install_deps()
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+maven_install(
+    name = "px_deps",
+    artifacts = [
+        "org.antlr:antlr4:4.9",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+load("@px_deps//:defs.bzl", px_deps_pinned_maven_install = "pinned_maven_install")
+
+px_deps_pinned_maven_install()

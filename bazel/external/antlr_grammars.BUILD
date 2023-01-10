@@ -18,7 +18,10 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 genrule(
     name = "mysql_parser_gen",
-    srcs = glob(["sql/mysql/Positive-Technologies/*.g4"]),
+    srcs = [
+        "sql/mysql/Positive-Technologies/MySQLLexer.g4",
+        "sql/mysql/Positive-Technologies/MySQLParser.g4",
+    ],
     outs = [
         "mysql_parser/MySQLLexer.cpp",
         "mysql_parser/MySQLLexer.h",
@@ -30,12 +33,18 @@ genrule(
         "mysql_parser/MySQLParserListener.h",
     ],
     cmd = """
-  OUT_DIR=`dirname $(location mysql_parser/MySQLParser.h)`;
-  OUT_DIR_ABS_PATH=`realpath $$OUT_DIR`;
-  GRAMMAR_DIR=`dirname $(location sql/mysql/Positive-Technologies/MySQLParser.g4)`;
-  cd $$GRAMMAR_DIR;
-  java -Xmx500m -jar /opt/antlr/antlr-4.9-complete.jar -Dlanguage=Cpp -o $$OUT_DIR_ABS_PATH -package mysql_parser -listener MySQLLexer.g4 MySQLParser.g4;
-  """,
+        OUT=`dirname $(location mysql_parser/MySQLLexer.cpp)`
+
+        $(location @com_github_antlr_antlr4//:antlr) \
+            -Dlanguage=Cpp \
+            -o $$OUT \
+            -package mysql_parser \
+            -listener \
+            -Xexact-output-dir \
+            $(location sql/mysql/Positive-Technologies/MySQLLexer.g4) \
+            $(location sql/mysql/Positive-Technologies/MySQLParser.g4)
+    """,
+    tools = ["@com_github_antlr_antlr4//:antlr"],
 )
 
 cc_library(

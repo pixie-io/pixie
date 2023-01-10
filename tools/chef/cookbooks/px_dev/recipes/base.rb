@@ -139,15 +139,3 @@ file '/tmp/gsutil.tar.gz' do
   action :delete
 end
 
-directory '/opt/antlr' do
-  owner user
-  group root_group
-  mode '0755'
-  action :create
-end
-
-remote_file '/opt/antlr/antlr-4.9-complete.jar' do
-  source node['antlr']['download_path']
-  mode 0644
-  checksum node['antlr']['sha256']
-end

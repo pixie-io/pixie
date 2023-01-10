@@ -71,13 +71,13 @@ scala_library(
     name = "scrooge_jars",
     visibility = ["//visibility:public"],
     exports = [
-        "@maven//:com_twitter_finagle_core_2_13",
-        "@maven//:com_twitter_finagle_http_2_13",
-        "@maven//:com_twitter_finagle_mux_2_13",
-        "@maven//:com_twitter_finagle_thrift_2_13",
-        "@maven//:com_twitter_finagle_thriftmux_2_13",
-        "@maven//:com_twitter_scrooge_core_2_13",
-        "@maven//:com_twitter_scrooge_generator_2_13",
+        "@thrift_deps//:com_twitter_finagle_core_2_13",
+        "@thrift_deps//:com_twitter_finagle_http_2_13",
+        "@thrift_deps//:com_twitter_finagle_mux_2_13",
+        "@thrift_deps//:com_twitter_finagle_thrift_2_13",
+        "@thrift_deps//:com_twitter_finagle_thriftmux_2_13",
+        "@thrift_deps//:com_twitter_scrooge_core_2_13",
+        "@thrift_deps//:com_twitter_scrooge_generator_2_13",
     ],
 )
 
@@ -85,7 +85,7 @@ scala_library(
     name = "thrift_jars",
     visibility = ["//visibility:public"],
     exports = [
-        "@maven//:org_apache_thrift_libthrift",
+        "@thrift_deps//:org_apache_thrift_libthrift",
     ],
 )
 
@@ -99,9 +99,9 @@ scrooge_scala_library(
 scala_library(
     name = "logging",
     deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-        "@maven//:ch_qos_logback_logback_core",
-        "@maven//:org_slf4j_slf4j_api",
+        "@thrift_deps//:ch_qos_logback_logback_classic",
+        "@thrift_deps//:ch_qos_logback_logback_core",
+        "@thrift_deps//:org_slf4j_slf4j_api",
     ],
 )
 

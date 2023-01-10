@@ -24,6 +24,7 @@ def thrift_deps(scala_version):
     scala_minor_version = ".".join(scala_version.split(".")[:2])
 
     maven_install(
+        name = "thrift_deps",
         artifacts = [
             "com.twitter:finagle-thriftmux_%s:%s" % (scala_minor_version, finagle_version),
             "com.twitter:finagle-mux_%s:%s" % (scala_minor_version, finagle_version),
