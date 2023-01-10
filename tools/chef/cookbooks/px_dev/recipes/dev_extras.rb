@@ -38,14 +38,16 @@ elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
   homebrew_package 'gperftools'
 end
 
-remote_file '/usr/share/zsh/vendor-completions/_bazel' do
+remote_file '/usr/local/share/zsh/site-functions/_bazel' do
   source node['bazel']['zsh_completions']
   mode 0644
   checksum node['bazel']['zcomp_sha256']
 end
 
+remote_bin 'faq'
 remote_bin 'kubectl'
 remote_bin 'minikube'
+remote_bin 'opm'
 remote_bin 'skaffold'
 remote_bin 'sops'
 
@@ -62,18 +64,8 @@ execute 'update gcloud' do
   action :run
 end
 
-execute 'install gcloud::beta' do
-  command 'gcloud components install beta'
-  action :run
-end
-
-execute 'install gcloud::gke-gcloud-auth-plugin' do
-  command 'gcloud components install gke-gcloud-auth-plugin'
-  action :run
-end
-
-execute 'install gcloud::docker-credential-gcr' do
-  command 'gcloud components install docker-credential-gcr'
+execute 'install components' do
+  command 'gcloud components install beta gke-gcloud-auth-plugin docker-credential-gcr'
   action :run
 end
 
@@ -100,7 +92,15 @@ remote_file '/tmp/packer.zip' do
 end
 
 execute 'install packer' do
-  command 'unzip -d /usr/local/bin -o /tmp/packer.zip && chmod +x /usr/local/bin/packer'
+  command 'unzip -d /opt/px_dev/tools/packer -o /tmp/packer.zip'
+end
+
+link '/opt/px_dev/bin/packer' do
+  to '/opt/px_dev/tools/packer/packer'
+  link_type :symbolic
+  owner node['owner']
+  group node['group']
+  action :create
 end
 
 file '/tmp/packer.zip' do

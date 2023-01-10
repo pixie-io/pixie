@@ -25,8 +25,7 @@ if platform_family?('mac_os_x')
 end
 
 execute 'install_python_packages' do
-  command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir'
-  command 'python3 -m pip cache purge'
+  command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir && python3 -m pip cache purge'
 end
 
 include_recipe 'px_dev::phabricator'
@@ -75,9 +74,7 @@ remote_bin 'bazel' do
 end
 
 remote_bin 'codecov'
-remote_bin 'faq'
 remote_bin 'kustomize'
-remote_bin 'opm'
 remote_bin 'prototool'
 remote_bin 'yq'
 

@@ -43,8 +43,7 @@
       "prevent_sudo": true,
       "roles_path": "roles",
       "run_list": [
-        "role[px_base_dev]",
-        "recipe[px_dev::docker_extras]"
+        "role[px_base_dev]"
       ],
       "type": "chef-solo",
       "version": "17.8.25"
