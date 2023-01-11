@@ -60,11 +60,11 @@ TEST(StatsTest, CommonValues) {
 }
 
 TEST(HsperfdataPathTest, ResultIsAsExpected) {
-  const char kClassPath[] = "src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar";
-  const std::string class_path = testing::BazelRunfilePath(kClassPath);
+  const std::string javaBinPath =
+      testing::BazelRunfilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld");
 
   SubProcess hello_world;
-  ASSERT_OK(hello_world.Start({"java", "-cp", class_path, "HelloWorld"}));
+  ASSERT_OK(hello_world.Start({javaBinPath, "HelloWorld"}));
 
   // Give some time for the JVM process to start.
   std::string s;

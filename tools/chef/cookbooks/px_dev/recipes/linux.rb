@@ -50,9 +50,6 @@ apt_pkg_list = [
   'gcc-12',
   'g++-12',
 
-  # Needed by rules_jvm_external to run coursier.
-  'openjdk-11-jre-headless',
-
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',

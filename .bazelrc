@@ -5,6 +5,9 @@
 build --java_runtime_version=remotejdk_11
 test --java_runtime_version=remotejdk_11
 
+# https://github.com/bazelbuild/rules_jvm_external/issues/445
+common --repo_env=JAVA_HOME=../bazel_tools/jdk
+
 # This is to flush bazel cache for new version of clang/gcc.
 build --action_env=CLANG_COMPILER_VERSION=15.0_3
 build --host_action_env=CLANG_COMPILER_VERSION=15.0_3
