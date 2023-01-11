@@ -16,7 +16,9 @@
 
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
-load("@io_bazel_rules_go//go:def.bzl", "go_context", "go_library")
+
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 def pl_copts():
@@ -390,3 +392,17 @@ pl_bindata = rule(
         "_go_context_data": attr.label(default = "@io_bazel_rules_go//:go_context_data"),
     },
 )
+
+def pl_go_image(**kwargs):
+    base = "//:pl_go_base_image"
+    if "base" not in kwargs:
+        kwargs["base"] = base
+    go_image(
+        **kwargs
+    )
+
+def pl_go_test(**kwargs):
+    go_test(**kwargs)
+
+def pl_go_binary(**kwargs):
+    go_binary(**kwargs)

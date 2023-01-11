@@ -14,8 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -31,12 +31,12 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "productcatalogservice_client",
     embed = [":productcatalogservice_client_lib"],
 )
 
-go_image(
+pl_go_image(
     name = "productcatalogservice_client_image",
     binary = ":productcatalogservice_client",
     importpath = "px.dev/pixie",

@@ -16,8 +16,9 @@
 
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
 go_library(
     name = "artifact_db_updater_lib",
@@ -40,7 +41,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "artifact_db_updater",
     embed = [":artifact_db_updater_lib"],
     visibility = ["//src:__subpackages__"],

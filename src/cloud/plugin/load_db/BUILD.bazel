@@ -17,7 +17,8 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_test")
 
 go_library(
     name = "load_db_lib",
@@ -47,7 +48,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "load_db",
     embed = [":load_db_lib"],
     visibility = ["//visibility:public"],
@@ -81,7 +82,7 @@ container_push(
     tag = "{STABLE_BUILD_TAG}",
 )
 
-go_test(
+pl_go_test(
     name = "load_db_test",
     srcs = ["load_db_test.go"],
     deps = [

@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
 go_library(
     name = "basic_example_lib",
@@ -28,7 +29,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "basic_example",
     embed = [":basic_example_lib"],
     visibility = ["//src:__subpackages__"],

@@ -14,8 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -30,7 +30,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "client",
     embed = [":client_lib"],
 )
@@ -63,22 +63,22 @@ go_cross_binary(
     target = ":client",
 )
 
-go_image(
+pl_go_image(
     name = "golang_1_16_https_client",
     binary = ":golang_1_16_client_binary",
 )
 
-go_image(
+pl_go_image(
     name = "golang_1_17_https_client",
     binary = ":golang_1_17_client_binary",
 )
 
-go_image(
+pl_go_image(
     name = "golang_1_18_https_client",
     binary = ":golang_1_18_client_binary",
 )
 
-go_image(
+pl_go_image(
     name = "golang_1_19_https_client",
     binary = ":golang_1_19_client_binary",
 )

@@ -15,8 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 go_library(
     name = "pixie_cli_lib",
@@ -36,14 +36,14 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "px",
     embed = [":pixie_cli_lib"],
     pure = "on",
     visibility = ["//src:__subpackages__"],
 )
 
-go_binary(
+pl_go_binary(
     name = "px_darwin_arm64",
     embed = [":pixie_cli_lib"],
     goarch = "arm64",
@@ -51,7 +51,7 @@ go_binary(
     visibility = ["//src:__subpackages__"],
 )
 
-go_binary(
+pl_go_binary(
     name = "px_darwin_amd64",
     embed = [":pixie_cli_lib"],
     goarch = "amd64",
@@ -65,7 +65,7 @@ filegroup(
     visibility = ["//src:__subpackages__"],
 )
 
-go_image(
+pl_go_image(
     name = "px_image",
     binary = ":px",
     importpath = "px.dev/pixie",

@@ -245,9 +245,10 @@ TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
+  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kPath, "runtime.buildVersion"));
 // Coverage build might alter the resultant binary.
 #ifndef PL_COVERAGE
-  EXPECT_EQ(symbol.address, 0x549F20);
+  EXPECT_EQ(symbol.address, expected_addr);
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
   EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);

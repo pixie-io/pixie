@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
 go_library(
     name = "example_mux_lib",
@@ -30,7 +31,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "example_mux",
     embed = [":example_mux_lib"],
     visibility = ["//src:__subpackages__"],

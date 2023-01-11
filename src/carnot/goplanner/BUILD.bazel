@@ -14,8 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
-load("//bazel:pl_build_system.bzl", "pl_cgo_library")
+load("//bazel:pl_build_system.bzl", "pl_cgo_library", "pl_go_test")
 
 # gazelle:ignore
 package(default_visibility = [
@@ -47,7 +46,7 @@ pl_cgo_library(
     ],
 )
 
-go_test(
+pl_go_test(
     name = "go_default_test",
     srcs = ["logical_planner_test.go"],
     deps = [
@@ -69,7 +68,7 @@ go_test(
     ],
 )
 
-go_test(
+pl_go_test(
     name = "go_benchmark",
     srcs = [
         "logical_planner_benchmark_test.go",

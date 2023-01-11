@@ -15,9 +15,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 go_library(
     name = "elastic_migration_lib",
@@ -34,13 +34,13 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "elastic_migration",
     embed = [":elastic_migration_lib"],
     visibility = ["//src/cloud:__subpackages__"],
 )
 
-go_image(
+pl_go_image(
     name = "elastic_migration_image",
     binary = ":elastic_migration",
     importpath = "px.dev/pixie",

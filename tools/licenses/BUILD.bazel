@@ -17,8 +17,9 @@
 # Packaging licenses for the entire pixie repository.
 # This includes the C API, Java API, and protocol buffer files.
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel:licenses.bzl", "fetch_licenses")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -35,7 +36,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "fetch_licenses",
     embed = [":licenses_lib"],
     visibility = ["//visibility:public"],
