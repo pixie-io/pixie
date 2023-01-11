@@ -216,6 +216,13 @@
     "licenseText": "This code is licensed under the terms of the Apache 2 license."
   },
   {
+    "name": "pixie-io/libuuid",
+    "package": "github.com/pixie-io/libuuid",
+    "url": "https://github.com/pixie-io/libuuid",
+    "spdxID": "BSD-3-Clause",
+    "licenseText": "Redistribution and use in source and binary forms, with or without\nmodification, are permitted provided that the following conditions\nare met:\n1. Redistributions of source code must retain the above copyright\n   notice, and the entire permission notice in its entirety,\n   including the disclaimer of warranties.\n2. Redistributions in binary form must reproduce the above copyright\n   notice, this list of conditions and the following disclaimer in the\n   documentation and/or other materials provided with the distribution.\n3. The name of the author may not be used to endorse or promote\n   products derived from this software without specific prior\n   written permission.\n\nTHIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED\nWARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES\nOF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF\nWHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE\nLIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR\nCONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT\nOF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR\nBUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF\nLIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE\nUSE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH\nDAMAGE.\n"
+  },
+  {
     "name": "protocolbuffers/protobuf",
     "package": "github.com/protocolbuffers/protobuf",
     "url": "https://github.com/protocolbuffers/protobuf",

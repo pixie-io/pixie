@@ -29,6 +29,10 @@ cmake(
         "-j`nproc`",
         "-l`nproc`",
     ],
+    cache_entries = {
+        "UUID_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
+        "UUID_LIBRARIES": "$EXT_BUILD_DEPS/lib/libuuid.a",
+    },
     lib_source = ":all",
     out_include_dir = "include/antlr4-runtime",
     out_static_libs = [
@@ -36,6 +40,9 @@ cmake(
     ],
     visibility = ["//visibility:public"],
     working_directory = "runtime/Cpp",
+    deps = [
+        "@com_github_util_linux_libuuid//:uuid",
+    ],
 )
 
 java_binary(

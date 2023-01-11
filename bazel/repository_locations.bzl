@@ -389,6 +389,13 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
         ],
     ),
+    com_github_util_linux_libuuid = dict(
+        sha256 = "f96f1924d1339cd5f668d380061c93e0b800939b5228dd6d7825593e5237f14c",
+        strip_prefix = "libuuid-0a6d600cab6aaa4a6d6b268e6edaab3addbb0a6b",
+        urls = [
+            "https://github.com/pixie-io/libuuid/archive/0a6d600cab6aaa4a6d6b268e6edaab3addbb0a6b.tar.gz",
+        ],
+    ),
 )
 
 # To modify one of the forked repos below:
