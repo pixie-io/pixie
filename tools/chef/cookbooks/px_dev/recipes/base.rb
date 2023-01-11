@@ -92,10 +92,6 @@ remote_tar_bin 'golangci-lint' do
   strip_components 1
 end
 
-remote_tar_bin 'gsutil' do
-  strip_components 2
-end
-
 remote_tar_bin 'helm' do
   strip_components 1
 end

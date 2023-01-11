@@ -18,6 +18,3 @@ default['bazel']['version']          = '6.0.0'
 default['bazel']['zsh_completions']  =
   "https://raw.githubusercontent.com/bazelbuild/bazel/#{default['bazel']['version']}/scripts/zsh_completion/_bazel"
 default['bazel']['zcomp_sha256']     = '4094dc84add2f23823bc341186adf6b8487fbd5d4164bd52d98891c41511eba4'
-
-default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_5.17.tar.gz'
-default['gsutil']['sha256']        = 'cd9495eb0437e47210c19087bf0e81c72b669102193132e5c0d72a807cc27d55'
