@@ -401,8 +401,16 @@ def pl_go_image(**kwargs):
         **kwargs
     )
 
+def _add_no_pie(kwargs):
+    if "gc_linkopts" not in kwargs:
+        kwargs["gc_linkopts"] = []
+    kwargs["gc_linkopts"].append("-extldflags")
+    kwargs["gc_linkopts"].append("-no-pie")
+
 def pl_go_test(**kwargs):
+    _add_no_pie(kwargs)
     go_test(**kwargs)
 
 def pl_go_binary(**kwargs):
+    _add_no_pie(kwargs)
     go_binary(**kwargs)
