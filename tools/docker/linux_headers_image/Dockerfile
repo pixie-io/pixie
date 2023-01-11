@@ -33,20 +33,20 @@ RUN apt-get install -y -q build-essential \
   wget
 
 # Download Linux sources
-WORKDIR /pl/src
+WORKDIR /px/src
 RUN KERN_MAJ="$(echo "${KERN_VERSION}" | cut -d'.' -f1)"; \
     wget -nv http://mirrors.edge.kernel.org/pub/linux/kernel/v${KERN_MAJ}.x/linux-${KERN_VERSION}.tar.gz
 RUN tar zxf linux-${KERN_VERSION}.tar.gz
 
 # Build Linux kernel
-WORKDIR /pl/src/linux-${KERN_VERSION}
+WORKDIR /px/src/linux-${KERN_VERSION}
 ADD config .config
 RUN make olddefconfig
 RUN make clean
 RUN make -j $(nproc) deb-pkg LOCALVERSION=-pl
 
 # Extract headers into a tarball
-WORKDIR /pl
+WORKDIR /px
 RUN dpkg -x src/linux-headers-${KERN_VERSION}-pl_${KERN_VERSION}-pl-1_amd64.deb .
 
 # Remove broken symlinks

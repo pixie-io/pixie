@@ -33,8 +33,8 @@ def getOutputBase():
 def getSourceFileMap(output_base):
     return {
         '/proc/self/cwd/': '${workspaceFolder}/',
-        '{0}/execroot/pl/src/'.format(output_base): '${workspaceFolder}/src/',
-        '{0}/execroot/pl/src/'.format(output_base.replace('/private/', '/')):
+        '{0}/execroot/px/src/'.format(output_base): '${workspaceFolder}/src/',
+        '{0}/execroot/px/src/'.format(output_base.replace('/private/', '/')):
             '${workspaceFolder}/src/',
     }
 

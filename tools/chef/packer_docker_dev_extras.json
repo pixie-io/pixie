@@ -2,13 +2,13 @@
   "builders": [
     {
       "changes": [
-        "ENV PATH /opt/golang/bin:/opt/px_dev/bin:/opt/clang-15.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV PATH /opt/golang/bin:/opt/px_dev/bin:/opt/clang-15.0/bin:/px/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "ENV LD_LIBRARY_PATH /opt/clang-15.0/lib",
-        "ENV GOPATH /pl",
+        "ENV GOPATH /px",
         "ENV CC clang",
         "ENV CXX clang++",
         "ENV ASAN_SYMBOLIZER_PATH /opt/clang-15.0/bin/llvm-symbolizer",
-        "WORKDIR /pl/src/px.dev/pixie",
+        "WORKDIR /px/src/px.dev/pixie",
         "ENTRYPOINT [\"\"]"
       ],
       "commit": true,

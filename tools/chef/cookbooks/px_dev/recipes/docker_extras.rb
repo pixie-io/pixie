@@ -16,10 +16,10 @@
 
 # The contains additional setup required in our docker image,
 # so that we can mount our code and use Golang.
-ENV['GOPATH'] = '/pl'
+ENV['GOPATH'] = '/px'
 ENV['PATH'] = "#{ENV['GOPATH']}/bin:#{ENV['PATH']}"
 
-directory '/pl' do
+directory '/px' do
   mode '0755'
   action :create
 end

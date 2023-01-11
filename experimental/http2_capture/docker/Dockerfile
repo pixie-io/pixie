@@ -18,7 +18,7 @@ FROM ubuntu:18.04
 RUN apt-get update
 RUN apt-get install -y -q tshark
 
-WORKDIR /pl
+WORKDIR /px
 COPY http2_capture.sh .
 
-CMD /pl/http2_capture.sh
+CMD /px/http2_capture.sh

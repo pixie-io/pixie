@@ -94,7 +94,7 @@ stirling_collateral = [":stirling_linux_timeconst_files"] + stirling_ctrl + stir
 
 container_layer(
     name = "bpf_layer",
-    directory = "/pl",
+    directory = "/px",
     files = stirling_collateral,
     tars = stirling_linux_headers_tarballs,
     visibility = ["//visibility:public"],

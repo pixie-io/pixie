@@ -392,7 +392,7 @@ Status GenAutoConf(const std::filesystem::path& linux_headers_base,
 }
 
 Status GenTimeconst(const std::filesystem::path& linux_headers_base, int hz) {
-  const std::filesystem::path kPackagedHeadersRoot = "/pl";
+  const std::filesystem::path kPackagedHeadersRoot = "/px";
 
   std::filesystem::path timeconst_path = linux_headers_base / "include/generated/timeconst.h";
   std::string src_file =
@@ -609,7 +609,7 @@ StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
 
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   // This is the directory in our container images that contains packaged linux headers.
-  const std::filesystem::path kPackagedHeadersRoot = "/pl";
+  const std::filesystem::path kPackagedHeadersRoot = "/px";
 
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 

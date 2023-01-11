@@ -99,7 +99,7 @@ configs=(
     # Allow docker to run within the container.
     -v /var/run/docker.sock:/var/run/docker.sock
     # Mount the workspace root within the build directory.
-    -v "${workspace_root}:/pl/src/px.dev/pixie"
+    -v "${workspace_root}:/px/src/px.dev/pixie"
     # Use the host network so we can easily access build caches, etc.
     "--network=host"
 )
