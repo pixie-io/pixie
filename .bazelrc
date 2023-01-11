@@ -6,8 +6,8 @@ build --java_runtime_version=remotejdk_11
 test --java_runtime_version=remotejdk_11
 
 # This is to flush bazel cache for new version of clang/gcc.
-build --action_env=CLANG_COMPILER_VERSION=15.0_2
-build --host_action_env=CLANG_COMPILER_VERSION=15.0_2
+build --action_env=CLANG_COMPILER_VERSION=15.0_3
+build --host_action_env=CLANG_COMPILER_VERSION=15.0_3
 
 build --remote_download_minimal
 test --remote_download_minimal
