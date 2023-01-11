@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -67,32 +67,34 @@ build:
     dateTime: {}
   local:
     push: true
-deploy:
+manifests:
   kustomize:
     paths:
     - k8s/cloud/dev
 profiles:
 - name: minikube
+  activation:
+  - kubeContext: minikube
   patches:
   - op: replace
     path: /build/local
     value:
       push: false
-  activation:
-  - kubeContext: minikube
 - name: dev
+  activation:
+  - command: dev
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=dbg
-  activation:
-  - command: dev
 - name: ory_auth
   patches:
   - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/dev, k8s/cloud/dev/ory_auth]
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/cloud/dev
+    - k8s/cloud/dev/ory_auth
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
@@ -100,22 +102,12 @@ profiles:
 - name: ory_auth_prod
   patches:
   - op: add
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/base/ory_auth]
-- name: staging
-  patches:
-  - op: add
-    path: /build/artifacts/context=./bazel/args
+    path: /manifests/kustomize/paths
     value:
-    - --compilation_mode=opt
-    - --stamp
-    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
-  - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/staging]
+    - k8s/cloud/base/ory_auth
+- name: staging
   activation:
   - env: PL_BUILD_TYPE=staging
-- name: testing
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
@@ -124,11 +116,12 @@ profiles:
     - --stamp
     - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/testing]
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/cloud/staging
+- name: testing
   activation:
   - env: PL_BUILD_TYPE=testing
-- name: prod
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
@@ -137,12 +130,26 @@ profiles:
     - --stamp
     - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/prod]
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/cloud/testing
+- name: prod
   activation:
   - env: PL_BUILD_TYPE=prod
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --compilation_mode=opt
+    - --stamp
+    - --action_env=GOOGLE_APPLICATION_CREDENTIALS
+  - op: replace
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/cloud/prod
 - name: public
   patches:
   - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/public]
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/cloud/public

@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -9,16 +9,16 @@ build:
       target: //src/operator:operator_image.tar
   tagPolicy:
     dateTime: {}
-deploy:
+manifests:
   kustomize:
     paths:
     - k8s/operator/deployment/base/
 profiles:
 - name: minikube
+  activation:
+  - kubeContext: minikube
   patches:
   - op: replace
     path: /build/local
     value:
       push: false
-  activation:
-  - kubeContext: minikube

@@ -113,9 +113,9 @@ default['shellcheck']['sha256'] =
   '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
 
 default['skaffold']['download_path'] =
-  'https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-linux-amd64'
+  'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-linux-amd64'
 default['skaffold']['sha256'] =
-  '3c347c9478880f22ebf95807c13371844769c625cf3ea9c987cd85859067503c'
+  'f1c54245b97073f39b209dd4b769802701c9901ceaa95774e7507d95bbd1d4c0'
 
 default['sops']['download_path'] =
   'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'

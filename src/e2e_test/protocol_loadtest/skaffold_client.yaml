@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -11,7 +11,7 @@ build:
     dateTime: {}
   local:
     push: true
-deploy:
+manifests:
   kustomize:
     paths:
     - src/e2e_test/protocol_loadtest/k8s/client

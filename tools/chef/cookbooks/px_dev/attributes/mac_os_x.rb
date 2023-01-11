@@ -114,9 +114,9 @@ default['shellcheck']['sha256'] =
   'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
 
 default['skaffold']['download_path'] =
-  'https://storage.googleapis.com/skaffold/releases/v1.38.0/skaffold-darwin-amd64'
+  'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-amd64'
 default['skaffold']['sha256'] =
-  '872897d78a17812913cd6e930c5d1c94f7c862381db820815c4bffc637c28b88'
+  'd0956712db4d2dd8084ffe297bf645ec92506b87db5f61c0f5e24c7fd99bf0a3'
 
 default['sops']['download_path'] =
   'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'

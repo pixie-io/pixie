@@ -1,11 +1,8 @@
 ---
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  # NOTE: If you move either pem/kelvin for the first two spots
-  # then you will have to update the ASAN/TSAN yaml-path
-  # index below.
   - image: gcr.io/pixie-oss/pixie-dev/vizier/pem_image
     context: .
     bazel:
@@ -46,19 +43,19 @@ build:
     dateTime: {}
   local:
     push: true
-deploy:
+manifests:
   kustomize:
     paths:
     - k8s/vizier/persistent_metadata
 profiles:
 - name: minikube
+  activation:
+  - kubeContext: minikube
   patches:
   - op: replace
     path: /build/local
     value:
       push: false
-  activation:
-  - kubeContext: minikube
 - name: dbg
   patches:
   - op: add
@@ -74,19 +71,19 @@ profiles:
 - name: jsyms
   patches:
   - op: add
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/jsyms
 - name: no-jsyms
   patches:
   - op: add
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/no-jsyms
 - name: heap
   patches:
   - op: add
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/heap_profile
 - name: asan
@@ -100,7 +97,7 @@ profiles:
     value:
     - --config=asan
   - op: replace
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/sanitizer
 - name: tsan
@@ -114,12 +111,12 @@ profiles:
     value:
     - --config=tsan
   - op: replace
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/sanitizer
 - name: etcd
   patches:
   - op: replace
-    path: /deploy/kustomize/paths
+    path: /manifests/kustomize/paths
     value:
     - k8s/vizier/etcd_metadata
