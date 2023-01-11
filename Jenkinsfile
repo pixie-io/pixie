@@ -427,7 +427,7 @@ def pxbuildContainer(boolean needExtras=false) {
   def image = needExtras ? devDockerImageExtrasWithTag : devDockerImageWithTag
   containerTemplate(
     name: 'pxbuild', image: image, command: 'cat', ttyEnabled: true,
-    resourceRequestMemory: '3072Mi', resourceRequestCpu: '1000m',
+    resourceRequestMemory: '58368Mi', resourceRequestCpu: '30000m',
   )
 }
 
