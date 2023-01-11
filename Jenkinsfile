@@ -105,6 +105,7 @@ isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regres
 isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
 isCopybaraTags = env.JOB_NAME.startsWith('pixie-main/copybara-tags')
 isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
+isCopybaraLibuuid = env.JOB_NAME.startsWith('pixie-main/copybara-libuuid')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
@@ -1775,6 +1776,20 @@ def buildScriptForCopybaraPxAPI() {
   }
 }
 
+def buildScriptForCopybaraLibuuid() {
+  try {
+    stage('Copybara it') {
+      copybaraTemplate('libuuid-copy', 'tools/copybara/libuuid/copy.bara.sky')
+    }
+  }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+}
+
 def buildScriptForStirlingPerfEval = {
   stage('Checkout code.') {
     checkoutAndInitialize()
@@ -1814,6 +1829,8 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCopybaraPxAPI()
 } else if (isStirlingPerfEval) {
   buildScriptForStirlingPerfEval()
+} else if (isCopybaraLibuuid) {
+  buildScriptForCopybaraLibuuid()
 } else {
   buildScriptForCommits()
 }
