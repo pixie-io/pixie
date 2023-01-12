@@ -25,13 +25,12 @@
 #include <unordered_map>
 #include <utility>
 
-#include "src/carnot/exec/ml/borrow_pool.h"
-#include "src/carnot/exec/ml/model_executor.h"
+#include "src/carnot/udf/borrow_pool.h"
+#include "src/carnot/udf/model_executor.h"
 
 namespace px {
 namespace carnot {
-namespace exec {
-namespace ml {
+namespace udf {
 
 class ModelPool {
  public:
@@ -72,7 +71,6 @@ class ModelPool {
   std::unordered_map<ModelType, std::unique_ptr<PoolType>> pool_map_;
 };
 
-}  // namespace ml
-}  // namespace exec
+}  // namespace udf
 }  // namespace carnot
 }  // namespace px

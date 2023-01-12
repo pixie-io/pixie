@@ -25,10 +25,10 @@
 #include <vector>
 
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/ml/model_pool.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/udf/model_pool.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
@@ -50,7 +50,7 @@ class EngineState : public NotCopyable {
               std::unique_ptr<planner::RegistryInfo> registry_info,
               const exec::ResultSinkStubGenerator& stub_generator,
               std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func,
-              exec::GRPCRouter* grpc_router, std::unique_ptr<exec::ml::ModelPool> model_pool)
+              exec::GRPCRouter* grpc_router, std::unique_ptr<udf::ModelPool> model_pool)
       : func_registry_(std::move(func_registry)),
         table_store_(std::move(table_store)),
         registry_info_(std::move(registry_info)),
@@ -68,7 +68,7 @@ class EngineState : public NotCopyable {
     auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
     PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
-    auto model_pool = exec::ml::ModelPool::Create();
+    auto model_pool = udf::ModelPool::Create();
 
     return std::make_unique<EngineState>(
         std::move(func_registry), table_store, std::move(registry_info), stub_generator,
@@ -135,7 +135,7 @@ class EngineState : public NotCopyable {
     return add_auth_to_grpc_context_func_;
   }
 
-  exec::ml::ModelPool* model_pool() const { return model_pool_.get(); }
+  udf::ModelPool* model_pool() const { return model_pool_.get(); }
 
  private:
   std::unique_ptr<udf::Registry> func_registry_;
@@ -144,7 +144,7 @@ class EngineState : public NotCopyable {
   const exec::ResultSinkStubGenerator stub_generator_;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
   exec::GRPCRouter* grpc_router_ = nullptr;
-  std::unique_ptr<exec::ml::ModelPool> model_pool_;
+  std::unique_ptr<udf::ModelPool> model_pool_;
 };
 
 }  // namespace carnot

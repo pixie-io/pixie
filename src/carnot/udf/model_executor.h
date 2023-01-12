@@ -20,8 +20,7 @@
 
 namespace px {
 namespace carnot {
-namespace exec {
-namespace ml {
+namespace udf {
 
 enum ModelType {
   kTransformer,
@@ -38,7 +37,6 @@ class ModelExecutor {
   virtual ~ModelExecutor() = default;
 };
 
-}  // namespace ml
-}  // namespace exec
+}  // namespace udf
 }  // namespace carnot
 }  // namespace px

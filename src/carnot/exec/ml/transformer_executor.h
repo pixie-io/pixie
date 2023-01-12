@@ -26,7 +26,7 @@
 #include <tensorflow/lite/model.h>
 #include <memory>
 #include <string>
-#include "src/carnot/exec/ml/model_executor.h"
+#include "src/carnot/udf/model_executor.h"
 #include "src/common/base/utils.h"
 
 namespace px {
@@ -34,12 +34,12 @@ namespace carnot {
 namespace exec {
 namespace ml {
 
-class TransformerExecutor : public ModelExecutor {
+class TransformerExecutor : public udf::ModelExecutor {
  public:
   TransformerExecutor() : TransformerExecutor("/embedding.proto") {}
   explicit TransformerExecutor(std::string model_proto_path) { Init(model_proto_path); }
 
-  static constexpr ModelType Type() { return kTransformer; }
+  static constexpr udf::ModelType Type() { return udf::kTransformer; }
 
   void Init(std::string model_proto_path) {
     model_ = tflite::FlatBufferModel::BuildFromFile(model_proto_path.c_str());

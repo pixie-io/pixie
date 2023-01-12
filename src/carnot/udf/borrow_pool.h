@@ -25,8 +25,7 @@
 
 namespace px {
 namespace carnot {
-namespace exec {
-namespace ml {
+namespace udf {
 
 template <typename T>
 class BorrowPool {
@@ -71,7 +70,6 @@ class BorrowPool {
   absl::base_internal::SpinLock pool_lock_;
 };
 
-}  // namespace ml
-}  // namespace exec
+}  // namespace udf
 }  // namespace carnot
 }  // namespace px

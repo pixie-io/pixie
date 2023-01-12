@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/exec/ml/borrow_pool.h"
+#include "src/carnot/udf/borrow_pool.h"
 #include <gtest/gtest.h>
 #include <atomic>
 #include <memory>
@@ -25,8 +25,7 @@
 
 namespace px {
 namespace carnot {
-namespace exec {
-namespace ml {
+namespace udf {
 
 TEST(BorrowPool, basic) {
   class A : public std::string {};
@@ -100,7 +99,6 @@ TEST(BorrowPool, threaded) {
   EXPECT_EQ(2, pool.Size());
 }
 
-}  // namespace ml
-}  // namespace exec
+}  // namespace udf
 }  // namespace carnot
 }  // namespace px

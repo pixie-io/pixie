@@ -30,7 +30,7 @@
 
 #include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/exec/grpc_router.h"
-#include "src/carnot/exec/ml/model_pool.h"
+#include "src/carnot/udf/model_pool.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"
@@ -69,7 +69,7 @@ class ExecState {
       const ResultSinkStubGenerator& stub_generator,
       const MetricsStubGenerator& metrics_stub_generator,
       const TraceStubGenerator& trace_stub_generator, const sole::uuid& query_id,
-      ml::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
+      udf::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
       std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
@@ -97,7 +97,7 @@ class ExecState {
 
   const sole::uuid& query_id() const { return query_id_; }
 
-  ml::ModelPool* model_pool() { return model_pool_; }
+  udf::ModelPool* model_pool() { return model_pool_; }
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
@@ -207,7 +207,7 @@ class ExecState {
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
-  ml::ModelPool* model_pool_;
+  udf::ModelPool* model_pool_;
   GRPCRouter* grpc_router_ = nullptr;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_client_context_func_;
 
