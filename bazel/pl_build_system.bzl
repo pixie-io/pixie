@@ -414,3 +414,7 @@ def pl_go_test(**kwargs):
 def pl_go_binary(**kwargs):
     _add_no_pie(kwargs)
     go_binary(**kwargs)
+
+cross_compile_configure_options = [
+    "--host x86_64-unknown-linux-gnu",
+]

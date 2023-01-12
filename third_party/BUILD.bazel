@@ -16,6 +16,7 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake", "configure_make")
+load("//bazel:pl_build_system.bzl", "cross_compile_configure_options")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,7 +37,7 @@ configure_make(
         "--enable-shared=no",
         "--disable-frame-pointers",
         "--enable-libunwind",
-    ],
+    ] + cross_compile_configure_options,
     lib_source = "@com_github_gperftools_gperftools//:all",
     linkopts = ["-lpthread"],
     out_static_libs = select({
@@ -150,7 +151,7 @@ configure_make(
     configure_options = [
         "-fPIC",
         "-static",
-    ],
+    ] + cross_compile_configure_options,
     lib_source = "@com_github_openssl_openssl//:all",
     out_lib_dir = "lib64",
     out_static_libs = [
