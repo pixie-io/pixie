@@ -46,7 +46,7 @@ pl_go_test(
     ],
     deps = [
         ":esutils",
-        "//src/utils/testingutils",
+        "//src/utils/testingutils/docker",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

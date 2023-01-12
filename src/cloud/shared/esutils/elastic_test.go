@@ -25,13 +25,13 @@ import (
 
 	"github.com/olivere/elastic/v7"
 
-	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/utils/testingutils/docker"
 )
 
 var elasticClient *elastic.Client
 
 func TestMain(m *testing.M) {
-	es, cleanup, err := testingutils.SetupElastic()
+	es, cleanup, err := docker.SetupElastic()
 	if err != nil {
 		cleanup()
 		log.Fatal(err)

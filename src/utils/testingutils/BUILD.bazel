@@ -19,8 +19,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "testingutils",
     srcs = [
-        "elastic.go",
-        "etcd.go",
         "gcs.go",
         "jwt.go",
         "mock_context.go",
@@ -36,12 +34,7 @@ go_library(
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_nats_io_nats_server_v2//server",
         "@com_github_nats_io_nats_server_v2//test",
-        "@com_github_olivere_elastic_v7//:elastic",
-        "@com_github_ory_dockertest_v3//:dockertest",
-        "@com_github_ory_dockertest_v3//docker",
         "@com_github_phayes_freeport//:freeport",
-        "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go_storage//:storage",
-        "@io_etcd_go_etcd_client_v3//:client",
     ],
 )

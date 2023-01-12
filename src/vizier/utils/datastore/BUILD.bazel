@@ -30,7 +30,7 @@ pl_go_test(
     embed = [":datastore"],
     tags = ["integration"],
     deps = [
-        "//src/utils/testingutils",
+        "//src/utils/testingutils/docker",
         "//src/vizier/utils/datastore/etcd",
         "//src/vizier/utils/datastore/pebbledb",
         "@com_github_cockroachdb_pebble//:pebble",

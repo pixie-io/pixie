@@ -33,7 +33,7 @@ import (
 
 	"px.dev/pixie/src/cloud/indexer/md"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
-	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/utils/testingutils/docker"
 )
 
 const indexName = "test_md_index"
@@ -43,7 +43,7 @@ var vzID uuid.UUID
 var orgID uuid.UUID
 
 func TestMain(m *testing.M) {
-	es, cleanup, err := testingutils.SetupElastic()
+	es, cleanup, err := docker.SetupElastic()
 	if err != nil {
 		cleanup()
 		log.Fatal(err)

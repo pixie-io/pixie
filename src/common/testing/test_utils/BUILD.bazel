@@ -26,6 +26,7 @@ pl_cc_library(
         exclude = ["*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
+    tags = ["requires_docker"],
     deps = [
         "//src/common/exec:cc_library",
     ],

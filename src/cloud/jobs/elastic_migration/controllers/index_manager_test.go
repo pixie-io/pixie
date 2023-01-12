@@ -30,13 +30,13 @@ import (
 
 	"px.dev/pixie/src/cloud/jobs/elastic_migration/controllers"
 	"px.dev/pixie/src/cloud/jobs/elastic_migration/schema"
-	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/utils/testingutils/docker"
 )
 
 var elasticClient *elastic.Client
 
 func TestMain(m *testing.M) {
-	es, cleanup, err := testingutils.SetupElastic()
+	es, cleanup, err := docker.SetupElastic()
 	if err != nil {
 		cleanup()
 		log.Fatal(err)

@@ -15,28 +15,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
-    name = "controllers",
-    srcs = ["index_manager.go"],
-    importpath = "px.dev/pixie/src/cloud/jobs/elastic_migration/controllers",
-    visibility = ["//src/cloud:__subpackages__"],
-    deps = [
-        "@com_github_olivere_elastic_v7//:elastic",
-        "@com_github_sirupsen_logrus//:logrus",
+    name = "docker",
+    srcs = [
+        "elastic.go",
+        "etcd.go",
     ],
-)
-
-pl_go_test(
-    name = "controllers_test",
-    srcs = ["index_manager_test.go"],
+    importpath = "px.dev/pixie/src/utils/testingutils/docker",
+    tags = ["requires_docker"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":controllers",
-        "//src/cloud/jobs/elastic_migration/schema",
-        "//src/utils/testingutils/docker",
         "@com_github_olivere_elastic_v7//:elastic",
-        "@com_github_stretchr_testify//assert",
-        "@com_github_stretchr_testify//require",
+        "@com_github_ory_dockertest_v3//:dockertest",
+        "@com_github_ory_dockertest_v3//docker",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@io_etcd_go_etcd_client_v3//:client",
     ],
 )

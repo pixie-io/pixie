@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package testingutils
+package docker
 
 import (
 	"fmt"

@@ -41,7 +41,7 @@ pl_go_test(
     deps = [
         ":md",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/utils/testingutils",
+        "//src/utils/testingutils/docker",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sirupsen_logrus//:logrus",
