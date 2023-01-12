@@ -16,48 +16,221 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const normalRegExp = new RegExp('[^a-z0-9/]+', 'gi');
+const ALLOWED_CHARS = new Set('abcdefghijklmnopqrstuvwxyz01234567890/'.split(''));
 
-/** Turns "  px/be_spoke-  " into "px/bespoke". That is: lowercase, remove anything that isn't alphanum or a slash. */
-export function normalize(s: string): string {
-  return s.toLowerCase().replace(normalRegExp, '');
+interface ScoredStringMatch {
+  /** Whether the search string is a reasonably confident match for the source string */
+  isMatch: boolean;
+  /** 0 means the search was an exact copy of the source. Higher numbers are weaker matches; Infinity mean no match. */
+  distance: number;
+  /** If there was a match, this is each index into the source string where an individual character matched. */
+  highlights: number[];
 }
 
 /**
- * Highlights the first occurrence, character by character, of the search string in the source string.
- * Works as if 'search' became the regular expression /^.*s.*e.*a.*r.*c.*h.*$/.
- * Ignores characters that would be removed by {@link normalize}, and ignores case.
+ * A faster (but much less compact) way of doing this:
+ *   const out = str.toLowerCase().split('').map((c, i) => ({ c, i })).filter(({ c }) => ALLOWED_CHARS.has(c));
+ *   const norm = out.map(({ c }) => c).join('');
+ * Handling it the long way is noticeably faster when `highlightScoreMatch` gets called hundreds of times per render.
  *
- * For example: searching for 'foobar' in 'baz/foo_bar' would highlight like: 'baz/FOO_BAR'.
- * Searching for 'foobar' in 'faz/foobar' would highlight 'Faz/fOOBAR'.
- * An incomplete match highlights nothing.
- *
- * Returns an array of positions in the source string that should be highlighted.
- * Returns an empty array if the match was incomplete (for instance, 'scorch' would not match 'search').
+ * @param str String to normalize
+ * @returns That string, lowercased and with forbidden characters removed; plus a mapping back to the original string.
  */
-export function highlightMatch(search: string, source: string): number[] {
-  const highlights = [];
+function normForScore(str: string): { norm: string, chars: Array<{ i: number, c: string }> } {
+  let j = 0;
+  const out = Array(str.length).fill(0);
+  let norm = '';
+  for (let i = 0; i < str.length; i++) {
+    const c = str.substring(i, i + 1).toLowerCase();
+    if (ALLOWED_CHARS.has(c)) {
+      out[j] = { i, c };
+      norm += c;
+      j++;
+    }
+  }
+  out.length = j; // Faster to overallocate and cut off at the end than to keep growing the array.
+  return { chars: out, norm };
+}
 
-  let sourceOffset = 0;
-  let searchOffset = 0;
-  for (; searchOffset < search.length && sourceOffset < source.length; searchOffset++) {
-    const c = normalize(search[searchOffset]);
-    if (!c.length) continue; // Skip characters we don't match against
-    while (sourceOffset < source.length) {
-      const s = normalize(source[sourceOffset]);
-      if (s.length && s === c) {
-        highlights.push(sourceOffset);
-        sourceOffset++;
-        break;
+// Some matches are just too far fetched to make sense, so filter those out
+function isMatchGoodEnough(searchLen: number, sourceLen: number, distance: number, highlights: number[]): boolean {
+  const min = Math.min(searchLen, sourceLen);
+  // Must highlight at least half of the smaller string
+  if (highlights.length <= Math.ceil(min / 2)) return false;
+  // Edit distance should be within reason (too high, and we probably have a totally unrelated string)
+  if (distance >= (Math.max(searchLen, sourceLen) * 0.75)) return false;
+  return true;
+}
+
+/**
+ * The complex case for {@link highlightScoredMatch}.
+ * Does Optimal String Alignment, with weighted costs for different transformations, and keeps track of the "path" it
+ * takes so it can highlight the characters that contributed to the match.
+ * See: https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance#Optimal_string_alignment_distance
+ *
+ * This function is only called if {@link highlightScoredMatch} could not cheaply find a simpler match.
+ * Both search and source are the results of pre-normalizing and tracking indices into the original strings.
+ */
+function optimalStringAlignmentAndHighlight(
+  search: Array<{ i: number, c: string }>,
+  source: Array<{ i: number, c: string }>,
+): ScoredStringMatch {
+  const highlights = new Set<number>();
+  const d = Array(search.length + 1);
+  for (let di = 0; di <= search.length; di++) {
+    d[di] = Array(source.length + 1).fill(0);
+    d[di][0] = di;
+  }
+  for (let dj = 0; dj <= source.length; dj++) d[0][dj] = dj;
+
+  // We use this to build the highlights after finding the score. See below
+  const prev = new Map<string, { k: number, l: number, op: 'del' | 'ins' | 'nop' | 'sub' | 'swp' | 'fswp' }>();
+
+  for (let k = 1; k <= search.length; k++) {
+    for (let l = 1; l <= source.length; l++) {
+      const canSubstitute = search[k - 1].c !== source[l - 1].c;
+      const canSwap = k > 1 && l > 1
+        && search[k - 1].c === source[l - 2].c
+        && search[k - 2].c === source[l - 1].c;
+      const canSwapFar = k > 2 && l > 2
+        && search[k - 1].c === source[l - 3].c
+        && search[k - 3].c === source[l - 1].c;
+
+      // Insert and delete "cost" more than substitution, which costs more than swapping.
+      // This means we're not tracking "how many edits does it take"; we're preferring edits that look better to humans.
+      const deleteDist = d[k - 1][l] + 1;
+      const insertDist = d[k][l - 1] + 1;
+      const substituteDist = canSubstitute ? d[k - 1][l - 1] + 0.75 : Infinity;
+      const noopDist = canSubstitute ? Infinity : d[k - 1][l - 1];
+      const swapDist = canSwap ? d[k - 2][l - 2] + 0.50 : Infinity;
+      const farSwapDist = canSwapFar ? d[k - 3][l - 3] + 0.70 : Infinity;
+      d[k][l] = Math.min(deleteDist, insertDist, substituteDist, noopDist, swapDist, farSwapDist);
+
+      // Keep track of the path we took, so we can trace it back for highlights later
+      const pk = `${k},${l}`;
+      switch (d[k][l]) {
+        case deleteDist: prev.set(pk, { k: k - 1, l: l, op: 'del' }); break;
+        case insertDist: prev.set(pk, { k: k, l: l - 1, op: 'ins' }); break;
+        case substituteDist: prev.set(pk, { k: k - 1, l: l - 1, op: 'sub' }); break;
+        case noopDist: prev.set(pk, { k: k - 1, l: l - 1, op: 'nop' }); break;
+        case swapDist: prev.set(pk, { k: k - 2, l: l - 2, op: 'swp' }); break;
+        case farSwapDist: prev.set(pk, { k: k - 1, l: l - 1, op: 'fswp' }); break;
+        default: throw new Error('Impossible: distance matrix made an illegal operation');
       }
-      sourceOffset++;
     }
   }
 
-  // If the match was not complete, treat it as no match.
-  if (highlights.length < normalize(search).length) {
-    return [];
+  // Retrace the steps we took to find the optimal string alignment, to mark which characters in the source string were
+  // actually kept from the search string (that means characters that were not inserts or deletes or substitutions).
+  // Structurally, this ends up looking a lot like Dijkstra's algorithm for pathfinding.
+  let ks = search.length;
+  let ls = source.length;
+  while (ks > 0 && ls > 0) {
+    const { k, l, op } = prev.get(`${ks},${ls}`);
+    if (op === 'swp') {
+      // Add both characters that moved
+      highlights.add(source[ls - 1].i);
+      highlights.add(source[l].i);
+    } else if (op === 'fswp') {
+      // Same, but the distance was greater
+      highlights.add(source[ls - 1].i);
+      highlights.add(source[ls - 3].i);
+    } else if (op === 'nop') {
+      // No-op means that character existed in the source and the search in the same relative position.
+      highlights.add(source[l].i);
+    }
+    ls = l;
+    ks = k;
   }
 
-  return highlights;
+  const distance = d[search.length][source.length];
+  const h = [...highlights];
+  h.sort((a, b) => a - b);
+  if (isMatchGoodEnough(search.length, source.length, distance, h)) {
+    return { isMatch: true, distance, highlights: h };
+  }
+
+  return { isMatch: false, distance: Infinity, highlights: [] };
+}
+
+/**
+ * Performs a fuzzy string match, scores match strength, and highlights contributing characters in the source string.
+ *
+ * @param search What to look for
+ * @param source Where to look for it
+ * @returns Highlights indices in the source string that resembled the search, and returns the strength of the match.
+ *          A strength of 0 means perfect match (source === search); Infinity means no match.
+ */
+export function highlightScoredMatch(search: string, source: string): ScoredStringMatch {
+  const failCase = { isMatch: false, distance: Infinity, highlights: [] };
+
+  // Before we begin, normalize both the search and the source.
+  const { chars: searchChars, norm: searchNorm } = normForScore(search);
+  const { chars: sourceChars, norm: sourceNorm } = normForScore(source);
+
+  // Perfect match: distance is 0
+  if (searchNorm === sourceNorm) {
+    return {
+      isMatch: true,
+      distance: 0,
+      highlights: sourceChars.map(({ i }) => i),
+    };
+  }
+
+  // Simple substring match: distance is the length difference between the strings
+  const exactSubstringIndex = sourceNorm.indexOf(searchNorm);
+  if (exactSubstringIndex >= 0) {
+    const start = sourceChars[exactSubstringIndex].i;
+    // The edit distance for a substring is quite high, but substring matches are often better than typo matches.
+    const distance = Math.ceil((sourceChars.length - searchChars.length) / 3);
+    const highlights = Array(searchChars.length);
+    for (let j = 0; j < searchChars.length; j++) {
+      highlights[j] = start + searchChars[j].i;
+    }
+    if (isMatchGoodEnough(search.length, source.length, distance * 3, highlights)) {
+      return { isMatch: true, distance, highlights };
+    } else {
+      // Too far apart, return early
+      return failCase;
+    }
+  }
+
+  // Check if the strings have anything in common at all before we proceed with the expensive match...
+  if (!sourceChars.some(({ c }) => searchNorm.includes(c))) {
+    return failCase;
+  }
+
+  return optimalStringAlignmentAndHighlight(searchChars, sourceChars);
+}
+
+/**
+ * Calls {@link highlightScoredMatch}, splitting the source string into namespaced parts to search them individually.
+ * Then returns the best match it finds this way.
+ *
+ * For example, search=`pod`, source=`px/pod`, delimiter=`/` -> { isMatch: true, distance: 0, highlights: [3, 4, 5] }
+ *
+ * @param search String to look for
+ * @param source String to look into, will be split on namespaceDelimiter
+ * @param namespaceDelimiter What character separates parts of the source string
+ * @returns
+ */
+export function highlightNamespacedScoredMatch(
+  search: string,
+  source: string,
+  namespaceDelimiter: string,
+): ScoredStringMatch {
+  if (search.includes(namespaceDelimiter) || !source.includes(namespaceDelimiter)) {
+    return highlightScoredMatch(search, source);
+  }
+  const parts = source.split(namespaceDelimiter).filter(p => p);
+  const matches = [highlightScoredMatch(search, source)];
+  let sumLen = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const match = highlightScoredMatch(search, parts[i]);
+    for (let j = 0; j < match.highlights.length; j++) match.highlights[j] += sumLen;
+    sumLen += 1 + parts[i].length;
+    matches.push(match);
+  }
+  matches.sort((a, b) => a.distance - b.distance);
+  return matches[0];
 }

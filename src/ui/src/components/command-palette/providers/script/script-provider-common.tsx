@@ -164,28 +164,6 @@ export function getOnSelectSetKeyVal(
   };
 }
 
-export function getStringHighlightSortFn(search: string): (a: string, am: number[], b: string, bm: number[]) => number {
-  return (a, am, b, bm) => {
-    const isSubstringDistance = Number(b.includes(search)) - Number(a.includes(search));
-
-    // More characters matching is the most important part of match strength
-    const matchDistance = bm.length - am.length;
-
-    // If two suggestions matched the same number of characters, the one with less gap between matches is better
-    const spread = (m: number[]) => m.reduce((o, c, i) => o + c - (m[i - 1] ?? 0), 0);
-    const matchSpreadDistance = spread(am) - spread(bm);
-
-    // If there's still a tie, just sort alphabetically
-    const alphaDistance = a.localeCompare(b);
-
-    // Combine the scores by priority to sort; stay in range [-1, 0, 1] so it's easier to combine with other sorts
-    return Math.sign((isSubstringDistance * 1e3)
-      + (matchDistance * 1e2)
-      + (matchSpreadDistance * 10)
-      + alphaDistance);
-  };
-}
-
 /**
  * If the selection covers exactly one key:value pair (even with an empty value), return those tokens; or else nothing.
  * Selecting more than one key, more than one value, or one of each but they're from different pairs, is invalid.

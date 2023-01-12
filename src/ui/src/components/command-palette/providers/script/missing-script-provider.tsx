@@ -24,13 +24,12 @@ import { PixieCommandIcon as ScriptIcon } from 'app/components';
 import { parse } from 'app/components/command-palette/parser';
 import { CommandProvider } from 'app/components/command-palette/providers/command-provider';
 import { ScriptsContext } from 'app/containers/App/scripts-context';
-import { highlightMatch } from 'app/utils/string-search';
+import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
 
 import {
   CompletionDescription,
   CompletionLabel,
   getSelectedKeyAndValueToken,
-  getStringHighlightSortFn,
   quoteIfNeeded,
 } from './script-provider-common';
 import {
@@ -75,7 +74,7 @@ export const useMissingScriptProvider: CommandProvider = () => {
     // If there's a script:something but it doesn't match a known script yet, filter the possible matches based on that
     if (hasScriptKey && !script && keyToken?.value !== 'script') {
       const partial = parsed.kvMap.get('script');
-      possibleScripts = possibleScripts.filter(({ id }) => highlightMatch(partial, id).length > 0);
+      possibleScripts = possibleScripts.filter(({ id }) => highlightScoredMatch(partial, id).highlights.length > 0);
     }
 
     // Now, look for scripts in the remaining options that have at least one of the args present in the input.
@@ -88,17 +87,19 @@ export const useMissingScriptProvider: CommandProvider = () => {
       const candidates = argScript.vis.variables.map(v => v.name);
       const matches = candidates.map(c => {
         for (const p of presentKeys) {
-          const h = highlightMatch(p, c);
-          if (!h.length) return null;
-          return { arg: c, search: p, highlight: h };
+          const h = highlightScoredMatch(p, c);
+          return { arg: c, search: p, match: h };
         }
-      }).filter(m => m);
+      }).filter(m => m.match.isMatch);
       if (!matches.length) continue; // Only looking for scripts where at least one arg matches
 
-      matches.sort((ma, mb) => mb.highlight.length - ma.highlight.length);
+      matches.sort((ma, mb) => ma.match.distance - mb.match.distance);
       const goToArg = matches[0];
-      const adjustedHighlight = goToArg.highlight.map(v => v + `${argScript.id} (`.length);
+      goToArg.match.distance += 1; // Penalize arg and entity matches compared to script name matches for sorting later
+      const adjustedHighlight = goToArg.match.highlights.map(v => v + `${argScript.id} (`.length);
       completionsFromArgMatch.push({
+        match: goToArg.match,
+        forScript: argScript.id,
         heading: 'Scripts',
         key: `missing_script_entity_${argScript.id}`,
         description: (
@@ -134,10 +135,6 @@ export const useMissingScriptProvider: CommandProvider = () => {
       });
     }
 
-    // Clear out because we're matching on args now, rather than a search string
-    // TODO: Instead, we should keep both, and sort more intelligently. That's a higher-level task than this file.
-    if (completionsFromArgMatch.length) possibleScripts = [];
-
     // If there are no keys at all yet, just filter the script list
     const completionsFromEntityMatch = [];
     if (!keyToken && valueToken?.value.length && possibleScripts.length > 0) {
@@ -147,13 +144,22 @@ export const useMissingScriptProvider: CommandProvider = () => {
 
         // TODO: This is wrong if we're matching on an arg with a bare value token. Gotta split that logic out.
         possibleScripts = possibleScripts.filter(({ id }) => (
-          highlightMatch(valueToken.value, id).length > 0
+          highlightNamespacedScoredMatch(valueToken.value, id, '/').isMatch
         ));
         for (const scriptId in matchedByEntity) {
           const cs = scripts.get(scriptId);
           const goToArg = [...Object.keys(matchedByEntity[scriptId])][0];
 
           completionsFromEntityMatch.push({
+            match: {
+              isMatch: true,
+              // This match came from Elastic, which is using a totally different matching method than the UI does.
+              // So, we roughly convert the quality of that match to vaguely resemble what the UI measures.
+              // We also penalize it a little bit compared to arg matches and script name matches for sorting.
+              distance: Math.abs(goToArg.length - matchedByEntity[scriptId][goToArg][0].matchedIndexes.length) + 2,
+              highlights: [], // We're not actually highlighting here; the search was run against a different string.
+            },
+            forScript: scriptId,
             heading: 'Scripts',
             key: `missing_script_entity_${scriptId}`,
             description: (
@@ -195,24 +201,22 @@ export const useMissingScriptProvider: CommandProvider = () => {
 
     const highlightedIds = possibleScripts.map(s => ({
       script: s,
-      highlights: highlightMatch(parsed.kvMap?.get('script') ?? valueToken?.value ?? parsed.input, s.id),
+      match: highlightNamespacedScoredMatch(
+        parsed.kvMap?.get('script') ?? valueToken?.value ?? parsed.input,
+        s.id,
+        '/',
+      ),
     }));
 
-    const sort = getStringHighlightSortFn(parsed.kvMap?.get('script') ?? '');
-    highlightedIds.sort((a, b) => sort(a.script.id, a.highlights, b.script.id, b.highlights));
-
-    // TODO: The sorting and filtering here is not very good. Scratch pad should always be an option at the top, etc.
-    //  Shorter matches with similar distance should come before others (`pod` should see `px/pod` before `px/node`)
-    //  And we're naively finding the first match of each character, but there can be better highlights.
-    //  We could do something silly: split on the slash if the partial doesn't have a slash, that'd fix that fast.
-
-    const completionsFromNameMatch = highlightedIds.map(({ script: cs, highlights }) => ({
+    const completionsFromNameMatch = highlightedIds.map(({ script: cs, match }) => ({
+      match,
+      forScript: cs.id,
       heading: 'Scripts',
       key: `missing_script_${cs.id}`,
       description: <CompletionDescription title={cs.id} body={cs.description} />,
       label: (
         // eslint-disable-next-line react-memo/require-usememo
-        <CompletionLabel input={cs.id} icon={<ScriptIcon />} highlights={highlights} />
+        <CompletionLabel input={cs.id} icon={<ScriptIcon />} highlights={match.highlights} />
       ),
       onSelect: () => {
         const argNames = cs.vis.variables.map(v => v.name);
@@ -231,12 +235,21 @@ export const useMissingScriptProvider: CommandProvider = () => {
       },
     }));
 
-    const completions = [...completionsFromNameMatch, ...completionsFromArgMatch, ...completionsFromEntityMatch];
+    // Now combine all of the suggestion types, but only keep one suggestion for each script if multiple exist.
+    const seenScripts = new Set<string>();
+    const completions = [];
+    for (const comp of [...completionsFromNameMatch, ...completionsFromArgMatch, ...completionsFromEntityMatch]) {
+      if (seenScripts.has(comp.forScript)) continue;
+      seenScripts.add(comp.forScript);
+      completions.push(comp);
+    }
+
+    completions.sort((a, b) => a.match.distance - b.match.distance);
 
     return {
       providerName: 'PxL Scripts',
-      completions: completions.slice(0, 5),
-      hasAdditionalMatches: completions.length > 5,
+      completions: completions.slice(0, 10),
+      hasAdditionalMatches: completions.length > 10,
     };
   }, [scripts, client, clusterUID]);
 };
