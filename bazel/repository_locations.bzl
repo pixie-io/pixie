@@ -396,6 +396,11 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/pixie-io/libuuid/archive/0a6d600cab6aaa4a6d6b268e6edaab3addbb0a6b.tar.gz",
         ],
     ),
+    cpuinfo = dict(
+        sha256 = "18eca9bc8d9c4ce5496d0d2be9f456d55cbbb5f0639a551ce9c8bac2e84d85fe",
+        strip_prefix = "cpuinfo-5e63739504f0f8e18e941bd63b2d6d42536c7d90",
+        urls = ["https://github.com/pytorch/cpuinfo/archive/5e63739504f0f8e18e941bd63b2d6d42536c7d90.tar.gz"],
+    ),
 )
 
 # To modify one of the forked repos below:
