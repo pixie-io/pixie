@@ -27,6 +27,7 @@ LLVM_LIBSTDCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}.tar.gz"
 LLVM_LIBCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}-libcxx.tar.gz"
 
 MIN_CLANG_TAR_FILE_NAME="clang-min-${CLANG_TAG}.tar.gz"
+CLANG_NO_DEP_LOCATION="/opt/clang-${CLANG_VERSION}-nodeps-build"
 
 pushd "/opt/libcxx-${CLANG_VERSION}"
 tar -czf "/image/${LIBCXX_TAR_FILE}" lib include
@@ -56,11 +57,11 @@ fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
     -t deb \
     -n "clang-${CLANG_VERSION}" \
     -v "${CLANG_TAG}" \
-    --prefix /opt "clang-${CLANG_VERSION}"
+    --prefix /opt/px_dev/tools "clang-${CLANG_VERSION}"
 
 tmpdir=$(mktemp -d)
-cp -a /opt/"clang-${CLANG_VERSION}"/bin/clang-format "${tmpdir}"
-cp -a /opt/"clang-${CLANG_VERSION}"/bin/clang-tidy "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-format "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-tidy "${tmpdir}"
 
 pushd "${tmpdir}"
 
@@ -69,7 +70,7 @@ fpm -p "/image/${CLANG_LINTER_DEB_IMAGE_NAME}" \
     -t deb \
     -n "clang-linters-${CLANG_VERSION}" \
     -v "${CLANG_TAG}" \
-    --prefix /opt/px-dev/bin .
+    --prefix /opt/px_dev/bin .
 
 popd
 

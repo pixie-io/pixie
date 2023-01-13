@@ -220,7 +220,7 @@ RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
     -DLLVM_BUILD_LLVM_DYLIB=OFF \
     -DLLVM_BUILD_SHARED_LIBS=OFF \
     -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;llvm;lld;compiler-rt" \
+    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;llvm;lld;compiler-rt" \
     -DCLANG_PLUGIN_SUPPORT=OFF \
   ../llvm-project/llvm
 
