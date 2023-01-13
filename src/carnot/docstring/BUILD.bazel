@@ -40,7 +40,7 @@ pl_go_binary(
     name = "docstring",
     data = [
         "//src/api/python/doc:generate",
-        "//src/carnot/planner/docs:doc_extractor",
+        "//src/carnot/planner/docs:generate",
     ],
     embed = [":docstring_lib"],
 )
