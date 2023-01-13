@@ -121,7 +121,7 @@ bool ColumnIR::NodeMatches(IRNode* node) { return Match(node, ColumnNode()); }
 Status ColumnIR::ResolveType(CompilerState* /* compiler_state */,
                              const std::vector<TypePtr>& parent_types) {
   DCHECK(container_op_parent_idx_set_);
-  DCHECK_LT(container_op_parent_idx_, parent_types.size());
+  DCHECK_LT(container_op_parent_idx_, static_cast<int64_t>(parent_types.size()));
   auto parent_table = std::static_pointer_cast<TableType>(parent_types[container_op_parent_idx_]);
   auto type_or_s = parent_table->GetColumnType(col_name_);
   if (!type_or_s.ok()) {

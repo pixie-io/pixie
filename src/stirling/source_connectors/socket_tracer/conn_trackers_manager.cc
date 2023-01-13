@@ -113,7 +113,7 @@ ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolS
 
 ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
-  DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
+  DCHECK_NE(conn_map_key, 0U) << "Connection map key cannot be 0, pid must be wrong";
 
   ConnTrackerGenerations& conn_trackers = conn_id_tracker_generations_[conn_map_key];
   auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id, &trackers_pool_);
@@ -195,8 +195,8 @@ void ConnTrackersManager::CleanupTrackers() {
 }
 
 void ConnTrackersManager::DebugChecks() const {
-  DCHECK_EQ(stats_.Get(StatKey::kTotal),
-            active_trackers_.size() + stats_.Get(StatKey::kReadyForDestruction));
+  DCHECK_EQ(stats_.Get(StatKey::kTotal), static_cast<int64_t>(active_trackers_.size()) +
+                                             stats_.Get(StatKey::kReadyForDestruction));
 }
 
 std::string ConnTrackersManager::DebugInfo() const {

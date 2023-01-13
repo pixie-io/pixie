@@ -53,7 +53,7 @@ struct TableFixture {
   types::ColumnWrapperRecordBatch record_batch() {
     std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
     // Tabletization not yet supported, so expect only one tablet.
-    CHECK_EQ(tablets.size(), 1);
+    CHECK_EQ(tablets.size(), 1U);
     return std::move(tablets.front().records);
   }
   ArrayView<DataElement> elements() const { return kTestTable.elements(); }

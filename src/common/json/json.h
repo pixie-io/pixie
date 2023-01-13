@@ -207,7 +207,7 @@ class JSONObjectBuilder {
   void WriteRepeatedKVs(std::string_view key, const std::vector<std::string_view>& keys,
                         VectorView<std::string> values) {
     DCHECK(!object_ended_);
-    DCHECK_EQ(values.size() % keys.size(), 0);
+    DCHECK_EQ(values.size() % keys.size(), 0U);
 
     writer_.String(key.data(), key.size());
     writer_.StartArray();

@@ -139,7 +139,7 @@ Status UnionNode::OptionallyFlushRowBatchIfTimeout(ExecState* exec_state) {
     return Status::OK();
   }
 
-  DCHECK_GT(column_builders_.size(), 0);
+  DCHECK_GT(column_builders_.size(), 0U);
   if (column_builders_[0]->length()) {
     return FlushBatch(exec_state);
   }

@@ -121,7 +121,7 @@ class TableType : public BaseType {
   }
 
   void AddColumn(std::string col_name, TypePtr type_) {
-    DCHECK_EQ(0, map_.count(col_name)) << absl::Substitute(
+    DCHECK_EQ(0U, map_.count(col_name)) << absl::Substitute(
         "Cannot AddColumn '$0'. Column already exists in type: $1", col_name, DebugString());
     map_.insert({col_name, type_});
     ordered_col_names_.push_back(col_name);

@@ -725,7 +725,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
                                                    parsed_arg_names, arg_annotations_objs, body,
                                                    std::placeholders::_1, std::placeholders::_2),
                                          this));
-  DCHECK_LE(node->decorators.size(), 1);
+  DCHECK_LE(node->decorators.size(), 1U);
   for (const auto& d : node->decorators) {
     // Each decorator should be a function that takes in the defined_func as an argument.
     PL_ASSIGN_OR_RETURN(auto dec_fn, Process(d, OperatorContext{{}, ""}));

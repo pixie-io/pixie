@@ -301,25 +301,25 @@ class StoreWithRowTimeAccounting {
 
   RowID BatchFirstRowID(BatchID batch_id) const {
     DCHECK_GE(batch_id, first_batch_id_);
-    DCHECK_LT(batch_id, first_batch_id_ + batches_.size());
+    DCHECK_LT(batch_id, first_batch_id_ + static_cast<int64_t>(batches_.size()));
     return row_ids_[batch_id - first_batch_id_].first;
   }
 
   RowID BatchLastRowID(BatchID batch_id) const {
     DCHECK_GE(batch_id, first_batch_id_);
-    DCHECK_LT(batch_id, first_batch_id_ + batches_.size());
+    DCHECK_LT(batch_id, first_batch_id_ + static_cast<int64_t>(batches_.size()));
     return row_ids_[batch_id - first_batch_id_].second;
   }
 
   TBatch& GetBatchFromBatchID(BatchID batch_id) {
     DCHECK_GE(batch_id, first_batch_id_);
-    DCHECK_LT(batch_id, first_batch_id_ + batches_.size());
+    DCHECK_LT(batch_id, first_batch_id_ + static_cast<int64_t>(batches_.size()));
     return batches_[batch_id - first_batch_id_];
   }
 
   const TBatch& GetBatchFromBatchID(BatchID batch_id) const {
     DCHECK_GE(batch_id, first_batch_id_);
-    DCHECK_LT(batch_id, first_batch_id_ + batches_.size());
+    DCHECK_LT(batch_id, first_batch_id_ + static_cast<int64_t>(batches_.size()));
     return batches_[batch_id - first_batch_id_];
   }
 

@@ -89,7 +89,7 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
 
   std::vector<OperatorIR*> grpc_sources;
   for (const auto& sink : sinks) {
-    DCHECK_GE(sinks[0].second.size(), 1);
+    DCHECK_GE(sinks[0].second.size(), 1U);
     for (int64_t agent_id : sink.second) {
       PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
       PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink.first, agent_id));

@@ -30,7 +30,7 @@ StatusOr<absl::flat_hash_set<OperatorIR*>> LimitPushdownRule::NewLimitParents(
     OperatorIR* current_node) {
   // Maps we can simply push up the chain.
   if (Match(current_node, Map())) {
-    DCHECK_EQ(1, current_node->parents().size());
+    DCHECK_EQ(1U, current_node->parents().size());
     // Don't push a Limit earlier than a PEM-only Map, because we need to ensure that after
     // splitting on Limit nodes, we don't end up with a PEM-only map on the Kelvin side of
     // the distributed plan.
@@ -67,7 +67,7 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
   auto graph = ir_node->graph();
 
   LimitIR* limit = static_cast<LimitIR*>(ir_node);
-  DCHECK_EQ(1, limit->parents().size());
+  DCHECK_EQ(1U, limit->parents().size());
   OperatorIR* limit_parent = limit->parents()[0];
 
   PL_ASSIGN_OR_RETURN(auto new_parents, NewLimitParents(limit_parent));

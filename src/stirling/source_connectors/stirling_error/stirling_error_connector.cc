@@ -39,7 +39,7 @@ Status StirlingErrorConnector::InitImpl() {
 Status StirlingErrorConnector::StopImpl() { return Status::OK(); }
 
 void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 2) << "StirlingErrorConnector has two data tables.";
+  DCHECK_EQ(data_tables_.size(), 2U) << "StirlingErrorConnector has two data tables.";
 
   if (data_tables_[kStirlingErrorTableNum] != nullptr) {
     TransferStirlingErrorTable(ctx, data_tables_[kStirlingErrorTableNum]);

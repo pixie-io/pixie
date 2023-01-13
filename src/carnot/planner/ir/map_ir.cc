@@ -159,7 +159,7 @@ Status MapIR::UpdateOpAfterParentTypesResolvedImpl() {
 }
 
 Status MapIR::ResolveType(CompilerState* compiler_state) {
-  DCHECK_EQ(1, parent_types().size());
+  DCHECK_EQ(1U, parent_types().size());
   // keep_input_columns_ = true case should be handled by UpdateOpAfterParentTypesResolvedImpl.
   DCHECK(!keep_input_columns_);
   auto table_type = TableType::Create();

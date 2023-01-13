@@ -234,7 +234,7 @@ Status DynamicBPFTraceConnector::StopImpl() {
 }
 
 void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1) << "Only one table is allowed per DynamicBPFTraceConnector.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "Only one table is allowed per DynamicBPFTraceConnector.";
   data_table_ = data_tables_[0];
   if (data_table_ == nullptr) {
     return;

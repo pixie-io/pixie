@@ -99,7 +99,7 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
 }
 
 void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 1) << "JVMStats only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "JVMStats only has one data table.";
 
   DataTable* data_table = data_tables_[0];
 

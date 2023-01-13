@@ -101,7 +101,7 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
       operator_output_annotations_[op][expr.name] = expr.node->annotations();
     }
   } else if (Match(op, Filter()) || Match(op, Limit())) {
-    DCHECK_EQ(1, op->parents().size());
+    DCHECK_EQ(1U, op->parents().size());
     operator_output_annotations_[op] = operator_output_annotations_.at(op->parents()[0]);
   }
 

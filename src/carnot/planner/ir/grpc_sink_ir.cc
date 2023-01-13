@@ -66,7 +66,7 @@ Status GRPCSinkIR::ToProto(planpb::Operator* op, int64_t agent_id) const {
 }
 
 Status GRPCSinkIR::ResolveType(CompilerState* /* compiler_state */) {
-  DCHECK_EQ(1, parent_types().size());
+  DCHECK_EQ(1U, parent_types().size());
   // When out_columns_ is empty, the GRPCSink just copies the parent type.
   if (out_columns_.size() == 0) {
     PL_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));

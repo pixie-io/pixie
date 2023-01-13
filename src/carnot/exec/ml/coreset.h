@@ -54,7 +54,7 @@ class WeightedPointSet {
 
   static std::shared_ptr<WeightedPointSet> Union(
       const std::vector<std::shared_ptr<WeightedPointSet>>& point_sets) {
-    DCHECK_GT(point_sets.size(), 0);
+    DCHECK_GT(point_sets.size(), 0U);
     int union_size = 0;
     for (auto set : point_sets) {
       union_size += set->size();

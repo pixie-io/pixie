@@ -168,7 +168,7 @@ static inline std::string TypeToOldStyleDebugString(std::shared_ptr<TableType> t
 }
 
 Status UnionIR::UpdateOpAfterParentTypesResolvedImpl() {
-  DCHECK_GT(parents().size(), 0);
+  DCHECK_GT(parents().size(), 0U);
   auto base_parent_type = parents()[0]->resolved_table_type();
 
   std::vector<InputColumnMapping> mappings;
@@ -213,7 +213,7 @@ Status UnionIR::UpdateOpAfterParentTypesResolvedImpl() {
 }
 
 Status UnionIR::ResolveType(CompilerState* /* compiler_state */) {
-  DCHECK_LE(1, parent_types().size());
+  DCHECK_LE(1U, parent_types().size());
   // The types were checked in UpdateOpAfterParentTypesResolved, so no need to check here.
   auto type = parent_types()[0]->Copy();
   return SetResolvedType(type);

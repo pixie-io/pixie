@@ -43,7 +43,7 @@ namespace {
 std::string ToString(const stirlingpb::TableSchema& schema,
                      const ColumnWrapperRecordBatch& record_batch, size_t index) {
   DCHECK(!record_batch.empty());
-  DCHECK_EQ(schema.elements_size(), record_batch.size());
+  DCHECK_EQ(schema.elements_size(), static_cast<int>(record_batch.size()));
   DCHECK_LT(index, record_batch[0]->Size());
 
   std::string out;
@@ -104,7 +104,7 @@ std::string ToString(const stirlingpb::TableSchema& schema,
 
 std::vector<std::string> ToString(const stirlingpb::TableSchema& schema,
                                   const types::ColumnWrapperRecordBatch& record_batch) {
-  DCHECK_EQ(schema.elements_size(), record_batch.size());
+  DCHECK_EQ(schema.elements_size(), static_cast<int>(record_batch.size()));
 
   const size_t num_records = record_batch.front()->Size();
 

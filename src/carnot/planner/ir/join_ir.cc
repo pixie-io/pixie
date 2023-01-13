@@ -306,7 +306,7 @@ Status JoinIR::UpdateOpAfterParentTypesResolvedImpl() {
 }
 
 Status JoinIR::ResolveType(CompilerState* compiler_state) {
-  DCHECK_EQ(2, parent_types().size());
+  DCHECK_EQ(2U, parent_types().size());
 
   // Check that the join_on columns have the same types.
   for (const auto& [idx, left_col] : Enumerate(left_on_columns_)) {

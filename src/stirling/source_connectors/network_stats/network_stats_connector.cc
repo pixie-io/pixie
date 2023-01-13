@@ -41,7 +41,7 @@ Status NetworkStatsConnector::InitImpl() {
 Status NetworkStatsConnector::StopImpl() { return Status::OK(); }
 
 void NetworkStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 1) << "NetworkStatsConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "NetworkStatsConnector only has one data table.";
 
   if (data_tables_[kNetStatsTableNum] != nullptr) {
     TransferNetworkStatsTable(ctx, data_tables_[kNetStatsTableNum]);

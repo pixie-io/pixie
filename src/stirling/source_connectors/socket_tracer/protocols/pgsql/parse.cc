@@ -144,7 +144,7 @@ Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc) {
 
     row_desc->fields.push_back(std::move(field));
   }
-  DCHECK_EQ(decoder.BufSize(), 0);
+  DCHECK_EQ(decoder.BufSize(), 0U);
   return Status::OK();
 }
 

@@ -376,11 +376,11 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
     RegularMessage req;                                   \
     req.tag = cur_iter->tag;                              \
     req.timestamp_ns = req_resp.req.timestamp_ns;         \
-    DCHECK_NE(req.timestamp_ns, 0);                       \
+    DCHECK_NE(req.timestamp_ns, 0U);                      \
     req.payload = req_resp.req.ToString();                \
     RegularMessage resp;                                  \
     resp.timestamp_ns = req_resp.resp.timestamp_ns;       \
-    DCHECK_NE(resp.timestamp_ns, 0);                      \
+    DCHECK_NE(resp.timestamp_ns, 0U);                     \
     resp.payload = req_resp.resp.ToString();              \
     records.push_back({std::move(req), std::move(resp)}); \
   } else {                                                \

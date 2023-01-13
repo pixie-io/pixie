@@ -25,8 +25,8 @@
 #include <string>
 #include <utility>
 
-DEFINE_int32(http_body_limit_bytes, 1024,
-             "The amount of an HTTP body that will be returned on a parse");
+DEFINE_uint32(http_body_limit_bytes, 1024,
+              "The amount of an HTTP body that will be returned on a parse");
 
 namespace px {
 namespace stirling {

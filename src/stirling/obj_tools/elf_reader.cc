@@ -317,7 +317,7 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
   if (symbol_infos_or.ok()) {
     const auto& symbol_infos = symbol_infos_or.ValueOrDie();
     if (!symbol_infos.empty()) {
-      DCHECK_EQ(symbol_infos.size(), 1);
+      DCHECK_EQ(symbol_infos.size(), 1U);
       return symbol_infos.front().address;
     }
   }

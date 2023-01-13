@@ -190,8 +190,8 @@ bool MergeNodesRule::CanMerge(OperatorIR* a, OperatorIR* b) {
     auto filter_b = static_cast<FilterIR*>(b);
     // Filter's output type mirrors its input parent type, so two filters can only be
     // merged if they share the same output type.
-    DCHECK_EQ(1, a->parents().size());
-    DCHECK_EQ(1, b->parents().size());
+    DCHECK_EQ(1U, a->parents().size());
+    DCHECK_EQ(1U, b->parents().size());
     return filter_a->filter_expr()->Equals(filter_b->filter_expr()) &&
            a->parents()[0]->resolved_table_type()->Equals(b->parents()[0]->resolved_table_type());
   } else if (Match(a, Limit())) {
@@ -199,8 +199,8 @@ bool MergeNodesRule::CanMerge(OperatorIR* a, OperatorIR* b) {
     auto limit_b = static_cast<LimitIR*>(b);
     // Limit's output type mirrors its input parent type, so two limits can only be
     // merged if they share the same output type.
-    DCHECK_EQ(1, a->parents().size());
-    DCHECK_EQ(1, b->parents().size());
+    DCHECK_EQ(1U, a->parents().size());
+    DCHECK_EQ(1U, b->parents().size());
     return limit_a->limit_value() == limit_b->limit_value() &&
            a->parents()[0]->resolved_table_type()->Equals(b->parents()[0]->resolved_table_type());
   }

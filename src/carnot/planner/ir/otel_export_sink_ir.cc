@@ -340,7 +340,7 @@ Status OTelExportSinkIR::CopyFromNodeImpl(const IRNode* node,
 }
 
 Status OTelExportSinkIR::ResolveType(CompilerState* compiler_state) {
-  DCHECK_EQ(1, parent_types().size());
+  DCHECK_EQ(1U, parent_types().size());
 
   auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
   auto table = TableType::Create();

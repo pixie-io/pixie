@@ -30,7 +30,7 @@ namespace protocols {
 
 FixedSizeContiguousBuffer::FixedSizeContiguousBuffer(size_t capacity)
     : data_(new uint8_t[capacity]), capacity_(capacity) {
-  DCHECK_GT(capacity, 0);
+  DCHECK_GT(capacity, 0U);
 }
 
 FixedSizeContiguousBuffer::~FixedSizeContiguousBuffer() {
@@ -53,7 +53,7 @@ void FixedSizeContiguousBuffer::RemovePrefix(size_t n) {
 }
 
 uint8_t* FixedSizeContiguousBuffer::Data() {
-  DCHECK_GT(capacity_, 0);
+  DCHECK_GT(capacity_, 0U);
   return data_ + offset_;
 }
 
@@ -273,7 +273,7 @@ void LazyContiguousDataStreamBufferImpl::ShrinkToFit() {
 
 size_t LazyContiguousDataStreamBufferImpl::FirstEventPos() const {
   // This is unsafe, caller must check that there are events.
-  DCHECK_GT(events_.size(), 0);
+  DCHECK_GT(events_.size(), 0U);
   return events_.begin()->first;
 }
 

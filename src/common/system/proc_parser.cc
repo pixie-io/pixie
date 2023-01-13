@@ -430,7 +430,7 @@ StatusOr<size_t> ProcParser::ParseProcPIDPss(const int32_t pid) const {
   while (std::getline(ifs, line)) {
     if (absl::StartsWith(line, "Pss:")) {
       const std::vector<std::string_view> toks = absl::StrSplit(line, ' ', absl::SkipWhitespace());
-      DCHECK_EQ(toks.size(), 3);
+      DCHECK_EQ(toks.size(), 3U);
       DCHECK_EQ(toks[kPssKeyIdx], "Pss:");
       DCHECK_EQ(toks[kUnitsIdx], "kB");
       size_t pss_kb;

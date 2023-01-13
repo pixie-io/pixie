@@ -150,7 +150,7 @@ StatusOr<TypePtr> OperatorIR::DefaultResolveType(const std::vector<TypePtr>& par
   // Only one parent is supported by default. If your new OperatorIR needs more than one parent, you
   // must define a ResolveType function on it with the same signature as this function (same
   // return type and args, but should be an instance method not static).
-  DCHECK_EQ(1, parent_types.size());
+  DCHECK_EQ(1U, parent_types.size());
   return parent_types[0]->Copy();
 }
 

@@ -50,7 +50,7 @@ Status CPUStatBPFTraceConnector::StopImpl() {
 }
 
 void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1) << "CPUStatBPFTraceConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "CPUStatBPFTraceConnector only has one data table.";
 
   auto* data_table = data_tables_[0];
 

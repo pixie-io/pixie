@@ -30,8 +30,8 @@ namespace {
 ConnStats::AggKey BuildAggKey(const upid_t& upid, endpoint_role_t role,
                               const SockAddr& remote_endpoint) {
   // Both local UPID and remote endpoint must be fully specified.
-  DCHECK_NE(upid.pid, 0);
-  DCHECK_NE(upid.start_time_ticks, 0);
+  DCHECK_NE(upid.pid, 0U);
+  DCHECK_NE(upid.start_time_ticks, 0U);
   DCHECK(remote_endpoint.family != SockAddrFamily::kUnspecified);
   DCHECK(role != kRoleUnknown);
   return {

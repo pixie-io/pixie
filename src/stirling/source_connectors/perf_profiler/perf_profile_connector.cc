@@ -355,7 +355,7 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
 }
 
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 1);
+  DCHECK_EQ(data_tables_.size(), 1U);
 
   auto* data_table = data_tables_[0];
 

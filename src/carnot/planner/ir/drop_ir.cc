@@ -39,7 +39,7 @@ Status DropIR::CopyFromNodeImpl(const IRNode* node, absl::flat_hash_map<const IR
 }
 
 Status DropIR::ResolveType(CompilerState* /* compiler_state */) {
-  DCHECK_EQ(1, parent_types().size());
+  DCHECK_EQ(1U, parent_types().size());
   auto new_table = std::static_pointer_cast<TableType>(parent_types()[0]->Copy());
   for (const auto& col_name : col_names_) {
     new_table->RemoveColumn(col_name);

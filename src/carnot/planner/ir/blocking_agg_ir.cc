@@ -171,7 +171,7 @@ Status BlockingAggIR::CopyFromNodeImpl(
 }
 
 Status BlockingAggIR::ResolveType(CompilerState* compiler_state) {
-  DCHECK_EQ(1, parent_types().size());
+  DCHECK_EQ(1U, parent_types().size());
   auto new_table = TableType::Create();
   for (const auto& group_col : groups()) {
     PL_RETURN_IF_ERROR(ResolveExpressionType(group_col, compiler_state, parent_types()));

@@ -28,7 +28,7 @@ constexpr std::false_type always_false{};
 
 // MemCopy is provided as a reference as an upper bound.
 // It is not functionally correct on a big-endian machine.
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 T MemCopy(std::string_view buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
@@ -45,7 +45,7 @@ T MemCopy(std::string_view buf) {
 }
 
 // MemCopyLEtoHost is a version that uses memcpy() and lenntoh().
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 T MemCopyLEtoHost(std::string_view buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
@@ -109,7 +109,7 @@ T ByteLoopn(std::string_view buf, uint32_t n = sizeof(T)) {
 // ByteLoopN performs the conversion through a loop.
 // In this version, the number of bytes is communicated through a template parameter.
 // This should enable the compiler to perform loop-unrolling and other optimizations.
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 T ByteLoopN(std::string_view buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
@@ -139,7 +139,7 @@ std::string InitBytes(int size) {
 // NOLINTNEXTLINE: runtime/string
 const std::string kBuf = InitBytes(100);
 
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 // NOLINTNEXTLINE : runtime/references.
 static void BM_MemCopy(benchmark::State& state) {
   for (auto _ : state) {
@@ -148,7 +148,7 @@ static void BM_MemCopy(benchmark::State& state) {
   }
 }
 
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 // NOLINTNEXTLINE : runtime/references.
 static void BM_MemCopyLEtoHost(benchmark::State& state) {
   for (auto _ : state) {
@@ -157,7 +157,7 @@ static void BM_MemCopyLEtoHost(benchmark::State& state) {
   }
 }
 
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 // NOLINTNEXTLINE : runtime/references.
 static void BM_ByteLoop(benchmark::State& state) {
   for (auto _ : state) {
@@ -166,7 +166,7 @@ static void BM_ByteLoop(benchmark::State& state) {
   }
 }
 
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 // NOLINTNEXTLINE : runtime/references.
 static void BM_ByteLoopn(benchmark::State& state) {
   for (auto _ : state) {
@@ -175,7 +175,7 @@ static void BM_ByteLoopn(benchmark::State& state) {
   }
 }
 
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 // NOLINTNEXTLINE : runtime/references.
 static void BM_ByteLoopN(benchmark::State& state) {
   for (auto _ : state) {

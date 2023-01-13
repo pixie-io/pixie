@@ -69,7 +69,7 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 }
 
 void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1) << "PIDCPUUseBPFTraceConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "PIDCPUUseBPFTraceConnector only has one data table.";
 
   auto* data_table = data_tables_[0];
 

@@ -174,7 +174,7 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   PL_RETURN_IF_ERROR(UpdateFilter(filter, column_name_mapping));
 
   // Make the filter's parent its children's new parent.
-  DCHECK_EQ(1, filter->parents().size());
+  DCHECK_EQ(1U, filter->parents().size());
   OperatorIR* filter_parent = filter->parents()[0];
 
   for (OperatorIR* child : filter->Children()) {
@@ -182,7 +182,7 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   }
   PL_RETURN_IF_ERROR(filter->RemoveParent(filter_parent));
 
-  DCHECK_EQ(1, current_node->parents().size());
+  DCHECK_EQ(1U, current_node->parents().size());
   auto new_filter_parent = current_node->parents()[0];
   PL_RETURN_IF_ERROR(filter->AddParent(new_filter_parent));
   PL_RETURN_IF_ERROR(current_node->ReplaceParent(new_filter_parent, filter));

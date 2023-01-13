@@ -42,7 +42,7 @@ Status PIDRuntimeConnector::StopImpl() {
 }
 
 void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1);
+  DCHECK_EQ(data_tables_.size(), 1U);
   DataTable* data_table = data_tables_[0];
 
   if (data_table == nullptr) {

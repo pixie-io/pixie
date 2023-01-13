@@ -186,7 +186,7 @@ ParseResult ParseFramesLoop(message_type_t type, std::string_view buf,
         // Attempt to look for next valid frame boundary.
         size_t pos = FindFrameBoundary<TFrameType, TStateType>(type, buf, 1, state);
         if (pos != std::string::npos) {
-          DCHECK_NE(pos, 0);
+          DCHECK_NE(pos, 0U);
           buf.remove_prefix(pos);
           stop = false;
           push = false;
