@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/utils/testingutils/docker"
+	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/utils/datastore/etcd"
 	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
@@ -56,7 +56,10 @@ func TestDatastore(t *testing.T) {
 		t.Fatal("failed to initialize a pebbledb")
 	}
 
-	et, cleanup := docker.SetupEtcd()
+	et, cleanup, err := testingutils.SetupEtcd()
+	if err != nil {
+		t.Fatal("failed to initialize an embedded etcd")
+	}
 	defer cleanup()
 
 	tests := []struct {

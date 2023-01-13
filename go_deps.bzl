@@ -3487,12 +3487,14 @@ def pl_go_dependencies():
     )
     go_repository(
         name = "io_etcd_go_etcd_raft_v3",
+        build_file_proto_mode = "disable",
         importpath = "go.etcd.io/etcd/raft/v3",
         sum = "h1:kw2TmO3yFTgE+F0mdKkG7xMxkit2duBDa2Hu6D/HMlw=",
         version = "v3.5.0",
     )
     go_repository(
         name = "io_etcd_go_etcd_server_v3",
+        build_file_proto_mode = "disable",
         importpath = "go.etcd.io/etcd/server/v3",
         sum = "h1:jk8D/lwGEDlQU9kZXUFMSANkE22Sg5+mW27ip8xcF9E=",
         version = "v3.5.0",

@@ -18,10 +18,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "docker",
-    srcs = [
-        "elastic.go",
-        "etcd.go",
-    ],
+    srcs = ["elastic.go"],
     importpath = "px.dev/pixie/src/utils/testingutils/docker",
     tags = ["requires_docker"],
     visibility = ["//visibility:public"],
@@ -30,6 +27,5 @@ go_library(
         "@com_github_ory_dockertest_v3//:dockertest",
         "@com_github_ory_dockertest_v3//docker",
         "@com_github_sirupsen_logrus//:logrus",
-        "@io_etcd_go_etcd_client_v3//:client",
     ],
 )
