@@ -135,6 +135,6 @@ cc_library(
 
 filegroup(
     name = "cmake",
-    srcs = glob(["lib/cmake/llvm/**"]),
+    srcs = glob(["lib/cmake/**"]),
     visibility = ["//visibility:public"],
 )

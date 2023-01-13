@@ -291,22 +291,22 @@ REPOSITORY_LOCATIONS = dict(
     ),
     com_llvm_clang_15 = dict(
         sha256 = "fa1198d6fcfb25a43b3ce326f14a874177ede9df1315c2826556742324fc6428",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl7/clang-min-15.0-pl7.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/clang-min-15.0-pl8.tar.gz"],
     ),
     com_llvm_lib = dict(
-        sha256 = "bf0d2fd2d72c7380eab94b10f7cb3d6d1af601a380e3d9b8388baef89a7742ba",
+        sha256 = "9106b0694ec4f16e10425bab2357f861e32c3e49041f0bac51f56c5bba9ea966",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl7/llvm-15.0-pl7.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8.tar.gz"],
     ),
     com_llvm_lib_libcpp = dict(
-        sha256 = "75fcaad98e1e834fb8d35f96e96451ab9502f5def9b8b607056707af5b210935",
+        sha256 = "041598998b833611efa0673c5a2795583257a4171b996ee50e2e130e60c439d7",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl7/llvm-15.0-pl7-libcxx.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8-libcxx.tar.gz"],
     ),
     com_llvm_libcxx = dict(
-        sha256 = "8402ec9ae59f5a58b351505978fadb75a1e6e87dac9272481c7015f0fd34fd63",
+        sha256 = "ef4db0e0e044e41377099ff5ae9570724006539020b8293d8bec76613141d81b",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl7/libcxx-15.0-pl7.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/libcxx-15.0-pl8.tar.gz"],
     ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
