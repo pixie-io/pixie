@@ -13,7 +13,6 @@ require (
 	github.com/bazelbuild/rules_go v0.35.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
-	github.com/bsm/go-vlq v0.0.0-20150828105119-ec6e8d4f5f4e
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/cockroachdb/pebble v0.0.0-20210120202502-6110b03a8a85
 	github.com/dustin/go-humanize v1.0.0
