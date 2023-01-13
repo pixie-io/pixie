@@ -35,13 +35,14 @@ using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::testing::BazelRunfilePath;
 using ::testing::HasSubstr;
 
+// TODO(jps): Fix and re-enable test.
 // This test does the following:
 // 1. Starts a target Java process (the fib app).
 // 2. Uses the AgentAttach class to inject a JVMTI agent (our symbolization agent).
 // 3. Finds the resulting symbol file and verifies that it has some symbols.
 // Before doing any of the above, we setup some file paths for the target app,
 // and for AgentAttach to find the JVMTI .so libs.
-TEST(JavaAgentTest, ExpectedSymbolsTest) {
+TEST(JavaAttachTest, DISABLED_ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
 

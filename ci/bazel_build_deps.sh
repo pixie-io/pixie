@@ -153,8 +153,13 @@ cc_tests="kind(cc_.*, ${tests})"
 go_buildables="kind(go_.*, ${buildables})"
 go_tests="kind(go_.*, ${tests})"
 
-bpf_buildables="attr('tags', 'requires_bpf', ${buildables})"
-bpf_tests="attr('tags', 'requires_bpf', ${tests})"
+# Note that we are lumping tests that require root into the BPF tests below
+# to minimize number of configs.
+# If there are ever a lot of tests with requires_root, a new config is warranted.
+# See also .bazelrc
+
+bpf_buildables="attr('tags', 'requires_bpf|requires_root', ${buildables})"
+bpf_tests="attr('tags', 'requires_bpf|requires_root', ${tests})"
 
 cc_bpf_buildables="kind(cc_.*, ${bpf_buildables})"
 cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
