@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_sh_test")
 
 package(default_visibility = ["//src/carnot:__subpackages__"])
 
@@ -46,7 +46,7 @@ pl_go_binary(
 )
 
 # Test to make sure extraction pipeline works. Test will fail if the docs are not correctly formatted.
-sh_test(
+pl_sh_test(
     name = "docstring_integration_test",
     srcs = [":docstring"],
 )

@@ -16,7 +16,7 @@
 
 load("@amqp_gen_reqs//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("@rules_python//python:python.bzl", "py_test")
+load("//bazel:pl_build_system.bzl", "pl_py_test")
 
 py_library(
     name = "amqp_code_gen",
@@ -36,7 +36,7 @@ py_library(
     ],
 )
 
-py_test(
+pl_py_test(
     name = "amqp_code_gen_test",
     srcs = ["amqp_code_gen_test.py"],
     deps = [

@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_test", "pl_sh_test")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "agent_libs_arg")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -64,7 +64,7 @@ pl_cc_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_wrapper_kprobe_leak_bpf_test",
     srcs = ["stirling_wrapper_kprobe_leak_bpf_test.sh"],
     args = [
@@ -84,7 +84,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_wrapper_bpf_test",
     srcs = ["stirling_wrapper_bpf_test.sh"],
     args = [
@@ -110,7 +110,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_wrapper_bpftrace_bpf_test",
     srcs = ["stirling_wrapper_bpftrace_bpf_test.sh"],
     args = [
@@ -134,7 +134,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_wrapper_container_bpf_test",
     srcs = ["stirling_wrapper_container_bpf_test.sh"],
     args = [
@@ -161,7 +161,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_perf_bpf_test",
     srcs = ["stirling_perf_bpf_test.sh"],
     args = [
@@ -186,7 +186,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_wrapper_jvm_stats_bpf_test",
     srcs = ["stirling_wrapper_jvm_stats_bpf_test.sh"],
     args = [
@@ -214,7 +214,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "stirling_signal_test",
     srcs = ["stirling_signal_test.sh"],
     args = [
@@ -228,7 +228,7 @@ sh_test(
     deps = ["//src/stirling/scripts:sh_library"],
 )
 
-sh_test(
+pl_sh_test(
     name = "probe_cleaner_bpf_test",
     srcs = ["probe_cleaner_bpf_test.sh"],
     args = [

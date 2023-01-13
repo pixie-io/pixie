@@ -20,6 +20,7 @@
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_python//python:defs.bzl", "py_test")
 
 def pl_copts():
     posix_options = [
@@ -414,3 +415,9 @@ def pl_go_test(**kwargs):
 def pl_go_binary(**kwargs):
     _add_no_pie(kwargs)
     go_binary(**kwargs)
+
+def pl_py_test(**kwargs):
+    py_test(**kwargs)
+
+def pl_sh_test(**kwargs):
+    native.sh_test(**kwargs)

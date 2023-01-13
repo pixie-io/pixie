@@ -13,13 +13,14 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("//bazel:pl_build_system.bzl", "pl_sh_test")
 
 sh_library(
     name = "common_library",
     srcs = glob(["*.sh"]),
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_gke_ubuntu_test",
     timeout = "long",
     srcs = ["test_px_on_gke.sh"],
@@ -31,7 +32,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_gke_ubuntu_containerd_test",
     timeout = "long",
     srcs = ["test_px_on_gke.sh"],
@@ -43,7 +44,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_gke_cos_test",
     timeout = "long",
     srcs = ["test_px_on_gke.sh"],
@@ -55,7 +56,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_gke_cost_containerd_test",
     timeout = "long",
     srcs = ["test_px_on_gke.sh"],
@@ -67,7 +68,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_minikube_test",
     timeout = "long",
     srcs = ["test_px_on_minikube.sh"],
@@ -82,7 +83,7 @@ sh_test(
     ],
 )
 
-sh_test(
+pl_sh_test(
     name = "px_on_kind_test",
     timeout = "long",
     srcs = ["test_px_on_kind.sh"],
