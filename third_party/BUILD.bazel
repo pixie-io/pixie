@@ -16,7 +16,6 @@
 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake", "configure_make")
-load("//bazel:pl_build_system.bzl", "cross_compile_configure_options")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -37,7 +36,8 @@ configure_make(
         "--enable-shared=no",
         "--disable-frame-pointers",
         "--enable-libunwind",
-    ] + cross_compile_configure_options,
+        "--host x86_64-unknown-linux-gnu",
+    ],
     lib_source = "@com_github_gperftools_gperftools//:all",
     linkopts = ["-lpthread"],
     out_static_libs = select({
@@ -151,9 +151,15 @@ configure_make(
     configure_options = [
         "-fPIC",
         "-static",
-    ] + cross_compile_configure_options,
+    ] + select({
+        "@platforms//cpu:aarch64": ["linux-aarch64"],
+        "@platforms//cpu:x86_64": ["linux-x86_64"],
+    }),
     lib_source = "@com_github_openssl_openssl//:all",
-    out_lib_dir = "lib64",
+    out_lib_dir = select({
+        "@platforms//cpu:aarch64": "lib",
+        "@platforms//cpu:x86_64": "lib64",
+    }),
     out_static_libs = [
         "libssl.a",
         "libcrypto.a",
