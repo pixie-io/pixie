@@ -212,9 +212,23 @@ func TestDatastore(t *testing.T) {
 						case <-ticker.C:
 							v, err := db.Get("/timed1")
 							require.NoError(t, err)
+
+							ttlTime, _, err := db.GetWithPrefix("___ttl_time___")
+							require.NoError(t, err)
+
 							if time.Since(now) < ttl {
 								assert.Equal(t, "limited1", string(v))
-							} else if v == nil {
+								continue
+							}
+
+							// Key timed1 might have been deleted but the ttl_timer markers
+							// for it seem to still be around. Since these markers should get
+							// deleted immediately after, let's wait a tiny bit longer to check.
+							if len(ttlTime) > 1 {
+								continue
+							}
+
+							if v == nil {
 								// Key timed1 was deleted some time after TTL passed.
 
 								// Key timed2 should still exist since a longer TTL was set on it.
