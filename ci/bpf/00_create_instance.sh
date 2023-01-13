@@ -16,7 +16,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-DEFAULT_IMAGE="projects/pl-dev-infra/global/images/bpf-runner-4-14-176"
+DEFAULT_IMAGE="projects/pl-dev-infra/global/images/bpf-runner-4-14-215"
 IMAGE_TO_USE=""
 
 if [[ $KERNEL_VERSION = '5.19' ]]; then
