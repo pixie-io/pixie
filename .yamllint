@@ -8,3 +8,5 @@ rules:
     check-multi-line-strings: true
   line-length:
     max: 120
+  truthy:
+    check-keys: false
