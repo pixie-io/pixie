@@ -43,15 +43,15 @@ default['fossa']['download_path'] =
 default['fossa']['sha256'] =
   '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
 
-default['golang']['download_path'] =
-  'https://dl.google.com/go/go1.19.4.darwin-amd64.tar.gz'
-default['golang']['sha256'] =
-  '44894862d996eec96ef2a39878e4e1fce4d05423fc18bdc1cbba745ebfa41253'
-
 default['gh']['download_path'] =
   'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_macOS_amd64.tar.gz'
 default['gh']['sha256'] =
   '448d617c11b964cff135bab43f73b321386c09fc5cdd998a17cbfc422f54239e'
+
+default['golang']['download_path'] =
+  'https://dl.google.com/go/go1.19.4.darwin-amd64.tar.gz'
+default['golang']['sha256'] =
+  '44894862d996eec96ef2a39878e4e1fce4d05423fc18bdc1cbba745ebfa41253'
 
 default['golangci-lint']['download_path'] =
   'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-darwin-amd64.tar.gz'

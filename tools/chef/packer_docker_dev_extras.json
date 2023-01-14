@@ -50,7 +50,7 @@
     {
       "inline": [
         "rm -rf /tmp/*",
-        "rm -rf /root/.npm",
+        "rm -rf /opt/chef",
         "rm -rf /var/lib/apt/lists/*"
       ],
       "type": "shell"

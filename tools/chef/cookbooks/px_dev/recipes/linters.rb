@@ -22,7 +22,7 @@ execute 'install go linters' do
 end
 
 execute 'install js linters' do
-  command '/opt/node/bin/npm install -g jshint@2.11.0 yarn@1.22.4'
+  command '/opt/node/bin/npm install -g jshint@2.11.0 && npm cache clean --force'
 end
 
 execute 'install py linters' do

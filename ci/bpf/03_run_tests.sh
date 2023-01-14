@@ -17,7 +17,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 printenv
-git config --global --add safe.directory /px/src/px.dev/pixie
 
 # 4 means that tests not present.
 # 38 means that bes update failed.

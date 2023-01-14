@@ -39,7 +39,7 @@ end
 ENV['PATH'] = "/opt/node/bin:#{ENV['PATH']}"
 
 execute 'install node packages' do
-  command '/opt/node/bin/npm install -g yarn@1.22.4 protobufjs@6.11.2'
+  command '/opt/node/bin/npm install -g yarn@1.22.4 protobufjs@6.11.2 && npm cache clean --force'
 end
 
 execute 'install pbjs/pbts deps' do

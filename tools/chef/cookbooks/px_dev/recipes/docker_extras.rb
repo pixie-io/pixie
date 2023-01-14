@@ -20,3 +20,7 @@
 # this recipe is included after the base recipe).
 ENV['GOPATH'] = '/px'
 ENV['PATH'] = "#{ENV['GOPATH']}/bin:#{ENV['PATH']}"
+
+execute 'mark expected src dir as safe' do
+  command 'git config --global --add safe.directory /px/src/px.dev/pixie'
+end
