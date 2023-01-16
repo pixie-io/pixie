@@ -23,7 +23,7 @@ default['owner'] = 'root'
 default['group'] = 'root'
 
 default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/#{default['bazel']['version']}/bazel-#{default['bazel']['version']}-linux-x86_64"
+  "https://github.com/bazelbuild/bazel/releases/download/6.0.0/bazel-6.0.0-linux-x86_64"
 default['bazel']['sha256'] =
   'f03d44ecaac3878e3d19489e37caa4ca1dc57427b686a78a85065ea3c27ebe68'
 
@@ -31,11 +31,6 @@ default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/linux/codecov'
 default['codecov']['sha256'] =
   '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
-
-default['faq']['download_path'] =
-  'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-linux-amd64'
-default['faq']['sha256'] =
-  '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
 
 default['fossa']['download_path'] =
   'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_linux_amd64.tar.gz'
@@ -62,65 +57,25 @@ default['helm']['download_path'] =
 default['helm']['sha256'] =
   '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
 
-default['kubectl']['download_path'] =
-  'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl'
-default['kubectl']['sha256'] =
-  'b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae'
-
 default['kustomize']['download_path'] =
   'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64'
 default['kustomize']['sha256'] =
   '7db89e32575d81393d5d84f0dc6cbe444457e61ce71af06c6e6b7b6718299c22'
-
-default['lego']['download_path'] =
-  'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_linux_amd64.tar.gz'
-default['lego']['sha256'] =
-  'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
-
-default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-linux-amd64'
-default['minikube']['sha256'] =
-  '3bc218476cf205acf11b078d45210a4882e136d24a3cbb7d8d645408e423b8fe'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v16.13.2/node-v16.13.2-linux-x64.tar.xz'
 default['nodejs']['sha256'] =
   '7f5e9a42d6e86147867d35643c7b1680c27ccd45db85666fc52798ead5e74421'
 
-default['opm']['download_path'] =
-  'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/linux-amd64-opm'
-default['opm']['sha256'] =
-  '771b72d802ac58b740ac493caf79256b28686907d3578f3b1e1e77b570bda156'
-
-default['packer']['download_path'] =
-  'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_amd64.zip'
-default['packer']['sha256'] =
-  '8a94b84542d21b8785847f4cccc8a6da4c7be5e16d4b1a2d0a5f7ec5532faec0'
-
 default['prototool']['download_path'] =
   'https://github.com/uber/prototool/releases/download/v1.10.0/prototool-Linux-x86_64'
 default['prototool']['sha256'] =
   '2247ff34ad31fa7d9433b3310879190d1ab63b2ddbd58257d24c267f53ef64e6'
 
-default['sentry']['download_path'] =
-  'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Linux-x86_64'
-default['sentry']['sha256'] =
-  'd6aeb45efbcdd3ec780f714b5082046ea1db31ff60ed0fc39916bbc8b6d708be'
-
 default['shellcheck']['download_path'] =
   'https://github.com/koalaman/shellcheck/releases/download/v0.7.0/shellcheck-v0.7.0.linux.x86_64.tar.xz'
 default['shellcheck']['sha256'] =
   '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
-
-default['skaffold']['download_path'] =
-  'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-linux-amd64'
-default['skaffold']['sha256'] =
-  'f1c54245b97073f39b209dd4b769802701c9901ceaa95774e7507d95bbd1d4c0'
-
-default['sops']['download_path'] =
-  'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
-default['sops']['sha256'] =
-  '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_linux_amd64'

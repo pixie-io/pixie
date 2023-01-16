@@ -14,38 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-if platform_family?('debian')
-  include_recipe 'px_dev::linux'
+if ! platform_family?('debian')
+  return
 end
 
-if platform_family?('mac_os_x')
-  include_recipe 'px_dev::mac_os_x'
-end
-
-include_recipe 'px_dev::setup'
-include_recipe 'px_dev::linters'
-
-template '/opt/px_dev/pxenv.inc' do
-  source 'pxenv.inc.erb'
-  owner node['owner']
-  group node['group']
-  mode '0644'
-  action :create
-end
-
-remote_bin 'codecov'
-remote_bin 'kustomize'
-remote_bin 'prototool'
-remote_bin 'yq'
-
-remote_tar_bin 'fossa'
-
-remote_tar_bin 'gh' do
-  tool_loc 'bin/gh'
-  strip_components 1
-end
-
-remote_tar_bin 'helm' do
-  strip_components 1
-end
-
+default['gperftools']['version']    = '2.10-pl1'
+default['gperftools']['deb']        =
+  "https://storage.googleapis.com/pixie-dev-public/gperftools-pixie-#{default['gperftools']['version']}.deb"
+default['gperftools']['deb_sha256'] =
+  '0920a93a8a8716b714b9b316c8d7e8f2ecc242a85147f7bec5e1543d88c203dc'

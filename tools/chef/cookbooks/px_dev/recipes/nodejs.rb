@@ -14,21 +14,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-directory '/opt/node' do
+directory '/opt/px_dev/tools/node' do
   owner node['owner']
   group node['group']
   mode '0755'
-  action :create
+  recursive true
+  action [:delete, :create]
 end
 
 remote_file '/tmp/nodejs.tar.gz' do
   source node['nodejs']['download_path']
-  mode 0644
+  mode '0644'
   checksum node['nodejs']['sha256']
 end
 
 execute 'install_node' do
-   command 'tar xf /tmp/nodejs.tar.gz -C /opt/node --strip-components 1'
+   command 'tar xf /tmp/nodejs.tar.gz -C /opt/px_dev/tools/node --strip-components 1'
    action :run
  end
 
@@ -36,12 +37,12 @@ file '/tmp/nodejs.tar.gz' do
   action :delete
 end
 
-ENV['PATH'] = "/opt/node/bin:#{ENV['PATH']}"
+ENV['PATH'] = "/opt/px_dev/tools/node/bin:#{ENV['PATH']}"
 
 execute 'install node packages' do
-  command '/opt/node/bin/npm install -g yarn@1.22.4 protobufjs@6.11.2 && npm cache clean --force'
+  command 'npm install -g yarn@1.22.4 protobufjs@6.11.2 && npm cache clean --force'
 end
 
 execute 'install pbjs/pbts deps' do
-  command '/opt/node/bin/pbjs || true'
+  command 'pbjs || true'
 end

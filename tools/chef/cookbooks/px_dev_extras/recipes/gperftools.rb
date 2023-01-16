@@ -14,30 +14,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-include_recipe 'px_dev::linux'
-include_recipe 'px_dev::setup'
-include_recipe 'px_dev::linters'
 
-template '/opt/px_dev/pxenv.inc' do
-  source 'pxenv.inc.erb'
-  owner node['owner']
-  group node['group']
+if platform_family?('mac_os_x')
+  homebrew_package 'gperftools'
+  return
+end
+
+if ! platform_family?('debian')
+  return
+end
+
+remote_file '/tmp/gperftools.deb' do
+  source node['gperftools']['deb']
   mode '0644'
-  action :create
+  checksum node['gperftools']['deb_sha256']
 end
 
-common_remote_bin 'codecov'
-common_remote_bin 'kustomize'
-common_remote_bin 'prototool'
-common_remote_bin 'yq'
-
-common_remote_tar_bin 'fossa'
-
-common_remote_tar_bin 'gh' do
-  tool_loc 'bin/gh'
-  strip_components 1
+dpkg_package 'gperftools' do
+  source '/tmp/gperftools.deb'
+  version node['gperftools']['version']
+  action :install
 end
 
-common_remote_tar_bin 'helm' do
-  strip_components 1
+file '/tmp/gperftools.deb' do
+  action :delete
 end

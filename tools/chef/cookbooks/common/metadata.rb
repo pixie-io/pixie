@@ -14,9 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-homebrew_package 'autoconf'
-homebrew_package 'automake'
-homebrew_package 'clang-format'
-homebrew_package 'libtool'
-homebrew_package 'postgresql@14'
-homebrew_package 'pyenv'
+name             'common'
+maintainer       'Zain Asgar'
+maintainer_email 'zasgar@pixielabs.ai'
+description      'Helpers for other cookbooks and recipes'
+version          '0.1.0'

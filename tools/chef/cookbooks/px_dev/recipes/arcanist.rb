@@ -14,16 +14,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-directory '/opt/phab' do
-  owner node['owner']
-  group node['group']
-  mode '0755'
-  action :create
-end
-
-git '/opt/phab/arcanist' do
+git '/opt/px_dev/tools/arcanist' do
   repository 'https://github.com/phacility/arcanist.git'
   revision 'stable'
   action :sync
 end
-ENV['PATH'] = "/opt/phab/arcanist/bin:#{ENV['PATH']}"
+
+link '/opt/px_dev/bin/arc' do
+  to '/opt/px_dev/tools/arcanist/bin/arc'
+  link_type :symbolic
+  owner node['owner']
+  group node['group']
+  action :create
+end

@@ -16,7 +16,7 @@
 
 remote_file '/tmp/clang.deb' do
   source node['clang']['deb']
-  mode 0644
+  mode '0644'
   checksum node['clang']['deb_sha256']
 end
 

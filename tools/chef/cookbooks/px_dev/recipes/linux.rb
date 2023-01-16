@@ -14,6 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+if ! platform_family?('debian')
+  return
+end
+
 apt_update 'update'
 
 apt_pkg_list = [

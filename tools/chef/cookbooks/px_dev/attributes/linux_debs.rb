@@ -35,9 +35,3 @@ default['gcc-musl']['deb'] =
   "https://storage.googleapis.com/pixie-dev-public/gcc-musl-libs-#{default['gcc-musl']['version']}.deb"
 default['gcc-musl']['deb_sha256'] =
   'ba52df92bce02f3c2bc53604466e0fac8844f941ae6d2d44061e48403f5752fb'
-
-default['gperftools']['version']    = '2.7-pl2'
-default['gperftools']['deb']        =
-  "https://storage.googleapis.com/pixie-dev-public/gperftools-pixie-#{default['gperftools']['version']}.deb"
-default['gperftools']['deb_sha256'] =
-  '10f00d6ddde920c74c80eb966362fa234c1d97349ba186b51d05bb98e3fff72e'

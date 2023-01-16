@@ -21,7 +21,7 @@
 
 ui_shared_cmds_start = [
     "export BASE_PATH=$PWD",
-    "export PATH=/usr/local/bin:/opt/node/bin:$PATH",
+    "export PATH=/usr/local/bin:/opt/px_dev/tools/node/bin:$PATH",
     "export HOME=$(mktemp -d)",  # This makes node-gyp happy.
     "export TMPPATH=$(mktemp -d)",
     # This is some truly shady stuff. The stamping on genrules just makes this file

@@ -15,27 +15,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 execute 'install go linters' do
-  ENV['GOPATH'] = "/opt/px_dev/gopath"
   command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
             go install golang.org/x/tools/cmd/goimports@v0.1.2 && \
             go clean -cache)
 end
 
 execute 'install js linters' do
-  command '/opt/node/bin/npm install -g jshint@2.11.0 && npm cache clean --force'
+  command 'npm install -g jshint@2.11.0 && npm cache clean --force'
 end
 
 execute 'install py linters' do
   command 'python3 -m pip install flake8 flake8-mypy yamllint --no-cache-dir && python3 -m pip cache purge'
 end
 
-remote_bin 'prototool'
+common_remote_bin 'prototool'
 
-remote_tar_bin 'golangci-lint' do
+common_remote_tar_bin 'golangci-lint' do
   strip_components 1
 end
 
-remote_tar_bin 'shellcheck' do
+common_remote_tar_bin 'shellcheck' do
   strip_components 1
 end
 
@@ -47,13 +46,13 @@ template '/opt/px_dev/bin/bazel' do
   action :create
 end
 
-remote_bin 'bazel' do
+common_remote_bin 'bazel' do
   bin_name 'bazel_core'
 end
 
 remote_file '/tmp/clang-linters.deb' do
   source node['clang-linters']['deb']
-  mode 0644
+  mode '0644'
   checksum node['clang-linters']['deb_sha256']
 end
 

@@ -16,7 +16,7 @@
 
 remote_file '/tmp/gcc_musl.deb' do
   source node['gcc-musl']['deb']
-  mode 0644
+  mode '0644'
   checksum node['gcc-musl']['deb_sha256']
 end
 

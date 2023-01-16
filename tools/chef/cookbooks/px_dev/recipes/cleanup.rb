@@ -14,30 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-include_recipe 'px_dev::linux'
-include_recipe 'px_dev::setup'
-include_recipe 'px_dev::linters'
-
-template '/opt/px_dev/pxenv.inc' do
-  source 'pxenv.inc.erb'
-  owner node['owner']
-  group node['group']
-  mode '0644'
-  action :create
+execute 'rm large dirs' do
+  command 'rm -r /tmp/* /var/lib/apt/lists/* ${GOPATH}/pkg'
 end
 
-common_remote_bin 'codecov'
-common_remote_bin 'kustomize'
-common_remote_bin 'prototool'
-common_remote_bin 'yq'
-
-common_remote_tar_bin 'fossa'
-
-common_remote_tar_bin 'gh' do
-  tool_loc 'bin/gh'
-  strip_components 1
-end
-
-common_remote_tar_bin 'helm' do
-  strip_components 1
+directory '/opt/px_dev/tools/golang' do
+  recursive true
+  action :delete
 end

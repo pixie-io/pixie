@@ -14,30 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-include_recipe 'px_dev::linux'
-include_recipe 'px_dev::setup'
-include_recipe 'px_dev::linters'
-
-template '/opt/px_dev/pxenv.inc' do
-  source 'pxenv.inc.erb'
-  owner node['owner']
-  group node['group']
-  mode '0644'
-  action :create
-end
-
-common_remote_bin 'codecov'
-common_remote_bin 'kustomize'
-common_remote_bin 'prototool'
-common_remote_bin 'yq'
-
-common_remote_tar_bin 'fossa'
-
-common_remote_tar_bin 'gh' do
-  tool_loc 'bin/gh'
-  strip_components 1
-end
-
-common_remote_tar_bin 'helm' do
-  strip_components 1
-end
+name             'px_dev_extras'
+depends          'common'
+maintainer       'Zain Asgar'
+maintainer_email 'zasgar@pixielabs.ai'
+description      'Setup for pixie dev machines'
+version          '0.1.0'

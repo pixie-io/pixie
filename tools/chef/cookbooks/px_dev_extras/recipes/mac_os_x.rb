@@ -14,18 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-remote_file '/tmp/gperftools.deb' do
-  source node['gperftools']['deb']
-  mode 0644
-  checksum node['gperftools']['deb_sha256']
+if ! platform_family?('mac_os_x')
+  return
 end
 
-dpkg_package 'gperftools' do
-  source '/tmp/gperftools.deb'
-  version node['gperftools']['version']
-  action :install
-end
-
-file '/tmp/gperftools.deb' do
-  action :delete
-end
+homebrew_package 'autoconf'
+homebrew_package 'automake'
+homebrew_package 'clang-format'
+homebrew_package 'libtool'
+homebrew_package 'postgresql@14'
+homebrew_package 'pyenv'

@@ -18,24 +18,23 @@ ENV['CLOUDSDK_CORE_DISABLE_PROMPTS'] = '1'
 ENV['CLOUDSDK_INSTALL_DIR'] = '/opt'
 ENV['PATH'] = "/opt/google-cloud-sdk/bin:#{ENV['PATH']}"
 
-if node[:platform] == 'ubuntu'
-  apt_pkg_list = [
-    'emacs',
-    'jq',
-    'vim',
-    'zsh',
-  ]
+include_recipe 'px_dev_extras::mac_os_x'
+include_recipe 'px_dev_extras::gperftools'
 
-  apt_package apt_pkg_list do
+pkg_list = [
+  'emacs',
+  'jq',
+  'vim',
+]
+
+if platform_family?('debian')
+  apt_package pkg_list + ['zsh'] do
     action :upgrade
   end
+end
 
-  include_recipe 'px_dev::linux_gperftools'
-elsif node[:platform] == 'mac_os_x' || node[:platform] == 'macos'
-  homebrew_package 'emacs'
-  homebrew_package 'vim'
-  homebrew_package 'jq'
-  homebrew_package 'gperftools'
+if platform_family?('mac_os_x')
+  homebrew_package pkg_list
 end
 
 remote_file '/usr/local/share/zsh/site-functions/_bazel' do
@@ -44,14 +43,14 @@ remote_file '/usr/local/share/zsh/site-functions/_bazel' do
   checksum node['bazel']['zcomp_sha256']
 end
 
-remote_bin 'faq'
-remote_bin 'kubectl'
-remote_bin 'minikube'
-remote_bin 'opm'
-remote_bin 'skaffold'
-remote_bin 'sops'
+common_remote_bin 'faq'
+common_remote_bin 'kubectl'
+common_remote_bin 'minikube'
+common_remote_bin 'opm'
+common_remote_bin 'skaffold'
+common_remote_bin 'sops'
 
-remote_tar_bin 'lego'
+common_remote_tar_bin 'lego'
 
 execute 'install gcloud' do
   command 'curl https://sdk.cloud.google.com | bash'
@@ -87,7 +86,7 @@ end
 
 remote_file '/tmp/packer.zip' do
   source node['packer']['download_path']
-  mode 0644
+  mode '0644'
   checksum node['packer']['sha256']
 end
 

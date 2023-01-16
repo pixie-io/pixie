@@ -30,4 +30,4 @@ include_recipe 'px_dev::nodejs'
 include_recipe 'px_dev::php'
 include_recipe 'px_dev::python'
 
-include_recipe 'px_dev::phabricator'
+include_recipe 'px_dev::arcanist'

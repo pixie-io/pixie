@@ -19,5 +19,5 @@ description 'The base workstation setup (without GUI apps)'
 
 run_list(
   'recipe[px_dev]',
-  'recipe[px_dev::dev_extras]'
+  'recipe[px_dev_extras]'
 )
