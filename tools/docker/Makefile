@@ -18,6 +18,13 @@
 DOCKER := docker
 BUILD_DIR ?= .build
 
+# We use our dev image to build some other tools. This fetches the latest tag.
+TOT		       := $$(git rev-parse --show-toplevel)
+DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
+
+DEV_EXTRAS_TAG = $$(cat $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
+DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DEV_EXTRAS_TAG)"
+
 ## Clang deb parameters
 CLANG_VERSION := 15.0
 CLANG_SUFFIX := pl8
@@ -30,8 +37,8 @@ clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
 
 ## gperftools parameters
-GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl2
-gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
+GPERFTOOLS_DEB_IMAGE_VERSION := 2.10-pl1
+gperftools_deb_fname := gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb
 gperftools_deb_gs_path :=  gs://pixie-dev-public/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
@@ -98,15 +105,15 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
-	$(DOCKER) build gperftools_deb_image -t $(gperftools_deb_image_tag)
+	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) gperftools_deb_image -t $(gperftools_deb_image_tag)
 
 .PHONY: upload_gperftools_deb
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
-	$(DOCKER) run --rm -e deb_name=$(gperftools_deb_fname) -v $(PWD):/image $(gperftools_deb_image_tag)
-	gsutil cp $(gperftools_deb_fname) $(gperftools_deb_gs_path)
+	mkdir -p $(BUILD_DIR)
+	$(DOCKER) run --rm -e DEB_NAME=$(gperftools_deb_fname) -e DEB_VERSION=$(GPERFTOOLS_DEB_IMAGE_VERSION) -v $(PWD)/$(BUILD_DIR):/image $(gperftools_deb_image_tag)
+	gsutil cp $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname) $(gperftools_deb_gs_path)
 	@echo "SHA: "
-	sha256sum $(gperftools_deb_fname)
-	rm -f $(gperftools_deb_fname)
+	sha256sum $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname)
 
 .PHONY: build_graalvm_archive_image
 build_graalvm_archive_image:
