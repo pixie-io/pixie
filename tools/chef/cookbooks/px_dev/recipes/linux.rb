@@ -70,5 +70,4 @@ execute 'enable docker' do
   action :run
 end
 
-include_recipe 'px_dev::linux_clang'
 include_recipe 'px_dev::linux_gcc_musl'

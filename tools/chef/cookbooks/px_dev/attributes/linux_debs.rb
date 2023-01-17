@@ -18,11 +18,11 @@ if ! platform_family?('debian')
   return
 end
 
-default['clang']['version']    = '15.0-pl2'
+default['clang']['version']    = '15.0-pl8'
 default['clang']['deb']        =
   "https://storage.googleapis.com/pixie-dev-public/clang/#{default['clang']['version']}/clang-#{default['clang']['version']}.deb"
 default['clang']['deb_sha256'] =
-  '32549362100f3759a0b50b3e1993f58086568696839bbdd88c11602bd3e994e2'
+  'b5ba346c638db9cb2ccb16b6e04b8f5f4b1ab02aa2a1db117ab952b4fcab0f74'
 
 default['clang-linters']['version']    = '15.0-pl7'
 default['clang-linters']['deb']        =
