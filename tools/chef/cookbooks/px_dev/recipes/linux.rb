@@ -29,8 +29,6 @@ apt_pkg_list = [
   # Not the newest docker CE from official docker repository, but should suffice.
   'docker.io',
   'git',
-  'graphviz',
-  'lcov',
   'libncurses5',
   'sudo',
   'systemd',
@@ -40,7 +38,6 @@ apt_pkg_list = [
   'zip',
 
   'bison',
-  'cmake',
   'flex',
   'libedit-dev',
   'libelf-dev',
@@ -51,10 +48,6 @@ apt_pkg_list = [
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',
-
-  # Needed by Clang-10.
-  'libz3-4',
-  'libz3-dev',
 
   # Needed by ANTLR4.
   'pkg-config',

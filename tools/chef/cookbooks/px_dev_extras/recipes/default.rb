@@ -22,7 +22,9 @@ include_recipe 'px_dev_extras::mac_os_x'
 include_recipe 'px_dev_extras::gperftools'
 
 pkg_list = [
+  'cmake',
   'emacs',
+  'graphviz',
   'jq',
   'vim',
 ]
