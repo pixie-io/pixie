@@ -34,14 +34,14 @@ config_setting(
 config_setting(
     name = "clang_build",
     flag_values = {
-        "@bazel_tools//tools/cpp:compiler": "clang",
+        "//bazel/cc_toolchains:compiler": "clang",
     },
 )
 
 config_setting(
     name = "gcc_build",
     flag_values = {
-        "@bazel_tools//tools/cpp:compiler": "gcc",
+        "//bazel/cc_toolchains:compiler": "gcc",
     },
 )
 

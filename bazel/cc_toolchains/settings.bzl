@@ -45,6 +45,9 @@ def _settings():
             "clang",
             "gcc",
         ],
+        visibility = [
+            "//visibility:public",
+        ],
     )
     native.config_setting(
         name = "compiler_clang",
