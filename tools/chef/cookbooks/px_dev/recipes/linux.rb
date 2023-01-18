@@ -30,6 +30,7 @@ apt_pkg_list = [
   'docker.io',
   'git',
   'libncurses5',
+  'lcov',
   'sudo',
   'systemd',
   'unzip',
@@ -48,10 +49,6 @@ apt_pkg_list = [
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',
-
-  # Needed by ANTLR4.
-  'pkg-config',
-  'uuid-dev',
 ]
 
 apt_package apt_pkg_list do
