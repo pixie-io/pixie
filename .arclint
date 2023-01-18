@@ -113,7 +113,10 @@
       "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
     },
     "filename": {
-      "type": "filename"
+      "type": "filename",
+      "exclude": [
+        "(^src/shared/metadata/testdata/sysfs.*$)"
+      ]
     },
     "flake8": {
       "type": "flake8",
