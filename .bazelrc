@@ -64,9 +64,11 @@ test --sandbox_tmpfs_path=/tmp
 build --@io_bazel_rules_docker//transitions:enable=false
 
 # This flag is equivalent to --config=linux on a linux machine, and --config=macos on a macos machine.
-build --enable_platform_specific_config
+common --enable_platform_specific_config
 
 # Linux specific config
+# `bazel query` will try to auto-detect the toolchain without this.
+common:linux --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 # --platforms is only set on linux, because we don't have a linux cross-compiling setup on macos.
 build:linux --platforms=//bazel/cc_toolchains:linux-x86_64
 # Likewise, we only have cc_toolchain definitions for our linux compilers, so we only enable toolchain resolution on linux.
