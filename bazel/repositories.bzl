@@ -150,7 +150,7 @@ def _cc_deps():
     _bazel_repo("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _bazel_repo("com_github_google_sentencepiece", build_file = "//bazel/external:sentencepiece.BUILD", patches = ["//bazel/external:sentencepiece.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_util_linux_libuuid", build_file = "//bazel/external:libuuid.BUILD")
-    _bazel_repo("com_github_antlr_antlr4", build_file = "//bazel/external:antlr4.BUILD", patches = ["//bazel/external:antlr4.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_github_antlr_antlr4", build_file = "//bazel/external:antlr4.BUILD")
     _bazel_repo("com_github_antlr_grammars_v4", build_file = "//bazel/external:antlr_grammars.BUILD", patches = ["//bazel/external:antlr_grammars.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_pgcodekeeper_pgcodekeeper", build_file = "//bazel/external:pgsql_grammar.BUILD", patches = ["//bazel/external:pgsql_grammar.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_simdutf_simdutf", build_file = "//bazel/external:simdutf.BUILD")

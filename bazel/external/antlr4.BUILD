@@ -30,6 +30,7 @@ cmake(
         "-l`nproc`",
     ],
     cache_entries = {
+        "ANTLR_BUILD_CPP_TESTS": "OFF",
         "UUID_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
         "UUID_LIBRARIES": "$EXT_BUILD_DEPS/lib/libuuid.a",
     },

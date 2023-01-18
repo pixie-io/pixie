@@ -35,9 +35,9 @@ REPOSITORY_LOCATIONS = dict(
                 "archive/7b00d84b025dff0c392c2df5ee8aa6d3c63ad539.tar.gz"],
     ),
     com_github_antlr_antlr4 = dict(
-        urls = ["https://github.com/antlr/antlr4/archive/refs/tags/4.9.2.tar.gz"],
-        strip_prefix = "antlr4-4.9.2",
-        sha256 = "6c86ebe2f3583ac19b199e704bdff9d70379f12347f7f2f1efa38051cd9a18cf",
+        urls = ["https://github.com/antlr/antlr4/archive/refs/tags/4.11.1.tar.gz"],
+        strip_prefix = "antlr4-4.11.1",
+        sha256 = "81f87f03bb83b48da62e4fc8bfdaf447efb9fb3b7f19eb5cbc37f64e171218cf",
     ),
     com_github_antlr_grammars_v4 = dict(
         urls = ["https://github.com/antlr/grammars-v4/archive/e53d7a1228505bfc80d8637808ef60e7eea92cc2.tar.gz"],

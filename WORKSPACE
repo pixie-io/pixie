@@ -260,7 +260,7 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 maven_install(
     name = "px_deps",
     artifacts = [
-        "org.antlr:antlr4:4.9",
+        "org.antlr:antlr4:4.11.1",
     ],
     repositories = [
         "https://repo1.maven.org/maven2",
