@@ -100,7 +100,7 @@ export const useMissingScriptProvider: CommandProvider = () => {
       completionsFromArgMatch.push({
         match: goToArg.match,
         forScript: argScript.id,
-        heading: 'Scripts',
+        heading: 'Script Arguments',
         key: `missing_script_entity_${argScript.id}`,
         description: (
           <CompletionDescription
@@ -160,7 +160,7 @@ export const useMissingScriptProvider: CommandProvider = () => {
               highlights: [], // We're not actually highlighting here; the search was run against a different string.
             },
             forScript: scriptId,
-            heading: 'Scripts',
+            heading: 'Entities for Script Arguments',
             key: `missing_script_entity_${scriptId}`,
             description: (
               <CompletionDescription
@@ -248,8 +248,8 @@ export const useMissingScriptProvider: CommandProvider = () => {
 
     return {
       providerName: 'PxL Scripts',
-      completions: completions.slice(0, 10),
-      hasAdditionalMatches: completions.length > 10,
+      completions: completions.slice(0, 25),
+      hasAdditionalMatches: completions.length > 25,
     };
   }, [scripts, client, clusterUID]);
 };

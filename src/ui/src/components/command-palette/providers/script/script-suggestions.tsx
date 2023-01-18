@@ -77,8 +77,8 @@ export function getScriptIdSuggestions(partial: string, scripts: Map<string, Scr
   });
 
   return {
-    suggestions: suggestions.slice(0, 10),
-    hasAdditionalMatches: suggestions.length > 10,
+    suggestions: suggestions.slice(0, 25),
+    hasAdditionalMatches: suggestions.length > 25,
   };
 }
 
@@ -266,8 +266,8 @@ export async function getScriptArgSuggestions(
   }
 
   return {
-    completions: completions.slice(0, 5),
-    hasAdditionalMatches: completions.length > 5,
+    completions: completions.slice(0, 25),
+    hasAdditionalMatches: completions.length > 25,
   };
 }
 
@@ -314,7 +314,7 @@ export function getScriptArgValueSuggestions(
   }
 
   return {
-    completions: completions.slice(0, 5),
-    hasAdditionalMatches: completions.length > 5,
+    completions: completions.slice(0, 25),
+    hasAdditionalMatches: completions.length > 25,
   };
 }

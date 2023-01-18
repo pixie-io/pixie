@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { useAutocomplete, alpha } from '@mui/material';
+import { useAutocomplete, alpha, AutocompleteGroupedOption, lighten } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { GlobalHotKeys } from 'react-hotkeys';
@@ -112,6 +112,7 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     flex: '1 1 auto',
     display: 'flex',
     flexFlow: 'row nowrap',
+    height: 0, // Prevents children from growing beyond the container's boundaries, so that scrolling works as expected.
     justifyContent: 'stretch',
     alignItems: 'stretch',
 
@@ -120,6 +121,19 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   optionsContainer: {
+    overflowY: 'auto',
+    width: '100%',
+    height: '100%',
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+  },
+  optionGroupWrapper: {
+    '&:not(:first-child)': {
+      borderTop: theme.palette.border.unFocused,
+    },
+  },
+  optionGroupList: {
     listStyle: 'none',
     margin: 0,
     padding: 0,
@@ -131,6 +145,20 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
         backgroundColor: theme.palette.background.two,
       },
     },
+    '&:not(:last-of-type)': {
+      borderBottom: theme.palette.border.unFocused,
+    },
+  },
+  optionGroupHeading: {
+    ...theme.typography.h4,
+    // TODO(nick): When using arrow keys to go up in the list, the option hidden under a sticky header isn't revealed.
+    //   This is because MUI doesn't consider anything but the element being selected and its container, so it doesn't
+    //   realize that it needs to scroll up further to make the option actually visible.
+    position: 'sticky',
+    top: 0,
+    left: 0,
+    padding: theme.spacing(0.5),
+    backgroundColor: lighten(theme.palette.background.three, 0.01), // To cover what's behind it
   },
   paperDetails: {
     flex: '4 0 40%',
@@ -183,6 +211,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     options: completions,
     freeSolo: true,
     disableCloseOnSelect: true,
+    groupBy: (o: CommandCompletion) => o.heading ?? '',
     getOptionLabel: (o: CommandCompletion) => o?.key ?? '',
     filterOptions: (opts) => opts, // They're already filtered, but when renderOption exists, so must this.
     onChange: (_, option: CommandCompletion) => { // Takes event, option, reason, details (in case we need them)
@@ -306,8 +335,24 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
         {/* Main area: the suggestions themselves on the left; descriptions on the right */}
         <div className={classes.paper}>
           <ul {...getListboxProps()} className={classes.optionsContainer}>
-            {groupedOptions.map((option, index) => (
-              <li key={index} {...getOptionProps({ option, index })}>{option.label}</li>
+            {(groupedOptions as AutocompleteGroupedOption<CommandCompletion>[]).map(({
+              group,
+              index: indexOffset,
+              options,
+            }) => (
+              <li key={`group-${group}-${indexOffset}`} className={classes.optionGroupWrapper}>
+                <div className={classes.optionGroupHeading}>{group}</div>
+                <ul className={classes.optionGroupList}>
+                  {options.map((option, optIndex) => (
+                    <li
+                      key={`${group}-${indexOffset}-${optIndex}`}
+                      {...getOptionProps({ option, index: indexOffset + optIndex })}
+                    >
+                      {option.label}
+                    </li>
+                  ))}
+                </ul>
+              </li>
             ))}
           </ul>
           <div className={classes.paperDetails}>
