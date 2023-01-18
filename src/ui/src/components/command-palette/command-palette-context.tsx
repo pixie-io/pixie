@@ -113,15 +113,18 @@ const CommandPaletteContextProviderInner = React.memo<WithChildren>(({
   const cta = React.useMemo(() => {
     if (highlightedCompletion?.cta) {
       return highlightedCompletion.cta;
-    } else if (highlightedCompletion) {
-      return groupedCompletions.find((res) => res.completions.includes(highlightedCompletion))?.cta ?? null;
-    } else {
-      // Pick the first matching provider that has a CTA, or if there are none, the first provider at all with a CTA.
-      // Providers should not offer a CTA if they aren't relevant to the current input.
-      return groupedCompletions.find((res) => res.completions.length > 0 && res.cta)?.cta
-        ?? groupedCompletions.find((res) => res.cta)?.cta
-        ?? null;
     }
+
+    if (highlightedCompletion) {
+      const match = groupedCompletions.find((res) => res.completions.includes(highlightedCompletion) && res.cta)?.cta;
+      if (match) return match;
+    }
+
+    // Pick the first matching provider that has a CTA, or if there are none, the first provider at all with a CTA.
+    // Providers should not offer a CTA if they aren't relevant to the current input.
+    return groupedCompletions.find((res) => res.completions.length > 0 && res.cta)?.cta
+      ?? groupedCompletions.find((res) => res.cta)?.cta
+      ?? null;
   }, [groupedCompletions, highlightedCompletion]);
 
   const ctx = React.useMemo(() => ({
