@@ -35,7 +35,6 @@ pl_cc_library(
     deps = [
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "//src/carnot/planner/objects:cc_library",
-        "//src/carnot/planner/plannerpb:service_pl_cc_proto",
         "//src/common/uuid:cc_library",
     ],
 )
@@ -70,5 +69,6 @@ pl_cc_binary(
     srcs = ["tracepoint_generator_tool.cc"],
     deps = [
         ":tracepoint_generator_lib",
+        "@com_github_grpc_grpc//:grpc++",
     ],
 )

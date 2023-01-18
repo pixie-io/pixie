@@ -17,7 +17,6 @@
  */
 
 #include "src/carnot/planner/probes/probes.h"
-#include "external/gogo_grpc_proto/github.com/gogo/protobuf/gogoproto/gogo.pb.h"
 
 #include <utility>
 
