@@ -94,6 +94,8 @@ for arg in "${PX_RUN_DOCKER_EXTRA_ARGS[@]}"; do
 done
 
 configs=(
+    # Mount shm from the host, otherwise docker will restrict to 64MB by default.
+    -v /dev/shm:/dev/shm
     # Mount the home directory.
     -v "${HOME}:/home/${USER}"
     # Allow docker to run within the container.
