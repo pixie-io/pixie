@@ -17,9 +17,9 @@
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
 load("@rules_java//java:defs.bzl", "java_binary")
+load("//bazel:graal.bzl", "graal_native_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 load("//bazel:toolchain_transitions.bzl", "java_graal_binary")
-load("//bazel/graal:rules.bzl", "graal_native_binary")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "jdk_names")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])

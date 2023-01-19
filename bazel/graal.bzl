@@ -17,29 +17,19 @@
 def _graal_native_binary_impl(ctx):
     cc_toolchain_info = ctx.toolchains["@bazel_tools//tools/cpp:toolchain_type"].cc
 
-    # TODO(james): this is a bit of a hack because bazel's JavaInfo doesn't currently have starlark definitions,
-    # so its hard to traverse.
-    default_info = ctx.attr.java_binary[DefaultInfo]
-    jar = None
-    for file in default_info.files.to_list():
-        if file.path.endswith(".jar"):
-            jar = file
-            break
-    if jar == None:
-        fail("no .jar file in java_binary rule output")
+    if len(ctx.attr.java_binary[JavaInfo].java_outputs) == 0:
+        fail("no jars in java_binary rule output")
 
-    out_name = ctx.attr.output_name
-    if out_name == "":
-        out_name = ctx.attr.name
+    if len(ctx.attr.java_binary[JavaInfo].java_outputs) > 1:
+        fail("more than one output jar in java_binary rule output")
 
-    out = ctx.actions.declare_file(out_name)
-
+    jar = ctx.attr.java_binary[JavaInfo].java_outputs[0].class_jar
     graal_runtime = ctx.attr.graal_runtime[java_common.JavaRuntimeInfo]
     args = [
         "-cp",
         jar.path,
         "-o",
-        out.path,
+        ctx.outputs.output_name.path,
         "--native-compiler-path=" + cc_toolchain_info.compiler_executable,
         # Add /usr/bin as prefix, so that `native-image` can find ld.
         # The real solution would be to get `native-image` to work with the combination of lld and gcc.
@@ -49,7 +39,7 @@ def _graal_native_binary_impl(ctx):
     ] + ctx.attr.extra_args
 
     ctx.actions.run(
-        outputs = [out],
+        outputs = [ctx.outputs.output_name],
         inputs = depset(
             [jar],
             transitive = [
@@ -63,8 +53,8 @@ def _graal_native_binary_impl(ctx):
 
     return [
         DefaultInfo(
-            files = depset([out]),
-            executable = out,
+            files = depset([ctx.outputs.output_name]),
+            executable = ctx.outputs.output_name,
         ),
     ]
 
@@ -79,9 +69,9 @@ graal_native_binary = rule(
             allow_files = True,
         ),
         "java_binary": attr.label(
-            providers = [JavaInfo, DefaultInfo],
+            providers = [JavaInfo],
         ),
-        "output_name": attr.string(),
+        "output_name": attr.output(mandatory = True),
     },
     toolchains = [
         "@bazel_tools//tools/cpp:toolchain_type",
