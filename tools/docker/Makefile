@@ -48,6 +48,16 @@ GRAALVM_ARCHIVE_IMAGE_TAG := graalvm-$(GRAALVM_IMAGE_VERSION)
 GRAALVM_ARCHIVE_FNAME := graalvm-native-image-22.3.0.tar.gz
 GRAALVM_ARCHIVE_GS_PATH := gs://pixie-dev-public/graalvm-native-image-22.3.0-$(GRAALVM_IMAGE_VERSION).tar.gz
 
+## Sysroot parameters
+SYSROOT_REV := pl1
+SYSROOT_BUILD_DIR := $(BUILD_DIR)/sysroots
+SYSROOT_ARCHITECTURES := amd64 arm64
+SYSROOT_VARIANTS := runtime build test
+SYSROOT_UPLOAD_TARGET_TEMPLATE := upload_sysroot_arch_variant
+SYSROOT_TARGETS = $(patsubst variant,$(patsubst arch,$(SYSROOT_UPLOAD_TARGET_TEMPLATE, $(SYSROOT_ARCHITECTURES)), $(SYSROOT_VARIANTS)))
+SYSROOT_GS_PATH := gs://pixie-oss/pixie-dev-public/sysroots/$(SYSROOT_REV)
+SYSROOT_CREATOR_IMAGE_TAG := sysroot-creator-$(SYSROOT_REV)
+
 ## Linux image parameters
 LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
 LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
@@ -143,6 +153,19 @@ $(LINUX_HEADERS_MERGED_FILE): $(LINUX_HEADER_TARGETS)
 upload_linux_headers:  $(LINUX_HEADERS_MERGED_FILE) $(LINUX_HEADER_TARGETS)  ## Target to build and upload linux headers image
 	gsutil cp $< $(LINUX_HEADERS_GS_PATH)/$(<F)
 	sha256sum $<
+
+
+.PHONY: build_all_sysroots
+build_all_sysroots: sysroot_creator/Dockerfile sysroot_creator/build_all_sysroots.sh
+	@mkdir -p $(SYSROOT_BUILD_DIR)
+	$(DOCKER) build sysroot_creator -t $(SYSROOT_CREATOR_IMAGE_TAG)
+	./sysroot_creator/build_all_sysroots.sh $(SYSROOT_BUILD_DIR) $(SYSROOT_CREATOR_IMAGE_TAG)
+
+.PHONY: upload_all_sysroots
+upload_all_sysroots: build_all_sysroots
+	gsutil cp -r $(SYSROOT_BUILD_DIR) $(SYSROOT_GS_PATH)
+	sha256sum $(SYSROOT_BUILD_DIR)
+
 
 .PHONY: build_and_upload_curl_image
 build_and_upload_curl_image:

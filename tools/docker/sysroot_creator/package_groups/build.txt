@@ -1,0 +1,10 @@
+liblzma-dev
+libunwind-dev
+libncurses-dev
+libc6-dev
+libelf-dev
+libgcc-12-dev
+libicu-dev
+libstdc++-12-dev
+linux-libc-dev
+zlib1g-dev

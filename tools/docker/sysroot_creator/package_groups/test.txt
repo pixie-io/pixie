@@ -1,0 +1,5 @@
+gawk
+sed
+bash
+# nm required by elf_reader_test.
+binutils
