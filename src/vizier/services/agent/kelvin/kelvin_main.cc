@@ -22,6 +22,7 @@
 #include <sole.hpp>
 
 #include "src/vizier/services/agent/kelvin/kelvin_manager.h"
+#include "src/vizier/services/agent/shared/base/lifecycle.h"
 
 #include "src/common/base/base.h"
 #include "src/common/event/nats.h"
@@ -51,51 +52,14 @@ DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
 DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
               "The IP of the host this service is running on");
 
+using ::px::vizier::agent::DefaultDeathHandler;
 using ::px::vizier::agent::KelvinManager;
-using ::px::vizier::agent::Manager;
-
-class AgentDeathHandler : public px::FatalErrorHandlerInterface {
- public:
-  AgentDeathHandler() = default;
-  void OnFatalError() const override {
-    // Stack trace will print automatically; any additional state dumps can be done here.
-    // Note that actions here must be async-signal-safe and must not allocate memory.
-  }
-};
-
-// Signal handlers for graceful termination.
-class AgentTerminationHandler {
- public:
-  // This list covers signals that are handled gracefully.
-  static constexpr auto kSignals = ::px::MakeArray(SIGINT, SIGQUIT, SIGTERM, SIGHUP);
-
-  static void InstallSignalHandlers() {
-    for (size_t i = 0; i < kSignals.size(); ++i) {
-      signal(kSignals[i], AgentTerminationHandler::OnTerminate);
-    }
-  }
-
-  static void set_manager(Manager* manager) { manager_ = manager; }
-
-  static void OnTerminate(int signum) {
-    if (manager_ != nullptr) {
-      LOG(INFO) << "Trying to gracefully stop agent manager";
-      auto s = manager_->Stop(std::chrono::seconds{5});
-      if (!s.ok()) {
-        LOG(ERROR) << "Failed to gracefully stop agent manager, it will terminate shortly.";
-      }
-      exit(signum);
-    }
-  }
-
- private:
-  inline static Manager* manager_ = nullptr;
-};
+using ::px::vizier::agent::TerminationHandler;
 
 int main(int argc, char** argv) {
   px::EnvironmentGuard env_guard(&argc, argv);
 
-  AgentDeathHandler err_handler;
+  DefaultDeathHandler err_handler;
 
   // This covers signals such as SIGSEGV and other fatal errors.
   // We print the stack trace and die.
@@ -103,7 +67,7 @@ int main(int argc, char** argv) {
   signal_action->RegisterFatalErrorHandler(err_handler);
 
   // Install signal handlers where graceful exit is possible.
-  AgentTerminationHandler::InstallSignalHandlers();
+  TerminationHandler::InstallSignalHandlers();
 
   sole::uuid agent_id = sole::uuid4();
   LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1",
@@ -128,13 +92,13 @@ int main(int argc, char** argv) {
                                        FLAGS_rpc_port, FLAGS_nats_url, mds_addr)
                      .ConsumeValueOrDie();
 
-  AgentTerminationHandler::set_manager(manager.get());
+  TerminationHandler::set_manager(manager.get());
 
   PL_CHECK_OK(manager->Run());
   PL_CHECK_OK(manager->Stop(std::chrono::seconds{1}));
 
   // Clear the manager, because it has been stopped.
-  AgentTerminationHandler::set_manager(nullptr);
+  TerminationHandler::set_manager(nullptr);
 
   return 0;
 }

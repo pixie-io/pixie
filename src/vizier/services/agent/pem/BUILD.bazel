@@ -60,6 +60,7 @@ pl_cc_binary(
         "//src/common/signal:cc_library",
         "//src/shared/version:cc_library",
         "//src/shared/version:version_linkstamp",
+        "//src/vizier/services/agent/shared/base:cc_library",
     ],
 )
 
