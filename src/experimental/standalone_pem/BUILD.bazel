@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
@@ -50,4 +52,37 @@ pl_cc_binary(
         "//src/shared/version:cc_library",
         "//src/shared/version:version_linkstamp",
     ],
+)
+
+container_image(
+    name = "standalone_pem_base_image",
+    base = "//:pl_cc_base_image",
+    layers = ["//src/stirling:bpf_layer"],
+)
+
+cc_image(
+    name = "standalone_pem_image",
+    base = ":standalone_pem_base_image",
+    binary = ":standalone_pem",
+    visibility = [
+        "//src/vizier:__subpackages__",
+    ],
+)
+
+container_push(
+    name = "push_standalone_pem_image",
+    format = "Docker",
+    image = ":standalone_pem_image",
+    registry = "gcr.io",
+    repository = "pixie-oss/pixie-dev/vizier/standalone_pem_image",
+    tag = "{STABLE_BUILD_TAG}",
+)
+
+container_push(
+    name = "push_test_standalone_pem_image",
+    format = "Docker",
+    image = ":standalone_pem_image",
+    registry = "gcr.io",
+    repository = "pixie-oss/pixie-dev/vizier/standalone_pem_image",
+    tag = "{BUILD_USER}",
 )
