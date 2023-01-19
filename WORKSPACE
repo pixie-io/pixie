@@ -8,6 +8,10 @@ load("//bazel:repositories.bzl", "pl_cc_toolchain_deps", "pl_deps")
 
 pl_cc_toolchain_deps()
 
+load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "pl_sysroot_deps")
+
+pl_sysroot_deps()
+
 load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 
 pl_register_cc_toolchains()

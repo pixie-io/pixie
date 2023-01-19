@@ -15,17 +15,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "sysroot_architectures", "sysroot_libc_versions")
 
 def _llvm_variants():
     variants = []
+    for arch in sysroot_architectures:
+        libc_versions = sysroot_libc_versions
+        if arch == "x86_64":
+            libc_versions = libc_versions + ["glibc_host"]
 
-    # TODO(james): add sysroot variants.
-    # Add variants for our non sysroot config.
-    variants.append(("x86_64", "glibc_host", True, "none"))
-    variants.append(("x86_64", "glibc_host", True, "asan"))
-    variants.append(("x86_64", "glibc_host", True, "tsan"))
-    variants.append(("x86_64", "glibc_host", True, "msan"))
-    variants.append(("x86_64", "glibc_host", False, "none"))
+        for libc_version in libc_versions:
+            for use_libcpp in [True, False]:
+                sanitizers = ["none"]
+
+                # Only run sanitizers on host x86_64 build.
+                if use_libcpp and arch == "x86_64" and libc_version == "glibc_host":
+                    sanitizers = sanitizers + ["asan", "msan", "tsan"]
+
+                for san in sanitizers:
+                    variants.append((arch, libc_version, use_libcpp, san))
+
     return variants
 
 def _llvm_variant_settings():
