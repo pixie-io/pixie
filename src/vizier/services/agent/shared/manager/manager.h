@@ -34,6 +34,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
+#include "src/vizier/services/agent/shared/base/base_manager.h"
 #include "src/vizier/services/agent/shared/base/info.h"
 #include "src/vizier/services/agent/shared/manager/chan_cache.h"
 #include "src/vizier/services/agent/shared/manager/relation_info_manager.h"
@@ -82,7 +83,7 @@ class RegistrationHandler;
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.
  * This version can be extended to add more sub-components.
  */
-class Manager : public px::NotCopyable {
+class Manager : public BaseManager {
  public:
   using VizierNATSConnector = px::event::NATSConnector<px::vizier::messages::VizierMessage>;
   using MsgCase = messages::VizierMessage::MsgCase;
@@ -98,18 +99,9 @@ class Manager : public px::NotCopyable {
   // Forward decleration to prevent circular dependency on MessageHandler.
   class MessageHandler;
 
-  /**
-   * Run the main event loop. This function blocks and uses the thread to run the event loop.
-   * The agent manager will continue to execute until Stop is called.
-   */
-  Status Run();
+  Status Run() final;
 
-  /**
-   * Stops the agent manager.
-   * Safe to call from any thread.
-   * \note Do not call this function from the destructor.
-   */
-  Status Stop(std::chrono::milliseconds timeout);
+  Status Stop(std::chrono::milliseconds timeout) final;
 
  protected:
   // Protect constructor since we need to use Init on this class.
