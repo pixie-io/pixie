@@ -105,8 +105,8 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/carnot/goplanner //src/carnot/goplanner:go_default_library
 # gazelle:resolve go px.dev/pixie/src/e2e_test/vizier/planner/dump_schemas/godumpschemas //src/e2e_test/vizier/planner/dump_schemas/godumpschemas:godumpschemas
 
-# gazelle:map_kind go_binary pl_go_binary //bazel:pl_build_system.bzl
-# gazelle:map_kind go_test pl_go_test //bazel:pl_build_system.bzl
+# gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl
+# gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl
 
 buildifier(
     name = "buildifier",

@@ -72,7 +72,11 @@ go-mod-ensure: ## Ensure that go dependencies exist.
 
 .PHONY: gazelle-repos
 gazelle-repos: go.mod ## Run gazelle and generate build rules for new deps in go.mod, and go.sum.
-	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune -to_macro=go_deps.bzl%pl_go_dependencies
+	$(BAZEL) run //:gazelle -- update-repos \
+		-from_file=go.mod \
+		-prune \
+		-to_macro=go_deps.bzl%pl_go_dependencies \
+		-build_directives="gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl,gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"
 
 .PHONY: gazelle
 gazelle: gazelle-repos ## Run gazelle and autofix bazel dependencies for go targets.
