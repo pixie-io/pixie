@@ -97,7 +97,7 @@ Status DissectStringParam(std::string_view msg, size_t* param_offset, std::strin
 
 template <size_t length>
 Status DissectIntParam(std::string_view msg, size_t* offset, std::string* param) {
-  int64_t p;
+  int64_t p = 0;
   PL_RETURN_IF_ERROR(DissectInt<length>(msg, offset, &p));
   *param = std::to_string(p);
   return Status::OK();

@@ -485,7 +485,7 @@ StatusOr<std::map<int, SocketInfo>*> SocketInfoManager::GetNamespaceConns(uint32
                         socket_probers_->GetOrCreateSocketProber(net_ns, {static_cast<int>(pid)}));
     DCHECK(socket_prober != nullptr);
 
-    ns_iter = connections_.insert(ns_iter, {net_ns, {}});
+    ns_iter = connections_.insert(ns_iter, {static_cast<int>(net_ns), {}});
     namespace_conns = &ns_iter->second;
 
     Status s;
