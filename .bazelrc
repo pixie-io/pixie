@@ -68,7 +68,6 @@ build:linux --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 # Build for Clang:
 build:clang --//bazel/cc_toolchains:compiler=clang
-build:clang --//bazel/cc_toolchains:libc_version=gnu
 
 # Build for Clang using Libc++.
 build:libc++ --define use_libcpp=1
@@ -77,7 +76,6 @@ build:libc++ --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
 build:libc++ --build_tag_filters=-no_libcpp
 build:libc++ --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 build:libc++ --//bazel/cc_toolchains:compiler=clang
-build:libc++ --//bazel/cc_toolchains:libc_version=gnu
 build:libc++ --features=libc++ --features=-libstdc++
 
 # Build for GCC.
@@ -90,7 +88,6 @@ build:gcc --copt -Wno-error=maybe-uninitialized
 build:gcc --build_tag_filters=-no_gcc
 build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled
 build:gcc --//bazel/cc_toolchains:compiler=gcc
-build:gcc --//bazel/cc_toolchains:libc_version=gnu
 
 
 # bazel build --config asan ...

@@ -119,7 +119,7 @@ def _gcc_x86_64_gnu():
         ],
         target_settings = [
             ":compiler_gcc",
-            ":libc_version_gnu",
+            ":libc_version_glibc_host",
         ],
         toolchain = ":cc-compiler-gcc-x86_64-gnu",
         toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",

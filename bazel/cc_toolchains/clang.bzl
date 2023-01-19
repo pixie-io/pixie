@@ -15,6 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:repository_locations.bzl", "REPOSITORY_LOCATIONS")
+load("//bazel/cc_toolchains:settings.bzl", "HOST_GLIBC_VERSION")
+load("//bazel/cc_toolchains:utils.bzl", "abi")
 
 def _download_repo(rctx, repo_name, output):
     loc = REPOSITORY_LOCATIONS[repo_name]
@@ -52,10 +54,11 @@ def _clang_toolchain_impl(rctx):
         substitutions = {
             "{clang_major_version}": rctx.attr.clang_version.split(".")[0],
             "{clang_version}": rctx.attr.clang_version,
+            "{host_abi}": abi(rctx.attr.host_arch, rctx.attr.host_libc_version),
             "{host_arch}": rctx.attr.host_arch,
-            "{host_libc_version}": rctx.attr.host_libc_version,
             "{libc_version}": rctx.attr.libc_version,
             "{libcxx_path}": libcxx_path,
+            "{target_abi}": abi(rctx.attr.target_arch, rctx.attr.libc_version),
             "{target_arch}": rctx.attr.target_arch,
             "{this_repo}": rctx.attr.name,
             "{toolchain_path}": toolchain_path,
@@ -83,9 +86,9 @@ def _clang_register_toolchain(
         libcxx_repo,
         target_arch,
         clang_version,
-        libc_version = "gnu",
+        libc_version = HOST_GLIBC_VERSION,
         host_arch = "x86_64",
-        host_libc_version = "gnu",
+        host_libc_version = HOST_GLIBC_VERSION,
         use_for_host_tools = False):
     clang_toolchain(
         name = name,

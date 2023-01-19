@@ -49,21 +49,13 @@ includes = [
     "{libcxx_path}/include/c++/v1",
 ]
 
-_LIBC_VERSION_TO_LONG_NAME = {
-    "gnu": "glibc_unknown",
-}
-
 _PLATFORMS = {
     "x86_64": "@platforms//cpu:x86_64",
 }
 
-_LIBC_CONSTRAINTS = {
-    "gnu": "@px//bazel/cc_toolchains:libc_version_gnu",
-}
-
 cc_toolchain_config(
     name = "toolchain_config",
-    abi_libc_version = _LIBC_VERSION_TO_LONG_NAME["{libc_version}"],
+    abi_libc_version = "{libc_version}",
     abi_version = "clang",
     compile_flags = [
         "-fstack-protector",
@@ -85,7 +77,7 @@ cc_toolchain_config(
     ],
     dbg_compile_flags = ["-g"],
     enable_sanitizers = not {use_for_host_tools},
-    host_system_name = "{host_arch}-unknown-linux-{host_libc_version}",
+    host_system_name = "{host_arch}-unknown-linux-{host_abi}",
     libclang_rt_path = "external/{this_repo}/{toolchain_path}/lib/clang/{clang_version}/lib/linux",
     libcxx_path = "external/{this_repo}/{libcxx_path}",
     link_flags = [
@@ -106,8 +98,8 @@ cc_toolchain_config(
     ],
     opt_link_flags = ["-Wl,--gc-sections"],
     supports_start_end_lib = True,
-    target_libc = _LIBC_VERSION_TO_LONG_NAME["{libc_version}"],
-    target_system_name = "{target_arch}-unknown-linux-{libc_version}",
+    target_libc = "{libc_version}",
+    target_system_name = "{target_arch}-unknown-linux-{target_abi}",
     tool_paths = tool_paths,
     toolchain_identifier = toolchain_identifier,
     unfiltered_compile_flags = [
@@ -206,7 +198,7 @@ toolchain(
     ] + ["@px//bazel/cc_toolchains:is_exec_true"] if {use_for_host_tools} else ["@px//bazel/cc_toolchains:is_exec_false"],
     target_settings = [
         "@px//bazel/cc_toolchains:compiler_clang",
-        _LIBC_CONSTRAINTS["{libc_version}"],
+        "@px//bazel/cc_toolchains:libc_version_{libc_version}",
     ],
     toolchain = ":cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
