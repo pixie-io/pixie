@@ -7,11 +7,16 @@ spec:
   selector:
     matchLabels:
       name: postgres
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
         name: postgres
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: postgres
         image: postgres:14-alpine
@@ -30,6 +35,22 @@ spec:
             secretKeyRef:
               key: PL_POSTGRES_PASSWORD
               name: pl-db-secrets
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - CHOWN
+              - DAC_OVERRIDE
+              - FSETID
+              - FOWNER
+              - MKNOD
+              - SETFCAP
+              - SETGID
+              - SETUID
+          seccompProfile:
+            type: RuntimeDefault
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           subPath: data

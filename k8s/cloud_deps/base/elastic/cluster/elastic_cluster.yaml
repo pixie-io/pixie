@@ -16,6 +16,19 @@ spec:
       node.store.allow_mmap: true
     podTemplate:
       spec:
+        containers:
+        - name: elasticsearch
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - SYS_CHROOT
+              - SETUID
+              drop:
+              - ALL
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
         initContainers:
         - name: install-plugins
           command:
@@ -25,8 +38,20 @@ spec:
               bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
+            allowPrivilegeEscalation: true
             privileged: true
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        - name: elastic-internal-init-filesystem
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
@@ -60,6 +85,17 @@ spec:
             requests:
               cpu: 0.5
               memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - SYS_CHROOT
+              - SETUID
+              drop:
+              - ALL
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
         initContainers:
         - name: install-plugins
           command:
@@ -69,8 +105,20 @@ spec:
               bin/elasticsearch-plugin install --batch repository-gcs
         - name: sysctl
           securityContext:
+            allowPrivilegeEscalation: true
             privileged: true
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+        - name: elastic-internal-init-filesystem
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: 0
+            seccompProfile:
+              type: RuntimeDefault
+        securityContext:
+          seccompProfile:
+            type: RuntimeDefault
     volumeClaimTemplates:
     - metadata:
         name: elasticsearch-data
