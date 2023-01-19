@@ -179,7 +179,6 @@ class Manager : public px::NotCopyable {
   Status PostRegisterHook(uint32_t asid);
   Status ReregisterHook();
   Status PostReregisterHook(uint32_t asid);
-  bool has_nats_connection() const { return !nats_addr_.empty(); }
 
   static constexpr char kAgentSubTopicPattern[] = "Agent/$0";
   static constexpr char kAgentPubTopic[] = "UpdateAgent";

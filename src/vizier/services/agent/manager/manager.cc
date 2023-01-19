@@ -102,19 +102,11 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       nats_addr_(nats_url),
       table_store_(std::make_shared<table_store::TableStore>()),
       relation_info_manager_(std::make_unique<RelationInfoManager>()),
-      // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
-      // this.
-      mds_channel_(mds_url.size() == 0
-                       ? nullptr
-                       : grpc::CreateChannel(std::string(mds_url), grpc_channel_creds_)),
+      mds_channel_(grpc::CreateChannel(std::string(mds_url), grpc_channel_creds_)),
       func_context_(this, CreateMDSStub(mds_channel_), CreateMDTPStub(mds_channel_),
                     CreateCronScriptStub(mds_channel_), table_store_,
                     [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }),
       memory_metrics_(&GetMetricsRegistry(), "agent_id", agent_id.str()) {
-  if (!has_nats_connection()) {
-    LOG(WARNING) << "--nats_url is empty, skip connecting to NATS.";
-  }
-
   // Register Vizier specific and carnot builtin functions.
   auto func_registry = std::make_unique<px::carnot::udf::Registry>("vizier_func_registry");
   ::px::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
@@ -156,35 +148,28 @@ Status Manager::Init() {
   LOG(INFO) << "Hostname: " << info_.hostname;
 
   // Set up the agent NATS connector.
-  if (!has_nats_connection()) {
-    LOG(WARNING) << "NATS is not configured, skip connecting. Stirling and Carnot might not behave "
-                    "as expected because of this.";
-  } else {
-    agent_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
-        nats_addr_, kAgentPubTopic /*pub_topic*/,
-        absl::Substitute(kAgentSubTopicPattern, info_.agent_id.str()) /*sub topic*/,
-        SSL::DefaultNATSCreds());
-  }
+  agent_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
+      nats_addr_, kAgentPubTopic /*pub_topic*/,
+      absl::Substitute(kAgentSubTopicPattern, info_.agent_id.str()) /*sub topic*/,
+      SSL::DefaultNATSCreds());
 
   // The first step is to connect to stats and register the agent.
   // Downstream dependencies like stirling/carnot depend on knowing
   // ASID and metadata state, which is only available after registration is
   // complete.
-  if (agent_nats_connector_ != nullptr) {
-    PL_RETURN_IF_ERROR(agent_nats_connector_->Connect(dispatcher_.get()));
-    // Attach the message handler for agent nats:
-    agent_nats_connector_->RegisterMessageHandler(
-        std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+  PL_RETURN_IF_ERROR(agent_nats_connector_->Connect(dispatcher_.get()));
+  // Attach the message handler for agent nats:
+  agent_nats_connector_->RegisterMessageHandler(
+      std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
-    registration_handler_ = std::make_shared<RegistrationHandler>(
-        dispatcher_.get(), &info_, agent_nats_connector_.get(),
-        std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
-        std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
+  registration_handler_ = std::make_shared<RegistrationHandler>(
+      dispatcher_.get(), &info_, agent_nats_connector_.get(),
+      std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
+      std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
 
-    PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
-                                       registration_handler_));
-    registration_handler_->RegisterAgent();
-  }
+  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
+                                     registration_handler_));
+  registration_handler_->RegisterAgent();
 
   return InitImpl();
 }
@@ -309,31 +294,29 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   PL_CHECK_OK(PostRegisterHookImpl());
   PL_CHECK_OK(RegisterBackgroundHelpers());
 
-  if (has_nats_connection()) {
-    k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
-        nats_addr_, kK8sPubTopic /*pub_topic*/,
-        absl::Substitute(kK8sSubTopicPattern, k8s_update_selector()) /*sub topic*/,
-        SSL::DefaultNATSCreds());
+  k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
+      nats_addr_, kK8sPubTopic /*pub_topic*/,
+      absl::Substitute(kK8sSubTopicPattern, k8s_update_selector()) /*sub topic*/,
+      SSL::DefaultNATSCreds());
 
-    PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
+  PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
 
-    auto k8s_update_handler =
-        std::make_shared<K8sUpdateHandler>(dispatcher_.get(), mds_manager_.get(), &info_,
-                                           k8s_nats_connector_.get(), k8s_update_selector());
+  auto k8s_update_handler =
+      std::make_shared<K8sUpdateHandler>(dispatcher_.get(), mds_manager_.get(), &info_,
+                                         k8s_nats_connector_.get(), k8s_update_selector());
 
-    PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
-                                       k8s_update_handler));
+  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
+                                     k8s_update_handler));
 
-    // Attach the message handler for k8s nats:
-    k8s_nats_connector_->RegisterMessageHandler(
-        std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+  // Attach the message handler for k8s nats:
+  k8s_nats_connector_->RegisterMessageHandler(
+      std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
-    // Create a NATS connector for the metrics topic.
-    metrics_nats_connector_ = std::make_unique<px::event::NATSConnector<messages::MetricsMessage>>(
-        nats_addr_, kMetricsPubTopic /*pub topic*/, "" /*sub topic*/, SSL::DefaultNATSCreds());
+  // Create a NATS connector for the metrics topic.
+  metrics_nats_connector_ = std::make_unique<px::event::NATSConnector<messages::MetricsMessage>>(
+      nats_addr_, kMetricsPubTopic /*pub topic*/, "" /*sub topic*/, SSL::DefaultNATSCreds());
 
-    PL_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
-  }
+  PL_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
 
   tablestore_compaction_timer_ = dispatcher()->CreateTimer([this]() {
     // TODO(james): when we change ExecState::exec_mem_pool to not return just the default pool, we
