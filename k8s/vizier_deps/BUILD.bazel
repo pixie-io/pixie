@@ -14,26 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("//bazel:kustomize.bzl", "kustomize_build")
+
 package(default_visibility = ["//visibility:public"])
 
-genrule(
+kustomize_build(
     name = "nats_prod",
-    srcs = glob(["**/*.yaml"]),
-    outs = ["nats_prod.yaml"],
-    cmd = """
-      T=`mktemp -d`
-      cp -aL k8s/vizier_deps/base/nats $$T
-      kustomize build $$T/nats -o $@
-    """,
+    srcs = glob(["base/nats/*.yaml"]),
+    kustomization = "base/nats/kustomization.yaml",
 )
 
-genrule(
+kustomize_build(
     name = "etcd_prod",
-    srcs = glob(["**/*.yaml"]),
-    outs = ["etcd_prod.yaml"],
-    cmd = """
-      T=`mktemp -d`
-      cp -aL k8s/vizier_deps/base/etcd $$T
-      kustomize build $$T/etcd -o $@
-    """,
+    srcs = glob(["base/etcd/*.yaml"]),
+    kustomization = "base/etcd/kustomization.yaml",
 )

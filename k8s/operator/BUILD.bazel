@@ -18,6 +18,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("//bazel:images.bzl", "image_map_with_bundle_version")
+load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -58,15 +59,10 @@ container_push(
     format = "Docker",
 )
 
-genrule(
-    name = "vizier_crd_yaml",
-    srcs = glob(["**/*.yaml"]),
-    outs = ["vizier_crd.yaml"],
-    cmd = """
-      T=`mktemp -d`
-      cp -aL k8s/operator/crd/base $$T
-      kustomize build $$T/base -o $@
-    """,
+kustomize_build(
+    name = "vizier_crd",
+    srcs = glob(["crd/base/*.yaml"]),
+    kustomization = "crd/base/kustomization.yaml",
 )
 
 pkg_tar(
@@ -77,7 +73,7 @@ pkg_tar(
         ],
     ) + [
         "helm/crds/olm_crd.yaml",
-        ":vizier_crd_yaml",
+        ":vizier_crd",
     ],
     package_dir = "/yamls",
     remap_paths = {
