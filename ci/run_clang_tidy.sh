@@ -62,6 +62,7 @@ if [[ -n "${diff_file}" && ! -s "${diff_file}" ]]; then
 fi
 
 clang_tidy_diff_scripts=(
+  "/opt/px_dev/bin/clang-tidy-diff.py"
   "/opt/clang-15.0/share/clang/clang-tidy-diff.py"
   "/usr/local/opt/llvm/share/clang/clang-tidy-diff.py"
 )

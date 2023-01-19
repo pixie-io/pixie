@@ -62,6 +62,8 @@ fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
 tmpdir=$(mktemp -d)
 cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-format "${tmpdir}"
 cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-tidy "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/share/clang/clang-tidy-diff.py "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/share/clang/clang-format-diff.py "${tmpdir}"
 
 pushd "${tmpdir}"
 

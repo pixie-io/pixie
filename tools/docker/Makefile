@@ -27,7 +27,7 @@ DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DE
 
 ## Clang deb parameters
 CLANG_VERSION := 15.0
-CLANG_SUFFIX := pl8
+CLANG_SUFFIX := pl9
 
 CLANG_TAG="$(CLANG_VERSION)-$(CLANG_SUFFIX)"
 
