@@ -52,9 +52,17 @@ func createBundleReader() (*script.BundleManager, error) {
 	if bundleFile == "" {
 		bundleFile = defaultBundleFile
 	}
+	direct := viper.GetString("direct_vizier_addr")
 
-	authInfo := auth.MustLoadDefaultCredentials()
-	br, err := script.NewBundleManagerWithOrg([]string{bundleFile, ossBundleFile}, authInfo.OrgID, authInfo.OrgName)
+	var orgID string
+	var orgName string
+	if direct == "" {
+		authInfo := auth.MustLoadDefaultCredentials()
+		orgID = authInfo.OrgID
+		orgName = authInfo.OrgName
+	}
+
+	br, err := script.NewBundleManagerWithOrg([]string{bundleFile, ossBundleFile}, orgID, orgName)
 	if err != nil {
 		return nil, err
 	}

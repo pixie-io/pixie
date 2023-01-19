@@ -116,6 +116,8 @@ func createNewCobraCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cloudAddr := viper.GetString("cloud_addr")
 			format, _ := cmd.Flags().GetString("output")
+			directVzAddr := viper.GetString("direct_vizier_addr")
+			directVzKey := viper.GetString("direct_vizier_key")
 
 			format = strings.ToLower(format)
 			if format == "live" {
@@ -178,15 +180,19 @@ func createNewCobraCommand() *cobra.Command {
 			selectedCluster, _ := cmd.Flags().GetString("cluster")
 			clusterID := uuid.FromStringOrNil(selectedCluster)
 
-			if !allClusters && clusterID == uuid.Nil {
+			if !allClusters && clusterID == uuid.Nil && directVzAddr == "" {
 				clusterID, err = vizier.GetCurrentVizier(cloudAddr)
 				if err != nil {
 					utils.WithError(err).Fatal("Could not fetch healthy vizier")
 				}
 			}
 
-			conns := vizier.MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
+			conns := vizier.MustConnectVizier(cloudAddr, allClusters, clusterID, directVzAddr, directVzKey)
 			useEncryption, _ := cmd.Flags().GetBool("e2e_encryption")
+			if directVzAddr != "" {
+				// There is no e2e encryption for direct mode.
+				useEncryption = false
+			}
 
 			// Support Ctrl+C to cancel a query.
 			ctx, cleanup := utils.WithSignalCancellable(context.Background())
@@ -203,6 +209,11 @@ func createNewCobraCommand() *cobra.Command {
 				default:
 					utils.WithError(err).Fatal("Failed to execute script")
 				}
+			}
+
+			// Don't print cloudAddr live view link for direct mode.
+			if directVzAddr != "" {
+				return
 			}
 
 			// Get the name for this cluster for the live view

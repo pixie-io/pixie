@@ -94,6 +94,19 @@ func MustFindVizierNamespace() string {
 	return vzNs
 }
 
+// MustConnectVizier will connect to Pixie cloud or directly to a vizier service.
+func MustConnectVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID, directVzAddr string, directKey string) []*Connector {
+	if directVzAddr == "" {
+		return MustConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
+	}
+
+	conn, err := NewConnector(cloudAddr, nil, directVzAddr, directKey)
+	if err != nil {
+		cliUtils.WithError(err).Fatal("Failed to connect to vizier")
+	}
+	return []*Connector{conn}
+}
+
 // MustConnectHealthyDefaultVizier vizier will connect to default vizier based on parameters.
 func MustConnectHealthyDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
 	c, err := ConnectHealthyDefaultVizier(cloudAddr, allClusters, clusterID)
@@ -122,7 +135,7 @@ func GetVizierList(cloudAddr string) ([]*cloudpb.ClusterInfo, error) {
 }
 
 func createVizierConnection(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Connector, error) {
-	v, err := NewConnector(cloudAddr, vzInfo)
+	v, err := NewConnector(cloudAddr, vzInfo, "", "")
 	if err != nil {
 		return nil, err
 	}

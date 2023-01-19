@@ -53,6 +53,12 @@ func init() {
 	RootCmd.PersistentFlags().Bool("do_not_track", false, "do_not_track")
 	viper.BindPFlag("do_not_track", RootCmd.PersistentFlags().Lookup("do_not_track"))
 
+	RootCmd.PersistentFlags().String("direct_vizier_addr", "", "If set, connect directly to the Vizier service at the given address.")
+	viper.BindPFlag("direct_vizier_addr", RootCmd.PersistentFlags().Lookup("direct_vizier_addr"))
+
+	RootCmd.PersistentFlags().String("direct_vizier_key", "", "Should be set if direct_vizier_addr is set, the key to authenticate whether the user has permissions to connect to the Vizier service.")
+	viper.BindPFlag("direct_vizier_key", RootCmd.PersistentFlags().Lookup("direct_vizier_key"))
+
 	RootCmd.AddCommand(VersionCmd)
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
@@ -83,6 +89,8 @@ func init() {
 	viper.BindEnv("testing_env", "PX_TESTING_ENV", "PL_TESTING_ENV")
 	viper.BindEnv("cli_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
 	viper.BindEnv("vizier_version", "PX_VIZIER_VERSION", "PL_VIZIER_VERSION")
+	viper.BindEnv("direct_vizier_key", "PX_DIRECT_VIZIER_KEY")
+	viper.BindEnv("direct_vizier_addr", "PX_DIRECT_VIZIER_ADDR")
 
 	viper.BindPFlags(pflag.CommandLine)
 
@@ -178,6 +186,20 @@ var RootCmd = &cobra.Command{
 }
 
 func checkAuthForCmd(c *cobra.Command) {
+	if viper.GetString("direct_vizier_addr") != "" {
+		if viper.GetString("direct_vizier_key") == "" {
+			utils.Errorf("Failed to authenticate. `direct_vizier_key` must be provided using `PX_DIRECT_VIZIER_KEY`")
+			os.Exit(1)
+		}
+		switch c {
+		case DeployCmd, UpdateCmd, GetCmd, DeployKeyCmd, APIKeyCmd:
+			utils.Errorf("These commands are unsupported in Direct Vizier mode.")
+			os.Exit(1)
+		default:
+		}
+		return
+	}
+
 	switch c {
 	case DeployCmd, UpdateCmd, RunCmd, LiveCmd, GetCmd, ScriptCmd, DeployKeyCmd, APIKeyCmd:
 		authenticated := auth.IsAuthenticated(viper.GetString("cloud_addr"))
