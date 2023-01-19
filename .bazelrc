@@ -8,10 +8,6 @@ test --java_runtime_version=remotejdk_11
 # https://github.com/bazelbuild/rules_jvm_external/issues/445
 common --repo_env=JAVA_HOME=../bazel_tools/jdk
 
-# This is to flush bazel cache for new version of clang/gcc.
-build --action_env=CLANG_COMPILER_VERSION=15.0_3
-build --host_action_env=CLANG_COMPILER_VERSION=15.0_3
-
 build --remote_download_minimal
 test --remote_download_minimal
 run --remote_download_outputs=all
@@ -21,11 +17,6 @@ coverage --build_runfile_links
 # Follow https://github.com/fmeum/rules_meta/issues/1#issuecomment-1255828109
 # for updates.
 common --incompatible_remove_rule_name_parameter=false
-
-build:clang --action_env=CC
-build:clang --host_action_env=CC
-build:clang --action_env=CXX
-build:clang --host_action_env=CXX
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status.sh
@@ -74,11 +65,6 @@ build:linux --platforms=//bazel/cc_toolchains:linux-x86_64
 # Likewise, we only have cc_toolchain definitions for our linux compilers, so we only enable toolchain resolution on linux.
 build:linux --incompatible_enable_cc_toolchain_resolution
 build:linux --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
-
-# Default mac config. Same as clang except we can't statically link,
-# and mac does not use libstdc++.
-build:macos --action_env=BAZEL_LINKLIBS
-build:macos --action_env=BAZEL_LINKOPTS
 
 # Build for Clang:
 build:clang --//bazel/cc_toolchains:compiler=clang
