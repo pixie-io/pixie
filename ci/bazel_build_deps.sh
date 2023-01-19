@@ -45,7 +45,7 @@ fi
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
-default_excludes="except attr('tags', 'manual', //...) \
+default_excludes="except attr('tags', 'manual|disabled_flaky_test', //...) \
   except //third_party/... ${experimental_exclude}"
 
 sanitizer_only="except attr('tags', 'no_asan', //...) \

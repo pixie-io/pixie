@@ -149,6 +149,8 @@ pl_sh_test(
     ],
     flaky = True,
     tags = [
+        # TODO: This test has a <90% pass rate in CI, please fix and re-enable.
+        "disabled_flaky_test",
         "requires_bpf",
         "cpu:16",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
