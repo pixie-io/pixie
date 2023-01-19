@@ -23,7 +23,7 @@
 #include <absl/container/flat_hash_map.h>
 #include <prometheus/registry.h>
 #include "src/carnot/plan/plan.h"
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

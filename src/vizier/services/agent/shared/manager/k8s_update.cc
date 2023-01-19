@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/k8s_update.h"
+#include "src/vizier/services/agent/shared/manager/k8s_update.h"
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

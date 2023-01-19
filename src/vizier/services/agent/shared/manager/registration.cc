@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/vizier/services/agent/manager/manager.h"
-#include "src/vizier/services/agent/manager/registration.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/registration.h"
 
 namespace px {
 namespace vizier {

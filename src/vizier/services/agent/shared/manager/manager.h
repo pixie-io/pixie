@@ -34,8 +34,8 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
-#include "src/vizier/services/agent/manager/chan_cache.h"
-#include "src/vizier/services/agent/manager/relation_info_manager.h"
+#include "src/vizier/services/agent/shared/manager/chan_cache.h"
+#include "src/vizier/services/agent/shared/manager/relation_info_manager.h"
 
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 

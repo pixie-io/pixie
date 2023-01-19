@@ -27,8 +27,8 @@
 #include <prometheus/gauge.h>
 
 #include "src/stirling/stirling.h"
-#include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

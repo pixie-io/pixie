@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/chan_cache.h"
+#include "src/vizier/services/agent/shared/manager/chan_cache.h"
 
 #include <vector>
 

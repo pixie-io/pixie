@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/exec.h"
+#include "src/vizier/services/agent/shared/manager/exec.h"
 
 #include <memory>
 #include <string>
@@ -27,7 +27,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/task.h"
 #include "src/common/perf/perf.h"
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

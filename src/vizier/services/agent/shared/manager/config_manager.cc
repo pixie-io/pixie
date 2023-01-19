@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/config_manager.h"
+#include "src/vizier/services/agent/shared/manager/config_manager.h"
 #include "src/common/base/base.h"
 
 namespace px {

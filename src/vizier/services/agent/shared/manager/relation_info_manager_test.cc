@@ -23,7 +23,7 @@
 #include <memory>
 #include <utility>
 
-#include "src/vizier/services/agent/manager/relation_info_manager.h"
+#include "src/vizier/services/agent/shared/manager/relation_info_manager.h"
 
 #include "src/common/testing/testing.h"
 

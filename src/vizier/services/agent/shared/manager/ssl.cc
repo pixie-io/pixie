@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/ssl.h"
+#include "src/vizier/services/agent/shared/manager/ssl.h"
 #include "src/common/base/base.h"
 
 DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");

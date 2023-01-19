@@ -25,8 +25,8 @@
 #include "src/common/event/nats.h"
 #include "src/common/testing/event/simulated_time_system.h"
 #include "src/common/testing/testing.h"
-#include "src/vizier/services/agent/manager/k8s_update.h"
-#include "src/vizier/services/agent/manager/test_utils.h"
+#include "src/vizier/services/agent/shared/manager/k8s_update.h"
+#include "src/vizier/services/agent/shared/manager/test_utils.h"
 
 namespace px {
 namespace vizier {

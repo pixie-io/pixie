@@ -20,7 +20,7 @@
 
 #include <memory>
 
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

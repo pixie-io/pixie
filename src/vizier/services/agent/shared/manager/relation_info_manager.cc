@@ -18,11 +18,12 @@
 
 #include <utility>
 
-#include "src/vizier/services/agent/manager/relation_info_manager.h"
+#include "src/vizier/services/agent/shared/manager/relation_info_manager.h"
 
 namespace px {
 namespace vizier {
 namespace agent {
+
 Status RelationInfoManager::AddRelationInfo(RelationInfo relation_info) {
   absl::base_internal::SpinLockHolder lock(&relation_info_map_lock_);
   if (relation_info_map_.contains(relation_info.name)) {

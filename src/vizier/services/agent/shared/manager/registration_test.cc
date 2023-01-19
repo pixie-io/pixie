@@ -27,9 +27,9 @@
 #include "src/common/testing/event/simulated_time_system.h"
 #include "src/shared/metadatapb/metadata.pb.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
-#include "src/vizier/services/agent/manager/manager.h"
-#include "src/vizier/services/agent/manager/registration.h"
-#include "src/vizier/services/agent/manager/test_utils.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/registration.h"
+#include "src/vizier/services/agent/shared/manager/test_utils.h"
 
 #include "src/common/testing/testing.h"
 

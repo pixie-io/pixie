@@ -18,8 +18,8 @@
 
 #include "src/vizier/services/agent/kelvin/kelvin_manager.h"
 
-#include "src/vizier/services/agent/manager/exec.h"
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/exec.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
 namespace vizier {

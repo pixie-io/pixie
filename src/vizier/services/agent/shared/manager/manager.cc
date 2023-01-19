@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 #include <limits.h>
 
@@ -35,13 +35,13 @@
 #include "src/common/perf/perf.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
-#include "src/vizier/services/agent/manager/chan_cache.h"
-#include "src/vizier/services/agent/manager/config_manager.h"
-#include "src/vizier/services/agent/manager/exec.h"
-#include "src/vizier/services/agent/manager/heartbeat.h"
-#include "src/vizier/services/agent/manager/k8s_update.h"
-#include "src/vizier/services/agent/manager/registration.h"
-#include "src/vizier/services/agent/manager/ssl.h"
+#include "src/vizier/services/agent/shared/manager/chan_cache.h"
+#include "src/vizier/services/agent/shared/manager/config_manager.h"
+#include "src/vizier/services/agent/shared/manager/exec.h"
+#include "src/vizier/services/agent/shared/manager/heartbeat.h"
+#include "src/vizier/services/agent/shared/manager/k8s_update.h"
+#include "src/vizier/services/agent/shared/manager/registration.h"
+#include "src/vizier/services/agent/shared/manager/ssl.h"
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace {

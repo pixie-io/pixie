@@ -19,8 +19,8 @@
 #include "src/vizier/services/agent/pem/pem_manager.h"
 
 #include "src/common/system/config.h"
-#include "src/vizier/services/agent/manager/exec.h"
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/exec.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 
 DEFINE_int32(
     table_store_data_limit, gflags::Int32FromEnv("PL_TABLE_STORE_DATA_LIMIT_MB", 1024 + 256),
