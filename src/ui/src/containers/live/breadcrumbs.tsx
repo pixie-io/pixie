@@ -34,7 +34,7 @@ import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/live/autoc
 import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
-import { highlightScoredMatch } from 'app/utils/string-search';
+import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
 
 import { Variable } from './vis';
@@ -131,7 +131,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       allowTyping: true,
       divider: true,
       getListItems: async (input) => {
-        const matches = new Map(input ? scriptIds.map(s => [s, highlightScoredMatch(input, s)]) : []);
+        const matches = new Map(input ? scriptIds.map(s => [s, highlightNamespacedScoredMatch(input, s, '/')]) : []);
 
         const ids = scriptIds.filter(s => !input || s === SCRATCH_SCRIPT.id || matches.get(s)?.isMatch);
 

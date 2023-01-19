@@ -179,7 +179,14 @@ export function highlightScoredMatch(search: string, source: string): ScoredStri
 
   // Simple substring match: distance is the length difference between the strings
   const exactSubstringIndex = sourceNorm.indexOf(searchNorm);
-  if (exactSubstringIndex >= 0) {
+  if (exactSubstringIndex === 0 && searchNorm.length >= 3) {
+    // Exact prefix is even better than exact substring, but not as good as a perfect match
+    return {
+      isMatch: true,
+      distance: Math.abs(searchNorm.length - sourceNorm.length) / 4,
+      highlights: Array(searchNorm.length).fill(0).map((_, i) => i),
+    };
+  } else if (exactSubstringIndex >= 0) {
     const start = sourceChars[exactSubstringIndex].i;
     // The edit distance for a substring is quite high, but substring matches are often better than typo matches.
     const distance = Math.ceil((sourceChars.length - searchChars.length) / 3);
