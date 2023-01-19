@@ -16,7 +16,10 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-package(default_visibility = ["//src/vizier/services/agent/pem:__subpackages__"])
+package(default_visibility = [
+    "//src/experimental:__subpackages__",
+    "//src/vizier/services/agent/pem:__subpackages__",
+])
 
 pl_cc_library(
     name = "cc_library",

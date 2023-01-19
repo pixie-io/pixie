@@ -38,6 +38,7 @@ pl_cc_library(
     ),
     visibility = [
         "//src/e2e_test/vizier/planner/dump_schemas:__pkg__",
+        "//src/experimental/standalone_pem:__subpackages__",
         "//src/stirling:__subpackages__",
         "//src/vizier/services/agent:__subpackages__",
     ],
