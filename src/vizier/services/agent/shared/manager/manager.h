@@ -34,6 +34,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
+#include "src/vizier/services/agent/shared/base/info.h"
 #include "src/vizier/services/agent/shared/manager/chan_cache.h"
 #include "src/vizier/services/agent/shared/manager/relation_info_manager.h"
 
@@ -65,24 +66,6 @@ constexpr auto kTableStoreCompactionPeriod = std::chrono::minutes(1);
 constexpr auto kMemoryMetricsCollectPeriod = std::chrono::minutes(1);
 
 constexpr auto kMetricsPushPeriod = std::chrono::minutes(1);
-
-/**
- * Info tracks basic information about and agent such as:
- * id, asid, hostname.
- */
-struct Info {
-  Info() = default;
-  // Identification information for the agent.
-  sole::uuid agent_id;
-  // Agent short Id.
-  uint32_t asid = 0;
-  uint32_t pid = 0;
-  std::string hostname;
-  std::string address;
-  std::string pod_name;
-  std::string host_ip;
-  services::shared::agent::AgentCapabilities capabilities;
-};
 
 // Generates a service bearer token for authenticated requests.
 std::string GenerateServiceToken();
