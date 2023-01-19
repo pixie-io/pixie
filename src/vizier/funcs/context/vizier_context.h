@@ -22,6 +22,7 @@
 
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
+#include "src/vizier/services/agent/shared/base/base_manager.h"
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace px {
@@ -44,7 +45,7 @@ class VizierFuncFactoryContext : public NotCopyable {
 
   VizierFuncFactoryContext() = default;
   VizierFuncFactoryContext(
-      const agent::Manager* agent_manager, const std::shared_ptr<MDSStub>& mds_stub,
+      const agent::BaseManager* agent_manager, const std::shared_ptr<MDSStub>& mds_stub,
       const std::shared_ptr<MDTPStub>& mdtp_stub,
       const std::shared_ptr<services::metadata::CronScriptStoreService::Stub>& cronscript_stub,
       std::shared_ptr<::px::table_store::TableStore> table_store,
@@ -57,7 +58,7 @@ class VizierFuncFactoryContext : public NotCopyable {
         add_auth_to_grpc_context_func_(add_grpc_auth) {}
   virtual ~VizierFuncFactoryContext() = default;
 
-  const agent::Manager* agent_manager() const {
+  const agent::BaseManager* agent_manager() const {
     DCHECK(agent_manager_ != nullptr);
     return agent_manager_;
   }
@@ -84,7 +85,7 @@ class VizierFuncFactoryContext : public NotCopyable {
   }
 
  private:
-  const agent::Manager* agent_manager_ = nullptr;
+  const agent::BaseManager* agent_manager_ = nullptr;
   std::shared_ptr<MDSStub> mds_stub_ = nullptr;
   std::shared_ptr<MDTPStub> mdtp_stub_ = nullptr;
   std::shared_ptr<services::metadata::CronScriptStoreService::Stub> cronscript_stub_ = nullptr;
