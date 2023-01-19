@@ -127,7 +127,7 @@ echo -e "\t${bold}Shell: \t\t\t ${green}${shell}${resetcolor}"
 
 container_args=(
   --rm
-  --hostname px-dev-docker
+  --hostname "px-dev-docker-$(hostname)"
 )
 
 if [ -t 1 ]; then
