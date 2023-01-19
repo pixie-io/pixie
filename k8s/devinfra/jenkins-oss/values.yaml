@@ -252,7 +252,7 @@ controller:
   - http_request:1.16
   - jackson2-api:2.14.1-313.v504cdd45c18b
   - junit:1166.va_436e268e972
-  - kubernetes:3734.v562b_b_a_627ea_c
+  - kubernetes:3802.vb_b_600831fcb_3
   - material-theme:0.5.2-rc100.6121925fe229
   - scm-api:631.v9143df5b_e4a_a
   - workflow-aggregator:590.v6a_d052e5a_a_b_5
@@ -261,7 +261,11 @@ controller:
   - blueocean-dashboard:1.27.0
   - blueocean-web:1.27.0
   - matrix-auth:3.0
-
+  - pipeline-utility-steps:2.14.0
+  - display-url-api:2.3.7
+  - job-dsl:1.81
+  - xunit:3.0.8
+  - ghprb:1.42.2
   # Set to false to download the minimum required version of all dependencies.
   installLatestPlugins: true
 
@@ -292,7 +296,11 @@ controller:
   enableRawHtmlMarkupFormatter: false
   # Used to approve a list of groovy functions in pipelines used the script-security plugin.
   # Can be viewed under /scriptApproval
-  scriptApproval: []
+  scriptApproval:
+  - "field hudson.model.Queue$Item task"
+  - "method hudson.model.AbstractCIBase getQueue"
+  - "method hudson.model.Queue getItems"
+  - "staticMethod jenkins.model.Jenkins get"
   #  - "method groovy.json.JsonSlurperClassic parseText java.lang.String"
   #  - "new groovy.json.JsonSlurperClassic"
   # List of groovy init scripts to be executed during Jenkins controller start
@@ -313,10 +321,18 @@ controller:
   existingSecret: ""
 
   additionalExistingSecrets:
-  - name: jenkins-secrets
+  - name: github-secrets
     keyName: client-id
-  - name: jenkins-secrets
+  - name: github-secrets
     keyName: client-secret
+  - name: github-secrets
+    keyName: token
+  - name: github-secrets
+    keyName: ssh-key
+  - name: bb-secrets
+    keyName: api-key
+  - name: codecov-secrets
+    keyName: token
 
   additionalSecrets: []
   #  - name: nameOfSecret
@@ -335,7 +351,7 @@ controller:
   #   renew: 60               # optional
 
   # Name of default cloud configuration.
-  cloudName: "kubernetes"
+  cloudName: "devinfra-cluster-usw1-0"
 
   # Below is the implementation of Jenkins Configuration as Code.  Add a key under configScripts for each
   # configuration area, where each corresponds to a plugin or section of the UI.  Each key (prior to | character) is
@@ -352,10 +368,137 @@ controller:
     configUrls: []
     # - https://acme.org/jenkins.yaml
     # Remote URL:s for configuration files.
-    configScripts: {}
-    #  welcome-message: |
-    #    jenkins:
-    #      systemMessage: Welcome to our CI\CD server.  This Jenkins is configured and managed 'as code'.
+    configScripts:
+      # yamllint disable rule:indentation
+      gh: |-
+        unclassified:
+          gitHubPluginConfig:
+            configs:
+            - credentialsId: "github-license-ratelimit"
+              manageHooks: false
+              name: "gh"
+          ghprbTrigger:
+            adminlist: "zasgar"
+            autoCloseFailedPullRequests: false
+            cron: "H/5 * * * *"
+            extensions:
+            - ghprbSimpleStatus:
+                addTestResults: true
+                commitStatusContext: "Jenkins Build"
+                completedStatus:
+                  - message: "Build Passed"
+                    result: SUCCESS
+                showMatrixStatus: false
+                startedStatus: "Jenkins Build Running"
+            githubAuth:
+              - credentialsId: "github-license-ratelimit"
+                serverAPIUrl: "https://api.github.com"
+            manageWebhooks: true
+            okToTestPhrase: ".*ok\\W+to\\W+test.*"
+            requestForTestingPhrase: "Can one of the admins verify this patch?"
+            retestPhrase: ".*test\\W+this\\W+please.*"
+            skipBuildPhrase: ".*\\[skip\\W+ci\\].*"
+            useComments: true
+            useDetailedComments: false
+            whitelistPhrase: ".*add\\W+to\\W+allowlist.*"
+      creds: |-
+        credentials:
+          system:
+            domainCredentials:
+            - credentials:
+              - string:
+                  id: "github-license-ratelimit"
+                  description: "A github OAuth token for pixie-labs-buildbot with no additional oauth scopes."
+                  scope: GLOBAL
+                  secret: "${github-secrets-token}"
+              - string:
+                  id: "buildbuddy-api-key"
+                  description: "API key for Buildbuddy"
+                  scope: GLOBAL
+                  secret: "${bb-secrets-api-key}"
+              - string:
+                  id: "pixie-oss-codecov-token"
+                  description: "Token for CodeCov"
+                  scope: GLOBAL
+                  secret: "${codecov-secrets-token}"
+              - basicSSHUserPrivateKey:
+                  scope: GLOBAL
+                  id: buildbot-ssh
+                  username: git
+                  description: "Read-only build bot access"
+                  privateKeySource:
+                      directEntry:
+                          privateKey: "${github-secrets-ssh-key}"
+      pipeline: |-
+        jobs:
+          - script: >
+              folder("pixie-oss")
+          - script: >
+              pipelineJob("pixie-oss/build-and-test-all") {
+                logRotator(30, 250)
+                triggers {
+                  githubPush()
+                }
+                properties {
+                  disableConcurrentBuilds()
+                }
+                definition {
+                  cpsScm {
+                    scriptPath('Jenkinsfile')
+                    scm {
+                      git {
+                        remote {
+                          url('https://github.com/pixie-io/pixie.git')
+                          credentials('buildbot-ssh')
+                        }
+                        branch('main')
+                        extensions {
+                          cleanAfterCheckout()
+                          cleanBeforeCheckout()
+                          wipeOutWorkspace()
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+          - script: >
+              pipelineJob("pixie-oss/build-and-test-pr") {
+                properties {
+                  githubProjectUrl('https://github.com/pixie-io/pixie/')
+                }
+                logRotator(30, 250)
+                triggers {
+                  githubPush()
+                }
+                definition {
+                  cpsScm {
+                    scriptPath('Jenkinsfile')
+                    scm {
+                      git {
+                        remote {
+                          url('https://github.com/pixie-io/pixie.git')
+                          credentials('buildbot-ssh')
+                          refspec('+refs/pull/*:refs/remotes/origin/pr/*')
+                        }
+                        branch('^${sha1}')
+                        extensions {
+                          cleanAfterCheckout()
+                          cleanBeforeCheckout()
+                          wipeOutWorkspace()
+                        }
+                      }
+                    }
+                    triggers {
+                      githubPullRequest {
+                        admins(['zasgar', 'aimichelle', 'vihangm'])
+                        useGitHubHooks()
+                      }
+                    }
+                  }
+                }
+              }
+        # yamllint enable rule:indentation
     # Allows adding to the top-level security JCasC section. For legacy,  default the chart includes
     # apiToken configurations
     security:
@@ -367,8 +510,8 @@ controller:
     # yamllint disable rule:indentation
     securityRealm: |-
       github:
-        clientID: "${jenkins-secrets-client-id}"
-        clientSecret: "${jenkins-secrets-client-secret}"
+        clientID: "${github-secrets-client-id}"
+        clientSecret: "${github-secrets-client-secret}"
         githubApiUri: "https://api.github.com"
         githubWebUri: "https://github.com"
         oauthScopes: "read:org,user:email"
@@ -597,7 +740,7 @@ agent:
   enabled: true
   defaultsProviderTemplate: ""
   # URL for connecting to the Jenkins contoller
-  jenkinsUrl:
+  jenkinsUrl: "https://jenkins.px.dev"
   # connect to the specified host and port, instead of connecting directly to the Jenkins controller
   jenkinsTunnel:
   kubernetesConnectTimeout: 5
@@ -704,7 +847,7 @@ agent:
   # Doesn't allocate pseudo TTY by default
   TTYEnabled: false
   # Max number of spawned agent
-  containerCap: 10
+  containerCap: 30
   # Pod name
   podName: "default"
   # Allows the Pod to remain active for reuse until the configured number of
@@ -749,7 +892,7 @@ agent:
   # Disable the default Jenkins Agent configuration.
   # Useful when configuring agents only with the podTemplates value, since the default podTemplate populated by values
   # mentioned above will be excluded in the rendered template.
-  disableDefaultAgent: false
+  disableDefaultAgent: true
 
   # Below is the implementation of custom pod templates for the default configured kubernetes cloud.
   # Add a key under podTemplates for each pod template. Each key (prior to | character) is just a label,

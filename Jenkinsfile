@@ -53,6 +53,8 @@ COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
+GCP_DEV_PROJECT = 'pl-dev-infra'
+GCP_OSS_PROJECT = 'pixie-oss'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
 // Our staging instance used to be run on our prod cluster. These creds are
@@ -109,6 +111,7 @@ isCopybaraLibuuid = env.JOB_NAME.startsWith('pixie-main/copybara-libuuid')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
+isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
 
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
@@ -262,7 +265,11 @@ def fetchSourceK8s(Closure body) {
   container('gcloud') {
     unstashFromGCS(SRC_STASH_NAME)
     sh 'git config --global --add safe.directory `pwd`'
-    sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+    if (isOSSCodeReviewRun || isOSSMainRun) {
+      sh 'cp ci/bes-gce.bazelrc bes.bazelrc'
+    } else {
+      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+    }
   }
   body()
 }
@@ -617,6 +624,13 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   def testFile = "bazel_tests_${targetsSuffix}"
   def bazelArgs = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
   def stashName = "${name}-${kernel}-testlogs"
+  def gcpProject = ""
+
+  if (isOSSCodeReviewRun || isOSSMainRun) {
+    gcpProject = GCP_OSS_PROJECT
+  } else {
+    gcpProject = GCP_DEV_PROJECT
+  }
 
   fetchFromGCS(SRC_STASH_NAME)
   fetchFromGCS(TARGETS_STASH_NAME)
@@ -629,6 +643,7 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
   export BUILD_TAG="${BUILD_TAG}"
   export KERNEL_VERSION="${kernel}"
+  export GCP_PROJECT="${gcpProject}"
   ./ci/bpf/00_create_instance.sh
   """
 

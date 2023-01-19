@@ -16,21 +16,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-DEFAULT_IMAGE="projects/pl-dev-infra/global/images/bpf-runner-4-14-215"
+if [[ -z ${GCP_PROJECT} ]]; then
+  echo "GCP_PROJECT must be set";
+  exit 1
+fi
+
+DEFAULT_IMAGE="projects/${GCP_PROJECT}/global/images/bpf-runner-4-14-215"
 IMAGE_TO_USE=""
 
 if [[ $KERNEL_VERSION = '5.19' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-5-19-11"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-5-19-11"
 elif [[ $KERNEL_VERSION = '5.15' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-5-15-15"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-5-15-15"
 elif [[ $KERNEL_VERSION = '5.10' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-5-10-149"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-5-10-149"
 elif [[ $KERNEL_VERSION = '5.4' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-5-4-19"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-5-4-19"
 elif [[ $KERNEL_VERSION = '4.19' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-4-19-260"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-4-19-260"
 elif [[ $KERNEL_VERSION = '4.14' ]]; then
-  IMAGE_TO_USE="projects/pl-dev-infra/global/images/bpf-runner-4-14-215"
+  IMAGE_TO_USE="projects/${GCP_PROJECT}/global/images/bpf-runner-4-14-215"
 elif [[ $KERNEL_VERSION ]]; then
   echo "Unsupported kernel version: ${KERNEL_VERSION}"
   exit 1
@@ -47,22 +52,22 @@ gcloud components install beta --quiet
 gcloud beta compute instances create \
   "${NAME}" \
   --quiet \
-  --project=pl-dev-infra \
+  --project="${GCP_PROJECT}" \
   --zone=us-west1-b \
   --machine-type=c2-standard-16 \
-  --service-account=jenkins-worker@pl-dev-infra.iam.gserviceaccount.com \
+  --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
   --network-interface=network-tier=PREMIUM,subnet=us-west1-0 \
   --maintenance-policy=MIGRATE --provisioning-model=STANDARD --instance-termination-action=DELETE \
   --instance-termination-action=DELETE --max-run-duration=10800s \
-  --service-account=jenkins-worker@pl-dev-infra.iam.gserviceaccount.com \
+  --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
-  --create-disk="auto-delete=yes,boot=yes,device-name=instance-1,image=${IMAGE_TO_USE},mode=rw,size=100,type=projects/pl-dev-infra/zones/us-central1-a/diskTypes/pd-ssd"
+  --create-disk="auto-delete=yes,boot=yes,device-name=instance-1,image=${IMAGE_TO_USE},mode=rw,size=100,type=projects/${GCP_PROJECT}/zones/us-central1-a/diskTypes/pd-ssd"
 
 cleanup() {
   gcloud compute instances delete \
   "${NAME}" \
-  --project=pl-dev-infra \
+  --project="${GCP_PROJECT}" \
   --zone=us-west1-b \
   --delete-disks=all \
   --quiet
@@ -81,14 +86,14 @@ run_on_instance() {
 
   gcloud compute ssh \
     "jenkins@${NAME}" \
-    --project=pl-dev-infra \
+    --project="${GCP_PROJECT}" \
     --zone=us-west1-b \
     --command="${PASSTHROUGH_ENV[*]} $*"
 }
 
 scp_to_instance() {
   gcloud compute scp \
-    --project=pl-dev-infra \
+    --project="${GCP_PROJECT}" \
     --zone=us-west1-b \
     "$@"
 }
