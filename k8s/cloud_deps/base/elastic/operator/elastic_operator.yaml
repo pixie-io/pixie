@@ -4863,7 +4863,7 @@ spec:
             - containerPort: 9443
               name: https-webhook
               protocol: TCP
-          securityContext:          
+          securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:

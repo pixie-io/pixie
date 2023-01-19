@@ -39,16 +39,16 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
-              - ALL
+            - ALL
             add:
-              - CHOWN
-              - DAC_OVERRIDE
-              - FSETID
-              - FOWNER
-              - MKNOD
-              - SETFCAP
-              - SETGID
-              - SETUID
+            - CHOWN
+            - DAC_OVERRIDE
+            - FSETID
+            - FOWNER
+            - MKNOD
+            - SETFCAP
+            - SETGID
+            - SETUID
           seccompProfile:
             type: RuntimeDefault
         volumeMounts:

@@ -235,16 +235,16 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
-              - ALL
+            - ALL
             add:
-              - CHOWN
-              - DAC_OVERRIDE
-              - FSETID
-              - FOWNER
-              - MKNOD
-              - SETFCAP
-              - SETGID
-              - SETUID
+            - CHOWN
+            - DAC_OVERRIDE
+            - FSETID
+            - FOWNER
+            - MKNOD
+            - SETFCAP
+            - SETGID
+            - SETUID
           runAsNonRoot: false
           runAsUser: 0
           seccompProfile:

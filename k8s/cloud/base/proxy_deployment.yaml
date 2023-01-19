@@ -82,16 +82,16 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             add:
-              - CHOWN
-              - DAC_OVERRIDE
-              - FSETID
-              - FOWNER
-              - MKNOD
-              - SETFCAP
-              - SETGID
-              - SETUID
+            - CHOWN
+            - DAC_OVERRIDE
+            - FSETID
+            - FOWNER
+            - MKNOD
+            - SETFCAP
+            - SETGID
+            - SETUID
             drop:
-              - ALL
+            - ALL
           seccompProfile:
             type: RuntimeDefault
       - name: envoy
@@ -128,16 +128,16 @@ spec:
           allowPrivilegeEscalation: false
           capabilities:
             add:
-              - CHOWN
-              - DAC_OVERRIDE
-              - FSETID
-              - FOWNER
-              - MKNOD
-              - SETFCAP
-              - SETGID
-              - SETUID
+            - CHOWN
+            - DAC_OVERRIDE
+            - FSETID
+            - FOWNER
+            - MKNOD
+            - SETFCAP
+            - SETGID
+            - SETUID
             drop:
-              - ALL
+            - ALL
           runAsNonRoot: true
           runAsUser: 10100
           seccompProfile:
