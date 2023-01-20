@@ -314,10 +314,46 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-tsan.tar.gz"],
         manual_license_name = "llvm/llvm-project",
     ),
-    com_llvm_libcxx = dict(
+    com_llvm_lib_x86_64_glibc2_36 = dict(
+        sha256 = "13a37fdba0e9bf386873509ded490177200265839a4abdbdccacb8bf2b9795ab",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-x86_64-sysroot.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_lib_libcpp_x86_64_glibc2_36 = dict(
+        sha256 = "6909bf0f95c2b0d798365651a8fb8e93c9b01994c5e68e76e71fb7e5100a3965",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-x86_64-sysroot.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_lib_aarch64_glibc2_36 = dict(
+        sha256 = "e1d0b628a7915113e79ac0fc1dfd4bc730177d0652fb684026ecfb87694416b0",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-aarch64-sysroot.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_lib_libcpp_aarch64_glibc2_36 = dict(
+        sha256 = "a0199c3a4247ea0e82a5b6914efac0cf339ad75ef64f927e353f84e2d0f8b60b",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-aarch64-sysroot.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_libcxx_x86_64_glibc_host = dict(
         sha256 = "2e123059d395daec37153fc413fe377a6a551b2919cd658fd9a302b11fea5201",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_libcxx_x86_64_glibc2_36 = dict(
+        sha256 = "51135b52804d3a899e58e1a7162ed065e95eb5d3822cab39edcfe9aed466eede",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-x86_64-sysroot.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
+    ),
+    com_llvm_libcxx_aarch64_glibc2_36 = dict(
+        sha256 = "a90304bd3e6530e6228beb8fede84fc06c893cefdab4b12859d5e93661aac7ce",
+        strip_prefix = "",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-aarch64-sysroot.tar.gz"],
         manual_license_name = "llvm/llvm-project",
     ),
     com_oracle_openjdk_18 = dict(

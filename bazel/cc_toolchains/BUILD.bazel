@@ -61,3 +61,12 @@ platform(
         ":is_exec_false",
     ],
 )
+
+platform(
+    name = "linux-aarch64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+        ":is_exec_false",
+    ],
+)

@@ -23,7 +23,7 @@ load("@unix_cc_toolchain_config//:cc_toolchain_config.bzl", "cc_toolchain_config
 # buildifier: disable=no-effect
 {toolchain_files_build}
 
-toolchain_identifier = "{name}_{target_arch}_{libc_version}"
+toolchain_identifier = "{name}_toolchain"
 
 tool_paths = {
     "ar": "{toolchain_path}/bin/llvm-ar",
@@ -40,24 +40,23 @@ tool_paths = {
 
 includes = [
     "{toolchain_path}/lib/clang/15.0.6/include",
-    "/usr/local/include",
-    "/usr/include/x86_64-linux-gnu",
-    "/usr/include",
-    "/usr/include/c++/11",
-    "/usr/include/x86_64-linux-gnu/c++/11",
-    "/usr/include/c++/11/backward",
+    "{sysroot_include_prefix}/usr/local/include",
+    "{sysroot_include_prefix}/usr/include/x86_64-linux-gnu",
+    "{sysroot_include_prefix}/usr/include",
+    "{sysroot_include_prefix}/usr/include/c++/12",
+    "{sysroot_include_prefix}/usr/include/x86_64-linux-gnu/c++/12",
+    "{sysroot_include_prefix}/usr/include/c++/12/backward",
     "{libcxx_path}/include/c++/v1",
 ]
-
-_PLATFORMS = {
-    "x86_64": "@platforms//cpu:x86_64",
-}
 
 cc_toolchain_config(
     name = "toolchain_config",
     abi_libc_version = "{libc_version}",
     abi_version = "clang",
+    builtin_sysroot = "{sysroot_path}",
     compile_flags = [
+        "-target",
+        "{target_arch}-linux-gnu",
         "-fstack-protector",
         "-Wall",
         "-Wthread-safety",
@@ -69,7 +68,7 @@ cc_toolchain_config(
     compiler = "clang",
     coverage_compile_flags = ["--coverage"],
     coverage_link_flags = ["--coverage"],
-    cpu = "k8",
+    cpu = "{target_arch}",
     cxx_builtin_include_directories = includes,
     cxx_flags = [
         "-std=c++17",
@@ -81,6 +80,8 @@ cc_toolchain_config(
     libclang_rt_path = "external/{this_repo}/{toolchain_path}/lib/clang/{clang_version}/lib/linux",
     libcxx_path = "external/{this_repo}/{libcxx_path}",
     link_flags = [
+        "-target",
+        "{target_arch}-linux-gnu",
         "-static-libgcc",
         "-fuse-ld=lld",
         "-Wl,-no-as-needed",
@@ -116,7 +117,7 @@ filegroup(
     srcs = [
         ":libcxx_all_files",
         ":toolchain_all_files",
-    ],
+    ] + (["@{sysroot_repo}//:all_files"] if "{sysroot_path}" else []),
 )
 
 filegroup(
@@ -138,7 +139,7 @@ filegroup(
     srcs = [
         ":libcxx_compiler_files",
         ":toolchain_compiler_files",
-    ],
+    ] + (["@{sysroot_repo}//:compiler_files"] if "{sysroot_path}" else []),
 )
 
 filegroup(
@@ -153,7 +154,7 @@ filegroup(
     srcs = [
         ":libcxx_linker_files",
         ":toolchain_linker_files",
-    ],
+    ] + (["@{sysroot_repo}//:linker_files"] if "{sysroot_path}" else []),
 )
 
 filegroup(
@@ -189,17 +190,16 @@ cc_toolchain(
 toolchain(
     name = "toolchain",
     exec_compatible_with = [
-        _PLATFORMS["{host_arch}"],
+        "@platforms//cpu:{host_arch}",
         "@platforms//os:linux",
     ],
     target_compatible_with = [
-        _PLATFORMS["{target_arch}"],
+        "@platforms//cpu:{target_arch}",
         "@platforms//os:linux",
-    ] + ["@px//bazel/cc_toolchains:is_exec_true"] if {use_for_host_tools} else ["@px//bazel/cc_toolchains:is_exec_false"],
+    ] + (["@px//bazel/cc_toolchains:is_exec_true"] if {use_for_host_tools} else ["@px//bazel/cc_toolchains:is_exec_false"]),
     target_settings = [
         "@px//bazel/cc_toolchains:compiler_clang",
-        "@px//bazel/cc_toolchains:libc_version_{libc_version}",
-    ],
+    ] + {target_libc_constraints},
     toolchain = ":cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )

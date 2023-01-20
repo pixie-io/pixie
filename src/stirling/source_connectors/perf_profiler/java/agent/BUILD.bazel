@@ -72,6 +72,9 @@ cc_static_musl_binary(
         "raw_symbol_update.h",
     ],
     linkshared = True,
+    target_compatible_with = [
+        "@platforms//cpu:x86_64",
+    ],
     deps = ["@com_oracle_openjdk_18//:jdk_includes"],
 )
 
