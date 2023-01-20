@@ -52,11 +52,13 @@ StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
   symbol.size = sizeof(gostring);
   PL_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
 
-  const auto* version_string = reinterpret_cast<const gostring*>(version_code.data());
+  // We can't guarantee the alignment on version_string so we make a copy into an aligned address.
+  gostring version_string;
+  std::memcpy(&version_string, version_code.data(), sizeof(version_string));
 
   ElfReader::SymbolInfo version_symbol;
-  version_symbol.address = reinterpret_cast<uint64_t>(version_string->ptr);
-  version_symbol.size = version_string->len;
+  version_symbol.address = reinterpret_cast<uint64_t>(version_string.ptr);
+  version_symbol.size = version_string.len;
 
   PL_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
   return std::string(reinterpret_cast<const char*>(str.data()), str.size());
