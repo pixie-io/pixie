@@ -141,6 +141,9 @@ def pl_py_grpc_library(name, proto, deps = [], **kwargs):
         name = codegen_py_grpc_target,
         srcs = [proto],
         deps = [codegen_py_pb_target],
+        target_compatible_with = [
+            "//bazel/cc_toolchains:is_exec_true",
+        ],
     )
     py_library(
         name = name,
@@ -201,6 +204,7 @@ colocate_python_files = rule(
             mandatory = True,
             providers = [PyInfo],
             allow_files = True,
+            cfg = "exec",
         ),
         protos_include_dir = attr.string(),
     ),
