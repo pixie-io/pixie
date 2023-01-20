@@ -17,9 +17,13 @@
  */
 
 #include <memory>
+#include <string>
 #include <utility>
 
+#include "src/experimental/standalone_pem/sink_server.h"
 #include "src/experimental/standalone_pem/standalone_pem_manager.h"
+#include "src/experimental/standalone_pem/vizier_server.h"
+#include "src/shared/metadata/standalone_state_manager.h"
 #include "src/shared/schema/utils.h"
 #include "src/table_store/table_store.h"
 #include "src/vizier/funcs/funcs.h"
@@ -49,28 +53,59 @@ namespace px {
 namespace vizier {
 namespace agent {
 
-StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view host_ip)
-    : time_system_(std::make_unique<px::event::RealTimeSystem>()),
+namespace {
+
+px::StatusOr<std::string> GetHostname() {
+  char hostname[HOST_NAME_MAX];
+  int err = gethostname(hostname, sizeof(hostname));
+  if (err != 0) {
+    return px::error::Unknown("Failed to get hostname");
+  }
+  return std::string(hostname);
+}
+
+}  // namespace
+
+StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view host_ip, int port)
+    : port_(port),
+      time_system_(std::make_unique<px::event::RealTimeSystem>()),
       api_(std::make_unique<px::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       table_store_(std::make_shared<table_store::TableStore>()),
       func_context_(this, /* mds_stub= */ nullptr, /* mdtp_stub= */ nullptr,
                     /* cronscript_stub= */ nullptr, table_store_, [](grpc::ClientContext*) {}),
-      stirling_(px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag())) {
+      stirling_(px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag())),
+      results_sink_server_(std::make_unique<StandaloneGRPCResultSinkServer>()) {
+  auto hostname_or_s = GetHostname();
   info_.agent_id = agent_id;
+  info_.asid = 0;
+  info_.pid = getpid();
   info_.host_ip = host_ip;
+  info_.hostname = hostname_or_s.ConsumeValueOrDie();
 
   // Register Vizier specific and carnot builtin functions.
   auto func_registry = std::make_unique<px::carnot::udf::Registry>("vizier_func_registry");
   ::px::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
   auto clients_config =
-      std::make_unique<px::carnot::Carnot::ClientsConfig>(px::carnot::Carnot::ClientsConfig{});
+      std::make_unique<px::carnot::Carnot::ClientsConfig>(px::carnot::Carnot::ClientsConfig{
+          [this](const std::string& addr, const std::string&) {
+            return this->results_sink_server_->StubGenerator(addr);
+          },
+          [](grpc::ClientContext*) {},
+      });
   auto server_config = std::make_unique<px::carnot::Carnot::ServerConfig>();
+  server_config->grpc_server_creds = grpc::InsecureServerCredentials();
+  server_config->grpc_server_port = 0;
 
   carnot_ = px::carnot::Carnot::Create(agent_id, std::move(func_registry), table_store_,
                                        std::move(clients_config), std::move(server_config))
                 .ConsumeValueOrDie();
+
+  mds_manager_ = std::make_unique<px::md::StandaloneAgentMetadataStateManager>(
+      info_.hostname, info_.asid, info_.pid, info_.agent_id);
+  // Force Metadata Update.
+  ECHECK_OK(mds_manager_->PerformMetadataStateUpdate());
 }
 
 Status StandalonePEMManager::Run() {
@@ -90,6 +125,27 @@ Status StandalonePEMManager::Init() {
   stirling_->RegisterUserDebugSignalHandlers();
 
   PL_RETURN_IF_ERROR(InitSchemas());
+
+  // Register the metadata update timer.
+  std::chrono::seconds update_period(5);
+  metadata_update_timer_ = dispatcher_->CreateTimer([this, update_period]() {
+    VLOG(1) << "State Update";
+    ECHECK_OK(mds_manager_->PerformMetadataStateUpdate());
+    if (metadata_update_timer_) {
+      metadata_update_timer_->EnableTimer(update_period);
+    }
+  });
+  metadata_update_timer_->EnableTimer(update_period);
+
+  carnot_->RegisterAgentMetadataCallback(
+      std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
+
+  stirling_->RegisterAgentMetadataCallback(
+      std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
+
+  vizier_grpc_server_ = std::make_unique<VizierGRPCServer>(
+      port_, carnot_.get(), results_sink_server_.get(), carnot_->GetEngineState());
+
   return Status::OK();
 }
 
@@ -152,6 +208,7 @@ Status StandalonePEMManager::Stop(std::chrono::milliseconds timeout) {
     std::this_thread::sleep_for(std::chrono::milliseconds{100});
   }
 
+  vizier_grpc_server_->Stop();
   return s;
 }
 

@@ -46,7 +46,7 @@ namespace agent {
 class VizierServer final : public api::vizierpb::VizierService::Service {
  public:
   VizierServer() = delete;
-  VizierServer(carnot::Carnot* carnot, px::vizier::agent::StandaloneResultSinkServer* svr,
+  VizierServer(carnot::Carnot* carnot, px::vizier::agent::StandaloneGRPCResultSinkServer* svr,
                px::carnot::EngineState* engine_state) {
     carnot_ = carnot;
     sink_server_ = svr;
@@ -56,6 +56,7 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
   ::grpc::Status ExecuteScript(
       ::grpc::ServerContext*, const ::px::api::vizierpb::ExecuteScriptRequest* reader,
       ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>* response) override {
+    LOG(INFO) << "Executing Script";
     // Send schema before sending query results.
     auto compiler_state = engine_state_->CreateLocalExecutionCompilerState(0);
     auto plan = px::carnot::planner::compiler::Compiler()
@@ -129,33 +130,37 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
 
  protected:
   carnot::Carnot* carnot_;
-  px::vizier::agent::StandaloneResultSinkServer* sink_server_;
+  px::vizier::agent::StandaloneGRPCResultSinkServer* sink_server_;
   px::carnot::EngineState* engine_state_;
 };
 
 class VizierGRPCServer {
  public:
   VizierGRPCServer() = delete;
-  VizierGRPCServer(std::string address, std::string port, carnot::Carnot* carnot,
-                   px::vizier::agent::StandaloneResultSinkServer* svr,
-                   carnot::EngineState* engine_state) {
-    std::make_unique<VizierServer>(carnot, svr, engine_state);
+  VizierGRPCServer(int port, carnot::Carnot* carnot,
+                   px::vizier::agent::StandaloneGRPCResultSinkServer* svr,
+                   carnot::EngineState* engine_state)
+      : vizier_server_(std::make_unique<VizierServer>(carnot, svr, engine_state)) {
     grpc::ServerBuilder builder;
 
-    builder.AddListeningPort(absl::Substitute("$0:$1", address, port),
-                             grpc::InsecureServerCredentials());
+    std::string uri = absl::Substitute("0.0.0.0:$0", port);
+    builder.AddListeningPort(uri, grpc::InsecureServerCredentials());
     builder.RegisterService(vizier_server_.get());
+
     grpc_server_ = builder.BuildAndStart();
     CHECK(grpc_server_ != nullptr);
 
-    LOG(INFO) << "Starting Vizier service";
+    LOG(INFO) << "Starting Vizier service: " << uri;
   }
 
-  ~VizierGRPCServer() {
+  void Stop() {
     if (grpc_server_) {
       grpc_server_->Shutdown();
     }
+    grpc_server_.reset(nullptr);
   }
+
+  ~VizierGRPCServer() { Stop(); }
 
   std::unique_ptr<api::vizierpb::VizierService::StubInterface> StubGenerator(
       const std::string&) const {

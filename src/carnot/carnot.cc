@@ -66,6 +66,8 @@ class CarnotImpl final : public Carnot {
 
   const udf::Registry* FuncRegistry() const override { return engine_state_->func_registry(); }
 
+  EngineState* GetEngineState() override { return engine_state_.get(); }
+
  private:
   Status RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan);
 

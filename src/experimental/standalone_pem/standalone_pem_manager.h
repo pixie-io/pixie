@@ -23,6 +23,9 @@
 
 #include "src/carnot/carnot.h"
 #include "src/common/event/event.h"
+#include "src/experimental/standalone_pem/sink_server.h"
+#include "src/experimental/standalone_pem/vizier_server.h"
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/stirling.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/services/agent/shared/base/base_manager.h"
@@ -43,13 +46,14 @@ class StandalonePEMManager : public BaseManager {
   }
 
   StandalonePEMManager() = delete;
-  StandalonePEMManager(sole::uuid agent_id, std::string_view host_ip);
+  StandalonePEMManager(sole::uuid agent_id, std::string_view host_ip, int port);
 
   Status Run() final;
   Status Init();
   Status Stop(std::chrono::milliseconds timeout) final;
 
  private:
+  int port_;
   Status InitSchemas();
   Status StopImpl(std::chrono::milliseconds);
 
@@ -72,6 +76,13 @@ class StandalonePEMManager : public BaseManager {
 
   std::unique_ptr<carnot::Carnot> carnot_;
   std::unique_ptr<stirling::Stirling> stirling_;
+
+  std::unique_ptr<StandaloneGRPCResultSinkServer> results_sink_server_;
+  std::unique_ptr<VizierGRPCServer> vizier_grpc_server_;
+
+  std::unique_ptr<px::md::AgentMetadataStateManager> mds_manager_;
+  // The timer to manage metadata updates.
+  px::event::TimerUPtr metadata_update_timer_;
 };
 
 }  // namespace agent

@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/engine_state.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/queryresultspb/query_results.pb.h"
@@ -89,6 +90,11 @@ class Carnot : public NotCopyable {
    * Returns a const pointer to carnot's function registry.
    */
   virtual const udf::Registry* FuncRegistry() const = 0;
+
+  /*
+   * Gets the active engine state from carnot.
+   */
+  virtual EngineState* GetEngineState() = 0;
 };
 
 }  // namespace carnot

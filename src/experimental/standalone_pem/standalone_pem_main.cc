@@ -26,6 +26,9 @@ using ::px::vizier::agent::DefaultDeathHandler;
 using ::px::vizier::agent::StandalonePEMManager;
 using ::px::vizier::agent::TerminationHandler;
 
+DEFINE_int32(port, gflags::Int32FromEnv("PX_STANDALONE_PEM_PORT", 12345),
+             "The port where the PEM receives GRPC requests.");
+
 int main(int argc, char** argv) {
   px::EnvironmentGuard env_guard(&argc, argv);
 
@@ -43,8 +46,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", px::VersionInfo::VersionString(),
                                 agent_id.str());
 
-  auto manager =
-      StandalonePEMManager::Create(agent_id, /* host_ip */ "0.0.0.0").ConsumeValueOrDie();
+  auto manager = StandalonePEMManager::Create(agent_id, /* host_ip */ "0.0.0.0", FLAGS_port)
+                     .ConsumeValueOrDie();
   TerminationHandler::set_manager(manager.get());
 
   PL_CHECK_OK(manager->Run());
