@@ -95,9 +95,9 @@ yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
 # Build prod YAMLs.
 if [[ "$RELEASE" == "true" ]]; then
   yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:prod_cloud_yamls
+  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:pixie_prod_cloud
 else # Build staging YAMLs.
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:staging_cloud_yamls
+  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:pixie_staging_cloud
 fi
 
 kubectl apply -f "$yaml_path"

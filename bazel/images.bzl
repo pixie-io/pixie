@@ -14,6 +14,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+def image_replacements(image_map, replace):
+    replacements = {}
+
+    for k in image_map.keys():
+        image_tag = k
+        for old, new in replace.items():
+            image_tag = image_tag.replace(old, new)
+        replacements[k] = image_tag
+
+    return replacements
+
 def image_map_with_bundle_version(image_map, replace):
     with_version = {}
 

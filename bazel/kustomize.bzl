@@ -19,15 +19,23 @@ def _kustomize_build_impl(ctx):
     out = ctx.actions.declare_file(output_fname)
 
     cmds = [
-        "KUSTOMIZE_BIN=$(realpath {})".format(ctx.executable._kustomize.path),
-        "TMP=$(mktemp -d)",
+        'KUSTOMIZE_BIN="$(realpath "{}")"'.format(ctx.executable._kustomize.path),
+        'TMP="$(mktemp -d)"',
     ]
 
     for file in ctx.files.srcs:
-        cmds.append('cp --parents {} "$TMP"'.format(file.path))
+        cmds.append('cp --parents "{}" "$TMP"'.format(file.path))
 
-    cmds.append('cp --parents {} "$TMP"'.format(ctx.file.kustomization.path))
-    cmds.append('"$KUSTOMIZE_BIN" build "$TMP/$(dirname {})" -o {}'.format(ctx.file.kustomization.path, out.path))
+    # The kustomization might be a bazel target, but we would like to
+    # place it in the short_path instead of the path.
+    # So create the parent for short_path if needed ...
+    cmds.append('mkdir --parents "$TMP/$(dirname "{}")"'.format(ctx.file.kustomization.short_path))
+
+    # ... and then copy path to short_path.
+    # This is all to just line up the directory structure!
+    cmds.append('cp "{}" "$TMP/{}"'.format(ctx.file.kustomization.path, ctx.file.kustomization.short_path))
+
+    cmds.append('"$KUSTOMIZE_BIN" build "$TMP/$(dirname "{}")" -o "{}"'.format(ctx.file.kustomization.short_path, out.path))
     cmds.append('rm -rf "$TMP"')
 
     ctx.actions.run_shell(
@@ -54,6 +62,50 @@ kustomize_build = rule(
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
+        ),
+        "_kustomize": attr.label(
+            default = Label("@io_k8s_sigs_kustomize_kustomize_v4//:v4"),
+            executable = True,
+            cfg = "exec",
+        ),
+    }),
+)
+
+def _kustomize_edit_set_image_impl(ctx):
+    out = ctx.actions.declare_file(ctx.attr.kustomization.label.name)
+
+    cmds = [
+        'KUSTOMIZE_BIN="$(realpath "{}")"'.format(ctx.executable._kustomize.path),
+        'cp "{}" "{}"'.format(ctx.file.kustomization.short_path, out.path),
+        'cd "$(dirname "{}")"'.format(out.path),
+    ]
+
+    for old, new in ctx.attr.replacements.items():
+        cmds.append('"$KUSTOMIZE_BIN" edit set image {}={}:{}'.format(old, new, ctx.var["BUNDLE_VERSION"]))
+
+    ctx.actions.run_shell(
+        tools = [ctx.executable._kustomize],
+        outputs = [out],
+        inputs = [ctx.file.kustomization],
+        command = " && ".join(cmds),
+        mnemonic = "KustomizeEdit",
+    )
+
+    return [
+        DefaultInfo(
+            files = depset([out]),
+        ),
+    ]
+
+kustomize_edit_set_image = rule(
+    implementation = _kustomize_edit_set_image_impl,
+    attrs = dict({
+        "kustomization": attr.label(
+            mandatory = True,
+            allow_single_file = True,
+        ),
+        "replacements": attr.string_dict(
+            mandatory = True,
         ),
         "_kustomize": attr.label(
             default = Label("@io_k8s_sigs_kustomize_kustomize_v4//:v4"),
