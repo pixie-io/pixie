@@ -126,18 +126,6 @@ spec:
           name: service-certs
         securityContext:
           allowPrivilegeEscalation: false
-          capabilities:
-            add:
-            - CHOWN
-            - DAC_OVERRIDE
-            - FSETID
-            - FOWNER
-            - MKNOD
-            - SETFCAP
-            - SETGID
-            - SETUID
-            drop:
-            - ALL
           runAsNonRoot: true
           runAsUser: 10100
           seccompProfile:

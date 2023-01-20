@@ -40,6 +40,32 @@ spec:
           capabilities:
             drop:
             - ALL
+          runAsNonRoot: false
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          subPath: data
+          name: postgres-pv-claim
+      initContainers:
+      - name: init-chown-data
+        image: busybox
+        command: ["chown", "-R", "10100:10100", "/var/lib/postgresql/data"]
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-pv-claim
+          subPath: data
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+          limits:
+            cpu: 100m
+            memory: 200Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
             add:
             - CHOWN
             - DAC_OVERRIDE
@@ -49,12 +75,10 @@ spec:
             - SETFCAP
             - SETGID
             - SETUID
+            drop:
+            - ALL
           seccompProfile:
             type: RuntimeDefault
-        volumeMounts:
-        - mountPath: /var/lib/postgresql/data
-          subPath: data
-          name: postgres-pv-claim
       volumes:
       - name: postgres-pv-claim
         persistentVolumeClaim:
