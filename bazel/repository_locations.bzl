@@ -292,21 +292,25 @@ REPOSITORY_LOCATIONS = dict(
     com_llvm_clang_15 = dict(
         sha256 = "fa1198d6fcfb25a43b3ce326f14a874177ede9df1315c2826556742324fc6428",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/clang-min-15.0-pl8.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_x86_64_glibc_host = dict(
         sha256 = "9106b0694ec4f16e10425bab2357f861e32c3e49041f0bac51f56c5bba9ea966",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc_host = dict(
         sha256 = "041598998b833611efa0673c5a2795583257a4171b996ee50e2e130e60c439d7",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8-libcxx.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_libcxx = dict(
         sha256 = "ef4db0e0e044e41377099ff5ae9570724006539020b8293d8bec76613141d81b",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/libcxx-15.0-pl8.tar.gz"],
+        manual_license_name = "llvm/llvm-project",
     ),
     com_oracle_openjdk_18 = dict(
         sha256 = "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
@@ -314,6 +318,7 @@ REPOSITORY_LOCATIONS = dict(
         urls = [
             "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz",
         ],
+        manual_license_name = "oracle/openjdk",
     ),
     io_bazel_rules_closure = dict(
         sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",

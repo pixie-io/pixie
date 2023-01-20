@@ -126,6 +126,10 @@ func parseDep(line string) *dependency {
 
 	dep.Name = dep.Package
 
+	if strings.HasPrefix(line, "#manual-license-name:") {
+		dep.Name = strings.TrimPrefix(line, "#manual-license-name:")
+	}
+
 	if *tryPkgDevGo && !strings.Contains(dep.Package, "github") {
 		// This is a non github go pkg dep. Resolve to the go pkg manager
 		// since these are usually URL like but not always valid pages on the internet.

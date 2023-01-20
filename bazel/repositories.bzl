@@ -192,14 +192,17 @@ def _java_deps():
     )
 
 def _list_pl_deps(name):
-    repo_urls = list()
+    modules = dict()
     for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
+        if "manual_license_name" in repo_config:
+            modules["#manual-license-name:" + repo_config["manual_license_name"]] = True
+            continue
         urls = repo_config["urls"]
         best_url = None
         for url in urls:
             if url.startswith("https://github.com") or best_url == None:
                 best_url = url
-        repo_urls.append(best_url)
+        modules[best_url] = True
 
     for repo_name, repo_config in GIT_REPOSITORY_LOCATIONS.items():
         remote = repo_config["remote"]
@@ -207,12 +210,16 @@ def _list_pl_deps(name):
             remote = remote[:-len(".git")]
         if repo_config["commit"]:
             remote = remote + "/commit/" + repo_config["commit"]
-        repo_urls.append(remote)
+        modules[remote] = True
+
+    module_lines = []
+    for key in modules.keys():
+        module_lines.append(key)
 
     native.genrule(
         name = name,
         outs = ["{}.out".format(name)],
-        cmd = 'echo "{}" > $@'.format("\n".join(repo_urls)),
+        cmd = 'echo "{}" > $@'.format("\n".join(module_lines)),
         visibility = ["//visibility:public"],
     )
 
