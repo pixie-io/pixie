@@ -61,7 +61,10 @@ container_push(
 
 kustomize_build(
     name = "vizier_crd",
-    srcs = glob(["crd/base/*.yaml"]),
+    srcs = glob(
+        ["crd/base/*.yaml"],
+        exclude = ["crd/base/kustomization.yaml"],
+    ),
     kustomization = "crd/base/kustomization.yaml",
 )
 

@@ -20,12 +20,18 @@ package(default_visibility = ["//visibility:public"])
 
 kustomize_build(
     name = "nats_prod",
-    srcs = glob(["base/nats/*.yaml"]),
+    srcs = glob(
+        ["base/nats/*.yaml"],
+        exclude = ["base/nats/kustomization.yaml"],
+    ),
     kustomization = "base/nats/kustomization.yaml",
 )
 
 kustomize_build(
     name = "etcd_prod",
-    srcs = glob(["base/etcd/*.yaml"]),
+    srcs = glob(
+        ["base/etcd/*.yaml"],
+        exclude = ["base/etcd/kustomization.yaml"],
+    ),
     kustomization = "base/etcd/kustomization.yaml",
 )

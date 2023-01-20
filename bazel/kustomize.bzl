@@ -16,24 +16,28 @@
 
 def _kustomize_build_impl(ctx):
     output_fname = "{}.yaml".format(ctx.attr.name)
-
     out = ctx.actions.declare_file(output_fname)
-    args = [
-        "build",
-        ctx.file.kustomization.dirname,
-        "--load-restrictor=LoadRestrictionsNone",
-        "-o",
-        out.path,
+
+    cmds = [
+        "KUSTOMIZE_BIN=$(realpath {})".format(ctx.executable._kustomize.path),
+        "TMP=$(mktemp -d)",
     ]
 
-    ctx.actions.run(
-        executable = ctx.executable._kustomize,
+    for file in ctx.files.srcs:
+        cmds.append('cp --parents {} "$TMP"'.format(file.path))
+
+    cmds.append('cp --parents {} "$TMP"'.format(ctx.file.kustomization.path))
+    cmds.append('"$KUSTOMIZE_BIN" build "$TMP/$(dirname {})" -o {}'.format(ctx.file.kustomization.path, out.path))
+    cmds.append('rm -rf "$TMP"')
+
+    ctx.actions.run_shell(
         tools = [ctx.executable._kustomize],
-        inputs = ctx.files.srcs + [ctx.file.kustomization],
         outputs = [out],
-        arguments = args,
+        inputs = ctx.files.srcs + [ctx.file.kustomization],
+        command = " && ".join(cmds),
         mnemonic = "KustomizeBuild",
     )
+
     return [
         DefaultInfo(
             files = depset([out]),
