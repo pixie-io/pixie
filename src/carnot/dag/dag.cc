@@ -159,6 +159,9 @@ void DAG::DeleteParentEdges(int64_t to_node) {
     // Erase points to the next valid iterator.
     // Delete to_node->parent edge.
     parent_iter = reverse_edges.erase(parent_iter);
+    if (parent_iter == reverse_edges.end()) {
+      break;
+    }
     // Remove the entry from the map for each parent of the edge.
     forward_edges_map_[*parent_iter].erase(to_node);
   }
