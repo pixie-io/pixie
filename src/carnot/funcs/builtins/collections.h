@@ -53,8 +53,16 @@ inline types::StringValue SerializeScalar(types::UInt128Value* value) {
 }
 
 template <typename T>
+inline T CopyIntoAligned(const types::StringValue& data) {
+  alignas(std::alignment_of_v<T>) T val;
+  DCHECK_EQ(data.size(), sizeof(val));
+  std::memcpy(&val, data.data(), sizeof(val));
+  return val;
+}
+
+template <typename T>
 T DeserializeScalar(const types::StringValue& data) {
-  return *reinterpret_cast<const typename types::ValueTypeTraits<T>::native_type*>(data.data());
+  return CopyIntoAligned<typename types::ValueTypeTraits<T>::native_type>(data);
 }
 
 template <>
@@ -63,8 +71,8 @@ inline types::StringValue DeserializeScalar(const types::StringValue& data) {
 }
 template <>
 inline types::UInt128Value DeserializeScalar(const types::StringValue& data) {
-  auto* val = reinterpret_cast<const UInt128*>(data.data());
-  return types::UInt128Value(val->high, val->low);
+  auto val = CopyIntoAligned<UInt128>(data);
+  return types::UInt128Value(val.high, val.low);
 }
 
 template <typename TArg>
