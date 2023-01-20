@@ -46,33 +46,45 @@ ui_shared_cmds_finish = [
 def _pl_webpack_deps_impl(ctx):
     all_files = list(ctx.files.srcs)
 
+    output_fname = "{}.tar.gz".format(ctx.attr.name)
+    out = ctx.actions.declare_file(output_fname)
+
     cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + ctx.outputs.out.path,
+        "export OUTPUT_PATH=" + out.path,
         "yarn install --immutable &> build.log",
         "tar -czf ${BASE_PATH}/${OUTPUT_PATH} .",
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
         inputs = all_files,
-        outputs = [ctx.outputs.out],
+        outputs = [out],
         command = " && ".join(cmd),
         env = {
             "BASE_PATH": "$$PWD",
             "UILIB_PATH": ctx.attr.uilib_base,
         },
         progress_message =
-            "Generating webpack deps %s" % ctx.outputs.out.short_path,
+            "Generating webpack deps %s" % out.short_path,
     )
+
+    return [
+        DefaultInfo(
+            files = depset([out]),
+        ),
+    ]
 
 def _pl_webpack_library_impl(ctx):
     all_files = list(ctx.files.srcs)
+
+    output_fname = "{}.tar.gz".format(ctx.attr.name)
+    out = ctx.actions.declare_file(output_fname)
 
     if ctx.attr.stamp:
         all_files.append(ctx.info_file)
         all_files.append(ctx.version_file)
 
     cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + ctx.outputs.out.path,
+        "export OUTPUT_PATH=" + out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
         "[ ! -d src/configurables/private ] || mv ${BASE_PATH}/" + ctx.file.licenses.path + " src/configurables/private/licenses.json",
         "output=`yarn build_prod 2>&1` || echo ${output}",
@@ -81,15 +93,21 @@ def _pl_webpack_library_impl(ctx):
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps + ctx.files.licenses,
-        outputs = [ctx.outputs.out],
+        outputs = [out],
         command = " && ".join(cmd),
         env = {
             "BASE_PATH": "$$PWD",
             "UILIB_PATH": ctx.attr.uilib_base,
         },
         progress_message =
-            "Generating webpack bundle %s" % ctx.outputs.out.short_path,
+            "Generating webpack bundle %s" % out.short_path,
     )
+
+    return [
+        DefaultInfo(
+            files = depset([out]),
+        ),
+    ]
 
 def _pl_ui_test_impl(ctx):
     test_cmd = [
@@ -136,8 +154,11 @@ def _pl_ui_test_impl(ctx):
 def _pl_deps_licenses_impl(ctx):
     all_files = list(ctx.files.srcs)
 
+    output_fname = "{}.json".format(ctx.attr.name)
+    out = ctx.actions.declare_file(output_fname)
+
     cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + ctx.outputs.out.path,
+        "export OUTPUT_PATH=" + out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
         "yarn license_check --excludePrivatePackages --production --json --out ${TMPPATH}/checker.json",
         "yarn pnpify node ./tools/licenses/yarn_license_extractor.js " +
@@ -146,15 +167,20 @@ def _pl_deps_licenses_impl(ctx):
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps,
-        outputs = [ctx.outputs.out],
+        outputs = [out],
         command = " && ".join(cmd),
         env = {
             "BASE_PATH": "$$PWD",
             "UILIB_PATH": ctx.attr.uilib_base,
         },
         progress_message =
-            "Generating licenses %s" % ctx.outputs.out.short_path,
+            "Generating licenses %s" % out.short_path,
     )
+    return [
+        DefaultInfo(
+            files = depset([out]),
+        ),
+    ]
 
 pl_webpack_deps = rule(
     implementation = _pl_webpack_deps_impl,
@@ -167,9 +193,6 @@ pl_webpack_deps = rule(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
     }),
-    outputs = {
-        "out": "%{name}.tar.gz",
-    },
 )
 
 pl_webpack_library = rule(
@@ -186,9 +209,6 @@ pl_webpack_library = rule(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
     }),
-    outputs = {
-        "out": "%{name}.tar.gz",
-    },
 )
 
 pl_ui_test = rule(
@@ -222,7 +242,4 @@ pl_deps_licenses = rule(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
     }),
-    outputs = {
-        "out": "%{name}.json",
-    },
 )
