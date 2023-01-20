@@ -27,22 +27,42 @@
 #include "src/stirling/testing/common.h"
 
 DECLARE_string(stirling_profiler_px_jattach_path);
+DEFINE_string(stirling_profiler_java_agent_libs, "none", "Agent libs test arg.");
 
 namespace px {
 namespace stirling {
 
+using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
 using ::px::testing::BazelRunfilePath;
 using ::testing::HasSubstr;
 
-// TODO(jps): Fix and re-enable test.
+namespace {
+// Uses the value in FLAGS_stirling_profiler_java_agent_libs to construct a new arg. that
+// is a comma separated list of abs paths to agent libs.
+StatusOr<std::string> GetAbsPathLibsArg() {
+  const std::string& comma_separated_libs = FLAGS_stirling_profiler_java_agent_libs;
+  const std::vector<std::string_view> rel_path_libs = absl::StrSplit(comma_separated_libs, ",");
+
+  std::vector<std::string> abs_path_libs;
+  for (const auto& rel_p : rel_path_libs) {
+    PL_ASSIGN_OR_RETURN(const auto abs_p, fs::Absolute(rel_p));
+    if (!fs::Exists(abs_p)) {
+      return error::NotFound("Could not find: $0.", abs_p.string());
+    }
+    abs_path_libs.push_back(abs_p.string());
+  }
+  return absl::StrJoin(abs_path_libs, ",");
+}
+}  // namespace
+
 // This test does the following:
 // 1. Starts a target Java process (the fib app).
 // 2. Uses the AgentAttach class to inject a JVMTI agent (our symbolization agent).
 // 3. Finds the resulting symbol file and verifies that it has some symbols.
 // Before doing any of the above, we setup some file paths for the target app,
 // and for AgentAttach to find the JVMTI .so libs.
-TEST(JavaAttachTest, DISABLED_ExpectedSymbolsTest) {
+TEST(JavaAttachTest, ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
 
@@ -60,21 +80,7 @@ TEST(JavaAttachTest, DISABLED_ExpectedSymbolsTest) {
   ASSERT_TRUE(fs::Exists(bazel_test_app_path));
 
   PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, bazel_attach_app_path.string());
-  // Construct the a vector of strings, "libs." It is used to show the attacher where it
-  // can find candidate agent.so files. The attacher will test each agent.so vs. the link
-  // environment inside of the target process namespace by (2) entering that namespace
-  // and (2) attempting to use a function from the lib by mapping it w/ dlopen.
-  // Currently, we have a symbolization agent library for glibc and for musl.
-  const fs_path lib_path_pfx = "src/stirling/source_connectors/perf_profiler/java/agent";
-  const fs_path lib = "lib-px-java-agent.so";
-
-  const std::vector<std::string> libs = {
-      std::filesystem::absolute(BazelRunfilePath(lib_path_pfx / lib)).string(),
-  };
-  for (const auto& lib : libs) {
-    ASSERT_TRUE(fs::Exists(lib)) << lib;
-  }
-  const std::string libs_arg = absl::StrJoin(libs, ",");
+  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
 
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).
@@ -92,6 +98,9 @@ TEST(JavaAttachTest, DISABLED_ExpectedSymbolsTest) {
   ASSERT_OK_AND_ASSIGN(const uint64_t start_time, GetPIDStartTimeTicks(proc_pid_path));
   const struct upid_t child_upid = {{child_pid}, start_time};
   const fs_path symbol_file_path = java::StirlingSymbolFilePath(child_upid);
+
+  // Populate libs arg. with a comma separated list of abs paths to agent libs.
+  ASSERT_OK_AND_ASSIGN(const auto libs_arg, GetAbsPathLibsArg());
 
   // Invoke the attach process by creating an attach object.
   auto attacher = java::AgentAttacher(child_upid, libs_arg);
