@@ -24,7 +24,10 @@ package(default_visibility = [
 pl_cc_library(
     name = "carnot",
     hdrs = ["carnot.h"],
-    visibility = ["//src/vizier/services/agent:__subpackages__"],
+    visibility = [
+        "//src/experimental:__subpackages__",
+        "//src/vizier/services/agent:__subpackages__",
+    ],
     deps = [":cc_library"],
 )
 
