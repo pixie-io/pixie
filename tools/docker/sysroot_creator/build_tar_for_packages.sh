@@ -109,12 +109,33 @@ do
   echo "- ${pkg}"
 done
 
+relativize_symlinks() {
+  dir="$1"
+  libdirs=("lib" "lib64" "usr/lib")
+  pushd "${dir}" > /dev/null
+
+  while read -r link target; do
+    # Skip links targeting non-absolute paths.
+    if [[ "${target}" != "/"* ]]; then
+      continue
+    fi
+    # Remove all non-"/" characters from the link name. Then replace each "/" with "../".
+    prefix=$(echo "${link}" | sed -e 's|[^/]||g' | sed -e 's|/|../|g')
+    ln -snf "${prefix}${target}" "${link}"
+  done < <(find "${libdirs[@]}" -type l -printf '%p %l\n')
+
+  popd > /dev/null
+}
+
 inside_tmpdir() {
   apt-get -c "${apt_conf}" download "${!dependency_transitive_closure[@]}" &>/dev/null
   root_dir="root"
   while read -r deb; do
     dpkg-deb -x "${deb}" "${root_dir}" &>/dev/null
   done < <(ls -- *.deb)
+
+  relativize_symlinks "${root_dir}"
+
   tar -C "${root_dir}" -czf "${output_tar_path}" .
 }
 
