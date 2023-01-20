@@ -163,12 +163,6 @@
         "(\\.go$)"
       ]
     },
-    "govet": {
-      "type": "govet",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
     "jshint-ui": {
       "type": "jshint",
       "jshint.jshintrc": "./src/ui/.jshintrc",

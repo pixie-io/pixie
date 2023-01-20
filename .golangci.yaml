@@ -23,6 +23,7 @@ linters:
   # So we include gofmt here.
   - gofmt
   - gosimple
+  - govet
   - ineffassign
   - makezero
   - misspell
@@ -44,7 +45,6 @@ linters:
   # This is because we have autofix hooks for these linters.
   - goimports
   - golint
-  - govet
   disable-all: false
 
 linters-settings:
