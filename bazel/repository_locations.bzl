@@ -293,12 +293,12 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "fa1198d6fcfb25a43b3ce326f14a874177ede9df1315c2826556742324fc6428",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/clang-min-15.0-pl8.tar.gz"],
     ),
-    com_llvm_lib = dict(
+    com_llvm_lib_x86_64_glibc_host = dict(
         sha256 = "9106b0694ec4f16e10425bab2357f861e32c3e49041f0bac51f56c5bba9ea966",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8.tar.gz"],
     ),
-    com_llvm_lib_libcpp = dict(
+    com_llvm_lib_libcpp_x86_64_glibc_host = dict(
         sha256 = "041598998b833611efa0673c5a2795583257a4171b996ee50e2e130e60c439d7",
         strip_prefix = "",
         urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl8/llvm-15.0-pl8-libcxx.tar.gz"],

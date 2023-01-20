@@ -13,23 +13,20 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("//bazel/cc_toolchains:llvm_libs.bzl", "llvm_variant_repo_name", "llvm_variant_setting_label", "llvm_variants")
 
 def add_llvm_cache_entries(cache_entries):
     return select({
-        "@px//bazel:use_libcpp": dict(
+        llvm_variant_setting_label(variant): dict(
             cache_entries,
-            LLVM_ROOT = "$EXT_BUILD_ROOT/external/com_llvm_lib_libcpp",
-            Clang_ROOT = "$EXT_BUILD_ROOT/external/com_llvm_lib_libcpp",
-        ),
-        "//conditions:default": dict(
-            cache_entries,
-            LLVM_ROOT = "$EXT_BUILD_ROOT/external/com_llvm_lib",
-            Clang_ROOT = "$EXT_BUILD_ROOT/external/com_llvm_lib",
-        ),
+            LLVM_ROOT = "$EXT_BUILD_ROOT/external/" + llvm_variant_repo_name(variant),
+            Clang_ROOT = "$EXT_BUILD_ROOT/external/" + llvm_variant_repo_name(variant),
+        )
+        for variant in llvm_variants()
     })
 
 def llvm_build_data_deps():
     return select({
-        "@px//bazel:use_libcpp": ["@com_llvm_lib_libcpp//:cmake"],
-        "//conditions:default": ["@com_llvm_lib//:cmake"],
+        llvm_variant_setting_label(variant): ["@{repo}//:cmake".format(repo = llvm_variant_repo_name(variant))]
+        for variant in llvm_variants()
     })

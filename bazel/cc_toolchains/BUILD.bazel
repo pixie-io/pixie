@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 load("//bazel/cc_toolchains:gcc.bzl", "gcc_x86_64_gnu", "gcc_x86_64_static_musl")
+load("//bazel/cc_toolchains:llvm_libs.bzl", "llvm_variant_settings")
 load("//bazel/cc_toolchains:settings.bzl", "settings")
 
 filegroup(
@@ -21,6 +22,8 @@ filegroup(
 )
 
 settings()
+
+llvm_variant_settings()
 
 gcc_x86_64_gnu()
 

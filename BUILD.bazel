@@ -18,6 +18,7 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("//bazel:repositories.bzl", "list_pl_deps")
+load("//bazel/cc_toolchains:llvm_libs.bzl", "llvm_variant_repo_name", "llvm_variant_setting_label", "llvm_variants")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 licenses(["restricted"])
@@ -172,8 +173,8 @@ container_image(
 alias(
     name = "llvm",
     actual = select({
-        "//bazel:use_libcpp": "@com_llvm_lib_libcpp//:llvm",
-        "//conditions:default": "@com_llvm_lib//:llvm",
+        llvm_variant_setting_label(variant): "@{repo}//:llvm".format(repo = llvm_variant_repo_name(variant))
+        for variant in llvm_variants()
     }),
     visibility = ["//visibility:public"],
 )

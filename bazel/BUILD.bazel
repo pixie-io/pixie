@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,9 +46,23 @@ config_setting(
     },
 )
 
+bool_flag(
+    name = "enable_libcpp",
+    build_setting_default = False,
+)
+
 config_setting(
     name = "use_libcpp",
-    values = {"define": "use_libcpp=1"},
+    flag_values = {
+        "//bazel:enable_libcpp": "True",
+    },
+)
+
+config_setting(
+    name = "use_libstdcpp",
+    flag_values = {
+        "//bazel:enable_libcpp": "False",
+    },
 )
 
 config_setting(
