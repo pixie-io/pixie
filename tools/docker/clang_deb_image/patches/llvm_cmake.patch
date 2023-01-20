@@ -1,6 +1,6 @@
-diff --color -Naur a/lib/cmake/clang/ClangTargets.cmake b/lib/cmake/clang/ClangTargets.cmake
---- a/lib/cmake/clang/ClangTargets.cmake	2023-01-13 10:19:51.000000000 -0800
-+++ b/lib/cmake/clang/ClangTargets.cmake	2023-01-13 15:48:15.524493118 -0800
+diff -Naur a/lib/cmake/clang/ClangTargets.cmake b/lib/cmake/clang/ClangTargets.cmake
+--- a/lib/cmake/clang/ClangTargets.cmake        2023-01-21 22:15:51.223322085 +0000
++++ b/lib/cmake/clang/ClangTargets.cmake        2023-01-21 22:16:22.539300831 +0000
 @@ -413,46 +413,6 @@
  # Cleanup temporary variables.
  set(_IMPORT_PREFIX)
@@ -29,7 +29,7 @@ diff --color -Naur a/lib/cmake/clang/ClangTargets.cmake b/lib/cmake/clang/ClangT
 -# Make sure the targets which have been exported in some other
 -# export set exist.
 -unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
--foreach(_target "LLVMSupport" "LLVMFrontendOpenMP" "LLVMMC" "LLVMMCParser" "LLVMBinaryFormat" "LLVMCore" "LLVMAnalysis" "LLVMBitReader" "LLVMBitWriter" "LLVMCoroutines" "LLVMCoverage" "LLVMDemangle" "LLVMExtensions" "LLVMipo" "LLVMIRReader" "LLVMAggressiveInstCombine" "LLVMInstCombine" "LLVMInstrumentation" "LLVMLTO" "LLVMLinker" "LLVMObjCARCOpts" "LLVMObject" "LLVMPasses" "LLVMProfileData" "LLVMRemarks" "LLVMScalarOpts" "LLVMTarget" "LLVMTransformUtils" "LLVMOption" "LLVMWindowsDriver" "LLVMBitstreamReader" "LLVMBPFCodeGen" "LLVMBPFAsmParser" "LLVMBPFDesc" "LLVMBPFDisassembler" "LLVMBPFInfo" "LLVMX86CodeGen" "LLVMX86AsmParser" "LLVMX86Desc" "LLVMX86Disassembler" "LLVMX86Info" "LLVMAArch64CodeGen" "LLVMAArch64AsmParser" "LLVMAArch64Desc" "LLVMAArch64Disassembler" "LLVMAArch64Info" "LLVMAArch64Utils" "LLVMOrcJIT" "LLVMCodeGen" "LLVMExecutionEngine" "LLVMMCJIT" "LLVMRuntimeDyld" "LLVMSelectionDAG" )
+-foreach(_target "LLVMSupport" "LLVMFrontendOpenMP" "LLVMMC" "LLVMMCParser" "LLVMBinaryFormat" "LLVMCore" "LLVMAnalysis" "LLVMBitReader" "LLVMBitWriter" "LLVMCoroutines" "LLVMCoverage" "LLVMDemangle" "LLVMExtensions" "LLVMipo" "LLVMIRReader" "LLVMAggressiveInstCombine" "LLVMInstCombine" "LLVMInstrumentation" "LLVMLTO" "LLVMLinker" "LLVMObjCARCOpts" "LLVMObject" "LLVMPasses" "LLVMProfileData" "LLVMRemarks" "LLVMScalarOpts" "LLVMTarget" "LLVMTransformUtils" "LLVMOption" "LLVMWindowsDriver" "LLVMBitstreamReader" "LLVMBPFCodeGen" "LLVMBPFAsmParser" "LLVMBPFDesc" "LLVMBPFDisassembler" "LLVMBPFInfo" "LLVMOrcJIT" "LLVMCodeGen" "LLVMExecutionEngine" "LLVMMCJIT" "LLVMRuntimeDyld" "LLVMSelectionDAG" )
 -  if(NOT TARGET "${_target}" )
 -    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets "${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets} ${_target}")
 -  endif()
@@ -48,10 +48,10 @@ diff --color -Naur a/lib/cmake/clang/ClangTargets.cmake b/lib/cmake/clang/ClangT
  # Commands beyond this point should not need to know the version.
  set(CMAKE_IMPORT_FILE_VERSION)
  cmake_policy(POP)
-diff --color -Naur a/lib/cmake/llvm/LLVMExports.cmake b/lib/cmake/llvm/LLVMExports.cmake
---- a/lib/cmake/llvm/LLVMExports.cmake	2023-01-13 15:47:42.994844313 -0800
-+++ b/lib/cmake/llvm/LLVMExports.cmake	2023-01-13 15:47:33.670371777 -0800
-@@ -740,24 +740,6 @@
+diff -Naur a/lib/cmake/llvm/LLVMExports.cmake b/lib/cmake/llvm/LLVMExports.cmake
+--- a/lib/cmake/llvm/LLVMExports.cmake  2023-01-21 22:15:51.223322085 +0000
++++ b/lib/cmake/llvm/LLVMExports.cmake  2023-01-21 22:17:19.643262072 +0000
+@@ -642,24 +642,6 @@
  # Cleanup temporary variables.
  set(_IMPORT_PREFIX)
  

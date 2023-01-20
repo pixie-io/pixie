@@ -37,195 +37,198 @@ RUN apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) m
 RUN apt update
 RUN apt-get install -y kitware-archive-keyring \
   cmake \
-  clang-14
+  clang-14 \
+  lld-14
 
 ENV CC=clang-14
 ENV CXX=clang++-14
+
+WORKDIR /llvm_all
+RUN git clone --branch llvmorg-15.0.6 --depth 1 https://github.com/llvm/llvm-project.git
+
+ENV LLVM_GIT_PATH="/llvm_all/llvm-project"
+
+RUN git config --global user.email "build@pixielabs.ai" && \
+  git config --global user.name "robot"
+
+COPY patches /patches
+COPY build_llvm.sh /scripts/build_llvm.sh
 
 # We build a few different versions of LLVM/Clang for our various different build setups.
 #   1. The host build to make sure we can build all the other versions consitently.
 #   2. Libcxx only that we can use standalone.
 #   3. LLVM libs with libcxx.
 #   4. LLVM libs wiht libstdc++ (system version of libstdc++).
-#   5  LLVM/Clang with libc++ that we can package into a deb.
-#   6. The minimal version of clang that we can distribute as a dependency to build the rest of Pixie.
-
-WORKDIR /llvm_all
-RUN git clone --branch llvmorg-15.0.6 --depth 1 https://github.com/llvm/llvm-project.git
-RUN cp -a llvm-project llvm-project-original
-
-COPY zdebug.15.0.6.patch zdebug.patch
-
-RUN cd llvm-project && git apply ../zdebug.patch
+#   5. The minimal version of clang that we can distribute as a dependency to build the rest of Pixie.
+# We have to do steps 2-4 using each "sysroot", currently we support the following "sysroots":
+#   - The host ubuntu:18.04 root (i.e. no sysroot).
+#   - x86_64 glibc2.36 sysroot.
+#   - aarch64 glibc2.36 sysroot.
 
 #--------------------------------------------------------
 # 1. Host LLVM/Clang
 #--------------------------------------------------------
-WORKDIR /llvm_all/build
-RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0 \
-    -DLLVM_ENABLE_PLUGINS=OFF \
-    -DMSVC=OFF \
-    -DLLVM_BUILD_DOCS=OFF \
-    -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_BUILD_32_BITS=OFF \
-    -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_ENABLE_DOXYGEN=OFF \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DCLANG_INCLUDE_TESTS=OFF \
-    -DLIBCLANG_BUILD_STATIC=ON \
-    -DLLVM_STATIC_LINK_CXX_STDLIB=ON \
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;polly;llvm;lld;compiler-rt" \
-    ../llvm-project/llvm
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "$(readlink -f "$(which clang-14)")" \
+  --cxx_compiler_path "$(which clang++-14)" \
+  --install_dir /opt/clang-15.0 \
+  --build_type full_clang
 
-RUN ninja -j $(nproc)
-RUN ninja install
+WORKDIR /sysroots/archives
+# Download build sysroots.
+RUN curl -L https://storage.googleapis.com/pixie-dev-public/sysroots/pl1/sysroot-amd64-build.tar.gz -o sysroot-amd64-build.tar.gz && \
+  mkdir -p /sysroots/x86_64 && \
+  tar -C /sysroots/x86_64 -xzf sysroot-amd64-build.tar.gz
+
+RUN curl -L https://storage.googleapis.com/pixie-dev-public/sysroots/pl1/sysroot-arm64-build.tar.gz -o sysroot-arm64-build.tar.gz && \
+  mkdir -p /sysroots/aarch64 && \
+  tar -C /sysroots/aarch64 -xzf sysroot-arm64-build.tar.gz
+
+WORKDIR /llvm_all
+
+ENV CLANG="/opt/clang-15.0/bin/clang"
+ENV CLANGPP="/opt/clang-15.0/bin/clang++"
 
 #--------------------------------------------------------
 # 2. Libcxx
 #--------------------------------------------------------
-ENV PATH=/opt/clang-15.0/bin:${PATH}
-ENV CC=clang
-ENV CXX=clang++
+# No sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/libcxx-15.0 \
+  --build_type libcxx
 
-WORKDIR /llvm_all/build_libcxx_only
-RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/libcxx-15.0 \
-    -DMSVC=OFF \
-    -DLLVM_BUILD_DOCS=OFF \
-    -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_BUILD_32_BITS=OFF \
-    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_ENABLE_DOXYGEN=OFF \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DCLANG_INCLUDE_TESTS=OFF \
-    -DLIBCLANG_BUILD_STATIC=ON \
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="libcxx;libcxxabi" \
-    ../llvm-project/llvm
+# x86_64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/libcxx-15.0-x86_64-sysroot \
+  --build_type libcxx \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64
 
-
-RUN ninja -j $(nproc) cxx cxxabi
-RUN ninja install-cxx install-cxxabi
-
-#######################################################
-# This builds all the clang/LLVM libs that we can package for our code in a source file.
-#
-# Since we link Clang/LLVM with our own source code we
-# need it to be built with the same underlying C++
-# library.
-#######################################################
+# aarch64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/libcxx-15.0-aarch64-sysroot \
+  --build_type libcxx \
+  --sysroot /sysroots/aarch64 \
+  --target_arch aarch64
 
 
 #--------------------------------------------------------
 # 3. LLVM Libs with Libcxx
 #--------------------------------------------------------
-ENV PATH=/opt/clang-15.0/bin:${PATH}
-ENV CC=clang
-ENV CXX=clang++
-ENV CXXFLAGS="-fPIC -stdlib=libc++ -L/opt/libcxx-15.0/lib -isystem /opt/libcxx-15.0/include/c++/v1 -Wl,-rpath,/opt/libcxx-15.0/lib"
 
-WORKDIR /llvm_all/build_llvm_libcxx
-RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/llvm-15.0-libcxx \
-    -DMSVC=OFF \
-    -DLLVM_BUILD_DOCS=OFF \
-    -DLLVM_BUILD_TOOLS=OFF \
-    -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_BUILD_32_BITS=OFF \
-    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_ENABLE_DOXYGEN=OFF \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DCLANG_INCLUDE_TESTS=OFF \
-    -DLIBCLANG_BUILD_STATIC=ON \
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;llvm" \
-  ../llvm-project/llvm
 
-RUN ninja -j $(nproc)
-RUN ninja install
+# No sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0
+
+# No sysroot with ASAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-asan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0 \
+  --build_with_asan
+
+# No sysroot with MSAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-msan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0 \
+  --build_with_msan
+
+# No sysroot with TSAN instrumentation.
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-tsan \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0 \
+  --build_with_tsan
+
+# x86_64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-x86_64-sysroot \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0-x86_64-sysroot \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64
+
+# aarch64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libcxx-aarch64-sysroot \
+  --build_type llvm_libs \
+  --target_libcxx_path /opt/libcxx-15.0-aarch64-sysroot \
+  --sysroot /sysroots/aarch64 \
+  --target_arch aarch64
 
 #--------------------------------------------------------
 # 4. LLVM Libs with libstdcxx
 #--------------------------------------------------------
-ENV PATH=/opt/clang-15.0/bin:${PATH}
-ENV CC=clang
-ENV CXX=clang++
-ENV CXXFLAGS=
 
-WORKDIR /llvm_all/build_llvm_libstdc++
-RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/llvm-15.0-libstdc++ \
-    -DMSVC=OFF \
-    -DLLVM_BUILD_DOCS=OFF \
-    -DLLVM_BUILD_TOOLS=OFF \
-    -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_BUILD_32_BITS=OFF \
-    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_ENABLE_DOXYGEN=OFF \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DCLANG_INCLUDE_TESTS=OFF \
-    -DLIBCLANG_BUILD_STATIC=ON \
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;llvm" \
-  ../llvm-project/llvm
+# No sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libstdc++ \
+  --build_type llvm_libs
 
-RUN ninja -j $(nproc)
-RUN ninja install
+# x86_64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libstdc++-x86_64-sysroot \
+  --build_type llvm_libs \
+  --sysroot /sysroots/x86_64 \
+  --target_arch x86_64
 
-WORKDIR /llvm_all
-COPY static_tinfo.15.0.6.patch tinfo.patch
-COPY disable_shared_libclang.15.0.6.patch disable_shared_libclang.patch
-RUN cd llvm-project && git apply ../disable_shared_libclang.patch && git apply ../tinfo.patch
+# aarch64 sysroot
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/llvm-15.0-libstdc++-aarch64-sysroot \
+  --build_type llvm_libs \
+  --sysroot /sysroots/aarch64 \
+  --target_arch aarch64
 
-ENV CXXFLAGS="-fPIC"
-ENV LDFLAGS="-static-libgcc"
-
-WORKDIR /llvm_all/build_clang_nodeps
-RUN triple=$(gcc -v 2>&1 | grep "^Target:" | cut -d ' ' -f 2) && \
-  cmake -G Ninja -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/clang-15.0-nodeps-build \
-    -DMSVC=OFF \
-    -DLLVM_BUILD_DOCS=OFF \
-    -DLLVM_BUILD_TOOLS=ON \
-    -DLLVM_INCLUDE_EXAMPLES=OFF \
-    -DLLVM_BUILD_32_BITS=OFF \
-    -DLLVM_TARGETS_TO_BUILD="BPF;X86;AArch64" \
-    -DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=OFF \
-    -DLLVM_ENABLE_SPHINX=OFF \
-    -DLLVM_ENABLE_DOXYGEN=OFF \
-    -DLLVM_ENABLE_RTTI=ON \
-    -DCLANG_INCLUDE_TESTS=OFF \
-    -DLIBCLANG_BUILD_STATIC=ON \
-    -DLLVM_STATIC_LINK_CXX_STDLIB=ON\
-    -DLLVM_INCLUDE_TESTS=OFF \
-    -DLLVM_TOOL_LTO_BUILD=OFF \
-    -DLLVM_BUILD_LLVM_DYLIB=OFF \
-    -DLLVM_BUILD_SHARED_LIBS=OFF \
-    -DLLVM_DEFAULT_TARGET_TRIPLE=${triple} \
-    -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;llvm;lld;compiler-rt" \
-    -DCLANG_PLUGIN_SUPPORT=OFF \
-  ../llvm-project/llvm
-
-RUN ninja -j $(nproc)
-RUN ninja install
+#--------------------------------------------------------
+# 5. Minimal clang
+#--------------------------------------------------------
+RUN /scripts/build_llvm.sh \
+  --llvm_git_repo "${LLVM_GIT_PATH}" \
+  --c_compiler_path "${CLANG}" \
+  --cxx_compiler_path "${CLANGPP}" \
+  --install_dir /opt/clang-15.0-nodeps-build \
+  --build_type minimal_clang
 
 COPY create_no_dep_clang.sh /opt
 
@@ -236,6 +239,5 @@ RUN ./create_no_dep_clang.sh "/opt/clang-15.0-nodeps-build" "/opt/clang-15.0-min
 WORKDIR /opt
 VOLUME /image
 COPY create_packages.sh /opt
-COPY llvm_cmake.patch /opt
 
 CMD ["/opt/create_packages.sh"]
