@@ -25,6 +25,7 @@ def _gcc_x86_64_gnu():
         "gcc": "/usr/bin/gcc-12",
         "gcov": "/usr/bin/gcov",
         "ld": "/usr/bin/ld.gold",
+        # TODO(zasgar): Fix this or remove this.
         "llvm-cov": "/opt/clang-15.0/bin/llvm-cov",
         "nm": "/usr/bin/nm",
         "objcopy": "/usr/bin/objcopy",
@@ -133,6 +134,7 @@ def _gcc_x86_64_static_musl():
         "gcc": "/usr/bin/gcc-12",
         "gcov": "/usr/bin/gcov",
         "ld": "/usr/bin/ld.gold",
+        # TODO(zasgar): Fix this or remove this.
         "llvm-cov": "/opt/clang-15.0/bin/llvm-cov",
         "nm": "/usr/bin/nm",
         "objcopy": "/usr/bin/objcopy",

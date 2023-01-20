@@ -18,6 +18,7 @@ name 'px_workstation'
 description 'The base workstation setup (without GUI apps)'
 
 run_list(
+  'recipe[px_dev_extras::linux_clang]',
   'recipe[px_dev]',
   'recipe[px_dev_extras]'
 )

@@ -18,6 +18,12 @@ if ! platform_family?('debian')
   return
 end
 
+default['clang']['version']    = '15.0-pl9'
+default['clang']['deb']        =
+  "https://storage.googleapis.com/pixie-dev-public/clang/#{default['clang']['version']}/clang-#{default['clang']['version']}.deb"
+default['clang']['deb_sha256'] =
+  'a7c6aa046cb3a75fae2f61e1ed43abbcce6514dd91f933bdc20f6633113994ed'
+
 default['gperftools']['version']    = '2.10-pl1'
 default['gperftools']['deb']        =
   "https://storage.googleapis.com/pixie-dev-public/gperftools-pixie-#{default['gperftools']['version']}.deb"
