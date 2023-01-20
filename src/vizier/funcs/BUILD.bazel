@@ -33,6 +33,7 @@ pl_cc_library(
     ),
     visibility = [
         "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
     deps = [

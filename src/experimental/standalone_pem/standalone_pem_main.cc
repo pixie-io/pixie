@@ -18,10 +18,12 @@
 
 #include <sole.hpp>
 
+#include "src/experimental/standalone_pem/standalone_pem_manager.h"
 #include "src/shared/version/version.h"
 #include "src/vizier/services/agent/shared/base/lifecycle.h"
 
 using ::px::vizier::agent::DefaultDeathHandler;
+using ::px::vizier::agent::StandalonePEMManager;
 using ::px::vizier::agent::TerminationHandler;
 
 int main(int argc, char** argv) {
@@ -40,4 +42,16 @@ int main(int argc, char** argv) {
   sole::uuid agent_id = sole::uuid4();
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", px::VersionInfo::VersionString(),
                                 agent_id.str());
+
+  auto manager =
+      StandalonePEMManager::Create(agent_id, /* host_ip */ "0.0.0.0").ConsumeValueOrDie();
+  TerminationHandler::set_manager(manager.get());
+
+  PL_CHECK_OK(manager->Run());
+  PL_CHECK_OK(manager->Stop(std::chrono::seconds{5}));
+
+  // Clear the manager, because it has been stopped.
+  TerminationHandler::set_manager(nullptr);
+
+  return 0;
 }

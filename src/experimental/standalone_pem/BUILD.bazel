@@ -32,11 +32,16 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     tags = ["manual"],
     deps = [
+        "//src/carnot:cc_library",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/common/event:cc_library",
         "//src/integrations/grpc_clocksync:cc_library",
+        "//src/shared/schema:cc_library",
         "//src/shared/tracepoint_translation:cc_library",
         "//src/stirling:cc_library",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/vizier/funcs:cc_library",
+        "//src/vizier/funcs/context:cc_library",
         "//src/vizier/services/agent/shared/base:cc_library",
     ],
 )
