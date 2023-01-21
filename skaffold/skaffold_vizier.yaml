@@ -68,18 +68,6 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
-- name: jsyms
-  patches:
-  - op: add
-    path: /manifests/kustomize/paths
-    value:
-    - k8s/vizier/jsyms
-- name: no-jsyms
-  patches:
-  - op: add
-    path: /manifests/kustomize/paths
-    value:
-    - k8s/vizier/no-jsyms
 - name: heap
   patches:
   - op: add
