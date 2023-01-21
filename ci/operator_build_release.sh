@@ -31,7 +31,7 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
     | grep "release/operator" | grep -v "\-")
 
-public="True"
+build_type="--//k8s:build_type=public"
 image_path="gcr.io/pixie-oss/pixie-prod/operator/operator_image:${release_tag}"
 deleter_image_path="gcr.io/pixie-oss/pixie-prod/operator/vizier_deleter:${release_tag}"
 channel="stable"
@@ -42,20 +42,21 @@ bucket="pixie-dev-public"
 prev_tag=$(echo "$tags" | sed -n '2 p')
 
 if [[ $release_tag == *"-"* ]]; then
-  public="False"
+  build_type="--//k8s:build_type=dev"
   image_path="gcr.io/pixie-oss/pixie-dev/operator/operator_image:${release_tag}"
   deleter_image_path="gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter:${release_tag}"
   channel="dev"
   channels="dev"
+  # TODO(vihang/michelle): Revisit this bucket.
   bucket="pixie-prod-artifacts"
-# The previous version should be the 1st item in the tags. Since this is a non-release build,
-# the first item in the tags is the previous release.
+  # The previous version should be the 1st item in the tags. Since this is a non-release build,
+  # the first item in the tags is the previous release.
   prev_tag=$(echo "$tags" | sed -n '1 p')
 fi
 
 # Push operator image.
-bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/operator:operator_images_push
+bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
+    --stamp "${build_type}" //k8s/operator:operator_images_push
 
 # Build operator bundle for OLM.
 tmp_dir="$(mktemp -d)"

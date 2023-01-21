@@ -29,31 +29,22 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
 
-public="True"
+build_type="--//k8s:build_type=public"
 bucket="pixie-dev-public"
 extra_bazel_args=()
 if [[ $release_tag == *"-"* ]]; then
-  public="False"
+  build_type="--//k8s:build_type=dev"
+  # TODO(vihang/michelle): Revisit this bucket.
   bucket="pixie-prod-artifacts"
-fi
-if [[ -n $DEV_ARTIFACT_BUCKET ]]; then
-  public="False"
-  bucket="${DEV_ARTIFACT_BUCKET}"
-  if [[ -z $DEV_IMAGE_PREFIX ]]; then
-    echo "Must specify DEV_IMAGE_PREFIX, when specifying a dev release with DEV_ARTIFACT_BUCKET"
-    exit 1
-  fi
-  extra_bazel_args+=("--define" "DEV_VIZIER_IMAGE_PREFIX=${DEV_IMAGE_PREFIX}")
-  extra_bazel_args+=("--//k8s/vizier:use_dev_vizier_images")
 fi
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 latest_output_path="gs://${bucket}/vizier/latest"
 
-bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
-bazel build --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
+bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
+    --stamp "${build_type}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
+bazel build --stamp -c opt --//k8s:image_version="${release_tag}" \
+    --stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"

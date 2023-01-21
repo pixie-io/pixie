@@ -16,32 +16,28 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("//bazel:images.bzl", "image_map_with_bundle_version", "image_replacements")
+load("//bazel:images.bzl", "DEV_PREFIX", "PROPRIETARY_PREFIX", "image_replacements")
 load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
-CLOUD_IMAGE_MAP = {
-    "gcr.io/pixie-oss/pixie-dev/cloud/api_server_image": "//src/cloud/api:api_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/artifact_tracker_server_image": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/auth_server_image": "//src/cloud/auth:auth_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/config_manager_server_image": "//src/cloud/config_manager:config_manager_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/cron_script_server_image": "//src/cloud/cron_script:cron_script_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/indexer_server_image": "//src/cloud/indexer:indexer_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image": "//src/cloud/metrics:metrics_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db": "//src/cloud/plugin/load_db:plugin_db_updater_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image": "//src/cloud/plugin:plugin_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/profile_server_image": "//src/cloud/profile:profile_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/project_manager_server_image": "//src/cloud/project_manager:project_manager_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/proxy_server_image": "//src/cloud/proxy:proxy_prod_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/scriptmgr_server_image": "//src/cloud/scriptmgr:scriptmgr_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/vzconn_server_image": "//src/cloud/vzconn:vzconn_server_image",
-    "gcr.io/pixie-oss/pixie-dev/cloud/vzmgr_server_image": "//src/cloud/vzmgr:vzmgr_server_image",
+CLOUD_IMAGE_TO_LABEL = {
+    "$(IMAGE_PREFIX)cloud/api_server_image:$(BUNDLE_VERSION)": "//src/cloud/api:api_server_image",
+    "$(IMAGE_PREFIX)cloud/artifact_tracker_server_image:$(BUNDLE_VERSION)": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
+    "$(IMAGE_PREFIX)cloud/auth_server_image:$(BUNDLE_VERSION)": "//src/cloud/auth:auth_server_image",
+    "$(IMAGE_PREFIX)cloud/config_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/config_manager:config_manager_server_image",
+    "$(IMAGE_PREFIX)cloud/cron_script_server_image:$(BUNDLE_VERSION)": "//src/cloud/cron_script:cron_script_server_image",
+    "$(IMAGE_PREFIX)cloud/indexer_server_image:$(BUNDLE_VERSION)": "//src/cloud/indexer:indexer_server_image",
+    "$(IMAGE_PREFIX)cloud/metrics_server_image:$(BUNDLE_VERSION)": "//src/cloud/metrics:metrics_server_image",
+    "$(IMAGE_PREFIX)cloud/plugin/load_db:$(BUNDLE_VERSION)": "//src/cloud/plugin/load_db:plugin_db_updater_image",
+    "$(IMAGE_PREFIX)cloud/plugin_server_image:$(BUNDLE_VERSION)": "//src/cloud/plugin:plugin_server_image",
+    "$(IMAGE_PREFIX)cloud/profile_server_image:$(BUNDLE_VERSION)": "//src/cloud/profile:profile_server_image",
+    "$(IMAGE_PREFIX)cloud/project_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/project_manager:project_manager_server_image",
+    "$(IMAGE_PREFIX)cloud/proxy_server_image:$(BUNDLE_VERSION)": "//src/cloud/proxy:proxy_prod_server_image",
+    "$(IMAGE_PREFIX)cloud/scriptmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/scriptmgr:scriptmgr_server_image",
+    "$(IMAGE_PREFIX)cloud/vzconn_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzconn:vzconn_server_image",
+    "$(IMAGE_PREFIX)cloud/vzmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzmgr:vzmgr_server_image",
 }
-
-public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
-
-proprietary_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pl-dev-infra"}
 
 kustomize_build(
     name = "pixie_staging_cloud",
@@ -55,9 +51,13 @@ kustomize_build(
     ),
     kustomization = "staging/kustomization.yaml",
     replacements = image_replacements(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = proprietary_image_replacement,
+        existing_prefix = DEV_PREFIX,
+        image_map = CLOUD_IMAGE_TO_LABEL,
+        new_prefix = PROPRIETARY_PREFIX,
     ),
+    toolchains = [
+        "//k8s:bundle_version",
+    ],
 )
 
 kustomize_build(
@@ -72,55 +72,26 @@ kustomize_build(
     ),
     kustomization = "prod/kustomization.yaml",
     replacements = image_replacements(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = proprietary_image_replacement,
+        existing_prefix = DEV_PREFIX,
+        image_map = CLOUD_IMAGE_TO_LABEL,
+        new_prefix = PROPRIETARY_PREFIX,
     ),
+    toolchains = [
+        "//k8s:bundle_version",
+    ],
 )
 
 container_bundle(
-    name = "staging_cloud_images_bundle",
-    images = image_map_with_bundle_version(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = proprietary_image_replacement,
-    ),
-)
-
-container_bundle(
-    name = "prod_cloud_images_bundle",
-    images = image_map_with_bundle_version(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = proprietary_image_replacement,
-    ),
-)
-
-container_bundle(
-    name = "public_cloud_images_bundle",
-    images = image_map_with_bundle_version(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = public_image_replacement,
-    ),
+    name = "image_bundle",
+    images = CLOUD_IMAGE_TO_LABEL,
+    toolchains = [
+        "//k8s:image_prefix",
+        "//k8s:bundle_version",
+    ],
 )
 
 container_push(
     name = "cloud_images_push",
-    bundle = select({
-        ":prod": ":prod_cloud_images_bundle",
-        ":public": ":public_cloud_images_bundle",
-        "//conditions:default": ":staging_cloud_images_bundle",
-    }),
+    bundle = ":image_bundle",
     format = "Docker",
-)
-
-config_setting(
-    name = "public",
-    values = {
-        "define": "public=True",
-    },
-)
-
-config_setting(
-    name = "prod",
-    values = {
-        "define": "prod=True",
-    },
 )

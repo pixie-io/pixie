@@ -17,45 +17,27 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
-load("//bazel:images.bzl", "image_map_with_bundle_version")
 load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
-OPERATOR_IMAGE_MAP = {
-    "gcr.io/pixie-oss/pixie-dev/operator/operator_image": "//src/operator:operator_image",
-    "gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter": "//src/utils/pixie_deleter:vizier_deleter_image",
+OPERATOR_IMAGE_TO_LABEL = {
+    "$(IMAGE_PREFIX)operator/operator_image:$(BUNDLE_VERSION)": "//src/operator:operator_image",
+    "$(IMAGE_PREFIX)operator/vizier_deleter:$(BUNDLE_VERSION)": "//src/utils/pixie_deleter:vizier_deleter_image",
 }
 
-public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
-
-config_setting(
-    name = "public",
-    values = {"define": "public=True"},
-)
-
 container_bundle(
-    name = "private_operator_images_bundle",
-    images = image_map_with_bundle_version(
-        image_map = OPERATOR_IMAGE_MAP,
-        replace = {},
-    ),
-)
-
-container_bundle(
-    name = "public_operator_images_bundle",
-    images = image_map_with_bundle_version(
-        image_map = OPERATOR_IMAGE_MAP,
-        replace = public_image_replacement,
-    ),
+    name = "image_bundle",
+    images = OPERATOR_IMAGE_TO_LABEL,
+    toolchains = [
+        "//k8s:image_prefix",
+        "//k8s:bundle_version",
+    ],
 )
 
 container_push(
     name = "operator_images_push",
-    bundle = select({
-        ":public": ":public_operator_images_bundle",
-        "//conditions:default": ":private_operator_images_bundle",
-    }),
+    bundle = ":image_bundle",
     format = "Docker",
 )
 
@@ -66,6 +48,9 @@ kustomize_build(
         exclude = ["crd/base/kustomization.yaml"],
     ),
     kustomization = "crd/base/kustomization.yaml",
+    toolchains = [
+        "//k8s:bundle_version",
+    ],
 )
 
 pkg_tar(

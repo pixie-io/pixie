@@ -173,12 +173,6 @@ coverage --define PL_COVERAGE=true
 coverage --copt -DPL_COVERAGE
 coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled,-no_gcc
 
-# Use stable GIT build tag by default.
-build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
-
-# pre-define as empty so that build all works. This might be overridden for dev vizier builds.
-build --define DEV_VIZIER_IMAGE_PREFIX=""
-
 # jenkins.bazelrc is copied from ci/jenkins.bazelrc by Jenkins workers during the build.
 # The intention is to avoid polluting configurations of bazel for developers.
 try-import %workspace%/jenkins.bazelrc

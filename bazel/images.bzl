@@ -14,26 +14,45 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-def image_replacements(image_map, replace):
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+
+PROPRIETARY_PREFIX = "gcr.io/pl-dev-infra/"
+PUBLIC_PREFIX = "gcr.io/pixie-oss/pixie-prod/"
+DEV_PREFIX = "gcr.io/pixie-oss/pixie-dev/"
+
+def image_replacements(image_map, existing_prefix, new_prefix):
     replacements = {}
 
-    for k in image_map.keys():
-        image_tag = k
-        for old, new in replace.items():
-            image_tag = image_tag.replace(old, new)
-        replacements[k] = image_tag
+    for image in image_map.keys():
+        image = image.removeprefix("$(IMAGE_PREFIX)").removesuffix(":$(BUNDLE_VERSION)")
+        replacements[existing_prefix + image] = new_prefix + image
 
     return replacements
 
-def image_map_with_bundle_version(image_map, replace):
-    with_version = {}
+def _bundle_version_provider_impl(ctx):
+    return [
+        platform_common.TemplateVariableInfo({
+            "BUNDLE_VERSION": ctx.attr._bundle_version[BuildSettingInfo].value,
+        }),
+    ]
 
-    for k, v in image_map.items():
-        image_tag = k
+bundle_version_provider = rule(
+    implementation = _bundle_version_provider_impl,
+    attrs = {
+        "_bundle_version": attr.label(default = "//k8s:image_version"),
+    },
+)
 
-        for old, new in replace.items():
-            image_tag = image_tag.replace(old, new)
-        k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
-        with_version[k_with_version] = v
+def _image_prefix_provider_impl(ctx):
+    return [
+        platform_common.TemplateVariableInfo({
+            "IMAGE_PREFIX": ctx.attr.image_prefix,
+        }),
+    ]
 
-    return with_version
+image_prefix_provider = rule(
+    implementation = _image_prefix_provider_impl,
+    attrs = {
+        "image_prefix": attr.string(mandatory = True),
+    },
+)

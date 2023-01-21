@@ -29,7 +29,6 @@ parse_args() {
   while test $# -gt 0; do
       case "$1" in
         -r) RELEASE=true
-            prod="True"
             shift
             ;;
         -p) PUBLIC=true
@@ -39,8 +38,6 @@ parse_args() {
       esac
   done
 }
-
-prod="False"
 
 parse_args "$@"
 
@@ -56,8 +53,8 @@ echo "The image tag is: ${image_tag}"
 
 # We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
 if [[ "$PUBLIC" == "true" ]]; then
-  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-      --define public=True //k8s/cloud:cloud_images_push
+  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+      --//k8s:build_type=public //k8s/cloud:cloud_images_push
 
   bazel build //tools/licenses:all_licenses --action_env=GOOGLE_APPLICATION_CREDENTIALS
 
@@ -88,16 +85,16 @@ if [[ "$PUBLIC" == "true" ]]; then
   exit 0
 fi
 
-bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-    --define prod="${prod}" //k8s/cloud:cloud_images_push
+bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+    --//k8s:build_type=proprietary //k8s/cloud:cloud_images_push
 
 yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
 # Build prod YAMLs.
 if [[ "$RELEASE" == "true" ]]; then
   yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:pixie_prod_cloud
+  bazel build --stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_prod_cloud
 else # Build staging YAMLs.
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:pixie_staging_cloud
+  bazel build --stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_staging_cloud
 fi
 
 kubectl apply -f "$yaml_path"
