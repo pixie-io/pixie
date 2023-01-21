@@ -18,7 +18,8 @@ load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
-load("//bazel:images.bzl", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
+load("//bazel:images.bzl", "image_map_with_bundle_version", "image_replacements")
+load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,52 +37,190 @@ public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixi
 
 dev_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "$(DEV_VIZIER_IMAGE_PREFIX)"}
 
-generate_vizier_yamls(
-    name = "public_vizier_etcd_metadata_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_etcd_metadata_prod",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = public_image_replacement,
+filegroup(
+    name = "etcd_base",
+    srcs = glob(
+        [
+            "base/**/*.yaml",
+            "bootstrap/**/*.yaml",
+            "etcd_metadata/**/*.yaml",
+            "pem/**/*.yaml",
+        ],
+        exclude = [
+            "etcd_metadata/kustomization.yaml",
+            "etcd_metadata/autopilot/**",
+            "persistent_metadata/**",
+        ],
+    ),
 )
 
-generate_vizier_yamls(
-    name = "private_vizier_etcd_metadata_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_etcd_metadata_prod",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = {},
+filegroup(
+    name = "etcd_autopilot",
+    srcs = glob(
+        [
+            "base/**/*.yaml",
+            "bootstrap/**/*.yaml",
+            "etcd_metadata/**/*.yaml",
+            "pem/**/*.yaml",
+        ],
+        exclude = [
+            "etcd_metadata/autopilot/kustomization.yaml",
+            "persistent_metadata/**",
+        ],
+    ),
 )
 
-generate_vizier_yamls(
-    name = "vizier_etcd_metadata_dev",
-    srcs = glob(["**/*.yaml"]),
-    out = "vizier_etcd_metadata_dev",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = dev_image_replacement,
+filegroup(
+    name = "persistent_base",
+    srcs = glob(
+        [
+            "base/**/*.yaml",
+            "bootstrap/**/*.yaml",
+            "persistent_metadata/**/*.yaml",
+            "pem/**/*.yaml",
+        ],
+        exclude = [
+            "persistent_metadata/kustomization.yaml",
+            "persistent_metadata/autopilot/**",
+            "etcd_metadata/**",
+        ],
+    ),
 )
 
-generate_vizier_metadata_persist_yamls(
-    name = "public_vizier_metadata_persist_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_metadata_persist_prod",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = public_image_replacement,
+filegroup(
+    name = "persistent_autopilot",
+    srcs = glob(
+        [
+            "base/**/*.yaml",
+            "bootstrap/**/*.yaml",
+            "persistent_metadata/**/*.yaml",
+            "pem/**/*.yaml",
+        ],
+        exclude = [
+            "persistent_metadata/autopilot/kustomization.yaml",
+            "etcd_metadata/**",
+        ],
+    ),
 )
 
-generate_vizier_metadata_persist_yamls(
-    name = "private_vizier_metadata_persist_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_metadata_persist_prod",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = {},
+kustomize_build(
+    name = "public_etcd",
+    srcs = [":etcd_base"],
+    kustomization = "etcd_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = public_image_replacement,
+    ),
 )
 
-generate_vizier_metadata_persist_yamls(
-    name = "vizier_metadata_persist_dev",
-    srcs = glob(["**/*.yaml"]),
-    out = "vizier_metadata_persist_dev",
-    image_map = VIZIER_IMAGE_MAP,
-    replace = dev_image_replacement,
+kustomize_build(
+    name = "private_etcd",
+    srcs = [":etcd_base"],
+    kustomization = "etcd_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = {},
+    ),
+)
+
+kustomize_build(
+    name = "dev_etcd",
+    srcs = [":etcd_base"],
+    kustomization = "etcd_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = dev_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "public_etcd_autopilot",
+    srcs = [":etcd_autopilot"],
+    kustomization = "etcd_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = public_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "private_etcd_autopilot",
+    srcs = [":etcd_autopilot"],
+    kustomization = "etcd_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = {},
+    ),
+)
+
+kustomize_build(
+    name = "dev_etcd_autopilot",
+    srcs = [":etcd_autopilot"],
+    kustomization = "etcd_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = dev_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "public_persist",
+    srcs = [":persistent_base"],
+    kustomization = "persistent_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = public_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "private_persist",
+    srcs = [":persistent_base"],
+    kustomization = "persistent_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = {},
+    ),
+)
+
+kustomize_build(
+    name = "dev_persist",
+    srcs = [":persistent_base"],
+    kustomization = "persistent_metadata/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = dev_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "public_persist_autopilot",
+    srcs = [":persistent_autopilot"],
+    kustomization = "persistent_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = public_image_replacement,
+    ),
+)
+
+kustomize_build(
+    name = "private_persist_autopilot",
+    srcs = [":persistent_autopilot"],
+    kustomization = "persistent_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = {},
+    ),
+)
+
+kustomize_build(
+    name = "dev_persist_autopilot",
+    srcs = [":persistent_autopilot"],
+    kustomization = "persistent_metadata/autopilot/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = dev_image_replacement,
+    ),
 )
 
 container_bundle(
@@ -137,13 +276,13 @@ genrule(
     name = "vizier_etcd_image_list",
     srcs = select({
         ":dev": [
-            "//k8s/vizier:vizier_etcd_metadata_dev/base.yaml",
+            ":dev_etcd",
         ],
         ":public": [
-            "//k8s/vizier:public_vizier_etcd_metadata_prod/base.yaml",
+            ":public_etcd",
         ],
         "//conditions:default": [
-            "//k8s/vizier:private_vizier_etcd_metadata_prod/base.yaml",
+            ":private_etcd",
         ],
     }) + [
         "//k8s/vizier_deps:nats_prod",
@@ -161,13 +300,13 @@ genrule(
     name = "vizier_image_list",
     srcs = select({
         ":dev": [
-            "//k8s/vizier:vizier_metadata_persist_dev/base.yaml",
+            ":dev_persist",
         ],
         ":public": [
-            "//k8s/vizier:public_vizier_metadata_persist_prod/base.yaml",
+            ":public_persist",
         ],
         "//conditions:default": [
-            "//k8s/vizier:private_vizier_metadata_persist_prod/base.yaml",
+            ":private_persist",
         ],
     }) + [
         "//k8s/vizier_deps:nats_prod",
@@ -185,47 +324,47 @@ pkg_tar(
     srcs =
         select({
             ":dev": [
-                "//k8s/vizier:vizier_etcd_metadata_dev/base.yaml",
-                "//k8s/vizier:vizier_metadata_persist_dev/base.yaml",
-                "//k8s/vizier:vizier_etcd_metadata_dev/autopilot.yaml",
-                "//k8s/vizier:vizier_metadata_persist_dev/autopilot.yaml",
+                ":dev_etcd",
+                ":dev_persist",
+                ":dev_etcd_autopilot",
+                ":dev_persist_autopilot",
             ],
             ":public": [
-                "//k8s/vizier:public_vizier_etcd_metadata_prod/base.yaml",
-                "//k8s/vizier:public_vizier_metadata_persist_prod/base.yaml",
-                "//k8s/vizier:public_vizier_etcd_metadata_prod/autopilot.yaml",
-                "//k8s/vizier:public_vizier_metadata_persist_prod/autopilot.yaml",
+                ":public_etcd",
+                ":public_persist",
+                ":public_etcd_autopilot",
+                ":public_persist_autopilot",
             ],
             "//conditions:default": [
-                "//k8s/vizier:private_vizier_etcd_metadata_prod/base.yaml",
-                "//k8s/vizier:private_vizier_metadata_persist_prod/base.yaml",
-                "//k8s/vizier:private_vizier_etcd_metadata_prod/autopilot.yaml",
-                "//k8s/vizier:private_vizier_metadata_persist_prod/autopilot.yaml",
+                ":private_etcd",
+                ":private_persist",
+                ":private_etcd_autopilot",
+                ":private_persist_autopilot",
             ],
         }) + [
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_prod",
-            "//k8s/vizier:vizier_etcd_image_list",
-            "//k8s/vizier:vizier_image_list",
+            ":vizier_etcd_image_list",
+            ":vizier_image_list",
             "public/secrets.yaml",
         ],
     package_dir = "/yamls",
     remap_paths = {
-        "/vizier/private_vizier_etcd_metadata_prod/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
-        "/vizier/private_vizier_etcd_metadata_prod/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
-        "/vizier/private_vizier_metadata_persist_prod/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
-        "/vizier/private_vizier_metadata_persist_prod/base.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/dev_etcd.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/dev_etcd_autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/dev_persist.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/dev_persist_autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
+        "/vizier/private_etcd.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/private_etcd_autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/private_persist.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/private_persist_autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
         "/vizier/public/secrets.yaml": "vizier/secrets.yaml",
-        "/vizier/public_vizier_etcd_metadata_prod/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
-        "/vizier/public_vizier_etcd_metadata_prod/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
-        "/vizier/public_vizier_metadata_persist_prod/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
-        "/vizier/public_vizier_metadata_persist_prod/base.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public_etcd.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/public_etcd_autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
+        "/vizier/public_persist.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public_persist_autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
         "/vizier/vizier_etcd_image_list.txt": "images/vizier_etcd_image_list.txt",
-        "/vizier/vizier_etcd_metadata_dev/autopilot.yaml": "vizier/vizier_etcd_metadata_autopilot_prod.yaml",
-        "/vizier/vizier_etcd_metadata_dev/base.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/vizier_image_list.txt": "images/vizier_image_list.txt",
-        "/vizier/vizier_metadata_persist_dev.yaml": "vizier/vizier_metadata_persist_prod.yaml",
-        "/vizier/vizier_metadata_persist_dev/autopilot.yaml": "vizier/vizier_metadata_persist_autopilot_prod.yaml",
     },
     strip_prefix = "/k8s",
 )
