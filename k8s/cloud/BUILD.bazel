@@ -17,7 +17,7 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("//bazel:images.bzl", "image_map_with_bundle_version", "image_replacements")
-load("//bazel:kustomize.bzl", "kustomize_build", "kustomize_edit_set_image")
+load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,15 +43,6 @@ public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixi
 
 proprietary_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pl-dev-infra"}
 
-kustomize_edit_set_image(
-    name = "versioned_staging",
-    kustomization = "staging/kustomization.yaml",
-    replacements = image_replacements(
-        image_map = CLOUD_IMAGE_MAP,
-        replace = proprietary_image_replacement,
-    ),
-)
-
 kustomize_build(
     name = "pixie_staging_cloud",
     srcs = glob(
@@ -62,12 +53,7 @@ kustomize_build(
         ],
         exclude = ["staging/kustomization.yaml"],
     ),
-    kustomization = ":versioned_staging",
-)
-
-kustomize_edit_set_image(
-    name = "versioned_prod",
-    kustomization = "prod/kustomization.yaml",
+    kustomization = "staging/kustomization.yaml",
     replacements = image_replacements(
         image_map = CLOUD_IMAGE_MAP,
         replace = proprietary_image_replacement,
@@ -84,7 +70,11 @@ kustomize_build(
         ],
         exclude = ["prod/kustomization.yaml"],
     ),
-    kustomization = ":versioned_prod",
+    kustomization = "prod/kustomization.yaml",
+    replacements = image_replacements(
+        image_map = CLOUD_IMAGE_MAP,
+        replace = proprietary_image_replacement,
+    ),
 )
 
 container_bundle(
