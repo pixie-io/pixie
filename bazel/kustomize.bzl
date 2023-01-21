@@ -29,7 +29,7 @@ def _kustomize_build_impl(ctx):
     cmds.append('cp --parents "{}" "$TMP"'.format(ctx.file.kustomization.path))
 
     if len(ctx.attr.replacements) > 0:
-        cmds.append('pushd "$TMP/$(dirname "{}" &> /dev/null)"'.format(ctx.file.kustomization.path))
+        cmds.append('pushd "$TMP/$(dirname "{}")" &> /dev/null'.format(ctx.file.kustomization.path))
 
         for old, new in ctx.attr.replacements.items():
             cmds.append('"$KUSTOMIZE_BIN" edit set image {}={}:{}'.format(old, new, ctx.var["BUNDLE_VERSION"]))
