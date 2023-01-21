@@ -25,7 +25,7 @@ def image_replacements(image_map, existing_prefix, new_prefix):
 
     for image in image_map.keys():
         image = image.removeprefix("$(IMAGE_PREFIX)").removesuffix(":$(BUNDLE_VERSION)")
-        replacements[existing_prefix + image] = new_prefix + image
+        replacements[existing_prefix + image] = new_prefix + image + ":{BUNDLE_VERSION}"
 
     return replacements
 

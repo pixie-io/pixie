@@ -32,7 +32,9 @@ def _kustomize_build_impl(ctx):
         cmds.append('pushd "$TMP/$(dirname "{}")" &> /dev/null'.format(ctx.file.kustomization.path))
 
         for old, new in ctx.attr.replacements.items():
-            cmds.append('"$KUSTOMIZE_BIN" edit set image {}={}:{}'.format(old, new, ctx.var["BUNDLE_VERSION"]))
+            old_expanded = old.format(**ctx.var)
+            new_expanded = new.format(**ctx.var)
+            cmds.append('"$KUSTOMIZE_BIN" edit set image {}={}'.format(old_expanded, new_expanded))
 
         cmds.append("popd &> /dev/null")
 
@@ -60,7 +62,13 @@ kustomize_build = rule(
             mandatory = True,
             allow_single_file = True,
         ),
-        "replacements": attr.string_dict(),
+        "replacements": attr.string_dict(
+            doc = """
+            Will be passed as args to `kustomize edit set image <key>=<value>`
+            Supports make vars as templates. i.e. {MY_VAR} will be replaced with
+            values ctx.vars["MY_VAR"] if available.
+            """,
+        ),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,

@@ -48,9 +48,6 @@ kustomize_build(
         exclude = ["crd/base/kustomization.yaml"],
     ),
     kustomization = "crd/base/kustomization.yaml",
-    toolchains = [
-        "//k8s:bundle_version",
-    ],
 )
 
 pkg_tar(
