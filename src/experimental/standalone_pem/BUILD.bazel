@@ -38,6 +38,7 @@ pl_cc_library(
         "//src/carnot/carnotpb:carnot_pl_cc_proto",
         "//src/carnot/planner/compiler:cc_library",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/carnot/planner/probes:tracepoint_generator_lib",
         "//src/common/event:cc_library",
         "//src/common/uuid:cc_library",
         "//src/integrations/grpc_clocksync:cc_library",

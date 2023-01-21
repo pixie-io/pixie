@@ -24,6 +24,7 @@
 #include "src/carnot/carnot.h"
 #include "src/common/event/event.h"
 #include "src/experimental/standalone_pem/sink_server.h"
+#include "src/experimental/standalone_pem/tracepoint_manager.h"
 #include "src/experimental/standalone_pem/vizier_server.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/stirling.h"
@@ -83,6 +84,9 @@ class StandalonePEMManager : public BaseManager {
   std::unique_ptr<px::md::AgentMetadataStateManager> mds_manager_;
   // The timer to manage metadata updates.
   px::event::TimerUPtr metadata_update_timer_;
+
+  // Tracepoints
+  std::unique_ptr<TracepointManager> tracepoint_manager_;
 };
 
 }  // namespace agent

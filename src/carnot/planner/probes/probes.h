@@ -325,6 +325,8 @@ class MutationsIR {
    */
   void AddConfig(const std::string& pem_pod_name, const std::string& key, const std::string& value);
 
+  std::vector<TracepointDeployment*> Deployments();
+
  private:
   // All the new tracepoints added as part of this mutation. DeploymentSpecs are protobufs because
   // we only modify these upon inserting the new tracepoint, while the Tracepoint definition is

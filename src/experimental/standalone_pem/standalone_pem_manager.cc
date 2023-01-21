@@ -104,6 +104,9 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
 
   mds_manager_ = std::make_unique<px::md::StandaloneAgentMetadataStateManager>(
       info_.hostname, info_.asid, info_.pid, info_.agent_id);
+
+  tracepoint_manager_ =
+      std::make_unique<TracepointManager>(dispatcher_.get(), stirling_.get(), table_store_.get());
   // Force Metadata Update.
   ECHECK_OK(mds_manager_->PerformMetadataStateUpdate());
 }
@@ -143,8 +146,9 @@ Status StandalonePEMManager::Init() {
   stirling_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
-  vizier_grpc_server_ = std::make_unique<VizierGRPCServer>(
-      port_, carnot_.get(), results_sink_server_.get(), carnot_->GetEngineState());
+  vizier_grpc_server_ =
+      std::make_unique<VizierGRPCServer>(port_, carnot_.get(), results_sink_server_.get(),
+                                         carnot_->GetEngineState(), tracepoint_manager_.get());
 
   return Status::OK();
 }

@@ -95,6 +95,19 @@ void TracepointIR::AddReturnValue(const std::string& id, const std::string& expr
   ret_vals_.push_back(ret);
 }
 
+std::vector<TracepointDeployment*> MutationsIR::Deployments() {
+  std::vector<TracepointDeployment*> deployments;
+  for (size_t i = 0; i < deployments_.size(); i++) {
+    deployments.push_back(deployments_[i].second.get());
+  }
+
+  for (size_t i = 0; i < bpftrace_programs_.size(); i++) {
+    deployments.push_back(bpftrace_programs_[i].get());
+  }
+
+  return deployments;
+}
+
 std::shared_ptr<TracepointIR> MutationsIR::StartProbe(const std::string& function_name) {
   auto tracepoint_ir = std::make_shared<TracepointIR>(function_name);
   probes_pool_.push_back(tracepoint_ir);
