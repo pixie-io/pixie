@@ -290,9 +290,7 @@ genrule(
     ],
     outs = ["vizier_etcd_image_list.txt"],
     cmd = """
-      T=`mktemp -d`
-      for FILE in $(SRCS); do cat $$FILE |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> $@; done
-      touch $@
+    yq e '.. | .image? | select(.)' -o=json $(SRCS) | jq 'strings' | sort | uniq > $@
     """,
 )
 
@@ -313,9 +311,7 @@ genrule(
     ],
     outs = ["vizier_image_list.txt"],
     cmd = """
-      T=`mktemp -d`
-      for FILE in $(SRCS); do cat $$FILE |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> $@; done
-      touch $@
+    yq e '.. | .image? | select(.)' -o=json $(SRCS) | jq 'strings' | sort | uniq > $@
     """,
 )
 

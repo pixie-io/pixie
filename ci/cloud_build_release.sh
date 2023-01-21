@@ -65,20 +65,20 @@ if [[ "$PUBLIC" == "true" ]]; then
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
 
   # Write YAMLs + image paths to a tar file to support easy deployment.
-  mkdir -p "${repo_path}/pixie_cloud"
   mkdir -p "${repo_path}/pixie_cloud/yamls"
   image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
 
   kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-  kustomize build "k8s/cloud_deps/base/elastic/operator" >> "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+  kustomize build "k8s/cloud_deps/base/elastic/operator" > "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
   kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
 
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> "${image_list_file}"
+  deploy_yamls=(
+    "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+    "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+    "${repo_path}/pixie_cloud/yamls/cloud.yaml"
+  )
+
+  yq e '.. | .image? | select(.)' -o=json "${deploy_yamls[@]}" | jq 'strings' | sort | uniq > "${image_list_file}"
 
   cd "${repo_path}"
   tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
