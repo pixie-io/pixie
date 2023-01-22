@@ -60,7 +60,7 @@ pl_cc_binary(
 
 genrule(
     name = "udf_info_pb_txt",
-    srcs = [":export_funcs"],
     outs = ["data/udf.pb"],
     cmd = "$(location :export_funcs) --out_file_path $@ &>/dev/null",
+    tools = [":export_funcs"],
 )
