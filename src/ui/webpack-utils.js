@@ -57,7 +57,9 @@ class ArchivePlugin {
     });
 
     compiler.hooks.assetEmitted.tap('ArchivePlugin', (file, info) => {
-      this.archiverStream.append(info.content, { name: file });
+      // Pick a deterministic mtime so that the output is not volatile.
+      // This helps ensure that bazel can cache the ui builds as expected.
+      this.archiverStream.append(info.content, { name: file, date: 1514764800 });
     });
 
     compiler.hooks.afterEmit.tap('ArchivePlugin', () => {

@@ -45,7 +45,7 @@ container_layer(
 container_layer(
     name = "ui_assets",
     directory = "/assets",
-    tars = ["//src/ui:ui-bundle"],
+    tars = ["//src/ui:ui_bundle"],
 )
 
 container_layer(

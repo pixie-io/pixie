@@ -15,32 +15,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # This file contains rules for for our UI builds.
-# It's a bit hacky, but better than what we had before. This is just a placeholder until
-# https://github.com/bazelbuild/rules_nodejs is ready. In the current state bazel
-# caching is broken with rules_nodejs.
 
 ui_shared_cmds_start = [
-    "export BASE_PATH=$PWD",
+    'export BASE_PATH="$(pwd)"',
     "export PATH=/usr/local/bin:/opt/px_dev/tools/node/bin:$PATH",
-    "export HOME=$(mktemp -d)",  # This makes node-gyp happy.
-    "export TMPPATH=$(mktemp -d)",
-    # This is some truly shady stuff. The stamping on genrules just makes this file
-    # available, but does not apply it to the environment. We parse out the file
-    # and apply it to the environment here. Hopefully,
-    # no special characters/spaces/quotes in the results ...
-    'if [ -f "bazel-out/stable-status.txt" ]; then\n' +
-    "$(sed -E \"s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g\" bazel-out/stable-status.txt)\n" +
-    "fi",
-    'if [ -f "bazel-out/volatile-status.txt" ]; then\n' +
-    "$(sed -E \"s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g\" bazel-out/volatile-status.txt)\n" +
-    "fi",
-    "cp -aL ${BASE_PATH}/* ${TMPPATH}",
-    "pushd ${TMPPATH}/${UILIB_PATH} &> /dev/null",
+    'export HOME="$(mktemp -d)"',  # This makes node-gyp happy.
+    'export TMPPATH="$(mktemp -d)"',
+    'cp -aL "$BASE_PATH"/* "$TMPPATH"',
+    'pushd "$TMPPATH/src/ui" &> /dev/null',
 ]
 
 ui_shared_cmds_finish = [
     "popd &> /dev/null",
-    "rm -rf ${TMPPATH}",
+    'rm -rf "$TMPPATH"',
 ]
 
 def _pl_webpack_deps_impl(ctx):
@@ -50,19 +37,16 @@ def _pl_webpack_deps_impl(ctx):
     out = ctx.actions.declare_file(output_fname)
 
     cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + out.path,
         "yarn install --immutable &> build.log",
-        "tar -czf ${BASE_PATH}/${OUTPUT_PATH} .",
+        # Pick a deterministic mtime so that the output is not volatile.
+        # This helps ensure that bazel can cache the ui builds as expected.
+        'tar --mtime="2018-01-01 00:00:00 UTC" -czf "$BASE_PATH/{}" .'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
         inputs = all_files,
         outputs = [out],
         command = " && ".join(cmd),
-        env = {
-            "BASE_PATH": "$$PWD",
-            "UILIB_PATH": ctx.attr.uilib_base,
-        },
         progress_message =
             "Generating webpack deps %s" % out.short_path,
     )
@@ -79,26 +63,30 @@ def _pl_webpack_library_impl(ctx):
     output_fname = "{}.tar.gz".format(ctx.attr.name)
     out = ctx.actions.declare_file(output_fname)
 
+    env_cmds = []
     if ctx.attr.stamp:
+        # This is some truly shady stuff. The stamping on genrules just makes this file
+        # available, but does not apply it to the environment. We parse out the file
+        # and apply it to the environment here. Hopefully,
+        # no special characters/spaces/quotes in the results ...
+        env_cmds = [
+            '$(sed -E "s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g" "{}")'.format(ctx.info_file.path),
+            '$(sed -E "s/^([A-Za-z_]+)\\s*(.*)/export \\1=\\2/g" "{}")'.format(ctx.version_file.path),
+        ]
         all_files.append(ctx.info_file)
         all_files.append(ctx.version_file)
 
-    cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + out.path,
-        "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "[ ! -d src/configurables/private ] || mv ${BASE_PATH}/" + ctx.file.licenses.path + " src/configurables/private/licenses.json",
-        "output=`yarn build_prod 2>&1` || echo ${output}",
-        "cp dist/bundle.tar.gz ${BASE_PATH}/${OUTPUT_PATH}",
+    cmd = env_cmds + ui_shared_cmds_start + [
+        'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
+        '[ ! -d src/configurables/private ] || mv "$BASE_PATH/{}" src/configurables/private/licenses.json'.format(ctx.file.licenses.path),
+        "output=`yarn build_prod 2>&1` || echo $output",
+        'cp dist/bundle.tar.gz "$BASE_PATH/{}"'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps + ctx.files.licenses,
         outputs = [out],
         command = " && ".join(cmd),
-        env = {
-            "BASE_PATH": "$$PWD",
-            "UILIB_PATH": ctx.attr.uilib_base,
-        },
         progress_message =
             "Generating webpack bundle %s" % out.short_path,
     )
@@ -121,12 +109,9 @@ def _pl_ui_test_impl(ctx):
             "cp coverage/lcov.info ${COVERAGE_OUTPUT_FILE}",
         ]
 
-    cmd = [
-        "export BASE_PATH=$(pwd)",
-        "export UILIB_PATH=" + ctx.attr.uilib_base,
+    cmd = ui_shared_cmds_start + [
         "export JEST_JUNIT_OUTPUT_NAME=${XML_OUTPUT_FILE:-junit.xml}",
-    ] + ui_shared_cmds_start + [
-        "tar -zxf ${BASE_PATH}/" + ctx.file.deps.short_path,
+        'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.short_path),
     ] + test_cmd + ui_shared_cmds_finish
 
     script = " && ".join(cmd)
@@ -158,21 +143,16 @@ def _pl_deps_licenses_impl(ctx):
     out = ctx.actions.declare_file(output_fname)
 
     cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + out.path,
-        "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "yarn license_check --excludePrivatePackages --production --json --out ${TMPPATH}/checker.json",
-        "yarn pnpify node ./tools/licenses/yarn_license_extractor.js " +
-        "--input=${TMPPATH}/checker.json --output=${BASE_PATH}/${OUTPUT_PATH}",
+        'export TMPPATH="$(mktemp -d)"',
+        'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
+        "yarn license_check --excludePrivatePackages --production --json --out $TMPPATH/checker.json",
+        'yarn pnpify node ./tools/licenses/yarn_license_extractor.js --input=$TMPPATH/checker.json --output="$BASE_PATH/{}"'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps,
         outputs = [out],
         command = " && ".join(cmd),
-        env = {
-            "BASE_PATH": "$$PWD",
-            "UILIB_PATH": ctx.attr.uilib_base,
-        },
         progress_message =
             "Generating licenses %s" % out.short_path,
     )
@@ -189,9 +169,6 @@ pl_webpack_deps = rule(
             mandatory = True,
             allow_files = True,
         ),
-        "uilib_base": attr.string(
-            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
-        ),
     }),
 )
 
@@ -205,9 +182,6 @@ pl_webpack_library = rule(
             allow_files = True,
         ),
         "stamp": attr.bool(mandatory = True),
-        "uilib_base": attr.string(
-            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
-        ),
     }),
 )
 
@@ -218,9 +192,6 @@ pl_ui_test = rule(
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
-        ),
-        "uilib_base": attr.string(
-            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
         "_lcov_merger": attr.label(
             default = configuration_field(fragment = "coverage", name = "output_generator"),
@@ -237,9 +208,6 @@ pl_deps_licenses = rule(
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
-        ),
-        "uilib_base": attr.string(
-            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
     }),
 )
