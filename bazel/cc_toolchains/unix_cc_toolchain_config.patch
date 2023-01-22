@@ -1,14 +1,23 @@
 diff --color -Naur a/cc_toolchain_config.bzl b/cc_toolchain_config.bzl
 --- a/cc_toolchain_config.bzl	2023-01-06 15:34:50.000000000 -0800
-+++ b/cc_toolchain_config.bzl	2023-01-08 12:14:33.829917530 -0800
++++ b/cc_toolchain_config.bzl	2023-01-22 15:33:16.794758043 -0800
 @@ -27,6 +27,7 @@
      "with_feature_set",
  )
  load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
-+load(":toolchain_features.bzl", "pl_toolchain_pre_features", "PL_EXTRA_CC_CONFIG_ATTRS", "pl_toolchain_post_features")
++load(":toolchain_features.bzl", "pl_toolchain_pre_features", "PL_EXTRA_CC_CONFIG_ATTRS", "pl_toolchain_post_features", "pl_action_configs")
  
  def layering_check_features(compiler):
      if compiler != "clang":
+@@ -147,7 +148,7 @@
+         tool_path(name = name, path = path)
+         for name, path in ctx.attr.tool_paths.items()
+     ]
+-    action_configs = []
++    action_configs = pl_action_configs(ctx)
+ 
+     llvm_cov_action = action_config(
+         action_name = ACTION_NAMES.llvm_cov,
 @@ -168,6 +169,10 @@
          name = "supports_start_end_lib",
          enabled = True,

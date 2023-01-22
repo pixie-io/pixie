@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
@@ -27,11 +28,10 @@ def pl_cc_resource(
         name = name + "_cp_genrule",
         outs = [out_file],
         srcs = [src],
-        tags = tags,
         cmd = "cat $(location {0}) > $@".format(src),
         **kwargs
     )
-    pl_cc_resource_impl(name, out_file, tags, **kwargs)
+    _pl_cc_resource_with_cc_info(name, out_file, **kwargs)
 
 def pl_bpf_cc_resource(
         name,
@@ -41,39 +41,93 @@ def pl_bpf_cc_resource(
         defines = [],
         tags = [],
         **kwargs):
-    out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, defines, tags)
-    pl_cc_resource_impl(name, out_file, tags = tags, **kwargs)
+    out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, defines, tags = kwargs.get("tags", []))
+    _pl_cc_resource_with_cc_info(name, out_file, **kwargs)
 
-def pl_cc_resource_impl(
-        name,
-        src,
-        tags = [],
-        **kwargs):
-    object_files = []
-    tags = ["linux_only"] + tags
-    object_file = src + ".o"
+def _pl_cc_resource_objcopy_impl(ctx):
+    cc_toolchain = find_cpp_toolchain(ctx)
 
-    native.genrule(
-        name = name + "_objcopy_genrule",
-        outs = [object_file],
-        srcs = [src],
-        tags = tags,
-        toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
-        # This is because the preprocessed files are now in Bazel's rule dir and $(location)
-        # will return the path of the source file, not the preprocessed file. So we cd into
-        # $(RULEDIR) and use the original file name to find the files.
-        cmd = "objcopy_abs_path=$$(realpath $(OBJCOPY));" +
-              "cd $(RULEDIR) && " +
-              # Objcopy's source file determines the symbol name, to make them identical to the rule
-              # name, copy the input source to a file named after the rule name.
-              #
-              # TODO(yzhao): This command would fail if pl_cc_resource_impl() is used directly,
-              # not through pl_cc_resource() and pl_bpf_cc_preprocess().
-              "cp {0} {1} && ".format(src, name) +
-              "$${objcopy_abs_path} -I binary -O elf64-x86-64 " +
-              "--binary-architecture i386:x86-64 {0} {1};".format(name, object_file),
-        **kwargs
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+
+    objcopy_tool = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = "objcopy",
+    )
+    output = ctx.actions.declare_file(ctx.attr.name + ".o")
+
+    elf_format = ""
+    binary_arch = ""
+    if cc_toolchain.cpu == "x86_64" or cc_toolchain.cpu == "k8":
+        elf_format = "elf64-x86-64"
+        binary_arch = "i386:x86-64"
+    elif cc_toolchain.cpu == "aarch64":
+        elf_format = "elf64-littleaarch64"
+        binary_arch = "aarch64"
+    else:
+        fail("Only x86 and aarch64 are currently supported by the pl_cc_resource rule")
+
+    if len(ctx.attr.src.files.to_list()) != 1:
+        fail("src input to _pl_cc_resource_objcopy must have exactly 1 file, received {}".format(len(ctx.attr.src.files)))
+    src_path = ctx.attr.src.files.to_list()[0].path
+
+    # Objcopy by default with use the full path to the source file to name its output symbols.
+    # We can rename them explicitly using the --redefine-sym argument to objcopy.
+    symbol_replacements = {
+        "_binary_{path}_{sym}".format(
+            path = src_path.replace("/", "_").replace("-", "_"),
+            sym = sym,
+        ): "_binary_{name_for_symbols}_{sym}".format(
+            name_for_symbols = ctx.attr.name_for_symbols,
+            sym = sym,
+        )
+        for sym in ["start", "end", "size"]
+    }
+
+    args = ctx.actions.args()
+    args.add("-I", "binary")
+    args.add("-O", elf_format)
+    args.add("--binary-architecture", binary_arch)
+    for orig, new in symbol_replacements.items():
+        args.add("--redefine-sym", "{orig}={new}".format(orig = orig, new = new))
+    args.add(src_path, output)
+
+    ctx.actions.run(
+        outputs = [output],
+        inputs = ctx.attr.src.files,
+        tools = cc_toolchain.all_files,
+        executable = objcopy_tool,
+        arguments = [args],
+        mnemonic = "ObjcopyCcResource",
+    )
+    return DefaultInfo(files = depset([output]))
+
+_pl_cc_resource_objcopy = rule(
+    implementation = _pl_cc_resource_objcopy_impl,
+    attrs = {
+        "name_for_symbols": attr.string(mandatory = True),
+        "src": attr.label(mandatory = True, allow_files = True),
+    },
+    fragments = ["cpp"],
+    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+)
+
+def _pl_cc_resource_with_cc_info(name, src, **kwargs):
+    objcopy_name = name + "_objcopy"
+    _pl_cc_resource_objcopy(
+        name = objcopy_name,
+        name_for_symbols = name,
+        src = src,
     )
 
     # Create a cc_library with the .o file.
-    cc_library(name = name, srcs = [object_file], tags = tags, linkstatic = 1, **kwargs)
+    cc_library(
+        name = name,
+        srcs = [objcopy_name],
+        linkstatic = True,
+        **kwargs
+    )
