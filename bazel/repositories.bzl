@@ -185,7 +185,6 @@ def _java_deps():
         prefix = "remotejdk_openjdk_graal",
         target_compatible_with = [
             "@platforms//os:linux",
-            "@platforms//cpu:x86_64",
         ],
         sha256 = "102db28b450ff5eb8c497aacaececc5263a4e50e64b7cdc5c7baa8b216e73531",
         urls = [
