@@ -17,8 +17,8 @@
 # abi returns the expected abi for the given arch libc_version pair.
 # Currently, doesn't support musl.
 def abi(arch, libc_version):
-    if arch == "aarch64":
-        return "eabi"
+    # Technically, the abi for aarch64 is eabi, however, all of the debian aarch64 sysroots we use have their files in aarch64-linux-gnu.
+    # So we treat aarch64 as having an abi of gnu as well.
     if libc_version.startswith("glibc"):
         return "gnu"
 
