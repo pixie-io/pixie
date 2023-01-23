@@ -89,7 +89,7 @@
       "position": {
         "x": 0,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "LET",
@@ -106,6 +106,44 @@
         "title": "",
         "yAxis": {
           "label": "RPS"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Throughput per Message Type",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "cmd_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "throughput_total",
+            "series": "req_op",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Message throughput"
         },
         "xAxis": null
       }
@@ -167,9 +205,9 @@
         }
       },
       "position": {
-        "x": 6,
+        "x": 8,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       }
     },
