@@ -29,6 +29,10 @@ def cql_data(start_time: str, source_filter: str, destination_filter: str, num_h
     df = add_source_dest_columns(df)
     df = add_source_dest_links(df, start_time)
 
+    # Translate opcode value to message type
+    df.req_op = px.cql_opcode_name(df.req_op)
+    df.resp_op = px.cql_opcode_name(df.resp_op)
+
     # Filter out entities as specified by the user.
     df = df[px.contains(df.source, source_filter)]
     df = df[px.contains(df.destination, destination_filter)]
