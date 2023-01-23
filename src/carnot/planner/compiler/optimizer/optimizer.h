@@ -26,6 +26,7 @@
 #include "src/carnot/planner/compiler/optimizer/merge_nodes_rule.h"
 #include "src/carnot/planner/compiler/optimizer/prune_unconnected_operators_rule.h"
 #include "src/carnot/planner/compiler/optimizer/prune_unused_columns_rule.h"
+#include "src/carnot/planner/compiler/optimizer/prune_unused_contains_rule.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/ir/ir.h"
@@ -62,10 +63,16 @@ class Optimizer : public RuleExecutor<IR> {
     prune_unused_columns->AddRule<PruneUnusedColumnsRule>();
   }
 
+  void CreatePruneUnusedContainsBatch() {
+    RuleBatch* prune_unused_columns = CreateRuleBatch<DoOnce>("PruneUnusedContains");
+    prune_unused_columns->AddRule<PruneUnusedContainsRule>();
+  }
+
   Status Init() {
     CreatePruneUnconnectedOpsBatch();
     CreateMergeNodesBatch();
     CreatePruneUnusedColumnsBatch();
+    CreatePruneUnusedContainsBatch();
     return Status::OK();
   }
 

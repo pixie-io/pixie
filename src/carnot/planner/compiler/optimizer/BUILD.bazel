@@ -82,3 +82,13 @@ pl_cc_test(
         "//src/carnot/udf_exporter:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "prune_unused_contains_rule_test",
+    srcs = ["prune_unused_contains_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
