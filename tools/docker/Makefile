@@ -55,7 +55,7 @@ SYSROOT_ARCHITECTURES := amd64 arm64
 SYSROOT_VARIANTS := runtime build test
 SYSROOT_UPLOAD_TARGET_TEMPLATE := upload_sysroot_arch_variant
 SYSROOT_TARGETS = $(patsubst variant,$(patsubst arch,$(SYSROOT_UPLOAD_TARGET_TEMPLATE, $(SYSROOT_ARCHITECTURES)), $(SYSROOT_VARIANTS)))
-SYSROOT_GS_PATH := gs://pixie-oss/pixie-dev-public/sysroots/$(SYSROOT_REV)
+SYSROOT_GS_PATH := gs://pixie-dev-public/sysroots/$(SYSROOT_REV)
 SYSROOT_CREATOR_IMAGE_TAG := sysroot-creator-$(SYSROOT_REV)
 
 ## Linux image parameters
@@ -163,8 +163,8 @@ build_all_sysroots: sysroot_creator/Dockerfile sysroot_creator/build_all_sysroot
 
 .PHONY: upload_all_sysroots
 upload_all_sysroots: build_all_sysroots
-	gsutil cp -r $(SYSROOT_BUILD_DIR) $(SYSROOT_GS_PATH)
-	sha256sum $(SYSROOT_BUILD_DIR)
+	gsutil cp $(SYSROOT_BUILD_DIR)/* $(SYSROOT_GS_PATH)
+	sha256sum $(SYSROOT_BUILD_DIR)/*
 
 
 .PHONY: build_and_upload_curl_image
