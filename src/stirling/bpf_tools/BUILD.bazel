@@ -33,20 +33,16 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//:llvm",
+        "//src/common/json:cc_library",
         "//src/common/system:cc_library",
+        "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//src/stirling/utils:cc_library",
-        "//src/common/json:cc_library",
-        "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
-        "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
-    ] + select({
-        "@bazel_tools//src/conditions:linux_x86_64": [
-            "@com_github_iovisor_bcc//:bcc",
-            "@com_github_iovisor_bpftrace//:bpftrace",
-            "//:llvm",
-        ],
-        "//conditions:default": [],
-    }),
+        "@com_github_iovisor_bcc//:bcc",
+        "@com_github_iovisor_bpftrace//:bpftrace",
+    ],
 )
 
 pl_cc_binary(
