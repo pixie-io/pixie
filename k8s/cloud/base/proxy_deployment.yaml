@@ -126,6 +126,9 @@ spec:
           name: service-certs
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
           runAsNonRoot: true
           runAsUser: 10100
           seccompProfile:
