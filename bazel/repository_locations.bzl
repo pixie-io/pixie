@@ -388,13 +388,6 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/protocolbuffers/upb/archive/e4635f223e7d36dfbea3b722a4ca4807a7e882e2.tar.gz",
         ],
     ),
-    com_github_util_linux_libuuid = dict(
-        sha256 = "f96f1924d1339cd5f668d380061c93e0b800939b5228dd6d7825593e5237f14c",
-        strip_prefix = "libuuid-0a6d600cab6aaa4a6d6b268e6edaab3addbb0a6b",
-        urls = [
-            "https://github.com/pixie-io/libuuid/archive/0a6d600cab6aaa4a6d6b268e6edaab3addbb0a6b.tar.gz",
-        ],
-    ),
     cpuinfo = dict(
         sha256 = "18eca9bc8d9c4ce5496d0d2be9f456d55cbbb5f0639a551ce9c8bac2e84d85fe",
         strip_prefix = "cpuinfo-5e63739504f0f8e18e941bd63b2d6d42536c7d90",
