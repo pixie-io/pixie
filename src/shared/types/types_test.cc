@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
@@ -29,6 +30,13 @@ class FixedSizedValueTypesOperatorTest : public ::testing::Test {};
 
 using TestedTypes = ::testing::Types<Int64Value, Float64Value, Time64NSValue>;
 TYPED_TEST_SUITE(FixedSizedValueTypesOperatorTest, TestedTypes);
+
+TYPED_TEST(FixedSizedValueTypesOperatorTest, serdes_test) {
+  auto val1 = TypeParam(1000);
+  auto val2 = TypeParam(0);
+  PL_CHECK_OK(val2.Deserialize(val1.Serialize()));
+  EXPECT_EQ(val1, val2);
+}
 
 TYPED_TEST(FixedSizedValueTypesOperatorTest, lt_operator) {
   EXPECT_LT(TypeParam(999), Time64NSValue(1000));

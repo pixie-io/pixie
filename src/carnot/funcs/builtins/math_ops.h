@@ -605,7 +605,7 @@ class MeanUDA : public udf::UDA {
   }
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
-    info_ = *reinterpret_cast<const MeanInfo*>(data.data());
+    std::memcpy(&info_, data.data(), sizeof(info_));
     return Status::OK();
   }
   static udf::UDADocBuilder Doc() {
@@ -638,15 +638,9 @@ class SumUDA : public udf::UDA {
                                                       types::ST_THROUGHPUT_BYTES_PER_NS,
                                                       types::ST_PERCENT})};
   }
-  StringValue Serialize(FunctionContext*) {
-    return StringValue(reinterpret_cast<char*>(&sum_), sizeof(sum_));
-  }
+  StringValue Serialize(FunctionContext*) { return sum_.Serialize(); }
 
-  Status Deserialize(FunctionContext*, const StringValue& data) {
-    sum_ = *reinterpret_cast<const typename types::ValueTypeTraits<TAggType>::native_type*>(
-        data.data());
-    return Status::OK();
-  }
+  Status Deserialize(FunctionContext*, const StringValue& data) { return sum_.Deserialize(data); }
 
   static udf::UDADocBuilder Doc() {
     return udf::UDADocBuilder("Calculate the arithmetic sum of the grouped values.")
@@ -687,15 +681,9 @@ class MaxUDA : public udf::UDA {
         .Returns("The maximum value in the group.");
   }
 
-  StringValue Serialize(FunctionContext*) {
-    return StringValue(reinterpret_cast<char*>(&max_), sizeof(max_));
-  }
+  StringValue Serialize(FunctionContext*) { return max_.Serialize(); }
 
-  Status Deserialize(FunctionContext*, const StringValue& data) {
-    max_ =
-        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
-    return Status::OK();
-  }
+  Status Deserialize(FunctionContext*, const StringValue& data) { return max_.Deserialize(data); }
 
  protected:
   TArg max_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::min();
@@ -722,15 +710,9 @@ class MinUDA : public udf::UDA {
                                                       types::ST_DURATION_NS, types::ST_PERCENT})};
   }
 
-  StringValue Serialize(FunctionContext*) {
-    return StringValue(reinterpret_cast<char*>(&min_), sizeof(min_));
-  }
+  StringValue Serialize(FunctionContext*) { return min_.Serialize(); }
 
-  Status Deserialize(FunctionContext*, const StringValue& data) {
-    min_ =
-        *reinterpret_cast<const typename types::ValueTypeTraits<TArg>::native_type*>(data.data());
-    return Status::OK();
-  }
+  Status Deserialize(FunctionContext*, const StringValue& data) { return min_.Deserialize(data); }
   static udf::UDADocBuilder Doc() {
     return udf::UDADocBuilder("Returns the minimum in the group.")
         .Example("df = df.agg(min_latency=('latency_ms', px.min))")
@@ -745,18 +727,13 @@ class MinUDA : public udf::UDA {
 template <typename TArg>
 class CountUDA : public udf::UDA {
  public:
-  void Update(FunctionContext*, TArg) { count_++; }
-  void Merge(FunctionContext*, const CountUDA& other) { count_ += other.count_; }
+  void Update(FunctionContext*, TArg) { count_.val++; }
+  void Merge(FunctionContext*, const CountUDA& other) { count_.val += other.count_.val; }
   Int64Value Finalize(FunctionContext*) { return count_; }
 
-  StringValue Serialize(FunctionContext*) {
-    return StringValue(reinterpret_cast<char*>(&count_), sizeof(count_));
-  }
+  StringValue Serialize(FunctionContext*) { return count_.Serialize(); }
 
-  Status Deserialize(FunctionContext*, const StringValue& data) {
-    count_ = *reinterpret_cast<const uint64_t*>(data.data());
-    return Status::OK();
-  }
+  Status Deserialize(FunctionContext*, const StringValue& data) { return count_.Deserialize(data); }
 
   static udf::UDADocBuilder Doc() {
     return udf::UDADocBuilder("Returns number of rows in the aggregate group.")
@@ -770,7 +747,7 @@ class CountUDA : public udf::UDA {
   }
 
  protected:
-  uint64_t count_ = 0;
+  Int64Value count_ = 0;
 };
 
 void RegisterMathOpsOrDie(udf::Registry* registry);

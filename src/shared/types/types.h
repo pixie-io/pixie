@@ -50,6 +50,22 @@ using DataType = types::DataType;
 struct BaseValueType {};
 
 /**
+ * The value type for string values.
+ */
+struct StringValue : BaseValueType, public std::string {
+  using std::string::string;
+  // Allow implicit construction to make it easier/more natural to return values
+  // from functions.
+  // NOLINTNEXTLINE: implicit constructor.
+  StringValue(std::string&& str) : std::string(std::move(str)) {}
+  // NOLINTNEXTLINE: implicit constructor.
+  StringValue(const std::string& str) : std::string(str) {}
+  int64_t bytes() const { return sizeof(char) * this->length(); }
+
+  const std::string& string() { return *this; }
+};
+
+/**
  * Defines the value type for all ValueTypes that have a fixed size in memory.
  * @tparam T The underlying data type.
  */
@@ -114,6 +130,16 @@ struct FixedSizedValueType : BaseValueType {
   }
 
   int64_t bytes() const { return sizeof(T); }
+
+  StringValue Serialize() const {
+    return StringValue(reinterpret_cast<const char*>(&val), sizeof(val));
+  }
+
+  Status Deserialize(const StringValue& in) {
+    DCHECK(sizeof(val) == in.size());
+    std::memcpy(reinterpret_cast<char*>(&val), in.data(), sizeof(val));
+    return Status::OK();
+  }
 
  private:
   /**
@@ -182,21 +208,6 @@ const uint8_t kFixedSizeBytes = sizeof(FixedSizeValueUnion);
 static_assert(kFixedSizeBytes == 16,
               "Please re-consider bloating fixed size values since it might have significant "
               "performance impact");
-/**
- * The value type for string values.
- */
-struct StringValue : BaseValueType, public std::string {
-  using std::string::string;
-  // Allow implicit construction to make it easier/more natural to return values
-  // from functions.
-  // NOLINTNEXTLINE: implicit constructor.
-  StringValue(std::string&& str) : std::string(std::move(str)) {}
-  // NOLINTNEXTLINE: implicit constructor.
-  StringValue(const std::string& str) : std::string(str) {}
-  int64_t bytes() const { return sizeof(char) * this->length(); }
-
-  const std::string& string() { return *this; }
-};
 
 /**
  * Get the value out of the fixed sized union (by type).
