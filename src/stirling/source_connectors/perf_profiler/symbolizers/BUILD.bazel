@@ -46,6 +46,7 @@ java_image_tar = "//src/stirling/source_connectors/perf_profiler/testing/java:%s
 
 pl_cc_test(
     name = "symbolizer_test",
+    timeout = "long",
     srcs = ["symbolizer_test.cc"],
     args = stirling_profiler_java_args + [
         "--java_image_name $(location %s)" % java_image_tar,
