@@ -18,6 +18,7 @@ To update this README, run `make update_readme` in this directory.
 - px/[amqp_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/amqp_data): Shows a sample of amqp messages in the cluster.
 - px/[cluster](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cluster): This view lists the namespaces and the node that are available on the current cluster.
 - px/[cql_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
+- px/[cql_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_flow_graph): Graph of Cassandra messages in the cluster, with latency stats.
 - px/[cql_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/cql_stats): This live view calculates the latency, error rate, and throughput of a pod's CQL (Cassandra) requests.
 - px/[dns_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_data): Show a sample of DNS traffic in the cluster.
 - px/[dns_flow_graph](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/dns_flow_graph): Overview of DNS requests in the cluster, with latency stats.

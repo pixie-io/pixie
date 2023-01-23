@@ -1,0 +1,123 @@
+{
+  "variables": [
+      {
+          "name": "start_time",
+          "type": "PX_STRING",
+          "description": "The start time of the window in time units before now.",
+          "defaultValue": "-5m"
+      },
+      {
+          "name": "namespace",
+          "type": "PX_NAMESPACE",
+          "description": "The namespace to filter on."
+      },
+      {
+          "name": "source_filter",
+          "type": "PX_STRING",
+          "description": "The partial string to match the 'source' column.",
+          "defaultValue": ""
+      },
+      {
+          "name": "destination_filter",
+          "type": "PX_STRING",
+          "description": "The partial string to match the 'destination' column.",
+          "defaultValue": ""
+      }
+  ],
+  "globalFuncs": [
+      {
+          "outputName": "cql_flow",
+          "func": {
+              "name": "cql_flow_graph",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "ns",
+                      "variable": "namespace"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      },
+      {
+          "outputName": "cql_summary_with_links",
+          "func": {
+              "name": "cql_summary_with_links",
+              "args": [
+                  {
+                      "name": "start_time",
+                      "variable": "start_time"
+                  },
+                  {
+                      "name": "ns",
+                      "variable": "namespace"
+                  },
+                  {
+                      "name": "source_filter",
+                      "variable": "source_filter"
+                  },
+                  {
+                      "name": "destination_filter",
+                      "variable": "destination_filter"
+                  }
+              ]
+          }
+      }
+  ],
+  "widgets": [
+      {
+          "name": "Cassandra Flow Graph",
+          "position": {
+              "x": 0,
+              "y": 0,
+              "w": 12,
+              "h": 5
+          },
+          "globalFuncOutputName": "cql_flow",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Graph",
+              "adjacencyList": {
+                  "fromColumn": "source",
+                  "toColumn": "destination"
+              },
+              "edgeWeightColumn": "request_throughput",
+              "edgeColorColumn": "latency_p90",
+              "edgeThresholds": {
+                  "mediumThreshold": 100000000,
+                  "highThreshold": 500000000
+              },
+              "edgeHoverInfo": [
+                  "latency_p50",
+                  "latency_p90",
+                  "latency_p99",
+                  "request_throughput",
+                  "throughput_total"
+              ],
+              "edgeLength": 500
+          }
+      },
+      {
+          "name": "Table",
+          "position": {
+              "x": 0,
+              "y": 5,
+              "w": 12,
+              "h": 4
+          },
+          "globalFuncOutputName": "cql_summary_with_links",
+          "displaySpec": {
+              "@type": "types.px.dev/px.vispb.Table"
+          }
+      }
+  ]
+}
