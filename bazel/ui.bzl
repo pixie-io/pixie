@@ -185,7 +185,7 @@ pl_webpack_library = rule(
     }),
 )
 
-pl_ui_test = rule(
+_pl_ui_test = rule(
     implementation = _pl_ui_test_impl,
     attrs = dict({
         "deps": attr.label(allow_single_file = True),
@@ -201,6 +201,15 @@ pl_ui_test = rule(
     test = True,
 )
 
+def _pl_ui_test_macro(**kwargs):
+    if "target_compatible_with" not in kwargs:
+        kwargs["target_compatible_with"] = []
+    kwargs["target_compatible_with"] = kwargs["target_compatible_with"] + select({
+        "//bazel/cc_toolchains:libc_version_glibc_host": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    })
+    _pl_ui_test(**kwargs)
+
 pl_deps_licenses = rule(
     implementation = _pl_deps_licenses_impl,
     attrs = dict({
@@ -211,3 +220,5 @@ pl_deps_licenses = rule(
         ),
     }),
 )
+
+pl_ui_test = _pl_ui_test_macro
