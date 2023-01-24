@@ -21,7 +21,8 @@
 # Go to the root of the repo
 cd "$(git rev-parse --show-toplevel)" || exit
 
-bazel_query="bazel query --keep_going --noshow_progress"
+bazel_query=("bazel" "query" "--keep_going" "--noshow_progress")
+bazel_cquery=("bazel" "cquery")
 
 # A list of patterns that will trigger a full build.
 poison_patterns=('^Jenkinsfile' '^bazel\/' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel'  '^docker.properties')
@@ -57,7 +58,7 @@ function usage() {
     echo " -a all_targets=${all_targets}" >&2
 }
 
-while getopts "abh" option; do
+while getopts "abhc:" option; do
   case "${option}" in
     a )
        all_targets=true
@@ -141,6 +142,16 @@ function check_bpf_trigger() {
   done
 }
 
+function query_compatible_targets() {
+  bazel_config="$1"
+  query_expr="$("${bazel_query[@]}" "${@:2}" 2> /dev/null | sed -z 's/\n/+/g;s/+$//g')"
+
+  if [ -n "${query_expr}" ]; then
+    starlark_expr='target.label if "IncompatiblePlatformProvider" not in providers(target) else "__INCOMPATIBLE__"'
+    "${bazel_cquery[@]}" --config="${bazel_config}" --output=starlark --starlark:expr="${starlark_expr}" "${query_expr}" 2> /dev/null | grep -v "__INCOMPATIBLE__"
+  fi
+}
+
 compute_targets
 check_bpf_trigger
 
@@ -166,29 +177,30 @@ cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
 
 
 # Clang:opt (includes non-cc targets: go targets, //src/ui/..., etc.)
-${bazel_query} "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt 2>/dev/null
-${bazel_query} "${tests} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
+query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt #2>/dev/null
+query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
 
 # Clang:dbg
-${bazel_query} "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg 2>/dev/null
-${bazel_query} "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg 2>/dev/null
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg 2>/dev/null
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg 2>/dev/null
 
 # GCC:opt
-${bazel_query} "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt 2>/dev/null
-${bazel_query} "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
+query_compatible_targets "gcc" "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt 2>/dev/null
+query_compatible_targets "gcc" "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt 2>/dev/null
 
 # Sanitizer (Limit to C++ only).
-${bazel_query} "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
-${bazel_query} "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
+# TODO(james): technically we should set the configs to asan, msan, and tsan and produce different files for each.
+query_compatible_targets "clang" "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer 2>/dev/null
+query_compatible_targets "clang" "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer 2>/dev/null
 
 if [[ "${run_bpf_targets}" = "true" ]]; then
   # BPF.
-  ${bazel_query} "${bpf_buildables}" > bazel_buildables_bpf 2>/dev/null
-  ${bazel_query} "${bpf_tests}" > bazel_tests_bpf 2>/dev/null
+  query_compatible_targets "bpf" "${bpf_buildables}" > bazel_buildables_bpf 2>/dev/null
+  query_compatible_targets "bpf" "${bpf_tests}" > bazel_tests_bpf 2>/dev/null
 
   # BPF Sanitizer (C/C++ Only, excludes shell tests).
-  ${bazel_query} "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer 2>/dev/null
-  ${bazel_query} "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer 2>/dev/null
+  query_compatible_targets "bpf" "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer 2>/dev/null
+  query_compatible_targets "bpf" "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer 2>/dev/null
 else
   # BPF.
   cat /dev/null > bazel_buildables_bpf
@@ -200,9 +212,9 @@ else
 fi
 
 # Should we run clang-tidy?
-${bazel_query} "${cc_buildables}" > bazel_buildables_clang_tidy 2>/dev/null
-${bazel_query} "${cc_tests}" > bazel_tests_clang_tidy 2>/dev/null
+query_compatible_targets "clang" "${cc_buildables}" > bazel_buildables_clang_tidy 2>/dev/null
+query_compatible_targets "clang" "${cc_tests}" > bazel_tests_clang_tidy 2>/dev/null
 
 # Should we run golang race detection?
-${bazel_query} "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race 2>/dev/null
-${bazel_query} "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/dev/null
+query_compatible_targets "clang" "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race 2>/dev/null
+query_compatible_targets "clang" "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race 2>/dev/null
