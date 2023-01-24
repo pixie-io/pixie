@@ -784,7 +784,7 @@ namespace {
 // For DW_AT_location expressions that have different values for different address ranges,
 // this function currently returns the value for the first address range (which should
 // correspond to the location of the variable at the function entry).
-StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
+StatusOr<llvm::DWARFLocationExpressionsVector> GetDieLocationAttrBytes(const DWARFDie& die) {
   PL_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
                       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
                                         "Could not find DW_AT_location for function argument."));
@@ -794,7 +794,13 @@ StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
     PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
                         AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
 
-    return loc_block;
+    // Wrap the results in a DWARFLocationExpressionsVector since it's just a single value.
+    llvm::DWARFLocationExpression dwarf_loc;
+    dwarf_loc.Expr.append(loc_block.begin(), loc_block.end());
+    llvm::DWARFLocationExpressionsVector dwarf_loc_vec;
+    dwarf_loc_vec.push_back(dwarf_loc);
+
+    return dwarf_loc_vec;
   }
 
   if (loc_attr.isFormClass(DWARFFormValue::FC_SectionOffset)) {
@@ -811,7 +817,7 @@ StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
     }
 
     if (location_expr_vec->empty()) {
-      return error::Internal("Emtpy DWARFLocationExpressionsVector");
+      return error::Internal("Empty DWARFLocationExpressionsVector");
     }
 
     // Now we have a vector of locations that look like the following:
@@ -819,12 +825,7 @@ StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
     //   [0x000000000047f14d, 0x000000000047f1cd): DW_OP_call_frame_cfa)
     // Note that there is an instruction address range. Within that range of instructions,
     // we can expect to find the argument at the specified location.
-
-    // For now, we use the first location, assuming that it is valid for the function entry.
-    const llvm::DWARFLocationExpression& loc = location_expr_vec->front();
-    VLOG(1) << llvm::to_string(loc);
-
-    return llvm::ArrayRef<uint8_t>(loc.Expr);
+    return location_expr_vec.get();
   }
 
   return error::Internal("Unsupported Form: $0", magic_enum::enum_name(loc_attr.getForm()));
@@ -841,8 +842,9 @@ StatusOr<llvm::ArrayRef<uint8_t>> GetDieLocationAttrBytes(const DWARFDie& die) {
 //                    DW_AT_location [DW_FORM_block1] (DW_OP_call_frame_cfa)
 // This example should return the location on the stack.
 StatusOr<VarLocation> GetDieLocationAttr(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_bytes, GetDieLocationAttrBytes(die));
-  PL_ASSIGN_OR_RETURN(SimpleBlock loc_block, DecodeSimpleBlock(loc_bytes));
+  PL_ASSIGN_OR_RETURN(llvm::DWARFLocationExpressionsVector loc, GetDieLocationAttrBytes(die));
+  PL_ASSIGN_OR_RETURN(SimpleBlock loc_block,
+                      DecodeSimpleBlock(llvm::ArrayRef<uint8_t>(loc.front().Expr)));
 
   if (loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
     if (loc_block.operand >= 0) {
