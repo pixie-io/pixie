@@ -130,10 +130,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/h2o/picohttpparser/archive/1d2b8a184e7ebe6651c30dcede37ba1d89691351.tar.gz"],
     ),
     com_github_iovisor_bcc = dict(
-        sha256 = "46eac44c0cf68a94bafe01088081b71606982936ccdfe2808fcd28e0cc131ba8",
-        strip_prefix = "bcc-6bfdb074c276be69ace19da376a689d1dbb4963f",
+        sha256 = "413a127fcdb14cb7ccfb92618e9c16a17fdb6c33c5d33294efaa6c1b76dc4a15",
+        strip_prefix = "bcc-d750529ecb2081e62745eb196603334deb28cd08",
         urls = [
-            "https://github.com/pixie-io/bcc/archive/6bfdb074c276be69ace19da376a689d1dbb4963f.tar.gz",
+            "https://github.com/pixie-io/bcc/archive/d750529ecb2081e62745eb196603334deb28cd08.tar.gz",
         ],
     ),
     com_github_iovisor_bpftrace = dict(
