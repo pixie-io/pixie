@@ -70,6 +70,7 @@ target_ldflags="-fuse-ld=lld"
 target_libcxx_path=""
 
 install_targets=()
+is_sanitizer_build=""
 
 with_libcxx() {
   target_libcxx_path="$1"
@@ -79,12 +80,15 @@ with_libcxx() {
 
 with_asan() {
   extra_cmake_options+=("-DLLVM_USE_SANITIZER=Address;Undefined")
+  is_sanitizer_build="true"
 }
 with_msan() {
   extra_cmake_options+=("-DLLVM_USE_SANITIZER=Memory")
+  is_sanitizer_build="true"
 }
 with_tsan() {
   extra_cmake_options+=("-DLLVM_USE_SANITIZER=Thread")
+  is_sanitizer_build="true"
 }
 with_host_tblgen() {
   host_bin_dir="$(dirname "${c_compiler_path}")"
@@ -253,12 +257,16 @@ run_llvm_build() {
     cmake_options+=("-DCMAKE_C_COMPILER_TARGET=${target_arch}-${target_os}-${target_abi}")
     cmake_options+=("-DLLVM_HOST_TRIPLE=${build_arch}-${build_os}-${build_abi}")
     cmake_options+=("-DLLVM_USE_HOST_TOOLS=True")
+  elif [[ "${is_sanitizer_build}" = "true" ]]; then
+    # If we're doing a sanitizer build, we make cmake think its cross-compiling
+    # so that llvm doesn't attempt to run some unnecessary tools built with sanitizer instrumentation.
+    cmake_options+=("-DCMAKE_SYSTEM_NAME=${target_os^}")
   fi
   cmake_options+=("${extra_cmake_options[@]}")
 
   cmake -G Ninja "${cmake_options[@]}" "${llvm_git_path}"/llvm
 
-  if [[ "${#install_targets[@]}" -gt 0 ]]; then
+  if [[ "${#install_targets[@]}" -eq 0 ]]; then
     ninja install
   else
     ninja "${install_targets[@]}"
@@ -286,7 +294,7 @@ build_libcxx() {
 
 build_llvm_libs() {
   projects_to_build="clang;llvm"
-  target_archs="BPF"
+  target_archs="BPF;X86;AArch64"
   extra_cmake_options+=("-DLLVM_BUILD_TOOLS=OFF")
   with_host_tblgen
   run_llvm_build

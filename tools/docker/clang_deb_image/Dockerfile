@@ -51,7 +51,7 @@ ENV LLVM_GIT_PATH="/llvm_all/llvm-project"
 RUN git config --global user.email "build@pixielabs.ai" && \
   git config --global user.name "robot"
 
-COPY patches /patches
+COPY patches/build/* /patches/
 COPY build_llvm.sh /scripts/build_llvm.sh
 
 # We build a few different versions of LLVM/Clang for our various different build setups.
@@ -239,5 +239,6 @@ RUN ./create_no_dep_clang.sh "/opt/clang-15.0-nodeps-build" "/opt/clang-15.0-min
 WORKDIR /opt
 VOLUME /image
 COPY create_packages.sh /opt
+COPY patches/llvm_cmake.patch /patches/llvm_cmake.patch
 
 CMD ["/opt/create_packages.sh"]
