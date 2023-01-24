@@ -42,8 +42,9 @@ def base_images():
     )
 
     _gcr_io_image(
+        # https://hub.docker.com/layers/openresty/openresty/1.21.4.1-4-bullseye/images/sha256-edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d?context=explore
         "openresty",
-        "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
+        "sha256:edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d",
         "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
     )
 
