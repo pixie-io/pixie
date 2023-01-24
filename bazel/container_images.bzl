@@ -49,13 +49,13 @@ def base_images():
 
     _gcr_io_image(
         "base_image",
-        "sha256:34e96e21516698913035a62ef1ce484d91184de8a44209a33c7e134547e20dee",
+        "sha256:6424eb0738952803e98b9067a27ec5f410aae54ebc21dabec4e8bb93a30af30b",
         "distroless/base",
     )
 
     _gcr_io_image(
         "base_image_debug",
-        "sha256:970c15d5174a9412290b8aa9d3dbc63b6a9016fb00384097ad06be194956c973",
+        "sha256:5fa21aeb39b7b6852bab06fe32e49071fe246e7bd479b80ebdc5797a587308e7",
         "distroless/base",
     )
 
