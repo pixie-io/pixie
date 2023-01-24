@@ -195,9 +195,9 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "b80d88f447566733f887a2c21ad6072751297459e79fa5acfc99e5db3a9418a1",
     ),
     com_github_rlyeh_sole = dict(
-        sha256 = "ff82a1d6071cbc9c709864266210ddedecdb2b1e507ac5e7c4290ca6453e89b3",
-        strip_prefix = "sole-1.0.2",
-        urls = ["https://github.com/r-lyeh-archived/sole/archive/refs/tags/1.0.2.tar.gz"],
+        sha256 = "70dbd71f2601963684195f4c7d8a1c2d45a0d53114bc4d06f8cebe6d3d3ffa69",
+        strip_prefix = "sole-95612e5cda1accc0369a51edfe0f32bfb4bee2a0",
+        urls = ["https://github.com/r-lyeh-archived/sole/archive/95612e5cda1accc0369a51edfe0f32bfb4bee2a0.tar.gz"],
     ),
     com_github_serge1_elfio = dict(
         sha256 = "de0bb37885cc041a00e3b27353125361716fc4a49bd6ce6ed5782a1e8d4ee137",
