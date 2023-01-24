@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/funcs/shared/utils.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/metadata/metadata_state.h"
@@ -314,29 +315,6 @@ inline const px::md::PodInfo* UPIDtoPod(const px::md::AgentMetadataState* md,
   }
   auto pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
   return pod_info;
-}
-
-// Stringifies a vector, including 0 and 1 element inputs.
-inline types::StringValue VectorToStringArray(const std::vector<std::string>& vec) {
-  rapidjson::StringBuffer s;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(s);
-
-  writer.StartArray();
-  for (const auto& str : vec) {
-    writer.String(str.c_str());
-  }
-  writer.EndArray();
-  return s.GetString();
-}
-
-// Stringifies a vector, but returns the input only as a vector for size>=2.
-inline types::StringValue StringifyVector(const std::vector<std::string>& vec) {
-  if (vec.size() == 1) {
-    return std::string(vec[0]);
-  } else if (vec.size() > 1) {
-    return VectorToStringArray(vec);
-  }
-  return "";
 }
 
 class UPIDToNamespaceUDF : public ScalarUDF {
