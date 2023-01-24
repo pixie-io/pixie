@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-include_recipe 'px_dev::golang'
 
 execute 'install go linters' do
   command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \

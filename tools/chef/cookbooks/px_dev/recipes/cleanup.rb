@@ -15,10 +15,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 execute 'rm large dirs' do
-  command 'rm -r /tmp/* /var/lib/apt/lists/* ${GOPATH}/pkg'
-end
-
-directory '/opt/px_dev/tools/golang' do
-  recursive true
-  action :delete
+  command 'rm -r /tmp/* /var/lib/apt/lists/*'
 end
