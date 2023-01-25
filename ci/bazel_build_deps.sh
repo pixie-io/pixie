@@ -46,6 +46,7 @@ fi
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
+buildables_excludes="except(kind(test, //...)) except(kind(container_image, //...))"
 default_excludes="except attr('tags', 'manual|disabled_flaky_test', //...) \
   except //third_party/... ${experimental_exclude}"
 
@@ -155,8 +156,8 @@ function query_compatible_targets() {
 compute_targets
 check_bpf_trigger
 
-buildables="kind(.*_binary, ${targets}) union kind(.*_library, ${targets}) ${default_excludes}"
-tests="kind(test, ${targets}) ${default_excludes}"
+buildables="${targets[*]} ${buildables_excludes} ${default_excludes}"
+tests="kind(test, ${targets[*]}) ${default_excludes}"
 
 cc_buildables="kind(cc_.*, ${buildables})"
 cc_tests="kind(cc_.*, ${tests})"
