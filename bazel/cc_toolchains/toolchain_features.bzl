@@ -225,7 +225,7 @@ def _asan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
@@ -258,7 +258,7 @@ def _msan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
@@ -291,7 +291,7 @@ def _tsan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
