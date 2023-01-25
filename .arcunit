@@ -6,7 +6,6 @@
          "(\\.proto$)"
       ],
       "exclude": [
-        "(^experimental/)",
         "(^third_party/)"
       ]
     },
@@ -16,7 +15,6 @@
          "(\\.graphql$)"
       ],
       "exclude": [
-        "(^experimental/)",
         "(^third_party/)"
       ]
     },
@@ -26,7 +24,6 @@
          "(\\.go$)"
       ],
       "exclude": [
-        "(^experimental/)",
         "(^third_party/)"
       ]
     }

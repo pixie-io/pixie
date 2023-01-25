@@ -17,7 +17,6 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = [
-    "//experimental:__subpackages__",
     "//src:__subpackages__",
 ])
 

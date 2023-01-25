@@ -38,17 +38,12 @@ run_bpf_targets=false
 
 commit_range=$(git merge-base origin/main HEAD)
 
-experimental_exclude=""
-if [[ -d experimental ]]; then
-    experimental_exclude="except //experimental/..."
-fi
-
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
 buildables_excludes="except(kind(test, //...)) except(kind(container_image, //...))"
 default_excludes="except attr('tags', 'manual|disabled_flaky_test', //...) \
-  except //third_party/... ${experimental_exclude}"
+  except //third_party/..."
 
 sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \

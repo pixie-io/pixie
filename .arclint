@@ -104,14 +104,6 @@
         "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
     },
-    "experimental-manual": {
-      "type": "script-and-regex",
-      "include": [
-        "(^experimental/.*BUILD\\.bazel$)"
-      ],
-      "script-and-regex.script": "./tools/linters/experimental-manual.sh",
-      "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
-    },
     "filename": {
       "type": "filename",
       "exclude": [
