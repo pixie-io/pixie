@@ -75,7 +75,7 @@ if [[ "$PUBLIC" == "true" ]]; then
     "${repo_path}/pixie_cloud/yamls/cloud.yaml"
   )
 
-  yq e '.. | .image? | select(.)' -o=json "${deploy_yamls[@]}" | jq 'strings' | sort | uniq > "${image_list_file}"
+  bazel run @com_github_mikefarah_yq_v4//:v4 -- '..|.image?|select(.|type == "!!str")' -o=json "${deploy_yamls[@]}" | sort | uniq > "${image_list_file}"
 
   cd "${repo_path}"
   tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"

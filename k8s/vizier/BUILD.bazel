@@ -162,7 +162,7 @@ genrule(
     ],
     outs = ["vizier_etcd_image_list.txt"],
     cmd = """
-    $(location @com_github_mikefarah_yq_v4//:v4) e '.. | .image? | select(.)' -o=json $(SRCS) | jq 'strings' | sort | uniq > $@
+    $(location @com_github_mikefarah_yq_v4//:v4) '..|.image?|select(.|type == "!!str")' -o json $(SRCS) | sort | uniq > $@
     """,
     tools = ["@com_github_mikefarah_yq_v4//:v4"],
 )
@@ -175,7 +175,7 @@ genrule(
     ],
     outs = ["vizier_image_list.txt"],
     cmd = """
-    $(location @com_github_mikefarah_yq_v4//:v4) e '.. | .image? | select(.)' -o=json $(SRCS) | jq 'strings' | sort | uniq > $@
+    $(location @com_github_mikefarah_yq_v4//:v4) '..|.image?|select(.|type == "!!str")' -o json $(SRCS) | sort | uniq > $@
     """,
     tools = ["@com_github_mikefarah_yq_v4//:v4"],
 )
