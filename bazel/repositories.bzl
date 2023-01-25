@@ -174,7 +174,6 @@ def _cc_deps():
 
     # Dependencies used in foreign cc rules (e.g. cmake-based builds)
     _include_all_repo("com_github_gperftools_gperftools")
-    _include_all_repo("com_github_openssl_openssl")
     _include_all_repo("com_github_nats_io_natsc")
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive", patches = ["//bazel/external:libarchive.patch"], patch_args = ["-p1"])

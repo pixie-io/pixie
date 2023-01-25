@@ -141,30 +141,3 @@ cc_binary(
     srcs = ["prom_test.cc"],
     deps = ["@com_github_jupp0r_prometheus_cpp//core"],
 )
-
-configure_make(
-    name = "openssl",
-    args = [
-        "-j`nproc`",
-        "-l`nproc`",
-    ],
-    configure_command = "Configure",
-    configure_in_place = True,
-    configure_options = [
-        "-fPIC",
-        "-static",
-    ] + select({
-        "@platforms//cpu:aarch64": ["linux-aarch64"],
-        "@platforms//cpu:x86_64": ["linux-x86_64"],
-    }),
-    lib_source = "@com_github_openssl_openssl//:all",
-    out_lib_dir = select({
-        "@platforms//cpu:aarch64": "lib",
-        "@platforms//cpu:x86_64": "lib64",
-    }),
-    out_static_libs = [
-        "libssl.a",
-        "libcrypto.a",
-    ],
-    visibility = ["//src/stirling:__subpackages__"],
-)
