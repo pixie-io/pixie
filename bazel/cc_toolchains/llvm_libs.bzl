@@ -21,21 +21,26 @@ def _llvm_variants():
 
     # TODO(james): add sysroot variants.
     # Add variants for our non sysroot config.
-    variants.append(("x86_64", "glibc_host", True))
-    variants.append(("x86_64", "glibc_host", False))
+    variants.append(("x86_64", "glibc_host", True, "none"))
+    variants.append(("x86_64", "glibc_host", True, "asan"))
+    variants.append(("x86_64", "glibc_host", True, "tsan"))
+    variants.append(("x86_64", "glibc_host", True, "msan"))
+    variants.append(("x86_64", "glibc_host", False, "none"))
     return variants
 
 def _llvm_variant_settings():
     for variant in _llvm_variants():
-        arch, libc_version, use_libcpp = variant
+        arch, libc_version, use_libcpp, sanitizer = variant
         configs_to_match = [
             ":libc_version_" + libc_version,
             "@platforms//cpu:" + arch,
         ]
         if use_libcpp:
             configs_to_match.append("//bazel:use_libcpp")
+            configs_to_match.append("//bazel:sanitizer_" + sanitizer)
         else:
             configs_to_match.append("//bazel:use_libstdcpp")
+
         selects.config_setting_group(
             name = _llvm_variant_setting_name(variant),
             match_all = configs_to_match,
@@ -43,13 +48,16 @@ def _llvm_variant_settings():
         )
 
 def _llvm_variant_setting_name(variant):
-    arch, libc_version, use_libcpp = variant
+    arch, libc_version, use_libcpp, sanitizer = variant
     name = "llvm_variant_{arch}_{libc_version}".format(
         arch = arch,
         libc_version = libc_version,
     )
     if use_libcpp:
         name = name + "_libcpp"
+
+    if sanitizer != "none":
+        name = name + "_" + sanitizer
     return name
 
 def _llvm_variant_setting_label(variant):
@@ -57,11 +65,13 @@ def _llvm_variant_setting_label(variant):
     return "@px//bazel/cc_toolchains:" + name
 
 def _llvm_variant_repo_name(variant):
-    arch, libc_version, use_libcpp = variant
-    return "com_llvm_lib{libcpp}_{arch}_{libc_version}".format(
+    arch, libc_version, use_libcpp, sanitizer = variant
+    sanitizer_tag = "_" + sanitizer
+    return "com_llvm_lib{libcpp}_{arch}_{libc_version}{sanitizer}".format(
         arch = arch,
         libc_version = libc_version.replace(".", "_"),
         libcpp = "_libcpp" if use_libcpp else "",
+        sanitizer = sanitizer_tag if sanitizer != "none" else "",
     )
 
 llvm_variant_settings = _llvm_variant_settings

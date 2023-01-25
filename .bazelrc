@@ -95,6 +95,8 @@ build:gcc --//bazel/cc_toolchains:compiler=gcc
 
 # bazel build --config asan ...
 build:asan --config=clang
+# TODO(zasgar): enable after we land libcxx default changes.
+# build:asan --//bazel:sanitizer=asan
 build:asan --features=asan
 build:asan --test_timeout="120,600,1800,3600"
 build:asan --define PL_CONFIG_ASAN=1
