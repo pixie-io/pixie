@@ -69,11 +69,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "concurrentqueue-1.0.3",
         urls = ["https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.tar.gz"],
     ),
-    com_github_cmcqueen_aes_min = dict(
-        sha256 = "dd82d23976695d857924780c262952cdb12ddbb56e6bdaf5a2270dccc851d279",
-        strip_prefix = "aes-min-0.3.1",
-        urls = ["https://github.com/cmcqueen/aes-min/releases/download/0.3.1/aes-min-0.3.1.tar.gz"],
-    ),
     com_github_cyan4973_xxhash = dict(
         sha256 = "952ebbf5b11fbf59ae5d760a562d1e9112278f244340ad7714e8556cbe54f7f7",
         strip_prefix = "xxHash-0.7.3",

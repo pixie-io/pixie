@@ -49,7 +49,6 @@ var (
 )
 
 var remapRepos = map[string]string{
-	"pixie-io/aes-min":      "cmcqueen/aes-min",
 	"pixie-io/arrow":        "apache/arrow",
 	"pixie-io/bcc":          "iovisor/bcc",
 	"pixie-io/bpftrace":     "iovisor/bpftrace",
