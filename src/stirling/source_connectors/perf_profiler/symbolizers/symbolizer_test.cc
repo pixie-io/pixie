@@ -234,7 +234,8 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
 
   // Setup commands to create and remove a docker volume.
   // It will be named and sized according to "volume_name" and "tmpfs_size_arg".
-  const std::string volume_name = "tmp-volume-java-symbolization-test-cases";
+  const pid_t pid = getpid();
+  const std::string volume_name = absl::Substitute("px-tmp-jsyms-not-enough-space-test-$0", pid);
   const std::string tmpfs_size_arg = "size=500K";
   const std::string create_volume = absl::Substitute(
       "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
@@ -310,7 +311,8 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
 
   // Setup commands to create and remove a docker volume.
   // It will be named and sized according to "volume_name" and "tmpfs_size_arg".
-  const std::string volume_name = "tmp-volume-java-symbolization-test-cases";
+  const pid_t pid = getpid();
+  const std::string volume_name = absl::Substitute("px-tmp-jsyms-enough-space-test-$0", pid);
   const std::string tmpfs_size_arg = "size=20M";
   const std::string create_volume = absl::Substitute(
       "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
