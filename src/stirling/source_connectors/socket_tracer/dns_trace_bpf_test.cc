@@ -44,7 +44,7 @@ class DNSTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ t
     // Run the bind DNS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(container_.Run(std::chrono::seconds{150}));
+    PX_CHECK_OK(container_.Run(std::chrono::seconds{150}));
   }
 
   ::px::stirling::testing::DNSServerContainer container_;
@@ -73,7 +73,7 @@ TEST_F(DNSTraceTest, Capture) {
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kDNSTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
-  PL_LOG_VAR(PrintDNSTable(rb));
+  PX_LOG_VAR(PrintDNSTable(rb));
 
   // Check server-side.
   {

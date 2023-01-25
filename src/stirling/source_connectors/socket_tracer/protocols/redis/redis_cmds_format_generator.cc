@@ -81,12 +81,12 @@ int main(int argc, char* argv[]) {
   CHECK(!FLAGS_redis_cmdargs.empty()) << "--redis_cmdargs must be specified.";
   CHECK(!FLAGS_redis_cmds.empty()) << "--redis_cmds must be specified.";
 
-  PL_ASSIGN_OR_EXIT(std::string redis_cmdargs, ReadFileToString(FLAGS_redis_cmdargs));
-  PL_ASSIGN_OR_EXIT(std::string redis_cmds, ReadFileToString(FLAGS_redis_cmds));
+  PX_ASSIGN_OR_EXIT(std::string redis_cmdargs, ReadFileToString(FLAGS_redis_cmdargs));
+  PX_ASSIGN_OR_EXIT(std::string redis_cmds, ReadFileToString(FLAGS_redis_cmds));
 
   std::vector<std::vector<std::string_view>> commands;
 
-  PL_CHECK_OK(Main(redis_cmds, redis_cmdargs, &commands));
+  PX_CHECK_OK(Main(redis_cmds, redis_cmdargs, &commands));
 
   for (const auto& command : commands) {
     std::cout << FomatCommand(command) << std::endl;

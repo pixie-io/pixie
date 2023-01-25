@@ -35,7 +35,7 @@ using ::px::testing::proto::EqualsProto;
 class ScalarUDF1 : public ScalarUDF {
  public:
   types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::Int64Value b2) {
-    PL_UNUSED(ctx);
+    PX_UNUSED(ctx);
     return b1.val && (b2.val != 0) ? 3 : 0;
   }
   static ScalarUDFDocBuilder Doc() {
@@ -49,12 +49,12 @@ class ScalarUDF1 : public ScalarUDF {
 class ScalarUDF1WithInit : public ScalarUDF {
  public:
   Status Init(FunctionContext* ctx, types::Int64Value v1) {
-    PL_UNUSED(ctx);
-    PL_UNUSED(v1);
+    PX_UNUSED(ctx);
+    PX_UNUSED(v1);
     return Status::OK();
   }
   types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::BoolValue b2) {
-    PL_UNUSED(ctx);
+    PX_UNUSED(ctx);
     return b1.val && b2.val ? 3 : 0;
   }
 };
@@ -69,7 +69,7 @@ template <typename TOutput, typename TInput1, typename TInput2>
 class AddUDF : public ScalarUDF {
  public:
   TOutput Exec(FunctionContext* ctx, TInput1 v1, TInput2 v2) {
-    PL_UNUSED(ctx);
+    PX_UNUSED(ctx);
     return v1.val + v2.val;
   }
 };
@@ -494,7 +494,7 @@ class TypedUDA1 : public UDA {
 class TypedScalarUDF1 : public ScalarUDF {
  public:
   types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::Int64Value b2) {
-    PL_UNUSED(ctx);
+    PX_UNUSED(ctx);
     return b1.val && (b2.val != 0) ? b2.val : 0;
   }
   static InfRuleVec SemanticInferenceRules() {

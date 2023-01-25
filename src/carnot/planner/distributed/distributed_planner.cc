@@ -36,7 +36,7 @@ namespace distributed {
 
 StatusOr<std::unique_ptr<DistributedPlanner>> DistributedPlanner::Create() {
   std::unique_ptr<DistributedPlanner> planner(new DistributedPlanner());
-  PL_RETURN_IF_ERROR(planner->Init());
+  PX_RETURN_IF_ERROR(planner->Init());
   return planner;
 }
 
@@ -50,35 +50,35 @@ Status StitchPlan(DistributedPlan* distributed_plan) {
   DCHECK(remote_plan);
 
   DistributedSetSourceGroupGRPCAddressRule set_grpc_address_rule;
-  PL_RETURN_IF_ERROR(set_grpc_address_rule.Apply(remote_carnot));
+  PX_RETURN_IF_ERROR(set_grpc_address_rule.Apply(remote_carnot));
 
   // Connect the plans.
   for (const auto& [plan, agents] : distributed_plan->plan_to_agent_map()) {
-    PL_ASSIGN_OR_RETURN(auto did_connect_plan, AssociateDistributedPlanEdgesRule::ConnectGraphs(
+    PX_ASSIGN_OR_RETURN(auto did_connect_plan, AssociateDistributedPlanEdgesRule::ConnectGraphs(
                                                    plan, agents, remote_plan));
     DCHECK(did_connect_plan);
   }
 
   // TODO(philkuz) make this connect to self without a grpc bridge.
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AssociateDistributedPlanEdgesRule::ConnectGraphs(remote_plan, {remote_node_id}, remote_plan));
 
   // Expand GRPCSourceGroups in the remote_plan.
   GRPCSourceGroupConversionRule conversion_rule;
-  PL_RETURN_IF_ERROR(conversion_rule.Execute(remote_plan));
+  PX_RETURN_IF_ERROR(conversion_rule.Execute(remote_plan));
   return MergeSameNodeGRPCBridgeRule(remote_node_id).Execute(remote_plan).status();
 }
 
 StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
     const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
     const IR* logical_plan) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<Coordinator> coordinator,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<Coordinator> coordinator,
                       Coordinator::Create(compiler_state, distributed_state));
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));
 
-  PL_RETURN_IF_ERROR(StitchPlan(distributed_plan.get()));
+  PX_RETURN_IF_ERROR(StitchPlan(distributed_plan.get()));
 
   AnnotateAbortableSourcesForLimitsRule rule;
   for (IR* agent_plan : distributed_plan->UniquePlans()) {

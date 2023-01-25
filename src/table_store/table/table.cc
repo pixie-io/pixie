@@ -198,14 +198,14 @@ Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
 
   Cursor cursor(this);
   while (!cursor.Done()) {
-    PL_ASSIGN_OR_RETURN(auto cur_rb, cursor.GetNextRowBatch(col_selector));
+    PX_ASSIGN_OR_RETURN(auto cur_rb, cursor.GetNextRowBatch(col_selector));
     auto eos = cursor.Done();
     cur_rb->set_eow(eos);
     cur_rb->set_eos(eos);
-    PL_RETURN_IF_ERROR(cur_rb->ToProto(table_proto->add_row_batches()));
+    PX_RETURN_IF_ERROR(cur_rb->ToProto(table_proto->add_row_batches()));
   }
 
-  PL_RETURN_IF_ERROR(rel_.ToProto(table_proto->mutable_relation()));
+  PX_RETURN_IF_ERROR(rel_.ToProto(table_proto->mutable_relation()));
   return Status::OK();
 }
 
@@ -213,19 +213,19 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetNextRowBatch(
     Cursor* cursor, const std::vector<int64_t>& cols) const {
   DCHECK(!cursor->Done()) << "Calling GetNextRowBatch on an exhausted Cursor";
   absl::base_internal::SpinLockHolder cold_lock(&cold_lock_);
-  PL_ASSIGN_OR_RETURN(auto rb,
+  PX_ASSIGN_OR_RETURN(auto rb,
                       cold_store_->GetNextRowBatch(cursor->LastReadRowID(), cursor->Hints(),
                                                    cursor->StopRowID(), cols));
   if (rb == nullptr) {
     absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
-    PL_ASSIGN_OR_RETURN(rb, hot_store_->GetNextRowBatch(cursor->LastReadRowID(), cursor->Hints(),
+    PX_ASSIGN_OR_RETURN(rb, hot_store_->GetNextRowBatch(cursor->LastReadRowID(), cursor->Hints(),
                                                         cursor->StopRowID(), cols));
     if (rb == nullptr && hot_store_->Size() > 0) {
       // If the cursor was pointing to an expired row batch, update the cursor to point to the start
       // of the table, then try to get the next row batch.
       *cursor->LastReadRowID() = hot_store_->FirstRowID() - 1;
       if (!cursor->Done()) {
-        PL_ASSIGN_OR_RETURN(rb,
+        PX_ASSIGN_OR_RETURN(rb,
                             hot_store_->GetNextRowBatch(cursor->LastReadRowID(), cursor->Hints(),
                                                         cursor->StopRowID(), cols));
       }
@@ -248,7 +248,7 @@ Status Table::ExpireRowBatches(int64_t row_batch_size) {
     bytes = batch_size_accountant_->HotBytes() + batch_size_accountant_->ColdBytes();
   }
   while (bytes + row_batch_size > max_table_size_) {
-    PL_RETURN_IF_ERROR(ExpireBatch());
+    PX_RETURN_IF_ERROR(ExpireBatch());
     {
       absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
       bytes = batch_size_accountant_->HotBytes() + batch_size_accountant_->ColdBytes();
@@ -270,7 +270,7 @@ Status Table::WriteRowBatch(const schema::RowBatch& rb) {
 
   internal::RecordOrRowBatch record_or_row_batch(rb);
 
-  PL_RETURN_IF_ERROR(WriteHot(std::move(record_or_row_batch)));
+  PX_RETURN_IF_ERROR(WriteHot(std::move(record_or_row_batch)));
   return Status::OK();
 }
 
@@ -288,7 +288,7 @@ Status Table::TransferRecordBatch(
   };
   internal::RecordOrRowBatch record_or_row_batch(std::move(record_batch_w_cache));
 
-  PL_RETURN_IF_ERROR(WriteHot(std::move(record_or_row_batch)));
+  PX_RETURN_IF_ERROR(WriteHot(std::move(record_or_row_batch)));
   return Status::OK();
 }
 
@@ -298,7 +298,7 @@ Status Table::WriteHot(internal::RecordOrRowBatch&& record_or_row_batch) {
   auto batch_stats = internal::BatchSizeAccountant::CalcBatchStats(
       ABSL_TS_UNCHECKED_READ(batch_size_accountant_)->NonMutableState(), record_or_row_batch);
 
-  PL_RETURN_IF_ERROR(ExpireRowBatches(batch_stats.bytes));
+  PX_RETURN_IF_ERROR(ExpireRowBatches(batch_stats.bytes));
 
   {
     absl::base_internal::SpinLockHolder hot_lock(&hot_lock_);
@@ -317,7 +317,7 @@ Status Table::WriteHot(internal::RecordOrRowBatch&& record_or_row_batch) {
   }
 
   // Make sure locks are released for this call, since they are reacquired inside.
-  PL_RETURN_IF_ERROR(UpdateTableMetricGauges());
+  PX_RETURN_IF_ERROR(UpdateTableMetricGauges());
   return Status::OK();
 }
 
@@ -424,7 +424,7 @@ TableStats Table::GetTableStats() const {
 Status Table::CompactSingleBatchUnlocked(arrow::MemoryPool*) {
   const auto& compaction_spec = batch_size_accountant_->GetNextCompactedBatchSpec();
 
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       compactor_.Reserve(compaction_spec.num_rows, compaction_spec.variable_col_bytes));
 
   RowID first_row_id = -1;
@@ -439,7 +439,7 @@ Status Table::CompactSingleBatchUnlocked(arrow::MemoryPool*) {
     }
   }
 
-  PL_ASSIGN_OR_RETURN(std::vector<ArrowArrayPtr> out_columns, compactor_.Finish());
+  PX_ASSIGN_OR_RETURN(std::vector<ArrowArrayPtr> out_columns, compactor_.Finish());
 
   cold_store_->EmplaceBack(first_row_id, out_columns);
 
@@ -470,7 +470,7 @@ Status Table::CompactHotToCold(arrow::MemoryPool* mem_pool) {
     if (!batch_size_accountant_->CompactedBatchReady()) {
       break;
     }
-    PL_RETURN_IF_ERROR(CompactSingleBatchUnlocked(mem_pool));
+    PX_RETURN_IF_ERROR(CompactSingleBatchUnlocked(mem_pool));
     next_ready = batch_size_accountant_->CompactedBatchReady();
   }
   return Status::OK();
@@ -498,7 +498,7 @@ Status Table::ExpireHot() {
 }
 
 Status Table::ExpireBatch() {
-  PL_ASSIGN_OR_RETURN(auto expired_cold, ExpireCold());
+  PX_ASSIGN_OR_RETURN(auto expired_cold, ExpireCold());
   if (expired_cold) {
     return Status::OK();
   }

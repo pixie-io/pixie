@@ -60,8 +60,8 @@ void AppendToBuilder(arrow::ArrayBuilder* builder, RowTuple* rt, size_t rt_idx) 
   using ValueType = typename types::DataTypeTraits<DT>::value_type;
   auto status =
       static_cast<ArrowBuilder*>(builder)->Append(udf::UnWrap(rt->GetValue<ValueType>(rt_idx)));
-  PL_DCHECK_OK(status);
-  PL_UNUSED(status);
+  PX_DCHECK_OK(status);
+  PX_UNUSED(status);
 }
 
 template <types::DataType DT>
@@ -144,7 +144,7 @@ Status AggNode::PrepareImpl(ExecState* exec_state) {
 
 Status AggNode::OpenImpl(ExecState* exec_state) {
   if (HasNoGroups()) {
-    PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
+    PX_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
   }
   return Status::OK();
 }
@@ -172,7 +172,7 @@ bool AggNode::ReadyToEmitBatches(const RowBatch& rb) const {
 Status AggNode::ClearAggState(ExecState* exec_state) {
   if (HasNoGroups()) {
     udas_no_groups_.clear();
-    PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
+    PX_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
   }
   agg_hash_map_.clear();
   return Status::OK();
@@ -181,7 +181,7 @@ Status AggNode::ClearAggState(ExecState* exec_state) {
 Status AggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) {
   auto values = plan_node_->values();
   for (size_t i = 0; i < values.size(); ++i) {
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         EvaluateSingleExpressionNoGroups(exec_state, udas_no_groups_[i], values[i].get(), rb));
   }
 
@@ -191,16 +191,16 @@ Status AggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) 
       const auto& uda_info = udas_no_groups_[i];
       auto builder = types::MakeArrowBuilder(uda_info.def->finalize_return_type(),
                                              exec_state->exec_mem_pool());
-      PL_RETURN_IF_ERROR(
+      PX_RETURN_IF_ERROR(
           uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(), builder.get()));
       SharedArray out_col;
-      PL_RETURN_IF_ERROR(builder->Finish(&out_col));
-      PL_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
+      PX_RETURN_IF_ERROR(builder->Finish(&out_col));
+      PX_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
     }
     output_rb.set_eow(rb.eow());
     output_rb.set_eos(rb.eos());
-    PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
-    PL_RETURN_IF_ERROR(ClearAggState(exec_state));
+    PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+    PX_RETURN_IF_ERROR(ClearAggState(exec_state));
   }
   return Status::OK();
 }
@@ -225,14 +225,14 @@ Status AggNode::ExtractRowTupleForBatch(const RowBatch& rb) {
     auto col = rb.ColumnAt(grp.idx).get();
 
 #define TYPE_CASE(_dt_) ExtractIntoGroupArgs<_dt_>(&group_args_chunk_, col, idx);
-    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
   return Status::OK();
 }
 
 Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
-  PL_UNUSED(exec_state);
+  PX_UNUSED(exec_state);
   // Loop through all the row and basically store the values into column chunk based on which
   // group they belong to.
   for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
@@ -262,7 +262,7 @@ Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
 
 #define TYPE_CASE(_dt_) ExtractToColumnWrapper<_dt_>(group_args_chunk_, rb, i, rb_col_idx);
 
-    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
 
@@ -270,7 +270,7 @@ Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
 }
 
 Status AggNode::EvaluatePartialAggregates(ExecState* exec_state, size_t num_records) {
-  PL_UNUSED(exec_state);
+  PX_UNUSED(exec_state);
   // TODO(zasgar): This only needs to run for unique groups. We should find
   // a way to optimize this.
   for (size_t i = 0; i < num_records; ++i) {
@@ -278,7 +278,7 @@ Status AggNode::EvaluatePartialAggregates(ExecState* exec_state, size_t num_reco
     auto& ga = group_args_chunk_[i];
     DCHECK(ga.av != nullptr);
     if (ga.av->agg_cols[0]->Size() > kAggCompactionThreshold) {
-      PL_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, ga.av));
+      PX_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, ga.av));
     }
   }
   return Status::OK();
@@ -300,7 +300,7 @@ Status AggNode::ResetGroupArgs() {
 }
 
 Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* output_rb) {
-  PL_UNUSED(exec_state);
+  PX_UNUSED(exec_state);
   DCHECK(output_rb != nullptr);
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> group_builders;
   for (const auto& group_dt : group_data_types_) {
@@ -320,28 +320,28 @@ Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* out
       DCHECK(i < group_builders.size());
 
 #define TYPE_CASE(_dt_) AppendToBuilder<_dt_>(group_builders[i].get(), groups_rt, i);
-      PL_SWITCH_FOREACH_DATATYPE(group_data_types_[i], TYPE_CASE);
+      PX_SWITCH_FOREACH_DATATYPE(group_data_types_[i], TYPE_CASE);
 #undef TYPE_CASE
     }
     // Actually Finalize the UDA based on the column wrapper chunks.
-    PL_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
+    PX_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
     for (size_t i = 0; i < val->udas.size(); ++i) {
       const auto& uda_info = val->udas[i];
-      PL_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(),
+      PX_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(),
                                                      value_builders[i].get()));
     }
   }
 
   for (const auto& group_builder : group_builders) {
     std::shared_ptr<arrow::Array> arr;
-    PL_RETURN_IF_ERROR(group_builder->Finish(&arr));
-    PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+    PX_RETURN_IF_ERROR(group_builder->Finish(&arr));
+    PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
   }
 
   for (const auto& value_builder : value_builders) {
     std::shared_ptr<arrow::Array> arr;
-    PL_RETURN_IF_ERROR(value_builder->Finish(&arr));
-    PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+    PX_RETURN_IF_ERROR(value_builder->Finish(&arr));
+    PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
   }
 
   return Status::OK();
@@ -356,19 +356,19 @@ Status AggNode::AggregateGroupByClause(ExecState* exec_state, const RowBatch& rb
   // 3. If the agg values are large then run aggregate and compact.
   // 4. Reset state to prepare for next row batch.
   // 5. If it's the last batch then emit the values.
-  PL_RETURN_IF_ERROR(ExtractRowTupleForBatch(rb));
-  PL_RETURN_IF_ERROR(HashRowBatch(exec_state, rb));
+  PX_RETURN_IF_ERROR(ExtractRowTupleForBatch(rb));
+  PX_RETURN_IF_ERROR(HashRowBatch(exec_state, rb));
   if (plan_node_->values().size() > 0) {
-    PL_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
+    PX_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
   }
-  PL_RETURN_IF_ERROR(ResetGroupArgs());
+  PX_RETURN_IF_ERROR(ResetGroupArgs());
   if (ReadyToEmitBatches(rb)) {
     RowBatch output_rb(*output_descriptor_, agg_hash_map_.size());
-    PL_RETURN_IF_ERROR(ConvertAggHashMapToRowBatch(exec_state, &output_rb));
+    PX_RETURN_IF_ERROR(ConvertAggHashMapToRowBatch(exec_state, &output_rb));
     output_rb.set_eow(rb.eow());
     output_rb.set_eos(rb.eos());
-    PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
-    PL_RETURN_IF_ERROR(ClearAggState(exec_state));
+    PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+    PX_RETURN_IF_ERROR(ClearAggState(exec_state));
   }
   return Status::OK();
 }
@@ -420,13 +420,13 @@ Status AggNode::EvaluateSingleExpressionNoGroups(ExecState* exec_state, const UD
           }
           raw_children.push_back(child.ValueOrDie().get());
         }
-        PL_RETURN_IF_ERROR(uda_info.def->ExecBatchUpdateArrow(uda_info.uda.get(), nullptr /* ctx */,
+        PX_RETURN_IF_ERROR(uda_info.def->ExecBatchUpdateArrow(uda_info.uda.get(), nullptr /* ctx */,
                                                               raw_children));
         // Blocking aggregates don't produce results until all data is seen.
         return {};
       });
 
-  PL_RETURN_IF_ERROR(walker.Walk(*expr));
+  PX_RETURN_IF_ERROR(walker.Walk(*expr));
   return Status::OK();
 }
 
@@ -461,15 +461,15 @@ Status AggNode::EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val) {
           std::vector<const types::ColumnWrapper*> raw_children;
           raw_children.reserve(children.size());
           for (auto& child : children) {
-            PL_RETURN_IF_ERROR(child);
+            PX_RETURN_IF_ERROR(child);
             raw_children.push_back(child.ValueOrDie().get());
           }
-          PL_RETURN_IF_ERROR(
+          PX_RETURN_IF_ERROR(
               uda_info.def->ExecBatchUpdate(uda_info.uda.get(), nullptr /* ctx */, raw_children));
           // Blocking aggregates don't produce results until all data is seen.
           return {};
         });
-    PL_RETURN_IF_ERROR(walker.Walk(expr));
+    PX_RETURN_IF_ERROR(walker.Walk(expr));
   }
 
   for (auto& col : val->agg_cols) {
@@ -500,14 +500,14 @@ Status AggNode::CreateColumnMapping() {
     walker.OnAggregateExpression(
         [&](const plan::AggregateExpression&, const std::vector<int>&) -> int { return 0; });
 
-    PL_RETURN_IF_ERROR(walker.Walk(*expr));
+    PX_RETURN_IF_ERROR(walker.Walk(*expr));
   }
   return Status::OK();
 }
 
 AggHashValue* AggNode::CreateAggHashValue(ExecState* exec_state) {
   auto* val = udas_pool_.Add(new AggHashValue);
-  PL_CHECK_OK(CreateUDAInfoValues(&(val->udas), exec_state));
+  PX_CHECK_OK(CreateUDAInfoValues(&(val->udas), exec_state));
   for (const auto& dt : stored_cols_data_types_) {
     val->agg_cols.emplace_back(types::ColumnWrapper::Make(dt, 0));
   }
@@ -522,7 +522,7 @@ Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_s
     std::vector<types::DataType> types;
     types.reserve(value->Deps().size());
     for (auto* dep : value->Deps()) {
-      PL_ASSIGN_OR_RETURN(auto type, GetTypeOfDep(*dep));
+      PX_ASSIGN_OR_RETURN(auto type, GetTypeOfDep(*dep));
       types.push_back(type);
     }
     auto def = exec_state->GetUDADefinition(value->uda_id());
@@ -534,7 +534,7 @@ Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_s
     }
     // We currently don't use FunctionContext in UDAs so continuing that tradition here, but at some
     // point we probably want to change this.
-    PL_RETURN_IF_ERROR(def->ExecInit(uda.get(), nullptr, init_args));
+    PX_RETURN_IF_ERROR(def->ExecInit(uda.get(), nullptr, init_args));
     val->emplace_back(std::move(uda), def);
   }
   return Status::OK();

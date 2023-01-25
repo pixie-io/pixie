@@ -37,7 +37,7 @@ class TypeResolutionTest : public ASTVisitorTest {
     funcs::RegisterFuncsOrDie(func_registry.get());
     auto udf_proto = func_registry->ToProto();
     registry_info_ = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(registry_info_->Init(udf_proto));
+    PX_CHECK_OK(registry_info_->Init(udf_proto));
   }
 
   void SetUp() override {

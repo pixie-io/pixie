@@ -63,7 +63,7 @@ class ASTExpressionTest : public ::testing::Test {
     info_ = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &info_pb);
-    PL_CHECK_OK(info_->Init(info_pb));
+    PX_CHECK_OK(info_->Init(info_pb));
     compiler_state_ = std::make_unique<CompilerState>(
         std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info_.get(),
         /* time_now */ time_now_,
@@ -74,7 +74,7 @@ class ASTExpressionTest : public ::testing::Test {
     auto ast_visitor_impl = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_,
                                                    compiler_state_.get(), &module_handler_)
                                 .ConsumeValueOrDie();
-    PL_CHECK_OK(ast_visitor_impl->AddPixieModule());
+    PX_CHECK_OK(ast_visitor_impl->AddPixieModule());
     ast_visitor = ast_visitor_impl;
   }
   std::shared_ptr<RegistryInfo> info_;

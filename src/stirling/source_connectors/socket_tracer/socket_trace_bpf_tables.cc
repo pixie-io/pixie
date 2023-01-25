@@ -35,8 +35,8 @@ DEFINE_uint32(stirling_conn_map_cleanup_threshold, kMaxConnMapCleanupItems,
 // We declare this with C linkage (extern "C") so it has a simple symbol name.
 extern "C" {
 NO_OPT_ATTR void ConnInfoMapCleanupTrigger(int n, struct conn_id_t* conn_id_vec) {
-  PL_UNUSED(n);
-  PL_UNUSED(conn_id_vec);
+  PX_UNUSED(n);
+  PX_UNUSED(conn_id_vec);
   return;
 }
 }
@@ -74,7 +74,7 @@ ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
                                .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
                                .probe_fn = "conn_cleanup_uprobe"};
 
-  PL_CHECK_OK(bcc->AttachUProbe(uprobe));
+  PX_CHECK_OK(bcc->AttachUProbe(uprobe));
 }
 
 void ConnInfoMapManager::ReleaseResources(struct conn_id_t conn_id) {

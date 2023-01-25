@@ -147,7 +147,7 @@ BackedDataElements ConvertFields(const google::protobuf::RepeatedPtrField<Field>
 
 StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
     std::string_view name, dynamic_tracing::ir::logical::TracepointDeployment* program) {
-  PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
+  PX_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
                       dynamic_tracing::CompileProgram(program));
 
   LOG(INFO) << "BCCProgram:\n" << bcc_program.ToString();
@@ -173,10 +173,10 @@ Status DynamicTraceConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
+  PX_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 
   for (const auto& uprobe_spec : bcc_program_.uprobe_specs) {
-    PL_RETURN_IF_ERROR(AttachUProbe(uprobe_spec));
+    PX_RETURN_IF_ERROR(AttachUProbe(uprobe_spec));
   }
 
   // TODO(yzhao/oazizi): Might need to change this if we need to support multiple perf buffers.
@@ -186,7 +186,7 @@ Status DynamicTraceConnector::InitImpl() {
       .probe_loss_fn = &GenericHandleEventLoss,
   };
 
-  PL_RETURN_IF_ERROR(OpenPerfBuffer(spec, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffer(spec, this));
 
   return Status::OK();
 }
@@ -297,10 +297,10 @@ class StructDecoder {
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.
-    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    PX_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
     std::string s(buf_.substr(0, len));
     buf_.remove_prefix(dynamic_tracing::kStructStringSize - sizeof(size_t) - 1);
-    PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
+    PX_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
 
     if (truncated) {
       absl::StrAppend(&s, "<truncated>");
@@ -320,12 +320,12 @@ class StructDecoder {
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.
-    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    PX_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
 
     std::string_view bytes = buf_.substr(0, len);
 
     buf_.remove_prefix(dynamic_tracing::kStructByteArraySize - sizeof(size_t) - 1);
-    PL_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
+    PX_ASSIGN_OR_RETURN(uint8_t truncated, ExtractField<uint8_t>());
 
     std::string s = BytesToString<bytes_format::HexCompact>(bytes);
     if (truncated) {
@@ -335,8 +335,8 @@ class StructDecoder {
   }
 
   StatusOr<std::string> ExtractStructBlobAsJSON(const RepeatedPtrField<StructSpec>& struct_specs) {
-    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
-    PL_ASSIGN_OR_RETURN(int8_t idx, ExtractField<int8_t>());
+    PX_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    PX_ASSIGN_OR_RETURN(int8_t idx, ExtractField<int8_t>());
 
     std::string_view bytes = buf_.substr(0, len);
     buf_.remove_prefix(dynamic_tracing::kStructBlobSize - sizeof(size_t) - sizeof(int8_t));
@@ -364,7 +364,7 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
                   ScalarType type, const RepeatedPtrField<StructSpec>& col_decoder) {
 #define WRITE_COLUMN(field_type, column_type)                                        \
   {                                                                                  \
-    PL_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
+    PX_ASSIGN_OR_RETURN(field_type val, struct_decoder->ExtractField<field_type>()); \
     r->Append(col_idx, column_type(val));                                            \
     break;                                                                           \
   }
@@ -425,17 +425,17 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
     case ScalarType::VOID_POINTER:
       WRITE_COLUMN(uint64_t, types::Int64Value);
     case ScalarType::STRING: {
-      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
+      PX_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
       r->Append(col_idx, types::StringValue(val));
       break;
     }
     case ScalarType::BYTE_ARRAY: {
-      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractByteArrayAsHex());
+      PX_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractByteArrayAsHex());
       r->Append(col_idx, types::StringValue(val));
       break;
     }
     case ScalarType::STRUCT_BLOB: {
-      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON(col_decoder));
+      PX_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractStructBlobAsJSON(col_decoder));
       r->Append(col_idx, types::StringValue(val));
       break;
     }
@@ -463,21 +463,21 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
     auto& field = st.fields(i);
 
     if (field.name() == "time_") {
-      PL_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
+      PX_ASSIGN_OR_RETURN(uint64_t ktime_ns, struct_decoder.ExtractField<uint64_t>());
       int64_t time = ConvertToRealTime(ktime_ns);
       r.Append(col_idx++, types::Time64NSValue(time));
     } else if ((field.name() == "tgid_") && (i + 1 < st.fields_size()) &&
                (st.fields(i + 1).name() == "tgid_start_time_")) {
       // If we see "tgid_" and "tgid_start_time_" back-to-back, then we automatically create UPID.
-      PL_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
-      PL_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
+      PX_ASSIGN_OR_RETURN(uint32_t tgid, struct_decoder.ExtractField<uint32_t>());
+      PX_ASSIGN_OR_RETURN(uint64_t tgid_start_time, struct_decoder.ExtractField<uint64_t>());
       md::UPID upid(asid, tgid, tgid_start_time);
       r.Append(col_idx++, types::UInt128Value(upid.value()));
 
       // Consume the extra tgid_start_time_ column.
       ++i;
     } else {
-      PL_RETURN_IF_ERROR(
+      PX_RETURN_IF_ERROR(
           FillColumn(&struct_decoder, &r, col_idx++, field.type(), field.blob_decoders()));
     }
   }

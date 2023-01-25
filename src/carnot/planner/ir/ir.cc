@@ -68,9 +68,9 @@ Status IR::DeleteOrphansInSubtree(int64_t id) {
   if (parents.size()) {
     return Status::OK();
   }
-  PL_RETURN_IF_ERROR(DeleteNode(id));
+  PX_RETURN_IF_ERROR(DeleteNode(id));
   for (auto child_id : children) {
-    PL_RETURN_IF_ERROR(DeleteOrphansInSubtree(child_id));
+    PX_RETURN_IF_ERROR(DeleteOrphansInSubtree(child_id));
   }
   return Status::OK();
 }
@@ -93,12 +93,12 @@ Status IR::DeleteNode(int64_t node) {
 
 StatusOr<IRNode*> IR::MakeNodeWithType(IRNodeType node_type, int64_t new_node_id) {
   switch (node_type) {
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME)    \
-  case IRNodeType::k##NAME: \
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME) \
+  case IRNodeType::k##NAME:     \
     return MakeNode<NAME##IR>(new_node_id);
 #include "src/carnot/planner/ir/ir_nodes.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
 
     case IRNodeType::kAny:
     case IRNodeType::number_of_types:
@@ -180,7 +180,7 @@ std::vector<absl::flat_hash_set<int64_t>> IR::IndependentGraphs() const {
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   auto new_ir = std::make_unique<IR>();
   absl::flat_hash_set<int64_t> nodes{dag().nodes().begin(), dag().nodes().end()};
-  PL_RETURN_IF_ERROR(new_ir->CopySelectedNodesAndDeps(this, nodes));
+  PX_RETURN_IF_ERROR(new_ir->CopySelectedNodesAndDeps(this, nodes));
   // TODO(philkuz) check to make sure these are the same.
   new_ir->dag_ = dag_;
   return new_ir;
@@ -199,9 +199,9 @@ Status IR::CopySelectedNodesAndDeps(const IR* src,
     if (HasNode(i) && Get(i)->type() == node->type()) {
       continue;
     }
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, CopyNode(node, &copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(IRNode * new_node, CopyNode(node, &copied_nodes_map));
     if (new_node->IsOperator()) {
-      PL_RETURN_IF_ERROR(static_cast<OperatorIR*>(new_node)->CopyParentsFrom(
+      PX_RETURN_IF_ERROR(static_cast<OperatorIR*>(new_node)->CopyParentsFrom(
           static_cast<const OperatorIR*>(node)));
     }
   }
@@ -242,7 +242,7 @@ StatusOr<planpb::Plan> IR::ToProto(int64_t agent_id) const {
   for (const auto& node_id : operators) {
     auto node = Get(node_id);
     if (node->IsOperator()) {
-      PL_RETURN_IF_ERROR(OutputProto(plan_fragment, static_cast<OperatorIR*>(node), agent_id));
+      PX_RETURN_IF_ERROR(OutputProto(plan_fragment, static_cast<OperatorIR*>(node), agent_id));
     } else {
       non_op_nodes.emplace(node_id);
     }
@@ -277,12 +277,12 @@ Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node,
 Status IR::Prune(const absl::flat_hash_set<int64_t>& ids_to_prune) {
   for (auto node : ids_to_prune) {
     for (auto child : dag_.DependenciesOf(node)) {
-      PL_RETURN_IF_ERROR(DeleteEdge(node, child));
+      PX_RETURN_IF_ERROR(DeleteEdge(node, child));
     }
     for (auto parent : dag_.ParentsOf(node)) {
-      PL_RETURN_IF_ERROR(DeleteEdge(parent, node));
+      PX_RETURN_IF_ERROR(DeleteEdge(parent, node));
     }
-    PL_RETURN_IF_ERROR(DeleteNode(node));
+    PX_RETURN_IF_ERROR(DeleteNode(node));
   }
   return Status::OK();
 }
@@ -314,14 +314,14 @@ Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state) {
     return Status::OK();
   }
   op->PullParentTypes();
-  PL_RETURN_IF_ERROR(op->UpdateOpAfterParentTypesResolved());
+  PX_RETURN_IF_ERROR(op->UpdateOpAfterParentTypesResolved());
   switch (op->type()) {
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME)    \
-  case IRNodeType::k##NAME: \
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME) \
+  case IRNodeType::k##NAME:     \
     return OperatorTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(op), compiler_state);
 #include "src/carnot/planner/ir/operators.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
     default:
       return error::Internal(
           absl::Substitute("cannot resolve operator type for non-operator: $0", op->type_string()));
@@ -345,14 +345,14 @@ Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
   }
   Status status;
   switch (expr->type()) {
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME)                                                                           \
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME)                                                                    \
   case IRNodeType::k##NAME:                                                                        \
     status = ExpressionTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(expr), compiler_state, \
                                                      parent_types);                                \
     break;
 #include "src/carnot/planner/ir/expressions.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
     default:
       return error::Internal(absl::Substitute(
           "cannot resolve expression type for non-expression: $0", expr->type_string()));
@@ -360,7 +360,7 @@ Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
   if (!status.ok() || !expr->HasTypeCast()) {
     return status;
   }
-  PL_RETURN_IF_ERROR(CheckTypeCast(expr, std::static_pointer_cast<ValueType>(expr->resolved_type()),
+  PX_RETURN_IF_ERROR(CheckTypeCast(expr, std::static_pointer_cast<ValueType>(expr->resolved_type()),
                                    expr->type_cast()));
   return expr->SetResolvedType(expr->type_cast());
 }
@@ -410,7 +410,7 @@ Status PropagateTypeChangesFromNode(IR* graph, IRNode* node, CompilerState* comp
       continue;
     }
     auto op = static_cast<OperatorIR*>(graph->Get(op_id));
-    PL_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state));
+    PX_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state));
   }
   return Status::OK();
 }

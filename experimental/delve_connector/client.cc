@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
   DelveDriver d;
   ::px::Status s = d.Connect("127.0.0.1", FLAGS_port);
-  PL_CHECK_OK(s);
+  PX_CHECK_OK(s);
 
   d.Init();
 

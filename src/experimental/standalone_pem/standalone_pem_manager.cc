@@ -113,7 +113,7 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
 
 Status StandalonePEMManager::Run() {
   running_ = true;
-  PL_RETURN_IF_ERROR(stirling_->RunAsThread());
+  PX_RETURN_IF_ERROR(stirling_->RunAsThread());
   dispatcher_->Run(px::event::Dispatcher::RunType::Block);
   running_ = false;
   return Status::OK();
@@ -127,7 +127,7 @@ Status StandalonePEMManager::Init() {
   // Enable use of USR1/USR2 for controlling Stirling debug.
   stirling_->RegisterUserDebugSignalHandlers();
 
-  PL_RETURN_IF_ERROR(InitSchemas());
+  PX_RETURN_IF_ERROR(InitSchemas());
 
   // Register the metadata update timer.
   std::chrono::seconds update_period(5);
@@ -191,7 +191,7 @@ Status StandalonePEMManager::InitSchemas() {
     }
 
     table_store_->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);
-    // PL_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
+    // PX_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
   }
   return Status::OK();
 }

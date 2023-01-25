@@ -225,7 +225,7 @@ StatusOr<std::unique_ptr<Symbolizer>> JavaSymbolizer::Create(
   const std::vector<std::string_view> lib_args = absl::StrSplit(comma_separated_libs, ",");
   std::vector<std::string> abs_path_libs;
   for (const auto& lib : lib_args) {
-    PL_ASSIGN_OR(const auto abs_path_lib, fs::Absolute(lib), continue);
+    PX_ASSIGN_OR(const auto abs_path_lib, fs::Absolute(lib), continue);
     if (!fs::Exists(abs_path_lib)) {
       LOG(WARNING) << absl::Substitute("Java agent lib path $0 not found.", lib);
       continue;

@@ -27,8 +27,8 @@ Status DocHolder::ToProto(docspb::DocstringNode* pb) const {
   pb->set_name(name);
   pb->set_docstring(doc);
   for (const auto& [k, v] : attrs) {
-    PL_UNUSED(k);
-    PL_RETURN_IF_ERROR(v.ToProto(pb->add_children()));
+    PX_UNUSED(k);
+    PX_RETURN_IF_ERROR(v.ToProto(pb->add_children()));
   }
   return Status::OK();
 }

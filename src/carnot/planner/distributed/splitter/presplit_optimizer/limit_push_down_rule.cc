@@ -34,7 +34,7 @@ StatusOr<absl::flat_hash_set<OperatorIR*>> LimitPushdownRule::NewLimitParents(
     // Don't push a Limit earlier than a PEM-only Map, because we need to ensure that after
     // splitting on Limit nodes, we don't end up with a PEM-only map on the Kelvin side of
     // the distributed plan.
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         auto has_pem_only_udf,
         HasFuncWithExecutor(compiler_state_, current_node, udfspb::UDFSourceExecutor::UDF_PEM));
     if (!has_pem_only_udf) {
@@ -49,7 +49,7 @@ StatusOr<absl::flat_hash_set<OperatorIR*>> LimitPushdownRule::NewLimitParents(
     results.insert(current_node);
 
     for (OperatorIR* parent : current_node->parents()) {
-      PL_ASSIGN_OR_RETURN(auto parent_results, NewLimitParents(parent));
+      PX_ASSIGN_OR_RETURN(auto parent_results, NewLimitParents(parent));
       for (OperatorIR* parent_result : parent_results) {
         results.insert(parent_result);
       }
@@ -70,7 +70,7 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
   DCHECK_EQ(1U, limit->parents().size());
   OperatorIR* limit_parent = limit->parents()[0];
 
-  PL_ASSIGN_OR_RETURN(auto new_parents, NewLimitParents(limit_parent));
+  PX_ASSIGN_OR_RETURN(auto new_parents, NewLimitParents(limit_parent));
   // If we don't push the limit up at all, just return.
   if (new_parents.size() == 1 && new_parents.find(limit_parent) != new_parents.end()) {
     return false;
@@ -78,24 +78,24 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
 
   // Remove the limit from its previous location.
   for (OperatorIR* child : limit->Children()) {
-    PL_RETURN_IF_ERROR(child->ReplaceParent(limit, limit_parent));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(limit, limit_parent));
   }
-  PL_RETURN_IF_ERROR(limit->RemoveParent(limit_parent));
+  PX_RETURN_IF_ERROR(limit->RemoveParent(limit_parent));
 
   // Add the limit to its new location(s).
   for (OperatorIR* new_parent : new_parents) {
-    PL_ASSIGN_OR_RETURN(LimitIR * new_limit, graph->CopyNode(limit));
+    PX_ASSIGN_OR_RETURN(LimitIR * new_limit, graph->CopyNode(limit));
     // The parent's children should now be the children of the limit.
     for (OperatorIR* former_child : new_parent->Children()) {
-      PL_RETURN_IF_ERROR(former_child->ReplaceParent(new_parent, new_limit));
+      PX_RETURN_IF_ERROR(former_child->ReplaceParent(new_parent, new_limit));
     }
     // The limit should now be a child of the parent.
-    PL_RETURN_IF_ERROR(new_limit->AddParent(new_parent));
+    PX_RETURN_IF_ERROR(new_limit->AddParent(new_parent));
     // Ensure we inherit the relation of the parent.
-    PL_RETURN_IF_ERROR(new_limit->SetResolvedType(new_parent->resolved_type()));
+    PX_RETURN_IF_ERROR(new_limit->SetResolvedType(new_parent->resolved_type()));
   }
 
-  PL_RETURN_IF_ERROR(graph->DeleteNode(limit->id()));
+  PX_RETURN_IF_ERROR(graph->DeleteNode(limit->id()));
   return true;
 }
 

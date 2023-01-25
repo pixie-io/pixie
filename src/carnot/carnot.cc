@@ -113,7 +113,7 @@ Status CarnotImpl::Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registr
     grpc_server_thread_ = std::make_unique<std::thread>(&CarnotImpl::GRPCServerFunc, this);
   }
 
-  PL_ASSIGN_OR_RETURN(engine_state_,
+  PX_ASSIGN_OR_RETURN(engine_state_,
                       EngineState::CreateDefault(std::move(func_registry), table_store,
                                                  clients_config_->stub_generator,
                                                  clients_config_->add_auth_to_grpc_context_func,
@@ -125,13 +125,13 @@ Status CarnotImpl::ExecuteQuery(const std::string& query, const sole::uuid& quer
                                 types::Time64NSValue time_now, bool analyze) {
   // Compile the query.
   auto compiler_state = engine_state_->CreateLocalExecutionCompilerState(time_now);
-  PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.CompileToIR(query, compiler_state.get()));
+  PX_ASSIGN_OR_RETURN(auto logical_plan, compiler_.CompileToIR(query, compiler_state.get()));
   // TOOD(james/nserrino/philkuz): This is a hack to make sure that the distributed rule for limits
   // gets run even in carnot_test. We should think about how we want to run distributed analyzer
   // rules in these test envs.
   planner::distributed::AnnotateAbortableSourcesForLimitsRule rule;
-  PL_RETURN_IF_ERROR(rule.Execute(logical_plan.get()));
-  PL_ASSIGN_OR_RETURN(auto plan_proto, logical_plan->ToProto());
+  PX_RETURN_IF_ERROR(rule.Execute(logical_plan.get()));
+  PX_ASSIGN_OR_RETURN(auto plan_proto, logical_plan->ToProto());
   auto dest = plan_proto.add_execution_status_destinations();
   dest->set_grpc_address(compiler_state->result_address());
   dest->set_ssl_targetname(compiler_state->result_ssl_targetname());
@@ -158,13 +158,13 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
   return plan::PlanFragmentWalker()
       .OnMap([&](const plan::MapOperator& map) {
         for (const auto& expr : map.expressions()) {
-          PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
+          PX_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
         }
         return Status::OK();
       })
       .OnAggregate([&](const plan::AggregateOperator& agg) {
         for (const auto& expr : agg.values()) {
-          PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
+          PX_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
         }
         return Status::OK();
       })
@@ -323,13 +323,13 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   auto timer = ElapsedTimer();
   plan::Plan plan;
 
-  PL_RETURN_IF_ERROR(plan.Init(logical_plan));
+  PX_RETURN_IF_ERROR(plan.Init(logical_plan));
 
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);
   auto outgoing_conns = GetOutgoingConns(exec_state.get(), logical_plan);
-  PL_RETURN_IF_ERROR(InitiateOutgoingConns(query_id, outgoing_conns,
+  PX_RETURN_IF_ERROR(InitiateOutgoingConns(query_id, outgoing_conns,
                                            engine_state_->add_auth_to_grpc_context_func()));
 
   // TODO(michellenguyen/zasgar, PP-2579): We should periodically update the metadata state for
@@ -340,7 +340,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
     exec_state->set_metadata_state(metadata_state);
   }
 
-  PL_RETURN_IF_ERROR(RegisterUDFs(exec_state.get(), &plan));
+  PX_RETURN_IF_ERROR(RegisterUDFs(exec_state.get(), &plan));
 
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
@@ -356,9 +356,9 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
       plan::PlanWalker()
           .OnPlanFragment([&](auto* pf) {
             auto exec_graph = exec::ExecutionGraph();
-            PL_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
+            PX_RETURN_IF_ERROR(exec_graph.Init(schema.get(), plan_state.get(), exec_state.get(), pf,
                                                /* collect_exec_node_stats */ analyze));
-            PL_RETURN_IF_ERROR(exec_graph.Execute());
+            PX_RETURN_IF_ERROR(exec_graph.Execute());
 
             // We must get this while exec_graph is alive. ExecutionGraph destructor calls
             // GRPCRouter::DeleteQuery() which would delete this data.
@@ -370,7 +370,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
 
             if (analyze) {
               for (int64_t node_id : pf->dag().TopologicalSort()) {
-                PL_ASSIGN_OR_RETURN(auto exec_node, exec_graph.node(node_id));
+                PX_ASSIGN_OR_RETURN(auto exec_node, exec_graph.node(node_id));
                 std::string node_name =
                     absl::Substitute("$0 (id=$1)", pf->nodes()[node_id]->DebugString(), node_id);
                 exec::ExecNodeStats* stats = exec_node->stats();
@@ -406,7 +406,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
           })
           .Walk(&plan);
   if (!s.ok()) {
-    PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(query_id, outgoing_conns,
+    PX_RETURN_IF_ERROR(SendErrorToOutgoingConns(query_id, outgoing_conns,
                                                 engine_state_->add_auth_to_grpc_context_func(), s));
     return s;
   }
@@ -419,7 +419,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
 
     auto combined_status = Status(incoming_errors[0].err_code(), absl::StrJoin(messages, "\n"));
 
-    PL_RETURN_IF_ERROR(SendErrorToOutgoingConns(
+    PX_RETURN_IF_ERROR(SendErrorToOutgoingConns(
         query_id, outgoing_conns, engine_state_->add_auth_to_grpc_context_func(), combined_status));
     return combined_status;
   }
@@ -432,7 +432,7 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
 
   std::vector<queryresultspb::AgentExecutionStats> input_agent_stats;
   if (HasGRPCServer() && !incoming_agents.empty()) {
-    PL_ASSIGN_OR_RETURN(input_agent_stats,
+    PX_ASSIGN_OR_RETURN(input_agent_stats,
                         server_config_->grpc_router.GetIncomingWorkerExecStats(query_id));
     if (input_agent_stats.size() != incoming_agents.size()) {
       LOG(WARNING) << absl::Substitute("Agent ids are not the same size. Got $0 and expected $1",
@@ -479,7 +479,7 @@ StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     std::shared_ptr<table_store::TableStore> table_store,
     std::unique_ptr<ClientsConfig> clients_config, std::unique_ptr<ServerConfig> server_config) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
-  PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
+  PX_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
                          ->Init(agent_id, std::move(func_registry), table_store,
                                 std::move(clients_config), std::move(server_config)));
   return carnot_impl;

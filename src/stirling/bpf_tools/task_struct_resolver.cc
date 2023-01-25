@@ -142,16 +142,16 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
 
     if (pl_nsec_to_clock_t(val) == proc_pid_start_time) {
       VLOG(1) << absl::Substitute("[offset = $0] Found real_start_time", current_offset);
-      PL_RETURN_IF_ERROR(offsets_manager.SetRealStartTimeOffset(current_offset));
+      PX_RETURN_IF_ERROR(offsets_manager.SetRealStartTimeOffset(current_offset));
     }
 
     if (val == task_struct_addr) {
       VLOG(1) << absl::Substitute("[offset = $0] Found group_leader.", current_offset);
-      PL_RETURN_IF_ERROR(offsets_manager.SetGroupLeaderOffset(current_offset));
+      PX_RETURN_IF_ERROR(offsets_manager.SetGroupLeaderOffset(current_offset));
     }
   }
 
-  PL_RETURN_IF_ERROR(offsets_manager.CheckPopulated());
+  PX_RETURN_IF_ERROR(offsets_manager.CheckPopulated());
 
   return task_struct_offsets;
 }
@@ -160,13 +160,13 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
 
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Get the PID start time from /proc.
-  PL_ASSIGN_OR_RETURN(uint64_t proc_pid_start_time,
+  PX_ASSIGN_OR_RETURN(uint64_t proc_pid_start_time,
                       ::px::system::GetPIDStartTimeTicks("/proc/self"));
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, GetSelfPath());
-  PL_ASSIGN_OR_RETURN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path self_path, GetSelfPath());
+  PX_ASSIGN_OR_RETURN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
   const int64_t pid = getpid();
-  PL_ASSIGN_OR_RETURN(auto converter,
+  PX_ASSIGN_OR_RETURN(auto converter,
                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), pid));
 
   // Use address instead of symbol to specify this probe,
@@ -186,8 +186,8 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
   // enter an infinite loop if BCCWrapper tries to run the TaskStructResolver again.
   bool requires_linux_headers = false;
-  PL_RETURN_IF_ERROR(bcc->InitBPFProgram(bcc_script, cflags, requires_linux_headers));
-  PL_RETURN_IF_ERROR(bcc->AttachUProbe(uprobe));
+  PX_RETURN_IF_ERROR(bcc->InitBPFProgram(bcc_script, cflags, requires_linux_headers));
+  PX_RETURN_IF_ERROR(bcc->AttachUProbe(uprobe));
 
   // Trigger our uprobe.
   StirlingProbeTrigger();
@@ -266,7 +266,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructStartTimeOffsets() {
 
     // Blocking read data from child.
     TaskStructOffsets result;
-    PL_RETURN_IF_ERROR(ReadFromChild(fd[0], &result));
+    PX_RETURN_IF_ERROR(ReadFromChild(fd[0], &result));
 
     // We can't transfer StatusOr through the pipe,
     // so we have to check manually.
@@ -310,12 +310,12 @@ StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
   constexpr uint8_t exit_code = 171;
 
   SubProcess proc;
-  PL_RETURN_IF_ERROR(proc.Start([]() -> int { return exit_code; }, {.stop_before_exec = true}));
+  PX_RETURN_IF_ERROR(proc.Start([]() -> int { return exit_code; }, {.stop_before_exec = true}));
 
   auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapper>();
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       bcc->InitBPFProgram(bcc_script, /*cflags*/ {}, /*requires_linux_headers*/ false));
-  PL_RETURN_IF_ERROR(bcc->AttachTracepoint({std::string("sched:sched_process_exit"),
+  PX_RETURN_IF_ERROR(bcc->AttachTracepoint({std::string("sched:sched_process_exit"),
                                             std::string("tracepoint__sched__sched_process_exit")}));
 
   const std::string kProcExitTargetPIDTableName = "proc_exit_target_pid";
@@ -369,8 +369,8 @@ StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
 }  // namespace
 
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
-  PL_ASSIGN_OR_RETURN(TaskStructOffsets res, ResolveTaskStructStartTimeOffsets());
-  PL_ASSIGN_OR_RETURN(uint64_t exit_code_offset, ResolveTaskStructExitCodeOffset());
+  PX_ASSIGN_OR_RETURN(TaskStructOffsets res, ResolveTaskStructStartTimeOffsets());
+  PX_ASSIGN_OR_RETURN(uint64_t exit_code_offset, ResolveTaskStructExitCodeOffset());
   res.exit_code_offset = exit_code_offset;
   return res;
 }

@@ -43,14 +43,14 @@ StatusOr<bool> GRPCSourceGroupConversionRule::Apply(IRNode* ir_node) {
 
 StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGroupIR* group_ir) {
   // Get the new parent.
-  PL_ASSIGN_OR_RETURN(OperatorIR * new_parent, ConvertGRPCSourceGroup(group_ir));
+  PX_ASSIGN_OR_RETURN(OperatorIR * new_parent, ConvertGRPCSourceGroup(group_ir));
   for (const auto child : group_ir->Children()) {
     // Replace the child node's parent with the new parent.
-    PL_RETURN_IF_ERROR(child->ReplaceParent(group_ir, new_parent));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(group_ir, new_parent));
   }
   IR* graph = group_ir->graph();
   // Remove the old group_ir from the graph.
-  PL_RETURN_IF_ERROR(graph->DeleteNode(group_ir->id()));
+  PX_RETURN_IF_ERROR(graph->DeleteNode(group_ir->id()));
   return true;
 }
 
@@ -74,7 +74,7 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   auto sinks = group_ir->dependent_sinks();
 
   if (sinks.size() == 0) {
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         EmptySourceIR * empty_source,
         ir_graph->CreateNode<EmptySourceIR>(group_ir->ast(), group_ir->resolved_type()));
     return empty_source;
@@ -82,8 +82,8 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
 
   // Don't add an unnecessary union node if there is only one sink.
   if (sinks.size() == 1 && sinks[0].second.size() == 1) {
-    PL_ASSIGN_OR_RETURN(auto new_grpc_source, CreateGRPCSource(group_ir));
-    PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sinks[0].first, *(sinks[0].second.begin())));
+    PX_ASSIGN_OR_RETURN(auto new_grpc_source, CreateGRPCSource(group_ir));
+    PX_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sinks[0].first, *(sinks[0].second.begin())));
     return new_grpc_source;
   }
 
@@ -91,16 +91,16 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   for (const auto& sink : sinks) {
     DCHECK_GE(sinks[0].second.size(), 1U);
     for (int64_t agent_id : sink.second) {
-      PL_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
-      PL_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink.first, agent_id));
+      PX_ASSIGN_OR_RETURN(GRPCSourceIR * new_grpc_source, CreateGRPCSource(group_ir));
+      PX_RETURN_IF_ERROR(UpdateSink(new_grpc_source, sink.first, agent_id));
       grpc_sources.push_back(new_grpc_source);
     }
   }
 
-  PL_ASSIGN_OR_RETURN(UnionIR * union_op,
+  PX_ASSIGN_OR_RETURN(UnionIR * union_op,
                       ir_graph->CreateNode<UnionIR>(group_ir->ast(), grpc_sources));
-  PL_RETURN_IF_ERROR(union_op->SetResolvedType(grpc_sources[0]->resolved_type()));
-  PL_RETURN_IF_ERROR(union_op->SetDefaultColumnMapping());
+  PX_RETURN_IF_ERROR(union_op->SetResolvedType(grpc_sources[0]->resolved_type()));
+  PX_RETURN_IF_ERROR(union_op->SetDefaultColumnMapping());
   return union_op;
 }
 
@@ -118,14 +118,14 @@ StatusOr<bool> MergeSameNodeGRPCBridgeRule::Apply(IRNode* ir_node) {
                                    node->DebugString());
   }
   auto grpc_sink_parent = grpc_sink->parents()[0];
-  PL_RETURN_IF_ERROR(grpc_sink->RemoveParent(grpc_sink_parent));
+  PX_RETURN_IF_ERROR(grpc_sink->RemoveParent(grpc_sink_parent));
   auto grpc_source_to_replace = static_cast<GRPCSourceIR*>(node);
   for (OperatorIR* child : grpc_source_to_replace->Children()) {
-    PL_RETURN_IF_ERROR(child->ReplaceParent(grpc_source_to_replace, grpc_sink_parent));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(grpc_source_to_replace, grpc_sink_parent));
   }
   IR* graph = grpc_source_to_replace->graph();
-  PL_RETURN_IF_ERROR(graph->DeleteNode(grpc_sink->id()));
-  PL_RETURN_IF_ERROR(graph->DeleteNode(grpc_source_to_replace->id()));
+  PX_RETURN_IF_ERROR(graph->DeleteNode(grpc_sink->id()));
+  PX_RETURN_IF_ERROR(graph->DeleteNode(grpc_source_to_replace->id()));
 
   return true;
 }

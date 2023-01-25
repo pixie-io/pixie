@@ -60,4 +60,4 @@ ScopedLambda<FnType> MakeScopedLambda(FnType fn) {
 
 }  // namespace px
 
-#define DEFER(...) auto PL_UNIQUE_NAME(varname) = px::MakeScopedLambda([&] { __VA_ARGS__; });
+#define DEFER(...) auto PX_UNIQUE_NAME(varname) = px::MakeScopedLambda([&] { __VA_ARGS__; });

@@ -217,7 +217,7 @@ static_assert(kFixedSizeBytes == 16,
  */
 template <typename T>
 inline const T& Get(const FixedSizeValueUnion& u) {
-  PL_UNUSED(u);
+  PX_UNUSED(u);
   static_assert(sizeof(T) == 0, "Invalid type for get expression");
 }
 
@@ -248,8 +248,8 @@ inline const Time64NSValue& Get<Time64NSValue>(const FixedSizeValueUnion& u) {
 
 template <typename T>
 inline void SetValue(FixedSizeValueUnion* u, T val) {
-  PL_UNUSED(u);
-  PL_UNUSED(val);
+  PX_UNUSED(u);
+  PX_UNUSED(val);
   static_assert(sizeof(T) == 0, "Invalid type for set expression");
 }
 
@@ -286,7 +286,7 @@ inline void SetValue<Time64NSValue>(FixedSizeValueUnion* u, Time64NSValue val) {
 /**
  * Checks to see if a valid ValueType is being used.
  * @tparam T The type to check.
- * PL_CARNOT_UPDATE_FOR_NEW_TYPES
+ * PX_CARNOT_UPDATE_FOR_NEW_TYPES
  */
 template <typename T>
 struct IsValidValueType {

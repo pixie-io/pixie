@@ -39,19 +39,19 @@ class ProbeCompilerTest : public ASTVisitorTest {
     auto func_based_exec = exec_funcs.size() > 0;
 
     Parser parser;
-    PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
+    PX_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
 
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     std::shared_ptr<compiler::MutationsIR> probe_ir = std::make_shared<compiler::MutationsIR>();
 
     ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+    PX_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
                                              ir.get(), probe_ir.get(), compiler_state_.get(),
                                              &module_handler, func_based_exec, reserved_names, {}));
 
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     if (func_based_exec) {
-      PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+      PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
     }
     return probe_ir;
   }

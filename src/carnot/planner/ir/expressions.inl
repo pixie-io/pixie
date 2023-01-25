@@ -16,16 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef PL_IR_NODE
+#ifdef PX_CARNOT_IR_NODE
 
-PL_IR_NODE(String)
-PL_IR_NODE(UInt128)
-PL_IR_NODE(Float)
-PL_IR_NODE(Int)
-PL_IR_NODE(Bool)
-PL_IR_NODE(Func)
-PL_IR_NODE(Column)
-PL_IR_NODE(Time)
-PL_IR_NODE(Metadata)
+PX_CARNOT_IR_NODE(String)
+PX_CARNOT_IR_NODE(UInt128)
+PX_CARNOT_IR_NODE(Float)
+PX_CARNOT_IR_NODE(Int)
+PX_CARNOT_IR_NODE(Bool)
+PX_CARNOT_IR_NODE(Func)
+PX_CARNOT_IR_NODE(Column)
+PX_CARNOT_IR_NODE(Time)
+PX_CARNOT_IR_NODE(Metadata)
 
 #endif

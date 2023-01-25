@@ -44,7 +44,7 @@ class VerifyFilterExpressionTest : public RulesTest {
                       ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
                                            std::vector<ExpressionIR*>{constant1, constant2})
                       .ValueOrDie();
-    PL_CHECK_OK(graph->CreateNode<FilterIR>(ast, mem_src, filter_func));
+    PX_CHECK_OK(graph->CreateNode<FilterIR>(ast, mem_src, filter_func));
     return filter_func;
   }
   MemorySourceIR* mem_src;

@@ -49,12 +49,12 @@ using ::testing::UnorderedElementsAre;
 class OptimizerTest : public ASTVisitorTest {
  protected:
   Status Analyze(std::shared_ptr<IR> ir_graph) {
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
+    PX_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
                         Analyzer::Create(compiler_state_.get()));
     return analyzer->Execute(ir_graph.get());
   }
   Status Optimize(std::shared_ptr<IR> ir_graph) {
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<Optimizer> optimizer,
+    PX_ASSIGN_OR_RETURN(std::unique_ptr<Optimizer> optimizer,
                         Optimizer::Create(compiler_state_.get()));
     return optimizer->Execute(ir_graph.get());
   }

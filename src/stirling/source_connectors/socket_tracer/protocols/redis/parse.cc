@@ -49,7 +49,7 @@ constexpr std::string_view kTerminalSequence = "\r\n";
 constexpr int kNullSize = -1;
 
 StatusOr<int> ParseSize(BinaryDecoder* decoder) {
-  PL_ASSIGN_OR_RETURN(std::string_view size_str, decoder->ExtractStringUntil(kTerminalSequence));
+  PX_ASSIGN_OR_RETURN(std::string_view size_str, decoder->ExtractStringUntil(kTerminalSequence));
 
   constexpr size_t kSizeStrMaxLen = 16;
   if (size_str.size() > kSizeStrMaxLen) {
@@ -75,7 +75,7 @@ StatusOr<int> ParseSize(BinaryDecoder* decoder) {
 
 // Bulk string is formatted as <length>\r\n<actual string, up to 512MB>\r\n
 Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
+  PX_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
 
   constexpr int kMaxLen = 512 * 1024 * 1024;
   if (len > kMaxLen) {
@@ -90,7 +90,7 @@ Status ParseBulkString(BinaryDecoder* decoder, Message* msg) {
     return Status::OK();
   }
 
-  PL_ASSIGN_OR_RETURN(std::string_view payload,
+  PX_ASSIGN_OR_RETURN(std::string_view payload,
                       decoder->ExtractString(len + kTerminalSequence.size()));
   if (!absl::EndsWith(payload, kTerminalSequence)) {
     return error::InvalidArgument("Bulk string should be terminated by '$0'", kTerminalSequence);
@@ -118,30 +118,30 @@ bool IsPubMsg(const std::vector<std::string>& payloads) {
 Status ParseArray(message_type_t type, BinaryDecoder* decoder, Message* msg);
 
 Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(const char type_marker, decoder->ExtractChar());
+  PX_ASSIGN_OR_RETURN(const char type_marker, decoder->ExtractChar());
 
   switch (type_marker) {
     case kSimpleStringMarker: {
-      PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
+      PX_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
       msg->payload = str;
       break;
     }
     case kBulkStringsMarker: {
-      PL_RETURN_IF_ERROR(ParseBulkString(decoder, msg));
+      PX_RETURN_IF_ERROR(ParseBulkString(decoder, msg));
       break;
     }
     case kErrorMarker: {
-      PL_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
+      PX_ASSIGN_OR_RETURN(std::string_view str, decoder->ExtractStringUntil(kTerminalSequence));
       // Append ErrorMarker in front to differentiate error messages from the rest.
       msg->payload = absl::StrCat("-", str);
       break;
     }
     case kIntegerMarker: {
-      PL_ASSIGN_OR_RETURN(msg->payload, decoder->ExtractStringUntil(kTerminalSequence));
+      PX_ASSIGN_OR_RETURN(msg->payload, decoder->ExtractStringUntil(kTerminalSequence));
       break;
     }
     case kArrayMarker: {
-      PL_RETURN_IF_ERROR(ParseArray(type, decoder, msg));
+      PX_RETURN_IF_ERROR(ParseArray(type, decoder, msg));
       break;
     }
     default:
@@ -154,7 +154,7 @@ Status ParseMessage(message_type_t type, BinaryDecoder* decoder, Message* msg) {
 
 // Array is formatted as *<size_str>\r\n[one of simple string, error, bulk string, etc.]
 Status ParseArray(message_type_t type, BinaryDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
+  PX_ASSIGN_OR_RETURN(int len, ParseSize(decoder));
 
   if (len == kNullSize) {
     constexpr std::string_view kNullArray = "[NULL]";
@@ -165,7 +165,7 @@ Status ParseArray(message_type_t type, BinaryDecoder* decoder, Message* msg) {
   std::vector<std::string> payloads;
   for (int i = 0; i < len; ++i) {
     Message tmp;
-    PL_RETURN_IF_ERROR(ParseMessage(type, decoder, &tmp));
+    PX_RETURN_IF_ERROR(ParseMessage(type, decoder, &tmp));
     payloads.push_back(std::move(tmp.payload));
   }
 

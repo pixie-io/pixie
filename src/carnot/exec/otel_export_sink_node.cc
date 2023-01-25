@@ -410,10 +410,10 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
 
 Status OTelExportSinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb, size_t) {
   if (plan_node_->metrics().size()) {
-    PL_RETURN_IF_ERROR(ConsumeMetrics(rb));
+    PX_RETURN_IF_ERROR(ConsumeMetrics(rb));
   }
   if (plan_node_->spans().size()) {
-    PL_RETURN_IF_ERROR(ConsumeSpans(rb));
+    PX_RETURN_IF_ERROR(ConsumeSpans(rb));
   }
   if (rb.eos()) {
     sent_eos_ = true;

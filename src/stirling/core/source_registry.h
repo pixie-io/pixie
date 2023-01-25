@@ -73,7 +73,7 @@ class SourceRegistry : public NotCopyable {
       name = TSourceConnector::kName;
     }
     auto status = Register(CreateRegistryElement<TSourceConnector>(name));
-    PL_CHECK_OK(status);
+    PX_CHECK_OK(status);
   }
 
   const auto& sources() { return sources_; }

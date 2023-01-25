@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 #include "src/carnot/funcs/builtins/request_path_ops.h"
 #include <string_view>
 #include <vector>
@@ -184,14 +183,14 @@ StatusOr<RequestPathCluster> RequestPathCluster::FromJSON(
         "RequestPathCluster::FromJSON outer json must be object with centroid and member keys");
   }
   RequestPathCluster cluster;
-  PL_ASSIGN_OR_RETURN(cluster.centroid_, RequestPath::FromJSON(doc[kCentroidKey]));
+  PX_ASSIGN_OR_RETURN(cluster.centroid_, RequestPath::FromJSON(doc[kCentroidKey]));
   const auto& members = doc[kMembersKey];
   if (!members.IsArray()) {
     return error::InvalidArgument("RequestPathCluster::FromJSON members key must be array");
   }
   for (rapidjson::Value::ConstValueIterator itr = members.Begin(); itr != members.End(); ++itr) {
     const rapidjson::Value& val = *itr;
-    PL_ASSIGN_OR_RETURN(auto path, RequestPath::FromJSON(val));
+    PX_ASSIGN_OR_RETURN(auto path, RequestPath::FromJSON(val));
     cluster.members_.insert(path);
   }
   return cluster;
@@ -255,7 +254,7 @@ StatusOr<RequestPathClustering> RequestPathClustering::FromJSON(const std::strin
   RequestPathClustering clustering;
   for (rapidjson::Value::ConstValueIterator itr = d.Begin(); itr != d.End(); ++itr) {
     const rapidjson::Value& val = *itr;
-    PL_ASSIGN_OR_RETURN(auto cluster, RequestPathCluster::FromJSON(val));
+    PX_ASSIGN_OR_RETURN(auto cluster, RequestPathCluster::FromJSON(val));
     clustering.AddNewCluster(cluster);
   }
   return clustering;

@@ -272,9 +272,9 @@ RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packet
   return {entries, error_count};
 }
 
-#define PL_RETURN_IF_NOT_SUCCESS(stmt)       \
+#define PX_RETURN_IF_NOT_SUCCESS(stmt)       \
   {                                          \
-    PL_ASSIGN_OR_RETURN(ParseState s, stmt); \
+    PX_ASSIGN_OR_RETURN(ParseState s, stmt); \
     if (s != ParseState::kSuccess) {         \
       return s;                              \
     }                                        \
@@ -288,7 +288,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -302,7 +302,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
+    PX_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     return ParseState::kSuccess;
   }
@@ -319,13 +319,13 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
 
   //----------------
   // Response
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
 
   return ParseState::kSuccess;
 }
@@ -338,7 +338,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(
+  PX_RETURN_IF_NOT_SUCCESS(
       HandleStmtExecuteRequest(req_packet, &state->prepared_statements, entry));
 
   //----------------
@@ -353,13 +353,13 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
+    PX_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
+    PX_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
 
     return ParseState::kSuccess;
   }
@@ -376,13 +376,13 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleStmtCloseRequest(req_packet, &state->prepared_statements, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleStmtCloseRequest(req_packet, &state->prepared_statements, entry));
 
   //----------------
   // Response
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
   return ParseState::kSuccess;
 }
 
@@ -395,7 +395,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -409,7 +409,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
 // MySQL documentation: https://dev.mysql.com/doc/internals/en/com-stmt-reset.html
 StatusOr<ParseState> ProcessStmtReset(const Packet& req_packet, DequeView<Packet> resp_packets,
                                       State* state, Record* entry) {
-  PL_UNUSED(state);
+  PX_UNUSED(state);
 
   // Defer to basic response for now.
   return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets, entry);
@@ -423,7 +423,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -437,13 +437,13 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   const Packet& first_resp_packet = resp_packets.front();
 
   if (IsErrPacket(first_resp_packet)) {
-    PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
+    PX_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
     return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
-    PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
+    PX_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
 
     return ParseState::kSuccess;
   }
@@ -460,7 +460,7 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleStringRequest(req_packet, entry));
 
   //----------------
   // Response
@@ -478,7 +478,7 @@ StatusOr<ParseState> ProcessQuit(const Packet& req_packet, DequeView<Packet> res
   // Request
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
+  PX_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
 
   //----------------
   // Response

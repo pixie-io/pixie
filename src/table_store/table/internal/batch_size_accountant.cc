@@ -41,7 +41,7 @@ BatchSizeAccountantNonMutableState BatchSizeAccountant::CreateNonMutableState(
   } else {                                                                        \
     state.per_row_fixed_size += sizeof(types::DataTypeTraits<_dt_>::native_type); \
   }
-    PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
 
     if (data_type == types::DataType::STRING) {

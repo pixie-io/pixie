@@ -102,7 +102,7 @@ StatusOr<OperatorIR*> FilterPushdownRule::NextFilterLocation(
     return nullptr;
   }
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto parent_has_pem_only_udf,
       HasFuncWithExecutor(compiler_state_, parent, udfspb::UDFSourceExecutor::UDF_PEM));
 
@@ -126,8 +126,8 @@ StatusOr<OperatorIR*> FilterPushdownRule::NextFilterLocation(
 
 Status FilterPushdownRule::UpdateFilter(FilterIR* filter,
                                         const ColumnNameMapping& column_name_mapping) {
-  PL_ASSIGN_OR_RETURN(ExpressionIR * new_expr, filter->graph()->CopyNode(filter->filter_expr()));
-  PL_ASSIGN_OR_RETURN(auto filter_input_cols, new_expr->InputColumns());
+  PX_ASSIGN_OR_RETURN(ExpressionIR * new_expr, filter->graph()->CopyNode(filter->filter_expr()));
+  PX_ASSIGN_OR_RETURN(auto filter_input_cols, new_expr->InputColumns());
   for (ColumnIR* col : filter_input_cols) {
     auto new_col_name = column_name_mapping.at(col->col_name());
     col->UpdateColumnName(new_col_name);
@@ -146,19 +146,19 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   // Tracks the name of each involved column we have in this filter func,
   // as of the current position of current_node.
   absl::flat_hash_map<std::string, std::string> column_name_mapping;
-  PL_ASSIGN_OR_RETURN(auto involved_cols, filter->filter_expr()->InputColumnNames());
+  PX_ASSIGN_OR_RETURN(auto involved_cols, filter->filter_expr()->InputColumnNames());
   for (const auto& col : involved_cols) {
     column_name_mapping[col] = col;
   }
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto kelvin_only_filter,
       HasFuncWithExecutor(compiler_state_, filter, udfspb::UDFSourceExecutor::UDF_KELVIN));
 
   // Iterate up from the current node, stopping when we reach the earliest allowable
   // new location for the filter node.
   while (true) {
-    PL_ASSIGN_OR_RETURN(OperatorIR * next_parent,
+    PX_ASSIGN_OR_RETURN(OperatorIR * next_parent,
                         NextFilterLocation(current_node, kelvin_only_filter, &column_name_mapping));
     if (next_parent == nullptr) {
       break;
@@ -171,22 +171,22 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
     return false;
   }
 
-  PL_RETURN_IF_ERROR(UpdateFilter(filter, column_name_mapping));
+  PX_RETURN_IF_ERROR(UpdateFilter(filter, column_name_mapping));
 
   // Make the filter's parent its children's new parent.
   DCHECK_EQ(1U, filter->parents().size());
   OperatorIR* filter_parent = filter->parents()[0];
 
   for (OperatorIR* child : filter->Children()) {
-    PL_RETURN_IF_ERROR(child->ReplaceParent(filter, filter_parent));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(filter, filter_parent));
   }
-  PL_RETURN_IF_ERROR(filter->RemoveParent(filter_parent));
+  PX_RETURN_IF_ERROR(filter->RemoveParent(filter_parent));
 
   DCHECK_EQ(1U, current_node->parents().size());
   auto new_filter_parent = current_node->parents()[0];
-  PL_RETURN_IF_ERROR(filter->AddParent(new_filter_parent));
-  PL_RETURN_IF_ERROR(current_node->ReplaceParent(new_filter_parent, filter));
-  PL_RETURN_IF_ERROR(filter->SetResolvedType(new_filter_parent->resolved_type()));
+  PX_RETURN_IF_ERROR(filter->AddParent(new_filter_parent));
+  PX_RETURN_IF_ERROR(current_node->ReplaceParent(new_filter_parent, filter));
+  PX_RETURN_IF_ERROR(filter->SetResolvedType(new_filter_parent->resolved_type()));
   return true;
 }
 

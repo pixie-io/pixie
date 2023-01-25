@@ -42,19 +42,19 @@ namespace compiler {
 StatusOr<std::shared_ptr<OTelModule>> OTelModule::Create(CompilerState* compiler_state,
                                                          ASTVisitor* ast_visitor, IR* ir) {
   auto otel_module = std::shared_ptr<OTelModule>(new OTelModule(ast_visitor));
-  PL_RETURN_IF_ERROR(otel_module->Init(compiler_state, ir));
+  PX_RETURN_IF_ERROR(otel_module->Init(compiler_state, ir));
   return otel_module;
 }
 
 StatusOr<std::shared_ptr<OTelMetrics>> OTelMetrics::Create(ASTVisitor* ast_visitor, IR* graph) {
   auto otel_metrics = std::shared_ptr<OTelMetrics>(new OTelMetrics(ast_visitor, graph));
-  PL_RETURN_IF_ERROR(otel_metrics->Init());
+  PX_RETURN_IF_ERROR(otel_metrics->Init());
   return otel_metrics;
 }
 
 StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor, IR* graph) {
   auto otel_trace = std::shared_ptr<OTelTrace>(new OTelTrace(ast_visitor, graph));
-  PL_RETURN_IF_ERROR(otel_trace->Init());
+  PX_RETURN_IF_ERROR(otel_trace->Init());
   return otel_trace;
 }
 
@@ -72,7 +72,7 @@ Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df
 
 StatusOr<std::string> GetArgAsString(const pypa::AstPtr& ast, const ParsedArgs& args,
                                      std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(StringIR * arg_ir, GetArgAs<StringIR>(ast, args, arg_name));
+  PX_ASSIGN_OR_RETURN(StringIR * arg_ir, GetArgAs<StringIR>(ast, args, arg_name));
   return arg_ir->str();
 }
 
@@ -106,7 +106,7 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
   DCHECK_EQ(values.size(), keys.size());
   std::vector<OTelAttribute> otel_attributes;
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
-    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
+    PX_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keyobj, "attribute"));
     if (key->str().empty()) {
       return keyobj->CreateError("Attribute key must be a non-empty string");
     }
@@ -138,7 +138,7 @@ bool IsValidName(const std::string& name) {
 }
 
 StatusOr<std::string> ParseName(const QLObjectPtr& name) {
-  PL_ASSIGN_OR_RETURN(auto name_ir, GetArgAs<StringIR>(name, "name"));
+  PX_ASSIGN_OR_RETURN(auto name_ir, GetArgAs<StringIR>(name, "name"));
   if (!IsValidName(name_ir->str())) {
     return name->CreateError(
         "Metric name is invalid. Please follow the naming conventions here: "
@@ -150,16 +150,16 @@ StatusOr<std::string> ParseName(const QLObjectPtr& name) {
 StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                       ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
-  PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
+  PX_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
+  PX_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
-  PL_ASSIGN_OR_RETURN(metric.time_column,
+  PX_ASSIGN_OR_RETURN(metric.time_column,
                       graph->CreateNode<ColumnIR>(ast, "time_", /* parent_op_idx */ 0));
 
-  PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(ast, args, "value"));
+  PX_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(ast, args, "value"));
   metric.unit_column = val;
   if (!NoneObject::IsNoneObject(args.GetArg("unit"))) {
-    PL_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
+    PX_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
     metric.unit_str = unit;
   }
   metric.metric = OTelMetricGauge{val};
@@ -170,7 +170,7 @@ StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const 
                                    attributes->name());
   }
 
-  PL_ASSIGN_OR_RETURN(metric.attributes,
+  PX_ASSIGN_OR_RETURN(metric.attributes,
                       ParseAttributes(static_cast<DictObject*>(attributes.get())));
 
   return OTelDataContainer::Create(visitor, std::move(metric));
@@ -179,15 +179,15 @@ StatusOr<QLObjectPtr> GaugeDefinition(IR* graph, const pypa::AstPtr& ast, const 
 StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
   OTelMetric metric;
-  PL_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
-  PL_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
+  PX_ASSIGN_OR_RETURN(metric.name, ParseName(args.GetArg("name")));
+  PX_ASSIGN_OR_RETURN(metric.description, GetArgAsString(ast, args, "description"));
   // We add the time_ column  automatically.
-  PL_ASSIGN_OR_RETURN(metric.time_column,
+  PX_ASSIGN_OR_RETURN(metric.time_column,
                       graph->CreateNode<ColumnIR>(ast, "time_", /* parent_op_idx */ 0));
 
   OTelMetricSummary summary;
-  PL_ASSIGN_OR_RETURN(summary.count_column, GetArgAs<ColumnIR>(ast, args, "count"));
-  PL_ASSIGN_OR_RETURN(summary.sum_column, GetArgAs<ColumnIR>(ast, args, "sum"));
+  PX_ASSIGN_OR_RETURN(summary.count_column, GetArgAs<ColumnIR>(ast, args, "count"));
+  PX_ASSIGN_OR_RETURN(summary.sum_column, GetArgAs<ColumnIR>(ast, args, "sum"));
 
   auto qvs = args.GetArg("quantile_values");
   if (!DictObject::IsDict(qvs)) {
@@ -202,13 +202,13 @@ StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, cons
     return qvs->CreateError("Summary must have at least one quantile value specified");
   }
   for (const auto& [idx, keyobj] : Enumerate(keys)) {
-    PL_ASSIGN_OR_RETURN(auto quantile, GetArgAs<FloatIR>(keyobj, "quantile"));
-    PL_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(values[idx], "quantile value column"));
+    PX_ASSIGN_OR_RETURN(auto quantile, GetArgAs<FloatIR>(keyobj, "quantile"));
+    PX_ASSIGN_OR_RETURN(auto val, GetArgAs<ColumnIR>(values[idx], "quantile value column"));
     summary.quantiles.push_back({quantile->val(), val});
   }
   metric.unit_column = summary.quantiles[0].value_column;
   if (!NoneObject::IsNoneObject(args.GetArg("unit"))) {
-    PL_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
+    PX_ASSIGN_OR_RETURN(auto unit, GetArgAsString(ast, args, "unit"));
     metric.unit_str = unit;
   }
   metric.metric = summary;
@@ -219,7 +219,7 @@ StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, cons
                                    attributes->name());
   }
 
-  PL_ASSIGN_OR_RETURN(metric.attributes,
+  PX_ASSIGN_OR_RETURN(metric.attributes,
                       ParseAttributes(static_cast<DictObject*>(attributes.get())));
 
   return OTelDataContainer::Create(visitor, std::move(metric));
@@ -228,7 +228,7 @@ StatusOr<QLObjectPtr> SummaryDefinition(IR* graph, const pypa::AstPtr& ast, cons
 StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const pypa::AstPtr&,
                                          const ParsedArgs& args, ASTVisitor* visitor) {
   OTelData otel_data;
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       ParseEndpointConfig(compiler_state, args.GetArg("endpoint"), &otel_data.endpoint_config));
   QLObjectPtr data = args.GetArg("data");
   if (!CollectionObject::IsCollection(data)) {
@@ -258,7 +258,7 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
                                  resource->name());
   }
 
-  PL_ASSIGN_OR_RETURN(otel_data.resource_attributes,
+  PX_ASSIGN_OR_RETURN(otel_data.resource_attributes,
                       ParseAttributes(static_cast<DictObject*>(resource.get())));
   bool has_service_name = false;
   for (const auto& attribute : otel_data.resource_attributes) {
@@ -283,7 +283,7 @@ StatusOr<QLObjectPtr> OTelDataDefinition(CompilerState* compiler_state, const py
 
 StatusOr<QLObjectPtr> EndpointConfigDefinition(const pypa::AstPtr& ast, const ParsedArgs& args,
                                                ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto url, GetArgAsString(ast, args, "url"));
+  PX_ASSIGN_OR_RETURN(auto url, GetArgAsString(ast, args, "url"));
 
   std::vector<EndpointConfig::ConnAttribute> attributes;
   auto headers = args.GetArg("headers");
@@ -293,20 +293,20 @@ StatusOr<QLObjectPtr> EndpointConfigDefinition(const pypa::AstPtr& ast, const Pa
   }
   auto headers_dict = static_cast<DictObject*>(headers.get());
   for (const auto& [i, key] : Enumerate(headers_dict->keys())) {
-    PL_ASSIGN_OR_RETURN(StringIR * key_ir, GetArgAs<StringIR>(ast, key, "header key"));
-    PL_ASSIGN_OR_RETURN(StringIR * val_ir,
+    PX_ASSIGN_OR_RETURN(StringIR * key_ir, GetArgAs<StringIR>(ast, key, "header key"));
+    PX_ASSIGN_OR_RETURN(StringIR * val_ir,
                         GetArgAs<StringIR>(ast, headers_dict->values()[i], "header value"));
     attributes.push_back(EndpointConfig::ConnAttribute{key_ir->str(), val_ir->str()});
   }
 
-  PL_ASSIGN_OR_RETURN(BoolIR * insecure_ir, GetArgAs<BoolIR>(ast, args, "insecure"));
+  PX_ASSIGN_OR_RETURN(BoolIR * insecure_ir, GetArgAs<BoolIR>(ast, args, "insecure"));
 
   return EndpointConfig::Create(visitor, url, attributes, insecure_ir->val());
 }
 
 Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> data_fn,
       FuncObject::Create(kDataOpID, {"resource", "data", "endpoint"}, {{"endpoint", "None"}},
                          /* has_variable_len_args */ false,
@@ -314,16 +314,16 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
                          std::bind(&OTelDataDefinition, compiler_state, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(data_fn->SetDocString(kDataOpDocstring));
+  PX_RETURN_IF_ERROR(data_fn->SetDocString(kDataOpDocstring));
   AddMethod(kDataOpID, data_fn);
 
-  PL_ASSIGN_OR_RETURN(auto metric, OTelMetrics::Create(ast_visitor(), ir));
-  PL_RETURN_IF_ERROR(AssignAttribute("metric", metric));
+  PX_ASSIGN_OR_RETURN(auto metric, OTelMetrics::Create(ast_visitor(), ir));
+  PX_RETURN_IF_ERROR(AssignAttribute("metric", metric));
 
-  PL_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor(), ir));
-  PL_RETURN_IF_ERROR(AssignAttribute("trace", trace));
+  PX_ASSIGN_OR_RETURN(auto trace, OTelTrace::Create(ast_visitor(), ir));
+  PX_RETURN_IF_ERROR(AssignAttribute("trace", trace));
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> endpoint_fn,
                       FuncObject::Create(kEndpointOpID, {"url", "headers", "insecure"},
                                          {{"headers", "{}"}, {"insecure", "False"}},
                                          /* has_variable_len_args */ false,
@@ -333,7 +333,7 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
                                          ast_visitor()));
 
   AddMethod(kEndpointOpID, endpoint_fn);
-  PL_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
+  PX_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
   return Status::OK();
 
   return Status::OK();
@@ -341,7 +341,7 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
 Status OTelMetrics::Init() {
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> gauge_fn,
       FuncObject::Create(kGaugeOpID, {"name", "value", "description", "attributes", "unit"},
                          {{"description", "\"\""}, {"attributes", "{}"}, {"unit", "None"}},
@@ -350,10 +350,10 @@ Status OTelMetrics::Init() {
                          std::bind(&GaugeDefinition, graph_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(gauge_fn->SetDocString(kGaugeOpDocstring));
+  PX_RETURN_IF_ERROR(gauge_fn->SetDocString(kGaugeOpDocstring));
   AddMethod(kGaugeOpID, gauge_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> summary_fn,
       FuncObject::Create(
           kSummaryOpID,
@@ -364,7 +364,7 @@ Status OTelMetrics::Init() {
           std::bind(&SummaryDefinition, graph_, std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3),
           ast_visitor()));
-  PL_RETURN_IF_ERROR(summary_fn->SetDocString(kSummaryOpDocstring));
+  PX_RETURN_IF_ERROR(summary_fn->SetDocString(kSummaryOpDocstring));
   AddMethod(kSummaryOpID, summary_fn);
 
   return Status::OK();
@@ -388,22 +388,22 @@ StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& 
                              IRNode::TypeString(name_expr->type()));
   }
 
-  PL_ASSIGN_OR_RETURN(span.start_time_column, GetArgAs<ColumnIR>(ast, args, "start_time"));
-  PL_ASSIGN_OR_RETURN(span.end_time_column, GetArgAs<ColumnIR>(ast, args, "end_time"));
+  PX_ASSIGN_OR_RETURN(span.start_time_column, GetArgAs<ColumnIR>(ast, args, "start_time"));
+  PX_ASSIGN_OR_RETURN(span.end_time_column, GetArgAs<ColumnIR>(ast, args, "end_time"));
   auto span_id = args.GetArg("span_id");
   if (!NoneObject::IsNoneObject(span_id)) {
-    PL_ASSIGN_OR_RETURN(span.span_id_column, GetArgAs<ColumnIR>(ast, args, "span_id"));
+    PX_ASSIGN_OR_RETURN(span.span_id_column, GetArgAs<ColumnIR>(ast, args, "span_id"));
   }
   auto trace_id = args.GetArg("trace_id");
   if (!NoneObject::IsNoneObject(trace_id)) {
-    PL_ASSIGN_OR_RETURN(span.trace_id_column, GetArgAs<ColumnIR>(ast, args, "trace_id"));
+    PX_ASSIGN_OR_RETURN(span.trace_id_column, GetArgAs<ColumnIR>(ast, args, "trace_id"));
   }
   auto parent_span_id = args.GetArg("parent_span_id");
   if (!NoneObject::IsNoneObject(parent_span_id)) {
-    PL_ASSIGN_OR_RETURN(span.parent_span_id_column,
+    PX_ASSIGN_OR_RETURN(span.parent_span_id_column,
                         GetArgAs<ColumnIR>(ast, args, "parent_span_id"));
   }
-  PL_ASSIGN_OR_RETURN(auto span_kind, GetArgAs<IntIR>(ast, args, "kind"));
+  PX_ASSIGN_OR_RETURN(auto span_kind, GetArgAs<IntIR>(ast, args, "kind"));
   span.span_kind = span_kind->val();
 
   QLObjectPtr attributes = args.GetArg("attributes");
@@ -412,7 +412,7 @@ StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& 
                                    attributes->name());
   }
 
-  PL_ASSIGN_OR_RETURN(span.attributes, ParseAttributes(static_cast<DictObject*>(attributes.get())));
+  PX_ASSIGN_OR_RETURN(span.attributes, ParseAttributes(static_cast<DictObject*>(attributes.get())));
 
   return OTelDataContainer::Create(visitor, std::move(span));
 }
@@ -420,17 +420,17 @@ StatusOr<QLObjectPtr> SpanDefinition(const pypa::AstPtr& ast, const ParsedArgs& 
 // Parse the kind name and assign it the integer value.
 Status OTelTrace::AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SpanKind kind) {
   auto ast = std::make_shared<pypa::Ast>(pypa::AstType::Number);
-  PL_ASSIGN_OR_RETURN(IntIR * span_kind,
+  PX_ASSIGN_OR_RETURN(IntIR * span_kind,
                       graph_->CreateNode<IntIR>(ast, static_cast<int64_t>(kind)));
-  PL_ASSIGN_OR_RETURN(auto value, ExprObject::Create(span_kind, ast_visitor()));
-  PL_RETURN_IF_ERROR(
+  PX_ASSIGN_OR_RETURN(auto value, ExprObject::Create(span_kind, ast_visitor()));
+  PX_RETURN_IF_ERROR(
       AssignAttribute(::opentelemetry::proto::trace::v1::Span::SpanKind_Name(kind), value));
   return Status::OK();
 }
 
 Status OTelTrace::Init() {
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> span_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> span_fn,
                       FuncObject::Create(kSpanOpID,
                                          {"name", "start_time", "end_time", "trace_id", "span_id",
                                           "parent_span_id", "attributes", "kind"},
@@ -444,20 +444,20 @@ Status OTelTrace::Init() {
                                          std::bind(&SpanDefinition, std::placeholders::_1,
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(span_fn->SetDocString(kSpanOpDocstring));
+  PX_RETURN_IF_ERROR(span_fn->SetDocString(kSpanOpDocstring));
   AddMethod(kSpanOpID, span_fn);
 
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_UNSPECIFIED));
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_INTERNAL));
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_SERVER));
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_CLIENT));
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_PRODUCER));
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       AddSpanKindAttribute(::opentelemetry::proto::trace::v1::Span::SPAN_KIND_CONSUMER));
 
   return Status::OK();

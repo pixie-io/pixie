@@ -83,12 +83,12 @@ TEST(ColumnWrapperTest, make_test_string) {
 
 TEST(ColumnWrapper, FromArrowBool) {
   arrow::BooleanBuilder builder;
-  PL_CHECK_OK(builder.Append(true));
-  PL_CHECK_OK(builder.Append(true));
-  PL_CHECK_OK(builder.Append(false));
+  PX_CHECK_OK(builder.Append(true));
+  PX_CHECK_OK(builder.Append(true));
+  PX_CHECK_OK(builder.Append(false));
 
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
 
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
@@ -97,12 +97,12 @@ TEST(ColumnWrapper, FromArrowBool) {
 
 TEST(ColumnWrapper, FromArrowInt64) {
   arrow::Int64Builder builder;
-  PL_CHECK_OK(builder.Append(1));
-  PL_CHECK_OK(builder.Append(2));
-  PL_CHECK_OK(builder.Append(3));
+  PX_CHECK_OK(builder.Append(1));
+  PX_CHECK_OK(builder.Append(2));
+  PX_CHECK_OK(builder.Append(3));
 
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
 
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
@@ -111,12 +111,12 @@ TEST(ColumnWrapper, FromArrowInt64) {
 
 TEST(ColumnWrapper, FromArrowUInt128) {
   arrow::UInt128Builder builder;
-  PL_CHECK_OK(builder.Append(absl::MakeUint128(100, 200)));
-  PL_CHECK_OK(builder.Append(absl::MakeUint128(200, 300)));
-  PL_CHECK_OK(builder.Append(absl::MakeUint128(300, 400)));
+  PX_CHECK_OK(builder.Append(absl::MakeUint128(100, 200)));
+  PX_CHECK_OK(builder.Append(absl::MakeUint128(200, 300)));
+  PX_CHECK_OK(builder.Append(absl::MakeUint128(300, 400)));
 
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
 
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
@@ -125,12 +125,12 @@ TEST(ColumnWrapper, FromArrowUInt128) {
 
 TEST(ColumnWrapper, FromArrowFloat64) {
   arrow::DoubleBuilder builder;
-  PL_CHECK_OK(builder.Append(1));
-  PL_CHECK_OK(builder.Append(2));
-  PL_CHECK_OK(builder.Append(3));
+  PX_CHECK_OK(builder.Append(1));
+  PX_CHECK_OK(builder.Append(2));
+  PX_CHECK_OK(builder.Append(3));
 
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
 
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
@@ -139,12 +139,12 @@ TEST(ColumnWrapper, FromArrowFloat64) {
 
 TEST(ColumnWrapper, FromArrowString) {
   arrow::StringBuilder builder;
-  PL_CHECK_OK(builder.Append("abc"));
-  PL_CHECK_OK(builder.Append("def"));
-  PL_CHECK_OK(builder.Append("hello"));
+  PX_CHECK_OK(builder.Append("abc"));
+  PX_CHECK_OK(builder.Append("def"));
+  PX_CHECK_OK(builder.Append("hello"));
 
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
 
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
@@ -168,13 +168,13 @@ TEST(ColumnWrapperTest, FromVectorInt64) {
 
   // build the comparison list.
   arrow::Int64Builder builder;
-  PL_CHECK_OK(builder.Append(4));
-  PL_CHECK_OK(builder.Append(2));
-  PL_CHECK_OK(builder.Append(3));
-  PL_CHECK_OK(builder.Append(1));
+  PX_CHECK_OK(builder.Append(4));
+  PX_CHECK_OK(builder.Append(2));
+  PX_CHECK_OK(builder.Append(3));
+  PX_CHECK_OK(builder.Append(1));
 
   std::shared_ptr<arrow::Array> expected_arr;
-  PL_CHECK_OK(builder.Finish(&expected_arr));
+  PX_CHECK_OK(builder.Finish(&expected_arr));
 
   EXPECT_TRUE(actual_arr->Equals(expected_arr));
 }
@@ -189,13 +189,13 @@ TEST(ColumnWrapperTest, FromVectorString) {
 
   // build the comparison list.
   arrow::StringBuilder builder;
-  PL_CHECK_OK(builder.Append("abc"));
-  PL_CHECK_OK(builder.Append("def"));
-  PL_CHECK_OK(builder.Append("ghi"));
-  PL_CHECK_OK(builder.Append("jkl"));
+  PX_CHECK_OK(builder.Append("abc"));
+  PX_CHECK_OK(builder.Append("def"));
+  PX_CHECK_OK(builder.Append("ghi"));
+  PX_CHECK_OK(builder.Append("jkl"));
 
   std::shared_ptr<arrow::Array> expected_arr;
-  PL_CHECK_OK(builder.Finish(&expected_arr));
+  PX_CHECK_OK(builder.Finish(&expected_arr));
 
   EXPECT_TRUE(actual_arr->Equals(expected_arr));
 }

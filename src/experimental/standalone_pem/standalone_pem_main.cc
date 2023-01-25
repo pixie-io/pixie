@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
                      .ConsumeValueOrDie();
   TerminationHandler::set_manager(manager.get());
 
-  PL_CHECK_OK(manager->Run());
-  PL_CHECK_OK(manager->Stop(std::chrono::seconds{5}));
+  PX_CHECK_OK(manager->Run());
+  PX_CHECK_OK(manager->Stop(std::chrono::seconds{5}));
 
   // Clear the manager, because it has been stopped.
   TerminationHandler::set_manager(nullptr);

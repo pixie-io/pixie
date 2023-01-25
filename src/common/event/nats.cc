@@ -71,13 +71,13 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
 }
 
 void NATSConnectorBase::DisconnectedCB(natsConnection* nc, void* closure) {
-  PL_UNUSED(nc);
+  PX_UNUSED(nc);
   auto* connector = static_cast<NATSConnectorBase*>(closure);
   LOG(WARNING) << "nats disconnected " << ++connector->disconnect_count_;
 }
 
 void NATSConnectorBase::ReconnectedCB(natsConnection* nc, void* closure) {
-  PL_UNUSED(nc);
+  PX_UNUSED(nc);
   auto* connector = static_cast<NATSConnectorBase*>(closure);
   LOG(INFO) << "nats reconnected " << ++connector->reconnect_count_;
 }

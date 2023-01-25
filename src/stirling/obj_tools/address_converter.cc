@@ -65,7 +65,7 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
   system::ProcParser parser;
   std::vector<system::ProcParser::ProcessSMaps> map_entries;
   // This is a little inefficient as we only need the first entry.
-  PL_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
+  PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
   if (map_entries.size() < 1) {
     return Status(
         statuspb::INTERNAL,
@@ -81,7 +81,7 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
 
   const uint64_t mapped_segment_start = mapped_virt_addr - mapped_offset;
 
-  PL_ASSIGN_OR_RETURN(auto elf_segment_start, elf_reader->GetVirtualAddrAtOffsetZero());
+  PX_ASSIGN_OR_RETURN(auto elf_segment_start, elf_reader->GetVirtualAddrAtOffsetZero());
 
   const int64_t virtual_to_binary_addr_offset = elf_segment_start - mapped_segment_start;
   return std::unique_ptr<ElfAddressConverter>(

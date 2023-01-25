@@ -36,7 +36,7 @@ namespace planner {
 template <>
 StatusOr<types::DataType> RegistryInfo::ResolveUDFSubType<types::DataType>(
     std::string name, std::vector<types::DataType> arg_types) {
-  PL_ASSIGN_OR_RETURN(auto uda_or_udf, GetUDFExecType(name));
+  PX_ASSIGN_OR_RETURN(auto uda_or_udf, GetUDFExecType(name));
   switch (uda_or_udf) {
     case UDFExecType::kUDF:
       return GetUDFDataType(name, arg_types);
@@ -75,7 +75,7 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
     num_init_args_map_[key] = uda.init_arg_types_size();
     // Add uda to funcs_.
     if (funcs_.contains(uda.name())) {
-      PL_ASSIGN_OR_RETURN(auto type, GetUDFExecType(uda.name()));
+      PX_ASSIGN_OR_RETURN(auto type, GetUDFExecType(uda.name()));
       DCHECK(UDFExecType::kUDA == type);
     }
     funcs_[uda.name()] = UDFExecType::kUDA;
@@ -99,7 +99,7 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
 
     // Add udf to funcs_.
     if (funcs_.contains(udf.name())) {
-      PL_ASSIGN_OR_RETURN(auto type, GetUDFExecType(udf.name()));
+      PX_ASSIGN_OR_RETURN(auto type, GetUDFExecType(udf.name()));
       DCHECK(UDFExecType::kUDF == type);
     }
     funcs_[udf.name()] = UDFExecType::kUDF;
@@ -186,8 +186,8 @@ StatusOr<std::shared_ptr<ValueType>> RegistryInfo::ResolveUDFType(
     arg_data_types.push_back(basic_type->data_type());
     arg_semantic_types.push_back(basic_type->semantic_type());
   }
-  PL_ASSIGN_OR_RETURN(auto out_data_type, ResolveUDFSubType(name, arg_data_types));
-  PL_ASSIGN_OR_RETURN(auto out_semantic_type, ResolveUDFSubType(name, arg_semantic_types));
+  PX_ASSIGN_OR_RETURN(auto out_data_type, ResolveUDFSubType(name, arg_data_types));
+  PX_ASSIGN_OR_RETURN(auto out_semantic_type, ResolveUDFSubType(name, arg_semantic_types));
   return ValueType::Create(out_data_type, out_semantic_type);
 }
 

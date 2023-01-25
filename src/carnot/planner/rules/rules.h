@@ -57,11 +57,11 @@ class BaseRule {
   virtual StatusOr<bool> Execute(TPlan* graph) {
     bool any_changed = false;
     if (!use_topo_) {
-      PL_ASSIGN_OR_RETURN(any_changed, ExecuteUnsorted(graph));
+      PX_ASSIGN_OR_RETURN(any_changed, ExecuteUnsorted(graph));
     } else {
-      PL_ASSIGN_OR_RETURN(any_changed, ExecuteTopologicalSorted(graph));
+      PX_ASSIGN_OR_RETURN(any_changed, ExecuteTopologicalSorted(graph));
     }
-    PL_RETURN_IF_ERROR(EmptyDeleteQueue(graph));
+    PX_RETURN_IF_ERROR(EmptyDeleteQueue(graph));
     return any_changed;
   }
 
@@ -77,7 +77,7 @@ class BaseRule {
       if (!graph->HasNode(node_i)) {
         continue;
       }
-      PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
+      PX_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
       any_changed = any_changed || node_is_changed;
     }
     return any_changed;
@@ -93,7 +93,7 @@ class BaseRule {
       if (!graph->HasNode(node_i)) {
         continue;
       }
-      PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
+      PX_ASSIGN_OR_RETURN(bool node_is_changed, Apply(graph->Get(node_i)));
       any_changed = any_changed || node_is_changed;
     }
     return any_changed;
@@ -114,7 +114,7 @@ class BaseRule {
 
   Status EmptyDeleteQueue(TPlan* graph) {
     while (!node_delete_q.empty()) {
-      PL_RETURN_IF_ERROR(graph->DeleteNode(node_delete_q.front()));
+      PX_RETURN_IF_ERROR(graph->DeleteNode(node_delete_q.front()));
       node_delete_q.pop();
     }
     return Status::OK();

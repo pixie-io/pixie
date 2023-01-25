@@ -57,7 +57,7 @@ struct DefaultValueTraits<types::STRING> {
  */
 class UDTFArg {
  public:
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+  // PX_CARNOT_UPDATE_FOR_NEW_TYPES.
   using DefaultValue =
       std::variant<std::monostate, types::BoolValue, types::Int64Value, types::Float64Value,
                    types::Time64NSValue, types::UInt128Value, std::string_view>;
@@ -271,7 +271,7 @@ class UDTFTraits {
   static constexpr auto InitArgumentTypes() {
     constexpr auto initargs = InitArguments<TUDTF>();
     return ArrayTransform(
-        initargs, [](const UDTFArg& arg) -> auto { return arg.type(); });
+        initargs, [](const UDTFArg& arg) -> auto{ return arg.type(); });
   }
 
   /**
@@ -287,7 +287,7 @@ class UDTFTraits {
   static constexpr auto OutputRelationTypes() {
     constexpr auto relation = TUDTF::OutputRelation();
     return ArrayTransform(
-        relation, [](const ColInfo& info) -> auto { return info.type(); });
+        relation, [](const ColInfo& info) -> auto{ return info.type(); });
   }
 
   /**
@@ -297,7 +297,7 @@ class UDTFTraits {
   static constexpr auto OutputRelationNames() {
     constexpr auto relation = TUDTF::OutputRelation();
     return ArrayTransform(
-        relation, [](const ColInfo& info) -> auto { return info.name(); });
+        relation, [](const ColInfo& info) -> auto{ return info.name(); });
   }
 
   /**
@@ -428,7 +428,7 @@ class RecordWriterProxy final {
     DCHECK(builder->length() < builder->capacity());
     // If it's a string type we also need to allocate memory for the data.
     // This actually applies to all non-fixed data allocations.
-    // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+    // PX_CARNOT_UPDATE_FOR_NEW_TYPES.
     if constexpr (std::is_same_v<arrow::StringBuilder, T>) {
       [[maybe_unused]] bool res = builder->ReserveData(v.size()).ok();
       DCHECK(res);

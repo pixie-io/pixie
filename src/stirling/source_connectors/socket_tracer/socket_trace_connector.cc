@@ -403,14 +403,14 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
   };
-  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
+  PX_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
 
-  PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";
 
   const auto kPerfBufferSpecs = InitPerfBufferSpecs();
-  PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
 
   // Set trace role to BPF probes.
@@ -420,13 +420,13 @@ Status SocketTraceConnector::InitBPF() {
       for (auto role : protocol_transfer_specs_[p].trace_roles) {
         role_mask |= role;
       }
-      PL_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, role_mask));
+      PX_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, role_mask));
     }
   }
 
-  PL_RETURN_IF_ERROR(TestOnlySetTargetPID());
+  PX_RETURN_IF_ERROR(TestOnlySetTargetPID());
   if (FLAGS_stirling_disable_self_tracing) {
-    PL_RETURN_IF_ERROR(DisableSelfTracing());
+    PX_RETURN_IF_ERROR(DisableSelfTracing());
   }
   if (!FLAGS_socket_trace_data_events_output_path.empty()) {
     SetupOutput(FLAGS_socket_trace_data_events_output_path);
@@ -462,7 +462,7 @@ Status SocketTraceConnector::InitImpl() {
         "timestamps in a way that matches how /proc/stat does it");
   }
 
-  PL_RETURN_IF_ERROR(InitBPF());
+  PX_RETURN_IF_ERROR(InitBPF());
 
   auto s = system::SocketInfoManager::Create(
       ProcPath(), system::kTCPEstablishedState | system::kTCPListeningState);

@@ -71,7 +71,7 @@ Status K8sUpdateHandler::HandleMissingK8sMetadataResponse(const MissingK8sMetada
   }
 
   for (const auto& update : resp.updates()) {
-    PL_RETURN_IF_ERROR(HandleK8sUpdate(update));
+    PX_RETURN_IF_ERROR(HandleK8sUpdate(update));
   }
 
   // Check and flush backlog.
@@ -86,7 +86,7 @@ Status K8sUpdateHandler::HandleMissingK8sMetadataResponse(const MissingK8sMetada
 
     // If this is the update that we need, then add it.
     if (current_update_version_ == next.prev_update_version()) {
-      PL_RETURN_IF_ERROR(AddK8sUpdate(next));
+      PX_RETURN_IF_ERROR(AddK8sUpdate(next));
     }
     update_backlog_.pop();
   }

@@ -46,7 +46,7 @@ StatusOr<std::string> GetAbsPathLibsArg() {
 
   std::vector<std::string> abs_path_libs;
   for (const auto& rel_p : rel_path_libs) {
-    PL_ASSIGN_OR_RETURN(const auto abs_p, fs::Absolute(rel_p));
+    PX_ASSIGN_OR_RETURN(const auto abs_p, fs::Absolute(rel_p));
     if (!fs::Exists(abs_p)) {
       return error::NotFound("Could not find: $0.", abs_p.string());
     }
@@ -79,8 +79,8 @@ TEST(JavaAttachTest, ExpectedSymbolsTest) {
   ASSERT_TRUE(fs::Exists(bazel_attach_app_path));
   ASSERT_TRUE(fs::Exists(bazel_test_app_path));
 
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, bazel_attach_app_path.string());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, bazel_attach_app_path.string());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
 
   // Start the Java process (and wait for it to enter the "live" phase, because
   // you cannot inject a JVMTI agent during Java startup phase).

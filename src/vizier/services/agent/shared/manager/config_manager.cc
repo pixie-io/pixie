@@ -28,8 +28,8 @@ ConfigManager::ConfigManager(px::event::Dispatcher* dispatcher, Info* agent_info
     : MessageHandler(dispatcher, agent_info, nats_conn),
       dispatcher_(dispatcher),
       nats_conn_(nats_conn) {
-  PL_UNUSED(dispatcher_);
-  PL_UNUSED(nats_conn_);
+  PX_UNUSED(dispatcher_);
+  PX_UNUSED(nats_conn_);
 }
 
 Status ConfigManager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {

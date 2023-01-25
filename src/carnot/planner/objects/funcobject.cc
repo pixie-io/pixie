@@ -55,7 +55,7 @@ FuncObject::FuncObject(std::string_view name, const std::vector<std::string>& ar
 }
 
 StatusOr<QLObjectPtr> FuncObject::Call(const ArgMap& args, const pypa::AstPtr& ast) {
-  PL_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast));
+  PX_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast));
   return impl_(ast, parsed_args, ast_visitor());
 }
 
@@ -114,7 +114,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       missing_pos_args.emplace(arg);
       continue;
     }
-    PL_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg));
+    PX_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg));
     default_node->SetAst(ast);
     parsed_args.SubDefaultArg(arg, default_node);
   }
@@ -161,7 +161,7 @@ StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast,
     pyobject->SetAst(ast);
     return std::static_pointer_cast<FuncObject>(pyobject);
   }
-  PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
+  PX_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
   func_object->SetAst(ast);
   return func_object;
 }
@@ -170,7 +170,7 @@ Status FuncObject::ResolveArgAnnotationsToTypes(
     const absl::flat_hash_map<std::string, QLObjectPtr>& arg_annotation_objs) {
   for (const auto& [name, obj] : arg_annotation_objs) {
     if (obj->type() != QLObjectType::kType) {
-      PL_ASSIGN_OR_RETURN(auto type_obj,
+      PX_ASSIGN_OR_RETURN(auto type_obj,
                           TypeObject::Create(types::DataType::DATA_TYPE_UNKNOWN,
                                              types::SemanticType::ST_UNSPECIFIED, ast_visitor()));
       arg_types_.insert({name, type_obj});

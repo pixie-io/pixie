@@ -129,9 +129,9 @@ Status PerfProfileConnector::InitImpl() {
       {{"histogram_a", HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
        {"histogram_b", HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
-  PL_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
-  PL_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
+  PX_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
+  PX_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
 
   stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
   stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
@@ -146,28 +146,28 @@ Status PerfProfileConnector::InitImpl() {
 
   // Create a symbolizer for user symbols.
   if (FLAGS_stirling_profiler_symbolizer == "bcc") {
-    PL_ASSIGN_OR_RETURN(u_symbolizer_, BCCSymbolizer::Create());
+    PX_ASSIGN_OR_RETURN(u_symbolizer_, BCCSymbolizer::Create());
   } else if (FLAGS_stirling_profiler_symbolizer == "elf") {
-    PL_ASSIGN_OR_RETURN(u_symbolizer_, ElfSymbolizer::Create());
+    PX_ASSIGN_OR_RETURN(u_symbolizer_, ElfSymbolizer::Create());
   } else {
     return error::Internal("Unrecognized symbolizer $0", FLAGS_stirling_profiler_symbolizer);
   }
 
   // Create a symbolizer for kernel symbols.
   // Kernel symbolizer always uses BCC symbolizer.
-  PL_ASSIGN_OR_RETURN(k_symbolizer_, BCCSymbolizer::Create());
+  PX_ASSIGN_OR_RETURN(k_symbolizer_, BCCSymbolizer::Create());
 
   if (FLAGS_stirling_profiler_java_symbols) {
     LOG(INFO) << "PerfProfiler: Java symbolization enabled.";
-    PL_ASSIGN_OR_RETURN(u_symbolizer_, JavaSymbolizer::Create(std::move(u_symbolizer_)));
+    PX_ASSIGN_OR_RETURN(u_symbolizer_, JavaSymbolizer::Create(std::move(u_symbolizer_)));
   } else {
     LOG(INFO) << "PerfProfiler: Java symbolization disabled.";
   }
 
   if (FLAGS_stirling_profiler_cache_symbols) {
     // Add a caching layer on top of the existing symbolizer.
-    PL_ASSIGN_OR_RETURN(u_symbolizer_, CachingSymbolizer::Create(std::move(u_symbolizer_)));
-    PL_ASSIGN_OR_RETURN(k_symbolizer_, CachingSymbolizer::Create(std::move(k_symbolizer_)));
+    PX_ASSIGN_OR_RETURN(u_symbolizer_, CachingSymbolizer::Create(std::move(u_symbolizer_)));
+    PX_ASSIGN_OR_RETURN(k_symbolizer_, CachingSymbolizer::Create(std::move(k_symbolizer_)));
   }
 
   return Status::OK();

@@ -68,7 +68,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
-  // PL_LOG_VAR(PrintConnStatsTable(rb));
+  // PX_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check server-side stats.
   {
@@ -302,7 +302,7 @@ TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
 
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
-  // PL_LOG_VAR(PrintConnStatsTable(rb));
+  // PX_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check client-side.
   {
@@ -351,7 +351,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   // Run the nginx HTTPS server.
   // The container runner will make sure it is in the ready state before unblocking.
   StatusOr<std::string> run_result = server.Run(std::chrono::seconds{60});
-  PL_CHECK_OK(run_result);
+  PX_CHECK_OK(run_result);
 
   // Sleep an additional second, just to be safe.
   sleep(1);
@@ -364,7 +364,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   // To take an exception and make the SSL connection anyways, we use the --insecure flag.
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(client.Run(std::chrono::seconds{60},
+  PX_CHECK_OK(client.Run(std::chrono::seconds{60},
                          {absl::Substitute("--network=container:$0", server.container_name())},
                          {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
   client.Wait();
@@ -376,7 +376,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   types::ColumnWrapperRecordBatch records = FindRecordsMatchingPID(rb, kUPIDIdx, server_pid);
-  // PL_LOG_VAR(PrintConnStatsTable(records));
+  // PX_LOG_VAR(PrintConnStatsTable(records));
 
   // Check server-side stats.
   {

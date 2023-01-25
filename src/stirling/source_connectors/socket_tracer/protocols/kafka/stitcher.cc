@@ -33,63 +33,63 @@ namespace protocols {
 namespace kafka {
 
 Status ProcessProduceReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(ProduceReq r, decoder->ExtractProduceReq());
+  PX_ASSIGN_OR_RETURN(ProduceReq r, decoder->ExtractProduceReq());
 
   req->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessProduceResp(PacketDecoder* decoder, Response* resp) {
-  PL_ASSIGN_OR_RETURN(ProduceResp r, decoder->ExtractProduceResp());
+  PX_ASSIGN_OR_RETURN(ProduceResp r, decoder->ExtractProduceResp());
 
   resp->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessFetchReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(FetchReq r, decoder->ExtractFetchReq());
+  PX_ASSIGN_OR_RETURN(FetchReq r, decoder->ExtractFetchReq());
 
   req->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessFetchResp(PacketDecoder* decoder, Response* resp) {
-  PL_ASSIGN_OR_RETURN(FetchResp r, decoder->ExtractFetchResp());
+  PX_ASSIGN_OR_RETURN(FetchResp r, decoder->ExtractFetchResp());
 
   resp->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessJoinGroupReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(JoinGroupReq r, decoder->ExtractJoinGroupReq());
+  PX_ASSIGN_OR_RETURN(JoinGroupReq r, decoder->ExtractJoinGroupReq());
 
   req->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessJoinGroupResp(PacketDecoder* decoder, Response* resp) {
-  PL_ASSIGN_OR_RETURN(JoinGroupResp r, decoder->ExtractJoinGroupResp());
+  PX_ASSIGN_OR_RETURN(JoinGroupResp r, decoder->ExtractJoinGroupResp());
 
   resp->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessSyncGroupReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(SyncGroupReq r, decoder->ExtractSyncGroupReq());
+  PX_ASSIGN_OR_RETURN(SyncGroupReq r, decoder->ExtractSyncGroupReq());
 
   req->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessSyncGroupResp(PacketDecoder* decoder, Response* resp) {
-  PL_ASSIGN_OR_RETURN(SyncGroupResp r, decoder->ExtractSyncGroupResp());
+  PX_ASSIGN_OR_RETURN(SyncGroupResp r, decoder->ExtractSyncGroupResp());
 
   resp->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessMetadataReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(MetadataReq r, decoder->ExtractMetadataReq());
+  PX_ASSIGN_OR_RETURN(MetadataReq r, decoder->ExtractMetadataReq());
 
   req->msg = ToString(r);
   return Status::OK();
@@ -99,7 +99,7 @@ Status ProcessReq(Packet* req_packet, Request* req) {
   req->timestamp_ns = req_packet->timestamp_ns;
   PacketDecoder decoder(*req_packet);
   // Extracts api_key, api_version, and correlation_id.
-  PL_RETURN_IF_ERROR(decoder.ExtractReqHeader(req));
+  PX_RETURN_IF_ERROR(decoder.ExtractReqHeader(req));
 
   // TODO(chengruizhe): Add support for more api keys.
   switch (req->api_key) {
@@ -124,7 +124,7 @@ Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t 
   PacketDecoder decoder(*resp_packet);
   decoder.SetAPIInfo(api_key, api_version);
 
-  PL_RETURN_IF_ERROR(decoder.ExtractRespHeader(resp));
+  PX_RETURN_IF_ERROR(decoder.ExtractRespHeader(resp));
 
   switch (api_key) {
     case APIKey::kProduce:
@@ -147,8 +147,8 @@ StatusOr<Record> ProcessReqRespPair(Packet* req_packet, Packet* resp_packet) {
   ECHECK_LT(req_packet->timestamp_ns, resp_packet->timestamp_ns);
 
   Record r;
-  PL_RETURN_IF_ERROR(ProcessReq(req_packet, &r.req));
-  PL_RETURN_IF_ERROR(ProcessResp(resp_packet, &r.resp, r.req.api_key, r.req.api_version));
+  PX_RETURN_IF_ERROR(ProcessReq(req_packet, &r.req));
+  PX_RETURN_IF_ERROR(ProcessResp(resp_packet, &r.resp, r.req.api_key, r.req.api_version));
   return r;
 }
 

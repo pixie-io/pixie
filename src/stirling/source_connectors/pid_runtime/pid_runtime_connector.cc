@@ -31,8 +31,8 @@ namespace stirling {
 Status PIDRuntimeConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
-  PL_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
-  PL_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbes));
+  PX_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
+  PX_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbes));
   return Status::OK();
 }
 

@@ -621,7 +621,7 @@ TEST(ExtractInet, V4Exact) {
   EXPECT_EQ(addr4.port, 80);
   ASSERT_TRUE(decoder.eof());
 
-  PL_UNUSED(kInet6);
+  PX_UNUSED(kInet6);
 }
 
 TEST(ExtractInet, V6Exact) {
@@ -633,7 +633,7 @@ TEST(ExtractInet, V6Exact) {
   EXPECT_EQ(addr6.port, 80);
   ASSERT_TRUE(decoder.eof());
 
-  PL_UNUSED(kInet6);
+  PX_UNUSED(kInet6);
 }
 
 //------------------------

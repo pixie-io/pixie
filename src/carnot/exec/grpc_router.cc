@@ -62,7 +62,7 @@ Status GRPCRouter::EnqueueRowBatch(QueryTracker* query_tracker,
       return Status::OK();
     }
     snt->source_node->set_upstream_initiated_connection();
-    PL_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(req)));
+    PX_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(req)));
   }
   query_tracker->RestartExecution();
   return Status::OK();
@@ -229,7 +229,7 @@ Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
   }
   if (snt->response_backlog.size() > 0) {
     for (auto& rb : snt->response_backlog) {
-      PL_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(rb)));
+      PX_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(rb)));
     }
     snt->response_backlog.clear();
   }

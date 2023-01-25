@@ -34,11 +34,11 @@ StatusOr<std::shared_ptr<PluginModule>> PluginModule::Create(PluginConfig* plugi
 
   // Add a place holder to store the docstring.
   auto start_time_placeholder = std::make_shared<NoneObject>(ast_visitor);
-  PL_RETURN_IF_ERROR(start_time_placeholder->SetDocString(kStartTimeDocstring));
-  PL_RETURN_IF_ERROR(plugin_module->AssignAttribute(kStartTimeOpID, start_time_placeholder));
+  PX_RETURN_IF_ERROR(start_time_placeholder->SetDocString(kStartTimeDocstring));
+  PX_RETURN_IF_ERROR(plugin_module->AssignAttribute(kStartTimeOpID, start_time_placeholder));
   auto end_time_placeholder = std::make_shared<NoneObject>(ast_visitor);
-  PL_RETURN_IF_ERROR(end_time_placeholder->SetDocString(kEndTimeDocstring));
-  PL_RETURN_IF_ERROR(plugin_module->AssignAttribute(kEndTimeOpID, end_time_placeholder));
+  PX_RETURN_IF_ERROR(end_time_placeholder->SetDocString(kEndTimeDocstring));
+  PX_RETURN_IF_ERROR(plugin_module->AssignAttribute(kEndTimeOpID, end_time_placeholder));
   return plugin_module;
 }
 
@@ -48,11 +48,11 @@ StatusOr<QLObjectPtr> PluginModule::GetAttributeImpl(const pypa::AstPtr& ast,
     return CreateError("No plugin config found. Make sure the script is run in a plugin context.");
   }
   if (name == kStartTimeOpID) {
-    PL_ASSIGN_OR_RETURN(IntIR * start_time_int,
+    PX_ASSIGN_OR_RETURN(IntIR * start_time_int,
                         graph_->CreateNode<IntIR>(ast, plugin_config_->start_time_ns));
     return ExprObject::Create(start_time_int, ast_visitor());
   } else if (name == kEndTimeOpID) {
-    PL_ASSIGN_OR_RETURN(IntIR * end_time_int,
+    PX_ASSIGN_OR_RETURN(IntIR * end_time_int,
                         graph_->CreateNode<IntIR>(ast, plugin_config_->end_time_ns));
     return ExprObject::Create(end_time_int, ast_visitor());
   }

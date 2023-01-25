@@ -113,7 +113,7 @@ class Registry {
   template <typename T>
   Status Register(const std::string& name) {
     auto udf_def = std::make_unique<typename RegistryTraits<T>::TUDFDef>(name);
-    PL_RETURN_IF_ERROR(udf_def->template Init<T>());
+    PX_RETURN_IF_ERROR(udf_def->template Init<T>());
 
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {
@@ -126,7 +126,7 @@ class Registry {
 
     if constexpr (has_valid_doc_fn<T>()) {
       auto docpb = docs_pb_.add_udf();
-      PL_RETURN_IF_ERROR(T::Doc().template ToProto<T>(docpb));
+      PX_RETURN_IF_ERROR(T::Doc().template ToProto<T>(docpb));
       docpb->set_name(name);
     }
     return Status::OK();
@@ -184,7 +184,7 @@ class Registry {
 
     auto factory = std::make_unique<TFactory>(std::forward<Args>(args)...);
     auto udf_def = std::make_unique<UDTFDefinition>(name);
-    PL_RETURN_IF_ERROR(udf_def->template Init<TUDTF>(std::move(factory)));
+    PX_RETURN_IF_ERROR(udf_def->template Init<TUDTF>(std::move(factory)));
 
     auto key = RegistryKey(name, udf_def->RegistryArgTypes());
     if (map_.find(key) != map_.end()) {

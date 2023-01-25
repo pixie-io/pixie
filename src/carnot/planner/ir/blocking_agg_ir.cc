@@ -37,8 +37,8 @@ std::string BlockingAggIR::DebugString() const {
 
 Status BlockingAggIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
                            const ColExpressionVector& agg_expr) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
-  PL_RETURN_IF_ERROR(SetGroups(groups));
+  PX_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(SetGroups(groups));
   return SetAggExprs(agg_expr);
 }
 
@@ -46,17 +46,17 @@ Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
   auto old_agg_expressions = aggregate_expressions_;
   for (const ColumnExpression& agg_expr : aggregate_expressions_) {
     ExpressionIR* expr = agg_expr.node;
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr));
+    PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr));
   }
   aggregate_expressions_.clear();
 
   for (const auto& agg_expr : agg_exprs) {
-    PL_ASSIGN_OR_RETURN(auto updated_expr, graph()->OptionallyCloneWithEdge(this, agg_expr.node));
+    PX_ASSIGN_OR_RETURN(auto updated_expr, graph()->OptionallyCloneWithEdge(this, agg_expr.node));
     aggregate_expressions_.emplace_back(agg_expr.name, updated_expr);
   }
 
   for (const auto& old_agg_expr : old_agg_expressions) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_agg_expr.node->id()));
+    PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_agg_expr.node->id()));
   }
 
   return Status::OK();
@@ -69,7 +69,7 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> BlockingAggIR::RequiredI
     required.insert(group->col_name());
   }
   for (const auto& agg_expr : aggregate_expressions_) {
-    PL_ASSIGN_OR_RETURN(auto ret, agg_expr.node->InputColumnNames());
+    PX_ASSIGN_OR_RETURN(auto ret, agg_expr.node->InputColumnNames());
     required.insert(ret.begin(), ret.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
@@ -85,7 +85,7 @@ StatusOr<absl::flat_hash_set<std::string>> BlockingAggIR::PruneOutputColumnsToIm
       new_aggs.push_back(expr);
     }
   }
-  PL_RETURN_IF_ERROR(SetAggExprs(new_aggs));
+  PX_RETURN_IF_ERROR(SetAggExprs(new_aggs));
 
   // We always need to keep the group columns based on the current specification of aggregate,
   // otherwise the result will change.
@@ -107,9 +107,9 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
     if (ir_arg->IsColumn()) {
-      PL_RETURN_IF_ERROR(static_cast<ColumnIR*>(ir_arg)->ToProto(arg_pb->mutable_column()));
+      PX_RETURN_IF_ERROR(static_cast<ColumnIR*>(ir_arg)->ToProto(arg_pb->mutable_column()));
     } else if (ir_arg->IsData()) {
-      PL_RETURN_IF_ERROR(static_cast<DataIR*>(ir_arg)->ToProto(arg_pb->mutable_constant()));
+      PX_RETURN_IF_ERROR(static_cast<DataIR*>(ir_arg)->ToProto(arg_pb->mutable_constant()));
     } else {
       return CreateIRNodeError("$0 is an invalid aggregate value", ir_arg->type_string());
     }
@@ -125,13 +125,13 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   } else {
     for (const auto& agg_expr : aggregate_expressions_) {
       auto expr = pb->add_values();
-      PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
+      PX_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
       pb->add_value_names(agg_expr.name);
     }
   }
   for (ColumnIR* group : groups()) {
     auto group_pb = pb->add_groups();
-    PL_RETURN_IF_ERROR(group->ToProto(group_pb));
+    PX_RETURN_IF_ERROR(group->ToProto(group_pb));
     pb->add_group_names(group->col_name());
   }
 
@@ -149,19 +149,19 @@ Status BlockingAggIR::CopyFromNodeImpl(
 
   ColExpressionVector new_agg_exprs;
   for (const ColumnExpression& col_expr : blocking_agg->aggregate_expressions_) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
+    PX_ASSIGN_OR_RETURN(ExpressionIR * new_node,
                         graph()->CopyNode(col_expr.node, copied_nodes_map));
     new_agg_exprs.push_back({col_expr.name, new_node});
   }
 
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : blocking_agg->groups()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
 
-  PL_RETURN_IF_ERROR(SetAggExprs(new_agg_exprs));
-  PL_RETURN_IF_ERROR(SetGroups(new_groups));
+  PX_RETURN_IF_ERROR(SetAggExprs(new_agg_exprs));
+  PX_RETURN_IF_ERROR(SetGroups(new_groups));
 
   finalize_results_ = blocking_agg->finalize_results_;
   partial_agg_ = blocking_agg->partial_agg_;
@@ -174,11 +174,11 @@ Status BlockingAggIR::ResolveType(CompilerState* compiler_state) {
   DCHECK_EQ(1U, parent_types().size());
   auto new_table = TableType::Create();
   for (const auto& group_col : groups()) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(group_col, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(group_col, compiler_state, parent_types()));
     new_table->AddColumn(group_col->col_name(), group_col->resolved_type());
   }
   for (const auto& col_expr : aggregate_expressions_) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
     new_table->AddColumn(col_expr.name, col_expr.node->resolved_type());
   }
   return SetResolvedType(new_table);

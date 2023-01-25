@@ -78,14 +78,14 @@ TEST_F(DataStreamTest, LostEvent) {
   EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(1));
 
   // Now add some lost events - should get skipped over.
-  PL_UNUSED(req1);  // Lost event.
+  PX_UNUSED(req1);  // Lost event.
   stream.AddData(std::move(req2));
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
   EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(2));
 
   // Some more requests, and another lost request (this time undetectable).
   stream.AddData(std::move(req3));
-  PL_UNUSED(req4);
+  PX_UNUSED(req4);
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
   EXPECT_THAT(stream.Frames<http::Message>(), SizeIs(3));
 
@@ -177,7 +177,7 @@ TEST_F(DataStreamTest, PartialMessageRecovery) {
   stream.set_protocol(kProtocolHTTP);
   stream.AddData(std::move(req0));
   stream.AddData(std::move(req1a));
-  PL_UNUSED(req1b);  // Missing event.
+  PX_UNUSED(req1b);  // Missing event.
   stream.AddData(std::move(req2));
 
   stream.ProcessBytesToFrames<http::Message>(message_type_t::kRequest, &state);
@@ -209,7 +209,7 @@ TEST_F(DataStreamTest, HeadAndMiddleMissing) {
   stream.set_protocol(kProtocolHTTP);
   stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1a));
-  PL_UNUSED(req1b);  // Missing event.
+  PX_UNUSED(req1b);  // Missing event.
   stream.AddData(std::move(req2a));
   stream.AddData(std::move(req2b));
 
@@ -263,8 +263,8 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
   stream.AddData(std::move(req0b));
   stream.AddData(std::move(req1a));
   stream.AddData(std::move(req1b));
-  PL_UNUSED(req2a);  // Missing event.
-  PL_UNUSED(req2b);  // Missing event.
+  PX_UNUSED(req2a);  // Missing event.
+  PX_UNUSED(req2b);  // Missing event.
   stream.AddData(std::move(req3a));
   stream.AddData(std::move(req3b));
   stream.AddData(std::move(req4a));
@@ -313,7 +313,7 @@ TEST_F(DataStreamTest, Stats) {
   EXPECT_EQ(stream.stat_valid_frames(), 2);
 
   stream.AddData(std::move(req3));
-  PL_UNUSED(req4);  // Skip req4 as missing event.
+  PX_UNUSED(req4);  // Skip req4 as missing event.
   stream.AddData(std::move(req5));
   stream.AddData(std::move(req6bad));
   stream.AddData(std::move(req7));

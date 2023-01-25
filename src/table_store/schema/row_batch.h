@@ -138,7 +138,7 @@ Status CopyValue(arrow::ArrayBuilder* output_col_builder,
   if constexpr (T == types::DataType::STRING) {
     int64_t size = value.size() + typed_col_builder->value_data_length();
     if (size >= typed_col_builder->value_data_capacity()) {
-      PL_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * size)));
+      PX_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * size)));
     }
   }
 
@@ -156,7 +156,7 @@ Status CopyValueRepeated(arrow::ArrayBuilder* output_col_builder,
   if constexpr (T == types::DataType::STRING) {
     int64_t new_size = num_times * value.size() + typed_col_builder->value_data_length();
     if (new_size >= typed_col_builder->value_data_capacity()) {
-      PL_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * new_size)));
+      PX_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * new_size)));
     }
   }
   for (size_t i = 0; i < num_times; ++i) {

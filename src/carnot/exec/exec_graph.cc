@@ -89,7 +89,7 @@ Status ExecutionGraph::Init(table_store::schema::Schema* schema, plan::PlanState
       })
       .OnGRPCSource([&](auto& node) {
         auto s = OnOperatorImpl<plan::GRPCSourceOperator, GRPCSourceNode>(node, &descriptors);
-        PL_RETURN_IF_ERROR(s);
+        PX_RETURN_IF_ERROR(s);
         grpc_sources_.insert(node.id());
         return exec_state->grpc_router()->AddGRPCSourceNode(
             exec_state->query_id(), node.id(), static_cast<GRPCSourceNode*>(nodes_[node.id()]),
@@ -169,7 +169,7 @@ Status ExecutionGraph::CheckDownstreamGRPCConnectionsHealth() {
       return error::NotFound("Could not find GRPCSinkNode $0.", grpc_sink_id);
     }
     GRPCSinkNode* grpc_sink = static_cast<GRPCSinkNode*>(node->second);
-    PL_RETURN_IF_ERROR(grpc_sink->OptionallyCheckConnection(exec_state_));
+    PX_RETURN_IF_ERROR(grpc_sink->OptionallyCheckConnection(exec_state_));
   }
   return Status::OK();
 }
@@ -200,7 +200,7 @@ Status ExecutionGraph::ExecuteSources() {
               "GRPCSourceNode connection to remote sink not healthy, terminating that source and "
               "proceeding with the rest of the query. Message: $0",
               s.msg());
-          PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+          PX_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
           completed_sources_execute_loop.insert(source);
           continue;
         }
@@ -212,7 +212,7 @@ Status ExecutionGraph::ExecuteSources() {
         if (!source->NextBatchReady() || !exec_state_->keep_running()) {
           break;
         }
-        PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
+        PX_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
       }
 
       // keep_running will be set to false when a downstream limit for this particular
@@ -222,7 +222,7 @@ Status ExecutionGraph::ExecuteSources() {
         break;
       }
     }
-    PL_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
+    PX_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
 
     // Flush all of the completed sources.
     for (SourceNode* source : completed_sources_execute_loop) {
@@ -267,13 +267,13 @@ Status ExecutionGraph::ExecuteSources() {
                 "GRPCSourceNode connection to remote sink not healthy, terminating that source and "
                 "proceeding with the rest of the query. Message: $0",
                 s.msg());
-            PL_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
+            PX_RETURN_IF_ERROR(source->SendEndOfStream(exec_state_));
             completed_sources_wait_loop.insert(source);
             continue;
           }
         }
       }
-      PL_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
+      PX_RETURN_IF_ERROR(CheckDownstreamGRPCConnectionsHealth());
 
       // Flush all of the completed sources after this phase of source deletion.
       for (SourceNode* source : completed_sources_wait_loop) {
@@ -300,14 +300,14 @@ Status ExecutionGraph::Execute() {
   transform(nodes_.begin(), nodes_.end(), nodes.begin(), [](auto pair) { return pair.second; });
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Prepare(exec_state_));
+    PX_RETURN_IF_ERROR(node->Prepare(exec_state_));
   }
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Open(exec_state_));
+    PX_RETURN_IF_ERROR(node->Open(exec_state_));
   }
 
-  // We don't PL_RETURN_IF_ERROR here because we want to make sure we close all of our
+  // We don't PX_RETURN_IF_ERROR here because we want to make sure we close all of our
   // nodes, even if there was an error during execution.
   Status source_status = ExecuteSources();
   Status close_status = Status::OK();

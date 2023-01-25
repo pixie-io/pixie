@@ -152,7 +152,7 @@ TEST(BasicUDTFOneCol, can_run) {
 
   // Check the static assertions.
   constexpr BasicUDTFOneCol::Checker check;
-  PL_UNUSED(check);
+  PX_UNUSED(check);
 
   EXPECT_TRUE(TR::HasInitArgsFn());
   EXPECT_TRUE(TR::HasCorrectInitArgsSignature());
@@ -163,7 +163,7 @@ TEST(BasicUDTFOneCol, can_run) {
   EXPECT_TRUE(TR::HasNextRecordFn());
 
   UDTFWrapper<BasicUDTFOneCol> wrapper;
-  PL_UNUSED(wrapper);
+  PX_UNUSED(wrapper);
   types::Int64Value init1 = 1337;
   types::StringValue init2 = "abc";
 
@@ -208,7 +208,7 @@ class BasicUDTFTwoColBad : public UDTF<BasicUDTFTwoColBad> {
 
 TEST(BasicUDTFTwoColBadDeathTest, record_writer_should_catch_bad_append) {
   constexpr BasicUDTFTwoColBad::Checker check;
-  PL_UNUSED(check);
+  PX_UNUSED(check);
 
   UDTFWrapper<BasicUDTFTwoColBad> wrapper;
   auto u = wrapper.Make();
@@ -248,7 +248,7 @@ class ValidOneColUDTFEmptyInit : public UDTF<ValidOneColUDTFEmptyInit> {
 TEST(ValidOneColUDTFEmptyInit, empty_init_is_valid) {
   using TR = UDTFTraits<ValidOneColUDTFEmptyInit>;
   constexpr ValidOneColUDTFEmptyInit::Checker check;
-  PL_UNUSED(check);
+  PX_UNUSED(check);
 
   EXPECT_FALSE(TR::HasInitArgsFn());
   EXPECT_TRUE(TR::HasInitFn());

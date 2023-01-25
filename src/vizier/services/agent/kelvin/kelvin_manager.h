@@ -33,7 +33,7 @@ class KelvinManager : public Manager {
   template <typename... Args>
   static StatusOr<std::unique_ptr<Manager>> Create(Args&&... args) {
     auto m = std::unique_ptr<KelvinManager>(new KelvinManager(std::forward<Args>(args)...));
-    PL_RETURN_IF_ERROR(m->Init());
+    PX_RETURN_IF_ERROR(m->Init());
     return std::unique_ptr<Manager>(std::move(m));
   }
 

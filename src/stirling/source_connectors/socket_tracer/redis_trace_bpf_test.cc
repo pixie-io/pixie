@@ -49,7 +49,7 @@ struct RedisTraceTestCase {
 class RedisTraceBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>,
                           public ::testing::WithParamInterface<RedisTraceTestCase> {
  protected:
-  RedisTraceBPFTest() { PL_CHECK_OK(container_.Run(std::chrono::seconds{150})); }
+  RedisTraceBPFTest() { PX_CHECK_OK(container_.Run(std::chrono::seconds{150})); }
 
   ::px::stirling::testing::RedisContainer container_;
 };

@@ -40,7 +40,7 @@ char* DumpSchemas(int* resultLen) {
     }
   }
   px::table_store::schemapb::Schema schema_pb;
-  PL_CHECK_OK(px::table_store::schema::Schema::ToProto(&schema_pb, rel_map));
+  PX_CHECK_OK(px::table_store::schema::Schema::ToProto(&schema_pb, rel_map));
   std::string output;
   schema_pb.SerializeToString(&output);
 

@@ -112,7 +112,7 @@ StatusOr<ObjInfo> Prepare(const ir::logical::TracepointDeployment& input_program
   const auto& binary_path = input_program.deployment_spec().path_list().paths(0);
   LOG(INFO) << absl::Substitute("Tracepoint binary: $0", binary_path);
 
-  PL_ASSIGN_OR_RETURN(obj_info.elf_reader, ElfReader::Create(binary_path));
+  PX_ASSIGN_OR_RETURN(obj_info.elf_reader, ElfReader::Create(binary_path));
 
   const auto& debug_symbols_path = obj_info.elf_reader->debug_symbols_path().string();
 
@@ -135,7 +135,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   }
 
   // Get the ELF and DWARF readers for the program.
-  PL_ASSIGN_OR_RETURN(ObjInfo obj_info, Prepare(*input_program));
+  PX_ASSIGN_OR_RETURN(ObjInfo obj_info, Prepare(*input_program));
 
   // --------------------------
   // Pre-processing pipeline
@@ -145,12 +145,12 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   DetectSourceLanguage(obj_info.elf_reader.get(), obj_info.dwarf_reader.get(), input_program);
 
   // Expand symbol.
-  PL_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
+  PX_RETURN_IF_ERROR(ResolveProbeSymbol(obj_info.elf_reader.get(), input_program));
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 
   // Auto-gen probe variables
-  PL_RETURN_IF_ERROR(AutoTraceExpansion(obj_info.dwarf_reader.get(), input_program));
+  PX_RETURN_IF_ERROR(AutoTraceExpansion(obj_info.dwarf_reader.get(), input_program));
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 
@@ -158,18 +158,18 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   // Main compilation pipeline
   // --------------------------
 
-  PL_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
+  PX_ASSIGN_OR_RETURN(ir::logical::TracepointDeployment intermediate_program,
                       TransformLogicalProgram(*input_program));
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << input_program->DebugString();
 
-  PL_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
+  PX_ASSIGN_OR_RETURN(ir::physical::Program physical_program,
                       GeneratePhysicalProgram(intermediate_program, obj_info.dwarf_reader.get(),
                                               obj_info.elf_reader.get()));
 
   LOG_IF(INFO, FLAGS_debug_dt_pipeline) << physical_program.DebugString();
 
-  PL_ASSIGN_OR_RETURN(std::string bcc_code, GenBCCProgram(physical_program));
+  PX_ASSIGN_OR_RETURN(std::string bcc_code, GenBCCProgram(physical_program));
 
   // --------------------------
   // Generate BCC Program Object
@@ -187,7 +187,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   // Consider adjust data structure such that both can be preserved.
 
   for (const auto& probe : physical_program.probes()) {
-    PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,
+    PX_ASSIGN_OR_RETURN(std::vector<UProbeSpec> specs,
                         GetUProbeSpec(binary_path, language, probe, obj_info.elf_reader.get()));
     for (auto& spec : specs) {
       bcc_program.uprobe_specs.push_back(std::move(spec));
@@ -200,7 +200,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
   }
 
   for (const auto& output : physical_program.outputs()) {
-    PL_ASSIGN_OR_RETURN(BCCProgram::PerfBufferSpec pf_spec, GetPerfBufferSpec(structs, output));
+    PX_ASSIGN_OR_RETURN(BCCProgram::PerfBufferSpec pf_spec, GetPerfBufferSpec(structs, output));
     bcc_program.perf_buffer_specs.push_back(std::move(pf_spec));
   }
 
@@ -210,7 +210,7 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
 namespace {
 
 Status CheckPIDStartTime(const ProcParser& proc_parser, int32_t pid, int64_t spec_start_time) {
-  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, proc_parser.GetPIDStartTimeTicks(pid));
+  PX_ASSIGN_OR_RETURN(int64_t pid_start_time, proc_parser.GetPIDStartTimeTicks(pid));
   if (spec_start_time != pid_start_time) {
     return error::NotFound(
         "This is not the pid you are looking for... "
@@ -225,10 +225,10 @@ StatusOr<std::filesystem::path> ResolveUPID(const ir::shared::UPID& upid) {
   const ProcParser proc_parser;
 
   if (upid.ts_ns() != 0) {
-    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, upid.ts_ns()));
+    PX_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, upid.ts_ns()));
   }
 
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
+  PX_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser.GetExePath(pid));
   const auto host_proc_exe = ProcPidRootPath(pid, proc_exe);
 
   if (!fs::Exists(host_proc_exe)) {
@@ -244,11 +244,11 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   const ProcParser proc_parser;
   auto ts_ns = deployment_spec.shared_object().upid().ts_ns();
   if (ts_ns != 0) {
-    PL_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, ts_ns));
+    PX_RETURN_IF_ERROR(CheckPIDStartTime(proc_parser, pid, ts_ns));
   }
 
   // Find the path to shared library, which may be inside a container.
-  PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
+  PX_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> libs_status, proc_parser.GetMapPaths(pid));
 
   for (const auto& lib : libs_status) {
     // Look for a library name such as /lib/libc.so.6 or /lib/libc-2.32.so.
@@ -292,7 +292,7 @@ ir::shared::UPID UPIDToProto(const md::UPID& upid) {
 
 StatusOr<const md::PodInfo*> ResolvePod(const md::K8sMetadataState& k8s_mds,
                                         std::string_view pod_name) {
-  PL_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
+  PX_ASSIGN_OR_RETURN(K8sNameIdentView name_ident_view, GetPodNameIdent(pod_name));
 
   std::vector<std::string> pod_names;
   std::vector<const md::PodInfo*> pod_infos;
@@ -407,8 +407,8 @@ StatusOr<md::UPID> ResolveProcess(const md::ContainerInfo& container_info,
   return upids.front();
 }
 
-#define PL_ASSIGN_OR_CONTINUE(lhs, rexpr, error_msgs) \
-  PL_ASSIGN_OR(lhs, rexpr, error_msgs.push_back(__s__.msg()); continue;)
+#define PX_ASSIGN_OR_CONTINUE(lhs, rexpr, error_msgs) \
+  PX_ASSIGN_OR(lhs, rexpr, error_msgs.push_back(__s__.msg()); continue;)
 
 // Given a TracepointDeployment that specifies a Pod as the target, resolves the UPIDs, and writes
 // them into the input protobuf.
@@ -430,10 +430,10 @@ Status ResolvePodProcess(const md::K8sMetadataState& k8s_mds,
   for (int i = 0; i < pods_size; ++i) {
     std::string_view pod_name(pod_process.pods(i));
     // If a pod doesn't exist, then try other pods.
-    PL_ASSIGN_OR_CONTINUE(const md::PodInfo* pod_info, ResolvePod(k8s_mds, pod_name), error_msgs);
-    PL_ASSIGN_OR_CONTINUE(const md::ContainerInfo* container_info,
+    PX_ASSIGN_OR_CONTINUE(const md::PodInfo* pod_info, ResolvePod(k8s_mds, pod_name), error_msgs);
+    PX_ASSIGN_OR_CONTINUE(const md::ContainerInfo* container_info,
                           ResolveContainer(k8s_mds, *pod_info, container_name), error_msgs);
-    PL_ASSIGN_OR_CONTINUE(const md::UPID upid, ResolveProcess(*container_info, process_regexp),
+    PX_ASSIGN_OR_CONTINUE(const md::UPID upid, ResolveProcess(*container_info, process_regexp),
                           error_msgs);
 
     auto upid_ptr = upid_list->add_upids();
@@ -453,7 +453,7 @@ Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
                              ir::shared::DeploymentSpec* deployment_spec) {
   // Write PodProcess to deployment_spec.upid.
   if (deployment_spec->has_pod_process()) {
-    PL_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
+    PX_RETURN_IF_ERROR(ResolvePodProcess(k8s_mds, deployment_spec));
   }
 
   std::filesystem::path target_obj_path;
@@ -472,7 +472,7 @@ Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
 
       absl::flat_hash_set<std::string> inserted_paths;
       for (int i = 0; i < upids_size; ++i) {
-        PL_ASSIGN_OR_RETURN(target_obj_path, ResolveUPID(upid_list.upids(i)));
+        PX_ASSIGN_OR_RETURN(target_obj_path, ResolveUPID(upid_list.upids(i)));
         // Deduplicate identical target paths before adding to deployment_spec.
         if (inserted_paths.find(target_obj_path.string()) == inserted_paths.end()) {
           inserted_paths.insert(target_obj_path.string());
@@ -483,7 +483,7 @@ Status ResolveTargetObjPaths(const md::K8sMetadataState& k8s_mds,
     }
     // Populate paths based on shared object identifier.
     case ir::shared::DeploymentSpec::TargetOneofCase::kSharedObject: {
-      PL_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
+      PX_ASSIGN_OR_RETURN(target_obj_path, ResolveSharedObject(*deployment_spec));
       deployment_spec->mutable_path_list()->add_paths(target_obj_path);
       break;
     }

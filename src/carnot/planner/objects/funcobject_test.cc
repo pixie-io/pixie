@@ -56,10 +56,10 @@ class TestQLObject : public QLObject {
 
 StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr& ast, const ParsedArgs& args,
                                  ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(ast, args, "simple"));
+  PX_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(ast, args, "simple"));
   auto out_obj = std::make_shared<TestQLObject>(node->val(), visitor);
   for (const auto& [arg, val] : args.kwargs()) {
-    PL_ASSIGN_OR_RETURN(auto str, GetAsString(val));
+    PX_ASSIGN_OR_RETURN(auto str, GetAsString(val));
     out_obj->AddKwargValue(arg, str);
   }
 
@@ -68,15 +68,15 @@ StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr& ast, const ParsedArgs& args
 
 StatusOr<QLObjectPtr> SimpleFuncForVarArgs(const pypa::AstPtr& ast, const ParsedArgs& args,
                                            ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(ast, args, "simple"));
+  PX_ASSIGN_OR_RETURN(IntIR * node, GetArgAs<IntIR>(ast, args, "simple"));
   auto out_obj = std::make_shared<TestQLObject>(static_cast<IntIR*>(node)->val(), visitor);
   for (const auto& [idx, val] : Enumerate(args.variable_args())) {
-    PL_ASSIGN_OR_RETURN(auto str, GetAsString(val));
+    PX_ASSIGN_OR_RETURN(auto str, GetAsString(val));
     out_obj->AddKwargValue(absl::Substitute("arg$0", idx), str);
   }
 
   for (const auto& [arg, val] : args.kwargs()) {
-    PL_ASSIGN_OR_RETURN(auto str, GetAsString(val));
+    PX_ASSIGN_OR_RETURN(auto str, GetAsString(val));
     out_obj->AddKwargValue(arg, str);
   }
 

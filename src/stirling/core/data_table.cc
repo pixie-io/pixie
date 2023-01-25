@@ -46,7 +46,7 @@ void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
   auto col = types::ColumnWrapper::Make(_dt_, 0); \
   col->Reserve(kTargetCapacity);                  \
   record_batch_ptr->push_back(col);
-    PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
 #undef TYPE_CASE
   }
 }

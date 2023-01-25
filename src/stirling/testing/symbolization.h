@@ -28,7 +28,7 @@ namespace stirling {
 
 // Finds the address of a given kernel symbol from /proc/kallsyms.
 StatusOr<uint64_t> GetKernelSymAddr(std::string_view symbol_name) {
-  PL_ASSIGN_OR_RETURN(const std::string kallsyms, px::ReadFileToString("/proc/kallsyms"));
+  PX_ASSIGN_OR_RETURN(const std::string kallsyms, px::ReadFileToString("/proc/kallsyms"));
 
   // Example line from /proc/kallsyms:
   // ffffffffa60b0ee0 T __x64_sys_getpid

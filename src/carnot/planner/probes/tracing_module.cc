@@ -80,7 +80,7 @@ StatusOr<QLObjectPtr> LabelSelectorTargetHandler(const pypa::AstPtr& ast, const 
 
 StatusOr<QLObjectPtr> LatencyHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                            const ParsedArgs&, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
+  PX_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
   std::string id = current_probe->NextLatencyName();
   current_probe->SetFunctionLatencyID(id);
   return std::static_pointer_cast<QLObject>(
@@ -90,12 +90,12 @@ StatusOr<QLObjectPtr> LatencyHandler::Eval(MutationsIR* mutations_ir, const pypa
 StatusOr<std::shared_ptr<TraceModule>> TraceModule::Create(MutationsIR* mutations_ir,
                                                            ASTVisitor* ast_visitor) {
   auto tracing_module = std::shared_ptr<TraceModule>(new TraceModule(mutations_ir, ast_visitor));
-  PL_RETURN_IF_ERROR(tracing_module->Init());
+  PX_RETURN_IF_ERROR(tracing_module->Init());
   return tracing_module;
 }
 
 Status TraceModule::Init() {
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> probe_fn,
       FuncObject::Create(kProbeTraceDefinition, {"fn_name"}, {},
                          /* has_variable_len_args */ false,
@@ -103,10 +103,10 @@ Status TraceModule::Init() {
                          std::bind(ProbeHandler::Probe, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(probe_fn->SetDocString(kProbeDocstring));
+  PX_RETURN_IF_ERROR(probe_fn->SetDocString(kProbeDocstring));
   AddMethod(kProbeTraceDefinition, probe_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> arg_expr_fn,
       FuncObject::Create(kArgExprID, {"expr"}, {},
                          /* has_variable_len_args */ false,
@@ -114,10 +114,10 @@ Status TraceModule::Init() {
                          std::bind(ArgumentHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(arg_expr_fn->SetDocString(kArgExprDocstring));
+  PX_RETURN_IF_ERROR(arg_expr_fn->SetDocString(kArgExprDocstring));
   AddMethod(kArgExprID, arg_expr_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> ret_expr_fn,
       FuncObject::Create(kRetExprID, {"expr"}, {},
                          /* has_variable_len_args */ false,
@@ -125,10 +125,10 @@ Status TraceModule::Init() {
                          std::bind(ReturnHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(ret_expr_fn->SetDocString(kRetExprDocstring));
+  PX_RETURN_IF_ERROR(ret_expr_fn->SetDocString(kRetExprDocstring));
   AddMethod(kRetExprID, ret_expr_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> latency_fn,
       FuncObject::Create(kFunctionLatencyID, {}, {},
                          /* has_variable_len_args */ false,
@@ -136,10 +136,10 @@ Status TraceModule::Init() {
                          std::bind(LatencyHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(latency_fn->SetDocString(kFunctionLatencyDocstring));
+  PX_RETURN_IF_ERROR(latency_fn->SetDocString(kFunctionLatencyDocstring));
   AddMethod(kFunctionLatencyID, latency_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upsert_fn,
       FuncObject::Create(kUpsertTraceID, {"name", "table_name", "probe_fn", "target", "ttl"}, {},
                          // TODO(philkuz/zasgar) uncomment definition when pod based upsert works.
@@ -150,30 +150,30 @@ Status TraceModule::Init() {
                          std::bind(UpsertHandler::Eval, mutations_ir_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(upsert_fn->SetDocString(kUpsertTracepointDocstring));
+  PX_RETURN_IF_ERROR(upsert_fn->SetDocString(kUpsertTracepointDocstring));
   AddMethod(kUpsertTraceID, upsert_fn);
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> shared_object_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> shared_object_fn,
                       FuncObject::Create(kSharedObjectID, {"name", "upid"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(SharedObjectHandler::Eval, std::placeholders::_1,
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(shared_object_fn->SetDocString(kSharedObjectDocstring));
+  PX_RETURN_IF_ERROR(shared_object_fn->SetDocString(kSharedObjectDocstring));
   AddMethod(kSharedObjectID, shared_object_fn);
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> kprobe_target_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> kprobe_target_fn,
                       FuncObject::Create(kKProbeTargetID, {}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(KProbeTargetHandler::Eval, std::placeholders::_1,
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(kprobe_target_fn->SetDocString(kKProbeTargetDocstring));
+  PX_RETURN_IF_ERROR(kprobe_target_fn->SetDocString(kKProbeTargetDocstring));
   AddMethod(kKProbeTargetID, kprobe_target_fn);
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> delete_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> delete_fn,
                       FuncObject::Create(kDeleteTracepointID, {"name"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -181,10 +181,10 @@ Status TraceModule::Init() {
                                                    std::placeholders::_1, std::placeholders::_2,
                                                    std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(delete_fn->SetDocString(kDeleteTracepointDocstring));
+  PX_RETURN_IF_ERROR(delete_fn->SetDocString(kDeleteTracepointDocstring));
   AddMethod(kDeleteTracepointID, delete_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> process_target_constructor,
       FuncObject::Create(kProcessTargetID, {"pod_name", "container_name", "process_name"},
                          {{"process_name", "''"}, {"container_name", "''"}},
@@ -193,10 +193,10 @@ Status TraceModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(process_target_constructor->SetDocString(kProcessTargetDocstring));
+  PX_RETURN_IF_ERROR(process_target_constructor->SetDocString(kProcessTargetDocstring));
   AddMethod(kProcessTargetID, process_target_constructor);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> label_selector_target_constructor,
       FuncObject::Create(kLabelSelectorTargetID,
                          {"labels", "namespace", "container_name", "process_name"},
@@ -206,7 +206,7 @@ Status TraceModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       label_selector_target_constructor->SetDocString(kLabelSelectorTargetDocString));
   AddMethod(kLabelSelectorTargetID, label_selector_target_constructor);
 
@@ -216,7 +216,7 @@ Status TraceModule::Init() {
 StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                           const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
-  PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(ast, args, "fn_name"));
+  PX_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(ast, args, "fn_name"));
 
   return FuncObject::Create(
       TraceModule::kProbeTraceDefinition, {"fn"}, {},
@@ -232,7 +232,7 @@ StatusOr<QLObjectPtr> ProbeHandler::Decorator(MutationsIR* mutations_ir,
                                               const pypa::AstPtr& ast, const ParsedArgs& args,
                                               ASTVisitor* visitor) {
   auto fn = args.GetArg("fn");
-  PL_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
+  PX_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
   // mutations_ir->AddFunc(func);
   // Need to wrap the call of the method to "start" the probe
   return FuncObject::Create(
@@ -257,7 +257,7 @@ Status ParseColumns(TracepointIR* probe, CollectionObject* column_object) {
     DCHECK_EQ(values.size(), keys.size());
 
     for (const auto& [idx, key] : Enumerate(keys)) {
-      PL_ASSIGN_OR_RETURN(auto key_str_ir, GetArgAs<StringIR>(key, "key"));
+      PX_ASSIGN_OR_RETURN(auto key_str_ir, GetArgAs<StringIR>(key, "key"));
 
       auto value = values[idx];
       if (!TracingVariableObject::IsTracingVariable(value)) {
@@ -301,8 +301,8 @@ StatusOr<QLObjectPtr> ProbeHandler::Wrapper(MutationsIR* mutations_ir,
   auto probe = mutations_ir->StartProbe(function_name);
   // Note that even though we call the wrapped func here, Handler::Wrapper only gets called
   // whenever the resulting funcobject is called. Ie in pxtrace.Upsert.
-  PL_ASSIGN_OR_RETURN(auto wrapped_result, wrapped_func->Call({}, ast));
-  PL_RETURN_IF_ERROR(ParseOutput(probe.get(), wrapped_result));
+  PX_ASSIGN_OR_RETURN(auto wrapped_result, wrapped_func->Call({}, ast));
+  PX_RETURN_IF_ERROR(ParseOutput(probe.get(), wrapped_result));
   // If this doesn't have any output, we error out. In the future, we'll allow mutations_ir
   // that don't produce an output iff they interact with BPF maps.
   if (probe->output() == nullptr) {
@@ -311,16 +311,16 @@ StatusOr<QLObjectPtr> ProbeHandler::Wrapper(MutationsIR* mutations_ir,
   }
 
   mutations_ir->EndProbe();
-  PL_ASSIGN_OR_RETURN(auto probe_obj, ProbeObject::Create(ast, visitor, probe));
+  PX_ASSIGN_OR_RETURN(auto probe_obj, ProbeObject::Create(ast, visitor, probe));
   return std::static_pointer_cast<QLObject>(probe_obj);
 }
 
 StatusOr<QLObjectPtr> ArgumentHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                             const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
-  PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
+  PX_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
 
-  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
+  PX_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
   std::string id = current_probe->NextArgName();
   current_probe->AddArgument(id, expr_ir->str());
 
@@ -331,9 +331,9 @@ StatusOr<QLObjectPtr> ArgumentHandler::Eval(MutationsIR* mutations_ir, const pyp
 StatusOr<QLObjectPtr> ReturnHandler::Eval(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
                                           const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
-  PL_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
+  PX_ASSIGN_OR_RETURN(auto current_probe, mutations_ir->GetCurrentProbeOrError(ast));
 
-  PL_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
+  PX_ASSIGN_OR_RETURN(auto expr_ir, GetArgAs<StringIR>(ast, args, "expr"));
   std::string id = current_probe->NextReturnName();
   current_probe->AddReturnValue(id, expr_ir->str());
 
@@ -345,16 +345,16 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
                                           const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
 
-  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
-  PL_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(ast, args, "table_name"));
+  PX_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
+  PX_ASSIGN_OR_RETURN(auto output_name_ir, GetArgAs<StringIR>(ast, args, "table_name"));
   // TODO(philkuz) support pod_name
-  // PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(args, "pod_name"));
-  // PL_ASSIGN_OR_RETURN(auto binary_name_ir, GetArgAs<StringIR>(args, "binary"));
-  PL_ASSIGN_OR_RETURN(auto ttl_ir, GetArgAs<StringIR>(ast, args, "ttl"));
+  // PX_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(args, "pod_name"));
+  // PX_ASSIGN_OR_RETURN(auto binary_name_ir, GetArgAs<StringIR>(args, "binary"));
+  PX_ASSIGN_OR_RETURN(auto ttl_ir, GetArgAs<StringIR>(ast, args, "ttl"));
 
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   const std::string& output_name = output_name_ir->str();
-  PL_ASSIGN_OR_RETURN(int64_t ttl_ns, StringToTimeInt(ttl_ir->str()));
+  PX_ASSIGN_OR_RETURN(int64_t ttl_ns, StringToTimeInt(ttl_ir->str()));
 
   // TODO(philkuz/oazizi/zasgar) when we support pods and so on, add this back in.
   // const auto& pod_name = pod_name_ir->str();
@@ -366,34 +366,34 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
     auto shared_object = std::static_pointer_cast<SharedObjectTarget>(target);
     auto trace_program_or_s = mutations_ir->CreateTracepointDeployment(
         tp_deployment_name, shared_object->shared_object(), ttl_ns);
-    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    PX_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (KProbeTarget::IsKProbeTarget(target)) {
     auto trace_program_or_s =
         mutations_ir->CreateKProbeTracepointDeployment(tp_deployment_name, ttl_ns);
-    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    PX_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (ProcessTarget::IsProcessTarget(target)) {
     auto process_target = std::static_pointer_cast<ProcessTarget>(target);
     auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnProcessSpec(
         tp_deployment_name, process_target->target(), ttl_ns);
-    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    PX_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (LabelSelectorTarget::IsLabelSelectorTarget(target)) {
     auto label_selector_target = std::static_pointer_cast<LabelSelectorTarget>(target);
     auto trace_program_or_s = mutations_ir->CreateTracepointDeploymentOnLabelSelectorSpec(
         tp_deployment_name, label_selector_target->target(), ttl_ns);
-    PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+    PX_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
     trace_program = trace_program_or_s.ConsumeValueOrDie();
   } else if (ExprObject::IsExprObject(target)) {
     auto expr_object = std::static_pointer_cast<ExprObject>(target);
     if (Match(expr_object->expr(), UInt128Value())) {
-      PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
+      PX_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "target"));
       md::UPID upid(upid_ir->val());
 
       auto trace_program_or_s =
           mutations_ir->CreateTracepointDeployment(tp_deployment_name, upid, ttl_ns);
-      PL_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
+      PX_RETURN_IF_ERROR(WrapAstError(ast, trace_program_or_s.status()));
       trace_program = trace_program_or_s.ConsumeValueOrDie();
     } else {
       return CreateAstError(ast, "Unexpected type '$0' for arg '$1'",
@@ -405,16 +405,16 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
   }
 
   if (FuncObject::IsFuncObject(args.GetArg("probe_fn"))) {
-    PL_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
-    PL_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
+    PX_ASSIGN_OR_RETURN(auto probe_fn, GetCallMethod(ast, args.GetArg("probe_fn")));
+    PX_ASSIGN_OR_RETURN(auto probe, probe_fn->Call({}, ast));
     CHECK(ProbeObject::IsProbe(probe));
     auto probe_ir = std::static_pointer_cast<ProbeObject>(probe)->probe();
-    PL_RETURN_IF_ERROR(WrapAstError(
+    PX_RETURN_IF_ERROR(WrapAstError(
         ast, trace_program->AddTracepoint(probe_ir.get(), tp_deployment_name, output_name)));
   } else {
     // The probe_fn is a string.
-    PL_ASSIGN_OR_RETURN(auto program_str_ir, GetArgAs<StringIR>(ast, args, "probe_fn"));
-    PL_RETURN_IF_ERROR(
+    PX_ASSIGN_OR_RETURN(auto program_str_ir, GetArgAs<StringIR>(ast, args, "probe_fn"));
+    PX_RETURN_IF_ERROR(
         WrapAstError(ast, trace_program->AddBPFTrace(program_str_ir->str(), output_name)));
   }
 
@@ -423,8 +423,8 @@ StatusOr<QLObjectPtr> UpsertHandler::Eval(MutationsIR* mutations_ir, const pypa:
 
 StatusOr<QLObjectPtr> SharedObjectHandler::Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
                                                 ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto shared_object_name_ir, GetArgAs<StringIR>(ast, args, "name"));
-  PL_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "upid"));
+  PX_ASSIGN_OR_RETURN(auto shared_object_name_ir, GetArgAs<StringIR>(ast, args, "name"));
+  PX_ASSIGN_OR_RETURN(UInt128IR * upid_ir, GetArgAs<UInt128IR>(ast, args, "upid"));
   std::string shared_object_name = shared_object_name_ir->str();
   md::UPID shared_object_upid(upid_ir->val());
 
@@ -439,7 +439,7 @@ StatusOr<QLObjectPtr> KProbeTargetHandler::Eval(const pypa::AstPtr& ast, const P
 StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,
                                                     const pypa::AstPtr& ast, const ParsedArgs& args,
                                                     ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
+  PX_ASSIGN_OR_RETURN(auto tp_deployment_name_ir, GetArgAs<StringIR>(ast, args, "name"));
   const std::string& tp_deployment_name = tp_deployment_name_ir->str();
   mutations_ir->DeleteTracepoint(tp_deployment_name);
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ast, visitor));
@@ -447,9 +447,9 @@ StatusOr<QLObjectPtr> DeleteTracepointHandler::Eval(MutationsIR* mutations_ir,
 
 StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const ParsedArgs& args,
                                            ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(ast, args, "pod_name"));
-  PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
-  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
+  PX_ASSIGN_OR_RETURN(auto pod_name_ir, GetArgAs<StringIR>(ast, args, "pod_name"));
+  PX_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
+  PX_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
   return ProcessTarget::Create(ast, visitor, pod_name_ir->str(), container_name_ir->str(),
                                process_path_ir->str());
 }
@@ -461,9 +461,9 @@ StatusOr<QLObjectPtr> LabelSelectorTargetHandler(const pypa::AstPtr& ast, const 
     return labels_ir->CreateError("Expected labels to be a dictionary, received $0",
                                   labels_ir->name());
   }
-  PL_ASSIGN_OR_RETURN(auto namespace_ir, GetArgAs<StringIR>(ast, args, "namespace"));
-  PL_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
-  PL_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
+  PX_ASSIGN_OR_RETURN(auto namespace_ir, GetArgAs<StringIR>(ast, args, "namespace"));
+  PX_ASSIGN_OR_RETURN(auto container_name_ir, GetArgAs<StringIR>(ast, args, "container_name"));
+  PX_ASSIGN_OR_RETURN(auto process_path_ir, GetArgAs<StringIR>(ast, args, "process_name"));
 
   // Parse Labels into a map.
   auto labels_dict = static_cast<DictObject*>(labels_ir.get());
@@ -472,8 +472,8 @@ StatusOr<QLObjectPtr> LabelSelectorTargetHandler(const pypa::AstPtr& ast, const 
   DCHECK_EQ(values.size(), keys.size());
   absl::flat_hash_map<std::string, std::string> labels;
   for (size_t i = 0; i < keys.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keys[i], "label_key"));
-    PL_ASSIGN_OR_RETURN(auto value, GetArgAs<StringIR>(values[i], "label_value"));
+    PX_ASSIGN_OR_RETURN(auto key, GetArgAs<StringIR>(keys[i], "label_key"));
+    PX_ASSIGN_OR_RETURN(auto value, GetArgAs<StringIR>(values[i], "label_value"));
     labels[key->str()] = value->str();
   }
 

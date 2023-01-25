@@ -78,8 +78,8 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // Stirling will run after this unblocks, as part of SocketTraceBPFTestFixture SetUp().
     StatusOr<std::string> run_result =
         server_.Run(std::chrono::seconds{60}, {}, {"--use-tls", "true"});
-    PL_CHECK_OK(run_result);
-    PL_CHECK_OK(this->RunThriftMuxClient());
+    PX_CHECK_OK(run_result);
+    PX_CHECK_OK(this->RunThriftMuxClient());
 
     // Sleep an additional second, just to be safe.
     sleep(1);
@@ -106,7 +106,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     std::string cmd = absl::Substitute(
         "docker exec $0 /usr/bin/java -cp $1 Client --use-tls true & echo $$! && wait",
         server_.container_name(), classpath);
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
 
     LOG(INFO) << absl::Substitute("thriftmux client command output: '$0'", out);
 

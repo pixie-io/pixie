@@ -25,7 +25,7 @@ option go_package = "schemapb";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/shared/types/typespb/types.proto";
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES.
 
 // Boolean data column.
 message BooleanColumn {

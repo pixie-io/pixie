@@ -52,7 +52,7 @@ class PxDnsParserListener : public DnsParserListener {
 };
 
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result) {
-  PL_UNUSED(type);
+  PX_UNUSED(type);
 
   PxDnsParserListener response_handler;
   std::unique_ptr<DnsParser> parser = DnsParserNew(&response_handler);

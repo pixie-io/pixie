@@ -241,7 +241,7 @@ class RequestPathClusteringFitUDA : public udf::UDA {
   StringValue Serialize(FunctionContext*) { return clustering_.ToJSON(); }
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
-    PL_ASSIGN_OR_RETURN(clustering_, RequestPathClustering::FromJSON(data));
+    PX_ASSIGN_OR_RETURN(clustering_, RequestPathClustering::FromJSON(data));
     return Status::OK();
   }
 

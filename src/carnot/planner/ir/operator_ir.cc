@@ -72,7 +72,7 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
       new_parents.push_back(parent);
       continue;
     }
-    PL_ASSIGN_OR_RETURN(MapIR * map,
+    PX_ASSIGN_OR_RETURN(MapIR * map,
                         graph()->CreateNode<MapIR>(ast(), parent, ColExpressionVector{},
                                                    /*keep_input_columns*/ true));
     new_parents.push_back(map);
@@ -94,7 +94,7 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
       output_cols.insert(resolved_table_type()->ColumnNames()[0]);
     }
   }
-  PL_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_cols));
+  PX_ASSIGN_OR_RETURN(auto required_columns, PruneOutputColumnsToImpl(output_cols));
 
   auto new_table = TableType::Create();
   for (const auto& [col_name, col_type] : *std::static_pointer_cast<TableType>(resolved_type())) {
@@ -119,7 +119,7 @@ std::string OperatorIR::ChildrenDebugString() {
 
 Status OperatorIR::CopyFromNode(const IRNode* node,
                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
+  PX_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
   return Status::OK();
 }
 
@@ -128,7 +128,7 @@ Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
   for (const auto& parent : source_op->parents()) {
     IRNode* new_parent = graph()->Get(parent->id());
     DCHECK(Match(new_parent, Operator()));
-    PL_RETURN_IF_ERROR(AddParent(static_cast<OperatorIR*>(new_parent)));
+    PX_RETURN_IF_ERROR(AddParent(static_cast<OperatorIR*>(new_parent)));
   }
   return Status::OK();
 }

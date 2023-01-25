@@ -137,13 +137,13 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view p
 }
 
 StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_path) {
-  PL_ASSIGN_OR_RETURN(std::string base_path, CGroupBasePath(sysfs_path));
+  PX_ASSIGN_OR_RETURN(std::string base_path, CGroupBasePath(sysfs_path));
   LOG(INFO) << "Auto-discovered CGroup base path: " << base_path;
 
-  PL_ASSIGN_OR_RETURN(std::string self_cgroup_procs, FindSelfCGroupProcs(base_path));
+  PX_ASSIGN_OR_RETURN(std::string self_cgroup_procs, FindSelfCGroupProcs(base_path));
   LOG(INFO) << "Auto-discovered example path: " << self_cgroup_procs;
 
-  PL_ASSIGN_OR_RETURN(CGroupTemplateSpec cgroup_path_template,
+  PX_ASSIGN_OR_RETURN(CGroupTemplateSpec cgroup_path_template,
                       CreateCGroupTemplateSpecFromPath(self_cgroup_procs));
   LOG(INFO) << "Auto-discovered template: " << cgroup_path_template.templated_path;
 
@@ -152,7 +152,7 @@ StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_p
 
 StatusOr<std::unique_ptr<CGroupPathResolver>> CGroupPathResolver::Create(
     std::string_view sysfs_path) {
-  PL_ASSIGN_OR_RETURN(CGroupTemplateSpec spec, AutoDiscoverCGroupTemplate(sysfs_path));
+  PX_ASSIGN_OR_RETURN(CGroupTemplateSpec spec, AutoDiscoverCGroupTemplate(sysfs_path));
   return std::unique_ptr<CGroupPathResolver>(new CGroupPathResolver(spec));
 }
 
@@ -211,7 +211,7 @@ std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view 
 StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> LegacyCGroupPathResolver::Create(
     std::string_view sysfs_path) {
   auto resolver = std::unique_ptr<LegacyCGroupPathResolver>(new LegacyCGroupPathResolver);
-  PL_RETURN_IF_ERROR(resolver->Init(sysfs_path));
+  PX_RETURN_IF_ERROR(resolver->Init(sysfs_path));
   return resolver;
 }
 
@@ -222,7 +222,7 @@ Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
   //  $2 = container runtime
   // These template parameters are resolved by calls to PodPath.
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
-  PL_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path));
+  PX_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path));
 
   // Attempt assuming naming scheme #1.
   std::string cgroup_kubepods_base_path = absl::Substitute("$0/kubepods", cgroup_dir);

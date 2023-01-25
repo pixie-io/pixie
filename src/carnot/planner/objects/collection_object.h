@@ -71,7 +71,7 @@ class TupleObject : public CollectionObject {
                                                        const std::vector<QLObjectPtr>& items,
                                                        ASTVisitor* visitor) {
     auto tuple = std::shared_ptr<TupleObject>(new TupleObject(ast, items, visitor));
-    PL_RETURN_IF_ERROR(tuple->Init());
+    PX_RETURN_IF_ERROR(tuple->Init());
     return tuple;
   }
 
@@ -94,7 +94,7 @@ class ListObject : public CollectionObject {
                                                       const std::vector<QLObjectPtr>& items,
                                                       ASTVisitor* visitor) {
     auto list = std::shared_ptr<ListObject>(new ListObject(ast, items, visitor));
-    PL_RETURN_IF_ERROR(list->Init());
+    PX_RETURN_IF_ERROR(list->Init());
     return list;
   }
 

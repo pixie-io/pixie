@@ -55,7 +55,7 @@ class LibuvRunnableAsyncTask : public RunnableAsyncTask {
   }
 
   static void inline AfterWorkCB(uv_work_t* req, int status) {
-    PL_UNUSED(status);
+    PX_UNUSED(status);
     auto self = static_cast<LibuvRunnableAsyncTask*>(req->data);
     self->task_->Done();
   }

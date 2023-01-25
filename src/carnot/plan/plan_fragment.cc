@@ -60,43 +60,43 @@ Status PlanFragmentWalker::CallWalkFn(const Operator& op) {
   const auto op_type = op.op_type();
   switch (op_type) {
     case planpb::OperatorType::MEMORY_SOURCE_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<MemorySourceOperator>(on_memory_source_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<MemorySourceOperator>(on_memory_source_walk_fn_, op));
       break;
     case planpb::OperatorType::MAP_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<MapOperator>(on_map_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<MapOperator>(on_map_walk_fn_, op));
       break;
     case planpb::OperatorType::AGGREGATE_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<AggregateOperator>(on_aggregate_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<AggregateOperator>(on_aggregate_walk_fn_, op));
       break;
     case planpb::OperatorType::MEMORY_SINK_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op));
       break;
     case planpb::OperatorType::FILTER_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<FilterOperator>(on_filter_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<FilterOperator>(on_filter_walk_fn_, op));
       break;
     case planpb::OperatorType::LIMIT_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<LimitOperator>(on_limit_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<LimitOperator>(on_limit_walk_fn_, op));
       break;
     case planpb::OperatorType::JOIN_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<JoinOperator>(on_join_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<JoinOperator>(on_join_walk_fn_, op));
       break;
     case planpb::OperatorType::UNION_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<UnionOperator>(on_union_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<UnionOperator>(on_union_walk_fn_, op));
       break;
     case planpb::OperatorType::GRPC_SINK_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<GRPCSinkOperator>(on_grpc_sink_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<GRPCSinkOperator>(on_grpc_sink_walk_fn_, op));
       break;
     case planpb::OperatorType::GRPC_SOURCE_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op));
       break;
     case planpb::OperatorType::UDTF_SOURCE_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op));
       break;
     case planpb::OperatorType::EMPTY_SOURCE_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<EmptySourceOperator>(on_empty_source_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<EmptySourceOperator>(on_empty_source_walk_fn_, op));
       break;
     case planpb::OperatorType::OTEL_EXPORT_SINK_OPERATOR:
-      PL_RETURN_IF_ERROR(CallAs<OTelExportSinkOperator>(on_otel_sink_walk_fn_, op));
+      PX_RETURN_IF_ERROR(CallAs<OTelExportSinkOperator>(on_otel_sink_walk_fn_, op));
       break;
     default:
       LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
@@ -112,7 +112,7 @@ Status PlanFragmentWalker::Walk(PlanFragment* plan_fragment) {
     if (node == plan_fragment->nodes().end()) {
       LOG(WARNING) << absl::Substitute("Could not find node $0 in plan fragment", node_id);
     } else {
-      PL_RETURN_IF_ERROR(CallWalkFn(*node->second));
+      PX_RETURN_IF_ERROR(CallWalkFn(*node->second));
     }
   }
   return Status::OK();

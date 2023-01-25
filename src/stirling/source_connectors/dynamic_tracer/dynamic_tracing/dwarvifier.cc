@@ -174,7 +174,7 @@ StatusOr<ir::physical::Program> GeneratePhysicalProgram(
   for (const auto& input_tracepoint : input.tracepoints()) {
     // Transform tracepoint program.
     Dwarvifier dwarvifier(dwarf_reader, elf_reader, input_tracepoint.program().language());
-    PL_RETURN_IF_ERROR(dwarvifier.Generate(input_tracepoint.program(), &output_program));
+    PX_RETURN_IF_ERROR(dwarvifier.Generate(input_tracepoint.program(), &output_program));
   }
 
   return output_program;
@@ -352,7 +352,7 @@ Status Dwarvifier::Generate(const ir::logical::TracepointSpec& input_program,
 
   // Transform probes.
   for (const auto& probe : input_program.probes()) {
-    PL_RETURN_IF_ERROR(GenerateProbe(probe, output_program));
+    PX_RETURN_IF_ERROR(GenerateProbe(probe, output_program));
   }
 
   return Status::OK();
@@ -455,9 +455,9 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe& input_probe,
   // Some initial setup.
   variables_.clear();
   if (dwarf_reader_ != nullptr) {
-    PL_ASSIGN_OR_RETURN(args_map_,
+    PX_ASSIGN_OR_RETURN(args_map_,
                         dwarf_reader_->GetFunctionArgInfo(input_probe.tracepoint().symbol()));
-    PL_ASSIGN_OR_RETURN(retval_info_,
+    PX_ASSIGN_OR_RETURN(retval_info_,
                         dwarf_reader_->GetFunctionRetValInfo(input_probe.tracepoint().symbol()));
   }
 
@@ -465,39 +465,39 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe& input_probe,
 
   p->set_name(input_probe.name());
 
-  PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.tracepoint(), p));
+  PX_RETURN_IF_ERROR(ProcessTracepoint(input_probe.tracepoint(), p));
   AddSpecialVariables(p);
 
   for (auto& constant : input_probe.consts()) {
-    PL_RETURN_IF_ERROR(ProcessConstants(constant, p));
+    PX_RETURN_IF_ERROR(ProcessConstants(constant, p));
   }
 
   for (const auto& arg : input_probe.args()) {
-    PL_RETURN_IF_ERROR(ProcessArgExpr(arg, p));
+    PX_RETURN_IF_ERROR(ProcessArgExpr(arg, p));
   }
 
   for (const auto& ret_val : input_probe.ret_vals()) {
-    PL_RETURN_IF_ERROR(ProcessRetValExpr(ret_val, p));
+    PX_RETURN_IF_ERROR(ProcessRetValExpr(ret_val, p));
   }
 
   for (const auto& map_val : input_probe.map_vals()) {
-    PL_RETURN_IF_ERROR(ProcessMapVal(map_val, p));
+    PX_RETURN_IF_ERROR(ProcessMapVal(map_val, p));
   }
 
   if (IsFunctionLatencySpecified(input_probe)) {
-    PL_RETURN_IF_ERROR(ProcessFunctionLatency(input_probe.function_latency(), p));
+    PX_RETURN_IF_ERROR(ProcessFunctionLatency(input_probe.function_latency(), p));
   }
 
   for (const auto& stash_action : input_probe.map_stash_actions()) {
-    PL_RETURN_IF_ERROR(ProcessStashAction(stash_action, p, output_program));
+    PX_RETURN_IF_ERROR(ProcessStashAction(stash_action, p, output_program));
   }
 
   for (const auto& delete_action : input_probe.map_delete_actions()) {
-    PL_RETURN_IF_ERROR(ProcessDeleteAction(delete_action, p));
+    PX_RETURN_IF_ERROR(ProcessDeleteAction(delete_action, p));
   }
 
   for (const auto& output_action : input_probe.output_actions()) {
-    PL_RETURN_IF_ERROR(ProcessOutputAction(output_action, p, output_program));
+    PX_RETURN_IF_ERROR(ProcessOutputAction(output_action, p, output_program));
   }
 
   for (const auto& printk : input_probe.printks()) {
@@ -606,7 +606,7 @@ StatusOr<ir::physical::StructSpec> CreateStructSpecProto(
   ir::physical::StructSpec struct_spec;
 
   for (const auto& e : struct_spec_entires) {
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+    PX_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
                         VarTypeToProtoScalarType(e.type_info, lang));
 
     auto* entry_proto = struct_spec.add_entries();
@@ -651,7 +651,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   constexpr char kIfaceDataSuffix[] = "_intf_data";
 
   // Used to determine the implementation type.
-  PL_ASSIGN_OR_RETURN(const StructMemberInfo tab_mem_info,
+  PX_ASSIGN_OR_RETURN(const StructMemberInfo tab_mem_info,
                       dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName,
                                                          llvm::dwarf::DW_TAG_structure_type, "tab",
                                                          llvm::dwarf::DW_TAG_member));
@@ -664,7 +664,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   iface_tab_var->mutable_memory()->set_offset(offset + tab_mem_info.offset);
 
   // Used to copy the content of the implementation variable.
-  PL_ASSIGN_OR_RETURN(const StructMemberInfo data_mem_info,
+  PX_ASSIGN_OR_RETURN(const StructMemberInfo data_mem_info,
                       dwarf_reader_->GetStructMemberInfo(kGolangInterfaceTypeName,
                                                          llvm::dwarf::DW_TAG_structure_type, "data",
                                                          llvm::dwarf::DW_TAG_member));
@@ -678,7 +678,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 
   // TODO(yzhao): In case this is reused elsewhere, let Dwarvifier manage the return value, to avoid
   // duplicate computation.
-  PL_ASSIGN_OR_RETURN(const auto intf_impl_map, obj_tools::ExtractGolangInterfaces(elf_reader_));
+  PX_ASSIGN_OR_RETURN(const auto intf_impl_map, obj_tools::ExtractGolangInterfaces(elf_reader_));
 
   auto iter = intf_impl_map.find(type_info.decl_type);
 
@@ -697,9 +697,9 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 
   // Insert the interface itself as the first decoder. By default, the interface itself is output,
   // if it's nil or the type could not be identified.
-  PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
+  PX_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
                       dwarf_reader_->GetStructSpec(type_info.type_name));
-  PL_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
+  PX_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
                       CreateStructSpecProto(struct_spec_entires, language_));
   struct_spec.Add(std::move(struct_spec_proto));
 
@@ -772,7 +772,7 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
   var->mutable_memory()->set_op(ir::physical::DEFINE_ONLY);
 
   // Assign this particular type to the output variable.
-  PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
+  PX_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
                       dwarf_reader_->GetStructByteSize(type_info.type_name));
 
   auto* scalar_var = output_probe->add_vars()->mutable_scalar_var();
@@ -791,13 +791,13 @@ Status Dwarvifier::ProcessGolangInterfaceExpr(const std::string& base, uint64_t 
 Status Dwarvifier::ProcessStructBlob(const std::string& base, uint64_t offset,
                                      const TypeInfo& type_info, const std::string& var_name,
                                      ir::physical::Probe* output_probe) {
-  PL_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
+  PX_ASSIGN_OR_RETURN(std::vector<StructSpecEntry> struct_spec_entires,
                       dwarf_reader_->GetStructSpec(type_info.type_name));
-  PL_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
+  PX_ASSIGN_OR_RETURN(ir::physical::StructSpec struct_spec_proto,
                       CreateStructSpecProto(struct_spec_entires, language_));
 
   // STRUCT_BLOB is special. It is the only type where we specify the size to get copied.
-  PL_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
+  PX_ASSIGN_OR_RETURN(uint64_t struct_byte_size,
                       dwarf_reader_->GetStructByteSize(type_info.type_name));
 
   RepeatedPtrField<ir::physical::StructSpec> struct_spec;
@@ -840,7 +840,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   for (auto iter = components.begin() + 1; true; ++iter) {
     // If parent is a pointer, create a variable to dereference it.
     if (type_info.type == VarType::kPointer) {
-      PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+      PX_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
                           VarTypeToProtoScalarType(type_info, language_));
 
       absl::StrAppend(&name, kDerefStr);
@@ -853,7 +853,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
       base = name;
       offset = 0;
 
-      PL_ASSIGN_OR_RETURN(type_info, dwarf_reader_->DereferencePointerType(type_info.type_name));
+      PX_ASSIGN_OR_RETURN(type_info, dwarf_reader_->DereferencePointerType(type_info.type_name));
     }
 
     // Stop iterating only after dereferencing any pointers one last time.
@@ -862,7 +862,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     }
 
     std::string_view field_name = *iter;
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         StructMemberInfo member_info,
         dwarf_reader_->GetStructMemberInfo(type_info.type_name, llvm::dwarf::DW_TAG_structure_type,
                                            field_name, llvm::dwarf::DW_TAG_member));
@@ -876,7 +876,7 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
   // This is important so that references in the original probe are maintained.
 
   if (type_info.type == VarType::kBaseType) {
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType scalar_type,
+    PX_ASSIGN_OR_RETURN(ir::shared::ScalarType scalar_type,
                         VarTypeToProtoScalarType(type_info, language_));
 
     auto var = AddVariable<ScalarVariable>(output_probe, var_name, scalar_type);
@@ -914,10 +914,10 @@ Status Dwarvifier::ProcessVarExpr(const std::string& var_name, const ArgInfo& ar
     } else if (language_ == ir::shared::Language::GOLANG &&
                // Meaning that this variable is an interface.
                type_info.type_name == kGolangInterfaceTypeName) {
-      PL_RETURN_IF_ERROR(
+      PX_RETURN_IF_ERROR(
           ProcessGolangInterfaceExpr(base, offset, type_info, var_name, output_probe));
     } else {
-      PL_RETURN_IF_ERROR(ProcessStructBlob(base, offset, type_info, var_name, output_probe));
+      PX_RETURN_IF_ERROR(ProcessStructBlob(base, offset, type_info, var_name, output_probe));
     }
   } else {
     return error::Internal("Expected struct or base type, but got type: $0", type_info.ToString());
@@ -934,7 +934,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   std::vector<std::string_view> components = absl::StrSplit(arg.expr(), ".");
 
-  PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
+  PX_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, components.front()));
 
   switch (language_) {
     case ir::shared::GOLANG:
@@ -1021,14 +1021,14 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
         // is not counted in the indexing.
         // To address this problem, we search for the first ~r<n> that we can find,
         // then we apply the index offset to all indices from the user.
-        PL_ASSIGN_OR_RETURN(int first_index, GolangReturnValueIndex(args_map_));
+        PX_ASSIGN_OR_RETURN(int first_index, GolangReturnValueIndex(args_map_));
         index += first_index;
 
         ret_val_name = absl::StrCat("~r", std::to_string(index));
       }
 
       // Golang return values are really arguments located on the stack, so get the arg info.
-      PL_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, ret_val_name));
+      PX_ASSIGN_OR_RETURN(ArgInfo arg_info, GetArgInfo(args_map_, ret_val_name));
 
       return ProcessVarExpr(ret_val.id(), arg_info, kSPVarName, components, output_probe);
     }
@@ -1109,7 +1109,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     var->set_name(map_var_name);
     var->set_type(map->value_type().struct_type());
     var->set_map_name(map_val.map_name());
-    PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(map_val.key()));
+    PX_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(map_val.key()));
     var->set_key_variable_name(key_var_name);
   }
 
@@ -1195,8 +1195,8 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   std::string variable_name = absl::StrCat(stash_action_in.map_name(), "_value");
   std::string struct_type_name = StructTypeName(stash_action_in.map_name());
 
-  PL_RETURN_IF_ERROR(GenerateMapValueStruct(stash_action_in, struct_type_name, output_program));
-  PL_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
+  PX_RETURN_IF_ERROR(GenerateMapValueStruct(stash_action_in, struct_type_name, output_program));
+  PX_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
 
   auto* struct_var = output_probe->add_vars()->mutable_struct_var();
   struct_var->set_name(variable_name);
@@ -1211,7 +1211,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   auto* stash_action_out = output_probe->add_map_stash_actions();
   stash_action_out->set_map_name(stash_action_in.map_name());
 
-  PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(stash_action_in.key()));
+  PX_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(stash_action_in.key()));
   stash_action_out->set_key_variable_name(key_var_name);
   stash_action_out->set_value_variable_name(variable_name);
   stash_action_out->mutable_cond()->CopyFrom(stash_action_in.cond());
@@ -1224,7 +1224,7 @@ Status Dwarvifier::ProcessDeleteAction(const ir::logical::MapDeleteAction& delet
   auto* delete_action_out = output_probe->add_map_delete_actions();
   delete_action_out->set_map_name(delete_action_in.map_name());
 
-  PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(delete_action_in.key()));
+  PX_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(delete_action_in.key()));
   delete_action_out->set_key_variable_name(key_var_name);
 
   return Status::OK();
@@ -1326,10 +1326,10 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   data_buffer_array->set_capacity(1);
 
   // Generate struct definition.
-  PL_RETURN_IF_ERROR(GenerateOutputStruct(output_action_in, struct_type_name, output_program));
+  PX_RETURN_IF_ERROR(GenerateOutputStruct(output_action_in, struct_type_name, output_program));
 
   // Generate an output definition.
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       PopulateOutputTypes(outputs_, output_action_in.output_name(), struct_type_name));
 
   // The Struct generated in above step is always the last element.

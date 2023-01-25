@@ -38,17 +38,17 @@ namespace pgsql {
 // As a special case, -1 indicates a NULL column value. No value bytes follow in this case.
 constexpr int kNullValLen = -1;
 
-#define PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(expr, val_or) \
-  PL_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
+#define PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(expr, val_or) \
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
 
-#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
-  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
+#define PX_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   BinaryDecoder decoder(*buf);
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(const char char_val, decoder.ExtractChar());
+  PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(const char char_val, decoder.ExtractChar());
   msg->tag = static_cast<Tag>(char_val);
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
+  PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
 
   constexpr int kLenFieldLen = 4;
   if (msg->len < kLenFieldLen) {
@@ -57,7 +57,7 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   }
   const size_t str_len = msg->len - 4;
   // Len includes the length field itself (int32_t), so the payload needs to exclude 4 bytes.
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view str_view,
+  PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view str_view,
                                       decoder.ExtractString<char>(str_len));
   msg->payload = std::string(str_view);
 
@@ -68,9 +68,9 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
 Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   BinaryDecoder decoder(*buf);
 
-  PL_ASSIGN_OR_RETURN(msg->len, decoder.ExtractInt<int32_t>());
-  PL_ASSIGN_OR_RETURN(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
-  PL_ASSIGN_OR_RETURN(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(msg->len, decoder.ExtractInt<int32_t>());
+  PX_ASSIGN_OR_RETURN(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
 
   const size_t kHeaderSize = 2 * sizeof(int32_t);
 
@@ -79,7 +79,7 @@ Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   }
 
   while (!decoder.eof()) {
-    PL_ASSIGN_OR_RETURN(std::string_view name, decoder.ExtractStringUntil('\0'));
+    PX_ASSIGN_OR_RETURN(std::string_view name, decoder.ExtractStringUntil('\0'));
     if (name.empty()) {
       // Each name or value is terminated by '\0'. And all name value pairs are terminated by an
       // additional '\0'.
@@ -87,7 +87,7 @@ Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
       // Extracting an empty name means we are at the end of the string.
       break;
     }
-    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
+    PX_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
     if (value.empty()) {
       return error::InvalidArgument("Not enough data");
     }
@@ -128,18 +128,18 @@ Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PL_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < field_count; ++i) {
     RowDesc::Field field = {};
 
-    PL_ASSIGN_OR_RETURN(field.name, decoder.ExtractStringUntil('\0'));
-    PL_ASSIGN_OR_RETURN(field.table_oid, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN(field.attr_num, decoder.ExtractInt<int16_t>());
-    PL_ASSIGN_OR_RETURN(field.type_oid, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN(field.type_size, decoder.ExtractInt<int16_t>());
-    PL_ASSIGN_OR_RETURN(field.type_modifier, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.name, decoder.ExtractStringUntil('\0'));
+    PX_ASSIGN_OR_RETURN(field.table_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(field.attr_num, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.type_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(field.type_size, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.type_modifier, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     field.fmt_code = static_cast<FmtCode>(fmt_code);
 
     row_desc->fields.push_back(std::move(field));
@@ -153,11 +153,11 @@ Status ParseDataRow(const RegularMessage& msg, DataRow* data_row) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PL_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < field_count; ++i) {
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
-    PL_ASSIGN_OR_RETURN(const auto value_len, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const auto value_len, decoder.ExtractInt<int32_t>());
     if (value_len == kNullValLen) {
       data_row->cols.push_back(std::nullopt);
       continue;
@@ -166,7 +166,7 @@ Status ParseDataRow(const RegularMessage& msg, DataRow* data_row) {
       data_row->cols.push_back({});
       continue;
     }
-    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractString<char>(value_len));
+    PX_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractString<char>(value_len));
     data_row->cols.push_back(value);
   }
 
@@ -180,20 +180,20 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
 
   // Any decoding error means the input is invalid. As the input must be the payload of a regular
   // message with tag 'B'. Therefore, it must meet a predefined pattern.
-  PL_ASSIGN_OR_RETURN(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
-  PL_ASSIGN_OR_RETURN(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
+  PX_ASSIGN_OR_RETURN(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
+  PX_ASSIGN_OR_RETURN(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
 
-  PL_ASSIGN_OR_RETURN(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
 
   std::vector<FmtCode> param_fmt_codes;
   param_fmt_codes.reserve(param_fmt_code_count);
 
   for (int i = 0; i < param_fmt_code_count; ++i) {
-    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     param_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
-  PL_ASSIGN_OR_RETURN(int16_t param_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(int16_t param_count, decoder.ExtractInt<int16_t>());
 
   // The number of parameter format codes can be:
   // * 0: There is no parameter; or the format code is the default (TEXT) for all parameter.
@@ -219,22 +219,22 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   }
 
   for (int i = 0; i < param_count; ++i) {
-    PL_ASSIGN_OR_RETURN(int32_t param_value_len, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(int32_t param_value_len, decoder.ExtractInt<int32_t>());
 
     if (param_value_len == kNullValLen) {
       res->params.push_back({FmtCode::kText, std::nullopt});
       continue;
     }
 
-    PL_ASSIGN_OR_RETURN(std::string_view param_value, decoder.ExtractString(param_value_len));
+    PX_ASSIGN_OR_RETURN(std::string_view param_value, decoder.ExtractString(param_value_len));
     const FmtCode code = get_format_code_for_ith_param(i);
     res->params.push_back({code, std::string(param_value)});
   }
 
-  PL_ASSIGN_OR_RETURN(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < res_col_fmt_code_count; ++i) {
-    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     res->res_col_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
@@ -246,10 +246,10 @@ Status ParseParamDesc(const RegularMessage& msg, ParamDesc* param_desc) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PL_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < param_count; ++i) {
-    PL_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
     param_desc->type_oids.push_back(type_oid);
   }
 
@@ -261,13 +261,13 @@ Status ParseParse(const RegularMessage& msg, Parse* parse) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PL_ASSIGN_OR_RETURN(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
+  PX_ASSIGN_OR_RETURN(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
 
-  PL_ASSIGN_OR_RETURN(parse->query, decoder.ExtractStringUntil<char>('\0'));
+  PX_ASSIGN_OR_RETURN(parse->query, decoder.ExtractStringUntil<char>('\0'));
 
-  PL_ASSIGN_OR_RETURN(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
   for (int i = 0; i < param_type_count; ++i) {
-    PL_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
     parse->param_type_oids.push_back(type_oid);
   }
 
@@ -280,14 +280,14 @@ Status ParseErrResp(const RegularMessage& msg, ErrResp* err_resp) {
   BinaryDecoder decoder(msg.payload);
 
   while (!decoder.eof()) {
-    PL_ASSIGN_OR_RETURN(const char code, decoder.ExtractChar());
+    PX_ASSIGN_OR_RETURN(const char code, decoder.ExtractChar());
     if (code == '\0') {
       // Reach end of stream.
       return decoder.BufSize() == 0
                  ? Status::OK()
                  : error::InvalidArgument("'\\x00' is not the last character of the payload");
     }
-    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
+    PX_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
     err_resp->fields.push_back({static_cast<ErrFieldCode>(code), value});
   }
   return Status::OK();
@@ -300,9 +300,9 @@ Status ParseDesc(const RegularMessage& msg, Desc* desc) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PL_ASSIGN_OR_RETURN(const char type, decoder.ExtractChar());
+  PX_ASSIGN_OR_RETURN(const char type, decoder.ExtractChar());
   desc->type = static_cast<Desc::Type>(type);
-  PL_ASSIGN_OR_RETURN(desc->name, decoder.ExtractStringUntil('\0'));
+  PX_ASSIGN_OR_RETURN(desc->name, decoder.ExtractStringUntil('\0'));
 
   return Status::OK();
 }
@@ -312,7 +312,7 @@ Status ParseDesc(const RegularMessage& msg, Desc* desc) {
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, pgsql::RegularMessage* frame,
                       pgsql::StateWrapper* /*state*/) {
-  PL_UNUSED(type);
+  PX_UNUSED(type);
 
   std::string_view buf_copy = *buf;
   pgsql::StartupMessage startup_msg = {};
@@ -326,7 +326,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, pgsql::Regular
 template <>
 size_t FindFrameBoundary<pgsql::RegularMessage>(message_type_t type, std::string_view buf,
                                                 size_t start, pgsql::StateWrapper* /*state*/) {
-  PL_UNUSED(type);
+  PX_UNUSED(type);
   return pgsql::FindFrameBoundary(buf, start);
 }
 

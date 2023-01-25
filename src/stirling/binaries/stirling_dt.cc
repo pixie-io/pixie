@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
 
   px::EnvironmentGuard env_guard(&argc, argv);
 
-  PL_ASSIGN_OR_EXIT(TraceProgram trace_program, ParseArgs(argc, argv));
+  PX_ASSIGN_OR_EXIT(TraceProgram trace_program, ParseArgs(argc, argv));
 
   // Make Stirling.
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::make_unique<SourceRegistry>());

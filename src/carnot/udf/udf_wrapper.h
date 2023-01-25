@@ -109,7 +109,7 @@ Status ExecWrapperArrow(TUDF* udf, FunctionContext* ctx, size_t count, TOutput* 
   size_t total_size = 0;
   // If it's a string type we also need to allocate memory for the data.
   // This actually applies to all non-fixed data allocations.
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+  // PX_CARNOT_UPDATE_FOR_NEW_TYPES.
   if constexpr (std::is_same_v<arrow::StringBuilder, TOutput>) {
     CHECK(out->ReserveData(reserved).ok());
   }
@@ -118,12 +118,12 @@ Status ExecWrapperArrow(TUDF* udf, FunctionContext* ctx, size_t count, TOutput* 
         udf->Exec(ctx, types::GetValueFromArrowArray<exec_argument_types[I]>(args[I], idx)...));
 
     // We use doubling to make sure we minimize the number of allocations.
-    // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+    // PX_CARNOT_UPDATE_FOR_NEW_TYPES.
     if constexpr (std::is_same_v<arrow::StringBuilder, TOutput>) {
       total_size += res.size();
       while (total_size >= reserved) {
         reserved *= 2;
-        PL_RETURN_IF_ERROR(out->ReserveData(reserved));
+        PX_RETURN_IF_ERROR(out->ReserveData(reserved));
       }
     }
     // This function is "safe" now because we manually allocated memory.
@@ -415,7 +415,7 @@ struct UDAWrapper {
     auto* casted_builder =
         static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type*>(output);
     auto* casted_uda = static_cast<TUDA*>(uda);
-    PL_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
+    PX_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
     return Status::OK();
   }
 
@@ -459,8 +459,8 @@ struct UDTFWrapper {
     }
     if (args.size()) {
       // These are to make GCC happy.
-      PL_UNUSED(udtf);
-      PL_UNUSED(ctx);
+      PX_UNUSED(udtf);
+      PX_UNUSED(ctx);
       return error::InvalidArgument("Got args for UDTF '%s', that takes no init args, ignoring...",
                                     typeid(TUDTF).name());
     }

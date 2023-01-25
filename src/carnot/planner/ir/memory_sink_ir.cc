@@ -24,7 +24,7 @@ namespace planner {
 
 Status MemorySinkIR::Init(OperatorIR* parent, const std::string& name,
                           const std::vector<std::string> out_columns) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(AddParent(parent));
   name_ = name;
   out_columns_ = out_columns;
   return Status::OK();
@@ -57,13 +57,13 @@ Status MemorySinkIR::ResolveType(CompilerState* /* compiler_state */) {
   DCHECK_EQ(1U, parent_types().size());
   // When out_columns_ is empty, the MemorySink just copies the parent type.
   if (out_columns_.size() == 0) {
-    PL_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
+    PX_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
     return SetResolvedType(type_ptr);
   }
   auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
   auto table = TableType::Create();
   for (const auto& col_name : out_columns_) {
-    PL_ASSIGN_OR_RETURN(auto col_type, parent_table_type->GetColumnType(col_name));
+    PX_ASSIGN_OR_RETURN(auto col_type, parent_table_type->GetColumnType(col_name));
     table->AddColumn(col_name, col_type);
   }
   return SetResolvedType(table);

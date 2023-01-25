@@ -34,7 +34,7 @@ TYPED_TEST_SUITE(FixedSizedValueTypesOperatorTest, TestedTypes);
 TYPED_TEST(FixedSizedValueTypesOperatorTest, serdes_test) {
   auto val1 = TypeParam(1000);
   auto val2 = TypeParam(0);
-  PL_CHECK_OK(val2.Deserialize(val1.Serialize()));
+  PX_CHECK_OK(val2.Deserialize(val1.Serialize()));
   EXPECT_EQ(val1, val2);
 }
 

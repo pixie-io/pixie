@@ -159,7 +159,7 @@ Status CreateReturnProbe(const ir::shared::Language& language,
   for (const auto& in_output_action : input_probe.output_actions()) {
     auto* output_action = return_probe->add_output_actions();
     output_action->CopyFrom(in_output_action);
-    PL_RETURN_IF_ERROR(CheckOutputAction(outputs, *output_action));
+    PX_RETURN_IF_ERROR(CheckOutputAction(outputs, *output_action));
   }
 
   for (const auto& printk : input_probe.printks()) {
@@ -183,7 +183,7 @@ Status TransformLogicalProbe(const ir::shared::Language& language,
   out->set_language(language);
   CreateMap(input_probe, out);
   CreateEntryProbe(language, input_probe, out);
-  PL_RETURN_IF_ERROR(CreateReturnProbe(language, input_probe, outputs, out));
+  PX_RETURN_IF_ERROR(CreateReturnProbe(language, input_probe, outputs, out));
 
   return Status::OK();
 }
@@ -232,7 +232,7 @@ StatusOr<ir::logical::TracepointDeployment> TransformLogicalProgram(
     for (const auto& p : input_tracepoint_spec.probes()) {
       // TODO(yzhao): Turn this into a DCHECK() with the same condition, and remove else branch.
       if (p.tracepoint().type() == ir::shared::Tracepoint::LOGICAL) {
-        PL_RETURN_IF_ERROR(TransformLogicalProbe(input_tracepoint_spec.language(), p, outputs,
+        PX_RETURN_IF_ERROR(TransformLogicalProbe(input_tracepoint_spec.language(), p, outputs,
                                                  out_tracepoint_spec));
       } else {
         auto* probe = out_tracepoint_spec->add_probes();

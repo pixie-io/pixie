@@ -186,7 +186,7 @@ class StirlingErrorTest : public ::testing::Test {
     auto trace_program = std::make_unique<DynamicTracepointDeployment>();
 
     // Compile tracepoint.
-    PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
+    PX_ASSIGN_OR_RETURN(auto compiled_tracepoint,
                         px::carnot::planner::compiler::CompileTracepoint(program_text));
     ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
                                                                    trace_program.get());
@@ -207,7 +207,7 @@ class StirlingErrorTest : public ::testing::Test {
 
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
                     std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
-    PL_UNUSED(tablet_id);
+    PX_UNUSED(tablet_id);
 
     // Append stirling error table records to record_batches.
     auto iter = table_info_map_.find(table_id);
@@ -479,11 +479,11 @@ std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
 }  // namespace
 
 TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_table_update_period_seconds, 5);
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_stack_trace_sample_period_ms, 7);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_table_update_period_seconds, 5);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_stack_trace_sample_period_ms, 7);
 
   // Register StirlingErrorConnector.
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
@@ -501,7 +501,7 @@ TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
   ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
   ContainerRunner java_container{image_tar_path, "java", ""};
   StatusOr<std::string> result = java_container.Run(std::chrono::seconds{90});
-  PL_CHECK_OK(result);
+  PX_CHECK_OK(result);
 
   // Wait for the java profiler to attempt symbolization.
   sleep(10);

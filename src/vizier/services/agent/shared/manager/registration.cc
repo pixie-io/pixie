@@ -81,7 +81,7 @@ Status RegistrationHandler::DispatchRegistration() {
   host_info->set_host_ip(agent_info()->host_ip);
   *req_info->mutable_capabilities() = agent_info()->capabilities;
 
-  PL_RETURN_IF_ERROR(nats_conn()->Publish(req));
+  PX_RETURN_IF_ERROR(nats_conn()->Publish(req));
   return Status::OK();
 }
 

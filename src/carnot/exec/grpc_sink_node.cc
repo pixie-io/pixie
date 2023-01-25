@@ -80,12 +80,12 @@ Status GRPCSinkNode::OptionallyCheckConnection(ExecState* exec_state) {
     return Status::OK();
   }
 
-  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
-  PL_ASSIGN_OR_RETURN(auto rb,
+  PX_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
+  PX_ASSIGN_OR_RETURN(auto rb,
                       RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
-  PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
+  PX_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
 
-  PL_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
+  PX_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
   return Status::OK();
 }
 
@@ -130,12 +130,12 @@ Status GRPCSinkNode::StartConnectionWithRetries(ExecState* exec_state, size_t n_
   response_.Clear();
   writer_ = stub_->TransferResultChunk(context_.get(), &response_);
 
-  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
+  PX_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
   // If this is not the first connection we've made then we send a 0-row rb instead of an
   // initiate_result_stream request.
-  PL_ASSIGN_OR_RETURN(auto rb,
+  PX_ASSIGN_OR_RETURN(auto rb,
                       RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
-  PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
+  PX_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
 
   if (!writer_->Write(req)) {
     return StartConnectionWithRetries(exec_state, n_retries - 1);
@@ -173,7 +173,7 @@ Status GRPCSinkNode::TryWriteRequest(ExecState* exec_state,
   }
   // Otherwise, the connection was probably cancelled due to a timeout or other transient failure,
   // so we can try to restart the connection.
-  PL_RETURN_IF_ERROR(StartConnection(exec_state));
+  PX_RETURN_IF_ERROR(StartConnection(exec_state));
 
   // Try again to write the request on the new connection.
   if (!writer_->Write(req)) {
@@ -207,7 +207,7 @@ Status GRPCSinkNode::CloseImpl(ExecState* exec_state) {
   if (writer_ != nullptr) {
     LOG(INFO) << absl::Substitute("Closing GRPCSinkNode $0 in query $1 before receiving EOS",
                                   plan_node_->id(), exec_state->query_id().str());
-    PL_RETURN_IF_ERROR(CloseWriter(exec_state));
+    PX_RETURN_IF_ERROR(CloseWriter(exec_state));
   }
 
   return Status::OK();
@@ -289,13 +289,13 @@ Status GRPCSinkNode::SplitAndSendBatch(ExecState* exec_state, const RowBatch& rb
   // batches eos/eow.
   for (size_t idx = 0; idx < new_batches_num_rows.size() - 1; ++idx) {
     auto num_rows = new_batches_num_rows[idx];
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb, rb.Slice(batch_idx, num_rows));
-    PL_RETURN_IF_ERROR(ConsumeNextImplNoSplit(exec_state, *output_rb, parent_idx));
+    PX_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb, rb.Slice(batch_idx, num_rows));
+    PX_RETURN_IF_ERROR(ConsumeNextImplNoSplit(exec_state, *output_rb, parent_idx));
     batch_idx += num_rows;
   }
 
   // Handle the final batch.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
                       rb.Slice(batch_idx, rb.num_rows() - batch_idx));
   output_rb->set_eos(rb.eos());
   output_rb->set_eow(rb.eow());
@@ -310,17 +310,17 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
 }
 
 Status GRPCSinkNode::ConsumeNextImplNoSplit(ExecState* exec_state, const RowBatch& rb, size_t) {
-  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
+  PX_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
   // Serialize the RowBatch.
-  PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_query_result()->mutable_row_batch()));
+  PX_RETURN_IF_ERROR(rb.ToProto(req.mutable_query_result()->mutable_row_batch()));
 
-  PL_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
+  PX_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
 
   if (!rb.eos()) {
     return Status::OK();
   }
 
-  PL_RETURN_IF_ERROR(CloseWriter(exec_state));
+  PX_RETURN_IF_ERROR(CloseWriter(exec_state));
   sent_eos_ = true;
 
   return response_.success()

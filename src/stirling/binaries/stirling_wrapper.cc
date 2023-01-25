@@ -186,7 +186,7 @@ std::optional<TraceProgram> GetTraceProgram() {
     } else {
       trace_program.format =
           (absl::EndsWith(FLAGS_trace, ".pxl")) ? TracepointFormat::kPXL : TracepointFormat::kIR;
-      PL_ASSIGN_OR_EXIT(trace_program.text, px::ReadFileToString(FLAGS_trace));
+      PX_ASSIGN_OR_EXIT(trace_program.text, px::ReadFileToString(FLAGS_trace));
     }
     return trace_program;
   }
@@ -206,7 +206,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
 
   if (trace_program_str.format == TracepointFormat::kPXL) {
 #ifdef PXL_SUPPORT
-    PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
+    PX_ASSIGN_OR_RETURN(auto compiled_tracepoint,
                         px::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
     LOG(INFO) << compiled_tracepoint.DebugString();
     trace_program = std::make_unique<DynamicTracepointDeployment>();
@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
   // Wait until thread starts.
-  PL_CHECK_OK(stirling->WaitUntilRunning(/* timeout */ std::chrono::seconds(5)));
+  PX_CHECK_OK(stirling->WaitUntilRunning(/* timeout */ std::chrono::seconds(5)));
 
   std::optional<TraceProgram> trace_program = GetTraceProgram();
 

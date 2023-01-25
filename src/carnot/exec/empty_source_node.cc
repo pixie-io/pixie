@@ -52,9 +52,9 @@ Status EmptySourceNode::OpenImpl(ExecState*) { return Status::OK(); }
 Status EmptySourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
 Status EmptySourceNode::GenerateNextImpl(ExecState* exec_state) {
-  PL_ASSIGN_OR_RETURN(auto row_batch,
+  PX_ASSIGN_OR_RETURN(auto row_batch,
                       RowBatch::WithZeroRows(*output_descriptor_, /* eow */ true, /* eos */ true));
-  PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
+  PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();
 }
 

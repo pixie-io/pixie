@@ -85,7 +85,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60});
-    PL_CHECK_OK(run_result);
+    PX_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
     sleep(1);

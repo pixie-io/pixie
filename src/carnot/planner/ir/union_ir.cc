@@ -32,7 +32,7 @@ Status UnionIR::CopyFromNodeImpl(const IRNode* node,
   for (const InputColumnMapping& src_mapping : union_ir->column_mappings_) {
     InputColumnMapping dest_mapping;
     for (ColumnIR* src_col : src_mapping) {
-      PL_ASSIGN_OR_RETURN(ColumnIR * dest_col, graph()->CopyNode(src_col, copied_nodes_map));
+      PX_ASSIGN_OR_RETURN(ColumnIR * dest_col, graph()->CopyNode(src_col, copied_nodes_map));
       dest_mapping.push_back(dest_col);
     }
     dest_mappings.push_back(dest_mapping);
@@ -64,7 +64,7 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
   for (const auto& column_mapping : column_mappings_) {
     auto* pb_column_mapping = pb->add_column_mappings();
     for (const ColumnIR* col : column_mapping) {
-      PL_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
+      PX_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
       pb_column_mapping->add_column_indexes(index);
     }
   }
@@ -79,7 +79,7 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
   InputColumnMapping cloned_mapping;
   for (ColumnIR* col : column_mapping) {
-    PL_ASSIGN_OR_RETURN(auto cloned, graph()->OptionallyCloneWithEdge(this, col));
+    PX_ASSIGN_OR_RETURN(auto cloned, graph()->OptionallyCloneWithEdge(this, col));
     cloned_mapping.push_back(cloned);
   }
 
@@ -92,15 +92,15 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
   column_mappings_.clear();
   for (const auto& old_mapping : old_mappings) {
     for (ColumnIR* col : old_mapping) {
-      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, col));
+      PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, col));
     }
   }
   for (const auto& new_mapping : column_mappings) {
-    PL_RETURN_IF_ERROR(AddColumnMapping(new_mapping));
+    PX_RETURN_IF_ERROR(AddColumnMapping(new_mapping));
   }
   for (const auto& old_mapping : old_mappings) {
     for (ColumnIR* col : old_mapping) {
-      PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(col->id()));
+      PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(col->id()));
     }
   }
   return Status::OK();
@@ -131,9 +131,9 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> UnionIR::RequiredInputCo
 
 Status UnionIR::Init(const std::vector<OperatorIR*>& parents) {
   // Support joining a table against itself by calling HandleDuplicateParents.
-  PL_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
+  PX_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
   for (auto p : transformed_parents) {
-    PL_RETURN_IF_ERROR(AddParent(p));
+    PX_RETURN_IF_ERROR(AddParent(p));
   }
   return Status::OK();
 }
@@ -152,7 +152,7 @@ StatusOr<absl::flat_hash_set<std::string>> UnionIR::PruneOutputColumnsToImpl(
     }
     new_column_mappings.push_back(new_parent_mapping);
   }
-  PL_RETURN_IF_ERROR(SetColumnMappings(new_column_mappings));
+  PX_RETURN_IF_ERROR(SetColumnMappings(new_column_mappings));
   return kept_columns;
 }
 
@@ -203,7 +203,7 @@ Status UnionIR::UpdateOpAfterParentTypesResolvedImpl() {
             TypeToOldStyleDebugString(base_parent_type), TypeToOldStyleDebugString(parent_type),
             absl::Substitute("wrong type for '$0'.", col_name));
       }
-      PL_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
+      PX_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
                                              ast(), col_name, /*parent_op_idx*/ parent_idx));
       column_mapping.push_back(col_node);
     }

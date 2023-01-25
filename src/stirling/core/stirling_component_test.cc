@@ -58,7 +58,7 @@ TEST_F(SourceToTableTest, source_to_table) {
 
     ASSERT_EQ(types::DataType::TIME64NS, columns[0]->data_type());
     auto col0_val = columns[0]->Get<types::Time64NSValue>(0).val;
-    PL_UNUSED(col0_val);
+    PX_UNUSED(col0_val);
 
     ASSERT_EQ(types::DataType::INT64, columns[1]->data_type());
     auto col1_val = columns[1]->Get<types::Int64Value>(0).val;

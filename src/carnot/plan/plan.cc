@@ -43,7 +43,7 @@ Status PlanWalker::Walk(Plan* plan) {
     if (node == plan->nodes().end()) {
       LOG(WARNING) << absl::Substitute("Could not find node $0 in plan", node_id);
     } else {
-      PL_RETURN_IF_ERROR(CallWalkFn(node->second.get()));
+      PX_RETURN_IF_ERROR(CallWalkFn(node->second.get()));
     }
   }
   return Status::OK();

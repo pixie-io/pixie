@@ -37,8 +37,8 @@ namespace stirling {
 namespace protocols {
 namespace amqp {
 
-#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
-  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
+#define PX_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 // The header frame for AMQP is usually split as
 // 0      1         3             7                  size+7 size+8
@@ -73,7 +73,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
     return ParseState::kNeedsMoreData;
   }
 
-  PL_ASSIGN_OR_RETURN_INVALID(uint8_t frame_type, decoder.ExtractInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN_INVALID(uint8_t frame_type, decoder.ExtractInt<uint8_t>());
   AMQPFrameTypes frame_type_header = static_cast<AMQPFrameTypes>(frame_type);
   if (!(frame_type_header == AMQPFrameTypes::kFrameHeader ||
         frame_type_header == AMQPFrameTypes::kFrameBody ||
@@ -82,8 +82,8 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
     return ParseState::kInvalid;
   }
 
-  PL_ASSIGN_OR_RETURN_INVALID(uint16_t channel, decoder.ExtractInt<uint16_t>());
-  PL_ASSIGN_OR_RETURN_INVALID(uint32_t payload_size, decoder.ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN_INVALID(uint16_t channel, decoder.ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN_INVALID(uint32_t payload_size, decoder.ExtractInt<uint32_t>());
   if (frame_type_header == AMQPFrameTypes::kFrameHeartbeat && payload_size != 0) {
     return ParseState::kInvalid;
   }
@@ -104,7 +104,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
     return ParseState::kInvalid;
   }
   packet->full_body_parsed = true;
-  PL_ASSIGN_OR_EXIT(uint8_t frame_end_after_parsing, decoder.ExtractChar());
+  PX_ASSIGN_OR_EXIT(uint8_t frame_end_after_parsing, decoder.ExtractChar());
   if (frame_end_after_parsing != kFrameEnd) {
     return ParseState::kInvalid;
   }

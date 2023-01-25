@@ -46,11 +46,11 @@ StatusOr<std::unique_ptr<ElfSymbolizer::SymbolizerWithConverter>> CreateUPIDSymb
     const struct upid_t& upid) {
   const pid_t pid = upid.pid;
   const system::ProcParser proc_parser;
-  PL_ASSIGN_OR_RETURN(const auto proc_exe, proc_parser.GetExePath(pid));
-  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(ProcPidRootPath(pid, proc_exe.string())));
+  PX_ASSIGN_OR_RETURN(const auto proc_exe, proc_parser.GetExePath(pid));
+  PX_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(ProcPidRootPath(pid, proc_exe.string())));
 
-  PL_ASSIGN_OR_RETURN(auto symbolizer, elf_reader->GetSymbolizer());
-  PL_ASSIGN_OR_RETURN(auto converter,
+  PX_ASSIGN_OR_RETURN(auto symbolizer, elf_reader->GetSymbolizer());
+  PX_ASSIGN_OR_RETURN(auto converter,
                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), pid));
   return std::make_unique<ElfSymbolizer::SymbolizerWithConverter>(std::move(symbolizer),
                                                                   std::move(converter));

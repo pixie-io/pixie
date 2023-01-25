@@ -119,14 +119,14 @@ Status EquijoinNode::InitializeColumnBuilders() {
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
     column_builders_[i] =
         MakeArrowBuilder(output_descriptor_->type(i), arrow::default_memory_pool());
-    PL_RETURN_IF_ERROR(column_builders_[i]->Reserve(output_rows_per_batch_));
+    PX_RETURN_IF_ERROR(column_builders_[i]->Reserve(output_rows_per_batch_));
   }
   return Status::OK();
 }
 
 Status EquijoinNode::PrepareImpl(ExecState* /*exec_state*/) {
   column_builders_.resize(output_descriptor_->size());
-  PL_RETURN_IF_ERROR(InitializeColumnBuilders());
+  PX_RETURN_IF_ERROR(InitializeColumnBuilders());
 
   return Status::OK();
 }
@@ -181,7 +181,7 @@ Status EquijoinNode::ExtractJoinKeysForBatch(const table_store::schema::RowBatch
     auto col = rb.ColumnAt(input_col_idx).get();
 
 #define TYPE_CASE(_dt_) ExtractIntoRowTuples<_dt_>(&join_keys_chunk_, col, tuple_col_idx);
-    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
 
@@ -222,7 +222,7 @@ Status EquijoinNode::HashRowBatch(const table_store::schema::RowBatch& rb) {
 
 #define TYPE_CASE(_dt_) \
   types::ExtractValueToColumnWrapper<_dt_>(wrappers_ptr->at(i).get(), arr, row_idx);
-      PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+      PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
     }
     // Keep track of the number of rows that the build buffer matches for each key.
@@ -244,7 +244,7 @@ Status AppendValuesFromWrapper(arrow::ArrayBuilder* output_builder,
                                size_t num_rows) {
   using ValueType = typename types::DataTypeTraits<DT>::value_type;
   for (size_t row_idx = start_idx; row_idx < start_idx + num_rows; ++row_idx) {
-    PL_RETURN_IF_ERROR(table_store::schema::CopyValue<DT>(
+    PX_RETURN_IF_ERROR(table_store::schema::CopyValue<DT>(
         output_builder, udf::UnWrap(input_wrapper->Get<ValueType>(row_idx))));
   }
   return Status::OK();
@@ -255,7 +255,7 @@ Status AppendColumnDefaultValue(arrow::ArrayBuilder* output_builder, size_t num_
   using ValueType = typename types::DataTypeTraits<DT>::value_type;
   ValueType zeroval;
   for (size_t i = 0; i < num_times; ++i) {
-    PL_RETURN_IF_ERROR(table_store::schema::CopyValue<DT>(output_builder, udf::UnWrap(zeroval)));
+    PX_RETURN_IF_ERROR(table_store::schema::CopyValue<DT>(output_builder, udf::UnWrap(zeroval)));
   }
   return Status::OK();
 }
@@ -265,10 +265,10 @@ Status AppendColumnDefaultValue(arrow::ArrayBuilder* output_builder, size_t num_
 // output batch will be eos/eow.
 Status EquijoinNode::NextOutputBatch(ExecState* exec_state) {
   // We will set eos/eow markers later, once we are sure whether this is the final batch.
-  PL_ASSIGN_OR_RETURN(auto output_batch, RowBatch::FromColumnBuilders(*output_descriptor_, false,
+  PX_ASSIGN_OR_RETURN(auto output_batch, RowBatch::FromColumnBuilders(*output_descriptor_, false,
                                                                       false, &column_builders_));
   if (pending_output_batch_ != nullptr) {
-    PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
+    PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
   }
   pending_output_batch_.swap(output_batch);
 
@@ -282,14 +282,14 @@ Status EquijoinNode::FlushChunkedRows(ExecState* exec_state) {
       auto builder = column_builders_.at(output_idx).get();
 
       if (chunk.wrappers_ptr == nullptr) {
-#define TYPE_CASE(_dt_) PL_RETURN_IF_ERROR(AppendColumnDefaultValue<_dt_>(builder, chunk.num_rows))
-        PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
+#define TYPE_CASE(_dt_) PX_RETURN_IF_ERROR(AppendColumnDefaultValue<_dt_>(builder, chunk.num_rows))
+        PX_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
 #undef TYPE_CASE
       } else {
 #define TYPE_CASE(_dt_)                                                                  \
-  PL_RETURN_IF_ERROR(AppendValuesFromWrapper<_dt_>(builder, chunk.wrappers_ptr->at(col), \
+  PX_RETURN_IF_ERROR(AppendValuesFromWrapper<_dt_>(builder, chunk.wrappers_ptr->at(col), \
                                                    chunk.bb_row_idx, chunk.num_rows))
-        PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
+        PX_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
 #undef TYPE_CASE
       }
     }
@@ -301,8 +301,8 @@ Status EquijoinNode::FlushChunkedRows(ExecState* exec_state) {
       auto builder = column_builders_.at(output_idx).get();
 
       if (chunk.rb == nullptr) {
-#define TYPE_CASE(_dt_) PL_RETURN_IF_ERROR(AppendColumnDefaultValue<_dt_>(builder, chunk.num_rows))
-        PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
+#define TYPE_CASE(_dt_) PX_RETURN_IF_ERROR(AppendColumnDefaultValue<_dt_>(builder, chunk.num_rows))
+        PX_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
 #undef TYPE_CASE
       } else {
         auto src_idx = probe_spec_.input_col_indices[col];
@@ -310,10 +310,10 @@ Status EquijoinNode::FlushChunkedRows(ExecState* exec_state) {
         auto input_col = chunk.rb->ColumnAt(src_idx).get();
 
 #define TYPE_CASE(_dt_)                                                             \
-  PL_RETURN_IF_ERROR(table_store::schema::CopyValueRepeated<_dt_>(                  \
+  PX_RETURN_IF_ERROR(table_store::schema::CopyValueRepeated<_dt_>(                  \
       builder, types::GetValueFromArrowArray<_dt_>(input_col, chunk.probe_row_idx), \
       chunk.num_rows))
-        PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
+        PX_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(output_idx), TYPE_CASE);
 #undef TYPE_CASE
       }
     }
@@ -339,7 +339,7 @@ Status EquijoinNode::MatchBuildValuesAndFlush(ExecState* exec_state,
     bb_rows_left -= chunk_rows;
 
     if (queued_rows_ == output_rows_per_batch_) {
-      PL_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
+      PX_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
     }
   }
 
@@ -351,7 +351,7 @@ Status EquijoinNode::DoProbe(ExecState* exec_state, const table_store::schema::R
     probe_eos_ = true;
   }
 
-  PL_RETURN_IF_ERROR(ExtractJoinKeysForBatch(rb, true));
+  PX_RETURN_IF_ERROR(ExtractJoinKeysForBatch(rb, true));
 
   if (rb.num_rows() > static_cast<int64_t>(probe_wrappers_chunk_.size())) {
     probe_wrappers_chunk_.resize(rb.num_rows());
@@ -371,7 +371,7 @@ Status EquijoinNode::DoProbe(ExecState* exec_state, const table_store::schema::R
 
   for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
     if (queued_rows_ >= output_rows_per_batch_ - column_builders_[0]->length()) {
-      PL_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
+      PX_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
     }
 
     if (probe_wrappers_chunk_[row_idx] == nullptr) {
@@ -383,13 +383,13 @@ Status EquijoinNode::DoProbe(ExecState* exec_state, const table_store::schema::R
       continue;
     }
 
-    PL_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, probe_wrappers_chunk_[row_idx], rb_ptr,
+    PX_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, probe_wrappers_chunk_[row_idx], rb_ptr,
                                                 row_idx,
                                                 build_buffer_rows_[join_keys_chunk_[row_idx]]));
   }
 
   if (probe_eos_ && queued_rows_ > 0) {
-    PL_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
+    PX_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
   }
 
   return Status::OK();
@@ -400,12 +400,12 @@ Status EquijoinNode::EmitUnmatchedBuildRows(ExecState* exec_state) {
     if (probed_keys_.find(it->first) != probed_keys_.end()) {
       continue;
     }
-    PL_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, it->second, nullptr, 0,
+    PX_RETURN_IF_ERROR(MatchBuildValuesAndFlush(exec_state, it->second, nullptr, 0,
                                                 build_buffer_rows_[it->first]));
   }
 
   if (queued_rows_ > 0) {
-    PL_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
+    PX_RETURN_IF_ERROR(FlushChunkedRows(exec_state));
   }
   return Status::OK();
 }
@@ -416,12 +416,12 @@ Status EquijoinNode::ConsumeBuildBatch(ExecState* exec_state,
     build_eos_ = true;
   }
 
-  PL_RETURN_IF_ERROR(ExtractJoinKeysForBatch(rb, false));
-  PL_RETURN_IF_ERROR(HashRowBatch(rb));
+  PX_RETURN_IF_ERROR(ExtractJoinKeysForBatch(rb, false));
+  PX_RETURN_IF_ERROR(HashRowBatch(rb));
 
   if (build_eos_) {
     while (probe_batches_.size()) {
-      PL_RETURN_IF_ERROR(DoProbe(exec_state, probe_batches_.front()));
+      PX_RETURN_IF_ERROR(DoProbe(exec_state, probe_batches_.front()));
       probe_batches_.pop();
     }
   }
@@ -441,32 +441,32 @@ Status EquijoinNode::ConsumeNextImpl(ExecState* exec_state, const table_store::s
                                      size_t parent_index) {
   if (IsProbeTable(parent_index)) {
     DCHECK(!probe_eos_);
-    PL_RETURN_IF_ERROR(ConsumeProbeBatch(exec_state, rb));
+    PX_RETURN_IF_ERROR(ConsumeProbeBatch(exec_state, rb));
   } else {
     DCHECK(!build_eos_);
-    PL_RETURN_IF_ERROR(ConsumeBuildBatch(exec_state, rb));
+    PX_RETURN_IF_ERROR(ConsumeBuildBatch(exec_state, rb));
   }
 
   if (build_eos_ && probe_eos_) {
     if (build_spec_.emit_unmatched_rows) {
-      PL_RETURN_IF_ERROR(EmitUnmatchedBuildRows(exec_state));
+      PX_RETURN_IF_ERROR(EmitUnmatchedBuildRows(exec_state));
     }
 
     if (column_builders_[0]->length()) {
-      PL_RETURN_IF_ERROR(NextOutputBatch(exec_state));
+      PX_RETURN_IF_ERROR(NextOutputBatch(exec_state));
     }
 
     // Now send the last row batch and we know it is EOS/EOW.
     if (pending_output_batch_ == nullptr) {
       // This should only happen when no join keys match up.
-      PL_ASSIGN_OR_RETURN(
+      PX_ASSIGN_OR_RETURN(
           pending_output_batch_,
           RowBatch::WithZeroRows(*output_descriptor_, /* eow */ true, /* eos */ true));
     } else {
       pending_output_batch_->set_eos(true);
       pending_output_batch_->set_eow(true);
     }
-    PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
+    PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
   }
 
   return Status::OK();

@@ -92,21 +92,21 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithoutIndexing(
   auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
 
-  PL_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
+  PX_RETURN_IF_ERROR(dwarf_reader->DetectSourceLanguage());
 
   return dwarf_reader;
 }
 
 StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateIndexingAll(
     const std::filesystem::path& path) {
-  PL_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
+  PX_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
   dwarf_reader->IndexDIEs(std::nullopt);
   return dwarf_reader;
 }
 
 StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::CreateWithSelectiveIndexing(
     const std::filesystem::path& path, const std::vector<SymbolSearchPattern>& symbol_patterns) {
-  PL_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
+  PX_ASSIGN_OR_RETURN(auto dwarf_reader, CreateWithoutIndexing(path));
   dwarf_reader->IndexDIEs(symbol_patterns);
   return dwarf_reader;
 }
@@ -162,7 +162,7 @@ Status DwarfReader::DetectSourceLanguage() {
       continue;
     }
 
-    PL_ASSIGN_OR(const DWARFFormValue& lang_attr,
+    PX_ASSIGN_OR(const DWARFFormValue& lang_attr,
                  GetAttribute(unit_die, llvm::dwarf::DW_AT_language), continue);
     source_language_ =
         static_cast<llvm::dwarf::SourceLanguage>(lang_attr.getAsUnsignedConstant().getValue());
@@ -294,7 +294,7 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(
 
 StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
                                                std::optional<llvm::dwarf::Tag> type) {
-  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(name, type));
+  PX_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(name, type));
   if (dies.empty()) {
     return error::Internal("Could not locate symbol name=$0", name);
   }
@@ -344,7 +344,7 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
       // Parent class inherited from.
       die.getTag() == llvm::dwarf::DW_TAG_inheritance);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       const DWARFFormValue& attr,
       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_data_member_location),
                         "Found member, but could not find data_member_location attribute."));
@@ -355,10 +355,10 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
   // example. This handles that case as long as the block is simple (which is what we've seen in
   // practice).
   if (attr.getForm() == llvm::dwarf::DW_FORM_block1) {
-    PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block,
+    PX_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> offset_block,
                         AdaptLLVMOptional(attr.getAsBlock(), "Could not extract block."));
 
-    PL_ASSIGN_OR_RETURN(SimpleBlock decoded_offset_block, DecodeSimpleBlock(offset_block));
+    PX_ASSIGN_OR_RETURN(SimpleBlock decoded_offset_block, DecodeSimpleBlock(offset_block));
 
     if (decoded_offset_block.code == llvm::dwarf::LocationAtom::DW_OP_plus_uconst) {
       return decoded_offset_block.operand;
@@ -368,7 +368,7 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
                            magic_enum::enum_name(decoded_offset_block.code));
   }
 
-  PL_ASSIGN_OR_RETURN(uint64_t offset,
+  PX_ASSIGN_OR_RETURN(uint64_t offset,
                       AdaptLLVMOptional(attr.getAsUnsignedConstant(),
                                         absl::Substitute("Could not extract offset for member $0.",
                                                          GetShortName(die))));
@@ -376,12 +376,12 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
 }
 
 StatusOr<DWARFDie> GetTypeAttribute(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(const DWARFFormValue& type_attr, GetAttribute(die, llvm::dwarf::DW_AT_type));
+  PX_ASSIGN_OR_RETURN(const DWARFFormValue& type_attr, GetAttribute(die, llvm::dwarf::DW_AT_type));
   return die.getAttributeValueAsReferencedDie(type_attr);
 }
 
 std::string_view GetTypeName(const DWARFDie& die) {
-  PL_ASSIGN_OR(DWARFDie type_die, GetTypeAttribute(die), return {});
+  PX_ASSIGN_OR(DWARFDie type_die, GetTypeAttribute(die), return {});
   return GetShortName(type_die);
 }
 
@@ -390,7 +390,7 @@ std::string_view GetTypeName(const DWARFDie& die) {
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
   DWARFDie type_die = die;
   do {
-    PL_ASSIGN_OR_RETURN(type_die, GetTypeAttribute(type_die));
+    PX_ASSIGN_OR_RETURN(type_die, GetTypeAttribute(type_die));
   } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
 
   return type_die;
@@ -435,7 +435,7 @@ StatusOr<std::string> GetDieName(const DWARFDie& die) {
       // C++ dwarf info doesn't have a name attached to the pointer types,
       // so follow to the type die and create the appropriate name.
       if (type_name.empty()) {
-        PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+        PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
         type_name = absl::StrCat(GetShortName(type_die), "*");
       }
       return type_name;
@@ -459,8 +459,8 @@ StatusOr<std::string> GetDieName(const DWARFDie& die) {
 StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
   TypeInfo type_info;
 
-  PL_ASSIGN_OR_RETURN(DWARFDie decl_type_die, GetTypeAttribute(die));
-  PL_ASSIGN_OR_RETURN(type_info.decl_type, GetDieName(decl_type_die));
+  PX_ASSIGN_OR_RETURN(DWARFDie decl_type_die, GetTypeAttribute(die));
+  PX_ASSIGN_OR_RETURN(type_info.decl_type, GetDieName(decl_type_die));
 
   type_info.type = GetType(type_die);
 
@@ -470,7 +470,7 @@ StatusOr<TypeInfo> GetTypeInfo(const DWARFDie& die, const DWARFDie& type_die) {
         Dump(type_die));
   }
 
-  PL_ASSIGN_OR_RETURN(type_info.type_name, GetDieName(type_die));
+  PX_ASSIGN_OR_RETURN(type_info.type_name, GetDieName(type_die));
 
   return type_info;
 }
@@ -479,10 +479,10 @@ StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
-  PL_ASSIGN_OR_RETURN(const DWARFFormValue& byte_size_attr,
+  PX_ASSIGN_OR_RETURN(const DWARFFormValue& byte_size_attr,
                       GetAttribute(die, llvm::dwarf::DW_AT_byte_size));
 
-  PL_ASSIGN_OR_RETURN(uint64_t byte_size,
+  PX_ASSIGN_OR_RETURN(uint64_t byte_size,
                       AdaptLLVMOptional(byte_size_attr.getAsUnsignedConstant(),
                                         absl::Substitute("Could not extract byte_size [die=$0].",
                                                          GetShortName(die))));
@@ -519,8 +519,8 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
       uint64_t max_size = 1;
       for (const auto& member_die : die.children()) {
         if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
-          PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
-          PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
+          PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
+          PX_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
           max_size = std::max(alignment_size, max_size);
         }
       }
@@ -545,8 +545,8 @@ StatusOr<int> GetNumPrimitives(const DWARFDie& die) {
       int num_primitives = 0;
       for (const auto& member_die : die.children()) {
         if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
-          PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
-          PL_ASSIGN_OR_RETURN(uint64_t member_num_primitives, GetNumPrimitives(type_die));
+          PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
+          PX_ASSIGN_OR_RETURN(uint64_t member_num_primitives, GetNumPrimitives(type_die));
           num_primitives += member_num_primitives;
         }
       }
@@ -566,10 +566,10 @@ StatusOr<TypeClass> GetTypeClass(const DWARFDie& die) {
     case llvm::dwarf::DW_TAG_subroutine_type:
       return TypeClass::kInteger;
     case llvm::dwarf::DW_TAG_base_type: {
-      PL_ASSIGN_OR_RETURN(const DWARFFormValue& encoding_attr,
+      PX_ASSIGN_OR_RETURN(const DWARFFormValue& encoding_attr,
                           GetAttribute(die, llvm::dwarf::DW_AT_encoding));
 
-      PL_ASSIGN_OR_RETURN(uint64_t encoding,
+      PX_ASSIGN_OR_RETURN(uint64_t encoding,
                           AdaptLLVMOptional(encoding_attr.getAsUnsignedConstant(),
                                             absl::Substitute("Could not extract encoding [die=$0].",
                                                              GetShortName(die))));
@@ -582,8 +582,8 @@ StatusOr<TypeClass> GetTypeClass(const DWARFDie& die) {
       TypeClass type_class = TypeClass::kNone;
       for (const auto& member_die : die.children()) {
         if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
-          PL_ASSIGN_OR_RETURN(DWARFDie member_type_die, GetTypeDie(member_die));
-          PL_ASSIGN_OR_RETURN(TypeClass child_type, GetTypeClass(member_type_die));
+          PX_ASSIGN_OR_RETURN(DWARFDie member_type_die, GetTypeDie(member_die));
+          PX_ASSIGN_OR_RETURN(TypeClass child_type, GetTypeClass(member_type_die));
           type_class = Combine(type_class, child_type);
         }
       }
@@ -603,11 +603,11 @@ StatusOr<TypeClass> GetTypeClass(const DWARFDie& die) {
 // also be completely wrong.
 // TODO(oazizi): Find a better way to determine return values.
 StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       const DWARFFormValue& attr,
       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_variable_parameter),
                         "Found member, but could not find DW_AT_variable_parameter attribute."));
-  PL_ASSIGN_OR_RETURN(uint64_t val, AdaptLLVMOptional(attr.getAsUnsignedConstant(),
+  PX_ASSIGN_OR_RETURN(uint64_t val, AdaptLLVMOptional(attr.getAsUnsignedConstant(),
                                                       "Could not read attribute value."));
 
   return (val == 0x01);
@@ -637,7 +637,7 @@ bool IsDeclaration(const llvm::DWARFDie& die) {
 }  // namespace
 
 StatusOr<uint64_t> DwarfReader::GetStructByteSize(std::string_view struct_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
                       GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
 
   return GetTypeByteSize(struct_die);
@@ -649,7 +649,7 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
                                                             llvm::dwarf::Tag member_tag) {
   StructMemberInfo member_info;
 
-  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(struct_name, {tag}));
+  PX_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(struct_name, {tag}));
 
   const DWARFDie* struct_def_die = nullptr;
 
@@ -667,15 +667,15 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
   }
 
   for (const auto& die : GetChildDIEs(*struct_def_die, member_tag)) {
-    PL_ASSIGN_OR(std::string die_name, GetDieName(die), continue);
+    PX_ASSIGN_OR(std::string die_name, GetDieName(die), continue);
 
     if (die_name != member_name) {
       continue;
     }
 
-    PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
-    PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-    PL_ASSIGN_OR_RETURN(member_info.type_info, GetTypeInfo(die, type_die));
+    PX_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
+    PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+    PX_ASSIGN_OR_RETURN(member_info.type_info, GetTypeInfo(die, type_die));
     return member_info;
   }
 
@@ -685,14 +685,14 @@ StatusOr<StructMemberInfo> DwarfReader::GetStructMemberInfo(std::string_view str
 StatusOr<std::vector<StructSpecEntry>> DwarfReader::GetStructSpec(std::string_view struct_name) {
   StructMemberInfo member_info;
 
-  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
                       GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
 
   std::vector<StructSpecEntry> output;
   // Start at the beginning (no prefix and offset 0).
   std::string path_prefix = "";
   int offset = 0;
-  PL_RETURN_IF_ERROR(FlattenedStructSpec(struct_die, &output, path_prefix, offset));
+  PX_RETURN_IF_ERROR(FlattenedStructSpec(struct_die, &output, path_prefix, offset));
 
   return output;
 }
@@ -707,13 +707,13 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member)) {
       std::string path = absl::StrCat(path_prefix, kPathSep, GetShortName(die));
-      PL_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
+      PX_ASSIGN_OR_RETURN(int member_offset, GetMemberOffset(die));
 
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      PL_ASSIGN_OR_RETURN(TypeInfo type_info, GetTypeInfo(die, type_die));
+      PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      PX_ASSIGN_OR_RETURN(TypeInfo type_info, GetTypeInfo(die, type_die));
 
       if (type_info.type == VarType::kBaseType || type_info.type == VarType::kPointer) {
-        PL_ASSIGN_OR_RETURN(const uint64_t size, GetTypeByteSize(type_die));
+        PX_ASSIGN_OR_RETURN(const uint64_t size, GetTypeByteSize(type_die));
 
         StructSpecEntry entry;
         entry.offset = offset + member_offset;
@@ -723,7 +723,7 @@ Status DwarfReader::FlattenedStructSpec(const llvm::DWARFDie& struct_die,
 
         output->push_back(std::move(entry));
       } else {
-        PL_RETURN_IF_ERROR(FlattenedStructSpec(type_die, output, path, offset + member_offset));
+        PX_RETURN_IF_ERROR(FlattenedStructSpec(type_die, output, path, offset + member_offset));
       }
     }
   }
@@ -758,20 +758,20 @@ std::optional<llvm::DWARFDie> DwarfReader::FindInDIEMap(const std::string& name,
 }
 
 StatusOr<TypeInfo> DwarfReader::DereferencePointerType(std::string type_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& die,
                       GetMatchingDIE(type_name, llvm::dwarf::DW_TAG_pointer_type));
-  PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
+  PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
   return GetTypeInfo(die, type_die);
 }
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
                                                         std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
     if (GetShortName(die) == arg_name) {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      PX_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
       return GetTypeByteSize(type_die);
     }
   }
@@ -785,13 +785,13 @@ namespace {
 // this function currently returns the value for the first address range (which should
 // correspond to the location of the variable at the function entry).
 StatusOr<llvm::DWARFLocationExpressionsVector> GetDieLocationAttrBytes(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
+  PX_ASSIGN_OR_RETURN(const DWARFFormValue& loc_attr,
                       AdaptLLVMOptional(die.find(llvm::dwarf::DW_AT_location),
                                         "Could not find DW_AT_location for function argument."));
 
   if (loc_attr.isFormClass(DWARFFormValue::FC_Block) ||
       loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
-    PL_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
+    PX_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc_block,
                         AdaptLLVMOptional(loc_attr.getAsBlock(), "Could not extract location."));
 
     // Wrap the results in a DWARFLocationExpressionsVector since it's just a single value.
@@ -804,7 +804,7 @@ StatusOr<llvm::DWARFLocationExpressionsVector> GetDieLocationAttrBytes(const DWA
   }
 
   if (loc_attr.isFormClass(DWARFFormValue::FC_SectionOffset)) {
-    PL_ASSIGN_OR_RETURN(uint64_t section_offset,
+    PX_ASSIGN_OR_RETURN(uint64_t section_offset,
                         AdaptLLVMOptional(loc_attr.getAsSectionOffset(),
                                           "Could not extract location as section offset."));
 
@@ -842,8 +842,8 @@ StatusOr<llvm::DWARFLocationExpressionsVector> GetDieLocationAttrBytes(const DWA
 //                    DW_AT_location [DW_FORM_block1] (DW_OP_call_frame_cfa)
 // This example should return the location on the stack.
 StatusOr<VarLocation> GetDieLocationAttr(const DWARFDie& die) {
-  PL_ASSIGN_OR_RETURN(llvm::DWARFLocationExpressionsVector loc, GetDieLocationAttrBytes(die));
-  PL_ASSIGN_OR_RETURN(SimpleBlock loc_block,
+  PX_ASSIGN_OR_RETURN(llvm::DWARFLocationExpressionsVector loc, GetDieLocationAttrBytes(die));
+  PX_ASSIGN_OR_RETURN(SimpleBlock loc_block,
                       DecodeSimpleBlock(llvm::ArrayRef<uint8_t>(loc.front().Expr)));
 
   if (loc_block.code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
@@ -876,7 +876,7 @@ StatusOr<VarLocation> GetDieLocationAttr(const DWARFDie& die) {
 
 StatusOr<VarLocation> DwarfReader::GetArgumentLocation(std::string_view function_symbol_name,
                                                        std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : GetParamDIEs(function_die)) {
@@ -930,7 +930,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   }
   std::unique_ptr<ABICallingConventionModel> arg_tracker = ABICallingConventionModel::Create(abi);
 
-  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   // If function has a return value, process that first.
@@ -940,16 +940,16 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
   // For more details, see: https://uclibc.org/docs/psABI-x86_64.pdf Section 3.2.3.
   // No return type means the function has a void return type.
   if (function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
-    PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
+    PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
 
-    PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
+    PX_ASSIGN_OR_RETURN(
         const VarLocation loc,
         arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars, true));
-    PL_UNUSED(loc);
+    PX_UNUSED(loc);
   }
 
   absl::flat_hash_set<std::string> arg_names;
@@ -965,18 +965,18 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     auto& arg = arg_info[arg_name];
     arg_names.insert(std::move(arg_name));
 
-    PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
-    PL_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
+    PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(die));
+    PX_ASSIGN_OR_RETURN(arg.type_info, GetTypeInfo(die, type_die));
 
     if (source_language_ == llvm::dwarf::DW_LANG_Go) {
       arg.retarg = IsGolangRetArg(die).ValueOr(false);
     }
 
-    PL_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
-    PL_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(const TypeClass type_class, GetTypeClass(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t type_size, GetTypeByteSize(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t alignment_size, GetAlignmentByteSize(type_die));
+    PX_ASSIGN_OR_RETURN(const uint64_t num_vars, GetNumPrimitives(type_die));
+    PX_ASSIGN_OR_RETURN(
         arg.location,
         arg_tracker->PopLocation(type_class, type_size, alignment_size, num_vars, arg.retarg));
   }
@@ -985,7 +985,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
 }
 
 StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view function_symbol_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+  PX_ASSIGN_OR_RETURN(const DWARFDie& function_die,
                       GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   if (!function_die.find(llvm::dwarf::DW_AT_type).hasValue()) {
@@ -996,9 +996,9 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
 
   RetValInfo ret_val_info;
 
-  PL_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.type_info, GetTypeInfo(function_die, type_die));
-  PL_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
+  PX_ASSIGN_OR_RETURN(const DWARFDie type_die, GetTypeDie(function_die));
+  PX_ASSIGN_OR_RETURN(ret_val_info.type_info, GetTypeInfo(function_die, type_die));
+  PX_ASSIGN_OR_RETURN(ret_val_info.byte_size, GetTypeByteSize(type_die));
 
   return ret_val_info;
 }

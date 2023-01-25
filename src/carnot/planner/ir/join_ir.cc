@@ -33,24 +33,24 @@ Status JoinIR::CopyFromNodeImpl(const IRNode* node,
 
   std::vector<ColumnIR*> new_output_columns;
   for (const ColumnIR* col : join_node->output_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_output_columns.push_back(new_node);
   }
-  PL_RETURN_IF_ERROR(SetOutputColumns(join_node->column_names_, new_output_columns));
+  PX_RETURN_IF_ERROR(SetOutputColumns(join_node->column_names_, new_output_columns));
 
   std::vector<ColumnIR*> new_left_columns;
   for (const ColumnIR* col : join_node->left_on_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_left_columns.push_back(new_node);
   }
 
   std::vector<ColumnIR*> new_right_columns;
   for (const ColumnIR* col : join_node->right_on_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_right_columns.push_back(new_node);
   }
 
-  PL_RETURN_IF_ERROR(SetJoinColumns(new_left_columns, new_right_columns));
+  PX_RETURN_IF_ERROR(SetJoinColumns(new_left_columns, new_right_columns));
   suffix_strs_ = join_node->suffix_strs_;
   return Status::OK();
 }
@@ -93,8 +93,8 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
   pb->set_type(join_enum_type);
   for (int64_t i = 0; i < static_cast<int64_t>(left_on_columns_.size()); i++) {
     auto eq_condition = pb->add_equality_conditions();
-    PL_ASSIGN_OR_RETURN(auto left_index, left_on_columns_[i]->GetColumnIndex());
-    PL_ASSIGN_OR_RETURN(auto right_index, right_on_columns_[i]->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto left_index, left_on_columns_[i]->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto right_index, right_on_columns_[i]->GetColumnIndex());
     eq_condition->set_left_column_index(left_index);
     eq_condition->set_right_column_index(right_index);
   }
@@ -105,7 +105,7 @@ Status JoinIR::ToProto(planpb::Operator* op) const {
     DCHECK_LT(parent_idx, 2);
     parent_col->set_parent_index(col->container_op_parent_idx());
     DCHECK(col->IsDataTypeEvaluated()) << "Column not evaluated";
-    PL_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto index, col->GetColumnIndex());
     parent_col->set_column_index(index);
   }
 
@@ -128,12 +128,12 @@ Status JoinIR::Init(const std::vector<OperatorIR*>& parents, const std::string& 
   }
 
   // Support joining a table against itself by calling HandleDuplicateParents.
-  PL_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
+  PX_ASSIGN_OR_RETURN(auto transformed_parents, HandleDuplicateParents(parents));
   for (auto* p : transformed_parents) {
-    PL_RETURN_IF_ERROR(AddParent(p));
+    PX_RETURN_IF_ERROR(AddParent(p));
   }
 
-  PL_RETURN_IF_ERROR(SetJoinColumns(left_on_cols, right_on_cols));
+  PX_RETURN_IF_ERROR(SetJoinColumns(left_on_cols, right_on_cols));
 
   suffix_strs_ = suffix_strs;
   return SetJoinType(how_type);
@@ -145,12 +145,12 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
   DCHECK(right_on_columns_.empty());
   left_on_columns_.resize(left_columns.size());
   for (size_t i = 0; i < left_columns.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(left_on_columns_[i],
+    PX_ASSIGN_OR_RETURN(left_on_columns_[i],
                         graph()->OptionallyCloneWithEdge(this, left_columns[i]));
   }
   right_on_columns_.resize(right_columns.size());
   for (size_t i = 0; i < right_columns.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(right_on_columns_[i],
+    PX_ASSIGN_OR_RETURN(right_on_columns_[i],
                         graph()->OptionallyCloneWithEdge(this, right_columns[i]));
   }
   key_columns_set_ = true;
@@ -188,13 +188,13 @@ Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
   column_names_ = column_names;
 
   for (auto old_col : old_output_cols) {
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_col));
+    PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_col));
   }
   for (auto new_col : output_columns_) {
-    PL_RETURN_IF_ERROR(graph()->AddEdge(this, new_col));
+    PX_RETURN_IF_ERROR(graph()->AddEdge(this, new_col));
   }
   for (auto old_col : old_output_cols) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_col->id()));
+    PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_col->id()));
   }
   return Status::OK();
 }
@@ -210,7 +210,7 @@ StatusOr<absl::flat_hash_set<std::string>> JoinIR::PruneOutputColumnsToImpl(
       new_output_cols.push_back(output_columns_[col_idx]);
     }
   }
-  PL_RETURN_IF_ERROR(SetOutputColumns(new_output_names, new_output_cols));
+  PX_RETURN_IF_ERROR(SetOutputColumns(new_output_names, new_output_cols));
   return kept_columns;
 }
 
@@ -294,11 +294,11 @@ Status JoinIR::UpdateOpAfterParentTypesResolvedImpl() {
   }
   std::vector<ColumnIR*> output_columns;
   for (auto col_name : left_type->ColumnNames()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, left_idx));
+    PX_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, left_idx));
     output_columns.push_back(col);
   }
   for (auto col_name : right_type->ColumnNames()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, right_idx));
+    PX_ASSIGN_OR_RETURN(ColumnIR * col, graph()->CreateNode<ColumnIR>(ast(), col_name, right_idx));
     output_columns.push_back(col);
   }
 
@@ -312,8 +312,8 @@ Status JoinIR::ResolveType(CompilerState* compiler_state) {
   for (const auto& [idx, left_col] : Enumerate(left_on_columns_)) {
     // Init checks that `left_on` and `right_on` are the same length.
     auto right_col = right_on_columns_[idx];
-    PL_RETURN_IF_ERROR(ResolveExpressionType(left_col, compiler_state, parent_types()));
-    PL_RETURN_IF_ERROR(ResolveExpressionType(right_col, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(left_col, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(right_col, compiler_state, parent_types()));
     auto left_col_dt = std::static_pointer_cast<ValueType>(left_col->resolved_type())->data_type();
     auto right_col_dt =
         std::static_pointer_cast<ValueType>(right_col->resolved_type())->data_type();
@@ -327,7 +327,7 @@ Status JoinIR::ResolveType(CompilerState* compiler_state) {
 
   auto new_table = TableType::Create();
   for (const auto& [idx, col] : Enumerate(output_columns_)) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(col, compiler_state, parent_types()));
     auto col_name = column_names_[idx];
     new_table->AddColumn(col_name, col->resolved_type());
   }

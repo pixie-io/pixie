@@ -56,7 +56,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
         std::chrono::seconds{90},
         {"--name=zookeeper", "--env=ZOOKEEPER_CLIENT_PORT=32181", "--env=ZOOKEEPER_TICK_TIME=2000",
          "--env=ZOOKEEPER_SYNC_LIMIT=2", "--env=ZOOKEEPER_ADMIN_SERVER_PORT=8020"});
-    PL_CHECK_OK(zookeeper_run_result);
+    PX_CHECK_OK(zookeeper_run_result);
 
     // Run Kafka server.
     StatusOr<std::string> kafka_run_result = kafka_server_.Run(
@@ -65,7 +65,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
          "--name=kafka", "--env=KAFKA_ZOOKEEPER_CONNECT=localhost:32181",
          "--env=KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092",
          "--env=KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1"});
-    PL_CHECK_OK(zookeeper_run_result);
+    PX_CHECK_OK(zookeeper_run_result);
   }
 
   StatusOr<int32_t> GetPIDFromOutput(std::string_view out) {
@@ -88,7 +88,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
         "--replication-factor 1 --if-not-exists --zookeeper localhost:32181 & echo $! && wait'",
         kafka_server_.container_name());
 
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
   }
 
@@ -99,7 +99,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
         "foo& echo $! && wait'",
         kafka_server_.container_name());
 
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
   }
 
@@ -109,7 +109,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
         "foo --from-beginning --timeout-ms 10000& echo $! && wait'",
         kafka_server_.container_name());
 
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
     return GetPIDFromOutput(out);
   }
 
@@ -260,7 +260,7 @@ TEST_F(KafkaTraceTest, kafka_capture) {
   StartTransferDataThread();
 
   ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, CreateTopic());
-  PL_UNUSED(create_topic_pid);
+  PX_UNUSED(create_topic_pid);
   ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, ProduceMessage());
   ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, FetchMessage());
 

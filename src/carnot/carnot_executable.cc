@@ -216,7 +216,7 @@ void TableToCsv(const std::string& filename,
       std::vector<std::string> row;
       for (auto col_idx = 0; col_idx < rb.num_columns(); col_idx++) {
 #define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb.ColumnAt(col_idx).get(), row_idx)
-        PL_SWITCH_FOREACH_DATATYPE(rb.desc().type(col_idx), TYPE_CASE);
+        PX_SWITCH_FOREACH_DATATYPE(rb.desc().type(col_idx), TYPE_CASE);
 #undef TYPE_CASE
       }
       output_csv << absl::StrJoin(row, ",") << "\n";

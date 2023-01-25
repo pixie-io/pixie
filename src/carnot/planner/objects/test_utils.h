@@ -118,7 +118,7 @@ class QLObjectTest : public OperatorTests {
     info = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(kRegistryInfoProto, &info_pb));
-    PL_CHECK_OK(info->Init(info_pb));
+    PX_CHECK_OK(info->Init(info_pb));
     compiler_state = std::make_unique<CompilerState>(
         std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
         /* time_now */ 0,
@@ -144,13 +144,13 @@ class QLObjectTest : public OperatorTests {
    */
   Status ParseScript(const std::shared_ptr<VarTable>& var_table, const std::string& script) {
     Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+    PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
 
     bool func_based_exec = false;
     absl::flat_hash_set<std::string> reserved_names;
     MutationsIR mutations_ir;
     ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         auto ast_walker,
         ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir, compiler_state.get(),
                                &module_handler, func_based_exec, reserved_names));
@@ -162,7 +162,7 @@ class QLObjectTest : public OperatorTests {
     std::string var = "sp";
     std::string script =
         absl::Substitute("$0 = $1", var, std::string(absl::StripLeadingAsciiWhitespace(expr)));
-    PL_RETURN_IF_ERROR(ParseScript(var_table, script));
+    PX_RETURN_IF_ERROR(ParseScript(var_table, script));
     return var_table->Lookup(var);
   }
 

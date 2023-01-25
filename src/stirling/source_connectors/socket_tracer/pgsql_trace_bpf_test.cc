@@ -50,7 +50,7 @@ class PostgreSQLTraceTest
     : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceTest() {
-    PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=POSTGRES_PASSWORD=docker"}));
+    PX_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=POSTGRES_PASSWORD=docker"}));
   }
 
   ::px::stirling::testing::PostgreSQLContainer container_;
@@ -131,7 +131,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
   StartTransferDataThread();
 
   ::px::stirling::testing::GolangSQLxContainer sqlx_container;
-  PL_CHECK_OK(sqlx_container.Run(
+  PX_CHECK_OK(sqlx_container.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", container_.container_name())}));
 

@@ -32,8 +32,8 @@ namespace amqp {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::px::operator<<;
-#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
-  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
+#define PX_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 template <size_t N>
 Frame GenFrame(message_type_t type, const uint8_t (&raw_packet)[N], uint8_t channel) {

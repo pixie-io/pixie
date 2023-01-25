@@ -304,7 +304,7 @@ class UDTFDefinition : public UDFDefinition {
     factory_ = std::move(factory);
     // Check to make sure it's a valid UDTF.
     UDTFChecker<T> checker;
-    PL_UNUSED(checker);
+    PX_UNUSED(checker);
 
     exec_init_ = UDTFWrapper<T>::Init;
     exec_batch_update_ = UDTFWrapper<T>::ExecBatchUpdate;

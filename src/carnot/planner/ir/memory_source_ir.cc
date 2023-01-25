@@ -129,7 +129,7 @@ Status MemorySourceIR::ResolveType(CompilerState* compiler_state) {
   std::vector<int64_t> column_indices;
   auto new_table = TableType::Create();
   for (const auto& col_name : column_names_) {
-    PL_ASSIGN_OR_RETURN(auto col_type, full_table_type->GetColumnType(col_name));
+    PX_ASSIGN_OR_RETURN(auto col_type, full_table_type->GetColumnType(col_name));
     new_table->AddColumn(col_name, col_type);
     column_indices.push_back(table_relation.GetColumnIndex(col_name));
   }

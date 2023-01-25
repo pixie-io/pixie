@@ -32,7 +32,7 @@ StatusOr<std::unique_ptr<planner::RegistryInfo>> ExportUDFInfo() {
 
   udfspb::UDFInfo udf_proto = registry->ToProto();
   auto registry_info = std::make_unique<planner::RegistryInfo>();
-  PL_RETURN_IF_ERROR(registry_info->Init(udf_proto));
+  PX_RETURN_IF_ERROR(registry_info->Init(udf_proto));
   return registry_info;
 }
 

@@ -64,8 +64,8 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
       graph, mutations, compiler_state, VarTable::Create(), std::move(var_table), func_based_exec,
       reserved_names, module_handler, std::make_shared<udf::Registry>("udcf")));
 
-  PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
-  PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
+  PX_RETURN_IF_ERROR(ast_visitor->InitGlobals());
+  PX_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
   builtins::RegisterMathOpsOrDie(ast_visitor->udf_registry_.get());
   return ast_visitor;
 }
@@ -99,30 +99,30 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
 Status ASTVisitorImpl::SetupModules(
     const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl_map) {
   DCHECK(module_handler_);
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       (*module_handler_)[PixieModule::kPixieModuleObjName],
       PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
-  PL_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
+  PX_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
                       TraceModule::Create(mutations_, this));
-  PL_ASSIGN_OR_RETURN((*module_handler_)[ConfigModule::kConfigModuleObjName],
+  PX_ASSIGN_OR_RETURN((*module_handler_)[ConfigModule::kConfigModuleObjName],
                       ConfigModule::Create(mutations_, this));
   for (const auto& [module_name, module_text] : module_name_to_pxl_map) {
-    PL_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
+    PX_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
   }
   return Status::OK();
 }
 
 Status ASTVisitorImpl::InitGlobals() {
   // Populate the type objects
-  PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));
+  PX_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));
   global_var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
-  PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt, this));
+  PX_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt, this));
   global_var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
-  PL_ASSIGN_OR_RETURN(auto float_type_object, TypeObject::Create(IRNodeType::kFloat, this));
+  PX_ASSIGN_OR_RETURN(auto float_type_object, TypeObject::Create(IRNodeType::kFloat, this));
   global_var_table_->Add(ASTVisitorImpl::kFloatTypeName, float_type_object);
-  PL_ASSIGN_OR_RETURN(auto bool_type_object, TypeObject::Create(IRNodeType::kBool, this));
+  PX_ASSIGN_OR_RETURN(auto bool_type_object, TypeObject::Create(IRNodeType::kBool, this));
   global_var_table_->Add(ASTVisitorImpl::kBoolTypeName, bool_type_object);
-  PL_ASSIGN_OR_RETURN(auto list_type_object, TypeObject::Create(QLObjectType::kList, this));
+  PX_ASSIGN_OR_RETURN(auto list_type_object, TypeObject::Create(QLObjectType::kList, this));
   global_var_table_->Add(ASTVisitorImpl::kListTypeName, list_type_object);
   // Populate other reserved words
   global_var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
@@ -134,11 +134,11 @@ Status ASTVisitorImpl::CreateBoolLiterals() {
   auto bool_ast = std::make_shared<pypa::Ast>(pypa::AstType::Bool);
   bool_ast->line = 0;
   bool_ast->column = 0;
-  PL_ASSIGN_OR_RETURN(auto true_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, true));
-  PL_ASSIGN_OR_RETURN(auto true_object, ExprObject::Create(true_ir, this));
+  PX_ASSIGN_OR_RETURN(auto true_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, true));
+  PX_ASSIGN_OR_RETURN(auto true_object, ExprObject::Create(true_ir, this));
   global_var_table_->Add(ASTVisitorImpl::kTrueName, true_object);
-  PL_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
-  PL_ASSIGN_OR_RETURN(auto false_object, ExprObject::Create(false_ir, this));
+  PX_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
+  PX_ASSIGN_OR_RETURN(auto false_object, ExprObject::Create(false_ir, this));
   global_var_table_->Add(ASTVisitorImpl::kFalseName, false_object);
   return Status::OK();
 }
@@ -170,7 +170,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
 StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
     std::string_view single_expr_str, bool import_px) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast,
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast,
                       parser.Parse(single_expr_str.data(), /* parse_doc_strings */ false));
   if (import_px) {
     auto child_visitor = CreateChild();
@@ -186,7 +186,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
 }
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
-  PL_RETURN_IF_ERROR(ProcessASTSuite(m->body, /*is_function_definition_body*/ false));
+  PX_RETURN_IF_ERROR(ProcessASTSuite(m->body, /*is_function_definition_body*/ false));
   return Status::OK();
 }
 
@@ -214,11 +214,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       if (!absl::SimpleAtob(value, &val)) {
         return CreateAstError(ast, "Failed to parse arg with value '$0' as bool.", value);
       }
-      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<BoolIR>(ast, val));
+      PX_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<BoolIR>(ast, val));
       break;
     }
     case types::DataType::STRING: {
-      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<StringIR>(ast, value));
+      PX_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<StringIR>(ast, value));
       break;
     }
     case types::DataType::INT64: {
@@ -226,7 +226,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       if (!absl::SimpleAtoi(value, &val)) {
         return CreateAstError(ast, "Failed to parse arg with value '$0' as int64.", value);
       }
-      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<IntIR>(ast, val));
+      PX_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<IntIR>(ast, val));
       break;
     }
     case types::DataType::FLOAT64: {
@@ -234,7 +234,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       if (!absl::SimpleAtod(value, &val)) {
         return CreateAstError(ast, "Failed to parse arg with value '$0' as float64.", value);
       }
-      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<FloatIR>(ast, val));
+      PX_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<FloatIR>(ast, val));
       break;
     }
     case types::DataType::TIME64NS: {
@@ -242,7 +242,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       if (!absl::SimpleAtoi(value, &val)) {
         return CreateAstError(ast, "Failed to parse arg with value '$0' as time.", value);
       }
-      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<TimeIR>(ast, val));
+      PX_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<TimeIR>(ast, val));
       break;
     }
     case types::DataType::UINT128: {
@@ -271,7 +271,7 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
       return CreateAstError(ast, "Arg type annotation required. Function: '$0', arg: '$1'",
                             func->name(), arg.name());
     }
-    PL_ASSIGN_OR_RETURN(auto node, ParseStringAsType(ast, arg.value(), it->second));
+    PX_ASSIGN_OR_RETURN(auto node, ParseStringAsType(ast, arg.value(), it->second));
     // FuncObject::Call has logic to handle accepting normal args as kwargs,
     // so its easiest to just pass everything as kwargs. In the future, if we want to support
     // variadic args in exec funcs we will have to change this.
@@ -308,10 +308,10 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
 
     // Process arguments.
     ArgValues arg_values(func.arg_values().begin(), func.arg_values().end());
-    PL_ASSIGN_OR_RETURN(auto arg_map, ProcessExecFuncArgs(ast, func_obj, arg_values));
+    PX_ASSIGN_OR_RETURN(auto arg_map, ProcessExecFuncArgs(ast, func_obj, arg_values));
 
     // Call function.
-    PL_ASSIGN_OR_RETURN(auto return_obj, func_obj->Call(arg_map, ast));
+    PX_ASSIGN_OR_RETURN(auto return_obj, func_obj->Call(arg_map, ast));
 
     // Process returns.
     if (!CollectionObject::IsCollection(return_obj)) {
@@ -320,7 +320,7 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
                               func.func_name(), return_obj->name());
       }
       auto df = std::static_pointer_cast<Dataframe>(return_obj);
-      PL_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, func.output_table_prefix(), df->op(),
+      PX_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, func.output_table_prefix(), df->op(),
                                        compiler_state_->result_address(),
                                        compiler_state_->result_ssl_targetname()));
       continue;
@@ -335,7 +335,7 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
       }
       auto df = std::static_pointer_cast<Dataframe>(obj);
       auto out_name = absl::Substitute("$0[$1]", func.output_table_prefix(), i);
-      PL_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, out_name, df->op(),
+      PX_RETURN_IF_ERROR(AddResultSink(ir_graph(), ast, out_name, df->op(),
                                        compiler_state_->result_address(),
                                        compiler_state_->result_ssl_targetname()));
     }
@@ -351,7 +351,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   }
   if (items_list[0]->type == pypa::AstType::DocString) {
     if (!is_function_definition_body) {
-      PL_ASSIGN_OR_RETURN(auto doc_string,
+      PX_ASSIGN_OR_RETURN(auto doc_string,
                           ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0])));
       var_table_->Add("__doc__", doc_string);
     }
@@ -360,8 +360,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
     items_list.erase(items_list.begin());
   } else {
     if (!is_function_definition_body) {
-      PL_ASSIGN_OR_RETURN(auto ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
-      PL_ASSIGN_OR_RETURN(auto doc_string, ExprObject::Create(ir_node, this));
+      PX_ASSIGN_OR_RETURN(auto ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
+      PX_ASSIGN_OR_RETURN(auto doc_string, ExprObject::Create(ir_node, this));
       var_table_->Add("__doc__", doc_string);
     }
   }
@@ -369,23 +369,23 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   for (pypa::AstStmt stmt : items_list) {
     switch (stmt->type) {
       case pypa::AstType::Import: {
-        PL_RETURN_IF_ERROR(ProcessImport(PYPA_PTR_CAST(Import, stmt)));
+        PX_RETURN_IF_ERROR(ProcessImport(PYPA_PTR_CAST(Import, stmt)));
         break;
       }
       case pypa::AstType::ImportFrom: {
-        PL_RETURN_IF_ERROR(ProcessImportFrom(PYPA_PTR_CAST(ImportFrom, stmt)));
+        PX_RETURN_IF_ERROR(ProcessImportFrom(PYPA_PTR_CAST(ImportFrom, stmt)));
         break;
       }
       case pypa::AstType::ExpressionStatement: {
-        PL_RETURN_IF_ERROR(ProcessExprStmtNode(PYPA_PTR_CAST(ExpressionStatement, stmt)));
+        PX_RETURN_IF_ERROR(ProcessExprStmtNode(PYPA_PTR_CAST(ExpressionStatement, stmt)));
         break;
       }
       case pypa::AstType::Assign: {
-        PL_RETURN_IF_ERROR(ProcessAssignNode(PYPA_PTR_CAST(Assign, stmt)));
+        PX_RETURN_IF_ERROR(ProcessAssignNode(PYPA_PTR_CAST(Assign, stmt)));
         break;
       }
       case pypa::AstType::FunctionDef: {
-        PL_RETURN_IF_ERROR(ProcessFunctionDefNode(PYPA_PTR_CAST(FunctionDef, stmt)));
+        PX_RETURN_IF_ERROR(ProcessFunctionDefNode(PYPA_PTR_CAST(FunctionDef, stmt)));
         break;
       }
       case pypa::AstType::DocString: {
@@ -411,7 +411,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 }
 
 Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
-  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this,
+  PX_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this,
                                                    func_based_exec_, reserved_names_));
   var_table_->Add(as_name, px);
   return Status::OK();
@@ -467,7 +467,7 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
     if (!obj->HasAttribute(name)) {
       return CreateAstError(from, "cannot import name '$1' from '$0'", module, name);
     }
-    PL_ASSIGN_OR_RETURN(auto attr, obj->GetAttribute(from, name));
+    PX_ASSIGN_OR_RETURN(auto attr, obj->GetAttribute(from, name));
     var_table_->Add(as_name, attr);
   }
   return Status::OK();
@@ -478,8 +478,8 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
 // following: df['foo'] = 1+2
 Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& subscript,
                                                   const pypa::AstExpr& expr_node) {
-  PL_ASSIGN_OR_RETURN(auto processed_node, Process(subscript, {{}, "", {}}));
-  PL_ASSIGN_OR_RETURN(auto processed_target_table, Process(subscript->value, {{}, "", {}}));
+  PX_ASSIGN_OR_RETURN(auto processed_node, Process(subscript, {{}, "", {}}));
+  PX_ASSIGN_OR_RETURN(auto processed_target_table, Process(subscript->value, {{}, "", {}}));
 
   if (processed_target_table->type() != QLObjectType::kDataframe) {
     return CreateAstError(subscript, "Subscript assignment not allowed for $0 objects",
@@ -495,11 +495,11 @@ Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& s
 // in addition to assigning to
 Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& attr,
                                                   const pypa::AstExpr& expr_node) {
-  PL_ASSIGN_OR_RETURN(auto processed_target, Process(attr->value, {{}, "", {}}));
+  PX_ASSIGN_OR_RETURN(auto processed_target, Process(attr->value, {{}, "", {}}));
 
   if (processed_target->type() != QLObjectType::kDataframe) {
-    PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(attr));
-    PL_ASSIGN_OR_RETURN(auto processed_value,
+    PX_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(attr));
+    PX_ASSIGN_OR_RETURN(auto processed_value,
                         Process(PYPA_PTR_CAST(Call, expr_node), {{}, "", {}}));
     return processed_target->AssignAttribute(attr_name, processed_value);
   }
@@ -507,7 +507,7 @@ Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& a
   // If the target is a Dataframe, we are doing a Subscript map assignment like "df.foo = 2".
   // We need to do special handling here as opposed to the above logic in order to produce a new
   // dataframe.
-  PL_ASSIGN_OR_RETURN(auto processed_node, Process(attr, {{}, "", {}}));
+  PX_ASSIGN_OR_RETURN(auto processed_node, Process(attr, {{}, "", {}}));
   return ProcessMapAssignment(attr->value, std::static_pointer_cast<Dataframe>(processed_target),
                               processed_node, expr_node);
 }
@@ -523,7 +523,7 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
   }
   auto assign_name_string = GetNameAsString(assign_target);
 
-  PL_ASSIGN_OR_RETURN(auto target_column,
+  PX_ASSIGN_OR_RETURN(auto target_column,
                       GetArgAs<ColumnIR>(assign_target, target_node, "assignment target"));
 
   if (!parent_df->op()) {
@@ -534,11 +534,11 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
   OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpID, {assign_name_string}};
-  PL_ASSIGN_OR_RETURN(auto expr_obj, Process(expr_node, op_context));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
+  PX_ASSIGN_OR_RETURN(auto expr_obj, Process(expr_node, op_context));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
                       GetArgAs<ExpressionIR>(expr_node, expr_obj, "assignment value"));
 
-  PL_ASSIGN_OR_RETURN(auto dataframe, parent_df->FromColumnAssignment(compiler_state_, expr_node,
+  PX_ASSIGN_OR_RETURN(auto dataframe, parent_df->FromColumnAssignment(compiler_state_, expr_node,
                                                                       target_column, expr_val));
   var_table_->Add(assign_name_string, dataframe);
 
@@ -613,7 +613,7 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
 
   std::string assign_name = GetNameAsString(target_node);
   OperatorContext op_context({}, "", {});
-  PL_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
+  PX_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
   var_table_->Add(assign_name, processed_node);
   return Status::OK();
 }
@@ -644,14 +644,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
     const pypa::AstSuitePtr& body, const pypa::AstPtr& ast, const ParsedArgs& args) {
   // TODO(philkuz) (PL-1365) figure out how to wrap the internal errors with the ast that's passed
   // in.
-  PL_UNUSED(ast);
+  PX_UNUSED(ast);
 
   auto func_visitor = CreateChild();
   for (const std::string& arg_name : arg_names) {
     QLObjectPtr arg_object = args.GetArg(arg_name);
 
     if (arg_annotation_objs.contains(arg_name)) {
-      PL_RETURN_IF_ERROR(
+      PX_RETURN_IF_ERROR(
           DoesArgMatchAnnotation(arg_object, arg_annotation_objs.find(arg_name)->second));
     }
     func_visitor->var_table()->Add(arg_name, arg_object);
@@ -677,7 +677,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
     auto arg_ptr = PYPA_PTR_CAST(Arg, arg);
     parsed_arg_names.push_back(arg_ptr->arg);
     if (arg_ptr->annotation) {
-      PL_ASSIGN_OR_RETURN(auto annotation_obj, Process(arg_ptr->annotation, {{}, "", {}}));
+      PX_ASSIGN_OR_RETURN(auto annotation_obj, Process(arg_ptr->annotation, {{}, "", {}}));
       arg_annotations_objs[arg_ptr->arg] = annotation_obj;
     }
   }
@@ -719,7 +719,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   pypa::AstSuitePtr body = PYPA_PTR_CAST(Suite, node->body);
   std::string function_name = GetNameAsString(function_name_node);
 
-  PL_ASSIGN_OR_RETURN(auto defined_func,
+  PX_ASSIGN_OR_RETURN(auto defined_func,
                       FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
                                          std::bind(&ASTVisitorImpl::FuncDefHandler, this,
                                                    parsed_arg_names, arg_annotations_objs, body,
@@ -728,18 +728,18 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   DCHECK_LE(node->decorators.size(), 1U);
   for (const auto& d : node->decorators) {
     // Each decorator should be a function that takes in the defined_func as an argument.
-    PL_ASSIGN_OR_RETURN(auto dec_fn, Process(d, OperatorContext{{}, ""}));
-    PL_ASSIGN_OR_RETURN(auto fn_object, GetCallMethod(d, dec_fn));
+    PX_ASSIGN_OR_RETURN(auto dec_fn, Process(d, OperatorContext{{}, ""}));
+    PX_ASSIGN_OR_RETURN(auto fn_object, GetCallMethod(d, dec_fn));
     ArgMap map{{}, {defined_func}};
-    PL_ASSIGN_OR_RETURN(auto object_fn, fn_object->Call(map, d));
-    PL_ASSIGN_OR_RETURN(defined_func, GetCallMethod(d, object_fn));
+    PX_ASSIGN_OR_RETURN(auto object_fn, fn_object->Call(map, d));
+    PX_ASSIGN_OR_RETURN(defined_func, GetCallMethod(d, object_fn));
   }
 
-  PL_ASSIGN_OR_RETURN(auto doc_string_obj, ProcessFuncDefDocString(body));
-  PL_ASSIGN_OR_RETURN(auto doc_string, GetAsString(doc_string_obj));
-  PL_RETURN_IF_ERROR(defined_func->SetDocString(doc_string));
+  PX_ASSIGN_OR_RETURN(auto doc_string_obj, ProcessFuncDefDocString(body));
+  PX_ASSIGN_OR_RETURN(auto doc_string, GetAsString(doc_string_obj));
+  PX_RETURN_IF_ERROR(defined_func->SetDocString(doc_string));
 
-  PL_RETURN_IF_ERROR(defined_func->ResolveArgAnnotationsToTypes(arg_annotations_objs));
+  PX_RETURN_IF_ERROR(defined_func->ResolveArgAnnotationsToTypes(arg_annotations_objs));
 
   var_table_->Add(function_name, defined_func);
   return Status::OK();
@@ -772,12 +772,12 @@ Status ASTVisitorImpl::ValidateSubscriptValue(const pypa::AstExpr& node,
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscriptPtr& node,
                                                            const OperatorContext& op_context) {
   // Validate to make sure that we can actually take the subscript in this context.
-  PL_RETURN_IF_ERROR(ValidateSubscriptValue(node->value, op_context));
-  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value, op_context));
+  PX_RETURN_IF_ERROR(ValidateSubscriptValue(node->value, op_context));
+  PX_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value, op_context));
   if (!pyobject->HasSubscriptMethod()) {
     return pyobject->CreateError("$0 is not subscriptable", pyobject->name());
   }
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> func_object, pyobject->GetSubscriptMethod());
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> func_object, pyobject->GetSubscriptMethod());
 
   auto slice = node->slice;
   if (slice->type != AstType::Index) {
@@ -790,7 +790,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
   }
 
   OperatorContext new_op_context(op_context.parent_ops, op_context.operator_name, dfs);
-  PL_ASSIGN_OR_RETURN(QLObjectPtr arg, Process(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
+  PX_ASSIGN_OR_RETURN(QLObjectPtr arg, Process(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
   ArgMap args;
   args.args.push_back(arg);
   return func_object->Call(args, node);
@@ -824,14 +824,14 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                              const OperatorContext& op_context) {
   ArgMap arg_map;
   for (const auto& arg : call_ast->arguments) {
-    PL_ASSIGN_OR_RETURN(auto value, Process(arg, op_context));
+    PX_ASSIGN_OR_RETURN(auto value, Process(arg, op_context));
     arg_map.args.push_back(value);
   }
 
   // Iterate through the keywords
   for (auto& kw_ptr : call_ast->keywords) {
     std::string key = GetNameAsString(kw_ptr->name);
-    PL_ASSIGN_OR_RETURN(auto value, Process(kw_ptr->value, op_context));
+    PX_ASSIGN_OR_RETURN(auto value, Process(kw_ptr->value, op_context));
     arg_map.kwargs.emplace_back(key, value);
   }
 
@@ -855,8 +855,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::LookupVariable(const pypa::AstPtr& ast,
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessAttribute(const pypa::AstAttributePtr& node,
                                                        const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(node));
-  PL_ASSIGN_OR_RETURN(QLObjectPtr value_obj, Process(node->value, op_context));
+  PX_ASSIGN_OR_RETURN(std::string attr_name, GetAttributeStr(node));
+  PX_ASSIGN_OR_RETURN(QLObjectPtr value_obj, Process(node->value, op_context));
   return value_obj->GetAttribute(node, attr_name);
 }
 
@@ -872,7 +872,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
   std::shared_ptr<FuncObject> func_object;
   // pyobject declared up here because we need this object to be allocated when
   // func_object->Call() is made.
-  PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->function, op_context));
+  PX_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->function, op_context));
   if (ExprObject::IsExprObject(pyobject)) {
     auto expr = static_cast<ExprObject*>(pyobject.get());
     // TODO(philkuz) Look into pushing column resolution earlier to avoid this messiness.
@@ -886,14 +886,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
     return CreateAstError(node, "expression object is not callable");
   }
 
-  PL_ASSIGN_OR_RETURN(func_object, GetCallMethod(node, pyobject));
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, op_context));
+  PX_ASSIGN_OR_RETURN(func_object, GetCallMethod(node, pyobject));
+  PX_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, op_context));
   return func_object->Call(args, node);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
-  PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
-  PL_ASSIGN_OR_RETURN(StringIR * node, ir_graph_->CreateNode<StringIR>(ast, str_value));
+  PX_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
+  PX_ASSIGN_OR_RETURN(StringIR * node, ir_graph_->CreateNode<StringIR>(ast, str_value));
   return ExprObject::Create(node, this);
 }
 
@@ -901,7 +901,7 @@ StatusOr<std::vector<QLObjectPtr>> ASTVisitorImpl::ProcessCollectionChildren(
     const pypa::AstExprList& elements, const OperatorContext& op_context) {
   std::vector<QLObjectPtr> children;
   for (auto& child : elements) {
-    PL_ASSIGN_OR_RETURN(QLObjectPtr child_node, Process(child, op_context));
+    PX_ASSIGN_OR_RETURN(QLObjectPtr child_node, Process(child, op_context));
     children.push_back(child_node);
   }
   return children;
@@ -909,14 +909,14 @@ StatusOr<std::vector<QLObjectPtr>> ASTVisitorImpl::ProcessCollectionChildren(
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
                                                   const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
+  PX_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   return ListObject::Create(ast, expr_vec, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
                                                    const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
+  PX_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   return TupleObject::Create(ast, expr_vec, this);
 }
@@ -924,12 +924,12 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
-      PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->CreateNode<FloatIR>(node, node->floating));
+      PX_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->CreateNode<FloatIR>(node, node->floating));
       return ExprObject::Create(ir_node, this);
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
-      PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
+      PX_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
       return ExprObject::Create(ir_node, this);
     }
   }
@@ -994,7 +994,7 @@ StatusOr<ExpressionIR*> ExecUDF(IR* graph, const pypa::AstPtr& ast, udf::ScalarU
   auto output = types::ColumnWrapper::Make(def->exec_return_type(), 1);
   auto function_ctx = std::make_unique<px::carnot::udf::FunctionContext>(nullptr, nullptr);
   auto udf = def->Make();
-  PL_RETURN_IF_ERROR(def->ExecBatch(udf.get(), function_ctx.get(), columns, output.get(), 1));
+  PX_RETURN_IF_ERROR(def->ExecBatch(udf.get(), function_ctx.get(), columns, output.get(), 1));
 
   // Convert the output type into a DataIR.
   switch (def->exec_return_type()) {
@@ -1019,21 +1019,21 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& 
                                                        const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
 
-  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
-  PL_ASSIGN_OR_RETURN(auto right_obj, Process(node->right, op_context));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+  PX_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
+  PX_ASSIGN_OR_RETURN(auto right_obj, Process(node->right, op_context));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * left,
                       GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * right,
+  PX_ASSIGN_OR_RETURN(ExpressionIR * right,
                       GetArgAs<ExpressionIR>(right_obj, "right side of operation"));
 
-  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
+  PX_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> args = {left, right};
-  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  PX_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
   if (udf != nullptr) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
     return ExprObject::Create(expr, this);
   }
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
+  PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 
@@ -1044,21 +1044,21 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr
     return CreateAstError(node, "Expected two arguments to '$0'.", op_str);
   }
 
-  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->values[0], op_context));
-  PL_ASSIGN_OR_RETURN(auto right_obj, Process(node->values[1], op_context));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+  PX_ASSIGN_OR_RETURN(auto left_obj, Process(node->values[0], op_context));
+  PX_ASSIGN_OR_RETURN(auto right_obj, Process(node->values[1], op_context));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * left,
                       GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * right,
+  PX_ASSIGN_OR_RETURN(ExpressionIR * right,
                       GetArgAs<ExpressionIR>(right_obj, "right side of operation"));
 
-  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
+  PX_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   std::vector<ExpressionIR*> args{left, right};
-  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  PX_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
   if (udf != nullptr) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
     return ExprObject::Create(expr, this);
   }
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
+  PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 
@@ -1070,25 +1070,25 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
     return CreateAstError(node, "Only expected one argument to the right of '$0'.", op_str);
   }
 
-  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+  PX_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * left,
                       GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
   std::vector<ExpressionIR*> args{left};
 
   for (const auto& comp : node->comparators) {
-    PL_ASSIGN_OR_RETURN(auto obj, Process(comp, op_context));
-    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(obj, "argument to operation"));
+    PX_ASSIGN_OR_RETURN(auto obj, Process(comp, op_context));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(obj, "argument to operation"));
     args.push_back(expr);
   }
 
-  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
-  PL_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  PX_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
+  PX_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
   if (udf != nullptr) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
     return ExprObject::Create(expr, this);
   }
 
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
+  PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,
@@ -1098,9 +1098,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,
   std::vector<QLObjectPtr> values;
   for (const auto& [i, key] : Enumerate(node->keys)) {
     const auto& value = node->values[i];
-    PL_ASSIGN_OR_RETURN(auto key_obj, Process(key, op_context));
+    PX_ASSIGN_OR_RETURN(auto key_obj, Process(key, op_context));
     keys.push_back(key_obj);
-    PL_ASSIGN_OR_RETURN(auto value_obj, Process(value, op_context));
+    PX_ASSIGN_OR_RETURN(auto value_obj, Process(value, op_context));
     values.push_back(value_obj);
   }
   return DictObject::Create(node, keys, values, this);
@@ -1108,17 +1108,17 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
                                                          const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(auto operand_obj, Process(node->operand, op_context));
-  PL_ASSIGN_OR_RETURN(ExpressionIR * operand,
+  PX_ASSIGN_OR_RETURN(auto operand_obj, Process(node->operand, op_context));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * operand,
                       GetArgAs<ExpressionIR>(operand_obj, "operand of unary op"));
 
   std::string op_str = pypa::to_string(node->op);
-  PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
+  PX_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
   if (op.op_code == FuncIR::Opcode::non_op) {
     return ExprObject::Create(operand, this);
   }
   std::vector<ExpressionIR*> args{operand};
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
+  PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 
@@ -1131,7 +1131,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturn
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDocString(const pypa::AstDocStringPtr& doc_string) {
-  PL_ASSIGN_OR_RETURN(StringIR * ir_node,
+  PX_ASSIGN_OR_RETURN(StringIR * ir_node,
                       ir_graph_->CreateNode<StringIR>(doc_string, doc_string->doc));
   return ExprObject::Create(ir_node, this);
 }
@@ -1139,7 +1139,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDocString(const pypa::AstDocStringP
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSuitePtr& body) {
   pypa::AstStmtList items_list = body->items;
   if (items_list.size() == 0 || items_list[0]->type != pypa::AstType::DocString) {
-    PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
+    PX_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
     return ExprObject::Create(ir_node, this);
   }
   return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));

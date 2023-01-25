@@ -48,7 +48,7 @@ Status InitRecordBatch(const T& data_elements, uint32_t target_capacity,
   auto col = types::ColumnWrapper::Make(_dt_, 0); \
   col->Reserve(target_capacity);                  \
   record_batch->push_back(col);
-    PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
 #undef TYPE_CASE
   }
   return Status::OK();
@@ -58,7 +58,7 @@ Status InitRecordBatch(const T& data_elements, uint32_t target_capacity,
 static void BM_record_batch_pb(benchmark::State& state) {
   HTTPRecord record;
   ColumnWrapperRecordBatch record_batch;
-  PL_CHECK_OK(InitRecordBatch(kHTTPElements, state.range(0), &record_batch));
+  PX_CHECK_OK(InitRecordBatch(kHTTPElements, state.range(0), &record_batch));
   for (auto _ : state) {
     for (auto& element : record_batch) {
       element->Clear();
@@ -66,7 +66,7 @@ static void BM_record_batch_pb(benchmark::State& state) {
     for (size_t i = 0; i < static_cast<size_t>(state.range(0)); i++) {
       ConsumeHTTPRecord(record, &record_batch);
     }
-    PL_UNUSED(_);
+    PX_UNUSED(_);
   }
   state.SetBytesProcessed(state.iterations() * state.range(0) * sizeof(HTTPRecord));
 }
@@ -75,7 +75,7 @@ static void BM_record_batch_pb(benchmark::State& state) {
 static void BM_record_batch_pb_refl(benchmark::State& state) {
   HTTPRecord record;
   ColumnWrapperRecordBatch record_batch;
-  PL_CHECK_OK(InitRecordBatch(kHTTPElements, state.range(0), &record_batch));
+  PX_CHECK_OK(InitRecordBatch(kHTTPElements, state.range(0), &record_batch));
   for (auto _ : state) {
     for (auto& element : record_batch) {
       element->Clear();

@@ -45,8 +45,8 @@ class StirlingBPFTest : public ::testing::Test {
 
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
                     std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
-    PL_UNUSED(table_id);
-    PL_UNUSED(tablet_id);
+    PX_UNUSED(table_id);
+    PX_UNUSED(tablet_id);
     record_batches_.push_back(std::move(record_batch));
     return Status::OK();
   }

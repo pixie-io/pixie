@@ -96,7 +96,7 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
         resp->timestamp_ns = iter->timestamp_ns;
       }
 
-      PL_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &resp->cmd_cmpl));
+      PX_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &resp->cmd_cmpl));
       break;
     }
 
@@ -107,7 +107,7 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
         resp->timestamp_ns = iter->timestamp_ns;
       }
 
-      PL_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
+      PX_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
       break;
     }
 
@@ -118,12 +118,12 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
         resp->timestamp_ns = iter->timestamp_ns;
       }
 
-      PL_RETURN_IF_ERROR(ParseRowDesc(*iter, &resp->row_desc));
+      PX_RETURN_IF_ERROR(ParseRowDesc(*iter, &resp->row_desc));
     }
 
     if (iter->tag == Tag::kDataRow) {
       DataRow data_row;
-      PL_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
+      PX_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
       resp->data_rows.push_back(std::move(data_row));
     }
   }
@@ -162,14 +162,14 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
 
     if (iter->tag == Tag::kCmdComplete) {
       found_resp = true;
-      PL_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &req_resp->resp.cmd_cmpl));
+      PX_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &req_resp->resp.cmd_cmpl));
       req_resp->resp.timestamp_ns = req_resp->resp.cmd_cmpl.timestamp_ns;
       break;
     }
 
     if (iter->tag == Tag::kErrResp) {
       found_resp = true;
-      PL_RETURN_IF_ERROR(ParseErrResp(*iter, &req_resp->resp.err_resp));
+      PX_RETURN_IF_ERROR(ParseErrResp(*iter, &req_resp->resp.err_resp));
       req_resp->resp.timestamp_ns = req_resp->resp.err_resp.timestamp_ns;
       break;
     }
@@ -177,14 +177,14 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     if (iter->tag == Tag::kRowDesc) {
       found_resp = true;
       req_resp->resp.cmd_cmpl.timestamp_ns = iter->timestamp_ns;
-      PL_RETURN_IF_ERROR(ParseRowDesc(*iter, &req_resp->resp.row_desc));
+      PX_RETURN_IF_ERROR(ParseRowDesc(*iter, &req_resp->resp.row_desc));
 
       req_resp->resp.timestamp_ns = req_resp->resp.row_desc.timestamp_ns;
     }
 
     if (iter->tag == Tag::kDataRow) {
       DataRow data_row;
-      PL_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
+      PX_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
 
       req_resp->resp.timestamp_ns = data_row.timestamp_ns;
       req_resp->resp.data_rows.push_back(std::move(data_row));
@@ -208,7 +208,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
                    ParseReqResp* req_resp, State* state) {
   DCHECK_EQ(msg.tag, Tag::kParse);
   Parse parse;
-  PL_RETURN_IF_ERROR(ParseParse(msg, &parse));
+  PX_RETURN_IF_ERROR(ParseParse(msg, &parse));
 
   auto iter = std::find_if(*resp_iter, end, TagMatcher({Tag::kParseComplete, Tag::kErrResp}));
   if (iter == end) {
@@ -231,7 +231,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
 
   if (iter->tag == Tag::kErrResp) {
     ErrResp err_resp;
-    PL_RETURN_IF_ERROR(ParseErrResp(*iter, &err_resp));
+    PX_RETURN_IF_ERROR(ParseErrResp(*iter, &err_resp));
     req_resp->resp.msg = err_resp;
   }
 
@@ -243,7 +243,7 @@ Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const M
   DCHECK_EQ(bind_msg.tag, Tag::kBind);
 
   BindRequest bind_req;
-  PL_RETURN_IF_ERROR(ParseBindRequest(bind_msg, &bind_req));
+  PX_RETURN_IF_ERROR(ParseBindRequest(bind_msg, &bind_req));
 
   auto iter = std::find_if(*resp_iter, end, TagMatcher({Tag::kBindComplete, Tag::kErrResp}));
   if (iter == end) {
@@ -275,7 +275,7 @@ Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const M
 
   if (iter->tag == Tag::kErrResp) {
     ErrResp err_resp;
-    PL_RETURN_IF_ERROR(ParseErrResp(*iter, &err_resp));
+    PX_RETURN_IF_ERROR(ParseErrResp(*iter, &err_resp));
     req_resp->resp.msg = std::move(err_resp);
   }
 
@@ -295,11 +295,11 @@ Status FillStmtDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqRes
 
   if (iter->tag == Tag::kErrResp) {
     resp->is_err_resp = true;
-    PL_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
+    PX_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
     return Status::OK();
   }
 
-  PL_RETURN_IF_ERROR(ParseParamDesc(*iter, &resp->param_desc));
+  PX_RETURN_IF_ERROR(ParseParamDesc(*iter, &resp->param_desc));
   if (++iter == end) {
     return error::InvalidArgument("Should have another message following kParamDesc");
   }
@@ -330,11 +330,11 @@ Status FillPortalDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqR
 
   if (iter->tag == Tag::kErrResp) {
     resp->is_err_resp = true;
-    PL_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
+    PX_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
     return Status::OK();
   }
 
-  PL_RETURN_IF_ERROR(ParseRowDesc(*iter, &resp->row_desc));
+  PX_RETURN_IF_ERROR(ParseRowDesc(*iter, &resp->row_desc));
 
   return Status::OK();
 }
@@ -343,7 +343,7 @@ Status HandleDesc(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeq
                   DescReqResp* req_resp) {
   DCHECK_EQ(msg.tag, Tag::kDesc);
 
-  PL_RETURN_IF_ERROR(ParseDesc(msg, &req_resp->req));
+  PX_RETURN_IF_ERROR(ParseDesc(msg, &req_resp->req));
 
   if (req_resp->req.type == Desc::Type::kStatement) {
     return FillStmtDescResp(resp_iter, end, &req_resp->resp);
@@ -364,7 +364,7 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
   req_resp->req.query = state->bound_statement;
   req_resp->req.params = state->bound_params;
 
-  PL_RETURN_IF_ERROR(FillQueryResp(resps_begin, resps_end, &req_resp->resp));
+  PX_RETURN_IF_ERROR(FillQueryResp(resps_begin, resps_end, &req_resp->resp));
 
   return Status::OK();
 }

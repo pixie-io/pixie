@@ -90,7 +90,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionFromNoteSection) {
 
 TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
   // Setup: Point to a custom /proc filesystem.
-  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_ubuntu/proc"));
+  PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_ubuntu/proc"));
 
   // Main test.
   StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);
@@ -101,7 +101,7 @@ TEST(LinuxHeadersUtils, GetKernelVersionUbuntu) {
 
 TEST(LinuxHeadersUtils, GetKernelVersionDebian) {
   // Setup: Point to a custom /proc filesystem.
-  PL_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_debian/proc"));
+  PX_SET_FOR_SCOPE(FLAGS_proc_path, GetPathToTestDataFile("sample_host_debian/proc"));
 
   // Main test.
   StatusOr<KernelVersion> kernel_version_status = FindKernelVersion(kProcFSKernelVersionSources);

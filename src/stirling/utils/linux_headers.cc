@@ -98,7 +98,7 @@ StatusOr<std::string> GetUname() {
 
 StatusOr<std::string> GetProcVersionSignature() {
   const auto version_signature_path = ProcPath("version_signature");
-  PL_ASSIGN_OR_RETURN(std::string version_signature, ReadFileToString(version_signature_path));
+  PX_ASSIGN_OR_RETURN(std::string version_signature, ReadFileToString(version_signature_path));
 
   LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
                                 version_signature_path.string(), version_signature);
@@ -117,7 +117,7 @@ StatusOr<std::string> GetProcVersionSignature() {
 
 StatusOr<std::string> GetProcSysKernelVersion() {
   const auto proc_sys_kernel_version = ProcPath("sys", "kernel", "version");
-  PL_ASSIGN_OR_RETURN(const std::string version_string, ReadFileToString(proc_sys_kernel_version));
+  PX_ASSIGN_OR_RETURN(const std::string version_string, ReadFileToString(proc_sys_kernel_version));
 
   LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
                                 proc_sys_kernel_version.string(), version_string);
@@ -279,7 +279,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
       linux_headers_base / "include/generated/uapi/linux/version.h";
 
   // Read the file into a string.
-  PL_ASSIGN_OR_RETURN(std::string file_contents, ReadFileToString(version_file_path));
+  PX_ASSIGN_OR_RETURN(std::string file_contents, ReadFileToString(version_file_path));
 
   // Modify the version code.
   LOG(INFO) << absl::Substitute("Overriding linux version code to $0", linux_version_code);
@@ -289,7 +289,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
   std::string new_file_contents = std::regex_replace(file_contents, e, linux_version_code_override);
 
   // Write the modified file back.
-  PL_RETURN_IF_ERROR(WriteFileFromString(version_file_path, new_file_contents));
+  PX_RETURN_IF_ERROR(WriteFileFromString(version_file_path, new_file_contents));
 
   return Status::OK();
 }
@@ -302,7 +302,7 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 //  - /lib/modules/<uname>/config: Used by RHEL8 CoreOS, and potentially other RHEL distros.
 StatusOr<std::filesystem::path> FindKernelConfig() {
   const system::Config& syscfg = system::Config::GetInstance();
-  PL_ASSIGN_OR_RETURN(const std::string uname, GetUname());
+  PX_ASSIGN_OR_RETURN(const std::string uname, GetUname());
 
   const std::vector<std::filesystem::path> search_paths = {
       // Used when CONFIG_IKCONFIG=y is set.
@@ -348,12 +348,12 @@ Status GenAutoConf(const std::filesystem::path& linux_headers_base,
 
   // If file is gzipped, then unzip it and read that instead.
   if (config_file.extension() == ".gz") {
-    PL_ASSIGN_OR_RETURN(std::string config_gzip_contents, ReadFileToString(config_file));
-    PL_ASSIGN_OR_RETURN(std::string config_contents, px::zlib::Inflate(config_gzip_contents));
+    PX_ASSIGN_OR_RETURN(std::string config_gzip_contents, ReadFileToString(config_file));
+    PX_ASSIGN_OR_RETURN(std::string config_contents, px::zlib::Inflate(config_gzip_contents));
 
     std::unique_ptr<fs::TempFile> tmp_file = fs::TempFile::Create();
     std::filesystem::path tmp_file_path = tmp_file->path();
-    PL_RETURN_IF_ERROR(WriteFileFromString(tmp_file_path, config_contents));
+    PX_RETURN_IF_ERROR(WriteFileFromString(tmp_file_path, config_contents));
     fin = std::ifstream(tmp_file_path);
   }
 
@@ -397,7 +397,7 @@ Status GenTimeconst(const std::filesystem::path& linux_headers_base, int hz) {
   std::filesystem::path timeconst_path = linux_headers_base / "include/generated/timeconst.h";
   std::string src_file =
       absl::StrCat(kPackagedHeadersRoot.string(), "/timeconst_", std::to_string(hz), ".h");
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       fs::Copy(src_file, timeconst_path, std::filesystem::copy_options::overwrite_existing));
 
   return Status::OK();
@@ -408,14 +408,14 @@ Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base) {
   int hz = 0;
 
   // Find kernel config.
-  PL_ASSIGN_OR_RETURN(std::filesystem::path kernel_config, FindKernelConfig());
+  PX_ASSIGN_OR_RETURN(std::filesystem::path kernel_config, FindKernelConfig());
 
   // Attempt to generate autconf.h based on the config.
   // While scanning, also pull out the CONFIG_HZ value.
-  PL_RETURN_IF_ERROR(GenAutoConf(linux_headers_base, kernel_config, &hz));
+  PX_RETURN_IF_ERROR(GenAutoConf(linux_headers_base, kernel_config, &hz));
 
   // Attempt to generate timeconst.h based on the HZ in the config.
-  PL_RETURN_IF_ERROR(GenTimeconst(linux_headers_base, hz));
+  PX_RETURN_IF_ERROR(GenTimeconst(linux_headers_base, hz));
 
   return Status::OK();
 }
@@ -480,7 +480,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   VLOG(1) << absl::Substitute("build_dir $0", host_lib_modules_build_dir.string());
 
   if (fs::Exists(host_lib_modules_source_dir)) {
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_source_dir, lib_modules_source_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0 to symlink at $1",
                                   host_lib_modules_source_dir.string(),
@@ -488,7 +488,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   }
 
   if (fs::Exists(host_lib_modules_build_dir)) {
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         fs::CreateSymlinkIfNotExists(host_lib_modules_build_dir, lib_modules_build_dir));
     LOG(INFO) << absl::Substitute("Linked linux headers found at $0 to symlink at $1",
                                   host_lib_modules_build_dir.string(),
@@ -511,7 +511,7 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
 
   // Extract the files.
   ::px::tools::Minitar minitar(headers_package->path.string());
-  PL_RETURN_IF_ERROR(minitar.Extract("/"));
+  PX_RETURN_IF_ERROR(minitar.Extract("/"));
 
   // Check that the expected path was created.
   if (!fs::Exists(expected_directory)) {
@@ -615,15 +615,15 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
 
   LOG(INFO) << "Attempting to install packaged headers.";
 
-  PL_ASSIGN_OR_RETURN(KernelVersion kernel_version, GetKernelVersion());
+  PX_ASSIGN_OR_RETURN(KernelVersion kernel_version, GetKernelVersion());
 
-  PL_ASSIGN_OR_RETURN(PackagedLinuxHeadersSpec packaged_headers,
+  PX_ASSIGN_OR_RETURN(PackagedLinuxHeadersSpec packaged_headers,
                       FindClosestPackagedLinuxHeaders(kPackagedHeadersRoot, kernel_version));
   LOG(INFO) << absl::Substitute("Using packaged header: $0", packaged_headers.path.string());
-  PL_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
-  PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
-  PL_RETURN_IF_ERROR(ApplyConfigPatches(packaged_headers.path));
-  PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
+  PX_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
+  PX_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
+  PX_RETURN_IF_ERROR(ApplyConfigPatches(packaged_headers.path));
+  PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());
   g_packaged_headers_installed = true;
@@ -631,7 +631,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
 }
 
 StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
-  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
+  PX_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
 
   std::filesystem::path lib_modules_dir = "/lib/modules/" + uname;
@@ -639,15 +639,15 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
 
   // Some strategies require the base directory to be present.
   // This does nothing if the directory already exists.
-  PL_RETURN_IF_ERROR(fs::CreateDirectories(lib_modules_dir));
+  PX_RETURN_IF_ERROR(fs::CreateDirectories(lib_modules_dir));
 
   auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
-  // TODO(yzhao): Consider add a PL_RETURN_IF_OK() macro to return the held value of StatusOr.
-  // A problem, when implementing PL_RETURN_IF_OK() in similar manner as PL_RETURN_IF_ERROR(),
-  // is that the return value of the input expression to PL_RETURN_IF_OK() cannot be bound to
+  // TODO(yzhao): Consider add a PX_RETURN_IF_OK() macro to return the held value of StatusOr.
+  // A problem, when implementing PX_RETURN_IF_OK() in similar manner as PX_RETURN_IF_ERROR(),
+  // is that the return value of the input expression to PX_RETURN_IF_OK() cannot be bound to
   // a non-const reference. Therefore, the following code will invoke StatusOr's copy constructor:
   // auto status_or = ...;
-  // PL_RETURN_IF_OK(status_or);
+  // PX_RETURN_IF_OK(status_or);
   if (status_or.ok()) {
     return status_or.ConsumeValueOrDie();
   }

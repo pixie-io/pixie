@@ -23,7 +23,7 @@ namespace carnot {
 namespace planner {
 
 Status DropIR::Init(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(AddParent(parent));
   col_names_ = drop_cols;
   return Status::OK();
 }

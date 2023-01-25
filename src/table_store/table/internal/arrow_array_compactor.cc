@@ -34,9 +34,9 @@ ArrowArrayCompactor::ArrowArrayCompactor(const schema::Relation& rel, arrow::Mem
 Status ArrowArrayCompactor::Reserve(size_t num_rows,
                                     const std::vector<size_t>& variable_col_size_bytes) {
   for (const auto& [col_idx, builder] : Enumerate(builders_)) {
-    PL_RETURN_IF_ERROR(builder->Reserve(num_rows));
+    PX_RETURN_IF_ERROR(builder->Reserve(num_rows));
     if (rel_.col_types()[col_idx] == types::DataType::STRING) {
-      PL_RETURN_IF_ERROR(builder->ReserveData(variable_col_size_bytes[col_idx]));
+      PX_RETURN_IF_ERROR(builder->ReserveData(variable_col_size_bytes[col_idx]));
     }
   }
   return Status::OK();
@@ -54,7 +54,7 @@ StatusOr<std::vector<ArrowArrayPtr>> ArrowArrayCompactor::Finish() {
   std::vector<ArrowArrayPtr> out_columns;
   for (const auto& [col_idx, builder] : Enumerate(builders_)) {
     out_columns.emplace_back();
-    PL_RETURN_IF_ERROR(builder->Finish(&out_columns.back()));
+    PX_RETURN_IF_ERROR(builder->Finish(&out_columns.back()));
   }
   return out_columns;
 }

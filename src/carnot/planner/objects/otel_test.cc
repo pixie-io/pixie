@@ -57,17 +57,17 @@ class OTelExportTest : public QLObjectTest {
     auto src = MakeMemSource("table");
     auto df = Dataframe::Create(compiler_state.get(), src, ast_visitor.get()).ConsumeValueOrDie();
     var_table->Add("df", df);
-    PL_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
+    PX_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
     if (!Exporter::IsExporter(sp)) {
       return error::InvalidArgument("Expected exporter, received $0", sp->name());
     }
     auto exporter = static_cast<Exporter*>(sp.get());
-    PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
+    PX_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
     auto child = src->Children();
     auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
-    PL_RETURN_IF_ERROR(src->ResolveType(compiler_state.get()));
+    PX_RETURN_IF_ERROR(src->ResolveType(compiler_state.get()));
     otel_sink->PullParentTypes();
-    PL_RETURN_IF_ERROR(otel_sink->ResolveType(compiler_state.get()));
+    PX_RETURN_IF_ERROR(otel_sink->ResolveType(compiler_state.get()));
     return otel_sink;
   }
 };

@@ -41,7 +41,7 @@ namespace px {
 namespace carnot {
 namespace exec {
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 using table_store::schema::CopyValueRepeated;
 using table_store::schema::RowBatch;
 using types::ArrowToDataType;
@@ -78,17 +78,17 @@ std::shared_ptr<arrow::Array> EvalScalar(
     arrow::MemoryPool* mem_pool, const typename px::types::DataTypeTraits<T>::native_type& val,
     size_t count) {
   auto builder = GetArrowBuilder<T>(mem_pool);
-  PL_CHECK_OK(builder->Reserve(count));
-  PL_CHECK_OK(CopyValueRepeated<T>(builder.get(), val, count));
+  PX_CHECK_OK(builder->Reserve(count));
+  PX_CHECK_OK(CopyValueRepeated<T>(builder.get(), val, count));
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder->Finish(&arr));
+  PX_CHECK_OK(builder->Finish(&arr));
   return arr;
 }
 
 }  // namespace
 
 // Evaluate Scalar to arrow.
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES.
 std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const plan::ScalarValue& val,
                                                 size_t count) {
   auto mem_pool = exec_state->exec_mem_pool();
@@ -111,7 +111,7 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const pla
 }
 
 // Eval scalar value to type erased column wrapper.
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES.
 std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState*, const plan::ScalarValue& val,
                                                          size_t count) {
   switch (val.DataType()) {
@@ -140,7 +140,7 @@ Status ScalarExpressionEvaluator::Evaluate(ExecState* exec_state, const RowBatch
   CHECK_EQ(static_cast<size_t>(output->num_columns()), expressions_.size());
 
   for (const auto& expression : expressions_) {
-    PL_RETURN_IF_ERROR(EvaluateSingleExpression(exec_state, input, *expression, output));
+    PX_RETURN_IF_ERROR(EvaluateSingleExpression(exec_state, input, *expression, output));
   }
   return Status::OK();
 }
@@ -164,11 +164,11 @@ Status ScalarExpressionEvaluator::InitFuncsInExpression(
     for (const auto& scalar_val : fn.init_arguments()) {
       init_args.push_back(scalar_val.ToBaseValueType());
     }
-    PL_CHECK_OK(def->ExecInit(udf, function_ctx_, init_args));
+    PX_CHECK_OK(def->ExecInit(udf, function_ctx_, init_args));
     return true;
   });
 
-  PL_RETURN_IF_ERROR(walker.Walk(*expr));
+  PX_RETURN_IF_ERROR(walker.Walk(*expr));
   return Status::OK();
 }
 
@@ -178,7 +178,7 @@ Status VectorNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
     id_to_udf_map_[kv.first] = std::move(udf);
   }
   for (auto expr : expressions_) {
-    PL_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
+    PX_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
   }
   return Status::OK();
 }
@@ -233,7 +233,7 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         }
         auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
         // TODO(zasgar): need a better way to handle errors.
-        PL_CHECK_OK(def->ExecBatch(udf, function_ctx_, raw_children, output.get(), num_rows));
+        PX_CHECK_OK(def->ExecBatch(udf, function_ctx_, raw_children, output.get(), num_rows));
         return output;
       });
 
@@ -256,7 +256,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   if (expr.ExpressionType() == plan::Expression::kConstant) {
     auto scalar_expr = static_cast<const plan::ScalarValue&>(expr);
     auto arr = EvalScalarToArrow(exec_state, scalar_expr, num_rows);
-    PL_RETURN_IF_ERROR(output->AddColumn(arr));
+    PX_RETURN_IF_ERROR(output->AddColumn(arr));
     return Status::OK();
   }
 
@@ -264,13 +264,13 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   if (expr.ExpressionType() == plan::Expression::kColumn) {
     // Trivial copy reference for arrow column.
     auto col_expr = static_cast<const plan::Column&>(expr);
-    PL_RETURN_IF_ERROR(output->AddColumn(input.ColumnAt(col_expr.Index())));
+    PX_RETURN_IF_ERROR(output->AddColumn(input.ColumnAt(col_expr.Index())));
     return Status::OK();
   }
 
-  PL_ASSIGN_OR_RETURN(auto result, VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
+  PX_ASSIGN_OR_RETURN(auto result, VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
                                        exec_state, input, expr));
-  PL_RETURN_IF_ERROR(output->AddColumn(result->ConvertToArrow(exec_state->exec_mem_pool())));
+  PX_RETURN_IF_ERROR(output->AddColumn(result->ConvertToArrow(exec_state->exec_mem_pool())));
   return Status::OK();
 }
 
@@ -280,7 +280,7 @@ Status ArrowNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
     id_to_udf_map_[kv.first] = std::move(udf);
   }
   for (const auto& expr : expressions_) {
-    PL_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
+    PX_RETURN_IF_ERROR(InitFuncsInExpression(exec_state, expr));
   }
   return Status::OK();
 }
@@ -328,16 +328,16 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           raw_children.push_back(child.get());
         }
 
-        PL_CHECK_OK(def->ExecBatchArrow(udf, function_ctx_, raw_children, output.get(), num_rows));
+        PX_CHECK_OK(def->ExecBatchArrow(udf, function_ctx_, raw_children, output.get(), num_rows));
 
         std::shared_ptr<arrow::Array> output_array;
-        PL_CHECK_OK(output->Finish(&output_array));
+        PX_CHECK_OK(output->Finish(&output_array));
         return output_array;
       });
 
-  PL_ASSIGN_OR_RETURN(auto result, walker.Walk(expr));
+  PX_ASSIGN_OR_RETURN(auto result, walker.Walk(expr));
 
-  PL_RETURN_IF_ERROR(output->AddColumn(result));
+  PX_RETURN_IF_ERROR(output->AddColumn(result));
   return Status::OK();
 }
 

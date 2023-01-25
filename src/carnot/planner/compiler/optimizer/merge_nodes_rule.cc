@@ -289,7 +289,7 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
   OperatorIR* merged_op = nullptr;
   if (Match(base_op, MemorySource())) {
     auto base_src = static_cast<MemorySourceIR*>(base_op);
-    PL_ASSIGN_OR_RETURN(auto new_src, graph->CopyNode(base_src));
+    PX_ASSIGN_OR_RETURN(auto new_src, graph->CopyNode(base_src));
     DCHECK(base_src->column_index_map_set());
     auto columns = new_src->column_names();
     auto column_idx_map = new_src->column_index_map();
@@ -324,12 +324,12 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     }
     for (OperatorIR* other_op : operators_to_merge) {
       DCHECK_EQ(other_op->parents().size(), 1UL);
-      PL_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
+      PX_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
 
       auto other_map = static_cast<MapIR*>(other_op);
-      PL_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_map->col_exprs()));
+      PX_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_map->col_exprs()));
     }
-    PL_ASSIGN_OR_RETURN(merged_op,
+    PX_ASSIGN_OR_RETURN(merged_op,
                         graph->CreateNode<MapIR>(base_map->ast(), base_map->parents()[0], expr_list,
                                                  /* keep_input_columns */ false));
   } else if (Match(base_op, BlockingAgg())) {
@@ -343,29 +343,29 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     }
     for (OperatorIR* other_op : operators_to_merge) {
       DCHECK_EQ(other_op->parents().size(), 1UL);
-      PL_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
+      PX_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
       auto other_agg = static_cast<BlockingAggIR*>(other_op);
-      PL_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_agg->aggregate_expressions()));
+      PX_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_agg->aggregate_expressions()));
     }
 
-    PL_ASSIGN_OR_RETURN(merged_op,
+    PX_ASSIGN_OR_RETURN(merged_op,
                         graph->CreateNode<BlockingAggIR>(base_agg->ast(), base_agg->parents()[0],
                                                          base_agg->groups(), expr_list));
 
   } else if (Match(base_op, Join())) {
     auto join = static_cast<JoinIR*>(base_op);
-    PL_ASSIGN_OR_RETURN(JoinIR * new_join, graph->CopyNode(join));
-    PL_RETURN_IF_ERROR(new_join->CopyParentsFrom(join));
+    PX_ASSIGN_OR_RETURN(JoinIR * new_join, graph->CopyNode(join));
+    PX_RETURN_IF_ERROR(new_join->CopyParentsFrom(join));
     merged_op = new_join;
   } else if (Match(base_op, Filter())) {
     FilterIR* filter = static_cast<FilterIR*>(base_op);
-    PL_ASSIGN_OR_RETURN(FilterIR * new_filter, graph->CopyNode(filter));
-    PL_RETURN_IF_ERROR(new_filter->CopyParentsFrom(filter));
+    PX_ASSIGN_OR_RETURN(FilterIR * new_filter, graph->CopyNode(filter));
+    PX_RETURN_IF_ERROR(new_filter->CopyParentsFrom(filter));
     merged_op = new_filter;
   } else if (Match(base_op, Limit())) {
     LimitIR* limit = static_cast<LimitIR*>(base_op);
-    PL_ASSIGN_OR_RETURN(LimitIR * new_limit, graph->CopyNode(limit));
-    PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
+    PX_ASSIGN_OR_RETURN(LimitIR * new_limit, graph->CopyNode(limit));
+    PX_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
     merged_op = new_limit;
   } else {
     return base_op->CreateIRNodeError("Can't optimize $0", base_op->DebugString());
@@ -373,18 +373,18 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
   DCHECK_NE(merged_op, nullptr);
   merged_op->ClearResolvedType();
   ResolveTypesRule rule(compiler_state_);
-  PL_ASSIGN_OR_RETURN(bool did_apply, rule.Apply(merged_op));
+  PX_ASSIGN_OR_RETURN(bool did_apply, rule.Apply(merged_op));
   DCHECK(did_apply) << merged_op->DebugString();
   return merged_op;
 }
 
 StatusOr<MapIR*> MakeNoOpMap(IR* graph, CompilerState* compiler_state, OperatorIR* op_to_copy) {
-  PL_ASSIGN_OR_RETURN(MapIR * map,
+  PX_ASSIGN_OR_RETURN(MapIR * map,
                       graph->CreateNode<MapIR>(op_to_copy->ast(), op_to_copy, ColExpressionVector{},
                                                /* keep_input_columns */ true));
 
   ResolveTypesRule rule(compiler_state);
-  PL_ASSIGN_OR_RETURN(bool did_change, rule.Apply(map));
+  PX_ASSIGN_OR_RETURN(bool did_change, rule.Apply(map));
   DCHECK(did_change);
   return map;
 }
@@ -402,11 +402,11 @@ Status ReplaceOpsWithMerged(CompilerState* compiler_state, OperatorIR* merged,
     // TODO(philkuz) (PP-1812) need to figure out how we would propagate information about
     // renamed output columns to the children. We'll need to add some data structure
     // that describes the transformation of o -> merged.
-    PL_RETURN_IF_ERROR(child->ReplaceParent(parents[0], merged));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(parents[0], merged));
     // Insert a no-op map for each following parent that is repeated.
     for (int64_t i = 1; i < static_cast<int64_t>(parents.size()); ++i) {
-      PL_ASSIGN_OR_RETURN(MapIR * map, MakeNoOpMap(parents[i]->graph(), compiler_state, merged));
-      PL_RETURN_IF_ERROR(child->ReplaceParent(parents[i], map));
+      PX_ASSIGN_OR_RETURN(MapIR * map, MakeNoOpMap(parents[i]->graph(), compiler_state, merged));
+      PX_RETURN_IF_ERROR(child->ReplaceParent(parents[i], map));
     }
   }
   return Status::OK();
@@ -417,7 +417,7 @@ Status RemoveMergedOps(IR* graph, const std::vector<OperatorIR*>& ops_to_merge) 
     if (op->Children().size() != 0) {
       return op->CreateIRNodeError("'$0' Still has children.", op->DebugString());
     }
-    PL_RETURN_IF_ERROR(graph->DeleteNode(op->id()));
+    PX_RETURN_IF_ERROR(graph->DeleteNode(op->id()));
   }
   return Status::OK();
 }
@@ -483,9 +483,9 @@ StatusOr<bool> MergeNodesRule::Execute(IR* graph) {
     // Merge the operators together. If there's only one operator then we don't need to merge it.
     if (ms.operators.size() > 1) {
       did_merge = true;
-      PL_ASSIGN_OR_RETURN(OperatorIR * merged_op, MergeOps(graph, ms.operators));
-      PL_RETURN_IF_ERROR(ReplaceOpsWithMerged(compiler_state_, merged_op, ms.operators));
-      PL_RETURN_IF_ERROR(RemoveMergedOps(graph, ms.operators));
+      PX_ASSIGN_OR_RETURN(OperatorIR * merged_op, MergeOps(graph, ms.operators));
+      PX_RETURN_IF_ERROR(ReplaceOpsWithMerged(compiler_state_, merged_op, ms.operators));
+      PX_RETURN_IF_ERROR(RemoveMergedOps(graph, ms.operators));
       observed_ops.insert(merged_op->id());
     }
 

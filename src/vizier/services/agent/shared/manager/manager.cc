@@ -132,7 +132,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 }
 
 Status Manager::Init() {
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       agent_metadata_filter_,
       md::AgentMetadataFilter::Create(kMetadataFilterMaxEntries, kMetadataFilterMaxErrorRate,
                                       md::kMetadataFilterEntities));
@@ -157,7 +157,7 @@ Status Manager::Init() {
   // Downstream dependencies like stirling/carnot depend on knowing
   // ASID and metadata state, which is only available after registration is
   // complete.
-  PL_RETURN_IF_ERROR(agent_nats_connector_->Connect(dispatcher_.get()));
+  PX_RETURN_IF_ERROR(agent_nats_connector_->Connect(dispatcher_.get()));
   // Attach the message handler for agent nats:
   agent_nats_connector_->RegisterMessageHandler(
       std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
@@ -167,7 +167,7 @@ Status Manager::Init() {
       std::bind(&Manager::PostRegisterHook, this, std::placeholders::_1),
       std::bind(&Manager::PostReregisterHook, this, std::placeholders::_1));
 
-  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
+  PX_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kRegisterAgentResponse,
                                      registration_handler_));
   registration_handler_->RegisterAgent();
 
@@ -228,15 +228,15 @@ Status Manager::RegisterBackgroundHelpers() {
       dispatcher_.get(), &info_, agent_nats_connector_.get(),
       std::bind(&Manager::ReregisterHook, this));
 
-  PL_CHECK_OK(
+  PX_CHECK_OK(
       RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatAck, heartbeat_handler_));
-  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack,
+  PX_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kHeartbeatNack,
                                      heartbeat_nack_handler));
 
   // Attach message handler for config updates.
   auto config_manager =
       std::make_shared<ConfigManager>(dispatcher_.get(), &info_, agent_nats_connector_.get());
-  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kConfigUpdateMessage,
+  PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kConfigUpdateMessage,
                                             config_manager));
 
   return Status::OK();
@@ -291,21 +291,21 @@ Status Manager::PostRegisterHook(uint32_t asid) {
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
   // Call the derived class post-register hook.
-  PL_CHECK_OK(PostRegisterHookImpl());
-  PL_CHECK_OK(RegisterBackgroundHelpers());
+  PX_CHECK_OK(PostRegisterHookImpl());
+  PX_CHECK_OK(RegisterBackgroundHelpers());
 
   k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
       nats_addr_, kK8sPubTopic /*pub_topic*/,
       absl::Substitute(kK8sSubTopicPattern, k8s_update_selector()) /*sub topic*/,
       SSL::DefaultNATSCreds());
 
-  PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
+  PX_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
 
   auto k8s_update_handler =
       std::make_shared<K8sUpdateHandler>(dispatcher_.get(), mds_manager_.get(), &info_,
                                          k8s_nats_connector_.get(), k8s_update_selector());
 
-  PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
+  PX_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
                                      k8s_update_handler));
 
   // Attach the message handler for k8s nats:
@@ -316,7 +316,7 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   metrics_nats_connector_ = std::make_unique<px::event::NATSConnector<messages::MetricsMessage>>(
       nats_addr_, kMetricsPubTopic /*pub topic*/, "" /*sub topic*/, SSL::DefaultNATSCreds());
 
-  PL_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
+  PX_RETURN_IF_ERROR(metrics_nats_connector_->Connect(dispatcher_.get()));
 
   tablestore_compaction_timer_ = dispatcher()->CreateTimer([this]() {
     // TODO(james): when we change ExecState::exec_mem_pool to not return just the default pool, we

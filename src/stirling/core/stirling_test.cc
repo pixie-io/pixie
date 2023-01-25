@@ -237,7 +237,7 @@ class StirlingTest : public ::testing::Test {
         switch (schema_elements[j].type()) {
           case DataType::TIME64NS: {
             auto val = col->Get<Time64NSValue>(i).val;
-            PL_UNUSED(val);
+            PX_UNUSED(val);
           } break;
           case DataType::INT64: {
             auto& checker = *(int_seq_checker_.at(key));

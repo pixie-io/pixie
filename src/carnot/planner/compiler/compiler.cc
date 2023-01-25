@@ -50,7 +50,7 @@ StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState
 
 StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state,
                                          const ExecFuncs& exec_funcs) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state, exec_funcs));
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state, exec_funcs));
   return ir->ToProto();
 }
 
@@ -62,21 +62,21 @@ StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
 StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
                                                     CompilerState* compiler_state,
                                                     const ExecFuncs& exec_funcs) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, exec_funcs));
-  PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
-  PL_RETURN_IF_ERROR(Optimize(ir.get(), compiler_state));
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, exec_funcs));
+  PX_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
+  PX_RETURN_IF_ERROR(Optimize(ir.get(), compiler_state));
 
-  PL_RETURN_IF_ERROR(VerifyGraphHasResultSink(ir.get()));
+  PX_RETURN_IF_ERROR(VerifyGraphHasResultSink(ir.get()));
   return ir;
 }
 
 Status Compiler::Analyze(IR* ir, CompilerState* compiler_state) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
   return analyzer->Execute(ir);
 }
 
 Status Compiler::Optimize(IR* ir, CompilerState* compiler_state) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<Optimizer> optimizer, Optimizer::Create(compiler_state));
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<Optimizer> optimizer, Optimizer::Create(compiler_state));
   return optimizer->Execute(ir);
 }
 
@@ -84,7 +84,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
                                                   CompilerState* compiler_state,
                                                   const ExecFuncs& exec_funcs) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   bool func_based_exec = exec_funcs.size() > 0;
@@ -97,13 +97,13 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 
   absl::flat_hash_map<std::string, std::string> module_map;
   module_map["pxviews"] = kPxlViews;
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(
+  PX_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(
                                            ir.get(), &mutations_ir, compiler_state, &module_handler,
                                            func_based_exec, reserved_names, module_map));
 
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {
-    PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
   }
   return ir;
 }
@@ -112,7 +112,7 @@ StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string&
                                                               CompilerState* compiler_state,
                                                               const ExecFuncs& exec_funcs) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   IR ir;
   bool func_based_exec = exec_funcs.size() > 0;
@@ -122,13 +122,13 @@ StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string&
   }
   std::unique_ptr<MutationsIR> mutations = std::make_unique<MutationsIR>();
   ModuleHandler module_handler;
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
+  PX_ASSIGN_OR_RETURN(auto ast_walker,
                       ASTVisitorImpl::Create(&ir, mutations.get(), compiler_state, &module_handler,
                                              func_based_exec, reserved_names));
 
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {
-    PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
   }
   return mutations;
 }

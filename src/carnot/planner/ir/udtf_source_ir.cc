@@ -30,8 +30,8 @@ Status UDTFSourceIR::Init(std::string_view func_name,
   func_name_ = func_name;
   udtf_spec_ = udtf_spec;
   table_store::schema::Relation relation;
-  PL_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
-  PL_RETURN_IF_ERROR(SetResolvedType(TableType::Create(relation)));
+  PX_RETURN_IF_ERROR(relation.FromProto(&udtf_spec_.relation()));
+  PX_RETURN_IF_ERROR(SetResolvedType(TableType::Create(relation)));
   return InitArgValues(arg_value_map, udtf_spec);
 }
 
@@ -42,7 +42,7 @@ Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
   pb->set_name(func_name_);
 
   for (const auto& arg_value : arg_values_) {
-    PL_RETURN_IF_ERROR(arg_value->ToProto(pb->add_arg_values()));
+    PX_RETURN_IF_ERROR(arg_value->ToProto(pb->add_arg_values()));
   }
 
   return Status::OK();
@@ -54,7 +54,7 @@ Status UDTFSourceIR::SetArgValues(const std::vector<ExpressionIR*>& arg_values) 
     if (!value->IsData()) {
       return CreateIRNodeError("expected scalar value, received '$0'", value->type_string());
     }
-    PL_ASSIGN_OR_RETURN(arg_values_[idx],
+    PX_ASSIGN_OR_RETURN(arg_values_[idx],
                         graph()->OptionallyCloneWithEdge(this, static_cast<DataIR*>(value)));
   }
   return Status::OK();
@@ -83,7 +83,7 @@ Status UDTFSourceIR::CopyFromNodeImpl(
   udtf_spec_ = udtf->udtf_spec_;
   std::vector<ExpressionIR*> arg_values;
   for (const DataIR* arg_element : udtf->arg_values_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_arg_element, graph()->CopyNode(arg_element, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(IRNode * new_arg_element, graph()->CopyNode(arg_element, copied_nodes_map));
     DCHECK(Match(new_arg_element, DataNode()));
     arg_values.push_back(static_cast<DataIR*>(new_arg_element));
   }

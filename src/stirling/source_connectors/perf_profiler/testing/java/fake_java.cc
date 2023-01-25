@@ -48,7 +48,7 @@ JavaSymbolFileWriter::JavaSymbolFileWriter() {
   const std::filesystem::path artifacts_path = java::StirlingArtifactsPath(my_upid);
   const std::filesystem::path symbol_file_path = java::StirlingSymbolFilePath(my_upid);
 
-  PL_EXIT_IF_ERROR(fs::CreateDirectories(artifacts_path));
+  PX_EXIT_IF_ERROR(fs::CreateDirectories(artifacts_path));
 
   constexpr auto kIOFlags = std::ios::out | std::ios::binary;
   symbol_file_ = std::make_unique<std::ofstream>(symbol_file_path, kIOFlags);

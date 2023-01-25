@@ -122,7 +122,7 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
 
   std::string vendor_prefix;
   for (std::string_view s : kSampleSymbols) {
-    PL_ASSIGN_OR(std::vector<ElfReader::SymbolInfo> symbol_matches,
+    PX_ASSIGN_OR(std::vector<ElfReader::SymbolInfo> symbol_matches,
                  elf_reader->ListFuncSymbols(s, obj_tools::SymbolMatchType::kSuffix), continue);
     if (symbol_matches.size() > 1) {
       VLOG(1) << absl::Substitute(
@@ -447,8 +447,8 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
 
 Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                  struct go_tls_symaddrs_t* symaddrs) {
-  PL_ASSIGN_OR_RETURN(std::string build_version, ReadBuildVersion(elf_reader));
-  PL_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_version, false));
+  PX_ASSIGN_OR_RETURN(std::string build_version, ReadBuildVersion(elf_reader));
+  PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_version, false));
   std::string retval0_arg = "~r1";
   std::string retval1_arg = "~r2";
 
@@ -497,10 +497,10 @@ StatusOr<struct go_common_symaddrs_t> GoCommonSymAddrs(ElfReader* elf_reader,
                                                        DwarfReader* dwarf_reader) {
   struct go_common_symaddrs_t symaddrs;
 
-  PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
 
-  PL_RETURN_IF_ERROR(PopulateCommonTypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PL_RETURN_IF_ERROR(PopulateCommonDebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateCommonTypeAddrs(elf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateCommonDebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
 
   return symaddrs;
 }
@@ -509,10 +509,10 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
                                                      DwarfReader* dwarf_reader) {
   struct go_http2_symaddrs_t symaddrs;
 
-  PL_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
+  PX_ASSIGN_OR_RETURN(std::string vendor_prefix, InferHTTP2SymAddrVendorPrefix(elf_reader));
 
-  PL_RETURN_IF_ERROR(PopulateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
-  PL_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateHTTP2TypeAddrs(elf_reader, vendor_prefix, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateHTTP2DebugSymbols(dwarf_reader, vendor_prefix, &symaddrs));
 
   return symaddrs;
 }
@@ -520,7 +520,7 @@ StatusOr<struct go_http2_symaddrs_t> GoHTTP2SymAddrs(ElfReader* elf_reader,
 StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader) {
   struct go_tls_symaddrs_t symaddrs;
 
-  PL_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(elf_reader, dwarf_reader, &symaddrs));
+  PX_RETURN_IF_ERROR(PopulateGoTLSDebugSymbols(elf_reader, dwarf_reader, &symaddrs));
 
   return symaddrs;
 }
@@ -559,7 +559,7 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
   const std::string version_num_symbol = "OpenSSL_version_num";
 
   // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
-  PL_ASSIGN_OR_RETURN(auto version_num_f, DLSymbolToFptr<unsigned long()>(h, version_num_symbol));
+  PX_ASSIGN_OR_RETURN(auto version_num_f, DLSymbolToFptr<unsigned long()>(h, version_num_symbol));
 
   const uint64_t version_num = version_num_f();
   return version_num;
@@ -568,7 +568,7 @@ StatusOr<uint64_t> GetOpenSSLVersionNumUsingDLOpen(const std::filesystem::path& 
 StatusOr<uint64_t> GetOpenSSLVersionNumUsingFptr(RawFptrManager* fptr_manager) {
   const std::string symbol = "OpenSSL_version_num";
   // NOLINTNEXTLINE(runtime/int): 'unsigned long' is from upstream, match that here (vs. uint64_t)
-  PL_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>(symbol));
+  PX_ASSIGN_OR_RETURN(auto version_num_f, fptr_manager->RawSymbolToFptr<unsigned long()>(symbol));
   return version_num_f();
 }
 
@@ -610,7 +610,7 @@ StatusOr<uint32_t> OpenSSLFixSubversionNum(RawFptrManager* fptrManager,
           "Unable to find openssl symbol 'OpenSSL_version_num' with raw function pointer: %s",
           openssl_version_packed.ToString());
   }
-  PL_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
+  PX_ASSIGN_OR_RETURN(version_num.packed, openssl_version_packed);
 
   const uint32_t major = version_num.major;
   const uint32_t minor = version_num.minor;
@@ -695,7 +695,7 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(RawFptrManager* fptrManager,
   struct openssl_symaddrs_t symaddrs;
   symaddrs.SSL_rbio_offset = kSSL_RBIO_offset;
 
-  PL_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
+  PX_ASSIGN_OR_RETURN(uint32_t openssl_fix_sub_version,
                       OpenSSLFixSubversionNum(fptrManager, openssl_lib, pid));
 
   if (!IsBoringSSL(openssl_lib)) {
@@ -844,25 +844,25 @@ StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromVersion(const Se
 StatusOr<struct node_tlswrap_symaddrs_t> NodeTLSWrapSymAddrsFromDwarf(DwarfReader* dwarf_reader) {
   struct node_tlswrap_symaddrs_t symaddrs = {};
 
-  PL_ASSIGN_OR_RETURN(symaddrs.TLSWrap_StreamListener_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.TLSWrap_StreamListener_offset,
                       dwarf_reader->GetClassParentOffset("TLSWrap", "StreamListener"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.StreamListener_stream_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.StreamListener_stream_offset,
                       dwarf_reader->GetClassMemberOffset("StreamListener", "stream_"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.StreamBase_StreamResource_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.StreamBase_StreamResource_offset,
                       dwarf_reader->GetClassParentOffset("StreamBase", "StreamResource"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_StreamBase_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_StreamBase_offset,
                       dwarf_reader->GetClassParentOffset("LibuvStreamWrap", "StreamBase"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_stream_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.LibuvStreamWrap_stream_offset,
                       dwarf_reader->GetClassMemberOffset("LibuvStreamWrap", "stream_"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.uv_stream_s_io_watcher_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.uv_stream_s_io_watcher_offset,
                       dwarf_reader->GetStructMemberOffset("uv_stream_s", "io_watcher"));
 
-  PL_ASSIGN_OR_RETURN(symaddrs.uv__io_s_fd_offset,
+  PX_ASSIGN_OR_RETURN(symaddrs.uv__io_s_fd_offset,
                       dwarf_reader->GetStructMemberOffset("uv__io_s", "fd"));
 
   return symaddrs;

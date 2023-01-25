@@ -36,14 +36,14 @@ StatusOr<absl::flat_hash_set<ColumnIR*>> ExpressionIR::InputColumns() {
   absl::flat_hash_set<ColumnIR*> ret;
   auto func = static_cast<FuncIR*>(this);
   for (ExpressionIR* arg : func->args()) {
-    PL_ASSIGN_OR_RETURN(auto input_cols, arg->InputColumns());
+    PX_ASSIGN_OR_RETURN(auto input_cols, arg->InputColumns());
     ret.insert(input_cols.begin(), input_cols.end());
   }
   return ret;
 }
 
 StatusOr<absl::flat_hash_set<std::string>> ExpressionIR::InputColumnNames() {
-  PL_ASSIGN_OR_RETURN(auto cols, InputColumns());
+  PX_ASSIGN_OR_RETURN(auto cols, InputColumns());
   absl::flat_hash_set<std::string> output;
   for (auto col : cols) {
     output.insert(col->col_name());
@@ -53,7 +53,7 @@ StatusOr<absl::flat_hash_set<std::string>> ExpressionIR::InputColumnNames() {
 
 Status ExpressionIR::CopyFromNode(const IRNode* node,
                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
+  PX_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
   annotations_ = static_cast<const ExpressionIR*>(node)->annotations();
   type_cast_ = static_cast<const ExpressionIR*>(node)->type_cast();
   return Status::OK();

@@ -280,7 +280,7 @@ TEST_F(CPPDynamicTraceTest, DISABLED_TraceTestExe) {
   // TODO(yzhao): This does not work yet.
   ASSERT_NO_FATAL_FAILURE(InitTestFixturesAndRunTestProgram(kTestExeTraceProgram));
   std::vector<TaggedRecordBatch> tablets = GetRecords();
-  PL_UNUSED(tablets);
+  PX_UNUSED(tablets);
 }
 
 }  // namespace stirling

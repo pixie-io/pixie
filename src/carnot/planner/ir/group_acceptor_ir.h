@@ -48,7 +48,7 @@ class GroupAcceptorIR : public OperatorIR {
     DCHECK(groups_.empty());
     groups_.resize(new_groups.size());
     for (size_t i = 0; i < new_groups.size(); ++i) {
-      PL_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, new_groups[i]));
+      PX_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, new_groups[i]));
     }
     return Status::OK();
   }

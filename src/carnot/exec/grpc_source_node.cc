@@ -50,8 +50,8 @@ Status GRPCSourceNode::OpenImpl(ExecState*) { return Status::OK(); }
 Status GRPCSourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
 Status GRPCSourceNode::GenerateNextImpl(ExecState* exec_state) {
-  PL_RETURN_IF_ERROR(PopRowBatch());
-  PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *rb_));
+  PX_RETURN_IF_ERROR(PopRowBatch());
+  PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *rb_));
   return Status::OK();
 }
 
@@ -78,7 +78,7 @@ Status GRPCSourceNode::PopRowBatch() {
         "message.");
   }
 
-  PL_ASSIGN_OR_RETURN(rb_, RowBatch::FromProto(rb_request->query_result().row_batch()));
+  PX_ASSIGN_OR_RETURN(rb_, RowBatch::FromProto(rb_request->query_result().row_batch()));
   return Status::OK();
 }
 

@@ -23,7 +23,7 @@ namespace carnot {
 namespace planner {
 
 Status EmptySourceIR::Init(TypePtr type) {
-  PL_RETURN_IF_ERROR(SetResolvedType(type));
+  PX_RETURN_IF_ERROR(SetResolvedType(type));
   return Status::OK();
 }
 Status EmptySourceIR::ToProto(planpb::Operator* op) const {

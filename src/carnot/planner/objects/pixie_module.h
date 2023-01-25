@@ -337,7 +337,7 @@ inline Status AddResultSink(IR* graph, const pypa::AstPtr& ast, std::string_view
   // px.display(df, cols=['cols', 'to', 'keep'])
   // So we don't currently support passing those output columns as an argument to display.
   std::vector<std::string> columns;
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto sink, graph->CreateNode<GRPCSinkIR>(ast, parent_op, std::string(out_name), columns));
   sink->SetDestinationAddress(std::string(result_addr));
   sink->SetDestinationSSLTargetName(std::string(result_ssl_targetname));

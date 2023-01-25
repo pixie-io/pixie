@@ -106,7 +106,7 @@ export function formatUInt128Protobuf(val: UInt128): string {
 }
 
 export function getDataRenderer(type: DataType): (any) => string {
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+  // PX_CARNOT_UPDATE_FOR_NEW_TYPES.
   switch (type) {
     case DataType.FLOAT64:
       return formatFloat64Data;

@@ -80,7 +80,7 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   // The container files need to be recursively read and the PIDs needs be merge across all
   // containers.
 
-  PL_ASSIGN_OR_RETURN(std::string fpath, PodPath(qos_class, pod_id, container_id, container_type));
+  PX_ASSIGN_OR_RETURN(std::string fpath, PodPath(qos_class, pod_id, container_id, container_type));
 
   std::ifstream ifs(fpath);
   if (!ifs) {

@@ -42,7 +42,7 @@ class StandalonePEMManager : public BaseManager {
   static StatusOr<std::unique_ptr<BaseManager>> Create(Args&&... args) {
     auto m = std::unique_ptr<StandalonePEMManager>(
         new StandalonePEMManager(std::forward<Args>(args)...));
-    PL_RETURN_IF_ERROR(m->Init());
+    PX_RETURN_IF_ERROR(m->Init());
     return std::unique_ptr<BaseManager>(std::move(m));
   }
 

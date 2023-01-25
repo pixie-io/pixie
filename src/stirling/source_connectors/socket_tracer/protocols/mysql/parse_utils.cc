@@ -86,7 +86,7 @@ StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
 }
 
 Status DissectStringParam(std::string_view msg, size_t* param_offset, std::string* param) {
-  PL_ASSIGN_OR_RETURN(int param_length, ProcessLengthEncodedInt(msg, param_offset));
+  PX_ASSIGN_OR_RETURN(int param_length, ProcessLengthEncodedInt(msg, param_offset));
   if (msg.size() < *param_offset + param_length) {
     return error::Internal("Not enough bytes to dissect string param.");
   }
@@ -98,7 +98,7 @@ Status DissectStringParam(std::string_view msg, size_t* param_offset, std::strin
 template <size_t length>
 Status DissectIntParam(std::string_view msg, size_t* offset, std::string* param) {
   int64_t p = 0;
-  PL_RETURN_IF_ERROR(DissectInt<length>(msg, offset, &p));
+  PX_RETURN_IF_ERROR(DissectInt<length>(msg, offset, &p));
   *param = std::to_string(p);
   return Status::OK();
 }

@@ -53,7 +53,7 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
   typename TClientServerContainers::ServerContainer server_;
@@ -90,7 +90,7 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(this->client_.Run(
+  PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())}));
   this->client_.Wait();
@@ -149,7 +149,7 @@ class ProductCatalogServiceTraceTest
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the HTTP image.
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
   ::px::stirling::testing::ProductCatalogService server_;
@@ -160,7 +160,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(client_.Run(std::chrono::seconds{10},
+  PX_CHECK_OK(client_.Run(std::chrono::seconds{10},
                           {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 

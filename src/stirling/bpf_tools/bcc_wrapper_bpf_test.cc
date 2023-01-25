@@ -56,7 +56,7 @@ class TestExeWrapper {
     // Copy test_exe to temp directory so we can remove it to simulate non-existent file.
     const obj_tools::TestExeFixture kTestExeFixture;
     test_exe_path_ = temp_dir_.path() / "test_exe";
-    PL_CHECK_OK(fs::Copy(kTestExeFixture.Path(), test_exe_path_));
+    PX_CHECK_OK(fs::Copy(kTestExeFixture.Path(), test_exe_path_));
   }
 
   std::filesystem::path& path() { return test_exe_path_; }

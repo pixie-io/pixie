@@ -44,13 +44,13 @@ bool IsGoExecutable(ElfReader* elf_reader) {
 }
 
 StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
-  PL_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
+  PX_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
                       elf_reader->SearchTheOnlySymbol(kGoBuildVersionSymbol));
 
   // The address of this symbol points to a Golang string object.
   // But the size is for the symbol table entry, not this string object.
   symbol.size = sizeof(gostring);
-  PL_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
+  PX_ASSIGN_OR_RETURN(utils::u8string version_code, elf_reader->SymbolByteCode(".data", symbol));
 
   // We can't guarantee the alignment on version_string so we make a copy into an aligned address.
   gostring version_string;
@@ -60,7 +60,7 @@ StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
   version_symbol.address = reinterpret_cast<uint64_t>(version_string.ptr);
   version_symbol.size = version_string.len;
 
-  PL_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
+  PX_ASSIGN_OR_RETURN(utils::u8string str, elf_reader->SymbolByteCode(".data", version_symbol));
   return std::string(reinterpret_cast<const char*>(str.data()), str.size());
 }
 
@@ -71,7 +71,7 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
   // All itable objects in the symbols are prefixed with this string.
   const std::string_view kITablePrefix("go.itab.");
 
-  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
+  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> itable_symbols,
                       elf_reader->SearchSymbols(kITablePrefix, SymbolMatchType::kPrefix,
                                                 /*symbol_type*/ ELFIO::STT_OBJECT));
 

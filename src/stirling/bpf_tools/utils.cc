@@ -29,7 +29,7 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
     obj_tools::ElfReader* elf_reader) {
   DCHECK(spec.attach_type == BPFProbeAttachType::kReturn);
 
-  PL_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs, elf_reader->FuncRetInstAddrs(target));
+  PX_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs, elf_reader->FuncRetInstAddrs(target));
 
   std::vector<UProbeSpec> res;
 
@@ -47,7 +47,7 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(
 
 StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& spec,
                                                              obj_tools::ElfReader* elf_reader) {
-  PL_ASSIGN_OR_RETURN(const std::vector<obj_tools::ElfReader::SymbolInfo> symbol_infos,
+  PX_ASSIGN_OR_RETURN(const std::vector<obj_tools::ElfReader::SymbolInfo> symbol_infos,
                       elf_reader->ListFuncSymbols(spec.symbol, obj_tools::SymbolMatchType::kExact));
 
   if (symbol_infos.empty()) {

@@ -54,7 +54,7 @@ std::vector<std::filesystem::path> ListDir(const std::filesystem::path& dir) {
 
 StatusOr<std::string> NamespaceID(std::string_view ns_name) {
   std::filesystem::path ns_path = std::filesystem::path("/proc/self/ns") / ns_name;
-  PL_ASSIGN_OR_RETURN(std::filesystem::path ns_link, fs::ReadSymlink(ns_path));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path ns_link, fs::ReadSymlink(ns_path));
   return ns_link.string();
 }
 

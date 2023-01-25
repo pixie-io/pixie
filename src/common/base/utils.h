@@ -367,7 +367,7 @@ constexpr auto ArrayTransform(const std::array<T, 0>&, F&&) {
 }
 
 // Attempts to cast raw value into an enum, and returns error if the value is not valid.
-// Meant for use with PL_ASSIGN_OR_RETURN, Otherwise one should use magic_enum::enum_cast directly.
+// Meant for use with PX_ASSIGN_OR_RETURN, Otherwise one should use magic_enum::enum_cast directly.
 template <typename TEnum, typename TIn>
 StatusOr<TEnum> EnumCast(TIn x) {
   auto enum_cast_var = magic_enum::enum_cast<TEnum>(x);

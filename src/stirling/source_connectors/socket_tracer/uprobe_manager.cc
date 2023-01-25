@@ -125,7 +125,7 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
         case BPFProbeAttachType::kEntry:
         case BPFProbeAttachType::kReturn: {
           spec.symbol = symbol_info.name;
-          PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+          PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
           ++uprobe_count;
           break;
         }
@@ -138,12 +138,12 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
           //
           // [1] https://llvm.org/doxygen/BinaryFormat_2ELF_8h_source.html
           // [2] https://github.com/eth-sri/debin/blob/master/cpp/elfio/elf_types.hpp
-          PL_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs,
+          PX_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs,
                               elf_reader->FuncRetInstAddrs(symbol_info));
           for (const uint64_t& addr : ret_inst_addrs) {
             spec.attach_type = BPFProbeAttachType::kEntry;
             spec.address = addr;
-            PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+            PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
             ++uprobe_count;
           }
           break;
@@ -158,7 +158,7 @@ StatusOr<int> UProbeManager::AttachUProbeTmpl(const ArrayView<UProbeTmpl>& probe
 
 Status UProbeManager::UpdateOpenSSLSymAddrs(obj_tools::RawFptrManager* fptr_manager,
                                             std::filesystem::path libcrypto_path, uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
+  PX_ASSIGN_OR_RETURN(struct openssl_symaddrs_t symaddrs,
                       OpenSSLSymAddrs(fptr_manager, libcrypto_path, pid));
 
   openssl_symaddrs_map_->UpdateValue(pid, symaddrs);
@@ -168,7 +168,7 @@ Status UProbeManager::UpdateOpenSSLSymAddrs(obj_tools::RawFptrManager* fptr_mana
 
 Status UProbeManager::UpdateGoCommonSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                              const std::vector<int32_t>& pids) {
-  PL_ASSIGN_OR_RETURN(struct go_common_symaddrs_t symaddrs,
+  PX_ASSIGN_OR_RETURN(struct go_common_symaddrs_t symaddrs,
                       GoCommonSymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
@@ -180,7 +180,7 @@ Status UProbeManager::UpdateGoCommonSymAddrs(ElfReader* elf_reader, DwarfReader*
 
 Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                             const std::vector<int32_t>& pids) {
-  PL_ASSIGN_OR_RETURN(struct go_http2_symaddrs_t symaddrs,
+  PX_ASSIGN_OR_RETURN(struct go_http2_symaddrs_t symaddrs,
                       GoHTTP2SymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
@@ -192,7 +192,7 @@ Status UProbeManager::UpdateGoHTTP2SymAddrs(ElfReader* elf_reader, DwarfReader* 
 
 Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                           const std::vector<int32_t>& pids) {
-  PL_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, dwarf_reader));
+  PX_ASSIGN_OR_RETURN(struct go_tls_symaddrs_t symaddrs, GoTLSSymAddrs(elf_reader, dwarf_reader));
 
   for (auto& pid : pids) {
     go_tls_symaddrs_map_->UpdateValue(pid, symaddrs);
@@ -203,7 +203,7 @@ Status UProbeManager::UpdateGoTLSSymAddrs(ElfReader* elf_reader, DwarfReader* dw
 
 Status UProbeManager::UpdateNodeTLSWrapSymAddrs(int32_t pid, const std::filesystem::path& node_exe,
                                                 const SemVer& ver) {
-  PL_ASSIGN_OR_RETURN(struct node_tlswrap_symaddrs_t symbol_offsets,
+  PX_ASSIGN_OR_RETURN(struct node_tlswrap_symaddrs_t symbol_offsets,
                       NodeTLSWrapSymAddrs(node_exe, ver));
   node_tlswrap_symaddrs_map_->UpdateValue(pid, symbol_offsets);
   return Status::OK();
@@ -224,7 +224,7 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
   // This would relieve the caller of the burden of tracking which entry
   // in the vector belonged to which library it wanted to find.
 
-  PL_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
+  PX_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
                       proc_parser->GetMapPaths(pid));
 
   // container_libs: final function output.
@@ -309,7 +309,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     const auto search_type = ssl_library_match.search_type;
 
     // Find paths to libssl.so and libcrypto.so for the pid, if they are in use (i.e. mapped).
-    PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
+    PX_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
                         FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), search_type));
 
     std::filesystem::path container_libssl = container_lib_paths[0];
@@ -335,7 +335,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
     auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
 
-    PL_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
+    PX_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
 
     // Only try probing .so files that we haven't already set probes on.
     auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -345,7 +345,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
     for (auto spec : kOpenSSLUProbes) {
       spec.binary_path = container_libssl.string();
-      PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+      PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
     }
   }
   return kOpenSSLUProbes.size();
@@ -355,14 +355,14 @@ namespace {
 
 StatusOr<SemVer> GetNodeVersion(pid_t node_pid, const std::filesystem::path& node_exe) {
   SubProcess node_version_proc(node_pid);
-  PL_RETURN_IF_ERROR(node_version_proc.Start({node_exe.string(), "--version"}));
+  PX_RETURN_IF_ERROR(node_version_proc.Start({node_exe.string(), "--version"}));
   // Wont check the exit code since we are only interested in the output.
   node_version_proc.Wait(/*close_pipe*/ false);
 
   std::string ver_str;
   // Wait subprocess to finish and then get stdout, to avoid race condition.
-  PL_RETURN_IF_ERROR(node_version_proc.Stdout(&ver_str));
-  PL_ASSIGN_OR_RETURN(SemVer ver, GetSemVer(ver_str));
+  PX_RETURN_IF_ERROR(node_version_proc.Stdout(&ver_str));
+  PX_ASSIGN_OR_RETURN(SemVer ver, GetSemVer(ver_str));
   return ver;
 }
 
@@ -382,7 +382,7 @@ StatusOr<std::array<UProbeTmpl, 6>> UProbeManager::GetNodeOpensslUProbeTmpls(con
 }
 
 StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
+  PX_ASSIGN_OR_RETURN(const std::filesystem::path proc_exe, proc_parser_->GetExePath(pid));
 
   if (DetectApplication(proc_exe) != Application::kNode) {
     return 0;
@@ -396,20 +396,20 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
     return 0;
   }
 
-  PL_ASSIGN_OR_RETURN(const SemVer ver, GetNodeVersion(pid, proc_exe));
-  PL_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe, ver));
+  PX_ASSIGN_OR_RETURN(const SemVer ver, GetNodeVersion(pid, proc_exe));
+  PX_RETURN_IF_ERROR(UpdateNodeTLSWrapSymAddrs(pid, host_proc_exe, ver));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).
   for (auto spec : kOpenSSLUProbes) {
     spec.binary_path = host_proc_exe.string();
-    PL_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
+    PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
   }
 
   // These are node-specific probes.
-  PL_ASSIGN_OR_RETURN(auto uprobe_tmpls, GetNodeOpensslUProbeTmpls(ver));
-  PL_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
-  PL_ASSIGN_OR_RETURN(int count, AttachUProbeTmpl(uprobe_tmpls, host_proc_exe, elf_reader.get()));
+  PX_ASSIGN_OR_RETURN(auto uprobe_tmpls, GetNodeOpensslUProbeTmpls(ver));
+  PX_ASSIGN_OR_RETURN(auto elf_reader, ElfReader::Create(host_proc_exe));
+  PX_ASSIGN_OR_RETURN(int count, AttachUProbeTmpl(uprobe_tmpls, host_proc_exe, elf_reader.get()));
 
   return kOpenSSLUProbes.size() + count;
 }
@@ -467,7 +467,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
   for (const auto& upid : upids) {
     // TODO(yzhao): Might need to check the start time.
-    PL_ASSIGN_OR(const auto exe_path, proc_parser.GetExePath(upid.pid()), continue);
+    PX_ASSIGN_OR(const auto exe_path, proc_parser.GetExePath(upid.pid()), continue);
     const auto host_exe_path = ProcPidRootPath(upid.pid(), exe_path);
 
     if (!fs::Exists(host_exe_path)) {
@@ -598,7 +598,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   const std::vector<std::string_view> lib_names = {kGrpcCPythonLibPrefix};
 
   // Find path to grpc-c shared object, if it's used (i.e. mapped).
-  PL_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
+  PX_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
                       FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(),
                                              HostPathForPIDPathSearchType::kSearchTypeContains));
 
@@ -624,7 +624,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
 
   // Calculate MD5 hash of the grpc-c library to know which version it is.
   // For further explanation see the definition of kGrpcCMD5HashToVersion.
-  PL_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
+  PX_ASSIGN_OR_RETURN(const std::string hash_str, MD5onFile(container_libgrpcc.string()));
   VLOG(1) << absl::Substitute("Found MD5 hash $0 of library $1 for pid=$2", hash_str,
                               container_libgrpcc.string(), pid);
 

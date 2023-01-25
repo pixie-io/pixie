@@ -52,12 +52,12 @@ inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue>& data,
   DCHECK(mem_pool != nullptr);
 
   typename ValueTypeTraits<TUDFValue>::arrow_builder_type builder(mem_pool);
-  PL_CHECK_OK(builder.Reserve(data.size()));
+  PX_CHECK_OK(builder.Reserve(data.size()));
   for (const auto& v : data) {
     builder.UnsafeAppend(v.val);
   }
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
   return arr;
 }
 
@@ -68,12 +68,12 @@ inline std::shared_ptr<arrow::Array> ToArrow<Time64NSValue>(const std::vector<Ti
   DCHECK(mem_pool != nullptr);
 
   arrow::Time64Builder builder(arrow::time64(arrow::TimeUnit::NANO), mem_pool);
-  PL_CHECK_OK(builder.Reserve(data.size()));
+  PX_CHECK_OK(builder.Reserve(data.size()));
   for (const auto& v : data) {
     builder.UnsafeAppend(v.val);
   }
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
   return arr;
 }
 
@@ -87,14 +87,14 @@ inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<Stri
       std::accumulate(data.begin(), data.end(), 0ULL,
                       [](uint64_t sum, const std::string& str) { return sum + str.size(); });
   // This allocates space for null/ptrs/size.
-  PL_CHECK_OK(builder.Reserve(data.size()));
+  PX_CHECK_OK(builder.Reserve(data.size()));
   // This allocates space for the actual data.
-  PL_CHECK_OK(builder.ReserveData(total_size));
+  PX_CHECK_OK(builder.ReserveData(total_size));
   for (const auto& val : data) {
     builder.UnsafeAppend(val);
   }
   std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
+  PX_CHECK_OK(builder.Finish(&arr));
   return arr;
 }
 
@@ -314,19 +314,19 @@ class TypeErasedArrowBuilderImpl : public TypeErasedArrowBuilder {
       : builder_(std::move(builder)), typed_builder_(static_cast<BuilderType*>(builder_.get())) {}
 
   Status Reserve(size_t num_rows) override {
-    PL_RETURN_IF_ERROR(typed_builder_->Reserve(num_rows));
+    PX_RETURN_IF_ERROR(typed_builder_->Reserve(num_rows));
     return Status::OK();
   }
 
   Status ReserveData(size_t num_bytes) override {
     if constexpr (TDataType == types::DataType::STRING) {
-      PL_RETURN_IF_ERROR(typed_builder_->ReserveData(num_bytes));
+      PX_RETURN_IF_ERROR(typed_builder_->ReserveData(num_bytes));
     }
     return Status::OK();
   }
 
   Status Finish(std::shared_ptr<arrow::Array>* out) override {
-    PL_RETURN_IF_ERROR(typed_builder_->Finish(out));
+    PX_RETURN_IF_ERROR(typed_builder_->Finish(out));
     return Status::OK();
   }
 

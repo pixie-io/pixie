@@ -155,7 +155,7 @@ StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
     bool found = false;
     for (const auto& source : kAllSources) {
       if (name == source.name) {
-        PL_RETURN_IF_ERROR(registry->Register(source));
+        PX_RETURN_IF_ERROR(registry->Register(source));
         found = true;
         break;
       }
@@ -423,7 +423,7 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
 }
 
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
-  PL_RETURN_IF_ERROR(source->Init());
+  PX_RETURN_IF_ERROR(source->Init());
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
@@ -464,7 +464,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
                          info_class_mgrs_.end());
 
   // Now perform the removal.
-  PL_RETURN_IF_ERROR(source->Stop());
+  PX_RETURN_IF_ERROR(source->Stop());
   sources_.erase(source_iter);
 
   return Status::OK();
@@ -484,7 +484,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
     return;                                                   \
   }
 
-#define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
+#define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PX_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
 #define RETURN_IF_ERROR(s) \
   auto __s__ = s;          \
   if (!__s__.ok()) {       \
@@ -957,7 +957,7 @@ std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> regis
 
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 
-  PL_CHECK_OK(stirling->Init());
+  PX_CHECK_OK(stirling->Init());
 
   return stirling;
 }

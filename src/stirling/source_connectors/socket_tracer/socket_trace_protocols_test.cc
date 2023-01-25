@@ -115,7 +115,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
     // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
     // because it would think the server is in the cluster.
-    PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
+    PX_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnTracker::set_inactivity_duration(ConnTracker::kDefaultInactivityDuration);

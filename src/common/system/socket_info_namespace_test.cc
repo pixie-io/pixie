@@ -97,7 +97,7 @@ TEST_F(NetNamespaceTest, SocketProberManager) {
 
   // First round: map should be empty.
   for (auto& [ns, pids] : pids_by_net_ns) {
-    PL_UNUSED(pids);
+    PX_UNUSED(pids);
     EXPECT_EQ(socket_probers->GetSocketProber(ns), nullptr);
   }
 
@@ -110,14 +110,14 @@ TEST_F(NetNamespaceTest, SocketProberManager) {
 
   // Third round: map should be populated.
   for (auto& [ns, pids] : pids_by_net_ns) {
-    PL_UNUSED(pids);
+    PX_UNUSED(pids);
     EXPECT_NE(socket_probers->GetSocketProber(ns), nullptr);
   }
 
   // Fourth round: A call to Update() should not remove any sockets yet.
   socket_probers->Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
-    PL_UNUSED(pids);
+    PX_UNUSED(pids);
     EXPECT_NE(socket_probers->GetSocketProber(ns), nullptr);
   }
 
@@ -128,7 +128,7 @@ TEST_F(NetNamespaceTest, SocketProberManager) {
   // Sixth round: If socket probers are not accessed, then they should have all been removed.
   socket_probers->Update();
   for (auto& [ns, pids] : pids_by_net_ns) {
-    PL_UNUSED(pids);
+    PX_UNUSED(pids);
     EXPECT_EQ(socket_probers->GetSocketProber(ns), nullptr);
   }
 }

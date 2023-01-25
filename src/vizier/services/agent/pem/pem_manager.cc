@@ -48,7 +48,7 @@ namespace vizier {
 namespace agent {
 
 Status PEMManager::InitImpl() {
-  PL_RETURN_IF_ERROR(InitClockConverters());
+  PX_RETURN_IF_ERROR(InitClockConverters());
   StartNodeMemoryCollector();
   return Status::OK();
 }
@@ -65,18 +65,18 @@ Status PEMManager::PostRegisterHookImpl() {
   stirling_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));
 
-  PL_RETURN_IF_ERROR(InitSchemas());
-  PL_RETURN_IF_ERROR(stirling_->RunAsThread());
+  PX_RETURN_IF_ERROR(InitSchemas());
+  PX_RETURN_IF_ERROR(stirling_->RunAsThread());
 
   auto execute_query_handler = std::make_shared<ExecuteQueryMessageHandler>(
       dispatcher(), info(), agent_nats_connector(), carnot());
-  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
+  PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
 
   tracepoint_manager_ =
       std::make_shared<TracepointManager>(dispatcher(), info(), agent_nats_connector(),
                                           stirling_.get(), table_store(), relation_info_manager());
-  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
+  PX_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kTracepointMessage,
                                             tracepoint_manager_));
   return Status::OK();
 }
@@ -125,7 +125,7 @@ Status PEMManager::InitSchemas() {
     }
 
     table_store()->AddTable(std::move(table_ptr), relation_info.name, relation_info.id);
-    PL_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
+    PX_RETURN_IF_ERROR(relation_info_manager()->AddRelationInfo(relation_info));
   }
   return Status::OK();
 }

@@ -46,7 +46,7 @@ class StreamIR : public OperatorIR {
   StreamIR() = delete;
   explicit StreamIR(int64_t id) : OperatorIR(id, IRNodeType::kStream) {}
   Status Init(OperatorIR* parent) {
-    PL_RETURN_IF_ERROR(AddParent(parent));
+    PX_RETURN_IF_ERROR(AddParent(parent));
     return Status::OK();
   }
 

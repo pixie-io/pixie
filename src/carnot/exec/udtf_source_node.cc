@@ -59,7 +59,7 @@ Status UDTFSourceNode::InitImpl(const plan::Operator& plan_node) {
 Status UDTFSourceNode::PrepareImpl(ExecState* exec_state) {
   // Always has more batches to start with.
   has_more_batches_ = true;
-  PL_ASSIGN_OR_RETURN(udtf_def_,
+  PX_ASSIGN_OR_RETURN(udtf_def_,
                       exec_state->func_registry()->GetUDTFDefinition(plan_node_->name()));
   return Status::OK();
 }

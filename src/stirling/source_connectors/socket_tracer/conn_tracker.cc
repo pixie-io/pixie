@@ -615,7 +615,7 @@ bool ConnTracker::ReadyForDestruction() const {
 }
 
 bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs) {
-  PL_ASSIGN_OR(InetAddr remote_addr, open_info_.remote_addr.ToInetAddr(), return false);
+  PX_ASSIGN_OR(InetAddr remote_addr, open_info_.remote_addr.ToInetAddr(), return false);
 
   for (const auto& cluster_cidr : cluster_cidrs) {
     if (CIDRContainsIPAddr(cluster_cidr, remote_addr)) {

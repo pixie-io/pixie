@@ -21,11 +21,11 @@
 // This header file should be used for all logging.
 
 // Include gflags before glog so flags get set correctly.
-PL_SUPPRESS_WARNINGS_START()
+PX_SUPPRESS_WARNINGS_START()
 #include <gflags/gflags.h>     // NOLINT(build/include_order).
 #include <glog/logging.h>      // NOLINT(build/include_order).
 #include <glog/stl_logging.h>  // NOLINT(build/include_order).
-PL_SUPPRESS_WARNINGS_END()
+PX_SUPPRESS_WARNINGS_END()
 
 #include <string>
 

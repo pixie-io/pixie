@@ -36,7 +36,7 @@ StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromSchema(const Schema& s
   auto rel_map = std::make_unique<RelationMap>();
   for (auto& relation_pair : schema_pb.relation_map()) {
     px::table_store::schema::Relation rel;
-    PL_RETURN_IF_ERROR(rel.FromProto(&relation_pair.second));
+    PX_RETURN_IF_ERROR(rel.FromProto(&relation_pair.second));
     rel_map->emplace(relation_pair.first, rel);
   }
 
@@ -47,7 +47,7 @@ StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromDistributedState(
   auto rel_map = std::make_unique<RelationMap>();
   for (const auto& schema_info : state_pb.schema_info()) {
     px::table_store::schema::Relation rel;
-    PL_RETURN_IF_ERROR(rel.FromProto(&schema_info.relation()));
+    PX_RETURN_IF_ERROR(rel.FromProto(&schema_info.relation()));
     rel_map->emplace(schema_info.name(), rel);
   }
 
@@ -65,7 +65,7 @@ static inline RedactionOptions RedactionOptionsFromPb(
 StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
     const distributedpb::LogicalPlannerState& logical_state, RegistryInfo* registry_info,
     int64_t max_output_rows_per_table) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<RelationMap> rel_map,
                       MakeRelationMapFromDistributedState(logical_state.distributed_state()));
 
   SensitiveColumnMap sensitive_columns = {
@@ -109,16 +109,16 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
 
 StatusOr<std::unique_ptr<LogicalPlanner>> LogicalPlanner::Create(const udfspb::UDFInfo& udf_info) {
   auto planner = std::unique_ptr<LogicalPlanner>(new LogicalPlanner());
-  PL_RETURN_IF_ERROR(planner->Init(udf_info));
+  PX_RETURN_IF_ERROR(planner->Init(udf_info));
   return planner;
 }
 
 Status LogicalPlanner::Init(const udfspb::UDFInfo& udf_info) {
   compiler_ = compiler::Compiler();
   registry_info_ = std::make_unique<planner::RegistryInfo>();
-  PL_RETURN_IF_ERROR(registry_info_->Init(udf_info));
+  PX_RETURN_IF_ERROR(registry_info_->Init(udf_info));
 
-  PL_ASSIGN_OR_RETURN(distributed_planner_, distributed::DistributedPlanner::Create());
+  PX_ASSIGN_OR_RETURN(distributed_planner_, distributed::DistributedPlanner::Create());
   return Status::OK();
 }
 
@@ -128,17 +128,17 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
 
   auto ms = query_request.logical_planner_state().plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::unique_ptr<CompilerState> compiler_state,
       CreateCompilerState(query_request.logical_planner_state(), registry_info_.get(), ms));
 
   std::vector<plannerpb::FuncToExecute> exec_funcs(query_request.exec_funcs().begin(),
                                                    query_request.exec_funcs().end());
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<IR> single_node_plan,
       compiler_.CompileToIR(query_request.query_str(), compiler_state.get(), exec_funcs));
   // Create the distributed plan.
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto distributed_plan,
       distributed_planner_->Plan(query_request.logical_planner_state().distributed_state(),
                                  compiler_state.get(), single_node_plan.get()));
@@ -153,7 +153,7 @@ StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
   // Compile into the IR.
   auto ms = mutations_req.logical_planner_state().plan_options().max_output_rows_per_table();
   VLOG(1) << "Max output rows: " << ms;
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::unique_ptr<CompilerState> compiler_state,
       CreateCompilerState(mutations_req.logical_planner_state(), registry_info_.get(), ms));
 
@@ -165,11 +165,11 @@ StatusOr<std::unique_ptr<compiler::MutationsIR>> LogicalPlanner::CompileTrace(
 
 StatusOr<std::unique_ptr<plannerpb::GenerateOTelScriptResponse>> LogicalPlanner::GenerateOTelScript(
     const plannerpb::GenerateOTelScriptRequest& generate_req) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
                       CreateCompilerState(generate_req.logical_planner_state(),
                                           registry_info_.get(), /* max_output_rows */ 0));
 
-  PL_ASSIGN_OR_RETURN(auto out_script,
+  PX_ASSIGN_OR_RETURN(auto out_script,
                       OTelGenerator::GenerateOTelScript(&compiler_, compiler_state.get(),
                                                         generate_req.pxl_script()));
   auto generate_resp = std::make_unique<plannerpb::GenerateOTelScriptResponse>();

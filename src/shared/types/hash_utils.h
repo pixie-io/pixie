@@ -28,7 +28,7 @@ namespace px {
 namespace types {
 namespace utils {
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 template <typename T>
 struct hash {};
 

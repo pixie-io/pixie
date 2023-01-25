@@ -33,7 +33,7 @@ namespace system {
 StatusOr<std::unique_ptr<ScopedNamespace>> ScopedNamespace::Create(int ns_pid,
                                                                    std::string_view ns_type) {
   auto scoped_namespace = std::unique_ptr<ScopedNamespace>(new ScopedNamespace);
-  PL_RETURN_IF_ERROR(scoped_namespace->EnterNamespace(ns_pid, ns_type));
+  PX_RETURN_IF_ERROR(scoped_namespace->EnterNamespace(ns_pid, ns_type));
   return scoped_namespace;
 }
 

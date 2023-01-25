@@ -41,7 +41,7 @@ std::string BytesToString(std::basic_string_view<uint8_t> x) {
 }  // namespace
 
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(StartupReq r, ParseStartupReq(req_frame));
+  PX_ASSIGN_OR_RETURN(StartupReq r, ParseStartupReq(req_frame));
 
   DCHECK(req->msg.empty());
   req->msg = ToJSONString(r.options);
@@ -50,7 +50,7 @@ Status ProcessStartupReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(AuthResponseReq r, ParseAuthResponseReq(req_frame));
+  PX_ASSIGN_OR_RETURN(AuthResponseReq r, ParseAuthResponseReq(req_frame));
 
   std::string_view token_str = CreateStringView<char>(r.token);
 
@@ -61,16 +61,16 @@ Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessOptionsReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(OptionsReq r, ParseOptionsReq(req_frame));
+  PX_ASSIGN_OR_RETURN(OptionsReq r, ParseOptionsReq(req_frame));
 
-  PL_UNUSED(r);
+  PX_UNUSED(r);
   DCHECK(req->msg.empty());
 
   return Status::OK();
 }
 
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(RegisterReq r, ParseRegisterReq(req_frame));
+  PX_ASSIGN_OR_RETURN(RegisterReq r, ParseRegisterReq(req_frame));
 
   DCHECK(req->msg.empty());
   req->msg = ToJSONString(r.event_types);
@@ -79,7 +79,7 @@ Status ProcessRegisterReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessQueryReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(QueryReq r, ParseQueryReq(req_frame));
+  PX_ASSIGN_OR_RETURN(QueryReq r, ParseQueryReq(req_frame));
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate
@@ -102,7 +102,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessPrepareReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(PrepareReq r, ParsePrepareReq(req_frame));
+  PX_ASSIGN_OR_RETURN(PrepareReq r, ParsePrepareReq(req_frame));
 
   DCHECK(req->msg.empty());
   req->msg = r.query;
@@ -111,7 +111,7 @@ Status ProcessPrepareReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessExecuteReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(ExecuteReq r, ParseExecuteReq(req_frame));
+  PX_ASSIGN_OR_RETURN(ExecuteReq r, ParseExecuteReq(req_frame));
 
   // TODO(oazizi): This is just a placeholder.
   // Real implementation should figure out what type each value is, and cast into the appropriate
@@ -128,7 +128,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessBatchReq(Frame* req_frame, Request* req) {
-  PL_ASSIGN_OR_RETURN(BatchReq r, ParseBatchReq(req_frame));
+  PX_ASSIGN_OR_RETURN(BatchReq r, ParseBatchReq(req_frame));
 
   // TODO(oazizi): Should we add other fields?
 
@@ -153,7 +153,7 @@ Status ProcessBatchReq(Frame* req_frame, Request* req) {
 }
 
 Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(ErrorResp r, ParseErrorResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(ErrorResp r, ParseErrorResp(resp_frame));
 
   DCHECK(resp->msg.empty());
   resp->msg = absl::Substitute("[$0] $1", r.error_code, r.error_msg);
@@ -162,16 +162,16 @@ Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(ReadyResp r, ParseReadyResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(ReadyResp r, ParseReadyResp(resp_frame));
 
-  PL_UNUSED(r);
+  PX_UNUSED(r);
   DCHECK(resp->msg.empty());
 
   return Status::OK();
 }
 
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(SupportedResp r, ParseSupportedResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(SupportedResp r, ParseSupportedResp(resp_frame));
 
   DCHECK(resp->msg.empty());
   resp->msg = ToJSONString(r.options);
@@ -180,7 +180,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(AuthenticateResp r, ParseAuthenticateResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(AuthenticateResp r, ParseAuthenticateResp(resp_frame));
 
   DCHECK(resp->msg.empty());
   resp->msg = std::move(r.authenticator_name);
@@ -189,7 +189,7 @@ Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(AuthSuccessResp r, ParseAuthSuccessResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(AuthSuccessResp r, ParseAuthSuccessResp(resp_frame));
 
   std::string token_hex = BytesToString(r.token);
 
@@ -200,7 +200,7 @@ Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(AuthChallengeResp r, ParseAuthChallengeResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(AuthChallengeResp r, ParseAuthChallengeResp(resp_frame));
 
   std::string token_hex = BytesToString(r.token);
 
@@ -211,7 +211,7 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessResultResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(ResultResp r, ParseResultResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(ResultResp r, ParseResultResp(resp_frame));
 
   DCHECK(resp->msg.empty());
 
@@ -262,7 +262,7 @@ Status ProcessResultResp(Frame* resp_frame, Response* resp) {
 }
 
 Status ProcessEventResp(Frame* resp_frame, Response* resp) {
-  PL_ASSIGN_OR_RETURN(EventResp r, ParseEventResp(resp_frame));
+  PX_ASSIGN_OR_RETURN(EventResp r, ParseEventResp(resp_frame));
 
   if (r.event_type == "TOPOLOGY_CHANGE" || r.event_type == "STATUS_CHANGE") {
     DCHECK(resp->msg.empty());
@@ -337,8 +337,8 @@ StatusOr<Record> ProcessReqRespPair(Frame* req_frame, Frame* resp_frame) {
   ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
 
   Record r;
-  PL_RETURN_IF_ERROR(ProcessReq(req_frame, &r.req));
-  PL_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
+  PX_RETURN_IF_ERROR(ProcessReq(req_frame, &r.req));
+  PX_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
 
   return r;
 }
@@ -359,7 +359,7 @@ StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
 
   // A little inefficient because it will go through a switch statement again,
   // when we actually know the op. But keep it this way for consistency.
-  PL_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
+  PX_RETURN_IF_ERROR(ProcessResp(resp_frame, &r.resp));
 
   return r;
 }

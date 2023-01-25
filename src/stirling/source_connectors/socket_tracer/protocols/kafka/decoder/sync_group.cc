@@ -25,41 +25,41 @@ namespace kafka {
 
 StatusOr<SyncGroupAssignment> PacketDecoder::ExtractSyncGroupAssignment() {
   SyncGroupAssignment r;
-  PL_ASSIGN_OR_RETURN(r.member_id, ExtractString());
-  PL_RETURN_IF_ERROR(/* assignment */ ExtractBytes());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.member_id, ExtractString());
+  PX_RETURN_IF_ERROR(/* assignment */ ExtractBytes());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<SyncGroupReq> PacketDecoder::ExtractSyncGroupReq() {
   SyncGroupReq r;
-  PL_ASSIGN_OR_RETURN(r.group_id, ExtractString());
-  PL_ASSIGN_OR_RETURN(r.generation_id, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(r.member_id, ExtractString());
+  PX_ASSIGN_OR_RETURN(r.group_id, ExtractString());
+  PX_ASSIGN_OR_RETURN(r.generation_id, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(r.member_id, ExtractString());
   if (api_version_ >= 3) {
-    PL_ASSIGN_OR_RETURN(r.group_instance_id, ExtractNullableString());
+    PX_ASSIGN_OR_RETURN(r.group_instance_id, ExtractNullableString());
   }
   if (api_version_ >= 5) {
-    PL_ASSIGN_OR_RETURN(r.protocol_type, ExtractNullableString());
-    PL_ASSIGN_OR_RETURN(r.protocol_name, ExtractNullableString());
+    PX_ASSIGN_OR_RETURN(r.protocol_type, ExtractNullableString());
+    PX_ASSIGN_OR_RETURN(r.protocol_name, ExtractNullableString());
   }
-  PL_ASSIGN_OR_RETURN(r.assignments, ExtractArray(&PacketDecoder::ExtractSyncGroupAssignment));
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.assignments, ExtractArray(&PacketDecoder::ExtractSyncGroupAssignment));
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<SyncGroupResp> PacketDecoder::ExtractSyncGroupResp() {
   SyncGroupResp r;
   if (api_version_ >= 1) {
-    PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
   }
-  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
   if (api_version_ >= 5) {
-    PL_ASSIGN_OR_RETURN(r.protocol_type, ExtractString());
-    PL_ASSIGN_OR_RETURN(r.protocol_name, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.protocol_type, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.protocol_name, ExtractString());
   }
-  PL_RETURN_IF_ERROR(/* assignment */ ExtractBytes());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* assignment */ ExtractBytes());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 

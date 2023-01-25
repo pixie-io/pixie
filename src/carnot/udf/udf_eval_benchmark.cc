@@ -114,7 +114,7 @@ static void BM_SubStr(benchmark::State& state) {
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1}, &out, vec1.size());
-    PL_CHECK_OK(res);
+    PX_CHECK_OK(res);
     benchmark::DoNotOptimize(out);
   }
 

@@ -1871,7 +1871,7 @@ px.display(funcs_utils.funcs())
 )pxl";
 
 TEST_F(ASTVisitorTest, alt_imports_test_normal) {
-  PL_UNUSED(kFuncsUtilsModule);
+  PX_UNUSED(kFuncsUtilsModule);
   auto graph_or_s = CompileGraph(kFuncsUtilsTest, {}, {{"funcs_utils", kFuncsUtilsModule}});
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();

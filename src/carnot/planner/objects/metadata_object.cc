@@ -30,7 +30,7 @@ namespace compiler {
 StatusOr<std::shared_ptr<MetadataObject>> MetadataObject::Create(OperatorIR* op,
                                                                  ASTVisitor* ast_visitor) {
   auto object = std::shared_ptr<MetadataObject>(new MetadataObject(op, ast_visitor));
-  PL_RETURN_IF_ERROR(object->Init());
+  PX_RETURN_IF_ERROR(object->Init());
   return object;
 }
 
@@ -42,14 +42,14 @@ Status MetadataObject::Init() {
                                std::placeholders::_2),
                      ast_visitor()));
 
-  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kCtxDocstring));
+  PX_RETURN_IF_ERROR(subscript_fn->SetDocString(kCtxDocstring));
   AddSubscriptMethod(subscript_fn);
   return Status::OK();
 }
 
 StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
                                                        const ParsedArgs& args) {
-  PL_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(ast, args, "key"));
+  PX_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(ast, args, "key"));
   std::string key_value = key->str();
   // Lookup the key
   IR* ir_graph = key->graph();
@@ -58,7 +58,7 @@ StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
   // is not 0. If a future developer finds this problem, use the op to reference as the parent. You
   // might have to rewire Columns to use OperatorIR* instead of parent_op_idx and then have an
   // analyzer rule that rewires to point to parent_op_idx instead and runs before everything else.
-  PL_ASSIGN_OR_RETURN(MetadataIR * md_node,
+  PX_ASSIGN_OR_RETURN(MetadataIR * md_node,
                       ir_graph->CreateNode<MetadataIR>(ast, key_value, /*parent_op_idx*/ 0));
   return ExprObject::Create(md_node, ast_visitor());
 }

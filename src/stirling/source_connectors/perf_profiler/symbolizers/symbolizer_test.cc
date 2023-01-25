@@ -97,10 +97,10 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
 // The symbolizer finds the pre-existing symbol file, and early exits the attach process.
 // This test expects to find known symbols at known addresses based on the canned symbol file.
 TEST_F(BCCSymbolizerTest, JavaSymbols) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
-  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
@@ -154,10 +154,10 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
 
 // Expect that Java symbolization agents will not be injected after disabling.
 TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
-  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
@@ -218,9 +218,9 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
   // Populate locally scoped flags values that setup the test environment.
   // Agent libs & px_jattach need to be found inside of the bazel env., populated via helper fns.
   // We also ensure that Java symbolization is enabled.
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
 
   // Create a Java symbolizer.
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
@@ -268,7 +268,7 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
   // of attach events allowed "per iteration" based on FLAGS_number_attach_attempts_per_iteration.
   // A freshly minted symbolizer starts with its budget set to zero. We do this here so that
   // the symbolizer can attempt (as many times as needed) a JVMTI symbolization agent attach.
-  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  PX_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   symbolizer->IterationPreTick();
 
   // Requesting the symbolization function kicks off the attach process, i.e. because the symbolizer
@@ -294,9 +294,9 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
   // Populate locally scoped flags values that setup the test environment.
   // Agent libs & px_jattach need to be found inside of the bazel env., populated via helper fns.
   // We also ensure that Java symbolization is enabled.
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
 
   // Create a Java symbolizer.
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
@@ -344,7 +344,7 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
   // of attach events allowed "per iteration" based on FLAGS_number_attach_attempts_per_iteration.
   // A freshly minted symbolizer starts with its budget set to zero. We do this here so that
   // the symbolizer can attempt (as many times as needed) a JVMTI symbolization agent attach.
-  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  PX_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   symbolizer->IterationPreTick();
 
   // Requesting the symbolization function kicks off the attach process, i.e. because the symbolizer
@@ -496,10 +496,10 @@ TEST_F(BCCSymbolizerTest, Caching) {
 
 // Expect that upids for Java processes (that we attempt to symbolize) are inserted to global set.
 TEST_F(BCCSymbolizerTest, JavaProcessBeingTracked) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
-  PL_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_number_attach_attempts_per_iteration, 10000);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer,
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 

@@ -624,7 +624,7 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
 
 StatusOr<std::filesystem::path> ProcParser::GetExePath(const int32_t pid) const {
   const auto exe_link = ProcPidPath(pid, "exe");
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path host_exe, fs::ReadSymlink(exe_link));
+  PX_ASSIGN_OR_RETURN(const std::filesystem::path host_exe, fs::ReadSymlink(exe_link));
   if (host_exe.empty() || host_exe == "/") {
     // Not sure what causes this, but some symlinks point to "/".
     // Seems to happen with PIDs that are short-lived (we can never catch it in the act).
@@ -641,7 +641,7 @@ StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
   const auto fpath = ProcPidPath(pid, "fd", std::to_string(fd));
-  PL_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path link, fs::ReadSymlink(fpath));
   *out = std::move(link);
   return Status::OK();
 }
@@ -666,7 +666,7 @@ std::string_view LineWithPrefix(std::string_view content, std::string_view prefi
 // ...
 Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   const auto proc_pid_status_path = ProcPidPath(pid, "status");
-  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
+  PX_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kUIDPrefix = "Uid:";
   std::string_view uid_line = LineWithPrefix(content, kUIDPrefix);
@@ -696,7 +696,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
 // There may not be a second pid if the process is not running inside a namespace.
 Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const {
   const auto proc_pid_status_path = ProcPidPath(pid, "status");
-  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
+  PX_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kNSPidPrefix = "NStgid:";
   std::string_view ns_pid_line = LineWithPrefix(content, kNSPidPrefix);
@@ -796,11 +796,11 @@ Status ParseMountInfo(std::string_view str, ProcParser::MountInfo* mount_info) {
 Status ProcParser::ReadMountInfos(pid_t pid,
                                   std::vector<ProcParser::MountInfo>* mount_infos) const {
   const std::filesystem::path proc_pid_mount_info_path = ProcPidPath(pid) / "mountinfo";
-  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_mount_info_path));
+  PX_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_mount_info_path));
   std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
   for (const auto line : lines) {
     ProcParser::MountInfo& mount_info = mount_infos->emplace_back();
-    PL_RETURN_IF_ERROR(ParseMountInfo(line, &mount_info));
+    PX_RETURN_IF_ERROR(ParseMountInfo(line, &mount_info));
   }
   return Status::OK();
 }
@@ -810,7 +810,7 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) co
   absl::flat_hash_set<std::string> map_paths;
 
   const std::filesystem::path proc_pid_maps_path = ProcPidPath(pid) / "maps";
-  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_maps_path));
+  PX_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_maps_path));
   std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
   for (const auto line : lines) {
     std::vector<std::string_view> fields =
@@ -828,7 +828,7 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) co
 StatusOr<ProcParser::ProcessSMaps> ProcParser::GetExecutableMapEntry(pid_t pid, std::string libpath,
                                                                      uint64_t vmem_start) {
   std::vector<ProcParser::ProcessSMaps> map_entries;
-  PL_RETURN_IF_ERROR(ParseProcPIDMaps(pid, &map_entries));
+  PX_RETURN_IF_ERROR(ParseProcPIDMaps(pid, &map_entries));
   for (const auto& entry : map_entries) {
     if (entry.pathname.compare(libpath) != 0 || entry.permissions.compare("r-xp") != 0 ||
         entry.vmem_start != vmem_start)

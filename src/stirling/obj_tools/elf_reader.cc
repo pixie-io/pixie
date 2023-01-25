@@ -124,7 +124,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
   // Next try using debug-link.
   if (!debug_link.empty()) {
     std::filesystem::path debug_link_path(debug_link);
-    PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path, fs::Canonical(binary_path_));
+    PX_ASSIGN_OR_RETURN(std::filesystem::path binary_path, fs::Canonical(binary_path_));
     std::filesystem::path binary_path_parent = binary_path.parent_path();
 
     std::filesystem::path candidate1 = fs::JoinPath({&binary_path_parent, &debug_link_path});
@@ -218,7 +218,7 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 // This function should be able to handle any section, but for the time being its is limited
 // in scope.
 StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string_view section_name) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
+  PX_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
   auto section_offset = text_section->get_offset();
 
   for (int i = 0; i < elf_reader_.segments.size() - 1; ++i) {
@@ -248,7 +248,7 @@ static auto NoTextStartAddrError =
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type,
     bool stop_at_first_match) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   std::vector<SymbolInfo> symbol_infos;
 
@@ -283,7 +283,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
     std::string_view search_symbol, SymbolMatchType match_type) {
-  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
                       SearchSymbols(search_symbol, match_type, /*symbol_type*/ ELFIO::STT_FUNC));
 
   absl::flat_hash_set<uint64_t> symbol_addrs;
@@ -303,7 +303,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
 }
 
 StatusOr<ElfReader::SymbolInfo> ElfReader::SearchTheOnlySymbol(std::string_view symbol) {
-  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
                       SearchSymbols(symbol, SymbolMatchType::kExact, /*symbol_type*/ std::nullopt,
                                     /*stop_at_first_match*/ true));
   if (symbol_infos.empty()) {
@@ -325,7 +325,7 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
 }
 
 StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
 
@@ -351,7 +351,7 @@ StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
 // TODO(oazizi): Optimize by indexing or switching to binary search if we can guarantee addresses
 //               are ordered.
 StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
   for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
@@ -376,7 +376,7 @@ StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_add
 }
 
 StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   auto symbolizer = std::make_unique<ElfReader::Symbolizer>();
 
@@ -516,7 +516,7 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
 
 StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
   constexpr std::string_view kDotText = ".text";
-  PL_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
+  PX_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
   std::vector<uint64_t> addrs = FindRetInsts(byte_code);
   for (auto& offset : addrs) {
     offset += func_symbol.address;
@@ -536,7 +536,7 @@ StatusOr<ELFIO::section*> ElfReader::SectionWithName(std::string_view section_na
 
 StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
                                                     const SymbolInfo& symbol) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));
+  PX_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));
   int offset = symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);

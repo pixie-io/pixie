@@ -114,7 +114,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
   }
   exec_args.push_back(nullptr);
 
-  PL_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
+  PX_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
 
   child_pid_ = fork();
   if (child_pid_ < 0) {
@@ -148,7 +148,7 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // Wait until the exe path changes. The contract of Start() is such that after the call,
     // the child process already started. We use the change of child process' exe path as the signal
     // that the child process actually already started.
-    PL_ASSIGN_OR_RETURN(std::filesystem::path parent_exe_path, proc_parser.GetExePath(getpid()));
+    PX_ASSIGN_OR_RETURN(std::filesystem::path parent_exe_path, proc_parser.GetExePath(getpid()));
     while (proc_parser.GetExePath(child_pid_).ValueOr({}) == parent_exe_path) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -166,7 +166,7 @@ Status SubProcess::Start(const std::function<int()>& fn, StartOptions options) {
   }
   started_ = true;
 
-  PL_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
+  PX_RETURN_IF_ERROR(pipe_.Open(O_NONBLOCK));
 
   child_pid_ = fork();
   if (child_pid_ < 0) {

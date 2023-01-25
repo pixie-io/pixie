@@ -75,7 +75,7 @@ class JoinIR : public OperatorIR {
     return Status::OK();
   }
   Status SetJoinType(const std::string& join_type) {
-    PL_ASSIGN_OR_RETURN(join_type_, GetJoinEnum(join_type));
+    PX_ASSIGN_OR_RETURN(join_type_, GetJoinEnum(join_type));
     if (join_type_ == JoinType::kRight) {
       specified_as_right_ = true;
     }

@@ -198,7 +198,7 @@ class UDATester {
 
   Status Deserialize(const types::StringValue& data) {
     TUDA other;
-    PL_RETURN_IF_ERROR(other.Deserialize(/*ctx*/ nullptr, data));
+    PX_RETURN_IF_ERROR(other.Deserialize(/*ctx*/ nullptr, data));
     uda_.Merge(nullptr, other);
     return Status::OK();
   }

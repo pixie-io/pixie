@@ -53,7 +53,7 @@ class Analyzer : public RuleExecutor<IR> {
  public:
   static StatusOr<std::unique_ptr<Analyzer>> Create(CompilerState* compiler_state) {
     std::unique_ptr<Analyzer> analyzer(new Analyzer(compiler_state));
-    PL_RETURN_IF_ERROR(analyzer->Init());
+    PX_RETURN_IF_ERROR(analyzer->Init());
     return analyzer;
   }
 

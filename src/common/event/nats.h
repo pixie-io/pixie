@@ -83,7 +83,7 @@ class NATSConnector : public NATSConnectorBase {
    * @return Status of the connection.
    */
   virtual Status Connect(Dispatcher* base_dispatcher) {
-    PL_RETURN_IF_ERROR(ConnectBase(base_dispatcher));
+    PX_RETURN_IF_ERROR(ConnectBase(base_dispatcher));
     // Attach the message reader.
     natsConnection_Subscribe(&nats_subscription_, nats_connection_, sub_topic_.c_str(),
                              NATSMessageCallbackHandler, this);

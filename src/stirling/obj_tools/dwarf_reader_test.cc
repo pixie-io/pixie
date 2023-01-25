@@ -98,7 +98,7 @@ class GolangDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestPar
 
   StatusOr<bool> UsesRegABI() const {
     constexpr SemVer kFirstRegABIVersion{.major = 1, .minor = 17, .patch = 0};
-    PL_ASSIGN_OR_RETURN(SemVer go_version, GetGoVersion());
+    PX_ASSIGN_OR_RETURN(SemVer go_version, GetGoVersion());
     return kFirstRegABIVersion <= go_version;
   }
 

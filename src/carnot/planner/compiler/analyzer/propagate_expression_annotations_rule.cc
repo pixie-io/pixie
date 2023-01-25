@@ -36,7 +36,7 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
   for (int64_t dependency_id : ir_node->graph()->dag().DependenciesOf(ir_node->id())) {
     auto node = ir_node->graph()->Get(dependency_id);
     if (Match(node, Expression())) {
-      PL_ASSIGN_OR_RETURN(auto expr_columns, static_cast<ExpressionIR*>(node)->InputColumns());
+      PX_ASSIGN_OR_RETURN(auto expr_columns, static_cast<ExpressionIR*>(node)->InputColumns());
       dependent_columns.insert(expr_columns.begin(), expr_columns.end());
     }
   }
@@ -44,7 +44,7 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
   // For all of the input columns that this operator uses, fetch the annotations
   // that their referenced Operator knows about for each of them and add it to these instances.
   for (ColumnIR* col : dependent_columns) {
-    PL_ASSIGN_OR_RETURN(auto referenced_op, col->ReferencedOperator());
+    PX_ASSIGN_OR_RETURN(auto referenced_op, col->ReferencedOperator());
     const auto& parent_annotations = operator_output_annotations_.at(referenced_op);
     if (!parent_annotations.contains(col->col_name())) {
       continue;

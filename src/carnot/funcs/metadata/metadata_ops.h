@@ -153,7 +153,7 @@ class PodNameToPodIDUDF : public ScalarUDF {
 
   static StringValue GetPodID(const px::md::AgentMetadataState* md, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
     return pod_id;
   }
@@ -217,7 +217,7 @@ class PodNameToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto k8s_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto k8s_name_view, internal::K8sName(pod_name), return "");
     return std::string(k8s_name_view.first);
   }
 
@@ -488,7 +488,7 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue service_name) {
     auto md = GetMetadataState(ctx);
     // This UDF expects the service name to be in the format of "<ns>/<service-name>".
-    PL_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
+    PX_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
     auto service_id = md->k8s_metadata_state().ServiceIDByName(service_name_view);
     return service_id;
   }
@@ -510,7 +510,7 @@ class ServiceNameToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue service_name) {
     // This UDF expects the service name to be in the format of "<ns>/<svc-name>".
-    PL_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
+    PX_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
     return std::string(service_name_view.first);
   }
 
@@ -1051,7 +1051,7 @@ class ReplicaSetNameToReplicaSetIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     return replica_set_id;
@@ -1081,7 +1081,7 @@ class ReplicaSetNameToStartTimeUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1112,7 +1112,7 @@ class ReplicaSetNameToStopTimeUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return 0);
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1143,7 +1143,7 @@ class ReplicaSetNameToNamespaceUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1173,7 +1173,7 @@ class ReplicaSetNameToOwnerReferencesUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1209,7 +1209,7 @@ class ReplicaSetNameToStatusUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1240,7 +1240,7 @@ class ReplicaSetNameToDeploymentNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1275,7 +1275,7 @@ class ReplicaSetNameToDeploymentIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Replica Set name to be in the format of "<ns>/<replica-set-name>".
-    PL_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
+    PX_ASSIGN_OR(auto rs_name_view, internal::K8sName(replica_set_name), return "");
     auto replica_set_id = md->k8s_metadata_state().ReplicaSetIDByName(rs_name_view);
 
     auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(replica_set_id);
@@ -1432,7 +1432,7 @@ class DeploymentNameToDeploymentIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Deployment name to be in the format of "<ns>/<deployment-name>".
-    PL_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
+    PX_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
     auto deployment_id = md->k8s_metadata_state().DeploymentIDByName(deployment_name_view);
 
     return deployment_id;
@@ -1462,7 +1462,7 @@ class DeploymentNameToStartTimeUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Deployment name to be in the format of "<ns>/<deployment-name>".
-    PL_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return 0);
+    PX_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return 0);
     auto deployment_id = md->k8s_metadata_state().DeploymentIDByName(deployment_name_view);
 
     auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(deployment_id);
@@ -1493,7 +1493,7 @@ class DeploymentNameToStopTimeUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Deployment name to be in the format of "<ns>/<deployment-name>".
-    PL_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return 0);
+    PX_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return 0);
     auto deployment_id = md->k8s_metadata_state().DeploymentIDByName(deployment_name_view);
 
     auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(deployment_id);
@@ -1524,7 +1524,7 @@ class DeploymentNameToNamespaceUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Deployment name to be in the format of "<ns>/<deployment-name>".
-    PL_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
+    PX_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
     auto deployment_id = md->k8s_metadata_state().DeploymentIDByName(deployment_name_view);
 
     auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(deployment_id);
@@ -1554,7 +1554,7 @@ class DeploymentNameToStatusUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the Deployment name to be in the format of "<ns>/<deployment-name>".
-    PL_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
+    PX_ASSIGN_OR(auto deployment_name_view, internal::K8sName(deployment_name), return "");
     auto deployment_id = md->k8s_metadata_state().DeploymentIDByName(deployment_name_view);
 
     auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(deployment_id);
@@ -2150,7 +2150,7 @@ class PodNameToReplicaSetNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -2190,7 +2190,7 @@ class PodNameToReplicaSetIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -2230,7 +2230,7 @@ class PodNameToDeploymentNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -2274,7 +2274,7 @@ class PodNameToDeploymentIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -2318,7 +2318,7 @@ class PodNameToServiceNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -2364,7 +2364,7 @@ class PodNameToServiceIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
+    PX_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);

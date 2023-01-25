@@ -114,7 +114,7 @@ StatusOr<BackedDataElements> ConvertFields(const std::vector<bpftrace::Field> fi
       }
     }
 
-    PL_ASSIGN_OR_RETURN(types::DataType col_type, BPFTraceTypeToDataType(bpftrace_type));
+    PX_ASSIGN_OR_RETURN(types::DataType col_type, BPFTraceTypeToDataType(bpftrace_type));
     std::string col_name =
         column_names[i].empty() ? absl::StrCat("Column_", i) : std::string(column_names[i]);
     // No way to set a description from BPFTrace code.
@@ -140,10 +140,10 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicBPFTraceConnector::Create(
     std::string_view source_name,
     const dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint& tracepoint) {
   auto bpftrace = std::make_unique<bpf_tools::BPFTraceWrapper>();
-  PL_RETURN_IF_ERROR(bpftrace->CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
+  PX_RETURN_IF_ERROR(bpftrace->CompileForPrintfOutput(tracepoint.bpftrace().program(), {}));
   const std::vector<bpftrace::Field>& fields = bpftrace->OutputFields();
   std::string_view format_str = bpftrace->OutputFmtStr();
-  PL_ASSIGN_OR_RETURN(BackedDataElements columns, ConvertFields(fields, format_str));
+  PX_ASSIGN_OR_RETURN(BackedDataElements columns, ConvertFields(fields, format_str));
 
   // Could consider making a better description, but may require more user input,
   // so punting on that for now.
@@ -181,7 +181,7 @@ Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
     bpftrace::Type bpftrace_type = fields[i].type.type;
     types::DataType table_type = table_schema_elements[i].type();
 
-    PL_ASSIGN_OR_RETURN(types::DataType expected_type, BPFTraceTypeToDataType(bpftrace_type));
+    PX_ASSIGN_OR_RETURN(types::DataType expected_type, BPFTraceTypeToDataType(bpftrace_type));
 
     if (table_schema_elements[i].name() == "time_") {
       expected_type = types::DataType::TIME64NS;
@@ -223,8 +223,8 @@ Status DynamicBPFTraceConnector::InitImpl() {
 
   auto callback_fn = absl::bind_front(&DynamicBPFTraceConnector::HandleEvent, this);
   output_fields_ = bpftrace_->OutputFields();
-  PL_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
-  PL_RETURN_IF_ERROR(bpftrace_->Deploy(callback_fn));
+  PX_RETURN_IF_ERROR(CheckOutputFields(output_fields_, table_schema_->Get().elements()));
+  PX_RETURN_IF_ERROR(bpftrace_->Deploy(callback_fn));
   return Status::OK();
 }
 

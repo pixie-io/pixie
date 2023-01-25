@@ -101,13 +101,13 @@ class ExecState {
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetScalarUDFDefinition(name, arg_types));
+    PX_ASSIGN_OR_RETURN(auto def, func_registry_->GetScalarUDFDefinition(name, arg_types));
     id_to_scalar_udf_map_[id] = def;
     return Status::OK();
   }
 
   Status AddUDA(int64_t id, const std::string& name, const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetUDADefinition(name, arg_types));
+    PX_ASSIGN_OR_RETURN(auto def, func_registry_->GetUDADefinition(name, arg_types));
     id_to_uda_map_[id] = def;
     return Status::OK();
   }

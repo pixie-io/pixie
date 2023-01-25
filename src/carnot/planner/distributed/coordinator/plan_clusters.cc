@@ -37,7 +37,7 @@ namespace distributed {
 
 StatusOr<std::unique_ptr<IR>> PlanCluster::CreatePlan(const IR* base_query) const {
   // TODO(philkuz) invert this so we don't clone everything.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> new_ir, base_query->Clone());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> new_ir, base_query->Clone());
   for (const auto& op : ops_to_remove) {
     // Some ops to remove are dependent upon each other, so they might be removed beforehand.
     if (!new_ir->HasNode(op->id())) {
@@ -51,7 +51,7 @@ StatusOr<std::unique_ptr<IR>> PlanCluster::CreatePlan(const IR* base_query) cons
       ancestor_to_maybe_delete_q.push(p);
     }
 
-    PL_RETURN_IF_ERROR(new_ir->DeleteSubtree(op->id()));
+    PX_RETURN_IF_ERROR(new_ir->DeleteSubtree(op->id()));
     while (!ancestor_to_maybe_delete_q.empty()) {
       OperatorIR* ancestor = ancestor_to_maybe_delete_q.front();
       ancestor_to_maybe_delete_q.pop();
@@ -62,7 +62,7 @@ StatusOr<std::unique_ptr<IR>> PlanCluster::CreatePlan(const IR* base_query) cons
       for (const auto& p : ancestor->parents()) {
         ancestor_to_maybe_delete_q.push(p);
       }
-      PL_RETURN_IF_ERROR(new_ir->DeleteSubtree(ancestor->id()));
+      PX_RETURN_IF_ERROR(new_ir->DeleteSubtree(ancestor->id()));
     }
   }
   return new_ir;

@@ -51,7 +51,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
   lhs = std::move(statusor.ValueOrDie())
 
 #define ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
-  ASSERT_OK_AND_ASSIGN_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+  ASSERT_OK_AND_ASSIGN_IMPL(PX_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
 
 #define ASSERT_HAS_VALUE_AND_ASSIGN_IMPL(optional_var, lhs, rexpr) \
   auto optional_var = rexpr;                                       \
@@ -60,7 +60,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 
 // For use with std::optional in testing.
 #define ASSERT_HAS_VALUE_AND_ASSIGN(lhs, rexpr) \
-  ASSERT_HAS_VALUE_AND_ASSIGN_IMPL(PL_CONCAT_NAME(__optional_var__, __COUNTER__), lhs, rexpr)
+  ASSERT_HAS_VALUE_AND_ASSIGN_IMPL(PX_CONCAT_NAME(__optional_var__, __COUNTER__), lhs, rexpr)
 
 #define EXPECT_OK_AND(expect_fn, expr, value) \
   {                                           \

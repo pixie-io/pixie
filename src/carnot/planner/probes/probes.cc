@@ -46,8 +46,8 @@ Status TracepointIR::ToProto(carnot::planner::dynamic_tracing::ir::logical::Trac
 
   // Probes don't necessarily have an output. IE if our probe just writes to a map.
   if (output_) {
-    PL_RETURN_IF_ERROR(output_->ToActionProto(probe_pb->add_output_actions()));
-    PL_RETURN_IF_ERROR(output_->ToOutputProto(pb->add_outputs()));
+    PX_RETURN_IF_ERROR(output_->ToActionProto(probe_pb->add_output_actions()));
+    PX_RETURN_IF_ERROR(output_->ToOutputProto(pb->add_outputs()));
   }
   return Status::OK();
 }
@@ -214,7 +214,7 @@ Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
 
   carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment::TracepointProgram
       tracepoint_pb;
-  PL_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_spec(), probe_name));
+  PX_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_spec(), probe_name));
   tracepoint_pb.set_table_name(output_name);
   tracepoints_.push_back(tracepoint_pb);
 
@@ -224,7 +224,7 @@ Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
   }
   // Upsert the output definition.
   carnot::planner::dynamic_tracing::ir::logical::Output output_pb;
-  PL_RETURN_IF_ERROR(output->ToOutputProto(&output_pb));
+  PX_RETURN_IF_ERROR(output->ToOutputProto(&output_pb));
 
   // If the output name is missing, then we need to add it.
   if (!output_map_.contains(output->name())) {
@@ -274,13 +274,13 @@ void MutationsIR::AddConfig(const std::string& pem_pod_name, const std::string& 
 Status MutationsIR::ToProto(plannerpb::CompileMutationsResponse* pb) {
   for (const auto& [spec, program] : deployments_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
+    PX_RETURN_IF_ERROR(program->ToProto(program_pb));
     *(program_pb->mutable_deployment_spec()) = spec;
   }
 
   for (const auto& program : bpftrace_programs_) {
     auto program_pb = pb->add_mutations()->mutable_trace();
-    PL_RETURN_IF_ERROR(program->ToProto(program_pb));
+    PX_RETURN_IF_ERROR(program->ToProto(program_pb));
   }
 
   for (const auto& tracepoint_to_delete : TracepointsToDelete()) {

@@ -52,7 +52,7 @@ StatusOr<CIDRBlock> ParseCIDRString(std::string_view cidr_str) {
 }  // namespace
 
 Status StandaloneContext::SetClusterCIDR(std::string_view cidr_str) {
-  PL_ASSIGN_OR_RETURN(CIDRBlock cidr, ParseCIDRString(cidr_str));
+  PX_ASSIGN_OR_RETURN(CIDRBlock cidr, ParseCIDRString(cidr_str));
   cidrs_ = {std::move(cidr)};
   return Status::OK();
 }
@@ -64,7 +64,7 @@ StandaloneContext::StandaloneContext(absl::flat_hash_set<md::UPID> upids,
   // for local environment, set it such that localhost (127.0.0.1) will be treated as outside of
   // cluster, and --treat_loopback_as_in_cluster in conn_tracker.cc will take effect.
   // TODO(yzhao): Might need to include IPv6 version when tests for IPv6 are added.
-  PL_CHECK_OK(SetClusterCIDR("0.0.0.1/32"));
+  PX_CHECK_OK(SetClusterCIDR("0.0.0.1/32"));
 
   system::ProcParser proc_parser;
   for (auto upid : upids_) {

@@ -79,7 +79,7 @@ class MuxTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ t
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
 
     // Run the thriftmux server and then the thriftmux client container
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
   std::string thriftmux_client_output = "StringString";
@@ -92,7 +92,7 @@ class MuxTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ t
     std::string cmd =
         absl::StrFormat("docker exec %s /usr/bin/java -cp %s Client & echo $! && wait",
                         server_.container_name(), classpath);
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
 
     LOG(INFO) << absl::StrFormat("thriftmux client command output: '%s'", out);
 

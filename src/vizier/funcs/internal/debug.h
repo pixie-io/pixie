@@ -374,8 +374,8 @@ class HeapRangesUDTF final : public carnot::udf::UDTF<HeapRangesUDTF> {
     idx_++;
     return idx_ < ranges_.size();
 #else
-    PL_UNUSED(ctx);
-    PL_UNUSED(rw);
+    PX_UNUSED(ctx);
+    PX_UNUSED(rw);
     return false;
 #endif
   }
@@ -440,8 +440,8 @@ class HeapStatsNumericUDTF final : public carnot::udf::UDTF<HeapStatsNumericUDTF
     rw->Append<IndexOf("pageheap_free_bytes")>(pageheap_free);
     rw->Append<IndexOf("pageheap_unmapped_bytes")>(pageheap_unmapped);
 #else
-    PL_UNUSED(ctx);
-    PL_UNUSED(rw);
+    PX_UNUSED(ctx);
+    PX_UNUSED(rw);
 #endif
     return false;
   }

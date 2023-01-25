@@ -28,30 +28,30 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
   auto old_exprs = col_exprs_;
   col_exprs_.clear();
   for (const ColumnExpression& expr : old_exprs) {
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr.node));
+    PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr.node));
   }
   for (const auto& expr : exprs) {
-    PL_RETURN_IF_ERROR(AddColExpr(expr));
+    PX_RETURN_IF_ERROR(AddColExpr(expr));
   }
   for (const ColumnExpression& expr : old_exprs) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(expr.node->id()));
+    PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(expr.node->id()));
   }
   return Status::OK();
 }
 
 Status MapIR::AddColExpr(const ColumnExpression& expr) {
-  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr.node));
+  PX_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr.node));
   col_exprs_.emplace_back(expr.name, expr_node);
   return Status::OK();
 }
 
 Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
-  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr));
+  PX_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr));
   for (size_t i = 0; i < col_exprs_.size(); ++i) {
     if (col_exprs_[i].name == name) {
       auto old_expr = col_exprs_[i].node;
       col_exprs_[i].node = expr_node;
-      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
+      PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
       return graph()->DeleteOrphansInSubtree(old_expr->id());
     }
   }
@@ -59,11 +59,11 @@ Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
 }
 
 Status MapIR::UpdateColExpr(ExpressionIR* old_expr, ExpressionIR* new_expr) {
-  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, new_expr));
+  PX_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, new_expr));
   for (size_t i = 0; i < col_exprs_.size(); ++i) {
     if (col_exprs_[i].node == old_expr) {
       col_exprs_[i].node = expr_node;
-      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
+      PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
       return graph()->DeleteOrphansInSubtree(old_expr->id());
     }
   }
@@ -72,8 +72,8 @@ Status MapIR::UpdateColExpr(ExpressionIR* old_expr, ExpressionIR* new_expr) {
 
 Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
                    bool keep_input_columns) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
-  PL_RETURN_IF_ERROR(SetColExprs(col_exprs));
+  PX_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(SetColExprs(col_exprs));
   keep_input_columns_ = keep_input_columns;
   return Status::OK();
 }
@@ -81,7 +81,7 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> MapIR::RequiredInputColumns() const {
   absl::flat_hash_set<std::string> required;
   for (const auto& expr : col_exprs_) {
-    PL_ASSIGN_OR_RETURN(auto inputs, expr.node->InputColumnNames());
+    PX_ASSIGN_OR_RETURN(auto inputs, expr.node->InputColumnNames());
     required.insert(inputs.begin(), inputs.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
@@ -95,7 +95,7 @@ StatusOr<absl::flat_hash_set<std::string>> MapIR::PruneOutputColumnsToImpl(
       new_exprs.push_back(expr);
     }
   }
-  PL_RETURN_IF_ERROR(SetColExprs(new_exprs));
+  PX_RETURN_IF_ERROR(SetColExprs(new_exprs));
   return output_colnames;
 }
 
@@ -105,7 +105,7 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 
   for (const auto& col_expr : col_exprs_) {
     auto expr = pb->add_expressions();
-    PL_RETURN_IF_ERROR(col_expr.node->ToProto(expr));
+    PX_RETURN_IF_ERROR(col_expr.node->ToProto(expr));
     pb->add_column_names(col_expr.name);
   }
 
@@ -117,7 +117,7 @@ Status MapIR::CopyFromNodeImpl(const IRNode* node,
   const MapIR* map_ir = static_cast<const MapIR*>(node);
   ColExpressionVector new_col_exprs;
   for (const ColumnExpression& col_expr : map_ir->col_exprs_) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
+    PX_ASSIGN_OR_RETURN(ExpressionIR * new_node,
                         graph()->CopyNode(col_expr.node, copied_nodes_map));
     new_col_exprs.push_back({col_expr.name, new_node});
   }
@@ -145,7 +145,7 @@ Status MapIR::UpdateOpAfterParentTypesResolvedImpl() {
       continue;
     }
     // Otherwise, bring over the column from the previous operator.
-    PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
+    PX_ASSIGN_OR_RETURN(ColumnIR * col_ir,
                         graph()->CreateNode<ColumnIR>(ast(), col_name, 0 /*parent_op_idx*/));
     new_col_exprs.push_back(ColumnExpression(col_name, col_ir));
   }
@@ -154,7 +154,7 @@ Status MapIR::UpdateOpAfterParentTypesResolvedImpl() {
   }
 
   keep_input_columns_ = false;
-  PL_RETURN_IF_ERROR(SetColExprs(new_col_exprs));
+  PX_RETURN_IF_ERROR(SetColExprs(new_col_exprs));
   return Status::OK();
 }
 
@@ -164,7 +164,7 @@ Status MapIR::ResolveType(CompilerState* compiler_state) {
   DCHECK(!keep_input_columns_);
   auto table_type = TableType::Create();
   for (const auto& col_expr : col_exprs_) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(col_expr.node, compiler_state, parent_types()));
     table_type->AddColumn(col_expr.name, col_expr.node->resolved_type());
   }
   return SetResolvedType(table_type);

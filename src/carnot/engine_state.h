@@ -67,7 +67,7 @@ class EngineState : public NotCopyable {
       exec::GRPCRouter* grpc_router) {
     auto registry_info = std::make_unique<planner::RegistryInfo>();
     auto udf_info = func_registry->ToProto();
-    PL_RETURN_IF_ERROR(registry_info->Init(udf_info));
+    PX_RETURN_IF_ERROR(registry_info->Init(udf_info));
     auto model_pool = udf::ModelPool::Create();
 
     return std::make_unique<EngineState>(

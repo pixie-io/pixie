@@ -117,7 +117,7 @@ class AntlrParser {
           antlr4::atn::PredictionMode::LL);
 
       parse_tree = parser.root();
-      PL_RETURN_IF_ERROR(error_listener.GetStatus());
+      PX_RETURN_IF_ERROR(error_listener.GetStatus());
     }
 
     antlr4::tree::ParseTreeWalker walker;

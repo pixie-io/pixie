@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 
   px::EnvironmentGuard env_guard(&argc, argv);
 
-  PL_EXIT_IF_ERROR(ParseArgs(argc, argv));
+  PX_EXIT_IF_ERROR(ParseArgs(argc, argv));
 
   // Make Stirling.
   auto registry = std::make_unique<SourceRegistry>();

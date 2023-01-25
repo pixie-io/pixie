@@ -64,7 +64,7 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
     if (DetectApplication(proc_exe) != Application::kJava) {
       continue;
     }
-    PL_ASSIGN_OR(auto hsperf_data_path, java::HsperfdataPath(pid), continue);
+    PX_ASSIGN_OR(auto hsperf_data_path, java::HsperfdataPath(pid), continue);
     java_procs_[upid].hsperf_data_path = hsperf_data_path;
   }
 }
@@ -72,7 +72,7 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
 Status JVMStatsConnector::ExportStats(const md::UPID& upid,
                                       const std::filesystem::path& hsperf_data_path,
                                       DataTable* data_table) const {
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_path));
+  PX_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_path));
 
   if (hsperf_data_str.empty()) {
     // Assume this is a transient failure.

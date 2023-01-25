@@ -37,7 +37,7 @@ namespace internal {
  * `RecordOrRowBatch`. It also supports appending only a slice of a given row batch. Typical usage
  * should be as follows:
  *
- *  PL_RETURN_IF_ERROR(compactor.Reserve(num_rows, variable_col_sizes_bytes));
+ *  PX_RETURN_IF_ERROR(compactor.Reserve(num_rows, variable_col_sizes_bytes));
  *  for (auto record_or_row_batch : record_or_row_batches_to_compact) {
  *    compactor.UnsafeAppendBatchSlice(record_or_row_batch, 0, NumRows(record_or_row_batch));
  *  }

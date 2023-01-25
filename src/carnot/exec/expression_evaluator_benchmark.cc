@@ -82,7 +82,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
 
   auto func_registry = std::make_unique<Registry>("test_registry");
   auto table_store = std::make_shared<px::table_store::TableStore>();
-  PL_CHECK_OK(func_registry->Register<AddUDF>("add"));
+  PX_CHECK_OK(func_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(
       func_registry.get(), table_store, MockResultSinkStubGenerator, MockMetricsStubGenerator,
       MockTraceStubGenerator, sole::uuid4(), nullptr);
@@ -96,17 +96,17 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   RowDescriptor rd({DataType::INT64, DataType::INT64});
   auto input_rb = std::make_unique<RowBatch>(rd, in1.size());
 
-  PL_CHECK_OK(input_rb->AddColumn(ToArrow(in1, arrow::default_memory_pool())));
-  PL_CHECK_OK(input_rb->AddColumn(ToArrow(in2, arrow::default_memory_pool())));
+  PX_CHECK_OK(input_rb->AddColumn(ToArrow(in1, arrow::default_memory_pool())));
+  PX_CHECK_OK(input_rb->AddColumn(ToArrow(in2, arrow::default_memory_pool())));
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());
     auto function_ctx = std::make_unique<px::carnot::udf::FunctionContext>(nullptr, nullptr);
     auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type, function_ctx.get());
-    PL_CHECK_OK(evaluator->Open(exec_state.get()));
-    PL_CHECK_OK(evaluator->Evaluate(exec_state.get(), *input_rb, &output_rb));
-    PL_CHECK_OK(evaluator->Close(exec_state.get()));
+    PX_CHECK_OK(evaluator->Open(exec_state.get()));
+    PX_CHECK_OK(evaluator->Evaluate(exec_state.get(), *input_rb, &output_rb));
+    PX_CHECK_OK(evaluator->Close(exec_state.get()));
 
     benchmark::DoNotOptimize(output_rb);
     CHECK_EQ(static_cast<size_t>(output_rb.ColumnAt(0)->length()), data_size);

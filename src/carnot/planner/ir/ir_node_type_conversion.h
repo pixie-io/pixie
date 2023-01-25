@@ -40,8 +40,8 @@ namespace planner {
 template <typename Node>
 struct IRNodeTraits {};
 
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME)                                            \
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME)                                     \
   template <>                                                       \
   struct IRNodeTraits<NAME##IR> {                                   \
     static constexpr IRNodeType ir_node_type = IRNodeType::k##NAME; \
@@ -49,7 +49,7 @@ struct IRNodeTraits {};
   };
 // NOLINTNEXTLINE : build/include
 #include "src/carnot/planner/ir/ir_nodes.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
 
 template <>
 struct IRNodeTraits<ExpressionIR> {

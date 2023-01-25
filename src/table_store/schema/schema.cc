@@ -65,7 +65,7 @@ Status Schema::ToProto(schemapb::Schema* schema,
   auto map = schema->mutable_relation_map();
   for (auto& [table_name, relation] : relation_map) {
     schemapb::Relation* relation_pb = &(*map)[table_name];
-    PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
+    PX_RETURN_IF_ERROR(relation.ToProto(relation_pb));
   }
   return Status::OK();
 }

@@ -35,7 +35,7 @@
 namespace px {
 namespace tools {
 
-#define PL_RETURN_IF_NOT_ARCHIVE_OK(r, ar)              \
+#define PX_RETURN_IF_NOT_ARCHIVE_OK(r, ar)              \
   {                                                     \
     if (r != ARCHIVE_OK) {                              \
       return error::Internal(archive_error_string(ar)); \
@@ -64,10 +64,10 @@ Status CopyData(struct archive* ar, struct archive* aw) {
     if (r == ARCHIVE_EOF) {
       break;
     }
-    PL_RETURN_IF_NOT_ARCHIVE_OK(r, ar);
+    PX_RETURN_IF_NOT_ARCHIVE_OK(r, ar);
 
     r = archive_write_data_block(aw, buff, size, offset);
-    PL_RETURN_IF_NOT_ARCHIVE_OK(r, ar);
+    PX_RETURN_IF_NOT_ARCHIVE_OK(r, ar);
   }
 
   return Status::OK();
@@ -87,7 +87,7 @@ Status Minitar::Extract(std::string_view dest_dir, int flags) {
   archive_read_support_format_tar(a);
 
   r = archive_read_open_filename(a, file_.string().c_str(), 10240);
-  PL_RETURN_IF_NOT_ARCHIVE_OK(r, a);
+  PX_RETURN_IF_NOT_ARCHIVE_OK(r, a);
 
   while (true) {
     struct archive_entry* entry;
@@ -95,7 +95,7 @@ Status Minitar::Extract(std::string_view dest_dir, int flags) {
     if (r == ARCHIVE_EOF) {
       break;
     }
-    PL_RETURN_IF_NOT_ARCHIVE_OK(r, a);
+    PX_RETURN_IF_NOT_ARCHIVE_OK(r, a);
 
     if (!dest_dir.empty()) {
       std::string dest_path = absl::StrCat(dest_dir, "/", archive_entry_pathname(entry));
@@ -103,8 +103,8 @@ Status Minitar::Extract(std::string_view dest_dir, int flags) {
     }
 
     r = archive_write_header(ext, entry);
-    PL_RETURN_IF_NOT_ARCHIVE_OK(r, a);
-    PL_RETURN_IF_ERROR(CopyData(a, ext));
+    PX_RETURN_IF_NOT_ARCHIVE_OK(r, a);
+    PX_RETURN_IF_ERROR(CopyData(a, ext));
   }
 
   return Status::OK();

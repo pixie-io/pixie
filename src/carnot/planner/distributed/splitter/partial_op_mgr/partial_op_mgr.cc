@@ -30,8 +30,8 @@ namespace distributed {
 StatusOr<OperatorIR*> LimitOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR* op) const {
   DCHECK(Matches(op));
   LimitIR* limit = static_cast<LimitIR*>(op);
-  PL_ASSIGN_OR_RETURN(LimitIR * new_limit, plan->CopyNode(limit));
-  PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
+  PX_ASSIGN_OR_RETURN(LimitIR * new_limit, plan->CopyNode(limit));
+  PX_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
   return new_limit;
 }
 
@@ -39,16 +39,16 @@ StatusOr<OperatorIR*> LimitOperatorMgr::CreateMergeOperator(IR* plan, OperatorIR
                                                             OperatorIR* op) const {
   DCHECK(Matches(op));
   LimitIR* limit = static_cast<LimitIR*>(op);
-  PL_ASSIGN_OR_RETURN(LimitIR * new_limit, plan->CopyNode(limit));
-  PL_RETURN_IF_ERROR(new_limit->AddParent(new_parent));
+  PX_ASSIGN_OR_RETURN(LimitIR * new_limit, plan->CopyNode(limit));
+  PX_RETURN_IF_ERROR(new_limit->AddParent(new_parent));
   return new_limit;
 }
 
 StatusOr<OperatorIR*> AggOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR* op) const {
   DCHECK(Matches(op));
   BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * new_agg, plan->CopyNode(agg));
-  PL_RETURN_IF_ERROR(new_agg->CopyParentsFrom(agg));
+  PX_ASSIGN_OR_RETURN(BlockingAggIR * new_agg, plan->CopyNode(agg));
+  PX_RETURN_IF_ERROR(new_agg->CopyParentsFrom(agg));
   new_agg->SetPartialAgg(true);
   new_agg->SetFinalizeResults(false);
 
@@ -60,7 +60,7 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR
 
   // Add column for the serialized expression
   new_type->AddColumn("serialized_expressions", ValueType::Create(types::STRING, types::ST_NONE));
-  PL_RETURN_IF_ERROR(new_agg->SetResolvedType(new_type));
+  PX_RETURN_IF_ERROR(new_agg->SetResolvedType(new_type));
 
   DCHECK(Match(new_agg, PartialAgg()));
   return new_agg;
@@ -70,10 +70,10 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreateMergeOperator(IR* plan, OperatorIR* 
                                                           OperatorIR* op) const {
   DCHECK(Matches(op));
   BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * new_agg, plan->CopyNode(agg));
-  PL_RETURN_IF_ERROR(new_agg->AddParent(new_parent));
+  PX_ASSIGN_OR_RETURN(BlockingAggIR * new_agg, plan->CopyNode(agg));
+  PX_RETURN_IF_ERROR(new_agg->AddParent(new_parent));
   planpb::Operator pb;
-  PL_RETURN_IF_ERROR(agg->ToProto(&pb));
+  PX_RETURN_IF_ERROR(agg->ToProto(&pb));
   new_agg->SetPreSplitProto(pb.agg_op());
 
   new_agg->SetPartialAgg(false);

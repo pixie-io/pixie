@@ -35,14 +35,14 @@ Status ConvertMetadataRule::UpdateMetadataContainer(IRNode* container, MetadataI
                                                     ExpressionIR* metadata_expr) const {
   if (Match(container, Func())) {
     auto func = static_cast<FuncIR*>(container);
-    PL_RETURN_IF_ERROR(func->UpdateArg(metadata, metadata_expr));
+    PX_RETURN_IF_ERROR(func->UpdateArg(metadata, metadata_expr));
     return Status::OK();
   }
   if (Match(container, Map())) {
     auto map = static_cast<MapIR*>(container);
     for (const auto& expr : map->col_exprs()) {
       if (expr.node == metadata) {
-        PL_RETURN_IF_ERROR(map->UpdateColExpr(expr.name, metadata_expr));
+        PX_RETURN_IF_ERROR(map->UpdateColExpr(expr.name, metadata_expr));
       }
     }
     return Status::OK();
@@ -82,28 +82,28 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   auto column_type = md_property->column_type();
   auto md_type = md_property->metadata_type();
 
-  PL_ASSIGN_OR_RETURN(auto parent, metadata->ReferencedOperator());
-  PL_ASSIGN_OR_RETURN(auto containing_ops, metadata->ContainingOperators());
+  PX_ASSIGN_OR_RETURN(auto parent, metadata->ReferencedOperator());
+  PX_ASSIGN_OR_RETURN(auto containing_ops, metadata->ContainingOperators());
 
-  PL_ASSIGN_OR_RETURN(std::string key_column_name,
+  PX_ASSIGN_OR_RETURN(std::string key_column_name,
                       FindKeyColumn(parent->resolved_table_type(), md_property, ir_node));
 
-  PL_ASSIGN_OR_RETURN(ColumnIR * key_column,
+  PX_ASSIGN_OR_RETURN(ColumnIR * key_column,
                       graph->CreateNode<ColumnIR>(ir_node->ast(), key_column_name, parent_op_idx));
 
-  PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column_name));
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column_name));
+  PX_ASSIGN_OR_RETURN(
       FuncIR * conversion_func,
       graph->CreateNode<FuncIR>(ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
                                 std::vector<ExpressionIR*>{key_column}));
   for (int64_t parent_id : graph->dag().ParentsOf(metadata->id())) {
     // For each container node of the metadata expression, update it to point to the
     // new conversion func instead.
-    PL_RETURN_IF_ERROR(UpdateMetadataContainer(graph->Get(parent_id), metadata, conversion_func));
+    PX_RETURN_IF_ERROR(UpdateMetadataContainer(graph->Get(parent_id), metadata, conversion_func));
   }
 
   // Propagate type changes from the new conversion_func.
-  PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
+  PX_RETURN_IF_ERROR(PropagateTypeChangesFromNode(graph, conversion_func, compiler_state_));
 
   DCHECK_EQ(conversion_func->EvaluatedDataType(), column_type)
       << "Expected the parent key column type and metadata property type to match.";

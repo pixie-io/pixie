@@ -133,11 +133,11 @@ class RuleExecutor {
         iteration += 1;
         bool graph_is_updated = false;
         for (const auto& rule : rb->rules()) {
-          PL_ASSIGN_OR_RETURN(bool rule_updates_graph, rule->Execute(ir_graph));
+          PX_ASSIGN_OR_RETURN(bool rule_updates_graph, rule->Execute(ir_graph));
           graph_is_updated = graph_is_updated || rule_updates_graph;
         }
         if (iteration >= rb->max_iterations() && graph_is_updated) {
-          PL_RETURN_IF_ERROR(rb->MaxIterationsHandler());
+          PX_RETURN_IF_ERROR(rb->MaxIterationsHandler());
           // TODO(philkuz) Reviewer: should this be a failure somehow?
           can_continue = false;
         }

@@ -118,7 +118,7 @@ class PixieModuleTest : public QLObjectTest {
     CHECK(google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto));
 
     info_ = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(info_->Init(udf_proto));
+    PX_CHECK_OK(info_->Init(udf_proto));
     udfspb::UDTFSourceSpec spec;
     google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
     info_->AddUDTF(spec);

@@ -64,12 +64,12 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
     if (!Match(child, ResultSink())) {
       return error::Unimplemented("df.stream() in the middle of a query is not yet implemented");
     }
-    PL_RETURN_IF_ERROR(child->ReplaceParent(stream_node, parent));
+    PX_RETURN_IF_ERROR(child->ReplaceParent(stream_node, parent));
   }
 
   // Now delete the stream node.
-  PL_RETURN_IF_ERROR(stream_node->RemoveParent(parent));
-  PL_RETURN_IF_ERROR(parent->graph()->DeleteNode(stream_node->id()));
+  PX_RETURN_IF_ERROR(stream_node->RemoveParent(parent));
+  PX_RETURN_IF_ERROR(parent->graph()->DeleteNode(stream_node->id()));
   return true;
 }
 

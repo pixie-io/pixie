@@ -84,7 +84,7 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
       data_.resource_attributes.push_back({attr.name, nullptr, attr.string_value});
       continue;
     }
-    PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
+    PX_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
     data_.resource_attributes.push_back({attr.name, column, ""});
   }
 
@@ -94,31 +94,31 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
     new_metric.description = metric.description;
 
     new_metric.unit_str = metric.unit_str;
-    PL_ASSIGN_OR_RETURN(new_metric.unit_column, AddColumn(metric.unit_column));
-    PL_ASSIGN_OR_RETURN(new_metric.time_column, AddColumn(metric.time_column));
+    PX_ASSIGN_OR_RETURN(new_metric.unit_column, AddColumn(metric.unit_column));
+    PX_ASSIGN_OR_RETURN(new_metric.time_column, AddColumn(metric.time_column));
     for (const auto& attr : metric.attributes) {
       if (attr.column_reference == nullptr) {
         new_metric.attributes.push_back({attr.name, nullptr, attr.string_value});
         continue;
       }
-      PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
+      PX_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
       new_metric.attributes.push_back({attr.name, column, ""});
     }
 
-    PL_RETURN_IF_ERROR(std::visit(
+    PX_RETURN_IF_ERROR(std::visit(
         overloaded{
             [&new_metric, this](const OTelMetricGauge& gauge) {
-              PL_ASSIGN_OR_RETURN(auto val, AddColumn(gauge.value_column));
+              PX_ASSIGN_OR_RETURN(auto val, AddColumn(gauge.value_column));
               new_metric.metric = OTelMetricGauge{val};
               return Status::OK();
             },
             [&new_metric, this](const OTelMetricSummary& summary) {
               OTelMetricSummary new_summary;
-              PL_ASSIGN_OR_RETURN(new_summary.count_column, AddColumn(summary.count_column));
-              PL_ASSIGN_OR_RETURN(new_summary.sum_column, AddColumn(summary.sum_column));
+              PX_ASSIGN_OR_RETURN(new_summary.count_column, AddColumn(summary.count_column));
+              PX_ASSIGN_OR_RETURN(new_summary.sum_column, AddColumn(summary.sum_column));
 
               for (const auto& quantile : summary.quantiles) {
-                PL_ASSIGN_OR_RETURN(auto column, AddColumn(quantile.value_column));
+                PX_ASSIGN_OR_RETURN(auto column, AddColumn(quantile.value_column));
                 new_summary.quantiles.push_back({quantile.quantile, column});
               }
               new_metric.metric = std::move(new_summary);
@@ -131,30 +131,30 @@ Status OTelExportSinkIR::ProcessConfig(const OTelData& data) {
   }
   for (const auto& span : data.spans) {
     OTelSpan new_span;
-    PL_RETURN_IF_ERROR(std::visit(overloaded{
+    PX_RETURN_IF_ERROR(std::visit(overloaded{
                                       [&new_span](const std::string& name) {
                                         new_span.name = name;
                                         return Status::OK();
                                       },
                                       [&new_span, this](ColumnIR* name_column) {
-                                        PL_ASSIGN_OR_RETURN(new_span.name, AddColumn(name_column));
+                                        PX_ASSIGN_OR_RETURN(new_span.name, AddColumn(name_column));
                                         return Status::OK();
                                       },
                                   },
                                   span.name));
-    PL_ASSIGN_OR_RETURN(new_span.start_time_column, AddColumn(span.start_time_column));
-    PL_ASSIGN_OR_RETURN(new_span.end_time_column, AddColumn(span.end_time_column));
+    PX_ASSIGN_OR_RETURN(new_span.start_time_column, AddColumn(span.start_time_column));
+    PX_ASSIGN_OR_RETURN(new_span.end_time_column, AddColumn(span.end_time_column));
     if (span.trace_id_column) {
-      PL_ASSIGN_OR_RETURN(new_span.trace_id_column, AddColumn(span.trace_id_column));
+      PX_ASSIGN_OR_RETURN(new_span.trace_id_column, AddColumn(span.trace_id_column));
     }
     if (span.span_id_column) {
-      PL_ASSIGN_OR_RETURN(new_span.span_id_column, AddColumn(span.span_id_column));
+      PX_ASSIGN_OR_RETURN(new_span.span_id_column, AddColumn(span.span_id_column));
     }
     if (span.parent_span_id_column) {
-      PL_ASSIGN_OR_RETURN(new_span.parent_span_id_column, AddColumn(span.parent_span_id_column));
+      PX_ASSIGN_OR_RETURN(new_span.parent_span_id_column, AddColumn(span.parent_span_id_column));
     }
     for (const auto& attr : span.attributes) {
-      PL_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
+      PX_ASSIGN_OR_RETURN(auto column, AddColumn(attr.column_reference));
       new_span.attributes.push_back({attr.name, column, ""});
     }
     new_span.span_kind = span.span_kind;
@@ -169,7 +169,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
   *otel_op->mutable_endpoint_config() = data_.endpoint_config;
   auto resource = otel_op->mutable_resource();
   for (const auto& otel_attribute : data_.resource_attributes) {
-    PL_RETURN_IF_ERROR(otel_attribute.ToProto(resource->add_attributes()));
+    PX_RETURN_IF_ERROR(otel_attribute.ToProto(resource->add_attributes()));
   }
 
   for (const auto& metric : data_.metrics) {
@@ -187,17 +187,17 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
           "Expected time column '$0' to be TIME64NS, received $1", metric.time_column->col_name(),
           types::ToString(metric.time_column->EvaluatedDataType()));
     }
-    PL_ASSIGN_OR_RETURN(auto time_index, metric.time_column->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto time_index, metric.time_column->GetColumnIndex());
     metric_pb->set_time_column_index(time_index);
     for (const auto& attribute : metric.attributes) {
-      PL_RETURN_IF_ERROR(attribute.ToProto(metric_pb->add_attributes()));
+      PX_RETURN_IF_ERROR(attribute.ToProto(metric_pb->add_attributes()));
     }
 
-    PL_RETURN_IF_ERROR(std::visit(
+    PX_RETURN_IF_ERROR(std::visit(
         overloaded{
             [&metric_pb](const OTelMetricGauge& gauge) {
               auto gauge_pb = metric_pb->mutable_gauge();
-              PL_ASSIGN_OR_RETURN(auto gauge_index, gauge.value_column->GetColumnIndex());
+              PX_ASSIGN_OR_RETURN(auto gauge_index, gauge.value_column->GetColumnIndex());
               switch (gauge.value_column->EvaluatedDataType()) {
                 case types::INT64:
                   gauge_pb->set_int_column_index(gauge_index);
@@ -215,7 +215,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
             },
             [&metric_pb](const OTelMetricSummary& summary) {
               auto summary_pb = metric_pb->mutable_summary();
-              PL_ASSIGN_OR_RETURN(auto count_index, summary.count_column->GetColumnIndex());
+              PX_ASSIGN_OR_RETURN(auto count_index, summary.count_column->GetColumnIndex());
               if (summary.count_column->EvaluatedDataType() != types::INT64) {
                 return summary.count_column->CreateIRNodeError(
                     "Expected count column '$0' to be INT64, received $1",
@@ -224,7 +224,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
               }
               summary_pb->set_count_column_index(count_index);
 
-              PL_ASSIGN_OR_RETURN(auto sum_index, summary.sum_column->GetColumnIndex());
+              PX_ASSIGN_OR_RETURN(auto sum_index, summary.sum_column->GetColumnIndex());
               if (summary.sum_column->EvaluatedDataType() != types::FLOAT64) {
                 return summary.sum_column->CreateIRNodeError(
                     "Expected sum column '$0' to be FLOAT64, received $1",
@@ -240,7 +240,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
                       quantile.value_column->col_name(),
                       types::ToString(quantile.value_column->EvaluatedDataType()));
                 }
-                PL_ASSIGN_OR_RETURN(auto value_column_index,
+                PX_ASSIGN_OR_RETURN(auto value_column_index,
                                     quantile.value_column->GetColumnIndex());
 
                 auto quantile_value_pb = summary_pb->add_quantile_values();
@@ -254,7 +254,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
   }
   for (const auto& span : data_.spans) {
     auto span_pb = otel_op->add_spans();
-    PL_RETURN_IF_ERROR(std::visit(
+    PX_RETURN_IF_ERROR(std::visit(
         overloaded{
             [&span_pb](const std::string& name) {
               span_pb->set_name_string(name);
@@ -266,7 +266,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
                     "Expected name column '$0' to be STRING, received $1", name_column->col_name(),
                     types::ToString(name_column->EvaluatedDataType()));
               }
-              PL_ASSIGN_OR_RETURN(auto name_column_index, name_column->GetColumnIndex());
+              PX_ASSIGN_OR_RETURN(auto name_column_index, name_column->GetColumnIndex());
               span_pb->set_name_column_index(name_column_index);
               return Status::OK();
             },
@@ -278,14 +278,14 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
           span.start_time_column->col_name(),
           types::ToString(span.start_time_column->EvaluatedDataType()));
     }
-    PL_ASSIGN_OR_RETURN(auto start_time_column_index, span.start_time_column->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto start_time_column_index, span.start_time_column->GetColumnIndex());
     span_pb->set_start_time_column_index(start_time_column_index);
     if (span.end_time_column->EvaluatedDataType() != types::TIME64NS) {
       return span.end_time_column->CreateIRNodeError(
           "Expected time column '$0' to be TIME64NS, received $1", span.end_time_column->col_name(),
           types::ToString(span.end_time_column->EvaluatedDataType()));
     }
-    PL_ASSIGN_OR_RETURN(auto end_time_column_index, span.end_time_column->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto end_time_column_index, span.end_time_column->GetColumnIndex());
     span_pb->set_end_time_column_index(end_time_column_index);
 
     if (span.trace_id_column) {
@@ -295,7 +295,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
             span.trace_id_column->col_name(),
             types::ToString(span.trace_id_column->EvaluatedDataType()));
       }
-      PL_ASSIGN_OR_RETURN(auto trace_id_column_index, span.trace_id_column->GetColumnIndex());
+      PX_ASSIGN_OR_RETURN(auto trace_id_column_index, span.trace_id_column->GetColumnIndex());
       span_pb->set_trace_id_column_index(trace_id_column_index);
     } else {
       span_pb->set_trace_id_column_index(-1);
@@ -307,7 +307,7 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
             span.span_id_column->col_name(),
             types::ToString(span.span_id_column->EvaluatedDataType()));
       }
-      PL_ASSIGN_OR_RETURN(auto span_id_column_index, span.span_id_column->GetColumnIndex());
+      PX_ASSIGN_OR_RETURN(auto span_id_column_index, span.span_id_column->GetColumnIndex());
       span_pb->set_span_id_column_index(span_id_column_index);
     } else {
       span_pb->set_span_id_column_index(-1);
@@ -319,14 +319,14 @@ Status OTelExportSinkIR::ToProto(planpb::Operator* op) const {
             span.parent_span_id_column->col_name(),
             types::ToString(span.parent_span_id_column->EvaluatedDataType()));
       }
-      PL_ASSIGN_OR_RETURN(auto parent_span_id_column_index,
+      PX_ASSIGN_OR_RETURN(auto parent_span_id_column_index,
                           span.parent_span_id_column->GetColumnIndex());
       span_pb->set_parent_span_id_column_index(parent_span_id_column_index);
     } else {
       span_pb->set_parent_span_id_column_index(-1);
     }
     for (const auto& attribute : span.attributes) {
-      PL_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
+      PX_RETURN_IF_ERROR(attribute.ToProto(span_pb->add_attributes()));
     }
     span_pb->set_kind_value(span.span_kind);
   }
@@ -345,7 +345,7 @@ Status OTelExportSinkIR::ResolveType(CompilerState* compiler_state) {
   auto parent_table_type = std::static_pointer_cast<TableType>(parent_types()[0]);
   auto table = TableType::Create();
   for (const auto& column : columns_to_resolve_) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(column, compiler_state, parent_types()));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(column, compiler_state, parent_types()));
     if (table->HasColumn(column->col_name())) {
       continue;
     }

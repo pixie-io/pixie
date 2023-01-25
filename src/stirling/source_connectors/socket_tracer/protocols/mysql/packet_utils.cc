@@ -104,7 +104,7 @@ Status ProcessTextResultsetRowPacket(const Packet& packet, size_t num_col) {
   std::string result;
   size_t offset = 0;
   for (size_t i = 0; i < num_col; ++i) {
-    PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &result));
+    PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &result));
   }
 
   // Shouldn't have anything after the length encoded string.
@@ -162,34 +162,34 @@ Status ProcessBinaryResultsetRowPacket(const Packet& packet,
       case ColType::kBit:
       case ColType::kDecimal:
       case ColType::kNewDecimal:
-        PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &val));
         break;
       case ColType::kLongLong:
-        PL_RETURN_IF_ERROR(DissectIntParam<8>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectIntParam<8>(packet.msg, &offset, &val));
         break;
       case ColType::kLong:
       case ColType::kInt24:
-        PL_RETURN_IF_ERROR(DissectIntParam<4>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectIntParam<4>(packet.msg, &offset, &val));
         break;
       case ColType::kShort:
       case ColType::kYear:
-        PL_RETURN_IF_ERROR(DissectIntParam<2>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectIntParam<2>(packet.msg, &offset, &val));
         break;
       case ColType::kTiny:
-        PL_RETURN_IF_ERROR(DissectIntParam<1>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectIntParam<1>(packet.msg, &offset, &val));
         break;
       case ColType::kDouble:
-        PL_RETURN_IF_ERROR(DissectFloatParam<double>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectFloatParam<double>(packet.msg, &offset, &val));
         break;
       case ColType::kFloat:
-        PL_RETURN_IF_ERROR(DissectFloatParam<float>(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectFloatParam<float>(packet.msg, &offset, &val));
         break;
       case ColType::kDate:
       case ColType::kDateTime:
       case ColType::kTimestamp:
       case ColType::kTime:
         // TODO(chengruizhe): Implement DissectDateTime correctly.
-        PL_RETURN_IF_ERROR(DissectDateTimeParam(packet.msg, &offset, &val));
+        PX_RETURN_IF_ERROR(DissectDateTimeParam(packet.msg, &offset, &val));
         break;
       default:
         return error::Internal("Unrecognized result column type.");
@@ -210,29 +210,29 @@ bool IsStmtPrepareOKPacket(const Packet& packet) {
 StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet) {
   ColDefinition col_def;
   size_t offset = 0;
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.catalog));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.catalog));
   if (col_def.catalog.compare("def") != 0) {
     return error::Internal("ColumnDef Packet must start with `def`.");
   }
 
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.schema));
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.table));
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_table));
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.name));
-  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_name));
-  PL_ASSIGN_OR_RETURN(col_def.next_length, ProcessLengthEncodedInt(packet.msg, &offset));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.schema));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.table));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_table));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.name));
+  PX_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_name));
+  PX_ASSIGN_OR_RETURN(col_def.next_length, ProcessLengthEncodedInt(packet.msg, &offset));
   if (col_def.next_length != 12) {
     return error::Internal("ColumnDef Packet's next_length field is always 0x0c.");
   }
 
-  PL_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.character_set));
-  PL_RETURN_IF_ERROR(DissectInt<4>(packet.msg, &offset, &col_def.column_length));
+  PX_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.character_set));
+  PX_RETURN_IF_ERROR(DissectInt<4>(packet.msg, &offset, &col_def.column_length));
   int8_t type;
-  PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &type));
+  PX_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &type));
   col_def.column_type = static_cast<ColType>(type);
 
-  PL_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.flags));
-  PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &col_def.decimals));
+  PX_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.flags));
+  PX_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &col_def.decimals));
 
   return col_def;
 }

@@ -126,7 +126,7 @@ class StoreWithRowTimeAccounting {
     }
     auto output_rb =
         std::make_unique<schema::RowBatch>(schema::RowDescriptor(col_types), batch_size);
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         AddBatchSliceToRowBatch(batch, row_offset, batch_size, cols, output_rb.get()));
 
     // Update the ptr to the last read row.
@@ -390,7 +390,7 @@ class StoreWithRowTimeAccounting {
     if constexpr (std::is_same_v<TBatch, ColdBatch>) {
       for (auto col_idx : cols) {
         auto arr = batch[col_idx]->Slice(row_offset, batch_size);
-        PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+        PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
       }
       return Status::OK();
     } else if constexpr (std::is_same_v<TBatch, HotBatch>) {

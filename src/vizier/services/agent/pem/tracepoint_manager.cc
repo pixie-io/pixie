@@ -47,7 +47,7 @@ TracepointManager::TracepointManager(px::event::Dispatcher* dispatcher, Info* ag
       dispatcher_->CreateTimer(std::bind(&TracepointManager::Monitor, this));
   // Kick off the background monitor.
   tracepoint_monitor_timer_->EnableTimer(kUpdateInterval);
-  PL_UNUSED(nats_conn_);
+  PX_UNUSED(nats_conn_);
 }
 
 Status TracepointManager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
@@ -74,7 +74,7 @@ Status TracepointManager::HandleMessage(std::unique_ptr<messages::VizierMessage>
 Status TracepointManager::HandleRegisterTracepointRequest(
     const messages::RegisterTracepointRequest& req) {
   const std::string& name = req.tracepoint_deployment().name();
-  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
+  PX_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   auto program = std::make_unique<stirling::dynamic_tracing::ir::logical::TracepointDeployment>();
   ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(req.tracepoint_deployment(),
                                                                  program.get());
@@ -97,7 +97,7 @@ Status TracepointManager::HandleRegisterTracepointRequest(
 
 Status TracepointManager::HandleRemoveTracepointRequest(
     const messages::RemoveTracepointRequest& req) {
-  PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
+  PX_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   std::lock_guard<std::mutex> lock(mu_);
 
   auto it = tracepoints_.find(id);
@@ -221,7 +221,7 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
     if (!relation_info_manager_->HasRelation(relation_info.name)) {
       table_store_->AddTable(table_store::Table::Create(relation_info.name, relation_info.relation),
                              relation_info.name, relation_info.id);
-      PL_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
+      PX_RETURN_IF_ERROR(relation_info_manager_->AddRelationInfo(relation_info));
     } else {
       if (relation_info.relation != table_store_->GetTable(relation_info.name)->GetRelation()) {
         return error::Internal(
@@ -229,7 +229,7 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
             "[table_name=$0]",
             relation_info.name);
       }
-      PL_RETURN_IF_ERROR(table_store_->AddTableAlias(relation_info.id, relation_info.name));
+      PX_RETURN_IF_ERROR(table_store_->AddTableAlias(relation_info.id, relation_info.name));
     }
   }
   return Status::OK();

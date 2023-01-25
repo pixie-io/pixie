@@ -65,7 +65,7 @@ int sample_stack_trace(struct pt_regs* ctx) {
 )";
 
 StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
-  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
   bpf_tools::BCCWrapper bcc_wrapper;
 
@@ -75,8 +75,8 @@ StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
       .probe_fn = "sample_stack_trace",
   };
 
-  PL_RETURN_IF_ERROR(bcc_wrapper.InitBPFProgram(kProgram));
-  PL_RETURN_IF_ERROR(bcc_wrapper.AttachUProbe(spec));
+  PX_RETURN_IF_ERROR(bcc_wrapper.InitBPFProgram(kProgram));
+  PX_RETURN_IF_ERROR(bcc_wrapper.AttachUProbe(spec));
 
   // Run our BPF program, which should collect a stack trace.
   Trigger();

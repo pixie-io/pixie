@@ -28,7 +28,7 @@ namespace compiler {
 
 Status VisualizationObject::Init() {
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> vega_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> vega_fn,
                       FuncObject::Create(kVegaAttrId, {"vega_spec"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -43,13 +43,13 @@ Status VisualizationObject::Init() {
 StatusOr<std::shared_ptr<VisualizationObject>> VisualizationObject::Create(
     ASTVisitor* ast_visitor) {
   auto viz_object = std::shared_ptr<VisualizationObject>(new VisualizationObject(ast_visitor));
-  PL_RETURN_IF_ERROR(viz_object->Init());
+  PX_RETURN_IF_ERROR(viz_object->Init());
   return viz_object;
 }
 
 StatusOr<QLObjectPtr> VegaHandler::Eval(const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * vega_spec_ir, GetArgAs<StringIR>(ast, args, "vega_spec"));
+  PX_ASSIGN_OR_RETURN(StringIR * vega_spec_ir, GetArgAs<StringIR>(ast, args, "vega_spec"));
   std::string vega_spec = vega_spec_ir->str();
   return FuncObject::Create(VisualizationObject::kVegaAttrId, {"fn"}, {},
                             /* has_variable_len_args */ false,
@@ -62,11 +62,11 @@ StatusOr<QLObjectPtr> VegaHandler::Eval(const pypa::AstPtr& ast, const ParsedArg
 StatusOr<QLObjectPtr> VegaHandler::NestedFn(std::string spec, const pypa::AstPtr& ast,
                                             const ParsedArgs& args, ASTVisitor*) {
   auto fn = args.GetArg("fn");
-  PL_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
+  PX_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
 
   auto vis_spec = std::make_unique<VisSpec>();
   vis_spec->vega_spec = spec;
-  PL_RETURN_IF_ERROR(func->AddVisSpec(std::move(vis_spec)));
+  PX_RETURN_IF_ERROR(func->AddVisSpec(std::move(vis_spec)));
   return std::static_pointer_cast<QLObject>(func);
 }
 

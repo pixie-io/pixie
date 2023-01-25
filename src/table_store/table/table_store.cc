@@ -60,7 +60,7 @@ Status TableStore::AppendData(uint64_t table_id, types::TabletID tablet_id,
   Table* table = GetTable(table_id, tablet_id);
   // We create new tablets only if the table at `table_id` exists, otherwise errors out.
   if (table == nullptr) {
-    PL_ASSIGN_OR_RETURN(table, CreateNewTablet(table_id, tablet_id));
+    PX_ASSIGN_OR_RETURN(table, CreateNewTablet(table_id, tablet_id));
   }
   return table->TransferRecordBatch(std::move(record_batch));
 }
@@ -160,7 +160,7 @@ std::vector<uint64_t> TableStore::GetTableIDs() const {
 
 Status TableStore::RunCompaction(arrow::MemoryPool* mem_pool) {
   for (const auto& it : name_to_table_map_) {
-    PL_RETURN_IF_ERROR(it.second->CompactHotToCold(mem_pool));
+    PX_RETURN_IF_ERROR(it.second->CompactHotToCold(mem_pool));
   }
   return Status::OK();
 }

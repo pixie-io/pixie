@@ -26,21 +26,21 @@ namespace kafka {
 // Only supports Kafka version >= 0.11.0
 StatusOr<RecordMessage> PacketDecoder::ExtractRecordMessage() {
   RecordMessage r;
-  PL_ASSIGN_OR_RETURN(int32_t length, ExtractVarint());
-  PL_RETURN_IF_ERROR(MarkOffset(length));
+  PX_ASSIGN_OR_RETURN(int32_t length, ExtractVarint());
+  PX_RETURN_IF_ERROR(MarkOffset(length));
 
-  PL_ASSIGN_OR_RETURN(int8_t attributes, ExtractInt8());
-  PL_ASSIGN_OR_RETURN(int64_t timestamp_delta, ExtractVarlong());
-  PL_ASSIGN_OR_RETURN(int32_t offset_delta, ExtractVarint());
-  PL_ASSIGN_OR_RETURN(r.key, ExtractBytesZigZag());
-  PL_ASSIGN_OR_RETURN(r.value, ExtractBytesZigZag());
+  PX_ASSIGN_OR_RETURN(int8_t attributes, ExtractInt8());
+  PX_ASSIGN_OR_RETURN(int64_t timestamp_delta, ExtractVarlong());
+  PX_ASSIGN_OR_RETURN(int32_t offset_delta, ExtractVarint());
+  PX_ASSIGN_OR_RETURN(r.key, ExtractBytesZigZag());
+  PX_ASSIGN_OR_RETURN(r.value, ExtractBytesZigZag());
 
-  PL_UNUSED(attributes);
-  PL_UNUSED(timestamp_delta);
-  PL_UNUSED(offset_delta);
+  PX_UNUSED(attributes);
+  PX_UNUSED(timestamp_delta);
+  PX_UNUSED(offset_delta);
 
   // Discard record headers and jump to the marked offset.
-  PL_RETURN_IF_ERROR(JumpToOffset());
+  PX_RETURN_IF_ERROR(JumpToOffset());
   return r;
 }
 
@@ -50,13 +50,13 @@ StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch(int32_t* offset) {
   constexpr int32_t kLengthLength = 4;
 
   RecordBatch r;
-  PL_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
 
-  PL_ASSIGN_OR_RETURN(int32_t length, ExtractInt32());
-  PL_RETURN_IF_ERROR(MarkOffset(length));
+  PX_ASSIGN_OR_RETURN(int32_t length, ExtractInt32());
+  PX_RETURN_IF_ERROR(MarkOffset(length));
 
-  PL_ASSIGN_OR_RETURN(int32_t partition_leader_epoch, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(int8_t magic, ExtractInt8());
+  PX_ASSIGN_OR_RETURN(int32_t partition_leader_epoch, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(int8_t magic, ExtractInt8());
   // If magic is not v2, then this is potentially an older format.
   if (magic < 2) {
     return error::Internal("Old record batch (message set) format not supported.");
@@ -65,28 +65,28 @@ StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch(int32_t* offset) {
     return error::Internal("Unknown magic in ExtractRecordBatch.");
   }
 
-  PL_ASSIGN_OR_RETURN(int32_t crc, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(int16_t attributes, ExtractInt16());
-  PL_ASSIGN_OR_RETURN(int32_t last_offset_delta, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(int64_t first_time_stamp, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(int64_t max_time_stamp, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(int64_t producer_ID, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(int16_t producer_epoch, ExtractInt16());
-  PL_ASSIGN_OR_RETURN(int32_t base_sequence, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(int32_t crc, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(int16_t attributes, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int32_t last_offset_delta, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(int64_t first_time_stamp, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(int64_t max_time_stamp, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(int64_t producer_ID, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(int16_t producer_epoch, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int32_t base_sequence, ExtractInt32());
 
-  PL_UNUSED(base_offset);
-  PL_UNUSED(partition_leader_epoch);
-  PL_UNUSED(crc);
-  PL_UNUSED(attributes);
-  PL_UNUSED(last_offset_delta);
-  PL_UNUSED(first_time_stamp);
-  PL_UNUSED(max_time_stamp);
-  PL_UNUSED(producer_ID);
-  PL_UNUSED(producer_epoch);
-  PL_UNUSED(base_sequence);
+  PX_UNUSED(base_offset);
+  PX_UNUSED(partition_leader_epoch);
+  PX_UNUSED(crc);
+  PX_UNUSED(attributes);
+  PX_UNUSED(last_offset_delta);
+  PX_UNUSED(first_time_stamp);
+  PX_UNUSED(max_time_stamp);
+  PX_UNUSED(producer_ID);
+  PX_UNUSED(producer_epoch);
+  PX_UNUSED(base_sequence);
 
-  PL_ASSIGN_OR_RETURN(r.records, ExtractRegularArray(&PacketDecoder::ExtractRecordMessage));
-  PL_RETURN_IF_ERROR(JumpToOffset());
+  PX_ASSIGN_OR_RETURN(r.records, ExtractRegularArray(&PacketDecoder::ExtractRecordMessage));
+  PX_RETURN_IF_ERROR(JumpToOffset());
 
   *offset += length + kBaseOffsetLength + kLengthLength;
   return r;
@@ -98,11 +98,11 @@ StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
   int32_t offset = 0;
 
   if (is_flexible_) {
-    PL_ASSIGN_OR_RETURN(message_set.size, ExtractUnsignedVarint());
+    PX_ASSIGN_OR_RETURN(message_set.size, ExtractUnsignedVarint());
   } else {
-    PL_ASSIGN_OR_RETURN(message_set.size, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(message_set.size, ExtractInt32());
   }
-  PL_RETURN_IF_ERROR(MarkOffset(message_set.size));
+  PX_RETURN_IF_ERROR(MarkOffset(message_set.size));
 
   // The message set in a fetch response is sent with the sendfile syscall:
   // sendfile(int out_fd, int in_fd, off_t *offset, size_t count). We can only get the length of
@@ -123,16 +123,16 @@ StatusOr<MessageSet> PacketDecoder::ExtractMessageSet() {
     if (record_batch_result.ok()) {
       message_set.record_batches.push_back(record_batch_result.ValueOrDie());
     } else {
-      PL_RETURN_IF_ERROR(JumpToOffset());
+      PX_RETURN_IF_ERROR(JumpToOffset());
       return message_set;
     }
   }
 
   if (is_flexible_) {
-    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+    PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   }
 
-  PL_RETURN_IF_ERROR(JumpToOffset());
+  PX_RETURN_IF_ERROR(JumpToOffset());
   return message_set;
 }
 

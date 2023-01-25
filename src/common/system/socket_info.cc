@@ -58,16 +58,16 @@ Status NetlinkSocketProber::Connect() {
 
 StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create() {
   auto socket_prober_ptr = std::unique_ptr<NetlinkSocketProber>(new NetlinkSocketProber);
-  PL_RETURN_IF_ERROR(socket_prober_ptr->Connect());
+  PX_RETURN_IF_ERROR(socket_prober_ptr->Connect());
   return socket_prober_ptr;
 }
 
 StatusOr<std::unique_ptr<NetlinkSocketProber>> NetlinkSocketProber::Create(int net_ns_pid) {
   // Enter the network namespace of the provided pid. The namespace will automatically exit
   // on termination of this scope.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<ScopedNamespace> scoped_namespace,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<ScopedNamespace> scoped_namespace,
                       ScopedNamespace::Create(net_ns_pid, "net"));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<NetlinkSocketProber> socket_prober_ptr, Create());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<NetlinkSocketProber> socket_prober_ptr, Create());
   return socket_prober_ptr;
 }
 
@@ -242,7 +242,7 @@ Status NetlinkSocketProber::RecvDiagResp(std::map<int, SocketInfo>* socket_info_
 #pragma GCC diagnostic ignored "-Wold-style-cast"
       TDiagMsgType* diag_msg = reinterpret_cast<TDiagMsgType*>(NLMSG_DATA(msg_header));
 #pragma GCC diagnostic pop
-      PL_RETURN_IF_ERROR(ProcessDiagMsg(*diag_msg, msg_header->nlmsg_len, socket_info_entries));
+      PX_RETURN_IF_ERROR(ProcessDiagMsg(*diag_msg, msg_header->nlmsg_len, socket_info_entries));
     }
   }
 
@@ -310,13 +310,13 @@ Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_in
 
   // Run once for IPv4.
   msg_req.sdiag_family = AF_INET;
-  PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
-  PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
+  PX_RETURN_IF_ERROR(SendDiagReq(msg_req));
+  PX_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
 
   // Run again for IPv6.
   msg_req.sdiag_family = AF_INET6;
-  PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
-  PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
+  PX_RETURN_IF_ERROR(SendDiagReq(msg_req));
+  PX_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
 
   // If Listening connections were queried, then also populate the role field of the connections.
   if (conn_states & kTCPListeningState) {
@@ -333,8 +333,8 @@ Status NetlinkSocketProber::UnixConnections(std::map<int, SocketInfo>* socket_in
   msg_req.udiag_states = conn_states;
   msg_req.udiag_show = UDIAG_SHOW_PEER;
 
-  PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
-  PL_RETURN_IF_ERROR(RecvDiagResp<struct unix_diag_msg>(socket_info_entries));
+  PX_RETURN_IF_ERROR(SendDiagReq(msg_req));
+  PX_RETURN_IF_ERROR(RecvDiagResp<struct unix_diag_msg>(socket_info_entries));
   return Status::OK();
 }
 
@@ -348,8 +348,8 @@ StatusOr<uint32_t> NetNamespace(std::filesystem::path proc, uint32_t pid) {
 
 StatusOr<uint32_t> NetNamespace(std::filesystem::path proc_pid) {
   std::filesystem::path net_ns_path = proc_pid / "ns/net";
-  PL_ASSIGN_OR_RETURN(std::filesystem::path net_ns_link, fs::ReadSymlink(net_ns_path));
-  PL_ASSIGN_OR_RETURN(uint32_t net_ns_inode_num,
+  PX_ASSIGN_OR_RETURN(std::filesystem::path net_ns_link, fs::ReadSymlink(net_ns_path));
+  PX_ASSIGN_OR_RETURN(uint32_t net_ns_inode_num,
                       fs::ExtractInodeNum(fs::kNetInodePrefix, net_ns_link.string()));
   return net_ns_inode_num;
 }
@@ -464,12 +464,12 @@ StatusOr<std::unique_ptr<SocketInfoManager>> SocketInfoManager::Create(
     std::filesystem::path proc_path, int conn_states) {
   std::unique_ptr<SocketInfoManager> socket_info_db_ptr(
       new SocketInfoManager(proc_path, conn_states));
-  PL_ASSIGN_OR_RETURN(socket_info_db_ptr->socket_probers_, SocketProberManager::Create());
+  PX_ASSIGN_OR_RETURN(socket_info_db_ptr->socket_probers_, SocketProberManager::Create());
   return socket_info_db_ptr;
 }
 
 StatusOr<std::map<int, SocketInfo>*> SocketInfoManager::GetNamespaceConns(uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(uint32_t net_ns, NetNamespace(cfg_proc_path_, pid));
+  PX_ASSIGN_OR_RETURN(uint32_t net_ns, NetNamespace(cfg_proc_path_, pid));
 
   // Step 1: Get the map of connections for this network namespace.
   // Create the map if it doesn't already exist.
@@ -481,7 +481,7 @@ StatusOr<std::map<int, SocketInfo>*> SocketInfoManager::GetNamespaceConns(uint32
     namespace_conns = &ns_iter->second;
   } else {
     // No map of connections for this network namespace, so use a socker prober to populate one.
-    PL_ASSIGN_OR_RETURN(NetlinkSocketProber * socket_prober,
+    PX_ASSIGN_OR_RETURN(NetlinkSocketProber * socket_prober,
                         socket_probers_->GetOrCreateSocketProber(net_ns, {static_cast<int>(pid)}));
     DCHECK(socket_prober != nullptr);
 
@@ -508,7 +508,7 @@ StatusOr<SocketInfo*> SocketInfoManager::Lookup(uint32_t pid, uint32_t inode_num
   // Step 1: Get the map of connections for this network namespace.
   // Create the map if it doesn't already exist.
   std::map<int, SocketInfo>* namespace_conns;
-  PL_ASSIGN_OR_RETURN(namespace_conns, GetNamespaceConns(pid));
+  PX_ASSIGN_OR_RETURN(namespace_conns, GetNamespaceConns(pid));
 
   // Step 2: Lookup the inode.
   auto iter = namespace_conns->find(inode_num);

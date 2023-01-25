@@ -49,7 +49,7 @@ using ::testing::HasSubstr;
 using ::testing::StrEq;
 
 StatusOr<md::UPID> ToUPID(uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(ProcPidPath(pid)));
+  PX_ASSIGN_OR_RETURN(int64_t pid_start_time, system::GetPIDStartTimeTicks(ProcPidPath(pid)));
   return md::UPID{/* asid */ 0, pid, pid_start_time};
 }
 
@@ -70,14 +70,14 @@ class GRPCServer {
     // Let server pick random port in order avoid conflicting.
     const std::string port_flag = "--port=0";
 
-    PL_CHECK_OK(s_.Start({server_path, https_flag, port_flag}));
+    PX_CHECK_OK(s_.Start({server_path, https_flag, port_flag}));
     LOG(INFO) << "Server PID: " << s_.child_pid();
 
     // Give some time for the server to start up.
     sleep(2);
 
     std::string port_str;
-    PL_CHECK_OK(s_.Stdout(&port_str));
+    PX_CHECK_OK(s_.Stdout(&port_str));
     CHECK(absl::SimpleAtoi(port_str, &port_));
     CHECK_NE(0, port_);
   }
@@ -104,7 +104,7 @@ class GRPCClient {
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
     const std::string compression_flag =
         use_compression ? "--compression=true" : "--compression=false";
-    PL_CHECK_OK(c_.Start({client_path, https_flag, compression_flag, "-once", "-name=PixieLabs",
+    PX_CHECK_OK(c_.Start({client_path, https_flag, compression_flag, "-once", "-name=PixieLabs",
                           absl::StrCat("-address=localhost:", port)}));
     LOG(INFO) << "Client PID: " << c_.child_pid();
     CHECK_EQ(0, c_.Wait());
@@ -136,7 +136,7 @@ class GRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTr
 TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   auto params = GetParam();
 
-  PL_SET_FOR_SCOPE(FLAGS_socket_tracer_enable_http2_gzip, params.use_compression);
+  PX_SET_FOR_SCOPE(FLAGS_socket_tracer_enable_http2_gzip, params.use_compression);
   server_.LaunchServer(params.go_version, params.use_https);
 
   // Deploy uprobes on the newly launched server.
@@ -222,9 +222,9 @@ TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
   testing::PyGRPCHelloWorld server;
 
   // First start the server so the process can be detected by socket tracer.
-  PL_CHECK_OK(server.Run(std::chrono::seconds{60}, /*options*/ {},
+  PX_CHECK_OK(server.Run(std::chrono::seconds{60}, /*options*/ {},
                          /*args*/ {"python", "helloworld/greeter_server.py"}));
-  PL_CHECK_OK(
+  PX_CHECK_OK(
       client.Run(std::chrono::seconds{60},
                  /*options*/ {absl::Substitute("--network=container:$0", server.container_name())},
                  /*args*/ {"python", "helloworld/greeter_client.py"}));

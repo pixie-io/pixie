@@ -109,7 +109,7 @@ StatusOr<int> StatusOrTestFunc(int x) {
 }
 
 Status TestCheckCall(int x) {
-  PL_ASSIGN_OR_RETURN(auto y, StatusOrTestFunc(x));
+  PX_ASSIGN_OR_RETURN(auto y, StatusOrTestFunc(x));
   EXPECT_EQ(y, x + 1);
   return Status::OK();
 }

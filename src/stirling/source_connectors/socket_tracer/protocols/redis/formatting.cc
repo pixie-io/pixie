@@ -223,7 +223,7 @@ StatusOr<std::string> FmtArgs(const CmdArgs& cmd_args, VectorView<std::string> a
   }
   utils::JSONObjectBuilder json_builder;
   for (const auto& arg : cmd_args.cmd_arg_descs_.value()) {
-    PL_RETURN_IF_ERROR(FmtArg(arg, &args, &json_builder));
+    PX_RETURN_IF_ERROR(FmtArg(arg, &args, &json_builder));
   }
   return json_builder.GetString();
 }

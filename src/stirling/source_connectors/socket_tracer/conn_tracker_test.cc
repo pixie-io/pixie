@@ -189,7 +189,7 @@ TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
-  PL_UNUSED(req1);  // Missing event.
+  PX_UNUSED(req1);  // Missing event.
   tracker.AddDataEvent(std::move(resp1));
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
@@ -222,7 +222,7 @@ TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
   tracker.AddDataEvent(std::move(req1));
-  PL_UNUSED(req2);  // Missing event.
+  PX_UNUSED(req2);  // Missing event.
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
@@ -617,7 +617,7 @@ TEST_F(ConnTrackerTest, DisabledForNonTrackedUPID) {
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-  PL_SET_FOR_SCOPE(FLAGS_stirling_untracked_upid_threshold_seconds, 1);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_untracked_upid_threshold_seconds, 1);
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);

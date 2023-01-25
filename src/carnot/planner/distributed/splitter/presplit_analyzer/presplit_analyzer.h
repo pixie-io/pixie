@@ -40,7 +40,7 @@ class PreSplitAnalyzer : public RuleExecutor<IR> {
  public:
   static StatusOr<std::unique_ptr<PreSplitAnalyzer>> Create(CompilerState* compiler_state) {
     std::unique_ptr<PreSplitAnalyzer> optimizer(new PreSplitAnalyzer(compiler_state));
-    PL_RETURN_IF_ERROR(optimizer->Init());
+    PX_RETURN_IF_ERROR(optimizer->Init());
     return optimizer;
   }
 

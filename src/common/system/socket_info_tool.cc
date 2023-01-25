@@ -103,14 +103,14 @@ int main(int argc, char** argv) {
     std::cout << "No PID specified. Assuming network namespace of current PID." << std::endl;
   }
 
-  PL_ASSIGN_OR_EXIT(std::unique_ptr<SocketInfoManager> socket_info_db,
+  PX_ASSIGN_OR_EXIT(std::unique_ptr<SocketInfoManager> socket_info_db,
                     SocketInfoManager::Create(px::system::proc_path(), 0xfff));
 
   if (fd == -1) {
     std::cout << absl::Substitute("Querying network namespace of pid=$0 (all connections):", pid)
               << std::endl;
     std::map<int, SocketInfo>* namespace_conns;
-    PL_ASSIGN_OR_EXIT(namespace_conns, socket_info_db->GetNamespaceConns(pid));
+    PX_ASSIGN_OR_EXIT(namespace_conns, socket_info_db->GetNamespaceConns(pid));
 
     int i = 0;
     for (const auto& x : *namespace_conns) {
@@ -125,11 +125,11 @@ int main(int argc, char** argv) {
   } else {
     std::cout << absl::Substitute("Querying pid=$0 fd=$1:", pid, fd) << std::endl;
     const auto fd_path = px::system::ProcPidPath(pid, "fd", std::to_string(fd));
-    PL_ASSIGN_OR_EXIT(std::filesystem::path fd_link, px::fs::ReadSymlink(fd_path));
-    PL_ASSIGN_OR_EXIT(uint32_t inode_num,
+    PX_ASSIGN_OR_EXIT(std::filesystem::path fd_link, px::fs::ReadSymlink(fd_path));
+    PX_ASSIGN_OR_EXIT(uint32_t inode_num,
                       px::fs::ExtractInodeNum(px::fs::kSocketInodePrefix, fd_link.string()));
 
-    PL_ASSIGN_OR_EXIT(SocketInfo * socket_info, socket_info_db->Lookup(pid, inode_num));
+    PX_ASSIGN_OR_EXIT(SocketInfo * socket_info, socket_info_db->Lookup(pid, inode_num));
     if (socket_info == nullptr) {
       std::cout << "No data" << std::endl;
       return 1;

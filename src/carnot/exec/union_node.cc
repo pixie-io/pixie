@@ -60,7 +60,7 @@ Status UnionNode::InitializeColumnBuilders() {
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
     column_builders_[i] =
         MakeArrowBuilder(output_descriptor_->type(i), arrow::default_memory_pool());
-    PL_RETURN_IF_ERROR(column_builders_[i]->Reserve(output_rows_per_batch_));
+    PX_RETURN_IF_ERROR(column_builders_[i]->Reserve(output_rows_per_batch_));
   }
   return Status::OK();
 }
@@ -78,7 +78,7 @@ Status UnionNode::PrepareImpl(ExecState*) {
     data_columns_.resize(num_parents_, std::vector<arrow::Array*>(num_output_cols));
 
     column_builders_.resize(num_output_cols);
-    PL_RETURN_IF_ERROR(InitializeColumnBuilders());
+    PX_RETURN_IF_ERROR(InitializeColumnBuilders());
   }
 
   return Status::OK();
@@ -116,9 +116,9 @@ Status UnionNode::AppendRow(size_t parent) {
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
     auto input_col = data_columns_[parent][i];
 #define TYPE_CASE(_dt_)                                    \
-  PL_RETURN_IF_ERROR(table_store::schema::CopyValue<_dt_>( \
+  PX_RETURN_IF_ERROR(table_store::schema::CopyValue<_dt_>( \
       column_builders_[i].get(), types::GetValueFromArrowArray<_dt_>(input_col, row)));
-    PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(i), TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(i), TYPE_CASE);
 #undef TYPE_CASE
   }
   return Status::OK();
@@ -162,9 +162,9 @@ Status UnionNode::FlushBatch(ExecState* exec_state) {
   DCHECK(!sent_eos_);
 
   bool eos = InputsComplete();
-  PL_ASSIGN_OR_RETURN(auto rb, RowBatch::FromColumnBuilders(*output_descriptor_, /*eow*/ eos,
+  PX_ASSIGN_OR_RETURN(auto rb, RowBatch::FromColumnBuilders(*output_descriptor_, /*eow*/ eos,
                                                             /*eos*/ eos, &column_builders_));
-  PL_RETURN_IF_ERROR(InitializeColumnBuilders());
+  PX_RETURN_IF_ERROR(InitializeColumnBuilders());
   last_data_flush_time_ = std::chrono::system_clock::now();
   return SendRowBatchToChildren(exec_state, *rb);
 }
@@ -214,7 +214,7 @@ Status UnionNode::MergeData(ExecState* exec_state) {
         }
       }
 
-      PL_RETURN_IF_ERROR(AppendRow(parent));
+      PX_RETURN_IF_ERROR(AppendRow(parent));
 
       // Mark whether or not we hit the eos for this stream, and whether the row batch needs to be
       // popped.
@@ -232,7 +232,7 @@ Status UnionNode::MergeData(ExecState* exec_state) {
       }
 
       // Flush the current RowBatch if necessary.
-      PL_RETURN_IF_ERROR(OptionallyFlushRowBatchIfMaxRowsOrEOS(exec_state));
+      PX_RETURN_IF_ERROR(OptionallyFlushRowBatchIfMaxRowsOrEOS(exec_state));
     }
   }
   return Status::OK();
@@ -261,7 +261,7 @@ Status UnionNode::ConsumeNextOrdered(ExecState* exec_state, const RowBatch& rb,
                                      size_t parent_index) {
   parent_row_batches_[parent_index].push_back(rb);
   CacheNextRowBatch(parent_index);
-  PL_RETURN_IF_ERROR(MergeData(exec_state));
+  PX_RETURN_IF_ERROR(MergeData(exec_state));
   return OptionallyFlushRowBatchIfTimeout(exec_state);
 }
 
@@ -272,12 +272,12 @@ Status UnionNode::ConsumeNextUnordered(ExecState* exec_state, const RowBatch& rb
   }
   RowBatch output_rb(*output_descriptor_, rb.num_rows());
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
-    PL_RETURN_IF_ERROR(output_rb.AddColumn(GetInputColumn(rb, parent_index, i)));
+    PX_RETURN_IF_ERROR(output_rb.AddColumn(GetInputColumn(rb, parent_index, i)));
   }
 
   output_rb.set_eow(InputsComplete());
   output_rb.set_eos(InputsComplete());
-  PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+  PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
   return Status::OK();
 }
 
