@@ -15,7 +15,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: pl-updater-service-account
-  namespace: "{{ .Release.Namespace }}"
+  namespace: pl
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -74,4 +74,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: pl-updater-service-account
-  namespace: "{{ .Release.Namespace }}"
+  namespace: pl

@@ -365,7 +365,7 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-cluster-binding"),
-			Patch:           `{ "subjects": [{ "name": "pl-updater-service-account", "namespace": "__PXqgq_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Patch:           `{ "subjects": [{ "name": "pl-updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
 		},
