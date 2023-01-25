@@ -21,8 +21,7 @@
 # Go to the root of the repo
 cd "$(git rev-parse --show-toplevel)" || exit
 
-bazel_query=("bazel" "query" "--keep_going" "--noshow_progress")
-bazel_cquery=("bazel" "cquery")
+bazel_cquery=("bazel" "cquery" "--keep_going" "--noshow_progress")
 
 # A list of patterns that will trigger a full build.
 poison_patterns=('^Jenkinsfile' '^bazel\/' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel'  '^docker.properties')
@@ -138,14 +137,10 @@ function check_bpf_trigger() {
   done
 }
 
+starlark_cquery_file="ci/cquery_ignore_non_target_and_incompatible.bzl"
 function query_compatible_targets() {
   bazel_config="$1"
-  query_expr="$("${bazel_query[@]}" "${@:2}" 2> /dev/null | sed -z 's/\n/+/g;s/+$//g')"
-
-  if [ -n "${query_expr}" ]; then
-    starlark_expr='target.label if "IncompatiblePlatformProvider" not in providers(target) else "__INCOMPATIBLE__"'
-    "${bazel_cquery[@]}" --config="${bazel_config}" --output=starlark --starlark:expr="${starlark_expr}" "${query_expr}" 2> /dev/null | grep -v "__INCOMPATIBLE__"
-  fi
+  "${bazel_cquery[@]}" --config="${bazel_config}" --notool_deps --output=starlark --starlark:file "${starlark_cquery_file}"	"${@:2}" | grep -v "^None$" | sort | uniq
 }
 
 compute_targets
@@ -173,7 +168,7 @@ cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
 
 
 # Clang:opt (includes non-cc targets: go targets, //src/ui/..., etc.)
-query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt #2>/dev/null
+query_compatible_targets "clang" "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt 2>/dev/null
 query_compatible_targets "clang" "${tests} ${bpf_excludes}" > bazel_tests_clang_opt 2>/dev/null
 
 # Clang:dbg
