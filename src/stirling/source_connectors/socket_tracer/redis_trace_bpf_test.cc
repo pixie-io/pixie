@@ -20,6 +20,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
 namespace px {
@@ -27,6 +28,7 @@ namespace stirling {
 
 using ::px::SubProcess;
 
+using testing::ContainsWithRelativeOrder;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::IsEmpty;
@@ -124,44 +126,30 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
-  // redis-cli sends a 'command' req to query all available commands from server.
-  // This only appears to happen when piping in a script.
-  // The response is too long to test meaningfully, so we ignore them.
-  // Sometimes this command is not properly traced, so we make this conditional.
-  // TODO(oazizi/yzhao): Figure out why this is not always traced.
-  ASSERT_THAT(redis_trace_records, Not(IsEmpty()));
-  while (redis_trace_records.begin()->cmd == "COMMAND") {
-    LOG(INFO) << "Erasing leading COMMAND record: " << redis_trace_records.front();
-    redis_trace_records.erase(redis_trace_records.begin());
-  }
-
-  EXPECT_THAT(
-      redis_trace_records,
-      ElementsAreArray(
-          {RedisTraceRecord{"PING", R"({"message":"test"})", "test"},
-           RedisTraceRecord{"SET", R"({"key":"foo","value":"100","options":["EX 10","NX"]})", "OK"},
-           RedisTraceRecord{"EXPIRE", R"({"key":"foo","seconds":"10000"})", "1"},
-           RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
-           RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
-           RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
-           RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"},
-           RedisTraceRecord{"MGET", R"({"key":["foo","bar"]})", R"(["101xxx","<NULL>"])"},
-           RedisTraceRecord{"SADD", R"({"key":"myset","member":["1","2","3"]})", "3"},
-           RedisTraceRecord{"SSCAN",
-                            R"({"key":"myset","cursor":"0","pattern":"[a-z]+","count":"10"})",
-                            R"(["0","[]"])"},
-           RedisTraceRecord{"SCARD", R"({"key":"myset"})", "3"},
-           RedisTraceRecord{"SMEMBERS", R"({"key":"myset"})", R"(["1","2","3"])"},
-           RedisTraceRecord{"HMSET",
-                            R"({"key":"fooset","field value":[{"field":"f1"},)"
-                            R"({"value":"100"},{"field":"f2"},{"value":"200"}]})",
-                            "OK"},
-           RedisTraceRecord{"HMGET", R"({"key":"fooset","field":["f1","f2"]})", R"(["100","200"])"},
-           RedisTraceRecord{"HGET", R"({"key":"fooset","field":"f1"})", "100"},
-           RedisTraceRecord{"HGETALL", R"({"key":"fooset"})", R"(["f1","100","f2","200"])"},
-           RedisTraceRecord{"WATCH", R"({"key":["foo","bar"]})", "OK"},
-           RedisTraceRecord{"UNWATCH", "[]", "OK"},
-           RedisTraceRecord{"SELECT", R"({"index":"0"})", "OK"}}));
+  ContainsWithRelativeOrder(
+      redis_trace_records, RedisTraceRecord{"PING", R"({"message":"test"})", "test"},
+      RedisTraceRecord{"SET", R"({"key":"foo","value":"100","options":["EX 10","NX"]})", "OK"},
+      RedisTraceRecord{"EXPIRE", R"({"key":"foo","seconds":"10000"})", "1"},
+      RedisTraceRecord{"BITCOUNT", R"(["foo","0","0"])", "3"},
+      RedisTraceRecord{"INCR", R"({"key":"foo"})", "101"},
+      RedisTraceRecord{"APPEND", R"({"key":"foo","value":"xxx"})", "6"},
+      RedisTraceRecord{"GET", R"({"key":"foo"})", "101xxx"},
+      RedisTraceRecord{"MGET", R"({"key":["foo","bar"]})", R"(["101xxx","<NULL>"])"},
+      RedisTraceRecord{"SADD", R"({"key":"myset","member":["1","2","3"]})", "3"},
+      RedisTraceRecord{"SSCAN", R"({"key":"myset","cursor":"0","pattern":"[a-z]+","count":"10"})",
+                       R"(["0","[]"])"},
+      RedisTraceRecord{"SCARD", R"({"key":"myset"})", "3"},
+      RedisTraceRecord{"SMEMBERS", R"({"key":"myset"})", R"(["1","2","3"])"},
+      RedisTraceRecord{"HMSET",
+                       R"({"key":"fooset","field value":[{"field":"f1"},)"
+                       R"({"value":"100"},{"field":"f2"},{"value":"200"}]})",
+                       "OK"},
+      RedisTraceRecord{"HMGET", R"({"key":"fooset","field":["f1","f2"]})", R"(["100","200"])"},
+      RedisTraceRecord{"HGET", R"({"key":"fooset","field":"f1"})", "100"},
+      RedisTraceRecord{"HGETALL", R"({"key":"fooset"})", R"(["f1","100","f2","200"])"},
+      RedisTraceRecord{"WATCH", R"({"key":["foo","bar"]})", "OK"},
+      RedisTraceRecord{"UNWATCH", "[]", "OK"},
+      RedisTraceRecord{"SELECT", R"({"index":"0"})", "OK"});
 }
 
 // Verifies that pub/sub commands can be traced correctly.
@@ -189,10 +177,10 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
-  EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{"SUBSCRIBE", R"({"channel":["foo","1"]})", ""},
-                          RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
-                          RedisTraceRecord{"PUSH PUB", "", R"(["message","foo","test"])"}));
+  ContainsWithRelativeOrder(
+      redis_trace_records, RedisTraceRecord{"SUBSCRIBE", R"({"channel":["foo","1"]})", ""},
+      RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
+      RedisTraceRecord{"PUSH PUB", "", R"(["message","foo","test"])"});
 }
 
 // Verifies that script load and evalsha works as expected.
@@ -224,14 +212,12 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
-  EXPECT_THAT(
-      redis_trace_records,
-      ElementsAre(RedisTraceRecord{"SCRIPT LOAD", R"({"script":"return 1"})", sha},
-                  RedisTraceRecord{
-                      "EVALSHA",
-                      absl::Substitute(
-                          R"({"sha1":"$0","numkeys":"2","key":["1","1"],"value":["2","2"]})", sha),
-                      "1"}));
+  ContainsWithRelativeOrder(
+      redis_trace_records, RedisTraceRecord{"SCRIPT LOAD", R"({"script":"return 1"})", sha},
+      RedisTraceRecord{
+          "EVALSHA",
+          absl::Substitute(R"({"sha1":"$0","numkeys":"2","key":["1","1"],"value":["2","2"]})", sha),
+          "1"});
 }
 
 // Verifies individual commands.
@@ -252,9 +238,9 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
 
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
 
-  EXPECT_THAT(
+  ContainsWithRelativeOrder(
       GetRedisTraceRecords(record_batch, container_.process_pid()),
-      ElementsAre(RedisTraceRecord{GetParam().exp_cmd, GetParam().exp_req, GetParam().exp_resp}));
+      RedisTraceRecord{GetParam().exp_cmd, GetParam().exp_req, GetParam().exp_resp});
 }
 
 INSTANTIATE_TEST_SUITE_P(

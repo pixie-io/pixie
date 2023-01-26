@@ -384,8 +384,6 @@ pl_cc_test(
     srcs = ["redis_trace_bpf_test.cc"],
     flaky = True,
     tags = [
-        # TODO: This test has a <90% pass rate in CI, please fix and re-enable.
-        "disabled_flaky_test",
         "cpu:16",
         "requires_bpf",
     ],

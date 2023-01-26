@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -44,6 +45,28 @@ std::vector<TFrameType> ToRecordVector(const types::ColumnWrapperRecordBatch& rb
 template <typename TFrameType>
 std::vector<TFrameType> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                          int32_t pid);
+
+template <typename Record, typename... Records>
+typename std::enable_if<(std::is_same<Records, Record>::value && ...), void>::type
+ContainsWithRelativeOrder(std::vector<Record> actual_records, Records... expected_records) {
+  using ::testing::Contains;
+
+  std::vector<size_t> record_indices;
+  for (const Record record : {expected_records...}) {
+    EXPECT_THAT(actual_records, Contains(record));
+
+    // No need to check that it matches since previous assert will cover that
+    auto result = std::find(begin(actual_records), end(actual_records), record);
+    record_indices.push_back(std::distance(actual_records.begin(), result));
+  }
+
+  auto start = std::begin(record_indices);
+  auto end = std::end(record_indices);
+  auto is_sorted = std::is_sorted(start, end);
+  auto sorted_until = std::is_sorted_until(start, end);
+
+  EXPECT_TRUE(is_sorted) << "Element not in sorted order: " << actual_records[*sorted_until];
+}
 
 inline auto EqHTTPReq(const protocols::http::Message& x) {
   using ::testing::Field;
