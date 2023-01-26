@@ -72,6 +72,7 @@ StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
   bpf_tools::UProbeSpec spec = {
       .binary_path = self_path.string(),
       .symbol = "Trigger",
+      .pid = getpid(),
       .probe_fn = "sample_stack_trace",
   };
 
