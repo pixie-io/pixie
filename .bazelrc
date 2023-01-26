@@ -2,6 +2,8 @@
 
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
+# podman requires $HOME to be set to pull images from gcr.
+test --action_env=HOME
 # Passthrough GH_API_KEY from the environment.
 build --action_env=GH_API_KEY
 

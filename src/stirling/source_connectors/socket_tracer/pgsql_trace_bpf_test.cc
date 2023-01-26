@@ -96,7 +96,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
 
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
-      "docker exec $0 bash -c "
+      "podman exec $0 bash -c "
       R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   const std::string kCreateTableCmd =
       absl::Substitute(kCmdTmpl, container_.container_name(),
@@ -187,7 +187,7 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
 TEST_F(PostgreSQLTraceTest, FunctionCall) {
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
-      "docker exec $0 bash -c "
+      "podman exec $0 bash -c "
       R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   {
     StartTransferDataThread();

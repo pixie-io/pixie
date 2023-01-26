@@ -160,7 +160,7 @@ TEST_F(NetNamespaceTest, SocketInfoManager) {
                          fs::ExtractInodeNum(fs::kSocketInodePrefix, fd_link.string()));
     ASSERT_OK_AND_ASSIGN(system::SocketInfo * socket_info, socket_info_db->Lookup(kPID, inode_num));
     ASSERT_NE(socket_info, nullptr);
-    EXPECT_EQ(socket_info->family, AF_INET);
+    EXPECT_THAT(socket_info->family, ::testing::AnyOf(AF_INET, AF_INET6));
 
     // Expecting caching to be in effect.
     EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);
@@ -171,7 +171,7 @@ TEST_F(NetNamespaceTest, SocketInfoManager) {
     EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 0);
     ASSERT_OK_AND_ASSIGN(socket_info, socket_info_db->Lookup(kPID, inode_num));
     ASSERT_NE(socket_info, nullptr);
-    EXPECT_EQ(socket_info->family, AF_INET);
+    EXPECT_THAT(socket_info->family, ::testing::AnyOf(AF_INET, AF_INET6));
 
     // After flush, we should have made one more call.
     EXPECT_EQ(socket_info_db->num_socket_prober_calls(), 1);

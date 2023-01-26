@@ -366,7 +366,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   // Run the client in the network of the server, so they can connect to each other.
   PX_CHECK_OK(client.Run(std::chrono::seconds{60},
                          {absl::Substitute("--network=container:$0", server.container_name())},
-                         {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+                         {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
   client.Wait();
 
   StopTransferDataThread();

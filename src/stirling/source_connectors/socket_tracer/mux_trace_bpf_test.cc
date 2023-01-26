@@ -90,7 +90,7 @@ class MuxTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ t
 
   StatusOr<int32_t> RunThriftMuxClient() {
     std::string cmd =
-        absl::StrFormat("docker exec %s /usr/bin/java -cp %s Client & echo $! && wait",
+        absl::StrFormat("podman exec %s /usr/bin/java -cp %s Client & echo $! && wait",
                         server_.container_name(), classpath);
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
 
