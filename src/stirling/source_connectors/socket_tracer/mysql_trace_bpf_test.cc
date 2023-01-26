@@ -89,7 +89,7 @@ class MySQLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
     // Run mysql as a way of generating traffic.
     // Run it through bash, and return the PID, so we can use it to filter captured results.
     std::string cmd = absl::StrFormat(
-        "docker exec %s bash -c 'echo \"%s\" | mysql --protocol=TCP --ssl-mode=DISABLED "
+        "podman exec %s bash -c 'echo \"%s\" | mysql --protocol=TCP --ssl-mode=DISABLED "
         "--host=localhost --port=3306 -uroot & echo $! && wait'",
         server_.container_name(), script_content);
     PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));

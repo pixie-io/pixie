@@ -31,7 +31,7 @@ namespace px {
 class ContainerRunner {
  public:
   /**
-   * Set-up a container runner with image from docker registry.
+   * Set-up a container runner with image from a registry.
    *
    * @param image Image to run.
    * @param instance_name_prefix The container instance name prefix. The instance name will
@@ -110,7 +110,7 @@ class ContainerRunner {
   const std::string ready_message_;
 
   // The subprocess running the container.
-  SubProcess docker_;
+  SubProcess podman_;
 
   // The instance name of the container.
   std::string container_name_;

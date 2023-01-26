@@ -397,7 +397,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // so we just tell it to quit after starting.
   // Run it through bash, and return the PID, so we can use it to filter captured results.
   std::string cmd = absl::StrFormat(
-      "docker exec %s bash -c 'cqlsh --protocol-version 4 -e quit & echo $! && wait'",
+      "podman exec %s bash -c 'cqlsh --protocol-version 4 -e quit & echo $! && wait'",
       container_.container_name());
   ASSERT_OK_AND_ASSIGN(std::string out, px::Exec(cmd));
   int32_t client_pid;

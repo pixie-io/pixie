@@ -18,6 +18,29 @@
 
 printenv
 
+cat << EOF > /etc/containers/storage.conf
+[storage]
+driver = "vfs"
+runroot = "/var/run/containers/storage"
+graphroot = "/var/lib/containers/storage"
+EOF
+
+cat << EOF > /etc/containers/containers.conf
+[containers]
+netns="host"
+userns="host"
+ipcns="host"
+utsns="host"
+cgroupns="host"
+cgroups="disabled"
+[engine]
+cgroup_manager = "cgroupfs"
+events_logger="none"
+runtime="crun"
+EOF
+
+podman info
+
 # 4 means that tests not present.
 # 38 means that bes update failed.
 # Both are not fatal.

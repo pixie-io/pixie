@@ -238,9 +238,9 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
   const std::string volume_name = absl::Substitute("px-tmp-jsyms-not-enough-space-test-$0", pid);
   const std::string tmpfs_size_arg = "size=500K";
   const std::string create_volume = absl::Substitute(
-      "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
+      "podman volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
       tmpfs_size_arg, volume_name);
-  const std::string remove_volume = absl::Substitute("docker volume rm $0", volume_name);
+  const std::string remove_volume = absl::Substitute("podman volume rm $0", volume_name);
 
   // Create the docker volume. Defer removal of the same.
   ASSERT_EQ(0, ::system(create_volume.c_str()));
@@ -315,9 +315,9 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
   const std::string volume_name = absl::Substitute("px-tmp-jsyms-enough-space-test-$0", pid);
   const std::string tmpfs_size_arg = "size=20M";
   const std::string create_volume = absl::Substitute(
-      "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
+      "podman volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
       tmpfs_size_arg, volume_name);
-  const std::string remove_volume = absl::Substitute("docker volume rm $0", volume_name);
+  const std::string remove_volume = absl::Substitute("podman volume rm $0", volume_name);
 
   // Create the docker volume. Defer removal of the same.
   ASSERT_EQ(0, ::system(create_volume.c_str()));
