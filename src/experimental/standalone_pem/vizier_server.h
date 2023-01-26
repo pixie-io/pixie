@@ -123,9 +123,12 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
     }
     LOG(INFO) << "Compiling and running query";
     // Send schema before sending query results.
-    auto plan = px::carnot::planner::compiler::Compiler()
-                    .Compile(reader->query_str(), compiler_state.get())
-                    .ConsumeValueOrDie();
+    auto s_or_plan = px::carnot::planner::compiler::Compiler().Compile(reader->query_str(),
+                                                                       compiler_state.get());
+    if (!s_or_plan.ok()) {
+      return ::grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Failed to compile script");
+    }
+    auto plan = s_or_plan.ConsumeValueOrDie();
     for (auto f : plan.nodes()) {
       for (auto n : f.nodes()) {
         if (n.op().op_type() == carnot::planpb::OperatorType::GRPC_SINK_OPERATOR) {
