@@ -99,9 +99,6 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
                                  std::chrono::steady_clock::now().time_since_epoch().count());
 
-  // Note that we don't add --rm to the docker run command, because we sometimes want to inspect
-  // the container state after termination. Instead we explicitly remove the container on
-  // ContainerRunner destruction.
   std::vector<std::string> docker_run_cmd;
   docker_run_cmd.push_back("docker");
   docker_run_cmd.push_back("run");
