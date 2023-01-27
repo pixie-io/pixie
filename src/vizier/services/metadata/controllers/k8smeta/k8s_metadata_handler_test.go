@@ -98,7 +98,6 @@ func createNodeObject() *storepb.K8SResource {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -134,7 +133,6 @@ func createNamespaceObject() *storepb.K8SResource {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -559,7 +557,6 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -581,7 +578,6 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -1134,7 +1130,6 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -1173,7 +1168,6 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							Name:            "object_md",
 							UID:             "ijkl",
 							ResourceVersion: "1",
-							ClusterName:     "a_cluster",
 							OwnerReferences: []*metadatapb.OwnerReference{
 								{
 									Kind: "pod",
@@ -1291,7 +1285,6 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -1323,7 +1316,6 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							Name:            "object_md",
 							UID:             "ijkl",
 							ResourceVersion: "1",
-							ClusterName:     "a_cluster",
 							OwnerReferences: []*metadatapb.OwnerReference{
 								{
 									Kind: "pod",
