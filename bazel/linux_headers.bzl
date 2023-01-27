@@ -27,8 +27,8 @@ def linux_headers():
 
     http_file(
         name = "linux_headers_merged_tar_gz",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl4/linux-headers-merged-pl4.tar.gz"],
-        sha256 = "484e3ddf21bf4474c34f17e5862758cc3552045cc9a1dd746203518eb298d876",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl5/linux-headers-merged-pl5.tar.gz"],
+        sha256 = "2fa58d4658f0d12c294c72d2ae4410e16968b049e145adde283dcb51a3c148a4",
         downloaded_file_path = "linux-headers-merged.tar.gz",
     )
 

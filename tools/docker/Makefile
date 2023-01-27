@@ -61,25 +61,35 @@ SYSROOT_CREATOR_IMAGE_TAG := sysroot-creator-$(SYSROOT_REV)
 ## Linux image parameters
 LINUX_HEADER_BUILD_DIR := $(BUILD_DIR)/linux_headers
 LINUX_HEADER_ASSETS_BUILD_DIR := $(LINUX_HEADER_BUILD_DIR)/assets
-LINUX_KERNEL_VERSIONS := 4.14.176 \
+LINUX_KERNEL_VERSIONS := 4.14.304 \
 	4.15.18 \
 	4.16.18 \
 	4.17.19 \
 	4.18.20 \
-	4.19.118 \
+	4.19.271 \
 	4.20.17 \
 	5.0.21 \
 	5.1.21 \
 	5.2.21 \
 	5.3.18 \
-	5.4.35 \
+	5.4.230 \
 	5.5.19 \
 	5.6.19 \
 	5.7.19 \
 	5.8.18 \
 	5.9.16 \
-	5.10.34 \
-	5.11.18
+	5.10.165 \
+	5.11.22 \
+	5.12.19 \
+	5.13.19 \
+	5.14.21 \
+	5.15.90 \
+	5.16.20 \
+	5.17.15 \
+	5.18.19 \
+	5.19.17 \
+	6.0.19 \
+	6.1.8
 
 LINUX_HEADER_TEMPLATE := linux-headers-%.tar.gz
 LINUX_HEADER_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
