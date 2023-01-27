@@ -89,8 +89,7 @@ func buildConfig(kubeconfig string) (*rest.Config, error) {
 // runElection manages the election.
 func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(string), id string) {
 	// leader election uses the Kubernetes API by writing to a
-	// lock object, which can be a LeaseLock object (preferred),
-	// a ConfigMap, or an Endpoints (deprecated) object.
+	// lock object.
 	// Conflicting writes are detected and each client handles those actions
 	// independently.
 	config, err := buildConfig(le.kubeConfig)
@@ -99,15 +98,32 @@ func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(s
 	}
 	client := clientset.NewForConfigOrDie(config)
 
-	// We use the EndpointsLock to remain compatible with older versions of K8s, rather than the LeaseLock (k8s >=v1.14) as suggested.
-	lock := &resourcelock.EndpointsLock{
-		EndpointsMeta: metav1.ObjectMeta{
-			Name:      le.name,
-			Namespace: le.namespace,
+	obj := metav1.ObjectMeta{
+		Name:      le.name,
+		Namespace: le.namespace,
+	}
+
+	lockConfig := resourcelock.ResourceLockConfig{
+		Identity: id,
+	}
+
+	// We use a multilock in order to transition from EndpointsLock
+	// to LeaseLock.
+	// EndpointsLock are removed from k8s.io/client-go `v0.24.0`, so
+	// this transition needs to be completed before we can upgrade that
+	// dependency.
+	// TODO(vihang): Switch to a pure LeaseLock after atleast one
+	// release that uses a MulitLock.
+	lock := &resourcelock.MultiLock{
+		Primary: &resourcelock.EndpointsLock{
+			EndpointsMeta: obj,
+			Client:        client.CoreV1(),
+			LockConfig:    lockConfig,
 		},
-		Client: client.CoreV1(),
-		LockConfig: resourcelock.ResourceLockConfig{
-			Identity: id,
+		Secondary: &resourcelock.LeaseLock{
+			LeaseMeta:  obj,
+			Client:     client.CoordinationV1(),
+			LockConfig: lockConfig,
 		},
 	}
 
