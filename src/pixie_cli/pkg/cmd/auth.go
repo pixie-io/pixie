@@ -20,10 +20,10 @@ package cmd
 
 import (
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"

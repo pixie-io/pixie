@@ -26,8 +26,8 @@ import (
 	"sync"
 
 	"github.com/gofrs/uuid"
+	"github.com/segmentio/analytics-go/v3"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	version "px.dev/pixie/src/shared/goversion"
 )

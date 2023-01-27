@@ -26,10 +26,10 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/gofrs/uuid"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"

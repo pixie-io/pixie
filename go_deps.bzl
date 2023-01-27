@@ -3085,12 +3085,28 @@ def pl_go_dependencies():
         version = "v0.9.2-0.20210429002308-3879420cc921",
     )
     go_repository(
+        name = "com_github_segmentio_analytics_go_v3",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/segmentio/analytics-go/v3",
+        sum = "h1:G+f90zxtc1p9G+WigVyTR0xNfOghOGs/PYAlljLOyeg=",
+        version = "v3.2.1",
+    )
+
+    go_repository(
         name = "com_github_segmentio_backo_go",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/segmentio/backo-go",
-        sum = "h1:ZuhckGJ10ulaKkdvJtiAqsLTiPrLaXSdnVgXJKJkTxE=",
-        version = "v0.0.0-20200129164019-23eae7c10bd3",
+        sum = "h1:kbOAtGJY2DqOR0jfRkYEorx/b18RgtepGtY3+Cpe6qA=",
+        version = "v1.0.0",
     )
+    go_repository(
+        name = "com_github_segmentio_conf",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/segmentio/conf",
+        sum = "h1:5OT9+6OyVHLsFLsiJa/2KlqiA1m7mpdUBlkB/qYTMts=",
+        version = "v1.2.0",
+    )
+
     go_repository(
         name = "com_github_sercand_kuberesolver_v3",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
@@ -3490,13 +3506,6 @@ def pl_go_dependencies():
     )
 
     go_repository(
-        name = "com_github_xtgo_uuid",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/xtgo/uuid",
-        sum = "h1:3lbZUMbMiGUW/LMkfsEABsc5zNT9+b1CvsJx47JzJ8g=",
-        version = "v0.0.0-20140804021211-a0b114877d4c",
-    )
-    go_repository(
         name = "com_github_yalp_jsonpath",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/yalp/jsonpath",
@@ -3736,13 +3745,6 @@ def pl_go_dependencies():
         version = "v1.12.0",
     )
 
-    go_repository(
-        name = "in_gopkg_segmentio_analytics_go_v3",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "gopkg.in/segmentio/analytics-go.v3",
-        sum = "h1:UzxH1uaGZRpMKDhJyBz0pexz6yUoBU3x8bJsRk/HV6U=",
-        version = "v3.1.0",
-    )
     go_repository(
         name = "in_gopkg_square_go_jose_v2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],

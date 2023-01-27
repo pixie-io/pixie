@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/segmentio/analytics-go/v3"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"

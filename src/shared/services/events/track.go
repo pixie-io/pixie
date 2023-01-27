@@ -24,10 +24,10 @@ package events
 import (
 	"sync"
 
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 )
 
 func init() {

@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/pixie_cli/pkg/cmd"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
