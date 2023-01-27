@@ -49,6 +49,13 @@ spec:
           value: "vizier-query-broker-svc"
         - name: SERVICE_PORT
           value: "50300"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
       containers:
       - name: app
         image: gcr.io/pixie-oss/pixie-dev/vizier/kelvin_image:latest
@@ -102,6 +109,20 @@ spec:
           mountPath: /sys
           readOnly: true
         resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsUser: 10100
+        runAsGroup: 10100
+        fsGroup: 10100
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       terminationGracePeriodSeconds: 30
       volumes:
       - name: certs
