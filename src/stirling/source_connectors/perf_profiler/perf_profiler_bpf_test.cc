@@ -66,7 +66,7 @@ namespace {
 std::filesystem::path BazelCCTestAppPath(const std::string_view app_name) {
   const std::filesystem::path kToyAppsPath =
       "src/stirling/source_connectors/perf_profiler/testing/cc";
-  const std::filesystem::path app_path = kToyAppsPath / app_name;
+  const std::filesystem::path app_path = kToyAppsPath / app_name / app_name;
   const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
@@ -86,6 +86,23 @@ std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
   const std::filesystem::path bazel_app_path = BazelRunfilePath(app_path);
   return bazel_app_path;
 }
+
+absl::flat_hash_map<std::string, uint64_t> KeepNLeafSyms(
+    const uint64_t n, const absl::flat_hash_map<std::string, uint64_t>& stack_trace_histo) {
+  absl::flat_hash_map<std::string, uint64_t> leaf_histo;
+
+  for (const auto& [stack_trace_str, count] : stack_trace_histo) {
+    const std::vector<std::string_view> symbols = absl::StrSplit(stack_trace_str, ";");
+
+    const auto begin_iter = n > symbols.size() ? symbols.begin() : symbols.end() - n;
+    const auto end_iter = symbols.end();
+
+    const auto leaf_syms = absl::StrJoin(begin_iter, end_iter, ";");
+    leaf_histo[leaf_syms] = count;
+  }
+  return leaf_histo;
+}
+
 }  // namespace
 
 class PerfProfilerTestSubProcesses {
@@ -95,7 +112,7 @@ class PerfProfilerTestSubProcesses {
   const std::vector<int>& pids() const { return pids_; }
   const std::vector<struct upid_t>& struct_upids() const { return struct_upids_; }
   const absl::flat_hash_set<md::UPID>& upids() const { return upids_; }
-  static constexpr size_t kNumSubProcesses = 4;
+  static constexpr size_t kNumSubProcs = 4;
   virtual ~PerfProfilerTestSubProcesses() = default;
 
  protected:
@@ -115,7 +132,7 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
     ASSERT_TRUE(fs::Exists(kTasksetBinPath));
     const system::ProcParser proc_parser;
 
-    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+    for (size_t i = 0; i < kNumSubProcs; ++i) {
       sub_processes_.push_back(std::make_unique<SubProcess>());
 
       // Run the sub-process & pin it to a CPU.
@@ -150,7 +167,7 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
  public:
   ContainerSubProcesses(const std::filesystem::path image_tar_path,
                         const std::string_view container_name_pfx) {
-    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+    for (size_t i = 0; i < kNumSubProcs; ++i) {
       sub_processes_.push_back(
           std::make_unique<ContainerRunner>(image_tar_path, container_name_pfx, kReadyMsg));
     }
@@ -165,7 +182,7 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
     const std::vector<std::string> args;
     static constexpr bool kUseHostPidNamespace = false;
 
-    for (size_t i = 0; i < kNumSubProcesses; ++i) {
+    for (size_t i = 0; i < kNumSubProcs; ++i) {
       sub_processes_[i]->Run(timeout, options, args, kUseHostPidNamespace);
 
       // Grab the PID and generate a UPID.
@@ -195,7 +212,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
  protected:
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
-    FLAGS_number_attach_attempts_per_iteration = kNumSubProcesses;
+    FLAGS_number_attach_attempts_per_iteration = kNumSubProcs;
     FLAGS_stirling_profiler_table_update_period_seconds = 5;
     FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
 
@@ -216,15 +233,10 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     ASSERT_TRUE(column_ptrs_populated_);
 
     for (const auto row_idx : target_row_idxs) {
-      // Build the histogram of observed stack traces here:
-      // Also, track the cumulative sum (or total number of samples).
+      // Build the histogram of observed stack traces here.
       const std::string stack_trace_str = stack_traces_column_->Get<types::StringValue>(row_idx);
-      const std::vector<std::string_view> symbols = absl::StrSplit(stack_trace_str, ";");
-      const std::string_view leaf_symbol = symbols.back();
-
       const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
-      observed_stack_traces_[stack_trace_str] += count;
-      observed_leaf_symbols_[leaf_symbol] += count;
+      histo_[stack_trace_str] += count;
     }
 
     // TODO(jps): bring in a 3rd party library for colorization. e.g., one of the following:
@@ -233,7 +245,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     auto makecolor = [](const auto n) { return absl::StrFormat("\x1b[38;5;$%dm", n); };
     auto reset = []() { return "\x1b[0m"; };
     VLOG(1) << std::endl;
-    for (const auto& [key, val] : observed_stack_traces_) {
+    for (const auto& [key, val] : histo_) {
       VLOG(1) << makecolor(220) << absl::StrFormat("%5d: ", val) << key << reset() << std::endl;
     }
     VLOG(1) << std::endl;
@@ -252,23 +264,23 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
 
   void CheckExpectedCounts(const absl::flat_hash_map<std::string, uint64_t>& counts,
                            const ssize_t num_subprocesses,
-                           const std::chrono::duration<double> elapsed_time,
+                           const std::chrono::duration<double> t_elapsed,
                            const std::string_view key1x, const std::string_view key2x) {
     const uint64_t table_period_ms = source_->SamplingPeriod().count();
     const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
     const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
-    const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
+    const double expected_num_samples = num_subprocesses * t_elapsed.count() * expected_rate;
     const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
     const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
     const double observedNumSamples = static_cast<double>(cumulative_sum_);
-    const double observed_rate = observedNumSamples / elapsed_time.count() / num_subprocesses;
+    const double observed_rate = observedNumSamples / t_elapsed.count() / num_subprocesses;
 
     LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms].", table_period_ms);
     LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms].", bpf_period_ms);
     LOG(INFO) << absl::StrFormat("Number of processes: %d.", num_subprocesses);
     LOG(INFO) << absl::StrFormat("expected num samples: %d.", uint64_t(expected_num_samples));
     LOG(INFO) << absl::StrFormat("total samples: %d.", cumulative_sum_);
-    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", elapsed_time.count());
+    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", t_elapsed.count());
     LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz].", expected_rate);
     LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz].", observed_rate);
 
@@ -277,7 +289,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     // For this test, use an upper & lower bound with 10% allowed error band.
     const std::string err_msg = absl::StrFormat(
         "num sub-processes: %d, time: %.2f [sec.], rate: %.2f [Hz], observed_rate: %.2f [Hz]",
-        num_subprocesses, elapsed_time.count(), expected_rate, observed_rate);
+        num_subprocesses, t_elapsed.count(), expected_rate, observed_rate);
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
 
@@ -290,7 +302,6 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     const double ratio = key2x_count / key1x_count;
 
     // We expect the ratio of key2x:key1x to be approx. 2:1.
-    // TODO(jps): Can we tighten the margin? e.g. by increasing sampling frequency.
     LOG(INFO) << absl::StrFormat("key2x: %s.", key2x);
     LOG(INFO) << absl::StrFormat("key1x: %s.", key1x);
     LOG(INFO) << absl::StrFormat("key2x count: %d.", static_cast<uint64_t>(key2x_count));
@@ -385,13 +396,12 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   std::shared_ptr<types::ColumnWrapper> counts_column_;
 
   uint64_t cumulative_sum_ = 0;
-  absl::flat_hash_map<std::string, uint64_t> observed_stack_traces_;
-  absl::flat_hash_map<std::string, uint64_t> observed_leaf_symbols_;
+  absl::flat_hash_map<std::string, uint64_t> histo_;
 
   types::ColumnWrapperRecordBatch columns_;
 
   // To reduce variance in results, we add more run-time or add sub-processes:
-  static constexpr uint64_t kNumSubProcesses = 4;
+  static constexpr uint64_t kNumSubProcs = 4;
   static constexpr double kRatioMargin = 0.5;
 };
 
@@ -411,23 +421,21 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> elapsed_time = RunTest();
+  const std::chrono::duration<double> t_elapsed = RunTest();
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedCounts(histo_, kNumSubProcs, t_elapsed, key1x, key2x));
 }
 
-// TODO(oazizi/jps): FIXME: This tests fails with new libc because of a symbol issue.
-TEST_F(PerfProfileBPFTest, DISABLED_PerfProfilerCppTest) {
+TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
-  constexpr std::string_view key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
-  constexpr std::string_view key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
+  constexpr std::string_view key2x = "main;fib52();fib(unsigned long)";
+  constexpr std::string_view key1x = "main;fib27();fib(unsigned long)";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
@@ -435,13 +443,13 @@ TEST_F(PerfProfileBPFTest, DISABLED_PerfProfilerCppTest) {
   RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> elapsed_time = RunTest();
+  const std::chrono::duration<double> t_elapsed = RunTest();
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(observed_stack_traces_, kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(KeepNLeafSyms(3, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
 }
 
 // TODO(jps/oazizi): This test is flaky.
@@ -461,13 +469,13 @@ TEST_F(PerfProfileBPFTest, DISABLED_GraalVM_AOT_Test) {
   RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> elapsed_time = RunTest();
+  const std::chrono::duration<double> t_elapsed = RunTest();
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(KeepNLeafSyms(1, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
 }
 
 TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
@@ -486,13 +494,13 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> elapsed_time = RunTest();
+  const std::chrono::duration<double> t_elapsed = RunTest();
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
   ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(observed_leaf_symbols_, kNumSubProcesses, elapsed_time, key1x, key2x));
+      CheckExpectedCounts(KeepNLeafSyms(1, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
   // We will construct a list of artifacts paths that we expect,
@@ -508,7 +516,7 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
       artifacts_paths.push_back(artifacts_path);
     }
   }
-  EXPECT_THAT(artifacts_paths, SizeIs(kNumSubProcesses));
+  EXPECT_THAT(artifacts_paths, SizeIs(kNumSubProcs));
 
   // Kill the subprocs.
   sub_processes_->KillAll();
