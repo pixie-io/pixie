@@ -47,10 +47,21 @@ end
 
 common_remote_bin 'faq'
 common_remote_bin 'kubectl'
+common_remote_bin 'kustomize'
 common_remote_bin 'minikube'
 common_remote_bin 'opm'
 common_remote_bin 'skaffold'
 common_remote_bin 'sops'
+common_remote_bin 'yq'
+
+common_remote_tar_bin 'gh' do
+  tool_loc 'bin/gh'
+  strip_components 1
+end
+
+common_remote_tar_bin 'helm' do
+  strip_components 1
+end
 
 common_remote_tar_bin 'lego'
 

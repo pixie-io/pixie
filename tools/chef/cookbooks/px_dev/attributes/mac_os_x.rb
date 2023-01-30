@@ -38,11 +38,6 @@ default['fossa']['download_path'] =
 default['fossa']['sha256'] =
   '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
 
-default['gh']['download_path'] =
-  'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_macOS_amd64.tar.gz'
-default['gh']['sha256'] =
-  '448d617c11b964cff135bab43f73b321386c09fc5cdd998a17cbfc422f54239e'
-
 default['golang']['download_path'] =
   'https://dl.google.com/go/go1.19.4.darwin-amd64.tar.gz'
 default['golang']['sha256'] =
@@ -52,16 +47,6 @@ default['golangci-lint']['download_path'] =
   'https://github.com/golangci/golangci-lint/releases/download/v1.48.0/golangci-lint-1.48.0-darwin-amd64.tar.gz'
 default['golangci-lint']['sha256'] =
   'ec2e1c3bb3d34268cd57baba6b631127beb185bbe8cfde8ac40ba9b4c8615784'
-
-default['helm']['download_path'] =
-  'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
-default['helm']['sha256'] =
-  '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'
-
-default['kustomize']['download_path'] =
-  'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_darwin_amd64'
-default['kustomize']['sha256'] =
-  'c7991a79470a52a95f1fac33f588b76f64e597ac64b54106e452f3a8f642c62e'
 
 default['nodejs']['download_path'] =
   'https://nodejs.org/dist/v16.13.2/node-v16.13.2-darwin-x64.tar.gz'
@@ -77,8 +62,3 @@ default['shellcheck']['download_path'] =
   'https://github.com/koalaman/shellcheck/releases/download/v0.7.0/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
 default['shellcheck']['sha256'] =
   'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
-
-default['yq']['download_path'] =
-  'https://github.com/mikefarah/yq/releases/download/v4.13.4/yq_darwin_amd64'
-default['yq']['sha256'] =
-  '17ab1aa6589f5be6398c60acc875426f4f64faeaba6ee581f700b0a9f47da19e'

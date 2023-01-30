@@ -27,17 +27,4 @@ template '/opt/px_dev/pxenv.inc' do
 end
 
 common_remote_bin 'codecov'
-common_remote_bin 'kustomize'
-common_remote_bin 'prototool'
-common_remote_bin 'yq'
-
 common_remote_tar_bin 'fossa'
-
-common_remote_tar_bin 'gh' do
-  tool_loc 'bin/gh'
-  strip_components 1
-end
-
-common_remote_tar_bin 'helm' do
-  strip_components 1
-end

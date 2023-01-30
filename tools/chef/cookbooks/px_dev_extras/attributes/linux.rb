@@ -27,10 +27,25 @@ default['faq']['download_path'] =
 default['faq']['sha256'] =
   '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
 
+default['gh']['download_path'] =
+  'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz'
+default['gh']['sha256'] =
+  '359ff9d759b67e174214098144a530a8afc4b0c9d738cd07c83ac84390cdc988'
+
+default['helm']['download_path'] =
+  'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
+default['helm']['sha256'] =
+  '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
+
 default['kubectl']['download_path'] =
   'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl'
 default['kubectl']['sha256'] =
   'b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae'
+
+default['kustomize']['download_path'] =
+  'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64'
+default['kustomize']['sha256'] =
+  '7db89e32575d81393d5d84f0dc6cbe444457e61ce71af06c6e6b7b6718299c22'
 
 default['lego']['download_path'] =
   'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_linux_amd64.tar.gz'
@@ -61,3 +76,8 @@ default['sops']['download_path'] =
   'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
 default['sops']['sha256'] =
   '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
+
+default['yq']['download_path'] =
+  'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64'
+default['yq']['sha256'] =
+  '6c911103e0dcc54e2ba07e767d2d62bcfc77452b39ebaee45b1c46f062f4fd26'
