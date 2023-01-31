@@ -23,9 +23,11 @@ REPOSITORY_LOCATIONS = dict(
         ],
     ),
     bazel_skylib = dict(
-        sha256 = "710c2ca4b4d46250cdce2bf8f5aa76ea1f0cba514ab368f2988f70e864cfaf51",
-        strip_prefix = "bazel-skylib-1.2.1",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.2.1.tar.gz"],
+        sha256 = "f7be3474d42aae265405a592bb7da8e171919d74c16f082a5457840f06054728",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.2.1/bazel-skylib-1.2.1.tar.gz",
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.1/bazel-skylib-1.2.1.tar.gz",
+        ],
     ),
     # Must be called boringssl to make sure the deps pick it up correctly.
     boringssl = dict(
@@ -370,9 +372,8 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_closure/archive/308b05b2419edb5c8ee0471b67a40403df940149.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
-        sha256 = "07ee8ca536080f5ebab6377fc6e8920e9a761d2ee4e64f0f6d919612f6ab56aa",
-        strip_prefix = "rules_docker-0.25.0",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/refs/tags/v0.25.0.tar.gz"],
+        sha256 = "b1e80761a8a8243d03ebca8845e9cc1ba6c82ce7c5179ce2b295cd36f7e394bf",
+        urls = ["https://github.com/bazelbuild/rules_docker/releases/download/v0.25.0/rules_docker-v0.25.0.tar.gz"],
     ),
     io_bazel_rules_go = dict(
         sha256 = "099a9fb96a376ccbbb7d291ed4ecbdfd42f6bc822ab77ae6f1b5cb9e914e94fa",
