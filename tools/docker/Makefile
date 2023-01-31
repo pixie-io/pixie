@@ -108,7 +108,20 @@ copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMA
 ELASTICSEARCH_IMAGE_VERSION := 7.6.0-patched1
 elasticsearch_image_tag := "gcr.io/pixie-oss/pixie-dev-public/elasticsearch:$(ELASTICSEARCH_IMAGE_VERSION)"
 
-# Clang DEB Image configuration.
+## Linux kernel for qemu/BPF tests.
+KERNEL_BUILD_DIR := $(BUILD_DIR)/kernel_build
+KERNEL_BUILD_VERSIONS := 4.14.304 \
+	5.15.90 \
+	5.18.19 \
+	6.1.8
+
+KERNEL_BUILD_TEMPLATE := linux-build-%.tar.gz
+KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_BUILD_TEMPLATE), $(KERNEL_BUILD_VERSIONS)))
+KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$$(date +%Y%m%d%H%M%S)
+
+##############################################
+# Clang Build
+##############################################
 .PHONY: build_clang_deb_image
 build_clang_deb_image:
 	$(DOCKER) build clang_deb_image -t $(clang_deb_image_tag)
@@ -123,6 +136,10 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 
 	cat $(BUILD_DIR)/sha256sums
 
+
+##############################################
+# GPerftools build
+##############################################
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
 	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) gperftools_deb_image -t $(gperftools_deb_image_tag)
@@ -135,6 +152,10 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 	@echo "SHA: "
 	sha256sum $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname)
 
+
+##############################################
+# Graalvm build
+##############################################
 .PHONY: build_graalvm_archive_image
 build_graalvm_archive_image:
 	$(DOCKER) build graalvm_archive_image -t $(GRAALVM_ARCHIVE_IMAGE_TAG)
@@ -147,6 +168,10 @@ upload_graalvm_archive: build_graalvm_archive_image
 	@echo "SHA: "
 	sha256sum $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME)
 
+
+##############################################
+# Linux Headers Build
+##############################################
 $(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/config
 ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
@@ -165,6 +190,9 @@ upload_linux_headers:  $(LINUX_HEADERS_MERGED_FILE) $(LINUX_HEADER_TARGETS)  ## 
 	sha256sum $<
 
 
+##############################################
+# Sysroots Build
+##############################################
 .PHONY: build_all_sysroots
 build_all_sysroots: sysroot_creator/Dockerfile sysroot_creator/build_all_sysroots.sh
 	@mkdir -p $(SYSROOT_BUILD_DIR)
@@ -177,6 +205,9 @@ upload_all_sysroots: build_all_sysroots
 	sha256sum $(SYSROOT_BUILD_DIR)/*
 
 
+##############################################
+# Test docker images.
+##############################################
 .PHONY: build_and_upload_curl_image
 build_and_upload_curl_image:
 	$(DOCKER) build curl_image -t $(curl_image_tag)
@@ -191,6 +222,22 @@ build_and_upload_copybara_image:
 build_and_upload_elasticsearch_image:
 	$(DOCKER) build elasticsearch -t $(elasticsearch_image_tag)
 	$(DOCKER) push $(elasticsearch_image_tag)
+
+
+##############################################
+# Kernel Builder
+##############################################
+$(KERNEL_BUILD_DIR)/linux-build-%.tar.gz: kernel_builder/Dockerfile kernel_builder/kernel.config kernel_builder/build_kernel.sh
+	@mkdir -p $(@D)
+	kernel_builder_image_tag="gcr.io/pixie-oss/kernel-builder:$*"; \
+	$(DOCKER) build --build-arg KERNEL_VERSION=$* kernel_builder -t "$${kernel_builder_image_tag}" && \
+	$(DOCKER) run --rm -v $(PWD)/$(KERNEL_BUILD_DIR):/output "$${kernel_builder_image_tag}"
+
+.PHONY: upload_kernel_build
+upload_kernel_build:  $(KERNEL_BUILD_TARGETS)
+	echo "hello"
+	gsutil cp $^ $(KERNEL_BUILD_GS_PATH)
+	sha256sum $^
 
 clean:
 	@rm -rf $(BUILD_DIR)
