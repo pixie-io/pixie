@@ -1,0 +1,23 @@
+---
+include:
+# dash provides /bin/sh. Things like popen will fail with weird errors if /bin/sh doesn't exist.
+- dash
+# Some of our tests require these shell utilities
+- bash
+- grep
+- gawk
+- sed
+- libc-bin
+# nm required by elf_reader_test.
+- binutils
+# diff required by minitar_test.
+- diffutils
+# Used for qemu emulation.
+- busybox-static
+# stirling_signal_test requires mktemp which is provided by coreutils.
+- coreutils
+# Deps for podman
+- iptables
+- aardvark-dns
+- netavark
+- podman

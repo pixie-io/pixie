@@ -20,94 +20,41 @@ set -e
 
 trap exit INT
 
-if [ "$#" -lt 3 ]; then
-  echo "Usage: build_tar_for_packages.sh <architecture> <output_tar_path> <package_group_file>..."
-  echo -e "\t This script downloads all of the debs it finds in each package_group_file, and extracts them into a single 'sysroot'"
+if [ "$#" -lt 4 ]; then
+  echo "Usage: build_tar_for_packages.sh <package_satisifier_path> <package_database_file> <output_tar_path> <package_group_yaml>..."
+  echo -e "\t This script downloads all of the debs (along with depedencies) it finds in each package_group_yaml, and extracts them into a single 'sysroot'"
   echo -e "\t The 'sysroot' is then tar'd and output at <output_tar_path>"
   exit 1
 fi
 
-arch="$1"
-output_tar_path="$(realpath "$2")"
+debian_mirror="${DEBIAN_MIRROR:-http://ftp.us.debian.org/debian/}"
 
-apt_conf="/conf/${arch}.apt.conf"
-
-# Update the apt cache for the current arch.
-apt-get -c "${apt_conf}" update &> /dev/null
-
-packages=()
-for file in "${@:3}"
+package_satisifier_path="$(realpath "$1")"
+package_database_file="$(realpath "$2")"
+output_tar_path="$(realpath "$3")"
+package_parser_args=("--pkgdb" "${package_database_file}")
+for yaml in "${@:4}"
 do
-  if [ -f "${file}" ]; then
-    readarray -t -O "${#packages[@]}" packages < <(grep -v "^#" "${file}")
-  else
-    echo "Cannot find package file ${file}"
-    exit 1
-  fi
+  package_parser_args+=("--specs" "${yaml}")
 done
 
-# Verify all packages exist.
-packages_tmpfile="$(mktemp)"
-printf "%s\n" "${packages[@]}" | sort > "${packages_tmpfile}"
-missing_packages="$(apt-cache -c "${apt_conf}" pkgnames | sort | comm -13 - "${packages_tmpfile}")"
-if [ -n "${missing_packages}" ]; then
-  echo "Cannot find packages: ${missing_packages}"
-  exit 1
-fi
-rm "${packages_tmpfile}"
-
-
-declare -A dependency_transitive_closure
-
-add_to_set() {
-  local pkg="$1"
-  if [[ "${pkg}" != *":"* ]]; then
-    pkg="${pkg}:${arch}"
-  fi
-  if [ -z "${dependency_transitive_closure[${pkg}]}" ]; then
-    dependency_transitive_closure["${pkg}"]="1"
-  fi
-}
-remove_from_set() {
-  local pkg="$1"
-  if [[ "${pkg}" != *":"* ]]; then
-    pkg="${pkg}:${arch}"
-  fi
-  unset dependency_transitive_closure["${pkg}"]
-}
-
-get_deps() {
-  apt-cache -c "${apt_conf}" depends --recurse --no-recommends --no-suggests --no-conflicts \
-    --no-breaks --no-replaces --no-enhances "$@" | grep "^\w"
-}
-
-get_virtual_packages() {
-  apt -c "${apt_conf}" show "$@" 2>/dev/null | grep -B 1 "not a real package" | grep -Po "(?<=Package: )(.*)"
-}
-
-
-# Add arch suffix to each package.
-for i in "${!packages[@]}"
-do
-  packages[$i]="${packages[$i]}:${arch}"
-done
-
-# Add dependencies that don't exist to the set.
-while read -r dependency; do
-    add_to_set "${dependency}"
-done < <(get_deps "${packages[@]}")
-
-# Remove virtual packages from the dependency set.
-while read -r virtual_pkg; do
-  echo "Skipping virtual package: ${virtual_pkg}"
-  remove_from_set "${virtual_pkg}"
-done < <(get_virtual_packages "${!dependency_transitive_closure[@]}")
+debs=()
+while read -r deb; do
+  debs+=("${debian_mirror}/${deb}")
+done < <("${package_satisifier_path}" "${package_parser_args[@]}")
 
 echo "Dependencies to be added to archive:"
-for pkg in "${!dependency_transitive_closure[@]}"
+for deb in "${debs[@]}"
 do
-  echo "- ${pkg}"
+  echo "- ${deb}"
 done
+
+declare -A paths_to_exclude
+while read -r path; do
+  if [ -n "${path}" ]; then
+    paths_to_exclude["${path}"]=true
+  fi
+done < <(yq eval -N '.path_excludes[]' "${@:4}")
 
 relativize_symlinks() {
   dir="$1"
@@ -128,11 +75,18 @@ relativize_symlinks() {
 }
 
 inside_tmpdir() {
-  apt-get -c "${apt_conf}" download "${!dependency_transitive_closure[@]}" &>/dev/null
+  echo "${debs[@]}" | xargs curl -fLO --remote-name-all &> /dev/null
+
   root_dir="root"
   while read -r deb; do
     dpkg-deb -x "${deb}" "${root_dir}" &>/dev/null
   done < <(ls -- *.deb)
+
+  for path in "${!paths_to_exclude[@]}"
+  do
+    echo "Removing ${path} from sysroot"
+    rm -rf "${root_dir:?}/${path:?}"
+  done
 
   relativize_symlinks "${root_dir}"
 

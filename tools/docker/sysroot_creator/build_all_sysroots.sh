@@ -25,11 +25,19 @@ architectures=("amd64" "arm64")
 variants=("runtime" "build" "test")
 
 # shellcheck disable=SC2034
-files_runtime=("/package_groups/runtime.txt")
+files_runtime=("/package_groups/runtime.yaml")
 # shellcheck disable=SC2034
-files_build=("/package_groups/runtime.txt" "/package_groups/build.txt")
+files_build=("/package_groups/runtime.yaml" "/package_groups/build.yaml")
 # shellcheck disable=SC2034
-files_test=("/package_groups/runtime.txt" "/package_groups/build.txt" "/package_groups/test.txt")
+files_test=("/package_groups/runtime.yaml" "/package_groups/build.yaml" "/package_groups/test.yaml")
+
+pkgdb_dir="$(mktemp -d)"
+
+download_package_index() {
+  arch="$1"
+  curl -fL "http://ftp.debian.org/debian/dists/bookworm/main/binary-${arch}/Packages.xz" | \
+    xz --decompress > "${pkgdb_dir}/${arch}"
+}
 
 build_sysroot() {
   arch="$1"
@@ -37,14 +45,17 @@ build_sysroot() {
   # shellcheck disable=SC1087
   file_varname="files_$variant[@]"
   package_files=( "${!file_varname}" )
-  docker run -it -v "${output_dir}":/build "${docker_image_tag}" "${arch}" "/build/sysroot-${arch}-${variant}.tar.gz" "${package_files[@]}"
+  docker run -it -v "${output_dir}":/build -v "${pkgdb_dir}":/pkgdb "${docker_image_tag}" "/pkgdb/${arch}" "/build/sysroot-${arch}-${variant}.tar.gz" "${package_files[@]}"
 }
 
 for arch in "${architectures[@]}"
 do
+  download_package_index "${arch}"
   for variant in "${variants[@]}"
   do
     echo "Building ${output_dir}/sysroot-${arch}-${variant}.tar.gz"
     build_sysroot "${arch}" "${variant}"
   done
 done
+
+rm -rf "${pkgdb_dir:?}"

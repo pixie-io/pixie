@@ -49,7 +49,7 @@ GRAALVM_ARCHIVE_FNAME := graalvm-native-image-22.3.0.tar.gz
 GRAALVM_ARCHIVE_GS_PATH := gs://pixie-dev-public/graalvm-native-image-22.3.0-$(GRAALVM_IMAGE_VERSION).tar.gz
 
 ## Sysroot parameters
-SYSROOT_REV := pl1
+SYSROOT_REV := pl2
 SYSROOT_BUILD_DIR := $(BUILD_DIR)/sysroots
 SYSROOT_ARCHITECTURES := amd64 arm64
 SYSROOT_VARIANTS := runtime build test

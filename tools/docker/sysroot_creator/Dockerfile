@@ -16,19 +16,24 @@
 
 FROM debian:bookworm
 
-COPY setup_arch.sh /scripts/setup_arch.sh
+RUN apt-get update -y && \
+  apt-get install -y golang curl xz-utils
 
-RUN mkdir -p /conf && \
-  for arch in amd64 arm64; \
-  do \
-    /scripts/setup_arch.sh "$arch"; \
-  done
+RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64 -o /bin/yq && \
+  chmod +x /bin/yq
 
-RUN apt-get update -y
+VOLUME /pkgdb
 
+COPY package_satisifier /package_satisifier
+WORKDIR /package_satisifier
+RUN go mod init "package_satisifier" && \
+  go mod tidy && \
+  go build .
+
+WORKDIR /
 COPY build_tar_for_packages.sh /scripts/build_tar_for_packages.sh
 COPY package_groups /package_groups
 
-ENTRYPOINT ["/scripts/build_tar_for_packages.sh"]
+ENTRYPOINT ["/scripts/build_tar_for_packages.sh", "/package_satisifier/package_satisifier"]
 
 VOLUME /build
