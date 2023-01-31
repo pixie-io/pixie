@@ -14,6 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+if ! platform_family?('debian')
+  return
+end
+
 remote_file '/tmp/clang.deb' do
   source node['clang']['deb']
   mode '0644'
