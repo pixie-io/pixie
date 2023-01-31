@@ -23,7 +23,7 @@ def _gcc_x86_64_gnu():
         "cpp": "/usr/bin/cpp",
         "dwp": "/usr/bin/dwp",
         "gcc": "/usr/bin/gcc-12",
-        "gcov": "/usr/bin/gcov",
+        "gcov": "/usr/bin/gcov-12",
         "ld": "/usr/bin/ld.gold",
         # TODO(zasgar): Fix this or remove this.
         "llvm-cov": "/opt/clang-15.0/bin/llvm-cov",
