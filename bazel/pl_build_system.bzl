@@ -386,7 +386,7 @@ pl_bindata = rule(
         "strip_external": attr.bool(default = False),
         "_bindata": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             # Modification of go_bindata repo from kevinburke to the go-bindata repo.
             default = "@com_github_go_bindata_go_bindata//go-bindata:go-bindata",
         ),

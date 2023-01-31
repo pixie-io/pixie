@@ -1057,6 +1057,7 @@ def pl_go_dependencies():
     # keep
     go_repository(
         name = "com_github_go_bindata_go_bindata",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/go-bindata/go-bindata",
         sum = "h1:5vjJMVhowQdPzjE1LdxyFF7YFTXg5IgGVW4gBr5IbvE=",
         version = "v3.1.2+incompatible",
