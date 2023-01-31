@@ -265,7 +265,7 @@ def fetchSourceK8s(Closure body) {
     unstashFromGCS(SRC_STASH_NAME)
     sh 'git config --global --add safe.directory `pwd`'
     if (isOSSCodeReviewRun || isOSSMainRun) {
-      sh 'cp ci/bes-gce.bazelrc bes.bazelrc'
+      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
     } else {
       sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
     }
@@ -624,11 +624,14 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   def bazelArgs = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
   def stashName = "${name}-${kernel}-testlogs"
   def gcpProject = ""
+  def besFile = ""
 
   if (isOSSCodeReviewRun || isOSSMainRun) {
     gcpProject = GCP_OSS_PROJECT
+    besFile = "ci/bes-gce.bazelrc"
   } else {
     gcpProject = GCP_DEV_PROJECT
+    besFile = "ci/bes-gce.bazelrc"
   }
 
   fetchFromGCS(SRC_STASH_NAME)
@@ -643,6 +646,7 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   export BUILD_TAG="${BUILD_TAG}"
   export KERNEL_VERSION="${kernel}"
   export GCP_PROJECT="${gcpProject}"
+  export BES_FILE="${besFile}"
   ./ci/bpf/00_create_instance.sh
   """
 

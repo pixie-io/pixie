@@ -30,7 +30,7 @@ check_retval() {
   fi
 }
 
-cp ci/bes-gce.bazelrc bes.bazelrc
+cp "${BES_FILE}" bes.bazelrc
 
 IFS=' '
 # Read the environment variable and set it to an array. This allows

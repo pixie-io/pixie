@@ -82,6 +82,7 @@ run_on_instance() {
     "STASH_NAME=${STASH_NAME}"
     "GCS_STASH_BUCKET=${GCS_STASH_BUCKET}"
     "BUILD_TAG=${BUILD_TAG}"
+    "BES_FILE=${BES_FILE}"
   )
 
   gcloud compute ssh \
