@@ -173,7 +173,7 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
     }
 
     sink_server_->AddConsumer(query_id, response);
-    auto s = carnot_->ExecuteQuery(reader->query_str(), query_id, 0);
+    auto s = carnot_->ExecuteQuery(reader->query_str(), query_id, px::CurrentTimeNS());
     if (s != Status::OK()) {
       return ::grpc::Status::CANCELLED;
     }
