@@ -265,7 +265,7 @@ def fetchSourceK8s(Closure body) {
     unstashFromGCS(SRC_STASH_NAME)
     sh 'git config --global --add safe.directory `pwd`'
     if (isOSSCodeReviewRun || isOSSMainRun) {
-      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+      sh 'cp ci/bes-oss-k8s.bazelrc bes.bazelrc'
     } else {
       sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
     }
@@ -628,7 +628,7 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
 
   if (isOSSCodeReviewRun || isOSSMainRun) {
     gcpProject = GCP_OSS_PROJECT
-    besFile = "ci/bes-gce.bazelrc"
+    besFile = "ci/bes-oss-gce.bazelrc"
   } else {
     gcpProject = GCP_DEV_PROJECT
     besFile = "ci/bes-gce.bazelrc"

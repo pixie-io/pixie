@@ -30,3 +30,7 @@ else
   echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
   echo "build --build_metadata=ROLE=DEV" >> jenkins.bazelrc
 fi
+
+if [[ "$JOB_NAME" == "pixie-oss/"* ]]; then
+  echo "build --build_metadata=VISIBILITY=PUBLIC" >> jenkins.bazelrc
+fi
