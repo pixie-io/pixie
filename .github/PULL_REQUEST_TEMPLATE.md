@@ -2,20 +2,18 @@
 
 1. If this is your first time, please read our contributor guidelines: https://github.com/pixie-io/pixie/blob/main/CONTRIBUTING.md and https://github.com/pixie-io/pixie/blob/main/DEVELOPMENT.md.
 -->
-# Description
-
-Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
-
+### Description:
 
 <!--
-*Automatically closes linked issue when PR is merged.
-Usage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.
-_If PR is about `failing-tests or flakes`, please post the related issues/tests in a comment and do not use `Fixes`_*
+Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
 -->
-Fixes # (issue)
 
+### Relevant Issues:
+<!--
+Please list all the relevant issues (#<issue number>): eg. #1, #2. If the PR fixes an issue use `Fixes #<issue number>`
+-->
 
-## Type of change
+### Type of change:
 
 <!--
 Add one of the following kinds:
@@ -32,23 +30,28 @@ Optionally add one or more of the following kinds if applicable:
 /kind regression
 -->
 
-## Test Plan:
+### Test Plan:
 <!--
 For stylistic change that don't require tests or enhancements write: N/A.
 -->
 
-## Does this PR introduce a user-facing change?
+## Changelog Message:
 <!--
-If no, just write "NONE" in the release-note block below.
+
+Does this PR include user facing changes?
+
+If no, just delete this entire block.
 If yes, a release note is required:
-Enter your extended release note in the block below. If the PR requires additional action from users switching to the new release, include the string "action required".
+Enter your extended release note in the format shown below. If the PR requires additional action from users switching to the new release, include the string "action required".
 
--->
 ```release-note
-
+Add your notes in this format, including the triple ticks.
 ```
 
-## Additional documentation:
+-->
+
+
+### Additional documentation:
 
 <!--
 This section can be blank if this pull request does not require a release note.
@@ -60,9 +63,9 @@ specific point in time, rather than a document that may change over time.
 See here for guidance on getting permanent links to files: https://help.github.com/en/articles/getting-permanent-links-to-files
 
 Please use the following format for linking documentation:
+```docs
 - [px/docs]: <link>
 - [px/website]: <link>
--->
-```docs
-
 ```
+-->
+
