@@ -782,7 +782,7 @@ if (isMainRun || isOSSMainRun) {
               variable: 'CODECOV_TOKEN'
             )
           ]) {
-            sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT` -r " + slug
+            sh "ci/collect_coverage.sh -u -b main -c `cat GIT_COMMIT` -r " + slug
           }
         }
         createBazelStash('build-gcc-coverage-testlogs')
