@@ -264,8 +264,9 @@ controller:
   - pipeline-utility-steps:2.14.0
   - display-url-api:2.3.7
   - job-dsl:1.81
-  - xunit:3.0.8
+  - xunit:3.1.2
   - ghprb:1.42.2
+  - script-security:1229.v4880b_b_e905a_6
   # Set to false to download the minimum required version of all dependencies.
   installLatestPlugins: true
 
@@ -519,7 +520,16 @@ controller:
     authorizationStrategy: |-
       globalMatrix:
         permissions:
-        - "USER:Overall/Read:authenticated"
+        - "GROUP:Overall/Read:anonymous"
+        - "GROUP:View/Read:anonymous"
+        - "GROUP:Job/Read:anonymous"
+        - "GROUP:Job/Discover:anonymous"
+        - "GROUP:Job/ViewStatus:anonymous"
+        - "GROUP:Overall/Read:authenticated"
+        - "GROUP:View/Read:authenticated"
+        - "GROUP:Job/Read:authenticated"
+        - "GROUP:Job/Discover:authenticated"
+        - "GROUP:Job/ViewStatus:authenticated"
         - "GROUP:Overall/Administer:pixie-io*admin"
   # Optionally specify additional init-containers
   customInitContainers: []
