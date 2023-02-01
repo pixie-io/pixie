@@ -396,7 +396,7 @@ controller:
               - credentialsId: "github-buildbot-api-token"
                 serverAPIUrl: "https://api.github.com"
             manageWebhooks: true
-            okToTestPhrase: ".*ok\\W+to\\W+test.*"
+            okToTestPhrase: "$^ Never match this since it is insecure"
             requestForTestingPhrase: "Can one of the admins verify this patch?"
             retestPhrase: ".*test\\W+this\\W+please.*"
             skipBuildPhrase: ".*\\[skip\\W+ci\\].*"
@@ -501,7 +501,7 @@ controller:
                     }
                     triggers {
                       githubPullRequest {
-                        admins(['zasgar', 'aimichelle', 'vihangm'])
+                        admins(['zasgar', 'aimichelle', 'vihangm', 'jamesmbartlett'])
                         useGitHubHooks()
                       }
                     }
