@@ -2,8 +2,20 @@
 
 1. If this is your first time, please read our contributor guidelines: https://github.com/pixie-io/pixie/blob/main/CONTRIBUTING.md and https://github.com/pixie-io/pixie/blob/main/DEVELOPMENT.md.
 -->
+# Description
 
-#### What type of PR is this?
+Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
+
+
+<!--
+*Automatically closes linked issue when PR is merged.
+Usage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.
+_If PR is about `failing-tests or flakes`, please post the related issues/tests in a comment and do not use `Fixes`_*
+-->
+Fixes # (issue)
+
+
+## Type of change
 
 <!--
 Add one of the following kinds:
@@ -20,24 +32,12 @@ Optionally add one or more of the following kinds if applicable:
 /kind regression
 -->
 
-#### What this PR does / why we need it:
-
-#### What is the testplan for the PR:
+## Test Plan:
 <!--
 For stylistic change that don't require tests or enhancements write: N/A.
 -->
 
-#### Which issue(s) this PR fixes:
-<!--
-*Automatically closes linked issue when PR is merged.
-Usage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.
-_If PR is about `failing-tests or flakes`, please post the related issues/tests in a comment and do not use `Fixes`_*
--->
-Fixes #
-
-#### Special notes for your reviewer:
-
-#### Does this PR introduce a user-facing change?
+## Does this PR introduce a user-facing change?
 <!--
 If no, just write "NONE" in the release-note block below.
 If yes, a release note is required:
@@ -48,7 +48,7 @@ Enter your extended release note in the block below. If the PR requires addition
 
 ```
 
-#### Additional documentation:
+## Additional documentation:
 
 <!--
 This section can be blank if this pull request does not require a release note.
