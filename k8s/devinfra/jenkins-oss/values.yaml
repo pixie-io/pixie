@@ -326,7 +326,9 @@ controller:
   - name: github-secrets
     keyName: client-secret
   - name: github-secrets
-    keyName: token
+    keyName: buildbot-api-token
+  - name: github-secrets
+    keyName: rate-limit-token
   - name: github-secrets
     keyName: ssh-key
   - name: bb-secrets
@@ -374,7 +376,7 @@ controller:
         unclassified:
           gitHubPluginConfig:
             configs:
-            - credentialsId: "github-license-ratelimit"
+            - credentialsId: "github-buildbot-api-token"
               manageHooks: false
               name: "gh"
           ghprbTrigger:
@@ -391,7 +393,7 @@ controller:
                 showMatrixStatus: false
                 startedStatus: "Jenkins Build Running"
             githubAuth:
-              - credentialsId: "github-license-ratelimit"
+              - credentialsId: "github-buildbot-api-token"
                 serverAPIUrl: "https://api.github.com"
             manageWebhooks: true
             okToTestPhrase: ".*ok\\W+to\\W+test.*"
@@ -410,7 +412,12 @@ controller:
                   id: "github-license-ratelimit"
                   description: "A github OAuth token for pixie-labs-buildbot with no additional oauth scopes."
                   scope: GLOBAL
-                  secret: "${github-secrets-token}"
+                  secret: "${github-secrets-rate-limit-token}"
+              - string:
+                  id: "github-buildbot-api-token"
+                  description: "A github OAuth token for pixie-labs-buildbot with access to write to PRs."
+                  scope: GLOBAL
+                  secret: "${github-secrets-buildbot-api-token}"
               - string:
                   id: "buildbuddy-api-key"
                   description: "API key for Buildbuddy"
