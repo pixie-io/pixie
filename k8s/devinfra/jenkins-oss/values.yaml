@@ -64,11 +64,11 @@ controller:
   #   - --httpPort=8080
   resources:
     requests:
-      cpu: "50m"
-      memory: "256Mi"
-    limits:
       cpu: "2000m"
       memory: "4096Mi"
+    limits:
+      cpu: "8000m"
+      memory: "8192Mi"
   # Overrides the init container default values
   # initContainerResources:
   #   requests:
@@ -85,8 +85,8 @@ controller:
   #   - name: http_proxy
   #     value: "http://192.168.64.1:3128"
   # Set min/max heap here if needed with:
-  # javaOpts: "-Xms512m -Xmx512m"
-  # jenkinsOpts: ""
+  javaOpts: "-Xms2048m -Xmx4096m"
+  jenkinsOpts: "-Dorg.csanchez.jenkins.plugins.kubernetes.pipeline.ContainerExecDecorator.websocketConnectionTimeout=60"
   # If you are using the ingress definitions provided by this chart via the `controller.ingress` block the configured
   # hostname will be the ingress hostname starting with `https://` or `http://` depending on the `tls` configuration.
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
