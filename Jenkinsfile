@@ -52,10 +52,6 @@ DEV_DOCKER_IMAGE_EXTRAS = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extr
 COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
-GCS_STASH_BUCKET = 'px-jenkins-build-temp'
-GCS_OSS_STASH_BUCKET = 'px-jenkins-build-oss'
-GCP_DEV_PROJECT = 'pl-dev-infra'
-GCP_OSS_PROJECT = 'pixie-oss'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
 // Our staging instance used to be run on our prod cluster. These creds are
@@ -112,6 +108,7 @@ isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
 isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
+isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun
 
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
@@ -119,6 +116,11 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isStirlingPerfEval = (env.JOB_NAME == 'pixie-main/stirling-perf-eval')
+
+GCS_STASH_BUCKET = isOSSRun ? 'px-jenkins-build-oss' : 'px-jenkins-build-temp'
+GCP_PROJECT = isOSSRun ? 'pixie-oss' : 'pl-dev-infra'
+BES_GCE_FILE = isOSSRun ? 'ci/bes-oss-gce.bazelrc' : 'ci/bes-gce.bazelrc'
+BES_K8S_FILE = isOSSRun ? 'ci/bes-oss-k8s.bazelrc' : 'ci/bes-k8s.bazelrc'
 
 // Build tags are used to modify the behavior of the build.
 // Note: Tags only work for code-review builds.
@@ -152,24 +154,14 @@ def stashOnGCS(String name, String pattern) {
   def destFile = "${name}.tar.gz"
   sh "mkdir -p .archive && tar --exclude=.archive -czf .archive/${destFile} ${pattern}"
 
-  def gcsBucket = "${GCS_OSS_STASH_BUCKET}"
-  if (!(isOSSMainRun || isOSSCodeReviewRun)) {
-    gcsBucket = "${GCS_STASH_BUCKET}"
-  }
-
-  gsutilCopy(".archive/${destFile}", "gs://${gcsBucket}/${env.BUILD_TAG}/${destFile}")
+  gsutilCopy(".archive/${destFile}", "gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${destFile}")
 }
 
 def fetchFromGCS(String name) {
   def srcFile = "${name}.tar.gz"
   sh 'mkdir -p .archive'
 
-  def gcsBucket = "${GCS_OSS_STASH_BUCKET}"
-  if (!(isOSSMainRun || isOSSCodeReviewRun)) {
-    gcsBucket = "${GCS_STASH_BUCKET}"
-  }
-
-  gsutilCopy("gs://${gcsBucket}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
+  gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
 }
 
 def unstashFromGCS(String name) {
@@ -628,16 +620,6 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   def testFile = "bazel_tests_${targetsSuffix}"
   def bazelArgs = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
   def stashName = "${name}-${kernel}-testlogs"
-  def gcpProject = ""
-  def besFile = ""
-
-  if (isOSSCodeReviewRun || isOSSMainRun) {
-    gcpProject = GCP_OSS_PROJECT
-    besFile = "ci/bes-oss-gce.bazelrc"
-  } else {
-    gcpProject = GCP_DEV_PROJECT
-    besFile = "ci/bes-gce.bazelrc"
-  }
 
   fetchFromGCS(SRC_STASH_NAME)
   fetchFromGCS(TARGETS_STASH_NAME)
@@ -650,8 +632,8 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
   export BUILD_TAG="${BUILD_TAG}"
   export KERNEL_VERSION="${kernel}"
-  export GCP_PROJECT="${gcpProject}"
-  export BES_FILE="${besFile}"
+  export GCP_PROJECT="${GCP_PROJECT}"
+  export BES_FILE="${BES_GCE_FILE}"
   ./ci/bpf/00_create_instance.sh
   """
 
