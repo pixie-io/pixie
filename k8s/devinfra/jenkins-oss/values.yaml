@@ -403,6 +403,9 @@ controller:
             useComments: true
             useDetailedComments: false
             whitelistPhrase: ".*add\\W+to\\W+allowlist.*"
+          location:
+            adminAddress: "Jenkins <build@pixielabs.ai>"
+            url: "https://jenkins.px.dev/"
       creds: |-
         credentials:
           system:
@@ -541,8 +544,11 @@ controller:
   customInitContainers: []
   # - name: custom-init
   #   image: "alpine:3.7"
-  #   imagePullPolicy: Always
-  #   command: [ "uname", "-a" ]
+  #   imagePullPolicy: IfNotPresent
+  #   command: ["/bin/sh", "-c", "ls"]
+  #   volumeMounts:
+  #     - name: jenkins-home
+  #       mountPath: "/var/jenkins_home"
 
   sidecars:
     configAutoReload:
