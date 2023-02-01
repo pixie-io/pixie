@@ -1,5 +1,6 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
+build --action_env=TEST=2
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
 # Passthrough GH_API_KEY from the environment.
