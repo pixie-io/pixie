@@ -53,6 +53,7 @@ COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
+GCS_OSS_STASH_BUCKET = 'px-jenkins-build-oss'
 GCP_DEV_PROJECT = 'pl-dev-infra'
 GCP_OSS_PROJECT = 'pixie-oss'
 
@@ -151,14 +152,24 @@ def stashOnGCS(String name, String pattern) {
   def destFile = "${name}.tar.gz"
   sh "mkdir -p .archive && tar --exclude=.archive -czf .archive/${destFile} ${pattern}"
 
-  gsutilCopy(".archive/${destFile}", "gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${destFile}")
+  def gcsBucket = "${GCS_OSS_STASH_BUCKET}"
+  if (!(isOSSMainRun || isOSSCodeReviewRun)) {
+    gcsBucket = "${GCS_STASH_BUCKET}"
+  }
+
+  gsutilCopy(".archive/${destFile}", "gs://${gcsBucket}/${env.BUILD_TAG}/${destFile}")
 }
 
 def fetchFromGCS(String name) {
   def srcFile = "${name}.tar.gz"
   sh 'mkdir -p .archive'
 
-  gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
+  def gcsBucket = "${GCS_OSS_STASH_BUCKET}"
+  if (!(isOSSMainRun || isOSSCodeReviewRun)) {
+    gcsBucket = "${GCS_STASH_BUCKET}"
+  }
+
+  gsutilCopy("gs://${gcsBucket}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
 }
 
 def unstashFromGCS(String name) {
