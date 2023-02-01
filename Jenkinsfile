@@ -487,7 +487,7 @@ def pxbuildRetryPodTemplate(String suffix, boolean needExtras=false, Closure bod
         volumes: [
           hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
           hostPathVolume(mountPath: '/var/lib/docker', hostPath: '/var/lib/docker'),
-          hostPathVolume(mountPath: '/mnt/jenkins/sharedDir', hostPath: '/mnt/jenkins/sharedDir')
+          hostPathVolume(mountPath: '/mnt/disks/jenkins/sharedDir', hostPath: '/mnt/disks/jenkins/sharedDir')
         ]) {
         node(label) {
           container('pxbuild') {

@@ -49,14 +49,14 @@ if [[ ! "$release_tag" == *"-"* ]]; then
     # docker volume and the host.
     tmp_dir="$(mktemp -d)"
     cp -RaL "${linux_binary}" "${tmp_dir}"
-    mv "${tmp_dir}" /mnt/jenkins/sharedDir
+    mv "${tmp_dir}" /mnt/disks/jenkins/sharedDir
     tmp_subpath="$(echo "${tmp_dir}" | cut -d'/' -f3-)"
-    mkdir -p /mnt/jenkins/sharedDir/image
+    mkdir -p /mnt/disks/jenkins/sharedDir/image
 
     # Create rpm package.
     docker run -i --rm \
-           -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
-           -v "/mnt/jenkins/sharedDir/image:/image" \
+           -v "/mnt/disks/jenkins/sharedDir/${tmp_subpath}:/src/" \
+           -v "/mnt/disks/jenkins/sharedDir/image:/image" \
            cdrx/fpm-fedora:24 \
            fpm \
            -f \
@@ -70,8 +70,8 @@ if [[ ! "$release_tag" == *"-"* ]]; then
 
     # Create deb package.
     docker run -i --rm \
-           -v "/mnt/jenkins/sharedDir/${tmp_subpath}:/src/" \
-           -v "/mnt/jenkins/sharedDir/image:/image" \
+           -v "/mnt/disks/jenkins/sharedDir/${tmp_subpath}:/src/" \
+           -v "/mnt/disks/jenkins/sharedDir/image:/image" \
            cdrx/fpm-ubuntu:18.04 \
            fpm \
            -f \
@@ -102,8 +102,8 @@ write_artifacts_to_gcs() {
 
     if [[ ! "$release_tag" == *"-"* ]]; then
         # RPM/DEB only exists for release builds.
-        copy_artifact_to_gcs "${output_path}" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
-        copy_artifact_to_gcs "${output_path}" "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
+        copy_artifact_to_gcs "${output_path}" "/mnt/disks/jenkins/sharedDir/image/${pkg_prefix}.deb" "pixie-px.${linux_arch}.deb"
+        copy_artifact_to_gcs "${output_path}" "/mnt/disks/jenkins/sharedDir/image/${pkg_prefix}.rpm" "pixie-px.${linux_arch}.rpm"
     fi
 }
 
@@ -113,8 +113,8 @@ write_artifacts_to_gh() {
     tmp_dir="$(mktemp -d)"
 
     cp "${linux_binary}" "${tmp_dir}/cli_linux_amd64"
-    cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.deb" "${tmp_dir}/pixie-px.${linux_arch}.deb"
-    cp "/mnt/jenkins/sharedDir/image/${pkg_prefix}.rpm" "${tmp_dir}/pixie-px.${linux_arch}.rpm"
+    cp "/mnt/disks/jenkins/sharedDir/image/${pkg_prefix}.deb" "${tmp_dir}/pixie-px.${linux_arch}.deb"
+    cp "/mnt/disks/jenkins/sharedDir/image/${pkg_prefix}.rpm" "${tmp_dir}/pixie-px.${linux_arch}.rpm"
 
     pushd "${tmp_dir}"
     gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_linux_amd64"
