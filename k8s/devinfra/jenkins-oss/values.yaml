@@ -35,8 +35,6 @@ controller:
   numExecutors: 0
   # configures the executor mode of the Jenkins node. Possible values are: NORMAL or EXCLUSIVE
   executorMode: "NORMAL"
-  # This is ignored if enableRawHtmlMarkupFormatter is true
-  markupFormatter: plainText
   customJenkinsLabels: []
   # The default configuration uses this secret to configure an admin user
   # If you don't need that user or use a different security realm then you can disable it
@@ -245,6 +243,7 @@ controller:
   # List of plugins to be install during Jenkins controller start
   installPlugins:
   - ansicolor:1.0.2
+  - antisamy-markup-formatter:155.v795fb_8702324
   - configuration-as-code:1569.vb_72405b_80249
   - embeddable-build-status:312.vf2de01b_051d0
   - git:5.0.0
@@ -257,9 +256,9 @@ controller:
   - scm-api:631.v9143df5b_e4a_a
   - workflow-aggregator:590.v6a_d052e5a_a_b_5
   - github-oauth:0.39
-  - blueocean:1.27.0
-  - blueocean-dashboard:1.27.0
-  - blueocean-web:1.27.0
+  - blueocean:1.27.1
+  - blueocean-dashboard:1.27.1
+  - blueocean-web:1.27.1
   - matrix-auth:3.0
   - pipeline-utility-steps:2.14.0
   - display-url-api:2.3.7
@@ -294,7 +293,7 @@ controller:
 
   # Enable HTML parsing using OWASP Markup Formatter Plugin (antisamy-markup-formatter), useful with ghprb plugin.
   # The plugin is not installed by default, please update controller.installPlugins.
-  enableRawHtmlMarkupFormatter: false
+  enableRawHtmlMarkupFormatter: true
   # Used to approve a list of groovy functions in pipelines used the script-security plugin.
   # Can be viewed under /scriptApproval
   scriptApproval:
@@ -968,7 +967,7 @@ persistence:
   annotations: {}
   labels: {}
   accessMode: "ReadWriteOnce"
-  size: "8Gi"
+  size: "100Gi"
   volumes:
   #  - name: nothing
   #    emptyDir: {}
