@@ -54,7 +54,7 @@ Add your notes in this format, including the triple ticks.
 ### Additional documentation:
 
 <!--
-This section can be blank if this pull request does not require a release note.
+This section can be removed if this PR does not include changes to our public documentation.
 
 When adding links which point to resources within git repositories (px-docs, etc), please reference a specific commit and avoid
 linking directly to the master branch. This ensures that links reference a
@@ -68,4 +68,3 @@ Please use the following format for linking documentation:
 - [px/website]: <link>
 ```
 -->
-
