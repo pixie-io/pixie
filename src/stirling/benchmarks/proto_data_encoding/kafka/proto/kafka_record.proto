@@ -1,0 +1,72 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+syntax = "proto3";
+
+package experimental;
+
+message MessageSet {
+  int32 size = 1;
+}
+
+message KafkaProduceReqPartition {
+  int32 index = 1;
+  MessageSet message_set = 2;
+}
+
+message KafkaProduceReqTopic {
+  string name = 1;
+  repeated KafkaProduceReqPartition partitions = 2;
+}
+
+message KafkaProduceReq {
+  string transactional_id = 1;
+  int32 acks = 2;
+  int32 timeout_ms = 3;
+  repeated KafkaProduceReqTopic topics = 4;
+}
+
+message RecordError {
+  int32 batch_index = 1;
+  string error_message = 2;
+}
+
+message KafkaProduceRespPartition {
+  int32 index = 1;
+  int32 error_code = 2;
+  int64 base_offset = 3;
+  int64 log_append_time_ms = 4;
+  int64 log_start_offset = 5;
+  repeated RecordError record_errors = 6;
+  string error_message = 7;
+}
+
+message KafkaProduceRespTopic {
+  string name = 1;
+  repeated KafkaProduceRespPartition partitions = 2;
+}
+
+message KafkaProduceResp {
+  int32 throttle_time_ms = 1;
+  repeated KafkaProduceRespTopic topics = 2;
+}
+
+message KafkaProduceRecord {
+  KafkaProduceReq req = 1;
+  KafkaProduceResp resp = 2;
+}

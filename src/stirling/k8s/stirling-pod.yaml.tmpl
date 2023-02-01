@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stirling
+  namespace: {{NAMESPACE}}
+  labels:
+    app: pl-monitoring
+spec:
+  imagePullSecrets:
+  - name: image-pull-secret
+  containers:
+  - name: stirling
+    image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
+    args: []
+    imagePullPolicy: Always
+    resources:
+      limits:
+        memory: 2048Mi
+      requests:
+        cpu: 100m
+        memory: 512Mi
+    securityContext:
+      capabilities:
+        add:
+          - SYS_PTRACE
+          - SYS_ADMIN
+      privileged: true
+    volumeMounts:
+       - name: host-root
+         mountPath: /host
+         readOnly: true
+       - name: sys
+         mountPath: /sys
+         readOnly: true
+    env:
+    - name: PL_HOST_PATH
+      value: "/host"
+  hostNetwork: true
+  hostPID: true
+  dnsPolicy: ClusterFirstWithHostNet
+  terminationGracePeriodSeconds: 30
+  restartPolicy: Never
+  volumes:
+      - name: host-root
+        hostPath:
+            path: /
+            type: Directory
+      - name: sys
+        hostPath:
+            path: /sys
+            type: Directory
