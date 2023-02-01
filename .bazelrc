@@ -2,6 +2,8 @@
 
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
+# Passthrough GH_API_KEY from the environment.
+build --action_env=GH_API_KEY
 
 # Doesn't rely on a localjdk which is default. This removes the need for a JAVA_HOME
 # on the build machine and also makes JAVA builds hermetic.

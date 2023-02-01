@@ -19,7 +19,7 @@
 cp ci/jenkins.bazelrc jenkins.bazelrc
 
 echo "build --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}" >> jenkins.bazelrc
-echo "build --action_env=GH_API_KEY=${GH_API_KEY}" >> jenkins.bazelrc
+echo "build --client_env=GH_API_KEY=${GH_API_KEY}" >> jenkins.bazelrc
 
 if [[ $JOB_NAME == 'pixie-main/build-and-test-all' ]]; then
   # Only set ROLE=CI if this is running on main. This controls the whether this
