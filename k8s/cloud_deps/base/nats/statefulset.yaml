@@ -135,6 +135,9 @@ spec:
                   values:
                   - pl-nats
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 10100
+        fsGroup: 10100
         seccompProfile:
           type: RuntimeDefault
       # Common volumes for the containers
@@ -236,36 +239,5 @@ spec:
             - ALL
           runAsNonRoot: true
           runAsUser: 10100
-          seccompProfile:
-            type: RuntimeDefault
-
-      initContainers:
-      - name: init-chown-data
-        image: busybox
-        command: ["chown", "-R", "10100:10100", "/data/jetstream"]
-        volumeMounts:
-        - mountPath: /data/jetstream
-          name: nats-sts-vol
-        resources:
-          requests:
-            cpu: 10m
-            memory: 50Mi
-          limits:
-            cpu: 100m
-            memory: 200Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            add:
-            - CHOWN
-            - DAC_OVERRIDE
-            - FSETID
-            - FOWNER
-            - MKNOD
-            - SETFCAP
-            - SETGID
-            - SETUID
-            drop:
-            - ALL
           seccompProfile:
             type: RuntimeDefault
