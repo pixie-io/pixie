@@ -559,13 +559,7 @@ def builders = [:]
 def buildAndTestOptWithUI = {
   pxbuildWithSourceAndTargetsK8s('build-opt') {
     container('pxbuild') {
-      withCredentials([
-        file(
-          credentialsId: 'pl-dev-infra-jenkins-sa-json',
-          variable: 'GOOGLE_APPLICATION_CREDENTIALS')
-      ]) {
-        bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
-      }
+      bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
     }
   }
 }
