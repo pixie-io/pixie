@@ -7,4 +7,4 @@ spec:
   replicas: 1
   template:
     spec:
-      repository: pixie-io/pixie 
+      repository: pixie-io/pixie
