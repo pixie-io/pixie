@@ -66,7 +66,7 @@ default['opm']['sha256'] =
 default['packer']['download_path'] =
   'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_darwin_amd64.zip'
 default['packer']['sha256'] =
-  'f8abe5d8660be2e6bea04bbb165ede4026e66f2f48ae5f076f9ea858699357ae'
+  '4435f3ab48eb0759f52cc9773182746f004ab0cc697efa23731c77b109d25b64'
 
 default['skaffold']['download_path'] =
   'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-amd64'
