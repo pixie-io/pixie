@@ -24,4 +24,3 @@ if node.platform_family?('debian')
     command 'update-alternatives --install /usr/bin/python python /usr/bin/python3 100'
   end
 end
-
