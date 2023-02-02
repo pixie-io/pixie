@@ -31,15 +31,28 @@ import {
   buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
 } from 'app/containers/legend/legend-data';
 import {
-  ChartDisplay, convertWidgetDisplayToVegaSpec, SHIFT_CLICK_FLAMEGRAPH_SIGNAL, EXTERNAL_HOVER_SIGNAL,
-  EXTERNAL_TS_DOMAIN_SIGNAL,
-  getColumnFromDisplay,
+  EXTERNAL_HOVER_SIGNAL,
   getVegaFormatFunc,
-  HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
-  LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
+  HOVER_PIVOT_TRANSFORM,
+  HOVER_SIGNAL,
+  INTERNAL_HOVER_SIGNAL,
+  LEGEND_HOVER_SIGNAL,
+  LEGEND_SELECT_SIGNAL,
+  REVERSE_HOVER_SIGNAL,
+  REVERSE_SELECT_SIGNAL,
   REVERSE_UNSELECT_SIGNAL,
+} from 'app/containers/live/convert-to-vega-spec/common';
+import {
+  ChartDisplay,
+  convertWidgetDisplayToVegaSpec,
+  getColumnFromDisplay,
   wrapFormatFn,
-} from 'app/containers/live/convert-to-vega-spec';
+} from 'app/containers/live/convert-to-vega-spec/convert-to-vega-spec';
+import { SHIFT_CLICK_FLAMEGRAPH_SIGNAL } from 'app/containers/live/convert-to-vega-spec/flamegraph';
+import {
+  EXTERNAL_TS_DOMAIN_SIGNAL,
+  INTERNAL_TS_DOMAIN_SIGNAL,
+} from 'app/containers/live/convert-to-vega-spec/timeseries';
 import {
   Relation, SemanticType,
 } from 'app/types/generated/vizierapi_pb';
