@@ -380,7 +380,7 @@ controller:
               manageHooks: false
               name: "gh"
           ghprbTrigger:
-            adminlist: "zasgar"
+            adminlist: "zasgar aimichelle vihangm"
             autoCloseFailedPullRequests: false
             cron: "H/5 * * * *"
             extensions:
@@ -502,6 +502,8 @@ controller:
                     triggers {
                       githubPullRequest {
                         admins(['zasgar', 'aimichelle', 'vihangm', 'jamesmbartlett'])
+                        allowMembersOfWhitelistedOrgsAsAdmin(false)
+                        orgWhitelist('pixie-io')
                         useGitHubHooks()
                       }
                     }
