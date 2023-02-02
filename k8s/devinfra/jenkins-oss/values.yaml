@@ -510,6 +510,11 @@ controller:
                   }
                 }
               }
+      buildURL: |-
+        unclassified:
+          location:
+            adminAddress: "Jenkins <build@pixielabs.ai>"
+            url: "https://jenkins.px.dev/"
         # yamllint enable rule:indentation
     # Allows adding to the top-level security JCasC section. For legacy,  default the chart includes
     # apiToken configurations
