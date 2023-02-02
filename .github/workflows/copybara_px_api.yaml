@@ -1,0 +1,25 @@
+---
+name: pxapi-copybara
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - 'main'
+jobs:
+  run-copybara:
+    runs-on: ubuntu-latest
+    container:
+      image: gcr.io/pixie-oss/pixie-dev-public/copybara:20210420
+    steps:
+    - uses: actions/checkout@v3
+    - id: create-ssh-key
+      env:
+        COPYBARA_SSH_KEY: ${{ secrets.COPYBARA_SSH_KEY }}
+      run: echo "$COPYBARA_SSH_KEY" > /tmp/sshkey && chmod 600 /tmp/sshkey
+    - id: pxapi-copybara
+      env:
+        COPYBARA_GPG_KEY: ${{ secrets.COPYBARA_GPG_KEY }}
+        COPYBARA_GPG_KEY_ID: ${{ secrets.COPYBARA_GPG_KEY_ID }}
+      run: >
+        GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i /tmp/sshkey'
+        ./ci/run_copybara.sh tools/copybara/pxapi_go/copy.bara.sky
