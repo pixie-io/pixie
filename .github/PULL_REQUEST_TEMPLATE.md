@@ -1,21 +1,24 @@
 <!--  Thanks for sending a pull request!  Here are some tips for you:
 
 1. If this is your first time, please read our contributor guidelines: https://github.com/pixie-io/pixie/blob/main/CONTRIBUTING.md and https://github.com/pixie-io/pixie/blob/main/DEVELOPMENT.md.
--->
-### Description:
 
-<!--
+Also, please delete all the comment blocks to make it easier for the maintainers to compose the final error message from this doc.
+
+All the fields need to be filled out inline. For example:
+Summary: Here is a description of this change, and
+it's allowed to span multiple lines.
+
+Leave an empty line between each block.
+-->
+Summary: <!--
 Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
 -->
 
-### Relevant Issues:
-<!--
+Relevant Issues: <!--
 Please list all the relevant issues (#<issue number>): eg. #1, #2. If the PR fixes an issue use `Fixes #<issue number>`
 -->
 
-### Type of change:
-
-<!--
+Type of change: <!--
 Add one of the following kinds:
 /kind bug
 /kind cleanup
@@ -30,13 +33,11 @@ Optionally add one or more of the following kinds if applicable:
 /kind regression
 -->
 
-### Test Plan:
-<!--
+Test Plan: <!--
 For stylistic change that don't require tests or enhancements write: N/A.
 -->
 
-## Changelog Message:
-<!--
+Changelog Message: <!--
 
 Does this PR include user facing changes?
 
@@ -50,10 +51,7 @@ Add your notes in this format, including the triple ticks.
 
 -->
 
-
-### Additional documentation:
-
-<!--
+Additional documentation: <!--
 This section can be removed if this PR does not include changes to our public documentation.
 
 When adding links which point to resources within git repositories (px-docs, etc), please reference a specific commit and avoid
