@@ -11,23 +11,9 @@ jobs:
       id: changes
       with:
         filters: |
-          src: &src
-          - '**/*.cc'
-          - '**/*.h'
-          - '**/*.hpp'
-          - '**/*.go'
-          - '**/*.proto'
-          - '**/*.py'
-          - '**/*.sh'
-          hyphenated:
-          - *src
-          - '**-**'
           private:
           - '**/*private*/**'
           - '**/*private*'
     - name: Fail on private
       if: ${{ steps.changes.outputs.private == 'true' }}
       run: echo "This repo disallows dirnames or filenames with 'private' in it." && exit 1
-    - name: Fail on hyphens
-      if: ${{ steps.changes.outputs.hyphenated == 'true' }}
-      run: echo "This repo disallows hyphens in dirnames or filenames. Use underscores instead." && exit 1
