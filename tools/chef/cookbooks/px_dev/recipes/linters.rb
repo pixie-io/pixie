@@ -50,18 +50,21 @@ common_remote_bin 'bazel' do
   bin_name 'bazel_core'
 end
 
-remote_file '/tmp/clang-linters.deb' do
-  source node['clang-linters']['deb']
-  mode '0644'
-  checksum node['clang-linters']['deb_sha256']
+if platform_family?('debian')
+  remote_file '/tmp/clang-linters.deb' do
+    source node['clang-linters']['deb']
+    mode '0644'
+    checksum node['clang-linters']['deb_sha256']
+  end
+
+  dpkg_package 'clang-linters' do
+    source '/tmp/clang-linters.deb'
+    action :install
+    version node['clang-linters']['version']
+  end
+
+  file '/tmp/clang-linters.deb' do
+    action :delete
+  end
 end
 
-dpkg_package 'clang-linters' do
-  source '/tmp/clang-linters.deb'
-  action :install
-  version node['clang-linters']['version']
-end
-
-file '/tmp/clang-linters.deb' do
-  action :delete
-end
