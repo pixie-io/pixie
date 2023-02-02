@@ -31,7 +31,7 @@ fi
 git config --global user.name ${git_committer_name}
 git config --global user.email ${git_committer_email}
 
-gpg --no-tty --batch --import "${COPYBARA_GPG_KEY_FILE}"
+echo "${COPYBARA_GPG_KEY}" | gpg --no-tty --batch --import
 git config --global user.signingkey "${COPYBARA_GPG_KEY_ID}"
 git config --global commit.gpgsign true
 
