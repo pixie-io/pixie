@@ -25,6 +25,8 @@ Add one of the following kinds:
 /kind documentation
 /kind feature
 
+Each type must include the entire "/kind {type}" text and not just the label.
+
 Optionally add one or more of the following kinds if applicable:
 /kind api-change
 /kind deprecation
