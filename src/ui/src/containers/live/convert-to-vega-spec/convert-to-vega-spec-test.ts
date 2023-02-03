@@ -22,9 +22,11 @@ import { DARK_THEME } from 'app/components';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 import {
-  convertWidgetDisplayToVegaSpec,
   TRANSFORMED_DATA_SOURCE_NAME,
   VALUE_DOMAIN_SIGNAL,
+} from './common';
+import {
+  convertWidgetDisplayToVegaSpec,
 } from './convert-to-vega-spec';
 
 function addHoverDataTest(spec: Spec, valueFieldNames: string[], seriesFieldName?: string) {
