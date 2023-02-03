@@ -276,7 +276,7 @@ def sendCloudReleaseSlackNotification(String profile) {
 }
 
 def postBuildActions = {
-  if (!isOSSCodeReviewRun) {
+  if (!isOSSRun) {
     sendSlackNotification()
   }
 }
@@ -1475,20 +1475,12 @@ def buildScriptForOperatorRelease = {
     stage('Build & Push Artifacts') {
       pxbuildWithSourceK8s('build-and-push-operator', true) {
         container('pxbuild') {
-          // withKubeConfig([
-          //   credentialsId: K8S_PROD_CREDS,
-          //   serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
-          // ]) {
-            sh './ci/operator_build_release.sh'
-            stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-            stashList.add('versions')
-          // }
+          sh './ci/operator_build_release.sh'
+          stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+          stashList.add('versions')
         }
       }
     }
-    // stage('Update versions databases') {
-    //   updateAllVersionsDB()
-    // }
   }
   catch (err) {
     currentBuild.result = 'FAILURE'
