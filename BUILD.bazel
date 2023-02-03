@@ -19,6 +19,7 @@ load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("//bazel:repositories.bzl", "list_pl_deps")
 load("//bazel/cc_toolchains:llvm_libs.bzl", "llvm_variant_repo_name", "llvm_variant_setting_label", "llvm_variants")
+load("//bazel/cc_toolchains/sysroots:images.bzl", "sysroot_runtime_image")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 licenses(["restricted"])
@@ -142,16 +143,32 @@ filegroup(
 )
 
 container_image(
-    name = "pl_go_base_image",
+    name = "pl_go_base_image_default",
+    base = "@base_image//image",
+    debs = pl_cc_base_packages,
+)
+
+container_image(
+    name = "pl_cc_base_image_default",
     base = "@base_image//image",
     debs = pl_cc_base_packages,
     visibility = ["//visibility:public"],
 )
 
+sysroot_runtime_image(
+    name = "pl_go_base_image",
+    default_image = ":pl_go_base_image_default",
+    visibility = ["//visibility:public"],
+)
+
+sysroot_runtime_image(
+    name = "pl_cc_base_image_no_extra_files",
+    default_image = ":pl_cc_base_image_default",
+)
+
 container_image(
     name = "pl_cc_base_image",
-    base = "@base_image//image",
-    debs = pl_cc_base_packages,
+    base = ":pl_cc_base_image_no_extra_files",
     files = [
         "//:embedding.proto",
         "//:sentencepiece.proto",
