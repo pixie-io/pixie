@@ -512,7 +512,7 @@ def checkoutAndInitialize() {
       deleteDir()
       checkout scm
       initializeRepoState()
-      if (isPhabricatorTriggeredBuild()) {
+      if (isPhabricatorTriggeredBuild() || isOSSCodeReviewRun) {
         def logMessage = sh(
           script: 'git log origin/main..',
           returnStdout: true,
