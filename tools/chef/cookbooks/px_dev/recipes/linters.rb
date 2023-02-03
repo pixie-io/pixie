@@ -67,4 +67,3 @@ if platform_family?('debian')
     action :delete
   end
 end
-
