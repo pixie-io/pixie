@@ -55,6 +55,7 @@ stashList = []
 
 // Flag controlling if coverage job is enabled.
 isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-pr')
+isReleaseRun = env.JOB_NAME.startsWith('pixie-release/')
 
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
@@ -63,7 +64,7 @@ isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regres
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
 isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
-isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun
+isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun || isReleaseRun
 
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
@@ -275,7 +276,7 @@ def sendCloudReleaseSlackNotification(String profile) {
 }
 
 def postBuildActions = {
-  if (!isOSSCodeReviewRun) {
+  if (!isOSSRun) {
     sendSlackNotification()
   }
 }
@@ -1474,19 +1475,11 @@ def buildScriptForOperatorRelease = {
     stage('Build & Push Artifacts') {
       pxbuildWithSourceK8s('build-and-push-operator', true) {
         container('pxbuild') {
-          withKubeConfig([
-            credentialsId: K8S_PROD_CREDS,
-            serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
-          ]) {
-            sh './ci/operator_build_release.sh'
-            stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-            stashList.add('versions')
-          }
+          sh './ci/operator_build_release.sh'
+          stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+          stashList.add('versions')
         }
       }
-    }
-    stage('Update versions databases') {
-      updateAllVersionsDB()
     }
   }
   catch (err) {
