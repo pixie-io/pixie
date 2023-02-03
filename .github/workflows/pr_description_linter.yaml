@@ -1,0 +1,14 @@
+---
+name: pr-description-linter
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+jobs:
+  lint-pr-description:
+    runs-on: ubuntu-latest
+    env:
+      PR_BODY: ${{github.event.pull_request.body}}
+    steps:
+    - uses: actions/checkout@v3
+    - id: run-pr-description-linter
+      run: ./ci/pr_description_linter.sh
