@@ -132,16 +132,19 @@ TEST_F(GoHTTPTraceTest, LargePostMessage) {
       AllOf(HasSubstr(R"("Accept-Encoding":"gzip")"),
             HasSubstr(absl::Substitute(R"(Host":"localhost:$0")", go_http_fixture_.server_port())),
             ContainsRegex(R"(User-Agent":"Go-http-client/.+")")));
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(target_record_idx)),
-      StrEq(
-          "{\"data\":"
-          "\"XVlBzgbaiCMRAjWwhTHctcuAxhxKQFDaFpLSjFbcXoEFfRsWxPLDnJObCsNVlgTeMaPEZQleQYhYzRyWJjPjzp"
-          "fRFEgmotaFetHsbZRjxAwnwekrBEmfdzdcEkXBAkjQZLCtTMtTCoaNatyyiNKAReKJyiXJrscctNswYNsGRussVm"
-          "aozFZBsbOJiFQGZsnwTKSmVoiGLOpbUOpEdKupdOMeRVjaRzLNTXYeUCWKsXbGyRAOmBTvKSJfjzaLbtZsyMGeuD"
-          "tRzQMDQiYCOhgHOvgSeycJPJHYNufNjJhhjUVRuSqfgqVMkPYVkURUpiFvIZRgBmyArKCtzkjkZIvaBjMkXVbWGv"
-          "bqzgexyALBsdjSGpngCwFkDifIBuufFMoWdiTskZoQJMqrTICTojIYxyeSxZyfroRODMbNDRZnPNRWCJPMHDtJmH"
-          "AYORsUfUMApsVgzHblmYYtEjVgwfFbbGGcnqbaEREunUZjQXmZOtaRLUtmYgmSVYB... [TRUNCATED]"));
+  // TODO(oazizi): random data isn't consistent across go versions. Switch to non-random data or
+  // update the assertion to not look at the contents.
+
+  // EXPECT_THAT(
+  //     std::string(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(target_record_idx)),
+  //     StrEq(
+  //         "{\"data\":"
+  //         "\"XVlBzgbaiCMRAjWwhTHctcuAxhxKQFDaFpLSjFbcXoEFfRsWxPLDnJObCsNVlgTeMaPEZQleQYhYzRyWJjPjzp"
+  //         "fRFEgmotaFetHsbZRjxAwnwekrBEmfdzdcEkXBAkjQZLCtTMtTCoaNatyyiNKAReKJyiXJrscctNswYNsGRussVm"
+  //         "aozFZBsbOJiFQGZsnwTKSmVoiGLOpbUOpEdKupdOMeRVjaRzLNTXYeUCWKsXbGyRAOmBTvKSJfjzaLbtZsyMGeuD"
+  //         "tRzQMDQiYCOhgHOvgSeycJPJHYNufNjJhhjUVRuSqfgqVMkPYVkURUpiFvIZRgBmyArKCtzkjkZIvaBjMkXVbWGv"
+  //         "bqzgexyALBsdjSGpngCwFkDifIBuufFMoWdiTskZoQJMqrTICTojIYxyeSxZyfroRODMbNDRZnPNRWCJPMHDtJmH"
+  //         "AYORsUfUMApsVgzHblmYYtEjVgwfFbbGGcnqbaEREunUZjQXmZOtaRLUtmYgmSVYB... [TRUNCATED]"));
   EXPECT_THAT(record_batch[kHTTPReqBodySizeIdx]->Get<types::Int64Value>(target_record_idx).val,
               131096);
 }
