@@ -1,5 +1,7 @@
 Authlib==1.1.0
+ddt==1.1.0
 gogo-python==0.0.1
 grpcio==1.47.0
 grpcio-tools==1.47.0
 protobuf==3.20.3
+requests==2.27.1
