@@ -26,6 +26,7 @@ fake-http-header==0.1.2
 Faker==13.15.0
 faker_airtravel==0.4
 filelock==3.8.0
+# latest release lacks "add_unk" option for unknown tokens. Hence installing from source
 flair @ git+https://github.com/flairNLP/flair.git@d4ed67bf663e4066517f00397412510d90043653
 flatbuffers==1.12
 fonttools==4.34.4
