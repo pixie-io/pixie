@@ -1601,7 +1601,7 @@ def buildScriptForOperatorRelease = {
     stage('Build & Push Artifacts') {
       pxbuildWithSourceK8s('build-and-push-operator', true) {
         container('pxbuild') {
-          withKubeConfig([
+          // withKubeConfig([
           //   credentialsId: K8S_PROD_CREDS,
           //   serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
           // ]) {
