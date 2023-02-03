@@ -49,7 +49,6 @@ SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
-COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
 
@@ -100,10 +99,6 @@ isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NA
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression-bpf')
-
-isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
-isCopybaraTags = env.JOB_NAME.startsWith('pixie-main/copybara-tags')
-isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
@@ -422,10 +417,6 @@ def gcloudContainer() {
 
 def gitContainer() {
   containerTemplate(name: 'git', image: GIT_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
-}
-
-def copybaraContainer() {
-  containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
 def pxdevContainer(boolean needExtras=false) {
@@ -1696,91 +1687,6 @@ def buildScriptForCloudProdRelease = {
   postBuildActions()
 }
 
-def copybaraTemplate(String name, String copybaraFile) {
-  retryPodTemplate(name, [copybaraContainer()]) {
-    deleteDir()
-    checkout scm
-    container('copybara') {
-      sshagent(credentials: ['pixie-copybara-git']) {
-        withCredentials([
-          file(
-            credentialsId: 'copybara-private-key-asc',
-            variable: 'COPYBARA_GPG_KEY_FILE'
-          ),
-          string(
-            credentialsId: 'copybara-gpg-key-id',
-            variable: 'COPYBARA_GPG_KEY_ID'
-          ),
-        ]) {
-          sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-          ./ci/run_copybara.sh ${copybaraFile}"
-        }
-      }
-    }
-  }
-}
-
-def checkoutForCopybara(String url, String relativeTargetDir, String credentialsId) {
-  checkout([
-    changelog: false,
-    poll: false,
-    scm: [
-      $class: 'GitSCM',
-      branches: [[name: 'main']],
-      extensions: [
-        [$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir],
-        [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-      ],
-      userRemoteConfigs: [
-        [credentialsId: credentialsId, url: url]
-      ]
-    ]
-  ])
-}
-
-def buildScriptForCopybaraPublic() {
-  try {
-    stage('Copybara it') {
-      copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
-    }
-    stage('Copy tags') {
-      retryPodTemplate('public-copy-tags', [gitContainer()]) {
-        container('git') {
-          deleteDir()
-          checkoutForCopybara('git@github.com:pixie-labs/pixielabs.git', 'pixie-private', 'build-bot-ro')
-          checkoutForCopybara('git@github.com:pixie-io/pixie.git', 'pixie-oss', 'pixie-copybara-git')
-          dir('pixie-private') {
-            sshagent(credentials: ['pixie-copybara-git']) {
-              sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-              ./ci/copy_release_tags.sh ../pixie-oss"
-            }
-          }
-        }
-      }
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-}
-
-def buildScriptForCopybaraPxAPI() {
-  try {
-    stage('Copybara it') {
-      copybaraTemplate('pxapi-copy', 'tools/copybara/pxapi_go/copy.bara.sky')
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-}
-
 def buildScriptForStirlingPerfEval = {
   stage('Checkout code.') {
     checkoutAndInitialize()
@@ -1814,10 +1720,6 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudProdRelease()
 } else if (isOSSCloudBuildRun) {
   buildScriptForOSSCloudRelease()
-} else if (isCopybaraPublic || isCopybaraTags) {
-  buildScriptForCopybaraPublic()
-} else if (isCopybaraPxAPI) {
-  buildScriptForCopybaraPxAPI()
 } else if (isStirlingPerfEval) {
   buildScriptForStirlingPerfEval()
 } else {
