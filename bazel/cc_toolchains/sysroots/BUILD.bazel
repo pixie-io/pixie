@@ -13,3 +13,6 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "pl_sysroot_settings")
+
+pl_sysroot_settings()
