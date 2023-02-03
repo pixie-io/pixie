@@ -67,12 +67,17 @@ multidict==6.0.2
 murmurhash==1.0.8
 networkx==2.8.6
 numpy==1.23.2
+nvidia-cublas-cu11==11.10.3.66
+nvidia-cuda-nvrtc-cu11==11.7.99
+nvidia-cuda-runtime-cu11==11.7.99
+nvidia-cudnn-cu11==8.5.0.96
 overrides==3.1.0
 packaging==21.3
 pandas==1.3.5
 pathy==0.6.2
 phonenumbers==8.12.54
 Pillow==9.3.0
+pip==22.0.2
 plotly==5.9.0
 pluggy==1.0.0
 pptree==3.1
@@ -107,6 +112,7 @@ scikit-learn==1.0.2
 scipy==1.9.1
 segtok==1.5.11
 sentencepiece==0.1.97
+setuptools==59.6.0
 six==1.16.0
 sklearn==0.0
 sklearn-crfsuite==0.3.6
@@ -142,6 +148,7 @@ urllib3==1.26.10
 wasabi==0.10.1
 wcwidth==0.2.5
 Werkzeug==2.1.2
+wheel==0.37.1
 Wikipedia-API==0.5.4
 wordcloud==1.8.2.2
 wrapt==1.14.1
