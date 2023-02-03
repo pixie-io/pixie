@@ -267,6 +267,7 @@ controller:
   - ghprb:1.42.2
   - script-security:1229.v4880b_b_e905a_6
   - basic-branch-build-strategies:71.vc1421f89888e
+  - kubernetes-cli:1.12.0
   # Set to false to download the minimum required version of all dependencies.
   installLatestPlugins: true
 
