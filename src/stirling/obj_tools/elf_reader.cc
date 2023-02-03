@@ -439,10 +439,17 @@ class LLVMDisasmContext {
   LLVMDisasmContext() {
     InitLLVMOnce();
 
+#if X86_64
+    constexpr char triple[] = "x86_64-pc-linux";
+#elif AARCH64
+    constexpr char triple[] = "aarch64-pc-linux";
+#else
+#error Architecture not supported.
+#endif
+
     // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
     // See https://llvm.org/doxygen/Triple_8h_source.html
-    // TODO(yzhao): Change to get TripleName from the system, instead of hard coding.
-    ref_ = LLVMCreateDisasm(/*TripleName*/ "x86_64-pc-linux",
+    ref_ = LLVMCreateDisasm(triple,
                             /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
                             /*LLVMSymbolLookupCallback*/ nullptr);
   }

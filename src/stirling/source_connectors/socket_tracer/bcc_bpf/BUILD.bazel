@@ -51,12 +51,16 @@ cc_library(
 pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
+    # Uncomment to enable debug printks.
+    # defines = ["BPF_DEBUG"],
+    defines = select({
+        "@platforms//cpu:aarch64": ["TARGET_ARCH_AARCH64"],
+        "@platforms//cpu:x86_64": ["TARGET_ARCH_X86_64"],
+    }),
     deps = [
         ":headers",
         "//src/stirling/bpf_tools/bcc_bpf/system-headers",
     ],
-    # Uncomment to enable debug printks.
-    # defines = ["BPF_DEBUG"],
 )
 
 pl_cc_test(
