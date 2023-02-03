@@ -5,46 +5,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import jenkins.model.Jenkins
 
-PHAB_URL = 'https://phab.corp.pixielabs.ai'
-PHAB_REPO = 'PLM'
-
-def harborMasterUrl(String method) {
-  return "${PHAB_URL}/api/${method}?api.token=${params.API_TOKEN}&buildTargetPHID=${params.PHID}"
-}
-
-def sendBuildStatus(String buildStatus) {
-  httpRequest(
-    consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: "type=${buildStatus}",
-    responseHandle: 'NONE',
-    url: harborMasterUrl('harbormaster.sendmessage'),
-    validResponseCodes: '200'
-  )
-}
-
-def addArtifactLink(String linkURL, String artifactKey, String artifactName) {
-  def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-  def body = ''
-  body += "&buildTargetPHID=${params.PHID}"
-  body += "&artifactKey=${artifactKey}"
-  body += '&artifactType=uri'
-  body += "&artifactData[uri]=${encodedDisplayUrl}"
-  body += "&artifactData[name]=${artifactName}"
-  body += '&artifactData[ui.external]=true'
-
-  httpRequest(
-    consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: body,
-    responseHandle: 'NONE',
-    url: harborMasterUrl('harbormaster.createartifact'),
-    validResponseCodes: '200'
-  )
-}
-
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image'
@@ -94,7 +54,7 @@ devDockerImageExtrasWithTag = ''
 stashList = []
 
 // Flag controlling if coverage job is enabled.
-isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NAME == 'pixie-oss/build-and-test-pr')
+isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-pr')
 
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
@@ -131,18 +91,7 @@ def gsutilCopy(String src, String dest) {
 }
 
 def bbLinks() {
-  def linkURL = "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})"
-  if (isPhabricatorTriggeredBuild()) {
-    def phabricatorLink = ''
-    if (params.REVISION) {
-      phabricatorLink = "${PHAB_URL}/D${REVISION}"
-    } else {
-      phabricatorLink = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
-    }
-    linkURL += ",[Phabricator](${phabricatorLink})"
-  }
-  linkURL += "'"
-  return linkURL
+  return "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})'"
 }
 
 def stashOnGCS(String name, String pattern) {
@@ -181,53 +130,6 @@ def shFileEmpty(String f) {
   return sh(
     script: "test -s ${f}",
     returnStatus: true) != 0
-}
-/**
-  * @brief Add build info to harbormaster and badge to Jenkins.
-  */
-def addBuildInfo = {
-  addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
-
-  def text = ''
-  def link = ''
-  // Either a revision of a commit to main.
-  if (params.REVISION) {
-    def revisionId = "D${REVISION}"
-    text = revisionId
-    link = "${PHAB_URL}/${revisionId}"
-  } else {
-    text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
-  }
-  addShortText(
-    text: text,
-    background: 'transparent',
-    border: 0,
-    borderColor: 'transparent',
-    color: '#1FBAD6',
-    link: link
-  )
-}
-
-/**
- * @brief Returns true if it's a phabricator triggered build.
- *  This could either be code review build or main commit.
- */
-def isPhabricatorTriggeredBuild() {
-  return params.PHID != null && params.PHID != ''
-}
-
-def codeReviewPreBuild = {
-  sendBuildStatus('work')
-  addBuildInfo()
-}
-
-def codeReviewPostBuild = {
-  if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
-    sendBuildStatus('pass')
-  } else {
-    sendBuildStatus('fail')
-  }
 }
 
 def createBazelStash(String stashName) {
@@ -307,7 +209,7 @@ def runBazelCmd(String f, String targetConfig, int retries = 5) {
   return retval
 }
 /**
-  * Runs bazel CI mode for main/phab builds.
+  * Runs bazel CI.
   *
   * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
@@ -373,13 +275,7 @@ def sendCloudReleaseSlackNotification(String profile) {
 }
 
 def postBuildActions = {
-  if (isPhabricatorTriggeredBuild()) {
-    codeReviewPostBuild()
-  }
-
-  // Main runs are triggered by Phabricator, but we still want
-  // notifications on failure.
-  if ((!isPhabricatorTriggeredBuild() || isMainRun) && !(isOSSCodeReviewRun || isOSSMainRun)) {
+  if (!isOSSCodeReviewRun) {
     sendSlackNotification()
   }
 }
@@ -512,7 +408,7 @@ def checkoutAndInitialize() {
       deleteDir()
       checkout scm
       initializeRepoState()
-      if (isPhabricatorTriggeredBuild() || isOSSCodeReviewRun) {
+      if (isOSSCodeReviewRun) {
         def logMessage = sh(
           script: 'git log origin/main..',
           returnStdout: true,
@@ -878,10 +774,6 @@ def buildScriptForCommits = {
         echo 'Stopping current build because a later build is already enqueued'
         return
       }
-    }
-
-    if (isPhabricatorTriggeredBuild()) {
-      codeReviewPreBuild()
     }
 
     try {
@@ -1282,33 +1174,15 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
   // Log out initial repo state.
   sh 'echo "Starting repo state:" && git rev-parse HEAD'
 
-  if (params.DIFF_ID != '') {
-    sshagent(['build-bot-ro']) {
-      // DIFF_ID branch.
-      // Specifying DIFF_ID (from Phab) enables a perf eval on an unmerged branch that resides in phab.
-      // To eval this repo state, we fetch the specific tag from the staging repo & merge.
-      def diffId = Integer.parseInt(params.DIFF_ID)
-      sh 'mkdir -p ~/.ssh'
-      sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
-      sh 'git config remote.staging.url ssh://git@github.com/pixie-labs/pixielabs-staging.git'
-      sh "git fetch --tags --force -q -- ssh://git@github.com/pixie-labs/pixielabs-staging.git refs/tags/phabricator/diff/${diffId}"
-      gitHashForPerfEval = sh(script: 'git rev-parse HEAD', returnStdout: true, returnStatus: false).trim()
-      def targetHash = sh(script: "git rev-parse refs/tags/phabricator/diff/${diffId}^{commit}", returnStdout: true, returnStatus: false).trim()
-      echo "Merging based on DIFF_ID: ${diffId}, found targetHash: ${targetHash}."
-      sh "git merge --ff ${targetHash}"
-      imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval + "-B${diffId}"
-    }
-  } else {
-    // GIT_HASH_FOR_PERF_EVAL branch.
-    // Here, we evaluate some commit that is merged into main.
-    // Alternately (to a SHA), the user can specify a string like "HEAD~3" or "some-branch".
-    // Build arg. GIT_HASH_FOR_PERF_EVAL is converted into sha,
-    // and used to construct the resulting image tag.
-    sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
-    gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
-    sh "git checkout ${gitHashForPerfEval}"
-    imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
-  }
+  // GIT_HASH_FOR_PERF_EVAL branch.
+  // Here, we evaluate some commit that is merged into main.
+  // Alternately (to a SHA), the user can specify a string like "HEAD~3" or "some-branch".
+  // Build arg. GIT_HASH_FOR_PERF_EVAL is converted into sha,
+  // and used to construct the resulting image tag.
+  sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
+  gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
+  sh "git checkout ${gitHashForPerfEval}"
+  imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
 
   echo "Image tag for perf eval: ${imageTagForPerfEval}"
   sh 'echo "Repo state:" && git rev-parse HEAD'
