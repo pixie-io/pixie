@@ -510,7 +510,7 @@ controller:
                   }
                 }
               }
-      buildURL: |-
+      buildurl: |-
         unclassified:
           location:
             adminAddress: "Jenkins <build@pixielabs.ai>"
