@@ -475,11 +475,6 @@ controller:
                 logRotator(30, 250)
                 properties {
                   githubProjectUrl('https://github.com/pixie-io/pixie/')
-                  pipelineTriggers {
-                    triggers {
-                      githubPush()
-                    }
-                  }
                 }
                 definition {
                   cpsScm {
@@ -499,7 +494,12 @@ controller:
                         admins(['zasgar', 'aimichelle', 'vihangm', 'jamesmbartlett'])
                         allowMembersOfWhitelistedOrgsAsAdmin(false)
                         orgWhitelist('pixie-io')
-                        useGitHubHooks()
+                        useGitHubHooks(true)
+                        extensions {
+                          cancelBuildsOnUpdate {
+                            overrideGlobal(true)
+                          }
+                        }
                       }
                     }
                   }
