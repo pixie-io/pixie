@@ -380,7 +380,7 @@ def postBuildActions = {
 
   // Main runs are triggered by Phabricator, but we still want
   // notifications on failure.
-  if ((!isPhabricatorTriggeredBuild() || isMainRun) && !(isOSSCodeReviewRun || isOSSMainRun)) {
+  if ((!isPhabricatorTriggeredBuild() || isMainRun) && !(isOSSRun)) {
     sendSlackNotification()
   }
 }
