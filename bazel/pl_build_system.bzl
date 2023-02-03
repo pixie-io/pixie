@@ -251,7 +251,7 @@ def pl_cc_test(
             repository + "//src/shared/version:test_version_linkstamp",
         ] + _default_external_deps(),
         args = args,
-        data = data,
+        data = data + ["//bazel/test_runners:test_runner_dep"],
         tags = tags + ["coverage_test"],
         shard_count = shard_count,
         size = size,
@@ -408,8 +408,22 @@ def _add_no_pie(kwargs):
     kwargs["gc_linkopts"].append("-extldflags")
     kwargs["gc_linkopts"].append("-no-pie")
 
+def _add_test_runner(kwargs):
+    if "data" not in kwargs:
+        kwargs["data"] = []
+    kwargs["data"].append("//bazel/test_runners:test_runner_dep")
+
+def _add_no_sysroot(kwargs):
+    if "target_compatible_with" not in kwargs:
+        kwargs["target_compatible_with"] = []
+    kwargs["target_compatible_with"] = kwargs["target_compatible_with"] + select({
+        "//bazel/cc_toolchains:libc_version_glibc_host": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    })
+
 def pl_go_test(**kwargs):
     _add_no_pie(kwargs)
+    _add_test_runner(kwargs)
     go_test(**kwargs)
 
 def pl_go_binary(**kwargs):
@@ -417,7 +431,10 @@ def pl_go_binary(**kwargs):
     go_binary(**kwargs)
 
 def pl_py_test(**kwargs):
+    _add_test_runner(kwargs)
+    _add_no_sysroot(kwargs)
     py_test(**kwargs)
 
 def pl_sh_test(**kwargs):
+    _add_test_runner(kwargs)
     native.sh_test(**kwargs)
