@@ -51,9 +51,9 @@ echo "$PR_BODY" | grep -E "^Test Plan: .+" > /dev/null || bad_description "PR de
 # Check that there's a Type of Change field.
 echo "$PR_BODY" | grep -E "^Type of change: /kind \w+" > /dev/null || bad_description "PR description must include Type of change: /kind <change_kind>"
 
-# Check that no lines begin with non-word characters.
-lines_start_whitespace="$(echo "$PR_BODY" | grep -E '^.+$' | grep -vE '^`' | grep -nE "^\W" || true)"
-[[ -z "${lines_start_whitespace}" ]] || bad_description "Line(s) begin with non-word characters:\n${lines_start_whitespace}"
+# Check that no lines begin with whitespace.
+lines_start_whitespace="$(echo "$PR_BODY" | grep -E '^.+$' | grep -nE "^\s" || true)"
+[[ -z "${lines_start_whitespace}" ]] || bad_description "Line(s) begin with whitespace:\n${lines_start_whitespace}"
 
 # Check that no lines end with whitespace.
 lines_end_whitespace="$(echo "$PR_BODY" | grep -nE "\s$" || true)"
