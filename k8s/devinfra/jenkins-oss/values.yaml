@@ -92,7 +92,7 @@ controller:
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
   jenkinsUrlProtocol: "https"
   # If you are not using the provided ingress you can specify `controller.jenkinsUrl` to change the url definition.
-  jenkinsUrl: "jenkins.px.dev"
+  jenkinsUrl: "https://jenkins.px.dev"
   # If you set this prefix and use ingress controller then you might want to set the ingress path below
   # jenkinsUriPrefix: "/jenkins"
   # Enable pod security context (must be `true` if podSecurityContextOverride, runAsUser or fsGroup are set)
@@ -266,6 +266,7 @@ controller:
   - xunit:3.1.2
   - ghprb:1.42.2
   - script-security:1229.v4880b_b_e905a_6
+  - basic-branch-build-strategies:71.vc1421f89888e
   # Set to false to download the minimum required version of all dependencies.
   installLatestPlugins: true
 
@@ -403,9 +404,6 @@ controller:
             useComments: true
             useDetailedComments: false
             whitelistPhrase: ".*add\\W+to\\W+allowlist.*"
-          location:
-            adminAddress: "Jenkins <build@pixielabs.ai>"
-            url: "https://jenkins.px.dev/"
       creds: |-
         credentials:
           system:
@@ -443,6 +441,8 @@ controller:
         jobs:
           - script: >
               folder("pixie-oss")
+          - script: >
+              folder("pixie-release")
           - script: >
               pipelineJob("pixie-oss/build-and-test-all") {
                 logRotator(30, 250)
@@ -510,11 +510,38 @@ controller:
                   }
                 }
               }
-      buildURL: |-
-        unclassified:
-          location:
-            adminAddress: "Jenkins <build@pixielabs.ai>"
-            url: "https://jenkins.px.dev/"
+          - script: >
+              multibranchPipelineJob("pixie-release/operator") {
+                branchSources {
+                  branchSource {
+                    source {
+                      git {
+                        id('pixie-operator')
+                        remote('https://github.com/pixie-io/pixie.git')
+                        credentialsId('buildbot-ssh')
+                        traits {
+                          gitTagDiscovery()
+                          headWildcardFilter {
+                            includes("release/operator/*")
+                            excludes('')
+                          }
+                        }
+                      }
+                    }
+                    buildStrategies {
+                      buildTags {
+                        atMostDays('1')
+                        atLeastDays('0')
+                      }
+                    }
+                  }
+                }
+                triggers {
+                  periodicFolderTrigger {
+                    interval('1m')
+                  }
+                }
+              }
         # yamllint enable rule:indentation
     # Allows adding to the top-level security JCasC section. For legacy,  default the chart includes
     # apiToken configurations
