@@ -1,0 +1,13 @@
+---
+name: commit-message-linter
+on:
+  merge_group:
+jobs:
+  lint-commit-message:
+    runs-on: ubuntu-latest
+    env:
+      COMMIT_MESSAGE: ${{github.event.head_commit.message}}
+    steps:
+    - uses: actions/checkout@v3
+    - id: run-commit-message-linter
+      run: ./ci/commit_message_linter.sh
