@@ -26,6 +26,13 @@ fi
 # Grep doesn't handle carriage returns very well, so remove them.
 PR_BODY="$(echo "${PR_BODY}" | sed 's/\r//g')"
 
+# Remove any detail blocks from the PR_BODY before linting.
+PR_BODY="$(echo "${PR_BODY}" | sed '/<details>/,/<\/details>/d')"
+
+# Remove any code blocks from the PR_BODY before linting.
+# shellcheck disable=SC2016
+PR_BODY="$(echo "${PR_BODY}" | sed '/```/,/```/{/```/!d}')"
+
 bad_description() {
   msg="$1"
   echo "Bad PR description:"
@@ -45,7 +52,7 @@ echo "$PR_BODY" | grep -E "^Test Plan: .+" > /dev/null || bad_description "PR de
 echo "$PR_BODY" | grep -E "^Type of change: /kind \w+" > /dev/null || bad_description "PR description must include Type of change: /kind <change_kind>"
 
 # Check that no lines begin with non-word characters.
-lines_start_whitespace="$(echo "$PR_BODY" | grep -E '^.+$' | grep -nE "^\W" || true)"
+lines_start_whitespace="$(echo "$PR_BODY" | grep -E '^.+$' | grep -vE '^`' | grep -nE "^\W" || true)"
 [[ -z "${lines_start_whitespace}" ]] || bad_description "Line(s) begin with non-word characters:\n${lines_start_whitespace}"
 
 # Check that no lines end with whitespace.
