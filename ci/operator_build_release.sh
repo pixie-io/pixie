@@ -47,8 +47,7 @@ if [[ $release_tag == *"-"* ]]; then
   deleter_image_path="gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter:${release_tag}"
   channel="dev"
   channels="dev"
-  # TODO(vihang/michelle): Revisit this bucket.
-  bucket="pixie-prod-artifacts"
+  bucket="pixie-dev"
   # The previous version should be the 1st item in the tags. Since this is a non-release build,
   # the first item in the tags is the previous release.
   prev_tag=$(echo "$tags" | sed -n '1 p')
