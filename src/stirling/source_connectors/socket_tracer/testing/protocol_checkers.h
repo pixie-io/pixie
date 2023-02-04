@@ -52,7 +52,7 @@ ContainsWithRelativeOrder(std::vector<Record> actual_records, Records... expecte
   using ::testing::Contains;
 
   std::vector<size_t> record_indices;
-  for (const Record record : {expected_records...}) {
+  for (const Record& record : {expected_records...}) {
     EXPECT_THAT(actual_records, Contains(record));
 
     // No need to check that it matches since previous assert will cover that
