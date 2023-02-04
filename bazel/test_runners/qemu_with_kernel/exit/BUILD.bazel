@@ -19,6 +19,11 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 cc_binary(
     name = "exit",
     srcs = ["exit.c"],
-    features = ["fully_static_link", "-asan", "-tsan", "-msan"],
+    features = [
+        "fully_static_link",
+        "-asan",
+        "-tsan",
+        "-msan",
+    ],
     linkstatic = True,
 )
