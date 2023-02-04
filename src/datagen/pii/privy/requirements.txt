@@ -31,7 +31,7 @@ flair @ git+https://github.com/flairNLP/flair.git@d4ed67bf663e4066517f0039741251
 flatbuffers==1.12
 fonttools==4.34.4
 ftfy==6.1.1
-future==0.18.2
+future==0.18.3
 gdown==4.4.0
 gensim==4.2.0
 grapheme==0.6.0
@@ -112,7 +112,7 @@ scikit-learn==1.0.2
 scipy==1.9.1
 segtok==1.5.11
 sentencepiece==0.1.97
-setuptools==59.6.0
+setuptools==67.1.0
 six==1.16.0
 sklearn==0.0
 sklearn-crfsuite==0.3.6
@@ -148,7 +148,7 @@ urllib3==1.26.10
 wasabi==0.10.1
 wcwidth==0.2.5
 Werkzeug==2.1.2
-wheel==0.37.1
+wheel==0.38.4
 Wikipedia-API==0.5.4
 wordcloud==1.8.2.2
 wrapt==1.14.1
