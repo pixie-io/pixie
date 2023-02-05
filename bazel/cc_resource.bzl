@@ -28,13 +28,17 @@ def pl_cc_resource(
 def pl_bpf_cc_resource(
         name,
         src,
-        hdrs,
-        syshdrs,
+        deps = [],
         defines = [],
-        tags = [],
         **kwargs):
-    out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, defines, tags = kwargs.get("tags", []))
-    _pl_cc_resource_with_cc_info(name, out_file, **kwargs)
+    pl_bpf_preprocess(
+        name = name + "_bpf_preprocess",
+        src = src,
+        deps = deps,
+        defines = defines,
+        **kwargs
+    )
+    _pl_cc_resource_with_cc_info(name, ":" + name + "_bpf_preprocess", **kwargs)
 
 def _sanitize_path(path):
     return "".join([c if c.isalnum() else "_" for c in path.elems()])

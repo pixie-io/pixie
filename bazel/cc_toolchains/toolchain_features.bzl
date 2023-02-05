@@ -399,7 +399,17 @@ def _objcopy_action(ctx):
         ],
     )
 
+def _cpp_action(ctx):
+    return action_config(
+        action_name = "c-preprocess",
+        enabled = True,
+        tools = [
+            tool(path = ctx.attr.tool_paths["cpp"]),
+        ],
+    )
+
 def pl_action_configs(ctx):
     return [
         _objcopy_action(ctx),
+        _cpp_action(ctx),
     ]

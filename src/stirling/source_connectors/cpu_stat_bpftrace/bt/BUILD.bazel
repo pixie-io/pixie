@@ -21,6 +21,7 @@ package(default_visibility = ["//src/stirling/source_connectors/cpu_stat_bpftrac
 pl_bpf_cc_resource(
     name = "cpustat",
     src = "cpustat.bt",
-    hdrs = [],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    ],
 )
