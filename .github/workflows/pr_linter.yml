@@ -2,6 +2,8 @@
 name: pr-linter
 on:
   pull_request
+permissions:
+  contents: read
 jobs:
   get-linter-image:
     runs-on: ubuntu-latest

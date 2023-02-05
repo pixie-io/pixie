@@ -3,6 +3,8 @@ name: pr-description-linter
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
+permissions:
+  contents: read
 jobs:
   lint-pr-description:
     runs-on: ubuntu-latest
