@@ -10,15 +10,18 @@ it's allowed to span multiple lines.
 
 Leave an empty line between each block.
 -->
-Summary: <!--
+Summary:
+<!--
 Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
 -->
 
-Relevant Issues: <!--
+Relevant Issues:
+<!--
 Please list all the relevant issues (#<issue number>): eg. #1, #2. If the PR fixes an issue use `Fixes #<issue number>`
 -->
 
-Type of change: <!--
+Type of change:
+<!--
 Add one of the following kinds:
 /kind bug
 /kind cleanup
@@ -35,11 +38,13 @@ Optionally add one or more of the following kinds if applicable:
 /kind regression
 -->
 
-Test Plan: <!--
+Test Plan:
+<!--
 For stylistic change that don't require tests or enhancements write: N/A.
 -->
 
-Changelog Message: <!--
+Changelog Message:
+<!--
 
 Does this PR include user facing changes?
 
@@ -53,7 +58,8 @@ Add your notes in this format, including the triple ticks.
 
 -->
 
-Additional documentation: <!--
+Additional documentation:
+<!--
 This section can be removed if this PR does not include changes to our public documentation.
 
 When adding links which point to resources within git repositories (px-docs, etc), please reference a specific commit and avoid
