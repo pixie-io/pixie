@@ -38,17 +38,6 @@
     "(go\\.sum$)"
   ],
   "linters": {
-    "bpf-naming": {
-      "type": "script-and-regex",
-      "include": [
-        "(.*BUILD\\.bazel$)"
-      ],
-      "exclude": [
-        "(^BUILD\\.bazel$)"
-      ],
-      "script-and-regex.script": "./tools/linters/bpf-test-naming.sh",
-      "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
-    },
     "build-linter": {
       "type": "script-and-regex",
       "include": [
