@@ -235,6 +235,7 @@ def _pl_cc_toolchain_deps():
     cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
 
 def _pl_deps():
+    _bazel_repo("bazel_skylib")
     _bazel_repo("bazel_gazelle")
     _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go.patch"], patch_args = ["-p1"])
     _bazel_repo("io_bazel_rules_scala")
