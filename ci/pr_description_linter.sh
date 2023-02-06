@@ -59,8 +59,8 @@ lines_start_whitespace="$(echo "$PR_BODY" | grep -E '^.+$' | grep -nE "^\s" || t
 lines_end_whitespace="$(echo "$PR_BODY" | grep -nE "\s$" || true)"
 [[ -z "${lines_end_whitespace}" ]] || bad_description "Line(s) end with whitespace:\n${lines_end_whitespace}"
 
-# Check that each "Key:" has text after it.
-keys_without_text="$(echo "$PR_BODY" | grep -E "^[a-zA-Z ]+:" | grep -nE "^[a-zA-Z ]+:\s*$" || true)"
+# Check that each "Key:" has text after it (except for Changelog Message which is allowed to have a codeblock start on the next line)
+keys_without_text="$(echo "$PR_BODY" | grep -E "^[a-zA-Z ]+:" | grep -v "Changelog Message:" | grep -nE "^[a-zA-Z ]+:\s*$" || true)"
 [[ -z "${keys_without_text}" ]] || bad_description "Each 'Key:' clause must have text after it:\n${keys_without_text}"
 
 # Check that there's a newline before each "Key:" clause (except if the clause is at the start of the message).
