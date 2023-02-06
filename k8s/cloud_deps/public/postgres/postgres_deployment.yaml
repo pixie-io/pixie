@@ -4,6 +4,9 @@ kind: Deployment
 metadata:
   name: postgres
 spec:
+  selector:
+    matchLabels:
+      name: postgres
   template:
     metadata:
       labels:
