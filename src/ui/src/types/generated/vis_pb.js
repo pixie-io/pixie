@@ -3860,6 +3860,408 @@ export const px = $root.px = (() => {
             return TimeseriesChart;
         })();
 
+        vispb.StatChart = (function() {
+
+            /**
+             * Properties of a StatChart.
+             * @memberof px.vispb
+             * @interface IStatChart
+             * @property {px.vispb.StatChart.IStat|null} [stat] StatChart stat
+             * @property {string|null} [title] StatChart title
+             */
+
+            /**
+             * Constructs a new StatChart.
+             * @memberof px.vispb
+             * @classdesc Represents a StatChart.
+             * @implements IStatChart
+             * @constructor
+             * @param {px.vispb.IStatChart=} [properties] Properties to set
+             */
+            function StatChart(properties) {
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * StatChart stat.
+             * @member {px.vispb.StatChart.IStat|null|undefined} stat
+             * @memberof px.vispb.StatChart
+             * @instance
+             */
+            StatChart.prototype.stat = null;
+
+            /**
+             * StatChart title.
+             * @member {string} title
+             * @memberof px.vispb.StatChart
+             * @instance
+             */
+            StatChart.prototype.title = "";
+
+            /**
+             * Creates a new StatChart instance using the specified properties.
+             * @function create
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {px.vispb.IStatChart=} [properties] Properties to set
+             * @returns {px.vispb.StatChart} StatChart instance
+             */
+            StatChart.create = function create(properties) {
+                return new StatChart(properties);
+            };
+
+            /**
+             * Encodes the specified StatChart message. Does not implicitly {@link px.vispb.StatChart.verify|verify} messages.
+             * @function encode
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {px.vispb.IStatChart} message StatChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            StatChart.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.stat != null && Object.hasOwnProperty.call(message, "stat"))
+                    $root.px.vispb.StatChart.Stat.encode(message.stat, writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+                if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.title);
+                return writer;
+            };
+
+            /**
+             * Encodes the specified StatChart message, length delimited. Does not implicitly {@link px.vispb.StatChart.verify|verify} messages.
+             * @function encodeDelimited
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {px.vispb.IStatChart} message StatChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            StatChart.encodeDelimited = function encodeDelimited(message, writer) {
+                return this.encode(message, writer).ldelim();
+            };
+
+            /**
+             * Decodes a StatChart message from the specified reader or buffer.
+             * @function decode
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {px.vispb.StatChart} StatChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            StatChart.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.px.vispb.StatChart();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 1:
+                        message.stat = $root.px.vispb.StatChart.Stat.decode(reader, reader.uint32());
+                        break;
+                    case 2:
+                        message.title = reader.string();
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            /**
+             * Decodes a StatChart message from the specified reader or buffer, length delimited.
+             * @function decodeDelimited
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @returns {px.vispb.StatChart} StatChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            StatChart.decodeDelimited = function decodeDelimited(reader) {
+                if (!(reader instanceof $Reader))
+                    reader = new $Reader(reader);
+                return this.decode(reader, reader.uint32());
+            };
+
+            /**
+             * Verifies a StatChart message.
+             * @function verify
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {Object.<string,*>} message Plain object to verify
+             * @returns {string|null} `null` if valid, otherwise the reason why it is not
+             */
+            StatChart.verify = function verify(message) {
+                if (typeof message !== "object" || message === null)
+                    return "object expected";
+                if (message.stat != null && message.hasOwnProperty("stat")) {
+                    let error = $root.px.vispb.StatChart.Stat.verify(message.stat);
+                    if (error)
+                        return "stat." + error;
+                }
+                if (message.title != null && message.hasOwnProperty("title"))
+                    if (!$util.isString(message.title))
+                        return "title: string expected";
+                return null;
+            };
+
+            /**
+             * Creates a StatChart message from a plain object. Also converts values to their respective internal types.
+             * @function fromObject
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {Object.<string,*>} object Plain object
+             * @returns {px.vispb.StatChart} StatChart
+             */
+            StatChart.fromObject = function fromObject(object) {
+                if (object instanceof $root.px.vispb.StatChart)
+                    return object;
+                let message = new $root.px.vispb.StatChart();
+                if (object.stat != null) {
+                    if (typeof object.stat !== "object")
+                        throw TypeError(".px.vispb.StatChart.stat: object expected");
+                    message.stat = $root.px.vispb.StatChart.Stat.fromObject(object.stat);
+                }
+                if (object.title != null)
+                    message.title = String(object.title);
+                return message;
+            };
+
+            /**
+             * Creates a plain object from a StatChart message. Also converts values to other types if specified.
+             * @function toObject
+             * @memberof px.vispb.StatChart
+             * @static
+             * @param {px.vispb.StatChart} message StatChart
+             * @param {$protobuf.IConversionOptions} [options] Conversion options
+             * @returns {Object.<string,*>} Plain object
+             */
+            StatChart.toObject = function toObject(message, options) {
+                if (!options)
+                    options = {};
+                let object = {};
+                if (options.defaults) {
+                    object.stat = null;
+                    object.title = "";
+                }
+                if (message.stat != null && message.hasOwnProperty("stat"))
+                    object.stat = $root.px.vispb.StatChart.Stat.toObject(message.stat, options);
+                if (message.title != null && message.hasOwnProperty("title"))
+                    object.title = message.title;
+                return object;
+            };
+
+            /**
+             * Converts this StatChart to JSON.
+             * @function toJSON
+             * @memberof px.vispb.StatChart
+             * @instance
+             * @returns {Object.<string,*>} JSON object
+             */
+            StatChart.prototype.toJSON = function toJSON() {
+                return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+            };
+
+            StatChart.Stat = (function() {
+
+                /**
+                 * Properties of a Stat.
+                 * @memberof px.vispb.StatChart
+                 * @interface IStat
+                 * @property {string|null} [value] Stat value
+                 */
+
+                /**
+                 * Constructs a new Stat.
+                 * @memberof px.vispb.StatChart
+                 * @classdesc Represents a Stat.
+                 * @implements IStat
+                 * @constructor
+                 * @param {px.vispb.StatChart.IStat=} [properties] Properties to set
+                 */
+                function Stat(properties) {
+                    if (properties)
+                        for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                            if (properties[keys[i]] != null)
+                                this[keys[i]] = properties[keys[i]];
+                }
+
+                /**
+                 * Stat value.
+                 * @member {string} value
+                 * @memberof px.vispb.StatChart.Stat
+                 * @instance
+                 */
+                Stat.prototype.value = "";
+
+                /**
+                 * Creates a new Stat instance using the specified properties.
+                 * @function create
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {px.vispb.StatChart.IStat=} [properties] Properties to set
+                 * @returns {px.vispb.StatChart.Stat} Stat instance
+                 */
+                Stat.create = function create(properties) {
+                    return new Stat(properties);
+                };
+
+                /**
+                 * Encodes the specified Stat message. Does not implicitly {@link px.vispb.StatChart.Stat.verify|verify} messages.
+                 * @function encode
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {px.vispb.StatChart.IStat} message Stat message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                Stat.encode = function encode(message, writer) {
+                    if (!writer)
+                        writer = $Writer.create();
+                    if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
+                    return writer;
+                };
+
+                /**
+                 * Encodes the specified Stat message, length delimited. Does not implicitly {@link px.vispb.StatChart.Stat.verify|verify} messages.
+                 * @function encodeDelimited
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {px.vispb.StatChart.IStat} message Stat message or plain object to encode
+                 * @param {$protobuf.Writer} [writer] Writer to encode to
+                 * @returns {$protobuf.Writer} Writer
+                 */
+                Stat.encodeDelimited = function encodeDelimited(message, writer) {
+                    return this.encode(message, writer).ldelim();
+                };
+
+                /**
+                 * Decodes a Stat message from the specified reader or buffer.
+                 * @function decode
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @param {number} [length] Message length if known beforehand
+                 * @returns {px.vispb.StatChart.Stat} Stat
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                Stat.decode = function decode(reader, length) {
+                    if (!(reader instanceof $Reader))
+                        reader = $Reader.create(reader);
+                    let end = length === undefined ? reader.len : reader.pos + length, message = new $root.px.vispb.StatChart.Stat();
+                    while (reader.pos < end) {
+                        let tag = reader.uint32();
+                        switch (tag >>> 3) {
+                        case 1:
+                            message.value = reader.string();
+                            break;
+                        default:
+                            reader.skipType(tag & 7);
+                            break;
+                        }
+                    }
+                    return message;
+                };
+
+                /**
+                 * Decodes a Stat message from the specified reader or buffer, length delimited.
+                 * @function decodeDelimited
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+                 * @returns {px.vispb.StatChart.Stat} Stat
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                Stat.decodeDelimited = function decodeDelimited(reader) {
+                    if (!(reader instanceof $Reader))
+                        reader = new $Reader(reader);
+                    return this.decode(reader, reader.uint32());
+                };
+
+                /**
+                 * Verifies a Stat message.
+                 * @function verify
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {Object.<string,*>} message Plain object to verify
+                 * @returns {string|null} `null` if valid, otherwise the reason why it is not
+                 */
+                Stat.verify = function verify(message) {
+                    if (typeof message !== "object" || message === null)
+                        return "object expected";
+                    if (message.value != null && message.hasOwnProperty("value"))
+                        if (!$util.isString(message.value))
+                            return "value: string expected";
+                    return null;
+                };
+
+                /**
+                 * Creates a Stat message from a plain object. Also converts values to their respective internal types.
+                 * @function fromObject
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {Object.<string,*>} object Plain object
+                 * @returns {px.vispb.StatChart.Stat} Stat
+                 */
+                Stat.fromObject = function fromObject(object) {
+                    if (object instanceof $root.px.vispb.StatChart.Stat)
+                        return object;
+                    let message = new $root.px.vispb.StatChart.Stat();
+                    if (object.value != null)
+                        message.value = String(object.value);
+                    return message;
+                };
+
+                /**
+                 * Creates a plain object from a Stat message. Also converts values to other types if specified.
+                 * @function toObject
+                 * @memberof px.vispb.StatChart.Stat
+                 * @static
+                 * @param {px.vispb.StatChart.Stat} message Stat
+                 * @param {$protobuf.IConversionOptions} [options] Conversion options
+                 * @returns {Object.<string,*>} Plain object
+                 */
+                Stat.toObject = function toObject(message, options) {
+                    if (!options)
+                        options = {};
+                    let object = {};
+                    if (options.defaults)
+                        object.value = "";
+                    if (message.value != null && message.hasOwnProperty("value"))
+                        object.value = message.value;
+                    return object;
+                };
+
+                /**
+                 * Converts this Stat to JSON.
+                 * @function toJSON
+                 * @memberof px.vispb.StatChart.Stat
+                 * @instance
+                 * @returns {Object.<string,*>} JSON object
+                 */
+                Stat.prototype.toJSON = function toJSON() {
+                    return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+                };
+
+                return Stat;
+            })();
+
+            return StatChart;
+        })();
+
         vispb.VegaChart = (function() {
 
             /**

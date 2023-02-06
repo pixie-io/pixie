@@ -39,6 +39,7 @@ export const DISPLAY_TYPE_KEY = '@type';
 export const TABLE_DISPLAY_TYPE = 'types.px.dev/px.vispb.Table';
 export const GRAPH_DISPLAY_TYPE = 'types.px.dev/px.vispb.Graph';
 export const REQUEST_GRAPH_DISPLAY_TYPE = 'types.px.dev/px.vispb.RequestGraph';
+export const STAT_CHART_DISPLAY_TYPE = 'types.px.dev/px.vispb.StatChart';
 
 export interface WidgetDisplay {
   readonly '@type': string;

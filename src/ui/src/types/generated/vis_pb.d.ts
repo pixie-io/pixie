@@ -1538,6 +1538,195 @@ export namespace px {
             }
         }
 
+        /** Properties of a StatChart. */
+        interface IStatChart {
+
+            /** StatChart stat */
+            stat?: (px.vispb.StatChart.IStat|null);
+
+            /** StatChart title */
+            title?: (string|null);
+        }
+
+        /** Represents a StatChart. */
+        class StatChart implements IStatChart {
+
+            /**
+             * Constructs a new StatChart.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: px.vispb.IStatChart);
+
+            /** StatChart stat. */
+            public stat?: (px.vispb.StatChart.IStat|null);
+
+            /** StatChart title. */
+            public title: string;
+
+            /**
+             * Creates a new StatChart instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns StatChart instance
+             */
+            public static create(properties?: px.vispb.IStatChart): px.vispb.StatChart;
+
+            /**
+             * Encodes the specified StatChart message. Does not implicitly {@link px.vispb.StatChart.verify|verify} messages.
+             * @param message StatChart message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: px.vispb.IStatChart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified StatChart message, length delimited. Does not implicitly {@link px.vispb.StatChart.verify|verify} messages.
+             * @param message StatChart message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: px.vispb.IStatChart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a StatChart message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns StatChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): px.vispb.StatChart;
+
+            /**
+             * Decodes a StatChart message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns StatChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): px.vispb.StatChart;
+
+            /**
+             * Verifies a StatChart message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a StatChart message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns StatChart
+             */
+            public static fromObject(object: { [k: string]: any }): px.vispb.StatChart;
+
+            /**
+             * Creates a plain object from a StatChart message. Also converts values to other types if specified.
+             * @param message StatChart
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: px.vispb.StatChart, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this StatChart to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+        }
+
+        namespace StatChart {
+
+            /** Properties of a Stat. */
+            interface IStat {
+
+                /** Stat value */
+                value?: (string|null);
+            }
+
+            /** Represents a Stat. */
+            class Stat implements IStat {
+
+                /**
+                 * Constructs a new Stat.
+                 * @param [properties] Properties to set
+                 */
+                constructor(properties?: px.vispb.StatChart.IStat);
+
+                /** Stat value. */
+                public value: string;
+
+                /**
+                 * Creates a new Stat instance using the specified properties.
+                 * @param [properties] Properties to set
+                 * @returns Stat instance
+                 */
+                public static create(properties?: px.vispb.StatChart.IStat): px.vispb.StatChart.Stat;
+
+                /**
+                 * Encodes the specified Stat message. Does not implicitly {@link px.vispb.StatChart.Stat.verify|verify} messages.
+                 * @param message Stat message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encode(message: px.vispb.StatChart.IStat, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Encodes the specified Stat message, length delimited. Does not implicitly {@link px.vispb.StatChart.Stat.verify|verify} messages.
+                 * @param message Stat message or plain object to encode
+                 * @param [writer] Writer to encode to
+                 * @returns Writer
+                 */
+                public static encodeDelimited(message: px.vispb.StatChart.IStat, writer?: $protobuf.Writer): $protobuf.Writer;
+
+                /**
+                 * Decodes a Stat message from the specified reader or buffer.
+                 * @param reader Reader or buffer to decode from
+                 * @param [length] Message length if known beforehand
+                 * @returns Stat
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): px.vispb.StatChart.Stat;
+
+                /**
+                 * Decodes a Stat message from the specified reader or buffer, length delimited.
+                 * @param reader Reader or buffer to decode from
+                 * @returns Stat
+                 * @throws {Error} If the payload is not a reader or valid buffer
+                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
+                 */
+                public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): px.vispb.StatChart.Stat;
+
+                /**
+                 * Verifies a Stat message.
+                 * @param message Plain object to verify
+                 * @returns `null` if valid, otherwise the reason why it is not
+                 */
+                public static verify(message: { [k: string]: any }): (string|null);
+
+                /**
+                 * Creates a Stat message from a plain object. Also converts values to their respective internal types.
+                 * @param object Plain object
+                 * @returns Stat
+                 */
+                public static fromObject(object: { [k: string]: any }): px.vispb.StatChart.Stat;
+
+                /**
+                 * Creates a plain object from a Stat message. Also converts values to other types if specified.
+                 * @param message Stat
+                 * @param [options] Conversion options
+                 * @returns Plain object
+                 */
+                public static toObject(message: px.vispb.StatChart.Stat, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+                /**
+                 * Converts this Stat to JSON.
+                 * @returns JSON object
+                 */
+                public toJSON(): { [k: string]: any };
+            }
+        }
+
         /** Properties of a VegaChart. */
         interface IVegaChart {
 
