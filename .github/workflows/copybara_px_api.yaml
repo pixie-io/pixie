@@ -5,6 +5,8 @@ on:
   push:
     branches:
     - 'main'
+permissions:
+  contents: read
 jobs:
   run-copybara:
     runs-on: ubuntu-latest
