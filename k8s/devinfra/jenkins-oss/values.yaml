@@ -447,11 +447,13 @@ controller:
           - script: >
               pipelineJob("pixie-oss/build-and-test-all") {
                 logRotator(30, 250)
-                triggers {
-                  githubPush()
-                }
                 properties {
                   disableConcurrentBuilds()
+                  pipelineTriggers {
+                    triggers {
+                      githubPush()
+                    }
+                  }
                 }
                 definition {
                   cpsScm {
@@ -470,12 +472,14 @@ controller:
               }
           - script: >
               pipelineJob("pixie-oss/build-and-test-pr") {
+                logRotator(30, 250)
                 properties {
                   githubProjectUrl('https://github.com/pixie-io/pixie/')
-                }
-                logRotator(30, 250)
-                triggers {
-                  githubPush()
+                  pipelineTriggers {
+                    triggers {
+                      githubPush()
+                    }
+                  }
                 }
                 definition {
                   cpsScm {
