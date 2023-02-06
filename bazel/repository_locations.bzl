@@ -407,9 +407,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.8.0.tar.gz"],
     ),
     rules_python = dict(
-        sha256 = "8c15896f6686beb5c631a4459a3aa8392daccaab805ea899c9d14215074b60ef",
-        strip_prefix = "rules_python-0.17.3",
-        urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.17.3.tar.gz"],
+        sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd",
+        strip_prefix = "rules_python-0.8.1",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.1.tar.gz"],
     ),
     rules_jvm_external = dict(
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/4.2.tar.gz"],
