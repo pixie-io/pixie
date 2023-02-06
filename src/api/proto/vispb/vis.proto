@@ -308,7 +308,8 @@ message TimeseriesChart {
   Axis y_axis = 4;
 }
 
-// StatChart The visual spec for a basic stat chart. Shows the latest value in the table as a big number with units.
+// StatChart The visual spec for a basic stat chart. Shows the latest value in the table as a big
+// number with units.
 message StatChart {
   message Stat {
     // The (numeric) data field that will be used as the Y axis
