@@ -463,11 +463,6 @@ controller:
                           credentials('buildbot-ssh')
                         }
                         branch('main')
-                        extensions {
-                          cleanAfterCheckout()
-                          cleanBeforeCheckout()
-                          wipeOutWorkspace()
-                        }
                       }
                     }
                   }
@@ -493,11 +488,6 @@ controller:
                           refspec('+refs/pull/*:refs/remotes/origin/pr/*')
                         }
                         branch('^${sha1}')
-                        extensions {
-                          cleanAfterCheckout()
-                          cleanBeforeCheckout()
-                          wipeOutWorkspace()
-                        }
                       }
                     }
                     triggers {
