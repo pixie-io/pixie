@@ -17,8 +17,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 cc_binary(
-    name = "exit",
-    srcs = ["exit.c"],
+    name = "exit_qemu_with_status",
+    srcs = ["exit_qemu_with_status.c"],
     features = [
         "fully_static_link",
         "-asan",
