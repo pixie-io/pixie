@@ -274,7 +274,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     ::perftools::profiles::Profile profile;
 
     // The pprof profiles start by describing their sample types. For CPU profiling,
-    // the convention is to describe to different metrics:
+    // the convention is to describe two different metrics:
     // "samples" with units of "count", and
     // "cpu" with units of "nanoseconds".
     // Note, the first entry in the strings table is required to be an empty string.
