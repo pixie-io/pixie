@@ -78,7 +78,7 @@ class LocalGRPCResultSinkServer {
   LocalGRPCResultSinkServer() {
     grpc::ServerBuilder builder;
 
-    builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
+    builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
     builder.RegisterService(&result_sink_server_);
     grpc_server_ = builder.BuildAndStart();
     CHECK(grpc_server_ != nullptr);
