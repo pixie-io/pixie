@@ -53,19 +53,20 @@ pl_cc_test(
         "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-fib",
     ],
     defines = ['JDK_IMAGE_NAMES=\\"%s\\"' % ",".join(jdk_image_names)],
-    shard_count = 3,
+    # shard_count = 3,
     tags = [
         "cpu:16",
         "exclusive",
         "requires_bpf",
-        # Disabling this test because it has a 25% pass rate on main at the moment.
-        "disabled_flaky_test",
     ],
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/common/testing/test_utils:cc_library",
         "//src/stirling/source_connectors/perf_profiler/testing:cc_library",
+        # "//src/stirling/source_connectors/perf_profiler/testing:profile_pl_cc_proto",
+        # "#include "opentelemetry/proto/trace/v1/trace.pb.h""
+        "@com_github_google_pprof//:pprof_proto_cc",
         "//src/stirling/testing:cc_library",
     ],
 )
