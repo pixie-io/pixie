@@ -325,6 +325,31 @@ func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
+// getEtcdState determines the state of etcd then translates that
+// to a corresponding VizierState.
+func getEtcdState(pods *concurrentPodMap) *vizierState {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+
+	unlabeledPods, ok := pods.unsafeMap[""]
+	if !ok {
+		return &vizierState{Reason: status.EtcdPodsMissing}
+	}
+
+	for podName, pod := range unlabeledPods {
+		if !strings.HasPrefix(podName, "pl-etcd-") {
+			continue
+		}
+		for _, c := range pod.pod.Status.ContainerStatuses {
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
+				return &vizierState{Reason: status.EtcdPodsCrashing}
+			}
+		}
+	}
+
+	return okState()
+}
+
 // getCloudConnState determines the state of the cloud connector then translates
 // that to a corresponding VizierState.
 func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
@@ -648,20 +673,39 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 	} else if state.Reason == status.TLSCertsExpired {
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		
+                err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
+                if err != nil {
+                        log.WithError(err).Error("Failed to update certs")
+                }
+                m.certState = okState()
+
+                log.Info("Bouncing Vizier pods to get certs update")
+                err = k8s.DeletePods(m.clientset, m.namespace, "")
+                if err != nil {
+                        return err
+                }
+	} else if state.Reason == status.EtcdPodsCrashing {
+		log.Info("etcd detected to be crashing, attempting to restart etcd")
+		// Delete etcd, deploy will trigger a new statefulset to startup.
+		err := m.clientset.AppsV1().StatefulSets(m.namespace).Delete(m.ctx, "pl-etcd", metav1.DeleteOptions{})
+		if err != nil {
+			log.WithError(err).Error("Failed to delete etcd statefulset")
+			return err
+		}
+		// Trigger redeploy.
+		vz := &pixiev1alpha1.Vizier{}
+		err = m.vzGet(context.Background(), m.namespacedName, vz)
 		if err != nil {
 			log.WithError(err).Error("Failed to get vizier")
 			return err
 		}
-
-		err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
-		if err != nil {
-			log.WithError(err).Error("Failed to update certs")
+		if len(vz.Status.Checksum) > 2 {
+			vz.Status.Checksum = vz.Status.Checksum[2:]
 		}
-		m.certState = okState()
-
-		log.Info("Bouncing Vizier pods to get certs update")
-		err = k8s.DeletePods(m.clientset, m.namespace, "")
+		err = m.vzUpdate(context.Background(), vz)
 		if err != nil {
+			log.WithError(err).Error("Failed to update status with empty checksum")
 			return err
 		}
 	}
