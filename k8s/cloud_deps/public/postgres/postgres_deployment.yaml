@@ -7,19 +7,11 @@ spec:
   selector:
     matchLabels:
       name: postgres
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
         name: postgres
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10100
-        fsGroup: 10100
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - name: postgres
         image: postgres:14-alpine
@@ -28,8 +20,6 @@ spec:
         env:
         - name: POSTGRES_DB
           value: pl
-        - name: PGDATA
-          value: /var/lib/postgresql/data/db
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
@@ -40,15 +30,6 @@ spec:
             secretKeyRef:
               key: PL_POSTGRES_PASSWORD
               name: pl-db-secrets
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: false
-          runAsUser: 10100
-          seccompProfile:
-            type: RuntimeDefault
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           subPath: data

@@ -134,12 +134,6 @@ spec:
                   operator: In
                   values:
                   - pl-nats
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10100
-        fsGroup: 10100
-        seccompProfile:
-          type: RuntimeDefault
       # Common volumes for the containers
       volumes:
       - name: nats-server-tls-volume
@@ -231,13 +225,3 @@ spec:
               # the NATS Server to gracefully terminate the client connections.
               #
               command: ["/bin/sh", "-c", "/nats-server -sl=ldm=/var/run/nats/nats.pid && /bin/sleep 60"]
-
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: true
-          runAsUser: 10100
-          seccompProfile:
-            type: RuntimeDefault
