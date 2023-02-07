@@ -703,6 +703,10 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 	} else if state.Reason == status.TLSCertsExpired {
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("failed to fetch Vizier")
+			return err
+		}
 
 		err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
 		if err != nil {
