@@ -33,4 +33,16 @@ jobs:
     - name: Check merge base
       run: git merge-base origin/main HEAD  # This is what arc uses to determine what changes to lint.
     - name: Run arc lint
-      run: arc lint --never-apply-patches
+      run: arc lint --apply-patches --trace
+    - name: Fail if any files changed
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        git diff-index --quiet HEAD -- || retval=$?
+        if [[ $retval -ne 0 ]]; then
+          echo "Please apply the autofix patches suggested by arc lint."
+          echo "Changed files:"
+          git diff --name-only
+          exit 1
+        fi
+      # yamllint enable rule:indentation
