@@ -574,8 +574,8 @@ func benchmarkCmd(cmd *cobra.Command) {
 	}
 
 	// Shuffle scripts to run, to increase independence of samples across time.
-	rand.Seed(42)
-	rand.Shuffle(len(scriptsToRun), func(i, j int) {
+	r := rand.New(rand.NewSource(42))
+	r.Shuffle(len(scriptsToRun), func(i, j int) {
 		scriptsToRun[i], scriptsToRun[j] = scriptsToRun[j], scriptsToRun[i]
 	})
 
