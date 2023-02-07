@@ -1,0 +1,78 @@
+---
+name: pr-genfile-checker
+on:
+  pull_request
+permissions:
+  contents: read
+jobs:
+  get-dev-image:
+    runs-on: ubuntu-latest
+    outputs:
+      image-with-tag: ${{ steps.get-version.outputs.image }}
+    steps:
+    - uses: actions/checkout@v3
+    - id: get-version
+      run: >-
+        IMAGE_NAME="gcr.io/pixie-oss/pixie-dev-public/dev_image";
+        IMAGE_TAG="$(cat docker.properties | cut -d'=' -f2)";
+        echo "image=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+  run-genfiles:
+    runs-on: ubuntu-latest-8-cores
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 7
+    steps:
+    - uses: actions/checkout@v3
+    - name: Go cache
+      uses: actions/cache@v3
+      with:
+        path: /px/pkg/mod
+        key: build-cache-${{hashFiles('go.sum')}}
+    - name: Yarn cache
+      uses: actions/cache@v3
+      with:
+        path: ./src/ui/.yarn
+        key: build-cache-${{hashFiles('src/ui/yarn.lock')}}
+    - name: Bazel cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/bazel
+        key: genfile-checker-${{hashFiles('WORKSPACE')}}
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - uses: dorny/paths-filter@v2.11.1
+      id: changes
+      with:
+        filters: |
+          go:
+          - '**/*.go'
+          graphql:
+          - '**/*.graphql'
+          proto:
+          - '**/*.proto'
+          sql:
+          - '**/*.sql'
+    - name: Run go generate
+      if: ${{ steps.changes.outputs.go == 'true' || steps.changes.outputs.sql == 'true' }}
+      run: go generate ./...
+    - name: Run update go protos
+      if: ${{ steps.changes.outputs.proto == 'true' }}
+      run: scripts/update_go_protos.sh
+    - name: Run update ts protos
+      if: ${{ steps.changes.outputs.proto == 'true' }}
+      run: scripts/update_ts_protos.sh
+    - name: Run update graphql schema
+      if: ${{ steps.changes.outputs.graphql == 'true' }}
+      run: src/cloud/api/controllers/schema/update.sh
+    - name: Fail if any files changed
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        if [[ $(git status --porcelain=v1 | wc -l) -ne 0 ]]; then
+          echo "Please update generated files by running the appropriate script."
+          echo "Changed files:"
+          git diff --name-only
+          exit $retval
+        fi
+      # yamllint enable rule:indentation
