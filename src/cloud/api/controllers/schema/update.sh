@@ -20,8 +20,8 @@ tot=$(git rev-parse --show-toplevel)
 
 pushd "${tot}/src/cloud/api/controllers/schema" > /dev/null
 # Update the schema assets.
-go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -pkg=complete -o=complete/bindata.gen.go .
-go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -ignore=^auth_schema.graphql -pkg=noauth -o=noauth/bindata.gen.go .
+go-bindata -modtime=1 -mode=436 -ignore=\.go -ignore=\.sh -pkg=complete -o=complete/bindata.gen.go .
+go-bindata -modtime=1 -mode=436 -ignore=\.go -ignore=\.sh -ignore=^auth_schema.graphql -pkg=noauth -o=noauth/bindata.gen.go .
 popd > /dev/null
 
 pushd "${tot}/src/ui" > /dev/null
