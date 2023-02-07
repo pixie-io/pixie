@@ -85,6 +85,8 @@ spec:
               key: PL_CLOUD_ADDR
         - name: PL_DATA_ACCESS
           value: "Full"
+        - name: GOTRACEBACK
+          value: crash
         envFrom:
         - configMapRef:
             name: pl-tls-config
@@ -93,6 +95,8 @@ spec:
         volumeMounts:
         - mountPath: /certs
           name: certs
+        - mountPath: /tmp
+          name: coredump
         livenessProbe:
           httpGet:
             scheme: HTTPS
@@ -120,3 +124,6 @@ spec:
       - name: envoy-yaml
         configMap:
           name: proxy-envoy-config
+      - name: coredump
+        hostPath:
+          path: /tmp
