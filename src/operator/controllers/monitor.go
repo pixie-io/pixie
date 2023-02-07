@@ -49,6 +49,7 @@ import (
 	"px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	pixiev1alpha1 "px.dev/pixie/src/operator/apis/px.dev/v1alpha1"
 	"px.dev/pixie/src/shared/status"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 const (
@@ -644,6 +645,25 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		}
 
 		log.Info("Successfully switched to etcd backed metadata store")
+	} else if state.Reason == status.TLSCertsExpired {
+		vz := &pixiev1alpha1.Vizier{}
+		err := m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			return err
+		}
+
+		err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
+		if err != nil {
+			log.WithError(err).Error("Failed to update certs")
+		}
+		m.certState = okState()
+
+		log.Info("Bouncing Vizier pods to get certs update")
+		err = k8s.DeletePods(m.clientset, m.namespace, "")
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
