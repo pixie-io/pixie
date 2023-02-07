@@ -38,7 +38,7 @@ spec:
                 - linux
       initContainers:
       - name: nats-wait
-        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
@@ -57,7 +57,7 @@ spec:
         - name: PROTOCOL
           value: "http"
       - name: etcd-wait
-        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
         # yamllint disable rule:indentation rule:line-length
         command: ['sh', '-c', 'set -xe;
           ETCD_PATH="${PL_MD_ETCD_SERVER}";
