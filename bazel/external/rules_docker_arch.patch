@@ -1,0 +1,104 @@
+diff --git a/container/archs.bzl b/container/archs.bzl
+new file mode 100644
+index 0000000..730283b
+--- /dev/null
++++ b/container/archs.bzl
+@@ -0,0 +1,51 @@
++# Per the config spec at: https://github.com/opencontainers/image-spec/blob/main/config.md,
++# configurations should use the values listed in the Go Language document (https://go.dev/doc/install/source#environment)
++# for architecture.
++# Some of bazel's platform CPU constraints are not representible in the set given in the documentation above.
++# In those cases, users should set the architecture attribute manually.
++# This dict selects from these golang values based on bazel's platform CPU contraint (https://github.com/bazelbuild/platforms/blob/main/cpu/BUILD)
++BAZEL_PLATFORM_TO_OCI_ARCH = {
++    "@platforms//cpu:x86_64": "amd64",
++
++    "@platforms//cpu:arm": "arm",
++    "@platforms//cpu:armv6-m": "arm",
++    "@platforms//cpu:armv7": "arm",
++    "@platforms//cpu:armv7k": "arm",
++    "@platforms//cpu:armv7-m": "arm",
++    "@platforms//cpu:armv7e-m": "arm",
++    "@platforms//cpu:armv7e-mf": "arm",
++    "@platforms//cpu:armv8-m": "arm",
++
++    "@platforms//cpu:arm64": "arm64",
++    "@platforms//cpu:arm64e": "arm64",
++
++    "@platforms//cpu:i386": "386",
++    "@platforms//cpu:x86_32": "386",
++    "@platforms//cpu:ppc": "ppc64",
++    "@platforms//cpu:mips64": "mips64",
++    "@platforms//cpu:s390x": "s390x",
++    "@platforms//cpu:riscv64": "riscv64",
++    "@platforms//cpu:wasm32": "wasm",
++
++    # Users of these architectures (or other architectures not listed above) should set the architecture attribute manually,
++    # as they don't map directly to any value specified in the OCI standard.
++    "@platforms//cpu:arm64_32": "",
++    "@platforms//cpu:wasm64": "",
++    "@platforms//cpu:riscv32": "",
++    "//conditions:default": "",
++}
++
++# This dict selects a architecture variant if applicable based on bazel's platform CPU constraint.
++# See https://github.com/opencontainers/image-spec/blob/main/image-index.md#platform-variants for
++# a list of OCI standardized variants.
++# Use this once go-containerregistry is upgraded.
++#BAZEL_PLATFORM_TO_OCI_VARIANT = {
++#    "@platforms//cpu:armv6-m": "v6",
++#    "@platforms//cpu:armv7": "v7",
++#    "@platforms//cpu:armv7k": "v7",
++#    "@platforms//cpu:armv7-m": "v7",
++#    "@platforms//cpu:armv7e-m": "v7",
++#    "@platforms//cpu:armv7e-mf": "v7",
++#    "@platforms//cpu:armv8-m": "v8",
++#    "//conditions:default": "",
++#}
+diff --git a/container/image.bzl b/container/image.bzl
+index ceeea01..0142ff6 100644
+--- a/container/image.bzl
++++ b/container/image.bzl
+@@ -31,6 +31,10 @@ load(
+     "STAMP_ATTR",
+     "StampSettingInfo",
+ )
++load(
++    "//container:archs.bzl",
++    "BAZEL_PLATFORM_TO_OCI_ARCH",
++)
+ load(
+     "//container:layer.bzl",
+     _layer = "layer",
+@@ -1039,4 +1043,7 @@ def container_image(**kwargs):
+         else:
+             kwargs["entrypoint"] = _validate_command("entrypoint", kwargs["entrypoint"], operating_system)
+ 
++    if "architecture" not in kwargs:
++        kwargs["architecture"] = select(BAZEL_PLATFORM_TO_OCI_ARCH)
++
+     container_image_(**kwargs)
+diff --git a/lang/image.bzl b/lang/image.bzl
+index 216ed93..d3378ed 100644
+--- a/lang/image.bzl
++++ b/lang/image.bzl
+@@ -20,6 +20,10 @@ load(
+     "FilterAspectInfo",
+     "FilterLayerInfo",
+ )
++load(
++    "//container:archs.bzl",
++    "BAZEL_PLATFORM_TO_OCI_ARCH",
++)
+ load(
+     "//container:container.bzl",
+     _container = "container",
+@@ -287,6 +291,8 @@ _app_layer = rule(
+ # Convenience function that instantiates the _app_layer rule and returns
+ # the name (useful when chaining layers).
+ def app_layer(name, **kwargs):
++    if "architecture" not in kwargs:
++        kwargs["architecture"] = select(BAZEL_PLATFORM_TO_OCI_ARCH)
+     _app_layer(name = name, **kwargs)
+     return name
+ 
