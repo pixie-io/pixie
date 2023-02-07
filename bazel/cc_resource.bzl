@@ -23,15 +23,7 @@ def pl_cc_resource(
         src,
         tags = [],
         **kwargs):
-    out_file = name + "_src"
-    native.genrule(
-        name = name + "_cp_genrule",
-        outs = [out_file],
-        srcs = [src],
-        cmd = "cat $(location {0}) > $@".format(src),
-        **kwargs
-    )
-    _pl_cc_resource_with_cc_info(name, out_file, **kwargs)
+    _pl_cc_resource_with_cc_info(name, src, **kwargs)
 
 def pl_bpf_cc_resource(
         name,
@@ -43,6 +35,9 @@ def pl_bpf_cc_resource(
         **kwargs):
     out_file = pl_bpf_preprocess(name, src, hdrs, syshdrs, defines, tags = kwargs.get("tags", []))
     _pl_cc_resource_with_cc_info(name, out_file, **kwargs)
+
+def _sanitize_path(path):
+    return "".join([c if c.isalnum() else "_" for c in path.elems()])
 
 def _pl_cc_resource_objcopy_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -79,7 +74,7 @@ def _pl_cc_resource_objcopy_impl(ctx):
     # We can rename them explicitly using the --redefine-sym argument to objcopy.
     symbol_replacements = {
         "_binary_{path}_{sym}".format(
-            path = src_path.replace("/", "_").replace("-", "_"),
+            path = _sanitize_path(src_path),
             sym = sym,
         ): "_binary_{name_for_symbols}_{sym}".format(
             name_for_symbols = ctx.attr.name_for_symbols,
