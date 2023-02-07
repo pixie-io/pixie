@@ -17,6 +17,11 @@ spec:
       labels:
         name: kratos
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10100
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: migrate
         args:
@@ -46,6 +51,15 @@ spec:
         imagePullPolicy: IfNotPresent
         image: oryd/kratos:v0.10.1
         resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
         volumeMounts:
         - mountPath: /etc/config/kratos
           name: config
@@ -131,6 +145,15 @@ spec:
           name: config
         - name: certs
           mountPath: /certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
       - name: admin-create-if-not-exists
         imagePullPolicy: IfNotPresent
         image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
@@ -168,6 +191,15 @@ spec:
           name: config
         - name: certs
           mountPath: /certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
       restartPolicy: Always
       serviceAccountName: ""
       volumes:
