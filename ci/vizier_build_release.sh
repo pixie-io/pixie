@@ -41,8 +41,46 @@ fi
 output_path="gs://${bucket}/vizier/${release_tag}"
 latest_output_path="gs://${bucket}/vizier/latest"
 
-bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
-    --stamp "${build_type}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
+push_images_for_arch() {
+  arch="$1"
+  bazel run --stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
+      --config="${arch}_sysroot" \
+      --stamp "${build_type}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}" > /dev/null
+  bazel run --stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
+      --config="${arch}_sysroot" \
+      --stamp "${build_type}" //k8s/vizier:list_image_bundle "${extra_bazel_args[@]}"
+}
+
+x86_64_image_list="$(mktemp)"
+aarch64_image_list="$(mktemp)"
+push_images_for_arch "x86_64" > "${x86_64_image_list}"
+push_images_for_arch "aarch64" > "${aarch64_image_list}"
+
+push_multiarch_image() {
+  multiarch_image="${1/:*/:${release_tag}}"
+  echo "Building ${multiarch_image} manifest"
+  # If the multiarch manifest list already exists locally, remove it before building a new one.
+  docker manifest rm "${multiarch_image}" || true
+  docker manifest create "${multiarch_image}" "$@"
+  docker manifest push "${multiarch_image}"
+}
+
+push_all_multiarch_images() {
+  combined_image_lists="$(paste -d' ' "$@")"
+
+  while read -r -a images;
+  do
+    push_multiarch_image "${images[@]}"
+  done < <(echo "${combined_image_lists}")
+}
+
+push_all_multiarch_images "${x86_64_image_list}" "${aarch64_image_list}"
+
+rm "${x86_64_image_list}"
+rm "${aarch64_image_list}"
+
+exit 0
+
 bazel build --stamp -c opt --//k8s:image_version="${release_tag}" \
     --stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
 

@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel/cc_toolchains:utils.bzl", "abi")
 
 SYSROOT_LOCATIONS = dict(
@@ -63,13 +64,26 @@ def _sysroot_repo_name(target_arch, libc_version, variant):
         return name
     return ""
 
+def _sysroot_setting_name(target_arch, libc_version):
+    return "using_sysroot_{target_arch}_{libc_version}".format(
+        target_arch = target_arch,
+        libc_version = libc_version,
+    )
+
 def _sysroot_repo_impl(rctx):
     loc = SYSROOT_LOCATIONS[rctx.attr.name]
-    rctx.download_and_extract(
+    tar_path = "sysroot.tar.gz"
+    rctx.download(
         url = loc["urls"],
+        output = tar_path,
         sha256 = loc["sha256"],
+    )
+
+    rctx.extract(
+        tar_path,
         stripPrefix = loc.get("strip_prefix", ""),
     )
+
     rctx.template(
         "BUILD.bazel",
         Label("@px//bazel/cc_toolchains/sysroots/{variant}:sysroot.BUILD".format(variant = rctx.attr.variant)),
@@ -77,6 +91,7 @@ def _sysroot_repo_impl(rctx):
             "{abi}": abi(rctx.attr.target_arch, rctx.attr.libc_version),
             "{libc_version}": rctx.attr.libc_version,
             "{path_to_this_repo}": "external/" + rctx.attr.name,
+            "{tar_path}": tar_path,
             "{target_arch}": rctx.attr.target_arch,
         },
     )
@@ -92,7 +107,7 @@ _sysroot_repo = repository_rule(
 
 SysrootInfo = provider(
     doc = "Information about a sysroot.",
-    fields = ["files", "architecture", "path"],
+    fields = ["files", "architecture", "path", "tar"],
 )
 
 def _sysroot_toolchain_impl(ctx):
@@ -102,6 +117,7 @@ def _sysroot_toolchain_impl(ctx):
                 files = ctx.attr.files.files,
                 architecture = ctx.attr.architecture,
                 path = ctx.attr.path,
+                tar = ctx.attr.tar.files,
             ),
         ),
     ]
@@ -112,6 +128,7 @@ sysroot_toolchain = rule(
         "architecture": attr.string(mandatory = True, doc = "CPU architecture targeted by this sysroot"),
         "files": attr.label(mandatory = True, doc = "All sysroot files"),
         "path": attr.string(mandatory = True, doc = "Path to sysroot relative to execroot"),
+        "tar": attr.label(mandatory = True, doc = "Sysroot tar, used to avoid repacking the sysroot as a tar for docker images."),
     },
 )
 
@@ -130,7 +147,20 @@ def _pl_sysroot_deps():
                 toolchains.append("@{repo}//:toolchain".format(repo = repo))
     native.register_toolchains(*toolchains)
 
+def _pl_sysroot_settings():
+    for target_arch in _sysroot_architectures:
+        for libc_version in _sysroot_libc_versions:
+            selects.config_setting_group(
+                name = _sysroot_setting_name(target_arch, libc_version),
+                match_all = [
+                    "@platforms//cpu:" + target_arch,
+                    "//bazel/cc_toolchains:libc_version_" + libc_version,
+                ],
+                visibility = ["//visibility:public"],
+            )
+
 sysroot_repo_name = _sysroot_repo_name
 sysroot_libc_versions = _sysroot_libc_versions
 sysroot_architectures = _sysroot_architectures
+pl_sysroot_settings = _pl_sysroot_settings
 pl_sysroot_deps = _pl_sysroot_deps
