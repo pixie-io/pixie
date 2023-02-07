@@ -673,18 +673,18 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 	} else if state.Reason == status.TLSCertsExpired {
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
-		
-                err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
-                if err != nil {
-                        log.WithError(err).Error("Failed to update certs")
-                }
-                m.certState = okState()
 
-                log.Info("Bouncing Vizier pods to get certs update")
-                err = k8s.DeletePods(m.clientset, m.namespace, "")
-                if err != nil {
-                        return err
-                }
+		err = deployCerts(context.Background(), m.namespace, vz, m.clientset, m.restConfig, true)
+		if err != nil {
+			log.WithError(err).Error("Failed to update certs")
+		}
+		m.certState = okState()
+
+		log.Info("Bouncing Vizier pods to get certs update")
+		err = k8s.DeletePods(m.clientset, m.namespace, "")
+		if err != nil {
+			return err
+		}
 	} else if state.Reason == status.EtcdPodsCrashing {
 		log.Info("etcd detected to be crashing, attempting to restart etcd")
 		// Delete etcd, deploy will trigger a new statefulset to startup.
