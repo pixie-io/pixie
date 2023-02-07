@@ -26,6 +26,11 @@ jobs:
     - uses: actions/checkout@v3
       with:
         fetch-depth: 100
+    - name: Yarn cache
+      uses: actions/cache@v3
+      with:
+        path: ./src/ui/.yarn
+        key: build-cache-${{hashFiles('src/ui/yarn.lock')}}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Fetch main
