@@ -29,7 +29,7 @@ jobs:
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Fetch main
-      run: git fetch origin main
+      run: git fetch origin main:main
     - name: Check merge base
       run: git merge-base origin/main HEAD  # This is what arc uses to determine what changes to lint.
     - name: Run arc lint
