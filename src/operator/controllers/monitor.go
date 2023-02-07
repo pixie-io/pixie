@@ -341,7 +341,7 @@ func getEtcdState(pods *concurrentPodMap) *vizierState {
 			continue
 		}
 		for _, c := range pod.pod.Status.ContainerStatuses {
-			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" {
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" && c.RestartCount >= 5 {
 				return &vizierState{Reason: status.EtcdPodsCrashing}
 			}
 		}
