@@ -7,7 +7,7 @@ common --keep_going
 
 build --build_metadata=HOST=jenkins-worker
 build --build_metadata=USER=jenkins
-build --build_metadata=REPO_URL=https://github.com/pixie-labs/pixielabs/
+build --build_metadata=REPO_URL=https://github.com/pixie-io/pixie
 build --verbose_failures
 
 test --verbose_failures
