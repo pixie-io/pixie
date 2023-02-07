@@ -28,11 +28,11 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 pl_bpf_cc_resource(
     name = "stringifier_test_bpf_text",
     src = "stringifier_test.c",
-    hdrs = [
+    deps = [
         "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
         "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
         "//src/stirling/source_connectors/perf_profiler/bcc_bpf_intf:headers",
         "//src/stirling/upid:headers",
     ],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )

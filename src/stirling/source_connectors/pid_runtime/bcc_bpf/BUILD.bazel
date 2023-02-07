@@ -25,10 +25,12 @@ load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-# Build :pidruntime_bpf_preprocess_genrule to examine the preprocessing output.
+# Build :pidruntime_bpf_preprocess to examine the preprocessing output.
 pl_bpf_cc_resource(
     name = "pidruntime",
     src = "pidruntime.c",
-    hdrs = ["//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers"],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+        "//src/stirling/source_connectors/pid_runtime/bcc_bpf_intf:headers",
+    ],
 )

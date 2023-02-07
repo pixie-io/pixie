@@ -21,34 +21,42 @@
 #
 # SPDX-License-Identifier: MIT
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 load("//bazel:pl_build_system.bzl", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-socket_trace_hdrs = [
-    "grpc_c_trace.c",
-    "go_http2_trace.c",
-    "go_tls_trace.c",
-    "go_trace_common.h",
-    "openssl_trace.c",
-    "node_openssl_trace.c",
-    "macros.h",
-    "protocol_inference.h",
-    "//src/stirling/upid:headers",
-    "//src/stirling/bpf_tools/bcc_bpf:headers",
-    "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
-    "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
-]
+cc_library(
+    name = "headers",
+    hdrs = [
+        "go_http2_trace.c",
+        "go_tls_trace.c",
+        "go_trace_common.h",
+        "grpc_c_trace.c",
+        "macros.h",
+        "node_openssl_trace.c",
+        "openssl_trace.c",
+        "protocol_inference.h",
+    ],
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
+        "//src/stirling/upid:headers",
+    ],
+)
 
-# To examine the preprocessing output, build :socket_trace_bpf_preprocess_genrule.
+# To examine the preprocessing output, build :socket_trace_bpf_preprocess.
 pl_bpf_cc_resource(
     name = "socket_trace",
     src = "socket_trace.c",
-    hdrs = socket_trace_hdrs,
+    deps = [
+        ":headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    ],
     # Uncomment to enable debug printks.
     # defines = ["BPF_DEBUG"],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 pl_cc_test(
@@ -56,9 +64,6 @@ pl_cc_test(
     srcs = [
         "protocol_inference.h",
         "protocol_inference_test.cc",
-        "//src/stirling/bpf_tools/bcc_bpf:headers",
-        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
-        "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
     ],
     # PROTOCOL_LIST: Requires update on new protocols.
     defines = [
@@ -75,6 +80,9 @@ pl_cc_test(
         "ENABLE_AMQP_TRACING=true",
     ],
     deps = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/socket_tracer/bcc_bpf_intf:headers",
         "//src/stirling/utils:cc_library",
     ],
 )

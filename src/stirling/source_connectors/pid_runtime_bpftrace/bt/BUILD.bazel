@@ -21,6 +21,5 @@ package(default_visibility = ["//src/stirling/source_connectors/pid_runtime_bpft
 pl_bpf_cc_resource(
     name = "bpftrace_pidruntime",
     src = "pidruntime.bt",
-    hdrs = [],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    deps = ["//src/stirling/bpf_tools/bcc_bpf/system-headers"],
 )

@@ -28,17 +28,15 @@ package(default_visibility = [
     "//src/stirling/source_connectors/proc_exit/bcc_bpf:__pkg__",
 ])
 
-proc_exit_trace_hdrs = [
-    "//src/stirling/upid:headers",
-    "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
-    "//src/stirling/bpf_tools/bcc_bpf:headers",
-    "//src/stirling/source_connectors/proc_exit/bcc_bpf_intf:headers",
-]
-
-# To examine the preprocessing output, build :socket_trace_bpf_preprocess_genrule.
+# To examine the preprocessing output, build :proc_exit_trace_bpf_preprocess.
 pl_bpf_cc_resource(
     name = "proc_exit_trace",
     src = "proc_exit_trace.c",
-    hdrs = proc_exit_trace_hdrs,
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/proc_exit/bcc_bpf_intf:headers",
+        "//src/stirling/upid:headers",
+    ],
 )
