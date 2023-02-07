@@ -40,6 +40,6 @@ build --jobs 16
 test --jobs 16
 
 # BPF machines are bit bigger.
-build:bpf --local_cpu_resources=48
-build:bpf --jobs 48
+build:bpf --local_cpu_resources=32
+build:bpf --jobs 32
 test:bpf --jobs 16
