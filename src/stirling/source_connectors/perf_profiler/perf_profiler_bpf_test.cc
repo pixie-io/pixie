@@ -267,10 +267,10 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     const uint64_t period_ms = FLAGS_stirling_profiler_stack_trace_sample_period_ms;
     const uint64_t period_ns = period_ms * 1000 * 1000;
 
-    // strings tracks which strings have been inserted into the profile.
+    // Tracks which strings have been inserted into the profile.
     absl::flat_hash_map<std::string, uint64_t> strings;
 
-    // This is the pprof profile, it will be populated next, and later, serialized to a file.
+    // This is the pprof profile.
     ::perftools::profiles::Profile profile;
 
     // The pprof profiles start by describing their sample types. For CPU profiling,
