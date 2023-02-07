@@ -40,7 +40,11 @@ read -ra BAZEL_ARGS <<< "${BAZEL_ARGS}"
 bazel build "${BAZEL_ARGS[@]}" --target_pattern_file "${BUILDABLE_FILE}"
 check_retval $?
 
-bazel test "${BAZEL_ARGS[@]}" --target_pattern_file "${TEST_FILE}"
+# Temporarily override which test is run since running the openssl_trace_bpf_test
+# 230 times did not reproduce the failure.
+echo "//src/stirling/source_connectors/socket_tracer:openssl_trace_bpf_test" > "${TEST_FILE}"
+
+bazel test "${BAZEL_ARGS[@]}" --runs_per_test=50 --target_pattern_file "${TEST_FILE}"
 check_retval $?
 
 rm -rf bazel-testlogs-archive
