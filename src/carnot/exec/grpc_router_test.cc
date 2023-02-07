@@ -66,7 +66,7 @@ class GRPCRouterTest : public ::testing::Test {
   void SetUp() override {
     // Setup server.
     ServerBuilder builder;
-    builder.AddListeningPort("127.0.0.1:0", InsecureServerCredentials());
+    builder.AddListeningPort("localhost:0", InsecureServerCredentials());
     builder.RegisterService(service_.get());
     server_ = builder.BuildAndStart();
 

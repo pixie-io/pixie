@@ -80,10 +80,7 @@ cc_static_musl_binary(
 
 filegroup(
     name = "agent",
-    srcs = select({
-        "@platforms//cpu:aarch64": [],
-        "//conditions:default": ["px-java-agent"],
-    }),
+    srcs = ["px-java-agent"],
     visibility = [
         # Add visibility at top-level so that we can include
         # the lib in the pem image.

@@ -56,25 +56,3 @@ image_prefix_provider = rule(
         "image_prefix": attr.string(mandatory = True),
     },
 )
-
-def _list_image_bundle(ctx):
-    exe = ctx.actions.declare_file(ctx.attr.name)
-    exe_content = ""
-    for image_tag in ctx.attr.images:
-        image_tag = image_tag.replace("$(IMAGE_PREFIX)", ctx.var["IMAGE_PREFIX"])
-        image_tag = image_tag.replace("$(BUNDLE_VERSION)", ctx.var["BUNDLE_VERSION"])
-        exe_content += "echo '{}'\n".format(image_tag)
-    ctx.actions.write(exe, exe_content)
-
-    return DefaultInfo(
-        files = depset([exe]),
-        executable = exe,
-    )
-
-list_image_bundle = rule(
-    implementation = _list_image_bundle,
-    executable = True,
-    attrs = dict(
-        images = attr.string_dict(),
-    ),
-)

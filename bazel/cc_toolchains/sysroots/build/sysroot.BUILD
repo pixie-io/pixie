@@ -51,18 +51,11 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-filegroup(
-    name = "tar",
-    srcs = ["{tar_path}"],
-    visibility = ["//visibility:public"],
-)
-
 sysroot_toolchain(
     name = "sysroot_toolchain",
     architecture = "{target_arch}",
     files = ":all_files",
     path = "{path_to_this_repo}",
-    tar = ":tar",
 )
 
 toolchain(
