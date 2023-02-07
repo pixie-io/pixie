@@ -18,18 +18,9 @@ load("@px//bazel/cc_toolchains/sysroots:sysroots.bzl", "sysroot_toolchain")
 
 filegroup(
     name = "all_files",
-    srcs = glob(
-        [
-            "**",
-        ],
-        exclude = ["{tar_path}"],
-    ),
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "tar",
-    srcs = ["{tar_path}"],
+    srcs = glob([
+        "**",
+    ]),
     visibility = ["//visibility:public"],
 )
 
@@ -38,7 +29,6 @@ sysroot_toolchain(
     architecture = "{target_arch}",
     files = ":all_files",
     path = "{path_to_this_repo}",
-    tar = ":tar",
 )
 
 toolchain(
