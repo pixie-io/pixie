@@ -9,24 +9,16 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
-    'ArcanistBaseGenCheckerTestEngine' => 'unit/ArcanistBaseGenCheckerTestEngine.php',
-    'ArcanistGoGenCheckerTestEngine' => 'unit/ArcanistGoGenCheckerTestEngine.php',
     'ArcanistGoImportsLinter' => 'lint/ArcanistGoImportsLinter.php',
     'ArcanistGolangCiLinter' => 'lint/ArcanistGolangCiLinter.php',
-    'ArcanistGraphqlGenCheckerTestEngine' => 'unit/ArcanistGraphqlGenCheckerTestEngine.php',
     'ArcanistPixieTextLinter' => 'lint/ArcanistPixieTextLinter.php',
     'ArcanistProtoBreakCheckLinter' => 'lint/ArcanistProtoBreakCheckLinter.php',
-    'ArcanistProtoGenCheckerTestEngine' => 'unit/ArcanistProtoGenCheckerTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
-    'ArcanistBaseGenCheckerTestEngine' => 'ArcanistUnitTestEngine',
-    'ArcanistGoGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
     'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
-    'ArcanistGraphqlGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
     'ArcanistPixieTextLinter' => 'ArcanistLinter',
     'ArcanistProtoBreakCheckLinter' => 'ArcanistExternalLinter',
-    'ArcanistProtoGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
   ),
 ));
