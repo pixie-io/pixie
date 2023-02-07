@@ -176,6 +176,8 @@ def _cc_deps():
 
     # TODO(jps): For jattach, consider using a patch and directly pulling from upstream (vs. fork).
     _git_repo("com_github_apangin_jattach", build_file = "//bazel/external:jattach.BUILD")
+
+    # Using "git repo" because the pprof repo does not have any release tags.
     _git_repo("com_github_google_pprof", build_file = "//bazel/external:pprof.BUILD")
 
     # Dependencies used in foreign cc rules (e.g. cmake-based builds)

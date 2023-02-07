@@ -459,6 +459,8 @@ GIT_REPOSITORY_LOCATIONS = dict(
         commit = "fa36a4fa141b4e9486b9126640d54a94c1d36fce",
         shallow_since = "1638898188 -0800",
     ),
+
+    # Used by the perf profiler to create pprof proto output.
     com_github_google_pprof = dict(
         remote = "https://github.com/google/pprof.git",
         commit = "5a9e8f65f08f77f42ab2a02f18561033f44da75e",
