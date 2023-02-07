@@ -38,8 +38,7 @@ jobs:
       shell: bash
       # yamllint disable rule:indentation
       run: |
-        git diff-index --quiet HEAD -- || retval=$?
-        if [[ $retval -ne 0 ]]; then
+        if [[ $(git status --porcelain=v1 | wc -l) -ne 0 ]]; then
           echo "Please apply the autofix patches suggested by arc lint."
           echo "Changed files:"
           git diff --name-only
