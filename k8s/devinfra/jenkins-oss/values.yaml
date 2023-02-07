@@ -394,6 +394,7 @@ controller:
                     result: SUCCESS
                 showMatrixStatus: false
                 startedStatus: "Jenkins Build Running"
+                statusUrl: "$RUN_DISPLAY_URL"
             githubAuth:
               - credentialsId: "github-buildbot-api-token"
                 serverAPIUrl: "https://api.github.com"
