@@ -34,6 +34,7 @@ import { VizierErrorDetails } from 'app/common/errors';
 import { buildClass, Spinner } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { StatChart, StatChartDisplay } from 'app/containers/live-widgets/charts/stat-chart';
+import { TextChart, TextChartDisplay } from 'app/containers/live-widgets/charts/text-chart';
 import {
   TimeSeriesContext, withTimeSeriesContext,
 } from 'app/containers/live-widgets/context/time-series-context';
@@ -55,7 +56,8 @@ import {
 import MutationModal from './mutation-modal';
 import {
   DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
-  TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay, STAT_CHART_DISPLAY_TYPE,
+  TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay,
+  STAT_CHART_DISPLAY_TYPE, TEXT_CHART_DISPLAY_TYPE,
 } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -183,6 +185,16 @@ const WidgetDisplay: React.FC<{
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
 }) => {
   const classes = useStyles();
+
+  // Before we do any other processing, check if we have the chart that exist entirely in the vis spec with no data
+  if (display[DISPLAY_TYPE_KEY] === TEXT_CHART_DISPLAY_TYPE) {
+    return (
+      <>
+        <div className={classes.widgetTitle}>{widgetName}</div>
+        <TextChart display={display as TextChartDisplay} />
+      </>
+    );
+  }
 
   if (!table) {
     const msg = emptyTableMsg || `"${tableName}" not found`;
