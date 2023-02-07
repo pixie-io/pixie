@@ -13,4 +13,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - id: run-pr-description-linter
-      run: ./ci/pr_description_linter.sh
+      run: ./tools/linters/pr_description_linter.sh
