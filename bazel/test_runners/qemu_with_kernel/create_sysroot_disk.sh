@@ -1,0 +1,120 @@
+#!/bin/bash
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -e
+
+DISK_SIZE="4096M"
+FS_TYPE="ext4"
+OUTPUT_DISK=""
+SYSROOT=""
+EXTRAS=""
+
+usage() {
+    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -e <src>:<dest>,<src2>:<dest2>"
+    echo "       <output_disk>           The generated ext2fs file system image"
+    echo "       <sysroot.tar.gz>        The input sysroot to use for the disk"
+    echo "       <additional_files>      Additional files that need to be written to the image"
+    exit 1
+}
+
+parse_args() {
+  local OPTIND
+  while getopts "o:e:s:h" opt; do
+    case ${opt} in
+      o)
+	OUTPUT_DISK=$OPTARG
+        ;;
+      e)
+	EXTRAS=$OPTARG
+        ;;
+      s)
+        SYSROOT=$OPTARG
+        ;;
+      :)
+        echo "Invalid option: $OPTARG requires an argument" 1>&2
+        ;;
+      h)
+        usage
+        ;;
+
+      *)
+        usage
+        ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+}
+
+parse_args "$@"
+
+if ! command -v mke2fs &> /dev/null
+then
+  echo "mke2fs is a required command. You might be able to 'apt-get install libext2fs2'."
+  exit
+fi
+
+if [[ -z "${OUTPUT_DISK}" ]]; then
+    echo "-o : output disk is a required argument"
+    usage
+fi
+
+if [[ -z "${SYSROOT}" ]]; then
+    echo "-s : sysroot is a required argument"
+    usage
+fi
+
+
+SYSROOT="$(realpath "${SYSROOT}")"
+OUTPUT_DISK="$(realpath "${OUTPUT_DISK}")"
+
+# Need to remove disk to prevent mke2fs from becoming interactive.
+if [[ -f "${OUTPUT_DISK}" ]]; then
+    echo "Removing stale output disk: ${OUTPUT_DISK}."
+    rm -f "${OUTPUT_DISK}"
+fi
+
+echo "Config:"
+echo "  sysroot: ${SYSROOT}"
+echo "  extras:  ${EXTRAS}"
+echo "  output: ${OUTPUT_DISK}"
+
+# Extract the sysroot tar.gz to a tmp folder and copy
+# in the extra files.
+build_dir=$(mktemp -d)
+sysroot_build_dir="${build_dir}/sysroot"
+mkdir -p "${sysroot_build_dir}"
+
+tar -C "${sysroot_build_dir}" -xf "${SYSROOT}"
+
+# Copy over required extra files.
+IFS=',' read -ra extra_files <<< "${EXTRAS}"
+for f in "${extra_files[@]}"; do
+    IFS=':' read -r from to <<< "${f}"
+    cp "${from}" "${sysroot_build_dir}/${to}"
+done
+
+# Actually create the file system.
+mke2fs \
+  -q \
+  -L '' \
+  -O ^64bit \
+  -d "${sysroot_build_dir}" \
+  -m 5 \
+  -r 1 \
+  -t "${FS_TYPE}" \
+  "${OUTPUT_DISK}" \
+  "${DISK_SIZE}"
