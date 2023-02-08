@@ -54,7 +54,7 @@ gcloud beta compute instances create \
   --quiet \
   --project="${GCP_PROJECT}" \
   --zone=us-west1-b \
-  --machine-type=c2-standard-32 \
+  --machine-type=n2d-standard-32 \
   --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
   --network-interface=network-tier=PREMIUM,subnet=us-west1-0 \
