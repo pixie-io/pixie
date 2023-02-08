@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from copy import copy
-import os
 
 from model.metadata import kTargetProtocols
 from prettytable import PrettyTable

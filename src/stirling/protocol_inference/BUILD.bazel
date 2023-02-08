@@ -16,7 +16,6 @@
 
 load("@protocol_inference//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//bazel:pl_build_system.bzl", "pl_py_test")
 
 lib_srcs = glob([
     "data/*.py",
