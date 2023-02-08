@@ -250,7 +250,7 @@ amp_gen_install_deps()
 
 pip_parse(
     name = "protocol_inference",
-    requirements_lock = "//src/stirling/protocol_inference:requirements.txt",
+    requirements_lock = "//src/stirling/protocol_inference:requirements.bazel.txt",
 )
 
 load("@protocol_inference//:requirements.bzl", protocol_inference_install_deps = "install_deps")
