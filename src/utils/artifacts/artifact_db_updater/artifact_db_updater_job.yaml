@@ -20,7 +20,7 @@ spec:
         args:
         - |
             trap "touch /tmp/pod/terminated" EXIT
-            /artifact_db_updater/artifact_db_updater
+            src/utils/artifacts/artifact_db_updater/artifact_db_updater_/artifact_db_updater
         volumeMounts:
         - mountPath: /tmp/pod
           name: tmp-pod
