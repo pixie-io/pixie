@@ -107,6 +107,13 @@ for f in "${extra_files[@]}"; do
     cp "${from}" "${sysroot_build_dir}/${to}"
 done
 
+
+# We need the files to be owned by root so we unshare
+# and then chown the sysroot files before building the FS.
+unshare -r bash <<EOF
+
+chown -R 0:0 "${sysroot_build_dir}"
+
 # Actually create the file system.
 mke2fs \
   -q \
@@ -116,5 +123,8 @@ mke2fs \
   -m 5 \
   -r 1 \
   -t "${FS_TYPE}" \
+  -E root_owner=0:0 \
   "${OUTPUT_DISK}" \
   "${DISK_SIZE}"
+
+EOF
