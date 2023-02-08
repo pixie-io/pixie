@@ -112,6 +112,30 @@ owner_references: {
 }
 )";
 
+const char* kPodMissingOwnerPbTxt = R"(
+uid: "missing_owner_3_uid"
+name: "missing_owner_pod"
+namespace: "pl"
+start_timestamp_ns: 5
+container_ids: "pod2_container_1"
+qos_class: QOS_CLASS_GUARANTEED
+node_name: "test_node"
+hostname: "test_host"
+pod_ip: "4.4.4.4"
+phase: RUNNING
+message: "Running message"
+reason: "Running reason"
+conditions {
+  type: 2
+  status: 1
+}
+owner_references: {
+  uid: "rs_missing_uid"
+  name: "rs0"
+  kind: "ReplicaSet"
+}
+)";
+
 /*
  * Templates for container updates.
  */
@@ -322,6 +346,14 @@ conditions: {
 std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateMissingOwnerPodUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kPodMissingOwnerPbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

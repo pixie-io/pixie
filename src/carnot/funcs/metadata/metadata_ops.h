@@ -811,11 +811,17 @@ inline std::vector<const px::md::K8sMetadataObject*> GetOwnerReferenceInfosFromM
     if (owner_reference.kind == owner_ref_kind) {
       const px::md::K8sMetadataObject* obj_info;
       if (owner_ref_kind == "ReplicaSet") {
-        obj_info = static_cast<const px::md::K8sMetadataObject*>(
-            md->k8s_metadata_state().ReplicaSetInfoByID(owner_reference.uid));
+        auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(owner_reference.uid);
+        if (rs_info == nullptr) {
+          continue;
+        }
+        obj_info = static_cast<const px::md::K8sMetadataObject*>(rs_info);
       } else if (owner_ref_kind == "Deployment") {
-        obj_info = static_cast<const px::md::K8sMetadataObject*>(
-            md->k8s_metadata_state().DeploymentInfoByID(owner_reference.uid));
+        auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(owner_reference.uid);
+        if (dep_info == nullptr) {
+          continue;
+        }
+        obj_info = static_cast<const px::md::K8sMetadataObject*>(dep_info);
       } else {
         continue;
       }

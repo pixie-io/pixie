@@ -790,11 +790,16 @@ TEST_F(MetadataOpsTest, pod_name_to_replicaset_name_test) {
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_replicaset_id_test) {
+  updates_->enqueue(px::metadatapb::testutils::CreateMissingOwnerPodUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = px::carnot::udf::UDFTester<PodNameToReplicaSetIDUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("rs0_uid");
   udf_tester.ForInput("pl/terminating_pod").Expect("terminating_rs0_uid");
   udf_tester.ForInput("badlyformed").Expect("");
+
+  // The owner is not available, should return empty.
+  udf_tester.ForInput("pl/missing_owner_pod").Expect("");
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_deployment_name_test) {
