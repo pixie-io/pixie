@@ -25,7 +25,7 @@ EXTRAS=""
 
 usage() {
     echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2>"
-    echo "       <output_disk>           The generated ext2fs file system image"
+    echo "       <output_disk>           The generated ext2fs file system image as a qcow2 file"
     echo "       <sysroot.tar.gz>        The input sysroot to use for the disk"
     echo "       <additional_files>      Additional files that need to be written to the image"
     exit 1
@@ -67,6 +67,12 @@ parse_args "$@"
 if ! command -v mke2fs &> /dev/null
 then
   echo "mke2fs is a required command. You might be able to 'apt-get install libext2fs2'."
+  exit
+fi
+
+if ! command -v qemu-img &> /dev/null
+then
+  echo "qemu-img is a required command. You might be able to 'apt-get install qemu-utils'."
   exit
 fi
 
@@ -120,6 +126,8 @@ done
 cp "${BUSYBOX}" "${sysroot_build_dir}/bin/busybox"
 chmod +x "${sysroot_build_dir}/bin/busybox"
 
+tmpdisk_image="$(mktemp  --suffix .img)"
+
 # We need the files to be owned by root so we unshare
 # and then chown the sysroot files before building the FS.
 unshare -r bash <<EOF
@@ -138,7 +146,13 @@ mke2fs \
   -r 1 \
   -t "${FS_TYPE}" \
   -E root_owner=0:0 \
-  "${OUTPUT_DISK}" \
+  "${tmpdisk_image}" \
   "${DISK_SIZE}"
 
 EOF
+
+qemu-img convert \
+  -f raw -O qcow2 \
+  "${tmpdisk_image}" "${OUTPUT_DISK}"
+
+rm -f "${tmpdisk_image}"
