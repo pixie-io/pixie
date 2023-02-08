@@ -279,6 +279,9 @@ def postBuildActions = {
   if (!isOSSRun) {
     sendSlackNotification()
   }
+  if (isOSSMainRun) {
+    step([$class: "GitHubCommitStatusSetter",]);
+  }
 }
 
 def initializeRepoState() {
