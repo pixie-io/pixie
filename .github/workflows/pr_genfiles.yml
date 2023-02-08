@@ -24,21 +24,20 @@ jobs:
       options: --cpus 7
     steps:
     - uses: actions/checkout@v3
-    - name: Go cache
+    - name: go cache
       uses: actions/cache@v3
       with:
         path: /px/pkg/mod
-        key: build-cache-${{hashFiles('go.sum')}}
-    - name: Yarn cache
+        key: go-cache-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          go-cache-
+    - name: yarn cache
       uses: actions/cache@v3
       with:
-        path: ./src/ui/.yarn
-        key: build-cache-${{hashFiles('src/ui/yarn.lock')}}
-    - name: Bazel cache
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/bazel
-        key: genfile-checker-${{hashFiles('WORKSPACE')}}
+        path: ./src/ui/.yarn/cache
+        key: yarn-cache-${{ hashFiles('src/ui/yarn.lock', 'src/ui/.yarnrc.yml') }}
+        restore-keys: |
+          yarn-cache-
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - uses: dorny/paths-filter@v2.11.1
