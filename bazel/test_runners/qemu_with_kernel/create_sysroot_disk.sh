@@ -82,7 +82,7 @@ fi
 
 
 if [[ -z "${BUSYBOX}" || ! -f "${BUSYBOX}" ]]; then
-    echo "-b : busybox is a required arguments and needs to point to an executable."
+    echo "-b : busybox is a required argument and needs to point to an executable."
     usage
 fi
 
