@@ -69,6 +69,8 @@ const (
 	statuszCheckInterval = 20 * time.Second
 	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
 	pemCrashingThreshold = 0.25
+	// The number of times etcd should crash before we try to autorepair.
+	etcdCrashLimit = 5
 )
 
 // HTTPClient is the interface for a simple HTTPClient which can execute "Get".
@@ -325,6 +327,31 @@ func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 	return okState()
 }
 
+// getEtcdState determines the state of etcd then translates that
+// to a corresponding VizierState.
+func getEtcdState(pods *concurrentPodMap) *vizierState {
+	pods.mapMu.Lock()
+	defer pods.mapMu.Unlock()
+
+	unlabeledPods, ok := pods.unsafeMap[""]
+	if !ok {
+		return &vizierState{Reason: status.EtcdPodsMissing}
+	}
+
+	for podName, pod := range unlabeledPods {
+		if !strings.HasPrefix(podName, "pl-etcd-") {
+			continue
+		}
+		for _, c := range pod.pod.Status.ContainerStatuses {
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" && c.RestartCount >= etcdCrashLimit {
+				return &vizierState{Reason: status.EtcdPodsCrashing}
+			}
+		}
+	}
+
+	return okState()
+}
+
 // getCloudConnState determines the state of the cloud connector then translates
 // that to a corresponding VizierState.
 func getCloudConnState(client HTTPClient, pods *concurrentPodMap) *vizierState {
@@ -573,6 +600,13 @@ func (m *VizierMonitor) getVizierState(vz *pixiev1alpha1.Vizier) *vizierState {
 		return natsState
 	}
 
+	if vz.Spec.UseEtcdOperator {
+		etcdState := getEtcdState(m.podStates)
+		if !isOk(etcdState) {
+			return etcdState
+		}
+	}
+
 	pemResourceState := getPEMResourceLimitsState(m.podStates)
 	if !isOk(pemResourceState) {
 		return pemResourceState
@@ -645,11 +679,34 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		}
 
 		log.Info("Successfully switched to etcd backed metadata store")
+	} else if state.Reason == status.EtcdPodsCrashing {
+		log.Info("Etcd detected to be crashing, attempting to restart etcd")
+		// Delete etcd, deploy will trigger a new statefulset to startup.
+		err := m.clientset.AppsV1().StatefulSets(m.namespace).Delete(m.ctx, "pl-etcd", metav1.DeleteOptions{})
+		if err != nil {
+			log.WithError(err).Error("Failed to delete etcd statefulset")
+			return err
+		}
+		// Trigger redeploy.
+		vz := &pixiev1alpha1.Vizier{}
+		err = m.vzGet(context.Background(), m.namespacedName, vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier")
+			return err
+		}
+		if len(vz.Status.Checksum) > 2 {
+			vz.Status.Checksum = vz.Status.Checksum[2:]
+		}
+		err = m.vzUpdate(context.Background(), vz)
+		if err != nil {
+			log.WithError(err).Error("Failed to update status with empty checksum")
+			return err
+		}
 	} else if state.Reason == status.TLSCertsExpired {
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
 		if err != nil {
-			log.WithError(err).Error("Failed to get vizier")
+			log.WithError(err).Error("Failed to fetch Vizier")
 			return err
 		}
 
