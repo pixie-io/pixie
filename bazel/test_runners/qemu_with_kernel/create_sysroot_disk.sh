@@ -24,7 +24,7 @@ SYSROOT=""
 EXTRAS=""
 
 usage() {
-    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -e <src>:<dest>,<src2>:<dest2>"
+    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2>"
     echo "       <output_disk>           The generated ext2fs file system image"
     echo "       <sysroot.tar.gz>        The input sysroot to use for the disk"
     echo "       <additional_files>      Additional files that need to be written to the image"
@@ -33,7 +33,7 @@ usage() {
 
 parse_args() {
   local OPTIND
-  while getopts "o:e:s:h" opt; do
+  while getopts "o:e:s:b:h" opt; do
     case ${opt} in
       o)
 	OUTPUT_DISK=$OPTARG
@@ -44,6 +44,9 @@ parse_args() {
       s)
         SYSROOT=$OPTARG
         ;;
+      b)
+	BUSYBOX=$OPTARG
+	;;
       :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
         ;;
@@ -78,8 +81,14 @@ if [[ -z "${SYSROOT}" ]]; then
 fi
 
 
+if [[ -z "${BUSYBOX}" || ! -f "${BUSYBOX}" ]]; then
+    echo "-b : busybox is a required argument and needs to point to an executable."
+    usage
+fi
+
 SYSROOT="$(realpath "${SYSROOT}")"
 OUTPUT_DISK="$(realpath "${OUTPUT_DISK}")"
+BUSYBOX="$(realpath "${BUSYBOX}")"
 
 # Need to remove disk to prevent mke2fs from becoming interactive.
 if [[ -f "${OUTPUT_DISK}" ]]; then
@@ -108,9 +117,14 @@ for f in "${extra_files[@]}"; do
 done
 
 
+cp "${BUSYBOX}" "${sysroot_build_dir}/bin/busybox"
+chmod +x "${sysroot_build_dir}/bin/busybox"
+
 # We need the files to be owned by root so we unshare
 # and then chown the sysroot files before building the FS.
 unshare -r bash <<EOF
+
+chroot "${sysroot_build_dir}" /bin/busybox --install -s /bin
 
 chown -R 0:0 "${sysroot_build_dir}"
 
