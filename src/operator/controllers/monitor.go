@@ -69,6 +69,8 @@ const (
 	statuszCheckInterval = 20 * time.Second
 	// The threshold of number of crashing PEM pods before we declare a cluster degraded.
 	pemCrashingThreshold = 0.25
+	// The number of times etcd should crash before we try to autorepair.
+	etcdCrashLimit = 5
 )
 
 // HTTPClient is the interface for a simple HTTPClient which can execute "Get".
@@ -341,7 +343,7 @@ func getEtcdState(pods *concurrentPodMap) *vizierState {
 			continue
 		}
 		for _, c := range pod.pod.Status.ContainerStatuses {
-			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" && c.RestartCount >= 5 {
+			if c.State.Waiting != nil && c.State.Waiting.Reason == "CrashLoopBackOff" && c.RestartCount >= etcdCrashLimit {
 				return &vizierState{Reason: status.EtcdPodsCrashing}
 			}
 		}
@@ -678,7 +680,7 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 
 		log.Info("Successfully switched to etcd backed metadata store")
 	} else if state.Reason == status.EtcdPodsCrashing {
-		log.Info("etcd detected to be crashing, attempting to restart etcd")
+		log.Info("Etcd detected to be crashing, attempting to restart etcd")
 		// Delete etcd, deploy will trigger a new statefulset to startup.
 		err := m.clientset.AppsV1().StatefulSets(m.namespace).Delete(m.ctx, "pl-etcd", metav1.DeleteOptions{})
 		if err != nil {
@@ -704,7 +706,7 @@ func (m *VizierMonitor) repairVizier(state *vizierState) error {
 		vz := &pixiev1alpha1.Vizier{}
 		err := m.vzGet(context.Background(), m.namespacedName, vz)
 		if err != nil {
-			log.WithError(err).Error("failed to fetch Vizier")
+			log.WithError(err).Error("Failed to fetch Vizier")
 			return err
 		}
 
