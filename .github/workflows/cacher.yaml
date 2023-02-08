@@ -1,0 +1,48 @@
+---
+name: main-cacher
+on:
+  push:
+    branches:
+    - 'main'
+permissions:
+  contents: read
+jobs:
+  get-dev-image:
+    runs-on: ubuntu-latest
+    outputs:
+      image-with-tag: ${{ steps.get-version.outputs.image }}
+    steps:
+    - uses: actions/checkout@v3
+    - id: get-version
+      run: >-
+        IMAGE_NAME="gcr.io/pixie-oss/pixie-dev-public/dev_image";
+        IMAGE_TAG="$(cat docker.properties | cut -d'=' -f2)";
+        echo "image=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+  populate-caches:
+    runs-on: ubuntu-latest-8-cores
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 7
+    steps:
+    - uses: actions/checkout@v3
+    - name: go cache
+      uses: actions/cache@v3
+      with:
+        path: /px/pkg/mod
+        key: go-cache-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          go-cache-
+    - name: yarn cache
+      uses: actions/cache@v3
+      with:
+        path: ./src/ui/.yarn/cache
+        key: yarn-cache-${{ hashFiles('src/ui/yarn.lock', 'src/ui/.yarnrc.yml') }}
+        restore-keys: |
+          yarn-cache-
+    - shell: bash
+      run: |
+        go mod download;
+        pushd src/ui > /dev/null;
+        yarn install;
+        popd > /dev/null;
