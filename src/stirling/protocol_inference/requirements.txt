@@ -1,0 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+pandas==1.5.3
+prettytable==3.6.0
+termcolor==2.2.0
+torch==1.13.1+cpu

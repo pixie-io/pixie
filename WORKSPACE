@@ -248,6 +248,15 @@ load("@amqp_gen_reqs//:requirements.bzl", amp_gen_install_deps = "install_deps")
 
 amp_gen_install_deps()
 
+pip_parse(
+    name = "protocol_inference",
+    requirements_lock = "//src/stirling/protocol_inference:requirements.bazel.txt",
+)
+
+load("@protocol_inference//:requirements.bzl", protocol_inference_install_deps = "install_deps")
+
+protocol_inference_install_deps()
+
 load(
     "@io_bazel_rules_docker//python3:image.bzl",
     py_image_repos = "repositories",
