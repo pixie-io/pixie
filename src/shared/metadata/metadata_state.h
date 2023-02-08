@@ -223,6 +223,24 @@ class K8sMetadataState : NotCopyable {
    */
   UID DeploymentIDByName(K8sNameIdentView deployment_name) const;
 
+  /**
+   * OwnerReplicaSetInfo gets an unowned pointer to the first replicaset that is the
+   * owner (if any) for the given k8s object. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param obj_info pointer to the given k8s object.
+   * @return Pointer to the ReplicaSetInfo.
+   */
+  const ReplicaSetInfo* OwnerReplicaSetInfo(const K8sMetadataObject* obj_info) const;
+
+  /**
+   * OwnerDeploymentInfo gets an unowned pointer to the first deployment that is the
+   * owner (if any) for the given k8s object. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param obj_info pointer to the given k8s object.
+   * @return Pointer to the DeploymentInfo.
+   */
+  const DeploymentInfo* OwnerDeploymentInfo(const K8sMetadataObject* obj_info) const;
+
   std::unique_ptr<K8sMetadataState> Clone() const;
 
   Status HandlePodUpdate(const PodUpdate& update);

@@ -118,6 +118,34 @@ UID K8sMetadataState::DeploymentIDByName(K8sNameIdentView deployment_name) const
   return (it == deployments_by_name_.end()) ? "" : it->second;
 }
 
+const ReplicaSetInfo* K8sMetadataState::OwnerReplicaSetInfo(
+    const K8sMetadataObject* obj_info) const {
+  for (const auto& owner_reference : obj_info->owner_references()) {
+    if (owner_reference.kind != "ReplicaSet") {
+      continue;
+    }
+    auto rs_info = ReplicaSetInfoByID(owner_reference.uid);
+    if (rs_info != nullptr) {
+      return rs_info;
+    }
+  }
+  return nullptr;
+}
+
+const DeploymentInfo* K8sMetadataState::OwnerDeploymentInfo(
+    const K8sMetadataObject* obj_info) const {
+  for (const auto& owner_reference : obj_info->owner_references()) {
+    if (owner_reference.kind != "Deployment") {
+      continue;
+    }
+    auto dep_info = DeploymentInfoByID(owner_reference.uid);
+    if (dep_info != nullptr) {
+      return dep_info;
+    }
+  }
+  return nullptr;
+}
+
 std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   auto other = std::make_unique<K8sMetadataState>();
 

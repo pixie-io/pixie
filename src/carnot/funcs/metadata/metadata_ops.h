@@ -793,49 +793,6 @@ inline types::StringValue DeploymentInfoToStatus(const px::md::DeploymentInfo* d
 }
 
 /**
- * @brief Get the Owner Reference Infos From Metadata Object object
- *
- * @param ctx function context
- * @param metadata_object some metadata object pointer
- * @param owner_ref_kind type of owner reference, ex. "ReplicaSet"
- * @param returnFirst if true returns first found owner reference with owner_ref_kind
- * @return vector of metadata objects
- */
-inline std::vector<const px::md::K8sMetadataObject*> GetOwnerReferenceInfosFromMetadataObject(
-    ::px::carnot::udf::FunctionContext* ctx, const md::K8sMetadataObject* metadata_object,
-    std::string owner_ref_kind, bool returnFirst = false) {
-  auto md = GetMetadataState(ctx);
-  std::vector<const px::md::K8sMetadataObject*> owner_references;
-
-  for (const auto& owner_reference : metadata_object->owner_references()) {
-    if (owner_reference.kind == owner_ref_kind) {
-      const px::md::K8sMetadataObject* obj_info;
-      if (owner_ref_kind == "ReplicaSet") {
-        auto rs_info = md->k8s_metadata_state().ReplicaSetInfoByID(owner_reference.uid);
-        if (rs_info == nullptr) {
-          continue;
-        }
-        obj_info = static_cast<const px::md::K8sMetadataObject*>(rs_info);
-      } else if (owner_ref_kind == "Deployment") {
-        auto dep_info = md->k8s_metadata_state().DeploymentInfoByID(owner_reference.uid);
-        if (dep_info == nullptr) {
-          continue;
-        }
-        obj_info = static_cast<const px::md::K8sMetadataObject*>(dep_info);
-      } else {
-        continue;
-      }
-
-      owner_references.push_back(obj_info);
-      if (returnFirst) {
-        return owner_references;
-      }
-    }
-  }
-  return owner_references;
-}
-
-/**
  * @brief Returns the replica set id for the given replica set name.
  */
 class ReplicaSetIDToReplicaSetNameUDF : public ScalarUDF {
@@ -1000,12 +957,12 @@ class ReplicaSetIDToDeploymentNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto deployments = GetOwnerReferenceInfosFromMetadataObject(ctx, rs_info, "Deployment", true);
-    if (deployments.empty()) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return absl::Substitute("$0/$1", deployment->ns(), deployment->name());
+
+    return absl::Substitute("$0/$1", dep_info->ns(), dep_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1030,12 +987,12 @@ class ReplicaSetIDToDeploymentIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto deployments = GetOwnerReferenceInfosFromMetadataObject(ctx, rs_info, "Deployment", true);
-    if (deployments.empty()) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return deployment->uid();
+
+    return dep_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1254,12 +1211,12 @@ class ReplicaSetNameToDeploymentNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto deployments = GetOwnerReferenceInfosFromMetadataObject(ctx, rs_info, "Deployment", true);
-    if (deployments.empty()) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return absl::Substitute("$0/$1", deployment->ns(), deployment->name());
+
+    return absl::Substitute("$0/$1", dep_info->ns(), dep_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1289,12 +1246,12 @@ class ReplicaSetNameToDeploymentIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto deployments = GetOwnerReferenceInfosFromMetadataObject(ctx, rs_info, "Deployment", true);
-    if (deployments.empty()) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return deployment->uid();
+
+    return dep_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1591,23 +1548,19 @@ class UPIDToReplicaSetNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
 
-    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+    if (pod_info == nullptr) {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      if (rs_info->stop_time_ns() != 0) {
-        return "";
-      }
-      return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
     }
 
-    return "";
+    if (rs_info->stop_time_ns() != 0) {
+      return "";
+    }
+    return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1635,20 +1588,19 @@ class UPIDToReplicaSetIDUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
-    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+    if (pod_info == nullptr) {
       return "";
     }
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      if (rs_info->stop_time_ns() != 0) {
-        return "";
-      }
-      return rs_info->uid();
     }
+
+    if (rs_info->stop_time_ns() != 0) {
+      return "";
+    }
+    return rs_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1676,18 +1628,16 @@ class UPIDToReplicaSetStatusUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
-    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+    if (pod_info == nullptr) {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      return ReplicaSetInfoToStatus(rs_info);
     }
+
+    return ReplicaSetInfoToStatus(rs_info);
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1717,26 +1667,24 @@ class UPIDToDeploymentNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
 
-    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+    if (pod_info == nullptr) {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
-      return "";
-    }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
 
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    if (deployment->stop_time_ns() != 0) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    return absl::Substitute("$0/$1", deployment->ns(), deployment->name());
+
+    if (dep_info->stop_time_ns() != 0) {
+      return "";
+    }
+    return absl::Substitute("$0/$1", dep_info->ns(), dep_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -1764,26 +1712,24 @@ class UPIDToDeploymentIDUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     auto pod_info = UPIDtoPod(md, upid_value);
-    if (pod_info == nullptr || pod_info->owner_references().size() == 0) {
+    if (pod_info == nullptr) {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
-      return "";
-    }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
 
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    if (deployment->stop_time_ns() != 0) {
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    return deployment->uid();
+
+    if (dep_info->stop_time_ns() != 0) {
+      return "";
+    }
+    return dep_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -2012,14 +1958,12 @@ class PodIDToReplicaSetNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
     }
+
+    return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -2047,14 +1991,12 @@ class PodIDToReplicaSetIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      return rs_info->uid();
     }
+
+    return rs_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -2082,18 +2024,17 @@ class PodIDToDeploymentNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return absl::Substitute("$0/$1", deployment->ns(), deployment->name());
+
+    return absl::Substitute("$0/$1", dep_info->ns(), dep_info->name());
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -2121,18 +2062,17 @@ class PodIDToDeploymentIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return deployment->uid();
+
+    return dep_info->uid();
   }
 
   static udf::ScalarUDFDocBuilder Doc() {
@@ -2164,14 +2104,12 @@ class PodNameToReplicaSetNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
     }
+
+    return absl::Substitute("$0/$1", rs_info->ns(), rs_info->name());
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
@@ -2204,14 +2142,12 @@ class PodNameToReplicaSetIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
-    } else {
-      auto rs_info = static_cast<const md::ReplicaSetInfo*>(replica_sets[0]);
-      return rs_info->uid();
     }
+
+    return rs_info->uid();
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
@@ -2244,18 +2180,17 @@ class PodNameToDeploymentNameUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return absl::Substitute("$0/$1", deployment->ns(), deployment->name());
+
+    return absl::Substitute("$0/$1", dep_info->ns(), dep_info->name());
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
@@ -2288,18 +2223,17 @@ class PodNameToDeploymentIDUDF : public ScalarUDF {
       return "";
     }
 
-    auto replica_sets = GetOwnerReferenceInfosFromMetadataObject(
-        ctx, static_cast<const md::K8sMetadataObject*>(pod_info), "ReplicaSet", true);
-    if (replica_sets.empty()) {
+    auto rs_info = md->k8s_metadata_state().OwnerReplicaSetInfo(pod_info);
+    if (rs_info == nullptr) {
       return "";
     }
-    auto deployments =
-        GetOwnerReferenceInfosFromMetadataObject(ctx, replica_sets[0], "Deployment", true);
-    if (deployments.empty()) {
+
+    auto dep_info = md->k8s_metadata_state().OwnerDeploymentInfo(rs_info);
+    if (dep_info == nullptr) {
       return "";
     }
-    auto deployment = static_cast<const md::DeploymentInfo*>(deployments[0]);
-    return deployment->uid();
+
+    return dep_info->uid();
   }
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder(
