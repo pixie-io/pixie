@@ -16,6 +16,7 @@
 
 load("@protocol_inference//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//bazel:pl_build_system.bzl", "pl_py_test")
 
 lib_srcs = glob([
     "data/*.py",
@@ -28,6 +29,10 @@ lib_srcs.append("__init__.py")
 py_library(
     name = "protocol_inference_lib",
     srcs = lib_srcs,
+    deps = [
+        requirement("prettytable"),
+        requirement("termcolor"),
+    ]
 )
 
 py_binary(
@@ -54,6 +59,5 @@ py_binary(
         ":protocol_inference_lib",
         requirement("torch"),
         requirement("pandas"),
-        requirement("matplotlib"),
     ],
 )

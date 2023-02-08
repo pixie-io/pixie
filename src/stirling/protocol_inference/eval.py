@@ -80,7 +80,7 @@ def main():
 
     print(f"{metric}: ", metric.avg())
     print(metric.confusion_matrix)
-    plot_confusion_matrix(metric.confusion_matrix.numpy(), args.output_dir)
+    plot_confusion_matrix(metric.confusion_matrix.numpy())
 
 
 if __name__ == "__main__":

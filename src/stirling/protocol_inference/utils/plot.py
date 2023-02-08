@@ -14,14 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from copy import copy
 import os
 
-import numpy as np
-import matplotlib.pyplot as plt
 from model.metadata import kTargetProtocols
+from prettytable import PrettyTable
+from termcolor import colored
 
 
-def plot_confusion_matrix(matrix, save_dir):
+def plot_confusion_matrix(matrix):
     num_protocols = len(kTargetProtocols)
 
     total_packets = matrix.sum(axis=1)
@@ -29,26 +30,22 @@ def plot_confusion_matrix(matrix, save_dir):
     # Normalize each row of the matrix.
     matrix = matrix / (total_packets + 1e-8)[:, None]
 
-    fig, ax = plt.subplots()
-    ax.imshow(matrix)
-    ax.set_xticks(np.arange(num_protocols))
-    ax.set_yticks(np.arange(num_protocols))
+    columns = copy(kTargetProtocols)
+    columns.insert(0, "Y axis")
 
-    ax.set_xticklabels(kTargetProtocols)
+    table = PrettyTable()
+    table.field_names = columns
 
-    ylabels = [f"{proto}({int(num)})" for proto, num in zip(kTargetProtocols, total_packets)]
-    ax.set_yticklabels(ylabels)
-
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    first_column = [f"{proto}({int(num)})" for proto, num in zip(kTargetProtocols, total_packets)]
 
     for i in range(num_protocols):
+        columns = [first_column[i]]
         for j in range(num_protocols):
+            elem = f"{matrix[i, j] * 100 :.1f}%"
             if matrix[i, j] > 0.5:
-                color = (0, 0, 0)
+                columns.append(colored(elem, "yellow"))
             else:
-                color = (1, 1, 1)
-            _ = ax.text(j, i, f"{matrix[i, j] * 100 :.1f}%", ha="center", va="center", color=color,
-                        fontsize="xx-small")
-    ax.set_title("Confusion Matrix")
-    fig.tight_layout()
-    plt.savefig(os.path.join(save_dir, "confusion_matrix.jpg"), dpi=300)
+                columns.append(elem)
+
+        table.add_row(columns)
+    print(table)
