@@ -1,0 +1,59 @@
+#!/bin/bash
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# We need proc mounted, otherwise the future mounts commands will fail.
+mount -t proc none /proc
+
+# Remount the root filesystem, since it starts out read-only.
+mount -o rw,remount /
+
+mount -t sysfs none /sys
+mount -t debugfs none /sys/kernel/debug
+mount -t cgroup2 none /sys/fs/cgroup
+mount -t bpf none /sys/fs/bpf
+mount -t tracefs none /sys/kernel/tracing
+#mount -t devtmpfs udev /dev
+mount -t tmpfs tmpfs /run
+
+mkdir -p /dev/shm
+mount -t tmpfs tmpfs /dev/shm
+
+# Mount the test filesystem.
+mkdir -p /test_fs
+mount -t 9p -o trans=virtio test_fs /test_fs || true
+
+ip link set dev lo up
+
+if [[ -f "/etc/hostname" ]]; then
+    hostname -F /etc/hostname
+fi
+
+
+cat <<EOF
+
+Boot took $(cut -d' ' -f1 /proc/uptime) seconds
+
+Welcome to PX BPF Runner
+
+EOF
+
+test_runner="/test_fs/test_runner"
+if [[ -x "${test_runner}" ]]; then
+  exec "${test_runner}"
+else
+  exec /bin/bash
+fi
