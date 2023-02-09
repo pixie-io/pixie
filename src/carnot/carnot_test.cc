@@ -1184,7 +1184,7 @@ class TransferResultChunkTests : public CarnotTest,
 };
 TEST_P(TransferResultChunkTests, send_and_forward_messages) {
   grpc::ServerBuilder builder;
-  builder.AddListeningPort("localhost:0", grpc::InsecureServerCredentials());
+  builder.AddListeningPort("127.0.0.1:0", grpc::InsecureServerCredentials());
   builder.RegisterService(router_);
   auto grpc_server = builder.BuildAndStart();
 
