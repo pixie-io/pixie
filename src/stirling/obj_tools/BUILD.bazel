@@ -51,7 +51,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
     ],
     deps = [
         ":cc_library",
@@ -119,7 +119,7 @@ pl_cc_test(
     name = "go_syms_test",
     srcs = ["go_syms_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
     ],
     deps = [
         ":cc_library",
