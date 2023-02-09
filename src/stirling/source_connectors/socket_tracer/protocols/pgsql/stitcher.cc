@@ -432,9 +432,6 @@ RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessa
   while (req_iter != reqs->end() && resp_iter != resps->end()) {
     auto& req = *req_iter;
     ++req_iter;
-    if (resp_iter->consumed) {
-      continue;
-    }
 
     // TODO(yzhao): Use a map to encode request type and the actions to find the response.
     // So we can get rid of the switch statement.
