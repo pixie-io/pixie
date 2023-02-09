@@ -19,7 +19,7 @@ load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("//bazel:repositories.bzl", "list_pl_deps")
 load("//bazel/cc_toolchains:llvm_libs.bzl", "llvm_variant_repo_name", "llvm_variant_setting_label", "llvm_variants")
-load("//bazel/cc_toolchains/sysroots:images.bzl", "sysroot_runtime_image")
+load("//bazel/cc_toolchains/sysroots:images.bzl", "sysroot_runtime_image", "sysroot_test_image")
 load("//bazel/external/ubuntu_packages:packages.bzl", "packages")
 
 licenses(["restricted"])
@@ -177,9 +177,20 @@ container_image(
 )
 
 container_image(
-    name = "pl_cc_base_debug_image",
+    name = "pl_cc_base_debug_image_default",
     base = "@base_image_debug//image",
     debs = pl_cc_base_packages,
+    visibility = ["//visibility:public"],
+)
+
+sysroot_test_image(
+    name = "pl_cc_base_debug_image_no_extra_files",
+    default_image = ":pl_cc_base_debug_image_default",
+)
+
+container_image(
+    name = "pl_cc_base_debug_image",
+    base = ":pl_cc_base_debug_image_no_extra_files",
     files = [
         "//:embedding.proto",
         "//:sentencepiece.proto",
