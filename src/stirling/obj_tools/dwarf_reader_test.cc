@@ -33,7 +33,7 @@ constexpr std::string_view kTestGo1_18Binary =
 constexpr std::string_view kTestGo1_19Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_19_binary";
 constexpr std::string_view kGoGRPCServer =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/go/sockshop_payments_service";
@@ -511,18 +511,24 @@ TEST_P(GolangDwarfReaderTest, FunctionArgInfo) {
         dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
         UnorderedElementsAre(
             Pair("f", ArgInfo{TypeInfo{VarType::kPointer, "*net/http.http2Framer"},
-                              {LocationType::kStack, 0}}),
-            Pair("streamID",
-                 ArgInfo{TypeInfo{VarType::kBaseType, "uint32"}, {LocationType::kStack, 8}}),
-            Pair("endStream",
-                 ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 12}}),
-            Pair("data",
-                 ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 16}}),
-            Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"}, {LocationType::kStack, 40}}),
+                              {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
+            Pair("streamID", ArgInfo{TypeInfo{VarType::kBaseType, "uint32"},
+                                     {LocationType::kRegister, 8, {RegisterName::kRBX}}}),
+            Pair("endStream", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
+                                      {LocationType::kRegister, 16, {RegisterName::kRCX}}}),
+            Pair("data", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
+                                 {LocationType::kRegister,
+                                  24,
+                                  {RegisterName::kRDI, RegisterName::kRSI, RegisterName::kR8}}}),
+            Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
+                                {LocationType::kRegister,
+                                 48,
+                                 {RegisterName::kR9, RegisterName::kR10, RegisterName::kR11}}}),
             // The returned "error" variable has a different decl_type than the type_name.
-            Pair("~r4", ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface", "error"},
-                                {LocationType::kStack, 64},
-                                true})));
+            Pair("~r0",
+                 ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface", "error"},
+                         {LocationType::kRegister, 0, {RegisterName::kRAX, RegisterName::kRBX}},
+                         true})));
   }
 }
 

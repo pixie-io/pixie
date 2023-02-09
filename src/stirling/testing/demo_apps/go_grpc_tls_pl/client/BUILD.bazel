@@ -46,13 +46,6 @@ pl_go_binary(
 )
 
 go_cross_binary(
-    name = "golang_1_16_grpc_tls_client_binary",
-    sdk_version = "1.16",
-    tags = ["manual"],
-    target = ":client",
-)
-
-go_cross_binary(
     name = "golang_1_17_grpc_tls_client_binary",
     sdk_version = "1.17",
     tags = ["manual"],
@@ -71,22 +64,6 @@ go_cross_binary(
     sdk_version = "1.19",
     tags = ["manual"],
     target = ":client",
-)
-
-container_image(
-    name = "golang_1_16_grpc_tls_client",
-    base = "//:pl_go_base_image",
-    entrypoint = [
-        "./golang_1_16_grpc_tls_client_binary",
-        "--client_tls_cert=/certs/client.crt",
-        "--client_tls_key=/certs/client.key",
-        "--tls_ca_cert=/certs/ca.crt",
-        "--count=1",
-    ],
-    files = [
-        ":golang_1_16_grpc_tls_client_binary",
-    ],
-    layers = [":certs_layer"],
 )
 
 container_image(
