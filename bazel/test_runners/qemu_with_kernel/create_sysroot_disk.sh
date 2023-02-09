@@ -24,16 +24,17 @@ SYSROOT=""
 EXTRAS=""
 
 usage() {
-    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2>"
+    echo "Usage: $0 -o <output_disk> -s <sysroot tar.gz> -b <busybox> -e <src>:<dest>,<src2>:<dest2> -k <kernel_package>"
     echo "       <output_disk>           The generated ext2fs file system image as a qcow2 file"
     echo "       <sysroot.tar.gz>        The input sysroot to use for the disk"
     echo "       <additional_files>      Additional files that need to be written to the image"
+    echo "       <kernel package>        The tar.gz package of kernel and header files."
     exit 1
 }
 
 parse_args() {
   local OPTIND
-  while getopts "o:e:s:b:h" opt; do
+  while getopts "o:e:s:b:k:h" opt; do
     case ${opt} in
       o)
 	OUTPUT_DISK=$OPTARG
@@ -46,6 +47,9 @@ parse_args() {
         ;;
       b)
 	BUSYBOX=$OPTARG
+	;;
+      k)
+	KERNEL_PACKAGE=$OPTARG
 	;;
       :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
@@ -92,9 +96,15 @@ if [[ -z "${BUSYBOX}" || ! -f "${BUSYBOX}" ]]; then
     usage
 fi
 
+if [[ -z "${KERNEL_PACKAGE}" || ! -f "${KERNEL_PACKAGE}" ]]; then
+    echo "-k : kernel package is a required argument and needs to point to tar.gz file."
+    usage
+fi
+
 SYSROOT="$(realpath "${SYSROOT}")"
 OUTPUT_DISK="$(realpath "${OUTPUT_DISK}")"
 BUSYBOX="$(realpath "${BUSYBOX}")"
+KERNEL_PACKAGE="$(realpath "${KERNEL_PACKAGE}")"
 
 # Need to remove disk to prevent mke2fs from becoming interactive.
 if [[ -f "${OUTPUT_DISK}" ]]; then
@@ -114,6 +124,10 @@ sysroot_build_dir="${build_dir}/sysroot"
 mkdir -p "${sysroot_build_dir}"
 
 tar -C "${sysroot_build_dir}" -xf "${SYSROOT}"
+
+# Extract the kernel modules.
+tar -C "${sysroot_build_dir}" -xf "${KERNEL_PACKAGE}" \
+  --strip-components=2 pkg/root
 
 # Copy over required extra files.
 IFS=',' read -ra extra_files <<< "${EXTRAS}"
