@@ -56,6 +56,13 @@ while read -r path; do
   fi
 done < <(yq eval -N '.path_excludes[]' "${@:4}")
 
+declare -A extra_dirs
+while read -r dir; do
+  if [ -n "${dir}" ]; then
+    extra_dirs["${dir}"]=true
+  fi
+done < <(yq eval -N '.extra_dirs[]' "${@:4}")
+
 relativize_symlinks() {
   dir="$1"
   libdirs=("lib" "lib64" "usr/lib")
@@ -81,6 +88,11 @@ inside_tmpdir() {
   while read -r deb; do
     dpkg-deb -x "${deb}" "${root_dir}" &>/dev/null
   done < <(ls -- *.deb)
+
+  for dir in "${!extra_dirs[@]}"
+  do
+    mkdir -p "${root_dir}/${dir}"
+  done
 
   for path in "${!paths_to_exclude[@]}"
   do
