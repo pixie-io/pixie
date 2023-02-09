@@ -84,20 +84,6 @@ go_cross_binary(
 )
 
 container_image(
-    name = "golang_1_16_https_server",
-    base = "//:pl_go_base_image",
-    entrypoint = [
-        "./golang_1_16_server_binary",
-        "--cert=server.crt",
-        "--key=server.key",
-    ],
-    files = [
-        ":golang_1_16_server_binary",
-        ":server_certs",
-    ],
-)
-
-container_image(
     name = "golang_1_17_https_server",
     base = "//:pl_go_base_image",
     entrypoint = [

@@ -53,10 +53,10 @@ TEST(BCCWrapper, UnexpectedExtraTrigger) {
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
-  ::px::stirling::testing::Go1_16_GRPCServerContainer server1;
-  ::px::stirling::testing::Go1_16_GRPCServerContainer server2;
-  ::px::stirling::testing::Go1_16_GRPCClientContainer client1;
-  ::px::stirling::testing::Go1_16_GRPCClientContainer client2;
+  ::px::stirling::testing::Go1_19_GRPCServerContainer server1;
+  ::px::stirling::testing::Go1_19_GRPCServerContainer server2;
+  ::px::stirling::testing::Go1_19_GRPCClientContainer client1;
+  ::px::stirling::testing::Go1_19_GRPCClientContainer client2;
 
   // A Uprobe template for the GRPCServerContainer.
   // Binary path is set later.
@@ -68,7 +68,7 @@ TEST(BCCWrapper, UnexpectedExtraTrigger) {
   };
 
   // A templated path to the server. We will replace $0 with the pid of the server instance.
-  const std::string kServerPath = "/proc/$0/root/golang_1_16_grpc_tls_server_binary";
+  const std::string kServerPath = "/proc/$0/root/golang_1_19_grpc_tls_server_binary";
 
   // Run server 1 and attach uprobes to it.
   ASSERT_OK(server1.Run(std::chrono::seconds{60}));
