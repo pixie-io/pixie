@@ -130,7 +130,10 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
     }
   }
 
-  // Move the iterator pass the last message.
+  // TODO(ddelnano): This iterator incrementing should likely happen
+  // after the InvalidArgument error is returned below. This should only
+  // impact the case when there is an error, but we are leaving as is
+  // avoid a larger change without further verification.
   if (*resp_iter != end) {
     ++(*resp_iter);
   }
@@ -204,6 +207,10 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     }
   }
 
+  // TODO(ddelnano): This iterator incrementing should likely happen
+  // after the InvalidArgument error is returned below. This should only
+  // impact the case when there is an error, but we are leaving as is
+  // avoid a larger change without further verification.
   if (*resp_iter != end) {
     ++(*resp_iter);
   }
