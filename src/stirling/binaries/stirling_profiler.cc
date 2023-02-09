@@ -117,7 +117,8 @@ int main(int argc, char** argv) {
   // Run for the specified amount of time.
   std::this_thread::sleep_for(std::chrono::seconds(FLAGS_time));
 
-  // The normal
+  // This is not likely because a table push is triggered immediately. But, just in case,
+  // provide some help if no data was received.
   LOG_IF(WARNING, !g_data_received) << "No data received from profiler. Try increasing -time or "
                                        "reducing -stirling_profiler_table_update_period_seconds.";
 
