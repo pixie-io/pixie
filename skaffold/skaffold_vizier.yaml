@@ -108,3 +108,15 @@ profiles:
     path: /manifests/kustomize/paths
     value:
     - k8s/vizier/etcd_metadata
+- name: aarch64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=aarch64_sysroot
+- name: x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot
