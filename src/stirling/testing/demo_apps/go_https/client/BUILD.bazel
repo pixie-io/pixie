@@ -64,11 +64,6 @@ go_cross_binary(
 )
 
 pl_go_image(
-    name = "golang_1_16_https_client",
-    binary = ":golang_1_16_client_binary",
-)
-
-pl_go_image(
     name = "golang_1_17_https_client",
     binary = ":golang_1_17_client_binary",
 )

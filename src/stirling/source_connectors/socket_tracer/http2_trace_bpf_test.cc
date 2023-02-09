@@ -60,11 +60,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
   typename TClientServerContainers::ClientContainer client_;
 };
 
-struct Go1_16GRPCClientServerContainers {
-  using ServerContainer = ::px::stirling::testing::Go1_16_GRPCServerContainer;
-  using ClientContainer = ::px::stirling::testing::Go1_16_GRPCClientContainer;
-};
-
 struct Go1_17GRPCClientServerContainers {
   using ServerContainer = ::px::stirling::testing::Go1_17_GRPCServerContainer;
   using ClientContainer = ::px::stirling::testing::Go1_17_GRPCClientContainer;
@@ -80,9 +75,9 @@ struct Go1_19GRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::Go1_19_GRPCClientContainer;
 };
 
-// Use a typed test to run the test for Go 1.16 - Go 1.19.
-typedef ::testing::Types<Go1_16GRPCClientServerContainers, Go1_17GRPCClientServerContainers,
-                         Go1_18GRPCClientServerContainers, Go1_19GRPCClientServerContainers>
+// Use a typed test to run the test for Go 1.17 - Go 1.19.
+typedef ::testing::Types<Go1_17GRPCClientServerContainers, Go1_18GRPCClientServerContainers,
+                         Go1_19GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 

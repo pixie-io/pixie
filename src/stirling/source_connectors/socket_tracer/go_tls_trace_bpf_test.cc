@@ -58,11 +58,6 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
   typename TClientServerContainers::GoTLSClientContainer client_;
 };
 
-struct Go1_16TLSClientServerContainers {
-  using GoTLSServerContainer = ::px::stirling::testing::Go1_16_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_16_TLSClientContainer;
-};
-
 struct Go1_17TLSClientServerContainers {
   using GoTLSServerContainer = ::px::stirling::testing::Go1_17_TLSServerContainer;
   using GoTLSClientContainer = ::px::stirling::testing::Go1_17_TLSClientContainer;
@@ -78,8 +73,8 @@ struct Go1_19TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
 };
 
-typedef ::testing::Types<Go1_16TLSClientServerContainers, Go1_17TLSClientServerContainers,
-                         Go1_18TLSClientServerContainers, Go1_19TLSClientServerContainers>
+typedef ::testing::Types<Go1_17TLSClientServerContainers, Go1_18TLSClientServerContainers,
+                         Go1_19TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
