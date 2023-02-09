@@ -102,6 +102,13 @@ Status StandaloneAgentMetadataStateManager::PerformMetadataStateUpdate() {
   shadow_state->set_epoch_id(epoch_id);
   shadow_state->set_last_update_ts_ns(ts);
 
+  // Set Pod CIDR to be as exclusive as possible, because client-side tracing will be
+  // disabled for any addresses that fall in the CIDR.
+  px::CIDRBlock pod_cidr;
+  std::string pod_cidr_str("0.0.0.1/32");
+  PX_RETURN_IF_ERROR(px::ParseCIDRBlock(pod_cidr_str, &pod_cidr));
+  shadow_state->k8s_metadata_state()->set_pod_cidrs({pod_cidr});
+
   {
     absl::base_internal::SpinLockHolder lock(&agent_metadata_state_lock_);
     agent_metadata_state_ = std::move(shadow_state);
