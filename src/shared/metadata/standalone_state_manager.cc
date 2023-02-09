@@ -106,10 +106,8 @@ Status StandaloneAgentMetadataStateManager::PerformMetadataStateUpdate() {
   // disabled for any addresses that fall in the CIDR.
   px::CIDRBlock pod_cidr;
   std::string pod_cidr_str("0.0.0.1/32");
-  Status s = px::ParseCIDRBlock(pod_cidr_str, &pod_cidr);
-  if (s.ok()) {
-    shadow_state->k8s_metadata_state()->set_pod_cidrs({pod_cidr});
-  }
+  PX_RETURN_IF_ERROR(px::ParseCIDRBlock(pod_cidr_str, &pod_cidr));
+  shadow_state->k8s_metadata_state()->set_pod_cidrs({pod_cidr});
 
   {
     absl::base_internal::SpinLockHolder lock(&agent_metadata_state_lock_);
