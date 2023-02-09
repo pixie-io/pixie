@@ -8,3 +8,5 @@ include:
 - libunwind8
 path_excludes:
 - usr/share/
+extra_dirs:
+- tmp/
