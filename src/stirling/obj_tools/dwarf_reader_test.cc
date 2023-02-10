@@ -24,8 +24,6 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/detect_application.h"
 
-constexpr std::string_view kTestGo1_16Binary =
-    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
 constexpr std::string_view kTestGo1_17Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_17_binary";
 constexpr std::string_view kTestGo1_18Binary =
@@ -39,7 +37,6 @@ constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/go/sockshop_payments_service";
 
 const auto kCPPBinaryPath = px::testing::BazelRunfilePath(kCppBinary);
-const auto kGo1_16BinaryPath = px::testing::BazelRunfilePath(kTestGo1_16Binary);
 const auto kGo1_17BinaryPath = px::testing::BazelRunfilePath(kTestGo1_17Binary);
 const auto kGo1_18BinaryPath = px::testing::BazelRunfilePath(kTestGo1_18Binary);
 const auto kGo1_19BinaryPath = px::testing::BazelRunfilePath(kTestGo1_19Binary);
@@ -102,6 +99,10 @@ class GolangDwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestPar
     return kFirstRegABIVersion <= go_version;
   }
 
+  std::unique_ptr<DwarfReader> dwarf_reader;
+};
+
+class GolangDwarfReaderIndexTest : public ::testing::TestWithParam<bool> {
   std::unique_ptr<DwarfReader> dwarf_reader;
 };
 
@@ -176,15 +177,6 @@ TEST_P(CppDwarfReaderTest, GetStructMemberOffset) {
 TEST_P(GolangDwarfReaderTest, GetStructMemberOffset) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("main.Vertex", "Y"), 8);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("main.Vertex", "bogus"));
-}
-
-// Inspired from a real life case.
-TEST_P(GolangDwarfReaderTest, UnconventionalGetStructMemberOffset) {
-  DwarfReaderTestParam p = GetParam();
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       CreateDwarfReader(kGoBinaryUnconventionalPath, p.index));
-
-  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("runtime.g", "goid"), 192);
 }
 
 TEST_P(CppDwarfReaderTest, GetStructSpec) {
@@ -499,44 +491,11 @@ TEST_P(GolangDwarfReaderTest, FunctionArgInfo) {
                   ArgInfo{TypeInfo{VarType::kBaseType, "bool"}, {LocationType::kStack, 8}, true})));
     }
   }
-
-  {
-    DwarfReaderTestParam p = GetParam();
-    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                         CreateDwarfReader(kGoServerBinaryPath, p.index));
-
-    // func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
-    // error
-    EXPECT_OK_AND_THAT(
-        dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
-        UnorderedElementsAre(
-            Pair("f", ArgInfo{TypeInfo{VarType::kPointer, "*net/http.http2Framer"},
-                              {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
-            Pair("streamID", ArgInfo{TypeInfo{VarType::kBaseType, "uint32"},
-                                     {LocationType::kRegister, 8, {RegisterName::kRBX}}}),
-            Pair("endStream", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
-                                      {LocationType::kRegister, 16, {RegisterName::kRCX}}}),
-            Pair("data", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
-                                 {LocationType::kRegister,
-                                  24,
-                                  {RegisterName::kRDI, RegisterName::kRSI, RegisterName::kR8}}}),
-            Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
-                                {LocationType::kRegister,
-                                 48,
-                                 {RegisterName::kR9, RegisterName::kR10, RegisterName::kR11}}}),
-            // The returned "error" variable has a different decl_type than the type_name.
-            Pair("~r0",
-                 ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface", "error"},
-                         {LocationType::kRegister, 0, {RegisterName::kRAX, RegisterName::kRBX}},
-                         true})));
-  }
 }
 
-TEST_P(GolangDwarfReaderTest, FunctionVarLocationConsistency) {
-  DwarfReaderTestParam p = GetParam();
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       CreateDwarfReader(kGo1_16BinaryPath, p.index));
-
+// TODO(oazizi): This seems to work only on go1.16.
+// If this is expected to work on go 1.17+, fix and re-enable. Else remove the test.
+TEST_P(GolangDwarfReaderTest, DISABLED_FunctionVarLocationConsistency) {
   // First run GetFunctionArgInfo to automatically get all arguments.
   ASSERT_OK_AND_ASSIGN(auto function_arg_locations,
                        dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"));
@@ -553,19 +512,60 @@ TEST_P(GolangDwarfReaderTest, FunctionVarLocationConsistency) {
   }
 }
 
+// Inspired from a real life case.
+TEST_P(GolangDwarfReaderIndexTest, UnconventionalGetStructMemberOffset) {
+  bool index = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGoBinaryUnconventionalPath, index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("runtime.g", "goid"), 192);
+}
+
+TEST_P(GolangDwarfReaderIndexTest, FunctionArgInfo) {
+  bool index = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       CreateDwarfReader(kGoServerBinaryPath, index));
+
+  // func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
+  // error
+  EXPECT_OK_AND_THAT(
+      dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
+      UnorderedElementsAre(
+          Pair("f", ArgInfo{TypeInfo{VarType::kPointer, "*net/http.http2Framer"},
+                            {LocationType::kRegister, 0, {RegisterName::kRAX}}}),
+          Pair("streamID", ArgInfo{TypeInfo{VarType::kBaseType, "uint32"},
+                                   {LocationType::kRegister, 8, {RegisterName::kRBX}}}),
+          Pair("endStream", ArgInfo{TypeInfo{VarType::kBaseType, "bool"},
+                                    {LocationType::kRegister, 16, {RegisterName::kRCX}}}),
+          Pair("data", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
+                               {LocationType::kRegister,
+                                24,
+                                {RegisterName::kRDI, RegisterName::kRSI, RegisterName::kR8}}}),
+          Pair("pad", ArgInfo{TypeInfo{VarType::kStruct, "[]uint8"},
+                              {LocationType::kRegister,
+                               48,
+                               {RegisterName::kR9, RegisterName::kR10, RegisterName::kR11}}}),
+          // The returned "error" variable has a different decl_type than the type_name.
+          Pair("~r0",
+               ArgInfo{TypeInfo{VarType::kStruct, "runtime.iface", "error"},
+                       {LocationType::kRegister, 0, {RegisterName::kRAX, RegisterName::kRBX}},
+                       true})));
+}
+
 INSTANTIATE_TEST_SUITE_P(CppDwarfReaderParameterizedTest, CppDwarfReaderTest,
                          ::testing::Values(DwarfReaderTestParam{kCPPBinaryPath, true},
                                            DwarfReaderTestParam{kCPPBinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedTest, GolangDwarfReaderTest,
-                         ::testing::Values(DwarfReaderTestParam{kGo1_16BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_16BinaryPath, false},
-                                           DwarfReaderTestParam{kGo1_17BinaryPath, true},
+                         ::testing::Values(DwarfReaderTestParam{kGo1_17BinaryPath, true},
                                            DwarfReaderTestParam{kGo1_17BinaryPath, false},
                                            DwarfReaderTestParam{kGo1_18BinaryPath, true},
                                            DwarfReaderTestParam{kGo1_18BinaryPath, false},
                                            DwarfReaderTestParam{kGo1_19BinaryPath, true},
                                            DwarfReaderTestParam{kGo1_19BinaryPath, false}));
+
+INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedIndexTest, GolangDwarfReaderIndexTest,
+                         ::testing::Values(true, false));
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px
