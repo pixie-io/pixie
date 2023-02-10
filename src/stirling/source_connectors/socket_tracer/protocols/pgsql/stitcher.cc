@@ -35,12 +35,6 @@ namespace pgsql {
 
 namespace {
 
-void AdvanceIterBeyondTimestamp(MsgDeqIter* start, const MsgDeqIter& end, uint64_t ts) {
-  while (*start != end && (*start)->timestamp_ns < ts) {
-    ++(*start);
-  }
-}
-
 template <typename TElemType>
 class DequeView {
  public:
@@ -97,6 +91,7 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
       }
 
       PX_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &resp->cmd_cmpl));
+      iter->consumed = true;
       break;
     }
 
@@ -108,6 +103,7 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
       }
 
       PX_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
+      iter->consumed = true;
       break;
     }
 
@@ -119,16 +115,25 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
       }
 
       PX_RETURN_IF_ERROR(ParseRowDesc(*iter, &resp->row_desc));
+      iter->consumed = true;
     }
 
+    // The response to a SELECT query (or other queries that return row sets, such as EXPLAIN or
+    // SHOW) normally consists of RowDescription, zero or more DataRow messages, and then
+    // CommandComplete. Therefore we should not break out of the for loop once the first DataRow
+    // message is parsed.
     if (iter->tag == Tag::kDataRow) {
       DataRow data_row;
       PX_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
       resp->data_rows.push_back(std::move(data_row));
+      iter->consumed = true;
     }
   }
 
-  // Move the iterator pass the last message.
+  // TODO(ddelnano): This iterator incrementing should likely happen
+  // after the InvalidArgument error is returned below. This should only
+  // impact the case when there is an error, but we are leaving as is
+  // avoid a larger change without further verification.
   if (*resp_iter != end) {
     ++(*resp_iter);
   }
@@ -157,12 +162,15 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     if (iter->tag == Tag::kEmptyQueryResponse) {
       found_resp = true;
       req_resp->resp.timestamp_ns = iter->timestamp_ns;
+      iter->consumed = true;
       break;
     }
 
     if (iter->tag == Tag::kCmdComplete) {
       found_resp = true;
       PX_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &req_resp->resp.cmd_cmpl));
+
+      iter->consumed = true;
       req_resp->resp.timestamp_ns = req_resp->resp.cmd_cmpl.timestamp_ns;
       break;
     }
@@ -170,6 +178,8 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     if (iter->tag == Tag::kErrResp) {
       found_resp = true;
       PX_RETURN_IF_ERROR(ParseErrResp(*iter, &req_resp->resp.err_resp));
+
+      iter->consumed = true;
       req_resp->resp.timestamp_ns = req_resp->resp.err_resp.timestamp_ns;
       break;
     }
@@ -179,18 +189,28 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
       req_resp->resp.cmd_cmpl.timestamp_ns = iter->timestamp_ns;
       PX_RETURN_IF_ERROR(ParseRowDesc(*iter, &req_resp->resp.row_desc));
 
+      iter->consumed = true;
       req_resp->resp.timestamp_ns = req_resp->resp.row_desc.timestamp_ns;
     }
 
+    // The response to a SELECT query (or other queries that return row sets, such as EXPLAIN or
+    // SHOW) normally consists of RowDescription, zero or more DataRow messages, and then
+    // CommandComplete. Therefore we should not break out of the for loop once the first DataRow
+    // message is parsed.
     if (iter->tag == Tag::kDataRow) {
       DataRow data_row;
       PX_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
 
+      iter->consumed = true;
       req_resp->resp.timestamp_ns = data_row.timestamp_ns;
       req_resp->resp.data_rows.push_back(std::move(data_row));
     }
   }
 
+  // TODO(ddelnano): This iterator incrementing should likely happen
+  // after the InvalidArgument error is returned below. This should only
+  // impact the case when there is an error, but we are leaving as is
+  // avoid a larger change without further verification.
   if (*resp_iter != end) {
     ++(*resp_iter);
   }
@@ -234,6 +254,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     PX_RETURN_IF_ERROR(ParseErrResp(*iter, &err_resp));
     req_resp->resp.msg = err_resp;
   }
+  iter->consumed = true;
 
   return Status::OK();
 }
@@ -279,6 +300,8 @@ Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const M
     req_resp->resp.msg = std::move(err_resp);
   }
 
+  iter->consumed = true;
+
   return Status::OK();
 }
 
@@ -296,6 +319,7 @@ Status FillStmtDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqRes
   if (iter->tag == Tag::kErrResp) {
     resp->is_err_resp = true;
     PX_RETURN_IF_ERROR(ParseErrResp(*iter, &resp->err_resp));
+    iter->consumed = true;
     return Status::OK();
   }
 
@@ -307,11 +331,16 @@ Status FillStmtDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqRes
   *resp_iter = iter + 1;
 
   if (iter->tag == Tag::kRowDesc) {
-    return ParseRowDesc(*iter, &resp->row_desc);
+    auto s = ParseRowDesc(*iter, &resp->row_desc);
+    if (s.ok()) {
+      iter->consumed = true;
+    }
+    return s;
   }
 
   if (iter->tag == Tag::kNoData) {
     resp->is_no_data = true;
+    iter->consumed = true;
     return Status::OK();
   }
 
@@ -373,9 +402,7 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
   TReqRespType req_resp;                                  \
   auto status = expr;                                     \
   if (status.ok()) {                                      \
-    RegularMessage req;                                   \
-    req.tag = cur_iter->tag;                              \
-    req.timestamp_ns = req_resp.req.timestamp_ns;         \
+    req.consumed = true;                                  \
     DCHECK_NE(req.timestamp_ns, 0U);                      \
     req.payload = req_resp.req.ToString();                \
     RegularMessage resp;                                  \
@@ -384,6 +411,7 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
     resp.payload = req_resp.resp.ToString();              \
     records.push_back({std::move(req), std::move(resp)}); \
   } else {                                                \
+    VLOG(2) << "Encountered error: " << status;           \
     ++error_count;                                        \
   }
 
@@ -409,43 +437,37 @@ RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessa
   //
   // TODO(yzhao): Research batch and pipeline mode and confirm their behaviors.
   while (req_iter != reqs->end() && resp_iter != resps->end()) {
-    // First advance response iterator to be at or later than the request's time stamp.
-    AdvanceIterBeyondTimestamp(&resp_iter, resps->end(), req_iter->timestamp_ns);
-
-    auto cur_iter = req_iter++;
+    auto& req = *req_iter;
+    ++req_iter;
 
     // TODO(yzhao): Use a map to encode request type and the actions to find the response.
-    // So we can get rid of the switch statement. That also include AdvanceIterBeyondTimestamp()
-    // into the handler functions, such that the logic is more grouped.
-    switch (cur_iter->tag) {
+    // So we can get rid of the switch statement.
+    switch (req.tag) {
       case Tag::kReadyForQuery:
       case Tag::kSync:
       case Tag::kCopyFail:
       case Tag::kClose:
       case Tag::kPasswd:
-        VLOG(1) << "Ignore tag: " << static_cast<char>(cur_iter->tag);
+        VLOG(1) << "Ignore tag: " << static_cast<char>(req.tag);
         break;
       case Tag::kQuery: {
-        CALL_HANDLER(QueryReqResp, HandleQuery(*cur_iter, &resp_iter, resps->end(), &req_resp));
+        CALL_HANDLER(QueryReqResp, HandleQuery(req, &resp_iter, resps->end(), &req_resp));
         break;
       }
       case Tag::kParse: {
-        CALL_HANDLER(ParseReqResp,
-                     HandleParse(*cur_iter, &resp_iter, resps->end(), &req_resp, state));
+        CALL_HANDLER(ParseReqResp, HandleParse(req, &resp_iter, resps->end(), &req_resp, state));
         break;
       }
       case Tag::kBind: {
-        CALL_HANDLER(BindReqResp,
-                     HandleBind(*cur_iter, &resp_iter, resps->end(), &req_resp, state));
+        CALL_HANDLER(BindReqResp, HandleBind(req, &resp_iter, resps->end(), &req_resp, state));
         break;
       }
       case Tag::kDesc: {
-        CALL_HANDLER(DescReqResp, HandleDesc(*cur_iter, &resp_iter, resps->end(), &req_resp));
+        CALL_HANDLER(DescReqResp, HandleDesc(req, &resp_iter, resps->end(), &req_resp));
         break;
       }
       case Tag::kExecute: {
-        CALL_HANDLER(ExecReqResp,
-                     HandleExecute(*cur_iter, &resp_iter, resps->end(), &req_resp, state));
+        CALL_HANDLER(ExecReqResp, HandleExecute(req, &resp_iter, resps->end(), &req_resp, state));
         break;
       }
       case Tag::kTerminate: {
@@ -453,14 +475,26 @@ RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessa
         break;
       }
       default:
-        LOG_EVERY_N(WARNING, 100) << "Unhandled or invalid tag: "
-                                  << static_cast<char>(cur_iter->tag);
+        LOG_EVERY_N(WARNING, 100) << "Unhandled or invalid tag: " << static_cast<char>(req.tag);
         break;
     }
   }
 
-  reqs->erase(reqs->begin(), req_iter);
-  resps->erase(resps->begin(), resp_iter);
+  auto it = reqs->begin();
+  while (it != reqs->end()) {
+    if (!(*it).consumed) {
+      break;
+    }
+    it++;
+  }
+
+  // Since postgres is an in-order protocol, remove the consumed requests and
+  // all responses. We assume if a response is accessible, the matching request
+  // would have been seen already.
+  // TODO(ddelnano): Standarize this across protocols at a later time. See
+  // https://github.com/pixie-io/pixie/issues/733 for more details.
+  reqs->erase(reqs->begin(), it);
+  resps->clear();
 
   return {records, error_count};
 }

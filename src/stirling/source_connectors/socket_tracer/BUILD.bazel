@@ -282,8 +282,6 @@ pl_cc_test(
     flaky = True,
     shard_count = 2,
     tags = [
-        # TODO: This test has a <90% pass rate in CI, please fix and re-enable.
-        "disabled_flaky_test",
         "cpu:16",
         "no_asan",
         "requires_bpf",

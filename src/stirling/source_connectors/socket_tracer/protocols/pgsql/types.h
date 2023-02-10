@@ -154,6 +154,7 @@ struct RegularMessage : public FrameBase {
   Tag tag = Tag::kUnknown;
   int32_t len = 0;
   std::string payload;
+  bool consumed = false;
 
   size_t ByteSize() const override { return 5 + payload.size(); }
 
