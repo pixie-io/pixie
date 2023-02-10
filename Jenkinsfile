@@ -62,7 +62,7 @@ isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regressio
 isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression-bpf')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
-isOSSCloudBuildRun = env.JOB_NAME.startsWith('release/oss-cloud/')
+isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-release/oss-cloud/')
 isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
 isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun || isReleaseRun
 
