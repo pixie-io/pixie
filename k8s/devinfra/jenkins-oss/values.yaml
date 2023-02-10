@@ -539,7 +539,7 @@ controller:
                 }
               }
           - script: >
-              multibranchPipelineJob("pixie-release/oss-cloud") {
+              multibranchPipelineJob("pixie-release/cloud") {
                 branchSources {
                   branchSource {
                     source {
@@ -550,7 +550,7 @@ controller:
                         traits {
                           gitTagDiscovery()
                           headWildcardFilter {
-                            includes("release/cloud/staging/*")
+                            includes("release/cloud/prod/*")
                             excludes('')
                           }
                         }
