@@ -44,30 +44,13 @@ using ::px::md::UPID;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::TabletID;
 
-struct Args {
-  uint32_t pid = 0;
-};
+DEFINE_uint32(time, 30, "Number of seconds to run the profiler.");
+DEFINE_uint32(pid, 0, "PID to profile. Leave unspecified to profile everything.");
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 ProcessStatsMonitor* g_process_stats_monitor = nullptr;
 std::atomic<bool> g_data_received = false;
-Args g_args;
-
-Status ParseArgs(int argc, char** argv) {
-  if (argc != 2) {
-    return ::px::error::Internal("Usage: ./stirling_profiler <pid>");
-  }
-
-  std::string_view pid_str(argv[1]);
-
-  bool success = absl::SimpleAtoi(pid_str, &g_args.pid);
-  if (!success) {
-    return ::px::error::Internal("PID is not a valid number: $0", pid_str);
-  }
-
-  return Status::OK();
-}
 
 Status StirlingWrapperCallback(uint64_t /* table_id */, TabletID /* tablet_id */,
                                std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
@@ -79,7 +62,7 @@ Status StirlingWrapperCallback(uint64_t /* table_id */, TabletID /* tablet_id */
   for (size_t i = 0; i < stack_trace_str_col->Size(); ++i) {
     UPID upid(upid_col->Get<px::types::UInt128Value>(i).val);
 
-    if (g_args.pid == upid.pid()) {
+    if (FLAGS_pid == upid.pid() || FLAGS_pid == 0) {
       std::cout << stack_trace_str_col->Get<px::types::StringValue>(i);
       std::cout << " ";
       std::cout << count_col->Get<px::types::Int64Value>(i).val;
@@ -114,8 +97,6 @@ int main(int argc, char** argv) {
 
   px::EnvironmentGuard env_guard(&argc, argv);
 
-  PX_EXIT_IF_ERROR(ParseArgs(argc, argv));
-
   // Make Stirling.
   auto registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<PerfProfileConnector>();
@@ -133,13 +114,15 @@ int main(int argc, char** argv) {
   // Run Stirling.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
-  // Run for the specified amount of time, then terminate.
-  for (int i = 0; i < 100; ++i) {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    if (g_data_received) {
-      break;
-    }
-  }
+  // Run for the specified amount of time.
+  std::this_thread::sleep_for(std::chrono::seconds(FLAGS_time));
+
+  // This is not likely because a table push is triggered immediately. But, just in case,
+  // provide some help if no data was received.
+  LOG_IF(WARNING, !g_data_received) << "No data received from profiler. Try increasing -time or "
+                                       "reducing -stirling_profiler_table_update_period_seconds.";
+
+  // Cleanup.
   stirling->Stop();
 
   // Wait for the thread to return.
