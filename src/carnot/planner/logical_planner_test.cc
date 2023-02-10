@@ -280,7 +280,7 @@ import px
 ###############################################################
 # Pods/services are formatted as <namespace>/<name>.
 # If you want to match a namespace, only keep the namespace portion
-match_name = 'sock-shop/order'
+match_name = ''
 k8s_object = 'service'
 requestor_filter = ''  # 'front-end'
 # Visualization Variables - Dont change unless you know what you are doing
