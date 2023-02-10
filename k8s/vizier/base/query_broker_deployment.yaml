@@ -35,6 +35,7 @@ spec:
                 operator: In
                 values:
                 - linux
+      shareProcessNamespace: true
       initContainers:
       - name: mds-wait
         # yamllint disable-line rule:line-length
