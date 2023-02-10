@@ -538,6 +538,38 @@ controller:
                   }
                 }
               }
+          - script: >
+              multibranchPipelineJob("pixie-release/cloud") {
+                branchSources {
+                  branchSource {
+                    source {
+                      git {
+                        id('pixie-cloud')
+                        remote('https://github.com/pixie-io/pixie.git')
+                        credentialsId('buildbot-ssh')
+                        traits {
+                          gitTagDiscovery()
+                          headWildcardFilter {
+                            includes("release/cloud/prod/*")
+                            excludes('')
+                          }
+                        }
+                      }
+                    }
+                    buildStrategies {
+                      buildTags {
+                        atMostDays('1')
+                        atLeastDays('0')
+                      }
+                    }
+                  }
+                }
+                triggers {
+                  periodicFolderTrigger {
+                    interval('1m')
+                  }
+                }
+              }
         # yamllint enable rule:indentation
     # Allows adding to the top-level security JCasC section. For legacy,  default the chart includes
     # apiToken configurations

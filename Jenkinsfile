@@ -62,14 +62,14 @@ isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regressio
 isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression-bpf')
 
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
-isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
+isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
 isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun || isReleaseRun
 
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
-isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
+isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-prod/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isStirlingPerfEval = (env.JOB_NAME == 'pixie-main/stirling-perf-eval')
 
