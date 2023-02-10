@@ -91,7 +91,7 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 
 pip_parse(
     name = "ubuntu_package_deps",
-    requirements_lock = "//bazel/external/ubuntu_packages:requirements.txt",
+    requirements_lock = "//bazel/external/ubuntu_packages:requirements.bazel.txt",
 )
 
 load("@ubuntu_package_deps//:requirements.bzl", ubuntu_packages_install_deps = "install_deps")
@@ -241,7 +241,7 @@ go_download_sdk(
 
 pip_parse(
     name = "amqp_gen_reqs",
-    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.bazel.txt",
 )
 
 load("@amqp_gen_reqs//:requirements.bzl", amp_gen_install_deps = "install_deps")
@@ -266,7 +266,7 @@ py_image_repos()
 
 pip_parse(
     name = "amqp_bpf_test_requirements",
-    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.txt",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.bazel.txt",
 )
 
 load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
