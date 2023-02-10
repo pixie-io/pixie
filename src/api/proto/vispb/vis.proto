@@ -308,6 +308,20 @@ message TimeseriesChart {
   Axis y_axis = 4;
 }
 
+// StatChart The visual spec for a basic stat chart. Shows the latest value in the table as a big
+// number with units.
+message StatChart {
+  // Stat defines what information to show
+  message Stat {
+    // value is the ID of the column to use. The column should hold numeric data of some kind.
+    string value = 1;
+  }
+  // stat is the definition of the stat chart
+  Stat stat = 1;
+  // title of the chart, shown as a label for the data
+  string title = 2;
+}
+
 // VegaChart the spec for providing a vega or vega lite spec directly to the UI.
 message VegaChart {
   // spec is the serialized JSON form of the Vega/Vega Lite spec.

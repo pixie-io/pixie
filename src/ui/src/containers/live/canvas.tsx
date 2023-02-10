@@ -33,6 +33,7 @@ import { isPixieEmbedded } from 'app/common/embed-context';
 import { VizierErrorDetails } from 'app/common/errors';
 import { buildClass, Spinner } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { StatChart, StatChartDisplay } from 'app/containers/live-widgets/charts/stat-chart';
 import {
   TimeSeriesContext, withTimeSeriesContext,
 } from 'app/containers/live-widgets/context/time-series-context';
@@ -54,7 +55,7 @@ import {
 import MutationModal from './mutation-modal';
 import {
   DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
-  TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay,
+  TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay, STAT_CHART_DISPLAY_TYPE,
 } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -232,6 +233,17 @@ const WidgetDisplay: React.FC<{
           propagatedArgs={propagatedArgs}
         />
       </>
+    );
+  }
+
+  if (display[DISPLAY_TYPE_KEY] === STAT_CHART_DISPLAY_TYPE) {
+    return (
+      <StatChart
+        title={widgetName}
+        display={display as StatChartDisplay}
+        table={table}
+        data={parsedTable}
+      />
     );
   }
 
