@@ -44,7 +44,7 @@ class UprobeSymaddrsTest : public ::testing::Test {
   }
 
   static inline constexpr std::string_view kGoGRPCServer =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary";
 
   std::unique_ptr<DwarfReader> dwarf_reader_;
   std::unique_ptr<ElfReader> elf_reader_;
@@ -78,9 +78,9 @@ TEST_F(UprobeSymaddrsTest, GoHTTP2SymAddrs) {
   // The values may change when golang version is updated.
   // If the test breaks because of that, just update the numbers here.
   EXPECT_EQ(symaddrs.http2Framer_WriteDataPadded_f_loc,
-            (location_t{.type = kLocationTypeStack, .offset = 8}));
+            (location_t{.type = kLocationTypeRegisters, .offset = 0}));
   EXPECT_EQ(symaddrs.writeHeader_hf_ptr_loc,
-            (location_t{.type = kLocationTypeStack, .offset = 24}));
+            (location_t{.type = kLocationTypeRegisters, .offset = 24}));
 }
 
 TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
@@ -90,10 +90,10 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
   // Check some member offsets.
   // The values may change when golang version is updated.
   // If the test breaks because of that, just update the numbers here.
-  EXPECT_EQ(symaddrs.Write_c_loc, (location_t{.type = kLocationTypeStack, .offset = 8}));
-  EXPECT_EQ(symaddrs.Write_b_loc, (location_t{.type = kLocationTypeStack, .offset = 16}));
-  EXPECT_EQ(symaddrs.Read_c_loc, (location_t{.type = kLocationTypeStack, .offset = 8}));
-  EXPECT_EQ(symaddrs.Read_b_loc, (location_t{.type = kLocationTypeStack, .offset = 16}));
+  EXPECT_EQ(symaddrs.Write_c_loc, (location_t{.type = kLocationTypeRegisters, .offset = 0}));
+  EXPECT_EQ(symaddrs.Write_b_loc, (location_t{.type = kLocationTypeRegisters, .offset = 8}));
+  EXPECT_EQ(symaddrs.Read_c_loc, (location_t{.type = kLocationTypeRegisters, .offset = 0}));
+  EXPECT_EQ(symaddrs.Read_b_loc, (location_t{.type = kLocationTypeRegisters, .offset = 8}));
 }
 
 // Note that DwarfReader cannot be created if there is no dwarf info.
