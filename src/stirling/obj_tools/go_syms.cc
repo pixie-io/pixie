@@ -99,6 +99,14 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
   return interface_types;
 }
 
+void PrintTo(const std::vector<IntfImplTypeInfo>& infos, std::ostream* os) {
+  *os << "[";
+  for (auto& info : infos) {
+    *os << info.ToString() << ", ";
+  }
+  *os << "]";
+}
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px
