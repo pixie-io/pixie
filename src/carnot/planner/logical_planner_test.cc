@@ -673,6 +673,63 @@ TEST_F(LogicalPlannerTest, filter_pushdown_bug) {
   ASSERT_OK(plan->ToProto());
 }
 
+const char kHttpDataScript[] = R"pxl(
+import px
+
+
+def http_data(start_time: str, source_filter: str, destination_filter: str, num_head: int):
+
+    df = px.DataFrame(table='http_events', start_time=start_time)
+
+    # Add context.
+    df.node = df.ctx['node']
+    df.pid = px.upid_to_pid(df.upid)
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains("source", source_filter)]
+    df = df[px.contains("destination", destination_filter)]
+
+    # Add additional filters below:
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    # Order columns.
+
+    return df
+)pxl";
+
+TEST_F(LogicalPlannerTest, SegFaultTest) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  plannerpb::QueryRequest req;
+  req.set_query_str(kHttpDataScript);
+  auto f = req.add_exec_funcs();
+  f->set_func_name("http_data");
+  f->set_output_table_prefix("http_data");
+  auto start_time = f->add_arg_values();
+  start_time->set_name("start_time");
+  start_time->set_value("-5m");
+
+  auto source_filter = f->add_arg_values();
+  source_filter->set_name("source_filter");
+  source_filter->set_value("");
+
+  auto dest_filter = f->add_arg_values();
+  dest_filter->set_name("destination_filter");
+  dest_filter->set_value("");
+
+  auto num_head = f->add_arg_values();
+  num_head->set_name("num_head");
+  num_head->set_value("1000");
+
+  *req.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto plan_or_s = planner->Plan(req);
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
+
 TEST_F(LogicalPlannerTest, create_compiler_state_has_endpoint_config) {
   auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(kCheckoutProbeTableSchema);
   auto endpoint_config = state.mutable_otel_endpoint_config();
