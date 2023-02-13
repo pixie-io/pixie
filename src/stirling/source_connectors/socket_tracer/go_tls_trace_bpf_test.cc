@@ -73,8 +73,13 @@ struct Go1_19TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
 };
 
+struct Go1_20TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_20_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
+};
+
 typedef ::testing::Types<Go1_17TLSClientServerContainers, Go1_18TLSClientServerContainers,
-                         Go1_19TLSClientServerContainers>
+                         Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 

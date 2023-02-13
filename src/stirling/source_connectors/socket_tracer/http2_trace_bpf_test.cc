@@ -75,9 +75,13 @@ struct Go1_19GRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::Go1_19_GRPCClientContainer;
 };
 
-// Use a typed test to run the test for Go 1.17 - Go 1.19.
+struct Go1_20GRPCClientServerContainers {
+  using ServerContainer = ::px::stirling::testing::Go1_20_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_20_GRPCClientContainer;
+};
+
 typedef ::testing::Types<Go1_17GRPCClientServerContainers, Go1_18GRPCClientServerContainers,
-                         Go1_19GRPCClientServerContainers>
+                         Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
