@@ -146,6 +146,14 @@ pl_cc_binary(
 )
 
 pl_cc_binary(
+    name = "vaddr_to_baddr_tool",
+    srcs = ["vaddr_to_baddr_tool.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_binary(
     name = "dwarfdump_tool",
     srcs = ["dwarfdump_tool.cc"],
     deps = [
