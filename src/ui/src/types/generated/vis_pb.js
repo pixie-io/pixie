@@ -4262,6 +4262,193 @@ export const px = $root.px = (() => {
             return StatChart;
         })();
 
+        vispb.TextChart = (function() {
+
+            /**
+             * Properties of a TextChart.
+             * @memberof px.vispb
+             * @interface ITextChart
+             * @property {string|null} [body] TextChart body
+             */
+
+            /**
+             * Constructs a new TextChart.
+             * @memberof px.vispb
+             * @classdesc Represents a TextChart.
+             * @implements ITextChart
+             * @constructor
+             * @param {px.vispb.ITextChart=} [properties] Properties to set
+             */
+            function TextChart(properties) {
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * TextChart body.
+             * @member {string} body
+             * @memberof px.vispb.TextChart
+             * @instance
+             */
+            TextChart.prototype.body = "";
+
+            /**
+             * Creates a new TextChart instance using the specified properties.
+             * @function create
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {px.vispb.ITextChart=} [properties] Properties to set
+             * @returns {px.vispb.TextChart} TextChart instance
+             */
+            TextChart.create = function create(properties) {
+                return new TextChart(properties);
+            };
+
+            /**
+             * Encodes the specified TextChart message. Does not implicitly {@link px.vispb.TextChart.verify|verify} messages.
+             * @function encode
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {px.vispb.ITextChart} message TextChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            TextChart.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.body != null && Object.hasOwnProperty.call(message, "body"))
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.body);
+                return writer;
+            };
+
+            /**
+             * Encodes the specified TextChart message, length delimited. Does not implicitly {@link px.vispb.TextChart.verify|verify} messages.
+             * @function encodeDelimited
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {px.vispb.ITextChart} message TextChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            TextChart.encodeDelimited = function encodeDelimited(message, writer) {
+                return this.encode(message, writer).ldelim();
+            };
+
+            /**
+             * Decodes a TextChart message from the specified reader or buffer.
+             * @function decode
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {px.vispb.TextChart} TextChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            TextChart.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.px.vispb.TextChart();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 1:
+                        message.body = reader.string();
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            /**
+             * Decodes a TextChart message from the specified reader or buffer, length delimited.
+             * @function decodeDelimited
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @returns {px.vispb.TextChart} TextChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            TextChart.decodeDelimited = function decodeDelimited(reader) {
+                if (!(reader instanceof $Reader))
+                    reader = new $Reader(reader);
+                return this.decode(reader, reader.uint32());
+            };
+
+            /**
+             * Verifies a TextChart message.
+             * @function verify
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {Object.<string,*>} message Plain object to verify
+             * @returns {string|null} `null` if valid, otherwise the reason why it is not
+             */
+            TextChart.verify = function verify(message) {
+                if (typeof message !== "object" || message === null)
+                    return "object expected";
+                if (message.body != null && message.hasOwnProperty("body"))
+                    if (!$util.isString(message.body))
+                        return "body: string expected";
+                return null;
+            };
+
+            /**
+             * Creates a TextChart message from a plain object. Also converts values to their respective internal types.
+             * @function fromObject
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {Object.<string,*>} object Plain object
+             * @returns {px.vispb.TextChart} TextChart
+             */
+            TextChart.fromObject = function fromObject(object) {
+                if (object instanceof $root.px.vispb.TextChart)
+                    return object;
+                let message = new $root.px.vispb.TextChart();
+                if (object.body != null)
+                    message.body = String(object.body);
+                return message;
+            };
+
+            /**
+             * Creates a plain object from a TextChart message. Also converts values to other types if specified.
+             * @function toObject
+             * @memberof px.vispb.TextChart
+             * @static
+             * @param {px.vispb.TextChart} message TextChart
+             * @param {$protobuf.IConversionOptions} [options] Conversion options
+             * @returns {Object.<string,*>} Plain object
+             */
+            TextChart.toObject = function toObject(message, options) {
+                if (!options)
+                    options = {};
+                let object = {};
+                if (options.defaults)
+                    object.body = "";
+                if (message.body != null && message.hasOwnProperty("body"))
+                    object.body = message.body;
+                return object;
+            };
+
+            /**
+             * Converts this TextChart to JSON.
+             * @function toJSON
+             * @memberof px.vispb.TextChart
+             * @instance
+             * @returns {Object.<string,*>} JSON object
+             */
+            TextChart.prototype.toJSON = function toJSON() {
+                return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+            };
+
+            return TextChart;
+        })();
+
         vispb.VegaChart = (function() {
 
             /**

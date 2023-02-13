@@ -1727,6 +1727,96 @@ export namespace px {
             }
         }
 
+        /** Properties of a TextChart. */
+        interface ITextChart {
+
+            /** TextChart body */
+            body?: (string|null);
+        }
+
+        /** Represents a TextChart. */
+        class TextChart implements ITextChart {
+
+            /**
+             * Constructs a new TextChart.
+             * @param [properties] Properties to set
+             */
+            constructor(properties?: px.vispb.ITextChart);
+
+            /** TextChart body. */
+            public body: string;
+
+            /**
+             * Creates a new TextChart instance using the specified properties.
+             * @param [properties] Properties to set
+             * @returns TextChart instance
+             */
+            public static create(properties?: px.vispb.ITextChart): px.vispb.TextChart;
+
+            /**
+             * Encodes the specified TextChart message. Does not implicitly {@link px.vispb.TextChart.verify|verify} messages.
+             * @param message TextChart message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encode(message: px.vispb.ITextChart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Encodes the specified TextChart message, length delimited. Does not implicitly {@link px.vispb.TextChart.verify|verify} messages.
+             * @param message TextChart message or plain object to encode
+             * @param [writer] Writer to encode to
+             * @returns Writer
+             */
+            public static encodeDelimited(message: px.vispb.ITextChart, writer?: $protobuf.Writer): $protobuf.Writer;
+
+            /**
+             * Decodes a TextChart message from the specified reader or buffer.
+             * @param reader Reader or buffer to decode from
+             * @param [length] Message length if known beforehand
+             * @returns TextChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): px.vispb.TextChart;
+
+            /**
+             * Decodes a TextChart message from the specified reader or buffer, length delimited.
+             * @param reader Reader or buffer to decode from
+             * @returns TextChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): px.vispb.TextChart;
+
+            /**
+             * Verifies a TextChart message.
+             * @param message Plain object to verify
+             * @returns `null` if valid, otherwise the reason why it is not
+             */
+            public static verify(message: { [k: string]: any }): (string|null);
+
+            /**
+             * Creates a TextChart message from a plain object. Also converts values to their respective internal types.
+             * @param object Plain object
+             * @returns TextChart
+             */
+            public static fromObject(object: { [k: string]: any }): px.vispb.TextChart;
+
+            /**
+             * Creates a plain object from a TextChart message. Also converts values to other types if specified.
+             * @param message TextChart
+             * @param [options] Conversion options
+             * @returns Plain object
+             */
+            public static toObject(message: px.vispb.TextChart, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+            /**
+             * Converts this TextChart to JSON.
+             * @returns JSON object
+             */
+            public toJSON(): { [k: string]: any };
+        }
+
         /** Properties of a VegaChart. */
         interface IVegaChart {
 

@@ -322,6 +322,13 @@ message StatChart {
   string title = 2;
 }
 
+// TextChart The visual spec for a basic block of text. Does not use anything other than the Vis
+// spec.
+message TextChart {
+  // What text to display.
+  string body = 1;
+}
+
 // VegaChart the spec for providing a vega or vega lite spec directly to the UI.
 message VegaChart {
   // spec is the serialized JSON form of the Vega/Vega Lite spec.
