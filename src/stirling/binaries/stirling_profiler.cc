@@ -114,13 +114,6 @@ class Profiler {
       }
     }
 
-    // This may be paranoid, but it is possible for StopTransferDataThread() to get
-    // called from the signal handler too. In any case, by the time we are here and from
-    // any entry point, transfer_data_thread_ should have been joined already.
-    if (transfer_data_thread_.joinable()) {
-      return error::Internal("transfer_data_thread_ failed to join.");
-    }
-
     return Status::OK();
   }
 
