@@ -10,6 +10,15 @@ patches:
   target:
     kind: Deployment
     labelSelector: vizier-bootstrap!=true
+- path: arch_tolerations/deployment.yaml
+  target:
+    kind: Deployment
+- path: arch_tolerations/job.yaml
+  target:
+    kind: Job
+- path: arch_tolerations/statefulset.yaml
+  target:
+    kind: StatefulSet
 resources:
 - ../bootstrap
 - kelvin_deployment.yaml
