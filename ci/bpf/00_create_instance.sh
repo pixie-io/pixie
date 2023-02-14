@@ -58,7 +58,7 @@ gcloud beta compute instances create \
   --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
   --network-interface=network-tier=PREMIUM,subnet=us-west1-0 \
-  --maintenance-policy=MIGRATE --provisioning-model=STANDARD --instance-termination-action=DELETE \
+  --maintenance-policy=MIGRATE --provisioning-model=STANDARD \
   --instance-termination-action=DELETE --max-run-duration=10800s \
   --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
