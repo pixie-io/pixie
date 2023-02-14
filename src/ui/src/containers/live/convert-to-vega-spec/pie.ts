@@ -130,6 +130,7 @@ export function convertToPieChart(
     range: {
       scheme: [...theme.palette.graph.category],
     },
+    interpolate: 'hsl',
     domain: {
       data: dataSource.name,
       field: display.pie.label,
