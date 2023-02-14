@@ -212,6 +212,19 @@ message BarChart {
   Axis y_axis = 4;
 }
 
+// PieChart The visual spec for a pie chart. Each slice is labeled by one column, with
+// values from another. Rows with the same label are combined.
+message PieChart {
+  // Which column to group values by. Also used to label that slice of the pie.
+  // This columns is expected to contain a string.
+  string label = 1;
+  // Which column represents the size of the slice. Rows with the same label are combined.
+  // This column is expected to contain a number, or something that readily converts to one.
+  string value = 2;
+  // Title of the chart.
+  string title = 3;
+}
+
 // HistogramChart The visual spec for a histogram chart. Support histograms
 // generated from prebinned data and data that needs to be binned.
 //
