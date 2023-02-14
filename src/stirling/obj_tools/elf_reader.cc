@@ -431,38 +431,18 @@ std::string_view ElfReader::Symbolizer::Lookup(size_t addr) const {
 
 namespace {
 
-/**
- * RAII wrapper around LLVMDisasmContextRef.
- */
-class LLVMDisasmContext {
- public:
-  LLVMDisasmContext() {
-    InitLLVMOnce();
-
-#if X86_64
-    constexpr char triple[] = "x86_64-pc-linux";
-#elif AARCH64
-    constexpr char triple[] = "aarch64-pc-linux";
-#else
-#error Architecture not supported.
-#endif
-
-    // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
-    // See https://llvm.org/doxygen/Triple_8h_source.html
-    ref_ = LLVMCreateDisasm(triple,
-                            /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
-                            /*LLVMSymbolLookupCallback*/ nullptr);
-  }
-
-  ~LLVMDisasmContext() { LLVMDisasmDispose(ref_); }
-
-  LLVMDisasmContextRef ref() const { return ref_; }
-
- private:
-  LLVMDisasmContextRef ref_ = nullptr;
+enum Arch {
+  ArchX86_64,
+  ArchAarch64,
 };
+constexpr char x86_64_triple[] = "x86_64-pc-linux";
+constexpr char aarch64_triple[] = "aarch64-pc-linux";
 
-bool IsRetInst(uint8_t code) {
+bool IsRetInstX86_64(const uint8_t* bytes, int inst_size) {
+  if (inst_size < 1) {
+    return false;
+  }
+  uint8_t opcode = *bytes;
   // https://c9x.me/x86/html/file_module_x86_id_280.html for full list.
   //
   // Near return to calling procedure.
@@ -477,17 +457,89 @@ bool IsRetInst(uint8_t code) {
   // Far return to calling procedure and pop imm16 bytes from stack.
   constexpr uint8_t kRetfImm = '\xca';
 
-  return code == kRetn || code == kRetf || code == kRetnImm || code == kRetfImm;
+  return opcode == kRetn || opcode == kRetf || opcode == kRetnImm || opcode == kRetfImm;
 }
 
-std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
+bool IsRetInstAarch64(const uint8_t* bytes, int inst_size) {
+  // A64 has fixed width instructions.
+  static constexpr int kInstrBytes = 4;
+  if (inst_size != kInstrBytes) {
+    return false;
+  }
+  uint32_t instr;
+  // TODO(james): this will fail on non-little endian machines.
+  // eg. if we're processing a little endian arm elf file on an x86_64 machine.
+  memcpy(&instr, bytes, kInstrBytes);
+
+  // Per the A64 docs the RET instruction encodes the branch target register in bits 5:9, so we mask
+  // out those bits.
+  constexpr uint32_t ret_reg_mask = ~(0b11111 << 5);
+  // Per the A64 docs a RET instruction sets all these bits exactly as below (ignoring 5:9 in the
+  // mask above).
+  constexpr uint32_t ret_instr_bits = 0b11010110010111110000000000000000;
+
+  return (instr & ret_reg_mask) == ret_instr_bits;
+}
+
+/**
+ * RAII wrapper around LLVMDisasmContextRef.
+ */
+class LLVMDisasmContext {
+  using IsRetInstFn = std::function<bool(const uint8_t*, int)>;
+
+ public:
+  explicit LLVMDisasmContext(Arch arch) {
+    InitLLVMOnce();
+
+    const char* triple = "";
+    switch (arch) {
+      case ArchX86_64:
+        triple = x86_64_triple;
+        is_ret_inst_impl_ = IsRetInstX86_64;
+        break;
+      case ArchAarch64:
+        triple = aarch64_triple;
+        is_ret_inst_impl_ = IsRetInstAarch64;
+        break;
+    }
+
+    ref_ = LLVMCreateDisasm(triple,
+                            /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
+                            /*LLVMSymbolLookupCallback*/ nullptr);
+  }
+
+  bool IsRetInst(const uint8_t* bytes, int instr_size) {
+    return is_ret_inst_impl_(bytes, instr_size);
+  }
+
+  ~LLVMDisasmContext() { LLVMDisasmDispose(ref_); }
+
+  LLVMDisasmContextRef ref() const { return ref_; }
+
+ private:
+  LLVMDisasmContextRef ref_ = nullptr;
+  IsRetInstFn is_ret_inst_impl_;
+};
+
+std::unique_ptr<absl::flat_hash_map<Arch, std::unique_ptr<LLVMDisasmContext>>> g_disasm_registry;
+
+LLVMDisasmContext* GetLLVMDisasmContextForArch(Arch arch) {
+  if (g_disasm_registry == nullptr) {
+    g_disasm_registry =
+        std::make_unique<absl::flat_hash_map<Arch, std::unique_ptr<LLVMDisasmContext>>>();
+  }
+  if (!g_disasm_registry->contains(arch)) {
+    (*g_disasm_registry)[arch] = std::make_unique<LLVMDisasmContext>(arch);
+  }
+  return (*g_disasm_registry)[arch].get();
+}
+
+std::vector<uint64_t> FindRetInsts(Arch arch, utils::u8string_view byte_code) {
   if (byte_code.empty()) {
     return {};
   }
 
-  // TODO(yzhao): This is a short-term quick way to avoid unnecessary overheads.
-  // We should create LLVMDisasmContext object inside SocketTraceConnector and pass it around.
-  static const LLVMDisasmContext kLLVMDisasmContext;
+  auto disasm = GetLLVMDisasmContextForArch(arch);
 
   // Size of the buffer to hold disassembled assembly code. Since we do not really use the assembly
   // code, we just provide a small buffer.
@@ -503,14 +555,13 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
 
   std::vector<uint64_t> res;
   do {
-    if (IsRetInst(*codes)) {
+    if (disasm->IsRetInst(codes, inst_size)) {
       res.push_back(pc);
     }
     // TODO(yzhao): MCDisassembler::getInst() works better here, because it returns a MCInst, with
     // an opcode for examination. Unfortunately, MCDisassembler is difficult to create without
     // class LLVMDisasmContex, which is not exposed.
-    inst_size =
-        LLVMDisasmInstruction(kLLVMDisasmContext.ref(), codes, codes_size, pc, buf, kBufSize);
+    inst_size = LLVMDisasmInstruction(disasm->ref(), codes, codes_size, pc, buf, kBufSize);
 
     pc += inst_size;
     codes += inst_size;
@@ -519,12 +570,25 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
   return res;
 }
 
+StatusOr<Arch> GetArchFromELFMachine(ELFIO::Elf_Half machine) {
+  switch (machine) {
+    case ELFIO::EM_X86_64:
+      return ArchX86_64;
+    case ELFIO::EM_AARCH64:
+      return ArchAarch64;
+    default:
+      return Status(statuspb::INVALID_ARGUMENT,
+                    absl::Substitute("ELF file uses unsupported architecture: $0", machine));
+  }
+}
+
 }  // namespace
 
 StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
   constexpr std::string_view kDotText = ".text";
   PX_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
-  std::vector<uint64_t> addrs = FindRetInsts(byte_code);
+  PX_ASSIGN_OR_RETURN(auto arch, GetArchFromELFMachine(elf_reader_.get_machine()));
+  std::vector<uint64_t> addrs = FindRetInsts(arch, byte_code);
   for (auto& offset : addrs) {
     offset += func_symbol.address;
   }
