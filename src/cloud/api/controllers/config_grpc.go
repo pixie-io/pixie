@@ -61,6 +61,7 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 			LeadershipElectionParams: vizSpecReq.LeadershipElectionParams,
 			Registry:                 vizSpecReq.Registry,
 		},
+		K8sVersion: req.K8sVersion,
 	})
 	if err != nil {
 		return nil, err
