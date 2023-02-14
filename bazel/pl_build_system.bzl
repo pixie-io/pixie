@@ -22,6 +22,8 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", 
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_python//python:defs.bzl", "py_test")
 
+pl_supported_go_sdk_versions = ["1.16", "1.17", "1.18", "1.19", "1.20"]
+
 def pl_copts():
     posix_options = [
         # Warnings setup.
