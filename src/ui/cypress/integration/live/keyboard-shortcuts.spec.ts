@@ -61,10 +61,11 @@ describe('Live view keyboard shortcuts', () => {
     cy.get('body').type('{shift}?');
     // Note: the way :nth-child works is weird; n+2 means "everything after the first child"
     cy.contains(modalTitle).parent().find('> div:nth-child(n+2)').as('rows');
-    cy.get('@rows').should('have.length', 4);
+    cy.get('@rows').should('have.length', 5);
     cy.get('@rows').within(() => {
       cy.contains('Show/hide script editor').should('exist');
       cy.contains('Show/hide data drawer').should('exist');
+      cy.contains('Show/hide command palette').should('exist');
       cy.contains('Execute current Live View script').should('exist');
       cy.contains('Show all keyboard shortcuts').should('exist');
     });
@@ -90,6 +91,16 @@ describe('Live view keyboard shortcuts', () => {
     cy.get(selector).should('be.visible');
     cy.get('body').type(hotkey);
     cy.get(selector).should('not.be.visible');
+  });
+
+  it('Shows and hides the command palette', () => {
+    const hotkey = `${useCmdKey ? '{cmd}' : '{ctrl}'}k`;
+    const selector = 'input#command-palette-autocomplete';
+    cy.get(selector).should('not.exist');
+    cy.get('body').type(hotkey);
+    cy.get(selector).should('exist');
+    cy.get('body').type(hotkey);
+    cy.get(selector).should('not.exist');
   });
 
   it('Re-runs the current script', () => {
