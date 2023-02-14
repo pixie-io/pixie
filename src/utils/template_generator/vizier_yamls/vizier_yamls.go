@@ -66,6 +66,7 @@ type VizierTmplValues struct {
 	ElectionPeriodMs          int64
 	CustomPEMFlags            map[string]string
 	Registry                  string
+	UseBetaPdbVersion         bool
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -91,6 +92,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"electionPeriodMs":          tmplValues.ElectionPeriodMs,
 			"customPEMFlags":            tmplValues.CustomPEMFlags,
 			"registry":                  tmplValues.Registry,
+			"useBetaPdbVersion":         tmplValues.UseBetaPdbVersion,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -319,7 +321,14 @@ func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]str
 		return "", "", err
 	}
 
-	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdYAMLPath], GlobalTemplateOptions)
+	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdYAMLPath], append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-etcd-pdb"),
+			Patch:           `{"apiVersion" : "__PX_PDB_API_VERSION__"}`,
+			Placeholder:     "__PX_PDB_API_VERSION__",
+			TemplateValue:   `{{ if .Values.useBetaPdbVersion }}"policy/v1beta1"{{ else }}"policy/v1"{{ end }}`,
+		},
+	}...))
 	if err != nil {
 		return "", "", err
 	}
