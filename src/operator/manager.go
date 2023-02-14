@@ -24,6 +24,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -77,11 +78,26 @@ func main() {
 	}
 	clientset := k8s.GetClientset(kubeConfig)
 
+	// Get K8s version.
+	k8sVersion := ""
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		log.WithError(err).Error("Failed to get discovery client for config")
+	} else {
+		version, err := discoveryClient.ServerVersion()
+		if err != nil {
+			log.WithError(err).Error("Failed to get server version from discovery client")
+		} else {
+			k8sVersion = version.GitVersion
+		}
+	}
+
 	vr := &controllers.VizierReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		Clientset:  clientset,
 		RestConfig: kubeConfig,
+		K8sVersion: k8sVersion,
 	}
 	err = vr.SetupWithManager(mgr)
 	if err != nil {
