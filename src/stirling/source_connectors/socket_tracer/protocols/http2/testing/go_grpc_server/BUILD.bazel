@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_supported_go_sdk_versions")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -36,70 +36,25 @@ pl_go_binary(
     embed = [":grpc_server_lib"],
 )
 
-go_cross_binary(
-    name = "golang_1_16_grpc_server",
-    sdk_version = "1.16",
-    tags = ["manual"],
-    target = ":server",
-)
+[
+    go_cross_binary(
+        name = "golang_%s_grpc_server" % sdk_version.replace(".", "_"),
+        sdk_version = sdk_version,
+        tags = ["manual"],
+        target = ":server",
+    )
+    for sdk_version in pl_supported_go_sdk_versions
+]
 
-go_cross_binary(
-    name = "golang_1_17_grpc_server",
-    sdk_version = "1.17",
-    tags = ["manual"],
-    target = ":server",
-)
-
-go_cross_binary(
-    name = "golang_1_18_grpc_server",
-    sdk_version = "1.18",
-    tags = ["manual"],
-    target = ":server",
-)
-
-go_cross_binary(
-    name = "golang_1_19_grpc_server",
-    sdk_version = "1.19",
-    tags = ["manual"],
-    target = ":server",
-)
-
-filegroup(
-    name = "golang_1_16_grpc_server_with_certs",
-    srcs = [":golang_1_16_grpc_server"],
-    data = [
-        "https-server.crt",
-        "https-server.key",
-    ],
-    visibility = ["//src/stirling:__subpackages__"],
-)
-
-filegroup(
-    name = "golang_1_17_grpc_server_with_certs",
-    srcs = [":golang_1_17_grpc_server"],
-    data = [
-        "https-server.crt",
-        "https-server.key",
-    ],
-    visibility = ["//src/stirling:__subpackages__"],
-)
-
-filegroup(
-    name = "golang_1_18_grpc_server_with_certs",
-    srcs = [":golang_1_18_grpc_server"],
-    data = [
-        "https-server.crt",
-        "https-server.key",
-    ],
-    visibility = ["//src/stirling:__subpackages__"],
-)
-
-filegroup(
-    name = "golang_1_19_grpc_server_with_certs",
-    srcs = [":golang_1_19_grpc_server"],
-    data = [
-        "https-server.crt",
-        "https-server.key",
-    ],
-    visibility = ["//src/stirling:__subpackages__"],
-)
+[
+    filegroup(
+        name = "golang_%s_grpc_server_with_certs" % sdk_version.replace(".", "_"),
+        srcs = [":golang_%s_grpc_server" % sdk_version.replace(".", "_")],
+        data = [
+            "https-server.crt",
+            "https-server.key",
+        ],
+        visibility = ["//src/stirling:__subpackages__"],
+    )
+    for sdk_version in pl_supported_go_sdk_versions
+]

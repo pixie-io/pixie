@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image", "pl_supported_go_sdk_versions")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -35,38 +35,20 @@ pl_go_binary(
     embed = [":client_lib"],
 )
 
-go_cross_binary(
-    name = "golang_1_17_client_binary",
-    sdk_version = "1.17",
-    tags = ["manual"],
-    target = ":client",
-)
+[
+    go_cross_binary(
+        name = "golang_%s_client_binary" % sdk_version.replace(".", "_"),
+        sdk_version = sdk_version,
+        tags = ["manual"],
+        target = ":client",
+    )
+    for sdk_version in pl_supported_go_sdk_versions
+]
 
-go_cross_binary(
-    name = "golang_1_18_client_binary",
-    sdk_version = "1.18",
-    tags = ["manual"],
-    target = ":client",
-)
-
-go_cross_binary(
-    name = "golang_1_19_client_binary",
-    sdk_version = "1.19",
-    tags = ["manual"],
-    target = ":client",
-)
-
-pl_go_image(
-    name = "golang_1_17_https_client",
-    binary = ":golang_1_17_client_binary",
-)
-
-pl_go_image(
-    name = "golang_1_18_https_client",
-    binary = ":golang_1_18_client_binary",
-)
-
-pl_go_image(
-    name = "golang_1_19_https_client",
-    binary = ":golang_1_19_client_binary",
-)
+[
+    pl_go_image(
+        name = "golang_%s_https_client" % sdk_version.replace(".", "_"),
+        binary = ":golang_%s_client_binary" % sdk_version.replace(".", "_"),
+    )
+    for sdk_version in pl_supported_go_sdk_versions
+]
