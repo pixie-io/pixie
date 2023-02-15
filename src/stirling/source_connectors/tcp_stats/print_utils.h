@@ -49,7 +49,7 @@ static void AddRecHeaders(rapidjson::Document::AllocatorType& a,
                    rapidjson::Value &metricsRec ,
                    std::pair < ip_key_t, uint64_t > item,
                    const std::string_view name) {
-  std::string addr_string;
+  std::string_view addr_string;
   metricsRec.AddMember("name", json_output::StringRef(name), a);
   metricsRec.AddMember("event_type", json_output::StringRef(metrics_source), a);
   metricsRec.AddMember("type", "guage", a);
@@ -66,8 +66,15 @@ static void AddRecHeaders(rapidjson::Document::AllocatorType& a,
   } else {
     addr_string = unspec;
   }
-  attributes.AddMember("remote-ip",  std::string(addr_string), a);
-  attributes.AddMember("process", std::string(item.first.name), a);
+
+  rapidjson::Value addr(rapidjson::kStringType);
+  addr.SetString(addr_string.data(), addr_string.size(), a);
+  attributes.AddMember("remote-ip",  addr, a);
+
+  std::string process = item.first.name;
+  rapidjson::Value pname(rapidjson::kStringType);
+  pname.SetString(process.data(), process.size(), a);
+  attributes.AddMember("process", pname, a);
   metricsRec.AddMember("attributes", attributes.Move(), a);
   attributes.SetObject();
 }
