@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//container:container.bzl", "container_layer")
+load("//bazel:linux_headers.bzl", "gen_timeconst")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = [
@@ -36,6 +38,7 @@ pl_cc_library(
     ),
     visibility = [
         "//src/e2e_test/vizier/planner/dump_schemas:__pkg__",
+        "//src/experimental/standalone_pem:__subpackages__",
         "//src/stirling:__subpackages__",
         "//src/vizier/services/agent:__subpackages__",
     ],
@@ -60,4 +63,43 @@ pl_cc_library(
         "//src/stirling/source_connectors/tcp_stats:cc_library",
         "//src/stirling/utils:cc_library",
     ],
+)
+
+# Used by stirling runtime to install linux headers on hosts having no Linux headers pre-installed.
+#
+# Note that each linux header tarball is ~15MB compressed and ~230MB uncompressed.
+# Trimmed versions are ~8MB compressed and ~110MB uncompressed.
+# These are all trimmed versions, so we have 8 * 12 = 96 MB of headers.
+stirling_linux_headers_tarballs = [
+    "@linux_headers_merged_tar_gz//file:file",
+]
+
+# Used by stirling runtime to replace the on-the-fly installed Linux headers from
+# stirling_linux_headers_tarballs, in order to match the host's actual configs.
+#
+# See GenTimeConst() in src/stirling/utils/linux_headers.h for more details.
+gen_timeconst(name = "stirling_linux_timeconst_files")
+
+# Used by stirling runtime to provide symbolization for Java application profiling.
+stirling_java_profiling_tools = [
+    "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
+] + select({
+    "@platforms//cpu:x86_64": ["//src/stirling/source_connectors/perf_profiler/java/agent:agent"],
+    "//conditions:default": [],
+})
+
+# Use this binary to dynamically turn on/off Stirling runtime's debug logging.
+# See src/stirling/e2e_tests/stirling_signal_test.sh for its usage.
+stirling_ctrl = [
+    "//src/stirling/binaries:stirling_ctrl",
+]
+
+stirling_collateral = [":stirling_linux_timeconst_files"] + stirling_ctrl + stirling_java_profiling_tools
+
+container_layer(
+    name = "bpf_layer",
+    directory = "/px",
+    files = stirling_collateral,
+    tars = stirling_linux_headers_tarballs,
+    visibility = ["//visibility:public"],
 )

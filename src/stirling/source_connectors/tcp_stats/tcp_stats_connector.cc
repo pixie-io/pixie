@@ -26,7 +26,7 @@
 #include "src/stirling/source_connectors/tcp_stats/print_utils.h"
 
 BPF_SRC_STRVIEW(tcpstats_bcc_script, tcpstats);
-DEFINE_bool(JsonOutput, true, "Print on santdard in Json format");
+DEFINE_bool(JsonOutput, true, "Standard output in Json format");
 
 namespace px {
 namespace stirling {
