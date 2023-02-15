@@ -521,20 +521,28 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   fetchFromGCS(SRC_STASH_NAME)
   fetchFromGCS(TARGETS_STASH_NAME)
 
-  sh """
-  export BUILDABLE_FILE="${buildableFile}"
-  export TEST_FILE="${testFile}"
-  export BAZEL_ARGS="${bazelArgs}"
-  export STASH_NAME="${stashName}"
-  export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
-  export BUILD_TAG="${BUILD_TAG}"
-  export KERNEL_VERSION="${kernel}"
-  export GCP_PROJECT="${GCP_PROJECT}"
-  export BES_FILE="${BES_GCE_FILE}"
-  ./ci/bpf/00_create_instance.sh
-  """
+  def retval = sh(
+    script: """
+    export BUILDABLE_FILE="${buildableFile}"
+    export TEST_FILE="${testFile}"
+    export BAZEL_ARGS="${bazelArgs}"
+    export STASH_NAME="${stashName}"
+    export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
+    export BUILD_TAG="${BUILD_TAG}"
+    export KERNEL_VERSION="${kernel}"
+    export GCP_PROJECT="${GCP_PROJECT}"
+    export BES_FILE="${BES_GCE_FILE}"
+    ./ci/bpf/00_create_instance.sh
+    """,
+    returnStatus: true
+  )
 
-  stashList.add(stashName)
+  if (retval == 0 || retval == 3) {
+    stashList.add(stashName)
+  }
+  if (retval != 0) {
+    unstable('Bazel BPF build/test failed')
+  }
 }
 
 def buildAndTestBPFOpt = { kernel ->
