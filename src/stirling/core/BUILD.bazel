@@ -43,10 +43,12 @@ pl_cc_library(
         "//src/stirling/source_connectors/seq_gen:__pkg__",
         "//src/stirling/source_connectors/socket_tracer:__pkg__",
         "//src/stirling/source_connectors/stirling_error:__pkg__",
+        "//src/stirling/source_connectors/tcp_stats:__pkg__",
         "//src/stirling/testing:__pkg__",
     ],
     deps = [
         "//src/shared/metadata:cc_library",
+        "//src/common/json:cc_library",
         "//src/shared/types:cc_library",
         "//src/shared/types/typespb/wrapper:cc_library",
         "//src/shared/upid:cc_library",

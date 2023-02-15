@@ -57,12 +57,12 @@
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
-
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/source_connectors/tcp_stats/tcp_stats_connector.h"
 
 DEFINE_string(
-    stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
-    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler] or comma separated list of "
+    stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProdTCPStats"),
+    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kProdTCPStats] or comma separated list of "
     "sources (find them the header files of source connector classes).");
 
 namespace px {
@@ -78,7 +78,7 @@ const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
     REGISTRY_PAIR(PIDCPUUseBPFTraceConnector), REGISTRY_PAIR(proc_exit_tracer::ProcExitConnector),
-    REGISTRY_PAIR(StirlingErrorConnector),
+    REGISTRY_PAIR(StirlingErrorConnector),     REGISTRY_PAIR(TCPStatsConnector)
 };
 #undef REGISTRY_PAIR
 
@@ -125,6 +125,10 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
       return {
         PerfProfileConnector::kName
       };
+    case SourceConnectorGroup::kProdTCPStats:
+      return {
+       TCPStatsConnector::kName
+      };
     default:
       // To keep GCC happy.
       DCHECK(false);
@@ -155,7 +159,7 @@ StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
     bool found = false;
     for (const auto& source : kAllSources) {
       if (name == source.name) {
-        PX_RETURN_IF_ERROR(registry->Register(source));
+        PL_RETURN_IF_ERROR(registry->Register(source));
         found = true;
         break;
       }
@@ -423,7 +427,7 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
 }
 
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
-  PX_RETURN_IF_ERROR(source->Init());
+  PL_RETURN_IF_ERROR(source->Init());
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
@@ -464,7 +468,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
                          info_class_mgrs_.end());
 
   // Now perform the removal.
-  PX_RETURN_IF_ERROR(source->Stop());
+  PL_RETURN_IF_ERROR(source->Stop());
   sources_.erase(source_iter);
 
   return Status::OK();
@@ -484,7 +488,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
     return;                                                   \
   }
 
-#define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PX_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
+#define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
 #define RETURN_IF_ERROR(s) \
   auto __s__ = s;          \
   if (!__s__.ok()) {       \
@@ -596,6 +600,7 @@ void StirlingImpl::DestroyDynamicTraceConnector(sole::uuid trace_id) {
 void StirlingImpl::RegisterTracepoint(
     sole::uuid trace_id,
     std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program) {
+  std::cout<<"I am here Temporary ";
   // Temporary: Check if the target exists on this PEM, otherwise return NotFound.
   // TODO(oazizi): Need to think of a better way of doing this.
   //               Need to differentiate errors caused by the binary not being on the host vs
@@ -609,6 +614,7 @@ void StirlingImpl::RegisterTracepoint(
                                     .output_table = ""};
   }
 
+  std::cout<<"I am here Temporary 2";
   if (program->has_deployment_spec()) {
     std::unique_ptr<ConnectorContext> conn_ctx = GetContext();
 
@@ -957,7 +963,7 @@ std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> regis
 
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 
-  PX_CHECK_OK(stirling->Init());
+  PL_CHECK_OK(stirling->Init());
 
   return stirling;
 }
