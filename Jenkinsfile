@@ -154,7 +154,7 @@ def retryOnK8sDownscale(Closure body, int times=5) {
       def interval = (retryCount + 1) * 5
       sleep interval
       continue
-    } catch (Exception e) {
+    } catch (e) {
       println("Unhandled ${e}, assuming fatal error.")
       throw e
     }
@@ -199,7 +199,7 @@ def runBazelCmd(String f, String targetConfig, int retries = 5) {
     return runBazelCmd(f, targetConfig, retries - 1)
   }
   // 4 means that tests not present.
-  // 38 means that bes update failed/
+  // 38 means that bes update failed.
   // Both are not fatal.
   if (retval == 0 || retval == 4 || retval == 38) {
     if (retval != 0) {
@@ -221,13 +221,19 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
 
   def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
 
-  if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}", targetConfig) != 0) {
-    throw new Exception('Bazel run failed')
+  def buildRet = runBazelCmd("build ${args} --target_pattern_file ${buildableFile}", targetConfig)
+  if (buildRet != 0) {
+    unstable('Bazel build failed')
   }
-  if (runBazelCmd("test ${args} --target_pattern_file ${testFile}", targetConfig) != 0) {
-    throw new Exception('Bazel test failed')
+  def testRet = runBazelCmd("test ${args} --target_pattern_file ${testFile}", targetConfig)
+  if (testRet == 0 || testRet == 3) {
+    // Create stash even when we get 3 as a retval which indicates some tests failed.
+    // This allows the test reporter to report on failing test names/counts.
+    createBazelStash("${name}-testlogs")
   }
-  createBazelStash("${name}-testlogs")
+  if (testRet != 0) {
+    unstable('Bazel test failed')
+  }
 }
 
 def processBazelLogs(String logBase) {
@@ -515,20 +521,28 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   fetchFromGCS(SRC_STASH_NAME)
   fetchFromGCS(TARGETS_STASH_NAME)
 
-  sh """
-  export BUILDABLE_FILE="${buildableFile}"
-  export TEST_FILE="${testFile}"
-  export BAZEL_ARGS="${bazelArgs}"
-  export STASH_NAME="${stashName}"
-  export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
-  export BUILD_TAG="${BUILD_TAG}"
-  export KERNEL_VERSION="${kernel}"
-  export GCP_PROJECT="${GCP_PROJECT}"
-  export BES_FILE="${BES_GCE_FILE}"
-  ./ci/bpf/00_create_instance.sh
-  """
+  def retval = sh(
+    script: """
+    export BUILDABLE_FILE="${buildableFile}"
+    export TEST_FILE="${testFile}"
+    export BAZEL_ARGS="${bazelArgs}"
+    export STASH_NAME="${stashName}"
+    export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
+    export BUILD_TAG="${BUILD_TAG}"
+    export KERNEL_VERSION="${kernel}"
+    export GCP_PROJECT="${GCP_PROJECT}"
+    export BES_FILE="${BES_GCE_FILE}"
+    ./ci/bpf/00_create_instance.sh
+    """,
+    returnStatus: true
+  )
 
-  stashList.add(stashName)
+  if (retval == 0 || retval == 3) {
+    stashList.add(stashName)
+  }
+  if (retval != 0) {
+    unstable('Bazel BPF build/test failed')
+  }
 }
 
 def buildAndTestBPFOpt = { kernel ->
