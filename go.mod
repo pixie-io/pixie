@@ -50,7 +50,7 @@ require (
 	github.com/ory/hydra-client-go v1.9.2
 	github.com/ory/kratos-client-go v0.10.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/prometheus/common v0.30.0
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
