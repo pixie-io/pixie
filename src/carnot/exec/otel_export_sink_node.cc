@@ -49,6 +49,8 @@ const int64_t kOTelTraceIDLength = 16;
 
 const int64_t kB3ShortTraceIDLength = 8;
 
+const int64_t otelClientTimeoutS = 5;
+
 std::string OTelExportSinkNode::DebugStringImpl() {
   return absl::Substitute("Exec::OTelExportSinkNode: $0", plan_node_->DebugString());
 }
@@ -206,7 +208,7 @@ Status FormatOTelStatus(int64_t id, const grpc::Status& status) {
 }
 
 using ::opentelemetry::proto::metrics::v1::ResourceMetrics;
-Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
+Status OTelExportSinkNode::ConsumeMetrics(ExecState* exec_state, const RowBatch& rb) {
   grpc::ClientContext context;
   for (const auto& header : plan_node_->endpoint_headers()) {
     context.AddMetadata(header.first, header.second);
@@ -281,8 +283,17 @@ Status OTelExportSinkNode::ConsumeMetrics(const RowBatch& rb) {
         std::move(resource_metrics), rb, row_idx);
   }
 
+  // Set timeout, to avoid blocking on query.
+  std::chrono::system_clock::time_point deadline =
+      std::chrono::system_clock::now() + std::chrono::seconds(otelClientTimeoutS);
+  context.set_deadline(deadline);
+
   grpc::Status status = metrics_service_stub_->Export(&context, request, &metrics_response_);
   if (!status.ok()) {
+    if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
+      exec_state->exec_metrics()->otlp_metrics_timeout_counter.Increment();
+    }
+
     return FormatOTelStatus(plan_node_->id(), status);
   }
   return Status::OK();
@@ -313,7 +324,7 @@ std::string GenerateID(uint64_t num_bytes) {
 }
 
 using ::opentelemetry::proto::trace::v1::ResourceSpans;
-Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
+Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& rb) {
   grpc::ClientContext context;
   for (const auto& header : plan_node_->endpoint_headers()) {
     context.AddMetadata(header.first, header.second);
@@ -400,20 +411,28 @@ Status OTelExportSinkNode::ConsumeSpans(const RowBatch& rb) {
         [&request](ResourceSpans span) { *request.add_resource_spans() = std::move(span); },
         std::move(resource_spans), rb, row_idx);
   }
+  // Set timeout, to avoid blocking on query.
+  std::chrono::system_clock::time_point deadline =
+      std::chrono::system_clock::now() + std::chrono::seconds(otelClientTimeoutS);
+  context.set_deadline(deadline);
 
   grpc::Status status = trace_service_stub_->Export(&context, request, &trace_response_);
   if (!status.ok()) {
+    if (status.error_code() == grpc::StatusCode::DEADLINE_EXCEEDED) {
+      exec_state->exec_metrics()->otlp_spans_timeout_counter.Increment();
+    }
+
     return FormatOTelStatus(plan_node_->id(), status);
   }
   return Status::OK();
 }
 
-Status OTelExportSinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb, size_t) {
+Status OTelExportSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   if (plan_node_->metrics().size()) {
-    PX_RETURN_IF_ERROR(ConsumeMetrics(rb));
+    PX_RETURN_IF_ERROR(ConsumeMetrics(exec_state, rb));
   }
   if (plan_node_->spans().size()) {
-    PX_RETURN_IF_ERROR(ConsumeSpans(rb));
+    PX_RETURN_IF_ERROR(ConsumeSpans(exec_state, rb));
   }
   if (rb.eos()) {
     sent_eos_ = true;
