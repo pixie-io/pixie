@@ -170,8 +170,8 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	useOldPDB := false
 	if in.K8sVersion != "" {
 		// policy/v1beta1 podDisruptionBudget was deprecated as of v1.21.
-		minPDBVers, pdbErr := semver.Make("1.21.0")
-		currentK8sVers, err := semver.Make(in.K8sVersion)
+		minPDBVers, pdbErr := semver.ParseTolerant("1.21.0")
+		currentK8sVers, err := semver.ParseTolerant(in.K8sVersion)
 		if err == nil && pdbErr == nil {
 			if currentK8sVers.LT(minPDBVers) {
 				useOldPDB = true
