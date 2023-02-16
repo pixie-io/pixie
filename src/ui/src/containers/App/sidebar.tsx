@@ -235,20 +235,20 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
         </List>
         <div className={classes.spacer} />
         <List>
-          <Tooltip title='Announcements' disableInteractive>
-            <div className={classes.announcekit}>
-              {
-                ANNOUNCEMENT_ENABLED && (
-                <AnnounceKit widget={ANNOUNCE_WIDGET_URL} user={announceUser} data={announceData}>
-                  <ListItem button key='announcements' className={classes.listIcon}>
-                    <ListItemIcon><CampaignIcon /></ListItemIcon>
-                    <ListItemText primary='Announcements' />
-                  </ListItem>
-                </AnnounceKit>
-                )
-              }
-            </div>
-          </Tooltip>
+          {
+            ANNOUNCEMENT_ENABLED && (
+              <Tooltip title='Announcements' disableInteractive>
+                <div className={classes.announcekit}>
+                    <AnnounceKit widget={ANNOUNCE_WIDGET_URL} user={announceUser} data={announceData}>
+                      <ListItem button key='announcements' className={classes.listIcon}>
+                        <ListItemIcon><CampaignIcon /></ListItemIcon>
+                        <ListItemText primary='Announcements' />
+                      </ListItem>
+                    </AnnounceKit>
+                </div>
+              </Tooltip>
+            )
+          }
           <SideBarExternalLinkItem
             key='Docs'
             icon={React.useMemo(() => <DocsIcon />, [])}

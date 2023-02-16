@@ -45,13 +45,14 @@ describe('Live View navbars', () => {
         cy.contains('Cluster:').find('+span').should(($span) => expect($span.text()).not.to.be.empty);
         // Items that have tooltips: the share/edit/move/run buttons.
         // The sidebar expander also has an aria-label but isn't a Material tooltip.
-        cy.get('[aria-label]').should('have.length', 5);
+        // The trigger for the Command Palette sets aria-label in the same way.
+        cy.get('[aria-label]').should('have.length', 6);
         cy.get('.MuiAvatar-root').should('exist');
       });
     });
 
     it('Has tooltips', () => {
-      cy.get('@topbar').find('[aria-label]:not([aria-label~="menu"])').as('hoverables');
+      cy.get('@topbar').find('[aria-label]:not([aria-label~="menu"]):not([aria-label~="command"])').as('hoverables');
       cy.get('@hoverables').should('have.length', 4);
       cy.get('@topbar').find('[aria-label="Execute script"]').should('exist'); // Wait for script to finish running.
       cy.get('@hoverables').each((el) => {
