@@ -56,7 +56,7 @@ Status TCPStatsConnector::StopImpl() {
 
 void TCPStatsConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
   if ( FLAGS_JsonOutput != true ) {
-    /* TODO: Support other output formats */
+    /* TODO: Support other output formats. */
     return;
   }
 
@@ -86,7 +86,7 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
   }
 
   rapidjson::Value data(rapidjson::kObjectType);
-  data.AddMember(json_output::StringRef(json_output::data_str), metricsArray.Move(), allocator);
+  data.AddMember(json_output::StringRef(json_output::metrics_str), metricsArray.Move(), allocator);
   document.AddMember(json_output::StringRef(json_output::version_str), json_output::StringRef(json_output::version_value), allocator);
   rapidjson::Value dataArray(rapidjson::kArrayType);
   dataArray.PushBack(data.Move(), allocator);

@@ -52,7 +52,7 @@ static void AddRecHeaders(rapidjson::Document::AllocatorType& a,
   std::string_view addr_string;
   metricsRec.AddMember("name", json_output::StringRef(name), a);
   metricsRec.AddMember("event_type", json_output::StringRef(metrics_source), a);
-  metricsRec.AddMember("type", "guage", a);
+  metricsRec.AddMember("type", "gauge", a);
   metricsRec.AddMember("value", uint64_t(item.second), a);
   rapidjson::Value attributes(rapidjson::kObjectType);
 
