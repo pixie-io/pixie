@@ -21,7 +21,6 @@ package main
 import (
 	"flag"
 	"os"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -89,7 +88,7 @@ func main() {
 		if err != nil {
 			log.WithError(err).Error("Failed to get server version from discovery client")
 		} else {
-			k8sVersion = strings.TrimPrefix(version.GitVersion, "v")
+			k8sVersion = version.GitVersion
 		}
 	}
 
