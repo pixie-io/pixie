@@ -230,44 +230,41 @@ TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {
   const std::string kTestSrcDir =
       testing::BazelRunfilePath("src/stirling/utils/testdata/test_header_packages");
 
+  std::string prefix = "src/stirling/utils/testdata/test_header_packages/linux-headers-";
+#if X86_64
+  prefix = prefix + "x86_64-";
+#elif AARCH64
+  prefix = prefix + "arm64-";
+#endif
+
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 4, 18}));
-    EXPECT_THAT(
-        match.path.string(),
-        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz"));
+    EXPECT_THAT(match.path.string(), EndsWith(prefix + "4.14.176.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 15, 10}));
-    EXPECT_THAT(
-        match.path.string(),
-        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.14.176.tar.gz"));
+    EXPECT_THAT(match.path.string(), EndsWith(prefix + "4.14.176.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 18, 1}));
-    EXPECT_THAT(
-        match.path.string(),
-        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-4.18.20.tar.gz"));
+    EXPECT_THAT(match.path.string(), EndsWith(prefix + "4.18.20.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 0, 0}));
-    EXPECT_THAT(
-        match.path.string(),
-        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz"));
+    EXPECT_THAT(match.path.string(), EndsWith(prefix + "5.3.18.tar.gz"));
   }
 
   {
     ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
                          FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 7, 20}));
-    EXPECT_THAT(
-        match.path.string(),
-        EndsWith("src/stirling/utils/testdata/test_header_packages/linux-headers-5.3.18.tar.gz"));
+    EXPECT_THAT(match.path.string(), EndsWith(prefix + "5.3.18.tar.gz"));
   }
 }
 

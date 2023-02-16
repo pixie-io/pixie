@@ -26,10 +26,16 @@ def linux_headers():
     )
 
     http_file(
-        name = "linux_headers_merged_tar_gz",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl5/linux-headers-merged-pl5.tar.gz"],
-        sha256 = "2fa58d4658f0d12c294c72d2ae4410e16968b049e145adde283dcb51a3c148a4",
-        downloaded_file_path = "linux-headers-merged.tar.gz",
+        name = "linux_headers_merged_x86_64_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl6/linux-headers-merged-x86_64-pl6.tar.gz"],
+        sha256 = "b99ac9def26c0c1ef03f34583a1e62b96b3b5f8b038428fa582ed28aacbe0ac3",
+        downloaded_file_path = "linux-headers-merged-x86_64.tar.gz",
+    )
+    http_file(
+        name = "linux_headers_merged_arm64_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers/pl6/linux-headers-merged-arm64-pl6.tar.gz"],
+        sha256 = "3daa69cc0e0516c2e9190b6c90ed42cbd8cdabc377c30571fc7037354dc5c57f",
+        downloaded_file_path = "linux-headers-merged-arm64.tar.gz",
     )
 
 def gen_timeconst_file(name, const):
