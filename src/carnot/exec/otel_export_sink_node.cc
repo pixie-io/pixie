@@ -49,7 +49,7 @@ const int64_t kOTelTraceIDLength = 16;
 
 const int64_t kB3ShortTraceIDLength = 8;
 
-const int64_t otelClientTimeoutS = 5;
+constexpr auto otelClientTimeout = std::chrono::seconds{5};
 
 std::string OTelExportSinkNode::DebugStringImpl() {
   return absl::Substitute("Exec::OTelExportSinkNode: $0", plan_node_->DebugString());
@@ -285,7 +285,7 @@ Status OTelExportSinkNode::ConsumeMetrics(ExecState* exec_state, const RowBatch&
 
   // Set timeout, to avoid blocking on query.
   std::chrono::system_clock::time_point deadline =
-      std::chrono::system_clock::now() + std::chrono::seconds(otelClientTimeoutS);
+      std::chrono::system_clock::now() + otelClientTimeout;
   context.set_deadline(deadline);
 
   grpc::Status status = metrics_service_stub_->Export(&context, request, &metrics_response_);
@@ -413,7 +413,7 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
   }
   // Set timeout, to avoid blocking on query.
   std::chrono::system_clock::time_point deadline =
-      std::chrono::system_clock::now() + std::chrono::seconds(otelClientTimeoutS);
+      std::chrono::system_clock::now() + otelClientTimeout;
   context.set_deadline(deadline);
 
   grpc::Status status = trace_service_stub_->Export(&context, request, &trace_response_);
