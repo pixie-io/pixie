@@ -147,7 +147,7 @@ typing_extensions==4.4.0
 urllib3==1.26.14
 wasabi==0.10.1
 wcwidth==0.2.6
-Werkzeug==2.1.2
+Werkzeug==2.2.3
 Wikipedia-API==0.5.4
 wordcloud==1.8.2.2
 wrapt==1.14.1
