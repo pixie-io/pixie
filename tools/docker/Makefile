@@ -91,9 +91,12 @@ LINUX_KERNEL_VERSIONS := 4.14.304 \
 	6.0.19 \
 	6.1.8
 
-LINUX_HEADER_TEMPLATE := linux-headers-%.tar.gz
-LINUX_HEADER_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
-LINUX_HEADERS_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-$(LINUX_HEADERS_REV).tar.gz
+LINUX_HEADER_X86_64_TEMPLATE := linux-headers-x86_64-%.tar.gz
+LINUX_HEADER_ARM64_TEMPLATE := linux-headers-arm64-%.tar.gz
+LINUX_HEADER_X86_64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_X86_64_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
+LINUX_HEADER_ARM64_TARGETS = $(addprefix $(LINUX_HEADER_ASSETS_BUILD_DIR)/, $(patsubst %,$(LINUX_HEADER_ARM64_TEMPLATE), $(LINUX_KERNEL_VERSIONS)))
+LINUX_HEADERS_X86_64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-x86_64-$(LINUX_HEADERS_REV).tar.gz
+LINUX_HEADERS_ARM64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-arm64-$(LINUX_HEADERS_REV).tar.gz
 LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV)
 
 ## Curl image parameters.
@@ -172,20 +175,35 @@ upload_graalvm_archive: build_graalvm_archive_image
 ##############################################
 # Linux Headers Build
 ##############################################
-$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/config
+$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-x86_64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/x86_64_config
 ifndef LINUX_HEADERS_REV
 	$(error set LINUX_HEADERS_REV to a valid value)
 endif
 	@mkdir -p $(@D)
 	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
-	$(DOCKER) build --build-arg KERN_VERSION=$* linux_headers_image -t "$${linux_headers_image_tag}" && \
+	$(DOCKER) build --build-arg KERN_VERSION=$* --build-arg ARCH=x86_64 linux_headers_image -t "$${linux_headers_image_tag}" && \
 	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
 
-$(LINUX_HEADERS_MERGED_FILE): $(LINUX_HEADER_TARGETS)
+$(LINUX_HEADER_ASSETS_BUILD_DIR)/linux-headers-arm64-%.tar.gz: linux_headers_image/Dockerfile linux_headers_image/arm64_config
+ifndef LINUX_HEADERS_REV
+	$(error set LINUX_HEADERS_REV to a valid value)
+endif
+	@mkdir -p $(@D)
+	linux_headers_image_tag="gcr.io/pixie-oss/pixie-dev-public:$*-$(LINUX_HEADERS_REV)"; \
+	$(DOCKER) build --build-arg KERN_VERSION=$* \
+		--build-arg ARCH=arm64 \
+		--build-arg CROSS_COMPILE=aarch64-linux-gnu- \
+		linux_headers_image -t "$${linux_headers_image_tag}" && \
+	$(DOCKER) run --rm -v $(PWD)/$(LINUX_HEADER_ASSETS_BUILD_DIR):/output "$${linux_headers_image_tag}"
+
+$(LINUX_HEADERS_X86_64_MERGED_FILE): $(LINUX_HEADER_X86_64_TARGETS)
+	tar -czf $@ -C $(LINUX_HEADER_ASSETS_BUILD_DIR) $(^F)
+
+$(LINUX_HEADERS_ARM64_MERGED_FILE): $(LINUX_HEADER_ARM64_TARGETS)
 	tar -czf $@ -C $(LINUX_HEADER_ASSETS_BUILD_DIR) $(^F)
 
 .PHONY: upload_linux_headers
-upload_linux_headers:  $(LINUX_HEADERS_MERGED_FILE) $(LINUX_HEADER_TARGETS)  ## Target to build and upload linux headers image
+upload_linux_headers:  $(LINUX_HEADERS_X86_64_MERGED_FILE) $(LINUX_HEADER_X86_64_TARGETS) $(LINUX_HEADERS_ARM64_MERGED_FILE) $(LINUX_HEADER_ARM64_TARGETS) ## Target to build and upload linux headers image
 	gsutil cp $< $(LINUX_HEADERS_GS_PATH)/$(<F)
 	sha256sum $<
 
