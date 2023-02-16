@@ -24,18 +24,18 @@
 
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = [
+         "//src/stirling/source_connectors/tcp_stats:__subpackages__",
+         "//src/stirling/source_connectors/tcp_stats/bcc_bpf:__pkg__"])
 
-tcp_stats_hdrs = [
-    "//src/stirling/bpf_tools/bcc_bpf:headers",
-    "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
-    "//src/stirling/source_connectors/tcp_stats/bcc_bpf_intf:headers",
-]
-
-# Build :pidruntime_bpf_preprocess_genrule to examine the preprocessing output.
 pl_bpf_cc_resource(
     name = "tcpstats",
     src = "tcp_stats.c",
-    hdrs = tcp_stats_hdrs , 
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+    deps = [
+        "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
+        "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
+        "//src/stirling/source_connectors/tcp_stats/bcc_bpf_intf:headers",
+        "//src/stirling/upid:headers",
+    ],
 )

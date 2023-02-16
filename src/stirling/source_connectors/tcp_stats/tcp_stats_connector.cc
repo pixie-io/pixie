@@ -25,7 +25,7 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/tcp_stats/print_utils.h"
 
-BPF_SRC_STRVIEW(tcpstats_bcc_script, tcpstats);
+OBJ_STRVIEW(tcpstats_bcc_script, tcpstats);
 DEFINE_bool(JsonOutput, true, "Standard output in Json format");
 
 namespace px {
@@ -42,8 +42,8 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
 Status TCPStatsConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
-  PL_RETURN_IF_ERROR(InitBPFProgram(tcpstats_bcc_script));
-  PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  PX_RETURN_IF_ERROR(InitBPFProgram(tcpstats_bcc_script));
+  PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";
   return Status::OK();
