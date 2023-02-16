@@ -137,8 +137,59 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
 
   TaskStructOffsetsManager offsets_manager(&task_struct_offsets);
 
+#if AARCH64
+  // On aarch64, the cpu_context struct inside the thread_struct, can contain the same address as
+  // the group_leader value of the task_struct. Since the thread_struct is always at the end of the
+  // task_struct, we can just stop searching when we get to the thread_struct. To identify the
+  // offset of the thread_struct, we search for the address of thread local storage which is always
+  // stored `sizeof(cpu_context) + some padding` after the beginning of the thread struct.
+  // See:
+  // https://github.com/torvalds/linux/blob/3ac88fa4605ec98e545fb3ad0154f575fda2de5f/arch/arm64/include/asm/processor.h#L147
+  // for the thread_struct definition.
+  uint64_t tls_addr;
+  // ARM magic to get the system register TPIDR_EL0, which stores the address of thread local
+  // storage.
+  asm volatile("mrs %0, TPIDR_EL0" : "=r"(tls_addr));
+  VLOG(1) << "TLS address = " << tls_addr;
+
+  // We leave some room for padding. The thread_struct almost always seems to have some padding
+  // between cpu_context and tp_value. In the case that there is no padding, it shouldn't affect
+  // us since the values we care about are never right before the thread_struct in the
+  // task_struct.
+  constexpr uint64_t padding = 8;
+  // aarch64's cpu_context struct in linux stores 13 registers. I checked this in v4.14 and v6.1
+  // and it hasn't changed.
+  constexpr uint64_t num_cpu_context_registers = 13;
+  constexpr uint64_t tp_value_offset_in_thread_struct =
+      padding + num_cpu_context_registers * sizeof(uint64_t);
+  // For now we iterate through the buffer twice. At some point we should refactor offsets_manager
+  // to eliminate the need to iterate through the buffer twice.
+  int stop_at_offset = -1;
+  for (uint64_t idx = tp_value_offset_in_thread_struct / sizeof(uint64_t);
+       idx < sizeof(buf.u64words) / sizeof(uint64_t); idx++) {
+    int current_offset = idx * sizeof(uint64_t);
+    if (buf.u64words[idx] == tls_addr) {
+      VLOG(1) << absl::Substitute("[offset = $0] Found tp_value", current_offset);
+      stop_at_offset = current_offset - tp_value_offset_in_thread_struct;
+      VLOG(1) << "Ignoring thread_struct at offset = " << stop_at_offset;
+      break;
+    }
+  }
+  if (stop_at_offset == -1) {
+    return error::Internal(
+        "Failed to find the thread_struct offset within the task_struct. This is required for "
+        "resolving task struct offsets on aarch64");
+  }
+#endif
+
   for (const auto& [idx, val] : Enumerate(buf.u64words)) {
     int current_offset = idx * sizeof(uint64_t);
+
+#if AARCH64
+    if (current_offset == stop_at_offset) {
+      break;
+    }
+#endif
 
     if (pl_nsec_to_clock_t(val) == proc_pid_start_time) {
       VLOG(1) << absl::Substitute("[offset = $0] Found real_start_time", current_offset);
