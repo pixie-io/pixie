@@ -203,9 +203,9 @@ $(LINUX_HEADERS_ARM64_MERGED_FILE): $(LINUX_HEADER_ARM64_TARGETS)
 	tar -czf $@ -C $(LINUX_HEADER_ASSETS_BUILD_DIR) $(^F)
 
 .PHONY: upload_linux_headers
-upload_linux_headers:  $(LINUX_HEADERS_X86_64_MERGED_FILE) $(LINUX_HEADER_X86_64_TARGETS) $(LINUX_HEADERS_ARM64_MERGED_FILE) $(LINUX_HEADER_ARM64_TARGETS) ## Target to build and upload linux headers image
-	gsutil cp $< $(LINUX_HEADERS_GS_PATH)/$(<F)
-	sha256sum $<
+upload_linux_headers:  $(LINUX_HEADERS_X86_64_MERGED_FILE) $(LINUX_HEADERS_ARM64_MERGED_FILE) ## Target to build and upload linux headers image
+	gsutil cp $^ $(LINUX_HEADERS_GS_PATH)
+	sha256sum $^
 
 
 ##############################################
