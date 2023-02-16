@@ -40,6 +40,7 @@ export const VEGA_SCHEMA = '$schema';
 
 export const TIMESERIES_CHART_TYPE = 'types.px.dev/px.vispb.TimeseriesChart';
 export const BAR_CHART_TYPE = 'types.px.dev/px.vispb.BarChart';
+export const PIE_CHART_TYPE = 'types.px.dev/px.vispb.PieChart';
 export const HISTOGRAM_CHART_TYPE = 'types.px.dev/px.vispb.HistogramChart';
 export const FLAMEGRAPH_CHART_TYPE = 'types.px.dev/px.vispb.StackTraceFlameGraph';
 
