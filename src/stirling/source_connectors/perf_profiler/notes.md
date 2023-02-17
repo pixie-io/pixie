@@ -9,6 +9,9 @@ TODO(jps): cover symbolization for compiled & Java and symbol caching.
 ### Missing stack frames
 While investigating issue [#719](https://github.com/pixie-io/pixie/issues/719), we noticed that infrequently (less than 0.5% of the time, e.g.) we observed a stack trace with a missing stack frame. Fixing the test case to accommodate the issue was easy, but not informative. Here, we document our investigation into the root cause of the issue.
 
+The following rendering of the callgraph shows arcs from x to y.
+[!skipped-call-frames](./.readme_assets/call-graph-with-skipped-frames.png)
+
 ##### The issue
 The missing stack frames we observed were caused by stack trace samples captured at function entry:
 ```
