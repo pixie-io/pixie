@@ -609,6 +609,54 @@ otel_sink_op {
     }
   }
 })pb"},
+        {"timeout_endpoint",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+    timeout=5,
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='runtime.jvm.gc.collection',
+      value=df.young_gc_time,
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::STRING, types::TIME64NS, types::INT64},
+             {"service", "time_", "young_gc_time"},
+             {types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+    timeout: 5
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 0
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "runtime.jvm.gc.collection"
+    time_column_index: 1
+    unit: "ns"
+    gauge {
+      int_column_index: 2
+    }
+  }
+})pb"},
         {"manually_specify_gauge_unit",
          R"pxl(
 otel.Data(

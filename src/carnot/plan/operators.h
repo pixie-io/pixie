@@ -390,6 +390,10 @@ class OTelExportSinkOperator : public Operator {
     return resource_attributes_normal_encoding_;
   }
 
+  const std::chrono::seconds timeout() {
+    return std::chrono::seconds{pb_.endpoint_config().timeout()};
+  }
+
  private:
   std::vector<std::pair<std::string, std::string>> headers_;
   std::vector<planpb::OTelAttribute> resource_attributes_optional_json_encoded_;

@@ -492,6 +492,8 @@ message OTelEndpointConfig {
   map<string, string> headers = 2;
   // True if the OpenTelemetry collector is not protected with SSL.
   bool insecure = 3;
+  // The number of seconds before a request to the OpenTelemetry collector times out.
+  int64 timeout = 4;
 }
 
 // Defines a resource. Discussed in depth in the OpenTelemetry spec.
