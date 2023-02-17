@@ -74,7 +74,7 @@ StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_releas
   kernel_version.major_rev = tmp;
 
   ECHECK(absl::SimpleAtoi(match[3].str(), &tmp));
-  if (tmp > std::numeric_limits<uint8_t>::max()) {
+  if (tmp > std::numeric_limits<uint16_t>::max()) {
     return error::Internal("Kernel minor_rev does not appear valid %d", tmp);
   }
   kernel_version.minor_rev = tmp;
