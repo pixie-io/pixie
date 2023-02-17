@@ -5327,7 +5327,8 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject = function(includeInst
   var f, obj = {
     url: jspb.Message.getFieldWithDefault(msg, 1, ""),
     headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : [],
-    insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false)
+    insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
+    timeout: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -5378,6 +5379,10 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.deserializeBinaryFromReader = f
       var value = /** @type {boolean} */ (reader.readBool());
       msg.setInsecure(value);
       break;
+    case 4:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setTimeout(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5422,6 +5427,13 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.serializeBinaryToWriter = funct
   if (f) {
     writer.writeBool(
       3,
+      f
+    );
+  }
+  f = message.getTimeout();
+  if (f !== 0) {
+    writer.writeInt64(
+      4,
       f
     );
   }
@@ -5484,6 +5496,24 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getInsecure = functio
  */
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.setInsecure = function(value) {
   return jspb.Message.setProto3BooleanField(this, 3, value);
+};
+
+
+/**
+ * optional int64 timeout = 4;
+ * @return {number}
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getTimeout = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.px.api.vizierpb.Configs.OTelEndpointConfig} returns this
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.setTimeout = function(value) {
+  return jspb.Message.setProto3IntField(this, 4, value);
 };
 
 
