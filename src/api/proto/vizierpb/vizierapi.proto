@@ -333,6 +333,7 @@ message Configs {
     string url = 1 [ (gogoproto.customname) = "URL" ];
     map<string, string> headers = 2;
     bool insecure = 3;
+    int64 timeout = 4;
   }
   OTelEndpointConfig otel_endpoint_config = 1 [ (gogoproto.customname) = "OTelEndpointConfig" ];
   message PluginConfig {

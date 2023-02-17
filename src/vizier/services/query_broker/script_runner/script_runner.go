@@ -64,6 +64,7 @@ var (
 	// CronScriptUpdatesResponseChannel is the NATS channel that script updates are published to.
 	CronScriptUpdatesResponseChannel = messagebus.V2CTopic(cvmsgs.CronScriptUpdatesResponseChannel)
 	natsWaitTimeout                  = 2 * time.Minute
+	defaultOTelTimeoutS              = int64(5)
 )
 
 // ScriptRunner tracks registered cron scripts and runs them according to schedule.
@@ -492,6 +493,7 @@ func (r *runner) runScript(scriptPeriod time.Duration) {
 			URL:      r.config.OtelEndpointConfig.URL,
 			Headers:  r.config.OtelEndpointConfig.Headers,
 			Insecure: r.config.OtelEndpointConfig.Insecure,
+			Timeout:  defaultOTelTimeoutS,
 		}
 	}
 
