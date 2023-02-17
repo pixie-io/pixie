@@ -284,7 +284,7 @@ Status OTelExportSinkNode::ConsumeMetrics(ExecState* exec_state, const RowBatch&
   // Set timeout, to avoid blocking on query.
   if (plan_node_->timeout() > 0) {
     std::chrono::system_clock::time_point deadline =
-      std::chrono::system_clock::now() + std::chrono::seconds{plan_node_->timeout()};
+        std::chrono::system_clock::now() + std::chrono::seconds{plan_node_->timeout()};
     context.set_deadline(deadline);
   }
 
@@ -414,7 +414,7 @@ Status OTelExportSinkNode::ConsumeSpans(ExecState* exec_state, const RowBatch& r
   // Set timeout, to avoid blocking on query.
   if (plan_node_->timeout() > 0) {
     std::chrono::system_clock::time_point deadline =
-      std::chrono::system_clock::now() + std::chrono::seconds{plan_node_->timeout()};
+        std::chrono::system_clock::now() + std::chrono::seconds{plan_node_->timeout()};
     context.set_deadline(deadline);
   }
 
