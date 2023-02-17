@@ -287,6 +287,15 @@ message HistogramChart {
   Axis y_axis = 4;
 }
 
+// GaugeChart shows the most recent value of a column in ratio to the lowest
+// and highest values in the same column.
+message GaugeChart {
+  // Which column to look at. Should contain numeric data.
+  string value = 1;
+  // title string for the chart.
+  string title = 2;
+}
+
 // TimeseriesChart the visual spec for a timeseries chart. There is variety in the possible visual
 // style for these charts, but they always occur over time. They automatically use the time_ column
 // of the input table(s) as the x-axis.

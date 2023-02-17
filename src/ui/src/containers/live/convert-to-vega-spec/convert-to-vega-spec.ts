@@ -34,6 +34,7 @@ import {
   BAR_CHART_TYPE,
   FLAMEGRAPH_CHART_TYPE,
   HISTOGRAM_CHART_TYPE,
+  GAUGE_CHART_TYPE,
   TIMESERIES_CHART_TYPE,
   VEGA_CHART_TYPE,
   VEGA_LITE_V4,
@@ -46,6 +47,7 @@ import {
   StacktraceFlameGraphDisplay,
   convertToStacktraceFlameGraph,
 } from './flamegraph';
+import { convertToGaugeChart, GaugeDisplay } from './gauge';
 import { convertToHistogramChart, HistogramDisplay } from './histogram';
 import { convertToPieChart, PieDisplay } from './pie';
 import {
@@ -95,8 +97,14 @@ function registerVegaFormatFunctions() {
 
 registerVegaFormatFunctions();
 
-export type ChartDisplay = TimeseriesDisplay | BarDisplay | PieDisplay | VegaDisplay | HistogramDisplay |
-StacktraceFlameGraphDisplay;
+export type ChartDisplay =
+| TimeseriesDisplay
+| BarDisplay
+| PieDisplay
+| VegaDisplay
+| HistogramDisplay
+| GaugeDisplay
+| StacktraceFlameGraphDisplay;
 
 function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
   spec.padding = 16;
@@ -228,6 +236,13 @@ function convertWidgetDisplayToSpecWithErrors(
       return convertToHistogramChart(display as HistogramDisplay, source, relation);
     case TIMESERIES_CHART_TYPE:
       return convertToTimeseriesChart(display as TimeseriesDisplay, source, theme, relation);
+    case GAUGE_CHART_TYPE:
+      return convertToGaugeChart(
+        display as GaugeDisplay,
+        source,
+        theme,
+        relation,
+      );
     case FLAMEGRAPH_CHART_TYPE:
       return convertToStacktraceFlameGraph(
         display as StacktraceFlameGraphDisplay,
