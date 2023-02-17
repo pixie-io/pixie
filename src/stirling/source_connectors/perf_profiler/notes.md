@@ -18,7 +18,7 @@ mov    %rsp, %rbp
 or at function exit:
 ```
 pop    %rbp
-ret    
+ret
 ```
 If the stack trace is sampled exactly when the program counter points to either the `push` or `ret` instructions shown above, then the stack trace (when walked using frame pointers) will start from the caller's ancestor function: the stack trace will skip the caller of the leaf function and wrongly connect the leaf function to its caller's calling function.
 
@@ -89,7 +89,7 @@ Caller_0             |  saved bp_0   |
                      +---------------+
                      |  ............ |
                      +---------------+
-                     |  return addr. |    
+                     |  return addr. |
 -------------------  +---------------+
 Caller_1    rbp -->  |  saved bp_1   |   # points to saved bp_0
                      +---------------+
@@ -135,7 +135,7 @@ main->foo->bar->0xabcd1234
 ```
 The second stack trace, with the hex address, is the same stack trace, but with the leaf symbol pointing to the hex representation of the instruction pointer when the stack trace was captured.
 
-This symbolization style does tend to degrade the flame graph representation of profiling data, so it we are not committing to our mainline code. 
+This symbolization style does tend to degrade the flame graph representation of profiling data, so it we are not committing to our mainline code.
 
 ###### Investigation results
 Using the modified stack traces and a test program crafted such that we could predict the expected stack traces, we found two virtual addresses (instruction pointers) with missing stack frames. After converting the virtual addresses into binary addresses (using`vaddr_to_baddr_tool` from the [Pixie](https://github.com/pixie-io/pixie/) repo), we indexed into the disassembled program and found that we had indeed sampled our stack traces exactly at function entry and function exit.
@@ -167,24 +167,24 @@ binary addr:  0x000000000003db6c.
       3dac8:       48 83 7d f0 00          cmpq   $0x0,-0x10(%rbp)
       3dacd:       0f 85 0d 00 00 00       jne    3dae0 <_Z3fibm+0x20>
       3dad3:       48 c7 45 f8 00 00 00    movq   $0x0,-0x8(%rbp)
-      3dada:       00 
+      3dada:       00
       3dadb:       e9 87 00 00 00          jmp    3db67 <_Z3fibm+0xa7>
       3dae0:       48 83 7d f0 01          cmpq   $0x1,-0x10(%rbp)
       3dae5:       0f 85 0d 00 00 00       jne    3daf8 <_Z3fibm+0x38>
       3daeb:       48 c7 45 f8 01 00 00    movq   $0x1,-0x8(%rbp)
-      3daf2:       00 
+      3daf2:       00
       3daf3:       e9 6f 00 00 00          jmp    3db67 <_Z3fibm+0xa7>
       3daf8:       48 8b 45 f0             mov    -0x10(%rbp),%rax
       3dafc:       48 83 e8 02             sub    $0x2,%rax
       3db00:       48 89 45 e8             mov    %rax,-0x18(%rbp)
       3db04:       48 c7 45 e0 01 00 00    movq   $0x1,-0x20(%rbp)
-      3db0b:       00 
+      3db0b:       00
       3db0c:       48 c7 45 d8 01 00 00    movq   $0x1,-0x28(%rbp)
-      3db13:       00 
+      3db13:       00
       3db14:       48 c7 45 d0 01 00 00    movq   $0x1,-0x30(%rbp)
-      3db1b:       00 
+      3db1b:       00
       3db1c:       48 c7 45 c8 00 00 00    movq   $0x0,-0x38(%rbp)
-      3db23:       00 
+      3db23:       00
       3db24:       48 8b 45 c8             mov    -0x38(%rbp),%rax
       3db28:       48 3b 45 e8             cmp    -0x18(%rbp),%rax
       3db2c:       0f 8d 2d 00 00 00       jge    3db5f <_Z3fibm+0x9f>
@@ -203,7 +203,7 @@ binary addr:  0x000000000003db6c.
       3db63:       48 89 45 f8             mov    %rax,-0x8(%rbp)
       3db67:       48 8b 45 f8             mov    -0x8(%rbp),%rax
       3db6b:       5d                      pop    %rbp
-      3db6c:       c3                      ret    
+      3db6c:       c3                      ret
       3db6d:       0f 1f 00                nopl   (%rax)
 
 ```
