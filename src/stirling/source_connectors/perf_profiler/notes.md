@@ -36,15 +36,18 @@ stack_trace.push_back(rip);
 fn_return_address = *(fp + 8);
 stack_trace.push_back(fn_return_address);
 ```
-4. The saved base pointers each, in turn, point to their caller's stack. Find the next caller's base pointer:
-5. If `saved_rbp` is not a valid stack address, exit, else goto step (3).
+4. Follow the pointer stored in `fp` to update it with the next caller's frame pointer (the saved frame pointers each, in turn, point to their caller's stack):
+```
+fp = *fp
+```
+5. If the value now stored in `fp` is not a valid stack address, exit, else goto step (3).
 
 In pseudo code:
 ```
 fp = *rbp;
 stack_trace.push_back(rip);
 while(true) {
-  fn_return_address = *(saved_rbp + 8);
+  fn_return_address = *(fp + 8);
   stack_trace.push_back(fn_return_address);
   fp = *fp;
   if(!valid_stack_address(fp)) {
@@ -103,7 +106,7 @@ Leaf fn.    rsp -->  |  saved bp_2   |   # points to saved bp_1
 __Figure 2.__ The stack and register state at the moment of function entry or function exit. The stack will be in this state when the instruction pointer points either `push %rbp` (on function entry) or at `ret` (on function exit).
 
 ##### Understanding the missing stack frame
-We can see that if register `rpb` is dereferenced with the stack and register state as shown in Figure (2), then `saved bp_2` is skipped and so the return address that points into caller 1 is skipped. Succinctly, the stack is walked back starting from `rbp` which points to `saved bp_1`.
+We can see that if register `rbp` is dereferenced with the stack and register state as shown in Figure (2), then `saved bp_2` is skipped and so the return address that points into caller 1 is skipped. Succinctly, the stack is walked back starting from `rbp` which points to `saved bp_1`.
 
 ##### Reproducing the "missing stack frames" issue with perf
 
@@ -118,11 +121,7 @@ cat perf.txt | c++filt | gprof2dot.py -f perf -e 0 | dot -Tpdf -o output.pdf
 For these experiments, we linked with `ld` vs. our toolchain default of `lld` because [`perf` + `dwarf` does not work with `lld`](https://github.com/llvm/llvm-project/issues/53156).
 
 ##### Linux perf users group
-We also sent email to the Linux perf users group and in two different replies, found confirmation of this issue. Editing for brevity:
-```
-On Arm we had an issue that looked like this when using --call-graph=fp...
-With --call-graph=dwarf... [we] would expect the stacks to always be complete.
-```
+We also sent email to the Linux perf users group and in two [different replies](https://lore.kernel.org/linux-perf-users/CAK2+a3RUFEb4ooe9BehBnBkOKgVt8n4Z28Ryzr2E4SH0--iiWg@mail.gmail.com/T/#t), found confirmation of this issue.
 
 ###### Capturing the instruction pointer in the leaf for stack traces with missing stack frames
 To prove out the theory, we found the exact value of the instruction pointer for the stack traces with missing stack frames. For this experiment, we modified our symbolization logic to append the leaf address as a hex string to the stack trace (i.e. in addition to symbolizing the leaf). In effect, we would go from stack traces like this:
