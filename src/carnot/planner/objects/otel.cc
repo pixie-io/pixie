@@ -328,7 +328,7 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> endpoint_fn,
       FuncObject::Create(kEndpointOpID, {"url", "headers", "insecure", "timeout"},
-                         {{"headers", "{}"}, {"insecure", "False"}, {"timeout", "0"}},
+                         {{"headers", "{}"}, {"insecure", "False"}, {"timeout", "5"}},
                          /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
                          std::bind(&EndpointConfigDefinition, std::placeholders::_1,

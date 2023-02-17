@@ -129,6 +129,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 5
   }
   resource {
     attributes {
@@ -184,6 +185,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -239,6 +241,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -310,6 +313,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -381,6 +385,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -443,6 +448,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -507,6 +513,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 5
   }
   resource {
     attributes {
@@ -589,6 +596,7 @@ otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
     insecure: true
+    timeout: 5
   }
   resource {
     attributes {
@@ -684,6 +692,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -736,6 +745,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -910,6 +920,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 6
   }
   resource {
     attributes {
@@ -936,6 +947,7 @@ otel_sink_op {
   };
   auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
   endpoint_config->set_url(("px.dev:55690"));
+  endpoint_config->set_timeout(6);
   (*endpoint_config->mutable_headers())["apikey"] = "12345";
   CompilerState compiler_state(std::make_unique<RelationMap>(),
                                /* sensitive_columns */ SensitiveColumnMap{}, info.get(),

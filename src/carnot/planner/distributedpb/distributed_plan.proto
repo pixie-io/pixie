@@ -137,6 +137,8 @@ message OTelEndpointConfig {
   map<string, string> headers = 2;
   // True if the OpenTelemetry collector is not protected with SSL.
   bool insecure = 3;
+  // The out of time in seconds before the request to the OTel collector should timeout.
+  int64 timeout = 4;
 }
 
 message PluginConfig {
