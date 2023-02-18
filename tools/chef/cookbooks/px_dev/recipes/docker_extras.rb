@@ -33,6 +33,13 @@ execute 'link gcr credential helper into /usr/bin' do
   command 'ln -s /opt/google-cloud-sdk/bin/docker-credential-gcr /usr/bin/docker-credential-gcr'
 end
 
+directory '/etc/containers' do
+  owner node['owner']
+  group node['group']
+  mode '0755'
+  action :create
+end
+
 template '/etc/containers/containers.conf' do
   source 'containers.conf.erb'
   owner node['owner']
