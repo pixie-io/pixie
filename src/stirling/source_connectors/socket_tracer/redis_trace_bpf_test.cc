@@ -163,9 +163,9 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
                        {absl::Substitute("--network=container:$0", container_.container_name())},
                        {"redis-cli", "subscribe", "foo"});
 
-  std::string redis_cli_cmd =
-      absl::Substitute("podman run --rm --network=container:$0 docker.io/redis redis-cli publish foo test",
-                       container_.container_name());
+  std::string redis_cli_cmd = absl::Substitute(
+      "podman run --rm --network=container:$0 docker.io/redis redis-cli publish foo test",
+      container_.container_name());
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 

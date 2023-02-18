@@ -242,7 +242,8 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
   static constexpr auto timeout = std::chrono::seconds{600};
   static constexpr bool kUseHostPidNamespace = false;
   const std::string tmpfs_size = "500K";
-  const std::vector<std::string> options = {"--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
+  const std::vector<std::string> options = {
+      "--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
   const std::vector<std::string> args;
   sub_process.Run(timeout, options, args, kUseHostPidNamespace);
 
@@ -301,11 +302,12 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
   static constexpr std::string_view container_name_pfx = "java";
   ContainerRunner sub_process(image_tar_path, container_name_pfx, kReadyMsg);
 
-  // Start the container/sub-proc. 
+  // Start the container/sub-proc.
   static constexpr auto timeout = std::chrono::seconds{600};
   static constexpr bool kUseHostPidNamespace = false;
   const std::string tmpfs_size = "20M";
-  const std::vector<std::string> options = {"--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
+  const std::vector<std::string> options = {
+      "--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
   const std::vector<std::string> args;
   sub_process.Run(timeout, options, args, kUseHostPidNamespace);
 

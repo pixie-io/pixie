@@ -27,7 +27,7 @@ bpf_flags=(--privileged \
   -v /:/host \
   -v /sys:/sys \
   -v /var/lib/docker:/var/lib/docker \
-  --pid=host \
+  "--pid=host" \
   --cgroupns host \
   --env "PL_HOST_PATH=/host")
 
