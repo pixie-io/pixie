@@ -542,6 +542,9 @@ bool ConnTracker::SetSSL(bool ssl, std::string_view reason) {
 
   bool old_ssl = ssl_;
   ssl_ = ssl;
+  send_data_.set_ssl(ssl);
+  recv_data_.set_ssl(ssl);
+
   CONN_TRACE(1) << absl::Substitute("SSL state changed: $0->$1, reason=[$2]", old_ssl, ssl, reason);
   return true;
 }
