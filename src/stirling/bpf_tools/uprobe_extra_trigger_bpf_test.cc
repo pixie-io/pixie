@@ -49,7 +49,8 @@ constexpr char kBCCProgram[] = R"(
 // It is not enough to resolve symlinks, because the two paths may come from two
 // instances of the same container image, which appear to be separate paths,
 // but which have share the same file inode behind the scenes.
-TEST(BCCWrapper, UnexpectedExtraTrigger) {
+// Disabling this test since this bug doesn't seem to reproduce with podman.
+TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
