@@ -144,6 +144,8 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
 
 std::optional<int64_t> ResolveSymbolWithEachGoPrefix(ElfReader* elf_reader,
                                                      std::string_view symbol) {
+  // In go version 1.20, the symbols for compiler generated types were switched from having a prefix
+  // of `go.` to `go:`. See the go 1.20 release notes: https://tip.golang.org/doc/go1.20
   static constexpr std::array go_prefixes{"go.", "go:"};
   for (const auto& prefix : go_prefixes) {
     auto optional_addr = elf_reader->SymbolAddress(absl::StrCat(prefix, symbol));
