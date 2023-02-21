@@ -51,8 +51,8 @@ class OTelExportSinkNode : public SinkNode {
                          size_t parent_index) override;
 
  private:
-  Status ConsumeMetrics(const table_store::schema::RowBatch& rb);
-  Status ConsumeSpans(const table_store::schema::RowBatch& rb);
+  Status ConsumeMetrics(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+  Status ConsumeSpans(ExecState* exec_state, const table_store::schema::RowBatch& rb);
 
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
   opentelemetry::proto::collector::metrics::v1::ExportMetricsServiceResponse metrics_response_;

@@ -29,6 +29,7 @@
 #include <sole.hpp>
 
 #include "src/carnot/carnotpb/carnot.pb.h"
+#include "src/carnot/exec/exec_metrics.h"
 #include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/udf/model_pool.h"
 #include "src/carnot/udf/registry.h"
@@ -70,7 +71,8 @@ class ExecState {
       const MetricsStubGenerator& metrics_stub_generator,
       const TraceStubGenerator& trace_stub_generator, const sole::uuid& query_id,
       udf::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
-      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
+      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {},
+      ExecMetrics* exec_metrics = nullptr)
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
@@ -79,7 +81,8 @@ class ExecState {
         query_id_(query_id),
         model_pool_(model_pool),
         grpc_router_(grpc_router),
-        add_auth_to_grpc_client_context_func_(add_auth_func) {}
+        add_auth_to_grpc_client_context_func_(add_auth_func),
+        exec_metrics_(exec_metrics) {}
 
   ~ExecState() {
     if (grpc_router_ != nullptr) {
@@ -197,6 +200,8 @@ class ExecState {
     add_auth_to_grpc_client_context_func_(ctx);
   }
 
+  ExecMetrics* exec_metrics() { return exec_metrics_; }
+
  private:
   udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
@@ -210,6 +215,7 @@ class ExecState {
   udf::ModelPool* model_pool_;
   GRPCRouter* grpc_router_ = nullptr;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_client_context_func_;
+  ExecMetrics* exec_metrics_;
 
   int64_t current_source_ = 0;
   bool current_source_set_ = false;

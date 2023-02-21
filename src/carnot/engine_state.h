@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/exec/exec_metrics.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/funcs/funcs.h"
 #include "src/carnot/plan/plan_state.h"
@@ -57,7 +58,8 @@ class EngineState : public NotCopyable {
         stub_generator_(stub_generator),
         add_auth_to_grpc_context_func_(add_auth_to_grpc_context_func),
         grpc_router_(grpc_router),
-        model_pool_(std::move(model_pool)) {}
+        model_pool_(std::move(model_pool)),
+        metrics_(std::make_unique<ExecMetrics>(&(GetMetricsRegistry()))) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
       std::unique_ptr<udf::Registry> func_registry,
@@ -85,7 +87,7 @@ class EngineState : public NotCopyable {
         [this](const std::string& remote_addr, bool insecure) {
           return TraceStubGenerator(remote_addr, insecure);
         },
-        query_id, model_pool_.get(), grpc_router_, add_auth_to_grpc_context_func_);
+        query_id, model_pool_.get(), grpc_router_, add_auth_to_grpc_context_func_, metrics_.get());
   }
   std::shared_ptr<grpc::Channel> CreateChannel(const std::string& remote_addr, bool insecure) {
     grpc::ChannelArguments args;
@@ -145,6 +147,7 @@ class EngineState : public NotCopyable {
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
   exec::GRPCRouter* grpc_router_ = nullptr;
   std::unique_ptr<udf::ModelPool> model_pool_;
+  std::unique_ptr<ExecMetrics> metrics_;
 };
 
 }  // namespace carnot
