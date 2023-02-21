@@ -178,8 +178,8 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
 namespace {
 void UpdateProtocolMetrics(traffic_protocol_t protocol, const conn_stats_event_t& event,
-                           const ConnTracker::ConnStatsTracker& conn_stats) {
-  auto& metrics = SocketTracerMetrics::GetProtocolMetrics(protocol);
+                           const ConnTracker::ConnStatsTracker& conn_stats, bool ssl) {
+  auto& metrics = SocketTracerMetrics::GetProtocolMetrics(protocol, ssl);
   if (event.rd_bytes > conn_stats.bytes_recv()) {
     metrics.conn_stats_bytes.Increment(event.rd_bytes - conn_stats.bytes_recv());
   }
@@ -204,7 +204,7 @@ void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
     DCHECK_GE(event.rd_bytes, conn_stats_.bytes_recv());
     DCHECK_GE(event.wr_bytes, conn_stats_.bytes_sent());
 
-    UpdateProtocolMetrics(protocol_, event, conn_stats_);
+    UpdateProtocolMetrics(protocol_, event, conn_stats_, ssl_);
 
     conn_stats_.set_bytes_recv(event.rd_bytes);
     conn_stats_.set_bytes_sent(event.wr_bytes);

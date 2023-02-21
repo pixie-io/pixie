@@ -28,38 +28,56 @@ namespace px {
 namespace stirling {
 
 SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
-                                         traffic_protocol_t protocol)
+                                         traffic_protocol_t protocol,
+                                         bool tls)
     : data_loss_bytes(
           prometheus::BuildCounter()
               .Name("data_loss_bytes")
               .Help("Total bytes of data loss for this protocol. Measured by bytes that weren't "
                     "successfully parsed.")
               .Register(*registry)
-              .Add({{"protocol", std::string(magic_enum::enum_name(protocol))}})),
+              .Add({
+                  {"protocol", std::string(magic_enum::enum_name(protocol))},
+                  {"tls", tls ? "1" : "0"},
+              })),
       conn_stats_bytes(prometheus::BuildCounter()
                            .Name("conn_stats_bytes")
                            .Help("Total bytes of data tracked by conn stats for this protocol.")
                            .Register(*registry)
-                           .Add({{"protocol", std::string(magic_enum::enum_name(protocol))}})) {}
+                           .Add({
+                               {"protocol", std::string(magic_enum::enum_name(protocol))},
+                               {"tls", tls ? "1" : "0"},
+                           })) {}
 
 namespace {
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_protocol_metrics;
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_plaintext_protocol_metrics;
 
-void ResetProtocolMetrics(traffic_protocol_t protocol) {
-  g_protocol_metrics.insert_or_assign(
-      protocol, std::make_unique<SocketTracerMetrics>(&GetMetricsRegistry(), protocol));
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_encrypted_protocol_metrics;
+
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>* GetUnderlyingProtocolMetrics(bool tls) {
+  if (tls) {
+    return &g_encrypted_protocol_metrics;
+  } else {
+    return &g_plaintext_protocol_metrics;
+  }
+}
+
+void ResetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
+  GetUnderlyingProtocolMetrics(tls)->insert_or_assign(
+      protocol, std::make_unique<SocketTracerMetrics>(&GetMetricsRegistry(), protocol, tls));
 }
 }  // namespace
 
-SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol) {
-  if (g_protocol_metrics.find(protocol) == g_protocol_metrics.end()) {
-    ResetProtocolMetrics(protocol);
+SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
+  auto metrics = GetUnderlyingProtocolMetrics(tls);
+  if (metrics->find(protocol) == metrics->end()) {
+    ResetProtocolMetrics(protocol, tls);
   }
-  return *g_protocol_metrics[protocol];
+  return *(*metrics)[protocol];
 }
 
-void SocketTracerMetrics::TestOnlyResetProtocolMetrics(traffic_protocol_t protocol) {
-  ResetProtocolMetrics(protocol);
+void SocketTracerMetrics::TestOnlyResetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
+  ResetProtocolMetrics(protocol, tls);
 }
 
 }  // namespace stirling
