@@ -28,8 +28,7 @@ namespace px {
 namespace stirling {
 
 SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
-                                         traffic_protocol_t protocol,
-                                         bool tls)
+                                         traffic_protocol_t protocol, bool tls)
     : data_loss_bytes(
           prometheus::BuildCounter()
               .Name("data_loss_bytes")
@@ -50,11 +49,14 @@ SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
                            })) {}
 
 namespace {
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_plaintext_protocol_metrics;
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>
+    g_plaintext_protocol_metrics;
 
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>> g_encrypted_protocol_metrics;
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>
+    g_encrypted_protocol_metrics;
 
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>* GetUnderlyingProtocolMetrics(bool tls) {
+std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>*
+GetUnderlyingProtocolMetrics(bool tls) {
   if (tls) {
     return &g_encrypted_protocol_metrics;
   } else {
@@ -68,7 +70,8 @@ void ResetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
 }
 }  // namespace
 
-SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
+SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol,
+                                                             bool tls) {
   auto metrics = GetUnderlyingProtocolMetrics(tls);
   if (metrics->find(protocol) == metrics->end()) {
     ResetProtocolMetrics(protocol, tls);
