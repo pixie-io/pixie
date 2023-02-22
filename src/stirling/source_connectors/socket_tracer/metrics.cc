@@ -19,10 +19,30 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include <magic_enum.hpp>
 
 #include "src/stirling/source_connectors/socket_tracer/metrics.h"
+
+using metrics_key = std::pair<traffic_protocol_t, bool>;
+
+namespace std {
+
+// Provides hash specialization since stdlib doesn't provide one for std::pair.
+// This uses the first 32 bits for the traffic_protocol_t enum and the final 32
+// bits for the boolean value.
+template <>
+struct hash<metrics_key> {
+  std::size_t operator()(const metrics_key& p) const {
+    uint64_t protocol = p.first;
+    int32_t b = p.second ? 1 : 0;
+
+    return (protocol << 32) | b;
+  }
+};
+
+}  // namespace std
 
 namespace px {
 namespace stirling {
@@ -49,34 +69,23 @@ SocketTracerMetrics::SocketTracerMetrics(prometheus::Registry* registry,
                            })) {}
 
 namespace {
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>
-    g_plaintext_protocol_metrics;
 
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>
-    g_encrypted_protocol_metrics;
-
-std::unordered_map<traffic_protocol_t, std::unique_ptr<SocketTracerMetrics>>*
-GetUnderlyingProtocolMetrics(bool tls) {
-  if (tls) {
-    return &g_encrypted_protocol_metrics;
-  } else {
-    return &g_plaintext_protocol_metrics;
-  }
-}
+std::unordered_map<metrics_key, std::unique_ptr<SocketTracerMetrics>> g_protocol_metrics;
 
 void ResetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
-  GetUnderlyingProtocolMetrics(tls)->insert_or_assign(
-      protocol, std::make_unique<SocketTracerMetrics>(&GetMetricsRegistry(), protocol, tls));
+  std::pair<traffic_protocol_t, bool> key = {protocol, tls};
+  g_protocol_metrics.insert_or_assign(
+      key, std::make_unique<SocketTracerMetrics>(&GetMetricsRegistry(), protocol, tls));
 }
 }  // namespace
 
 SocketTracerMetrics& SocketTracerMetrics::GetProtocolMetrics(traffic_protocol_t protocol,
                                                              bool tls) {
-  auto metrics = GetUnderlyingProtocolMetrics(tls);
-  if (metrics->find(protocol) == metrics->end()) {
+  std::pair<traffic_protocol_t, bool> key = {protocol, tls};
+  if (g_protocol_metrics.find(key) == g_protocol_metrics.end()) {
     ResetProtocolMetrics(protocol, tls);
   }
-  return *(*metrics)[protocol];
+  return *g_protocol_metrics[key];
 }
 
 void SocketTracerMetrics::TestOnlyResetProtocolMetrics(traffic_protocol_t protocol, bool tls) {
