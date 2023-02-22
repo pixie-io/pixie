@@ -163,7 +163,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   const std::filesystem::path java_app_path =
-      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
+      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/profiler_test");
   ASSERT_TRUE(fs::Exists(java_app_path)) << java_app_path.string();
   ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
       << FLAGS_stirling_profiler_px_jattach_path;
