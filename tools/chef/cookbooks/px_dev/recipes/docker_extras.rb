@@ -24,3 +24,26 @@ ENV['PATH'] = "#{ENV['GOPATH']}/bin:#{ENV['PATH']}"
 execute 'mark expected src dir as safe' do
   command 'git config --global --add safe.directory /px/src/px.dev/pixie'
 end
+
+execute 'link iptables into /usr/bin' do
+  command 'ln -s /usr/sbin/iptables /usr/bin/iptables && ln -s /usr/sbin/ip6tables /usr/bin/ip6tables'
+end
+
+execute 'link gcr credential helper into /usr/bin' do
+  command 'ln -s /opt/google-cloud-sdk/bin/docker-credential-gcr /usr/bin/docker-credential-gcr'
+end
+
+directory '/etc/containers' do
+  owner node['owner']
+  group node['group']
+  mode '0755'
+  action :create
+end
+
+template '/etc/containers/containers.conf' do
+  source 'containers.conf.erb'
+  owner node['owner']
+  group node['group']
+  mode '0644'
+  action :create
+end

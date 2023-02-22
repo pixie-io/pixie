@@ -87,8 +87,8 @@ std::vector<RedisTraceRecord> GetRedisTraceRecords(
 TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   StartTransferDataThread();
 
-  constexpr std::string_view kRedisDockerCmdTmpl =
-      R"(docker run --rm --network=container:$0 redis bash -c "echo '$1' | redis-cli")";
+  constexpr std::string_view kRedisPodmanCmdTmpl =
+      R"(podman run --rm --network=container:$0 docker.io/redis bash -c "echo '$1' | redis-cli")";
   // NOTE: select 0 must be the last one in order to avoid mess up with the key lookup in the
   // storage index.
   constexpr std::string_view kRedisCmds = R"(
@@ -113,7 +113,7 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
     select 0
   )";
   const std::string redis_cli_cmd =
-      absl::Substitute(kRedisDockerCmdTmpl, container_.container_name(), kRedisCmds);
+      absl::Substitute(kRedisPodmanCmdTmpl, container_.container_name(), kRedisCmds);
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
@@ -163,9 +163,9 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
                        {absl::Substitute("--network=container:$0", container_.container_name())},
                        {"redis-cli", "subscribe", "foo"});
 
-  std::string redis_cli_cmd =
-      absl::Substitute("docker run --rm --network=container:$0 redis redis-cli publish foo test",
-                       container_.container_name());
+  std::string redis_cli_cmd = absl::Substitute(
+      "podman run --rm --network=container:$0 docker.io/redis redis-cli publish foo test",
+      container_.container_name());
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
@@ -191,7 +191,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   StartTransferDataThread();
 
   std::string script_load_cmd = absl::Substitute(
-      R"(docker run --rm --network=container:$0 redis redis-cli script load "return 1")",
+      R"(podman run --rm --network=container:$0 docker.io/redis redis-cli script load "return 1")",
       container_.container_name());
   ASSERT_OK_AND_ASSIGN(std::string sha, px::Exec(script_load_cmd));
   ASSERT_FALSE(sha.empty());
@@ -199,7 +199,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   sha.pop_back();
 
   std::string evalsha_cmd = absl::Substitute(
-      "docker run --rm --network=container:$0 redis redis-cli evalsha $1 2 1 1 2 2",
+      "podman run --rm --network=container:$0 docker.io/redis redis-cli evalsha $1 2 1 1 2 2",
       container_.container_name(), sha);
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(evalsha_cmd));
   ASSERT_FALSE(output.empty());
@@ -227,7 +227,7 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
   std::string_view redis_cmd = GetParam().cmd;
 
   std::string redis_cli_cmd =
-      absl::Substitute("docker run --rm --network=container:$0 redis redis-cli $1",
+      absl::Substitute("podman run --rm --network=container:$0 docker.io/redis redis-cli $1",
                        container_.container_name(), redis_cmd);
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());

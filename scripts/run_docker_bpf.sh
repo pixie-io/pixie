@@ -28,6 +28,7 @@ bpf_flags=(--privileged \
   -v /sys:/sys \
   -v /var/lib/docker:/var/lib/docker \
   "--pid=host" \
+  --cgroupns host \
   --env "PL_HOST_PATH=/host")
 
 # Carry along any previously set PX_RUN_DOCKER_EXTRA_ARGS but prepend the bpf_flags to them.

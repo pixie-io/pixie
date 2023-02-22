@@ -63,7 +63,7 @@ TEST_F(DNSTraceTest, Capture) {
   // Run dig to generate a DNS request.
   // Run it through bash, and return the PID, so we can use it to filter captured results.
   std::string cmd =
-      absl::StrFormat("docker exec %s sh -c 'dig @127.0.0.1 server.dnstest.com & echo $! && wait'",
+      absl::StrFormat("podman exec %s sh -c 'dig @127.0.0.1 server.dnstest.com & echo $! && wait'",
                       container_.container_name());
   ASSERT_OK_AND_ASSIGN(std::string out, px::Exec(cmd));
   LOG(INFO) << out;
