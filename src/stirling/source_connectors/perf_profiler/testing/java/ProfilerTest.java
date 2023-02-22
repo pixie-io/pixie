@@ -31,7 +31,7 @@ class ProfilerTest {
 
     // Outer loop iterations. This function will compute its count (by increments of "m") "n" times.
     long n = 10000;
-    
+
     // The sum, returned when the function completes.
     long s = 0;
 
