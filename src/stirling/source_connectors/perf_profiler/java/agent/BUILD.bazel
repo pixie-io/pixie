@@ -97,7 +97,7 @@ pl_cc_test(
     ],
     data = [
         ":agent",
-        "//src/stirling/source_connectors/perf_profiler/testing/java:fib_with_agent",
+        "//src/stirling/source_connectors/perf_profiler/testing/java:profiler_test_with_agent",
     ],
     tags = [
         "exclusive",

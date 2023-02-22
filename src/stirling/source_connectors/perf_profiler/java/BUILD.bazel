@@ -52,7 +52,7 @@ pl_cc_test(
     name = "attach_test",
     srcs = ["attach_test.cc"],
     args = stirling_profiler_attach_args,
-    data = ["//src/stirling/source_connectors/perf_profiler/testing/java:fib"] + agent_libs + [px_jattach],
+    data = ["//src/stirling/source_connectors/perf_profiler/testing/java:profiler_test"] + agent_libs + [px_jattach],
     tags = [
         "no_asan",
         "requires_root",

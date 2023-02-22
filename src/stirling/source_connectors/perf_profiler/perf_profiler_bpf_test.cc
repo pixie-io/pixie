@@ -485,8 +485,8 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
-  constexpr std::string_view key2x = "[j] long JavaFib::fibs2x()";
-  constexpr std::string_view key1x = "[j] long JavaFib::fibs1x()";
+  constexpr std::string_view key2x = "[j] long ProfilerTest::leaf2x()";
+  constexpr std::string_view key1x = "[j] long ProfilerTest::leaf1x()";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
