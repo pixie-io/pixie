@@ -38,10 +38,12 @@ class ProfilerTest {
     for(long i=0; i < n; i++ ) {
       long k = i % 2 == 0 ? 7 : 11;
       for(long j=m; j <= n; j += m ) {
-        // We do some silly things here to prevent newer more powerful JVMs from inlining.
-        if( j % m == 0 ) {
-          s += j;
-        }
+        s += j;
+
+        // This tests if a prime number (stored in k) is divisible by the loop variable "j".
+        // Of course not! But hopefully the JIT compiler won't notice this.
+        // If we remove this (effectively) dead code, then certain JVMs (e.g. azul-zulu-debian)
+        // seem to be able to statically analyze this code and directly return the value for s.
         if( k % j == 0 ) {
           System.out.println(j);
           System.out.println(k);
@@ -65,10 +67,12 @@ class ProfilerTest {
     for(long i=0; i < n; i++ ) {
       long k = i % 2 == 0 ? 7 : 11;
       for(long j=m; j <= n; j += m ) {
-        // We do some silly things here to prevent newer more powerful JVMs from inlining.
-        if( j % m == 0 ) {
-          s += j;
-        }
+        s += j;
+
+        // This tests if a prime number (stored in k) is divisible by the loop variable "j".
+        // Of course not! But hopefully the JIT compiler won't notice this.
+        // If we remove this (effectively) dead code, then certain JVMs (e.g. azul-zulu-debian)
+        // seem to be able to statically analyze this code and directly return the value for s.
         if( k % j == 0 ) {
           System.out.println(j);
           System.out.println(k);
