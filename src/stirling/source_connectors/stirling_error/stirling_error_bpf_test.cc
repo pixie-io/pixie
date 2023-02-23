@@ -527,8 +527,8 @@ TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
           "/app/px/src/stirling/source_connectors/perf_profiler/testing/java/"
           "java_image_base-java-profiler-test-image-omit-frame-pointer.binary.jar:/app/px/src/"
           "stirling/source_connectors/perf_profiler/testing/java/"
-          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary JavaFib\". Preserve "
-          "frame pointers with the JDK option: -XX:+PreserveFramePointer.",
+          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary ProfilerTest\". "
+          "Preserve frame pointers with the JDK option: -XX:+PreserveFramePointer.",
           java_container.process_pid()),
       .context = "Java Symbolization"};
   EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r1)));
