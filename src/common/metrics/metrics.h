@@ -38,3 +38,12 @@ inline auto& BuildCounter(const std::string& name, const std::string& help_messa
       .Register(GetMetricsRegistry())
       .Add({{"name", name}});
 }
+
+// A convenience wrapper to return a counter with the specified name and help message.
+inline auto& BuildGauge(const std::string& name, const std::string& help_message) {
+  return prometheus::BuildGauge()
+      .Name(name)
+      .Help(help_message)
+      .Register(GetMetricsRegistry())
+      .Add({{"name", name}});
+}

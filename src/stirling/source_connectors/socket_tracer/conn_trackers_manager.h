@@ -26,6 +26,9 @@
 #include <utility>
 #include <vector>
 
+#include <prometheus/counter.h>
+#include <prometheus/gauge.h>
+
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/utils/obj_pool.h"
 #include "src/stirling/utils/stat_counter.h"
@@ -88,14 +91,6 @@ class ConnTrackerGenerations {
  */
 class ConnTrackersManager {
  public:
-  enum class StatKey {
-    kTotal,
-    kReadyForDestruction,
-
-    kCreated,
-    kDestroyed,
-    kDestroyedGens,
-  };
 
   ConnTrackersManager();
 
@@ -150,9 +145,14 @@ class ConnTrackersManager {
   // This is useful for avoiding memory reallocations.
   ConnTrackerPool trackers_pool_;
 
-  // Records statistics of ConnTracker for reporting and consistency check.
-  utils::StatCounter<StatKey> stats_;
+  // Records statistics of ConnTracker for reporting.
   utils::StatCounter<traffic_protocol_t> protocol_stats_;
+
+  prometheus::Gauge& total_conn_trackers_;
+  prometheus::Gauge& ready_for_destruction_;
+  prometheus::Counter& conn_tracker_created_;
+  prometheus::Counter& conn_tracker_destroyed_;
+  prometheus::Counter& destroyed_gens_;
 };
 
 }  // namespace stirling

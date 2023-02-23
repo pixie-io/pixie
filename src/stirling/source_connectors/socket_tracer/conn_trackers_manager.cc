@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
+#include "src/common/metrics/metrics.h"
 
 DEFINE_double(
     stirling_conn_tracker_cleanup_threshold, 0.2,
@@ -109,7 +110,18 @@ uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>
 
 }  // namespace
 
-ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
+ConnTrackersManager::ConnTrackersManager()
+    : trackers_pool_(kMaxConnTrackerPoolSize),
+      total_conn_trackers_(
+          BuildGauge("total_conn_trackers", "Total number of conn trackers in use")),
+      ready_for_destruction_(BuildGauge("ready_for_destruction",
+                                        "Number of conn trackers that are ready for destruction")),
+      conn_tracker_created_(BuildCounter("conn_tracker_created",
+                                         "Counter that tracks when a conn tracker is created")),
+      conn_tracker_destroyed_(BuildCounter("conn_tracker_destroyed",
+                                           "Counter that tracks when a conn tracker is destroyed")),
+      destroyed_gens_(BuildCounter(
+          "destroyed_gens", "Counter that tracks how many destroyed generations have occurred")) {}
 
 ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
@@ -122,8 +134,8 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
 
-    stats_.Increment(StatKey::kTotal);
-    stats_.Increment(StatKey::kCreated);
+    total_conn_trackers_.Increment();
+    conn_tracker_created_.Increment();
   }
 
   DebugChecks();
@@ -157,7 +169,7 @@ void ConnTrackersManager::CleanupTrackers() {
       const auto& tracker = *iter;
       if (tracker->ReadyForDestruction()) {
         active_trackers_.erase(iter++);
-        stats_.Increment(StatKey::kReadyForDestruction);
+        ready_for_destruction_.Increment();
       } else {
         ++iter;
       }
@@ -167,8 +179,7 @@ void ConnTrackersManager::CleanupTrackers() {
   // As a performance optimization, we only clean up trackers once we reach a certain threshold
   // of trackers that are ready for destruction.
   // Trade-off is just how quickly we release memory and BPF map entries.
-  double percent_destroyable =
-      1.0 * stats_.Get(StatKey::kReadyForDestruction) / stats_.Get(StatKey::kTotal);
+  double percent_destroyable = 1.0 * ready_for_destruction_.Value() / total_conn_trackers_.Value();
   if (percent_destroyable > FLAGS_stirling_conn_tracker_cleanup_threshold) {
     // Outer loop iterates through tracker sets (keyed by PID+FD),
     // while inner loop iterates through generations of trackers for that PID+FD pair.
@@ -178,13 +189,13 @@ void ConnTrackersManager::CleanupTrackers() {
 
       int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
 
-      stats_.Decrement(StatKey::kTotal, num_erased);
-      stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
-      stats_.Increment(StatKey::kDestroyed, num_erased);
+      total_conn_trackers_.Decrement(num_erased);
+      ready_for_destruction_.Decrement(num_erased);
+      conn_tracker_destroyed_.Increment(num_erased);
 
       if (tracker_generations.empty()) {
         conn_id_tracker_generations_.erase(iter++);
-        stats_.Increment(StatKey::kDestroyedGens);
+        destroyed_gens_.Increment();
       } else {
         ++iter;
       }
@@ -195,8 +206,8 @@ void ConnTrackersManager::CleanupTrackers() {
 }
 
 void ConnTrackersManager::DebugChecks() const {
-  DCHECK_EQ(stats_.Get(StatKey::kTotal), static_cast<int64_t>(active_trackers_.size()) +
-                                             stats_.Get(StatKey::kReadyForDestruction));
+  DCHECK_EQ(total_conn_trackers_.Value(),
+            static_cast<int64_t>(active_trackers_.size()) + ready_for_destruction_.Value());
 }
 
 std::string ConnTrackersManager::DebugInfo() const {
@@ -215,7 +226,12 @@ std::string ConnTrackersManager::DebugInfo() const {
 }
 
 std::string ConnTrackersManager::StatsString() const {
-  return absl::StrCat(stats_.Print(), protocol_stats_.Print());
+  return absl::StrCat(
+      absl::Substitute(
+          "kTotal=$0 kReadyForDestruction=$1 kCreated=$2 kDestroyed=$3 kDestroyedGens=$4",
+          total_conn_trackers_.Value(), ready_for_destruction_.Value(),
+          conn_tracker_created_.Value(), conn_tracker_destroyed_.Value(), destroyed_gens_.Value()),
+      protocol_stats_.Print());
 }
 
 void ConnTrackersManager::ComputeProtocolStats() {
