@@ -1,5 +1,6 @@
 ---
 include:
+- ca-certificates
 - libtinfo6
 - libc6
 - libelf1

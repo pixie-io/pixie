@@ -81,6 +81,15 @@ relativize_symlinks() {
   popd > /dev/null
 }
 
+create_root_cert() {
+  root_dir="$1"
+  combined_certs="$(find "${root_dir}/usr/share/ca-certificates" -type f -name '*.crt' -exec cat {} +)"
+  if [ -n "${combined_certs}" ]; then
+    # Only create the root cert file if there were certificates in the ca-certificates directory.
+    echo "${combined_certs}" > "${root_dir}/etc/ssl/certs/ca-certificates.crt"
+  fi
+}
+
 inside_tmpdir() {
   echo "${debs[@]}" | xargs curl -fLO --remote-name-all &> /dev/null
 
@@ -88,6 +97,8 @@ inside_tmpdir() {
   while read -r deb; do
     dpkg-deb -x "${deb}" "${root_dir}" &>/dev/null
   done < <(ls -- *.deb)
+
+  create_root_cert "${root_dir}"
 
   for dir in "${!extra_dirs[@]}"
   do
