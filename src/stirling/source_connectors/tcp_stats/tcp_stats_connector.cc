@@ -31,7 +31,9 @@ DEFINE_bool(JsonOutput, true, "Standard output in Json format");
 namespace px {
 namespace stirling {
 
-constexpr uint32_t kPerfBufferPerCPUSizeBytes = 5 * 1024 * 1024;
+// Allocating 50 MB perf buffer. It can accomodate ~125000 events
+// Considering each event size ~400 bytes (struct tcp_event_t).
+constexpr uint32_t kPerfBufferPerCPUSizeBytes = 50 * 1024 * 1024;
 
 using ProbeType = bpf_tools::BPFProbeAttachType;
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
@@ -53,7 +55,6 @@ void TCPStatsConnector::AcceptTcpEvent(const struct tcp_event_t& event) {
 
 void HandleTcpEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
   // TODO(RagalahariP): Add stats counter.
-  std::cout << "Lost data event" << std::endl;
 }
 
 const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
