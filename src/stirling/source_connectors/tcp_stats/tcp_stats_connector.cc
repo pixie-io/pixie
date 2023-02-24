@@ -31,19 +31,42 @@ DEFINE_bool(JsonOutput, true, "Standard output in Json format");
 namespace px {
 namespace stirling {
 
+constexpr uint32_t kPerfBufferPerCPUSizeBytes = 5 * 1024 * 1024;
+
 using ProbeType = bpf_tools::BPFProbeAttachType;
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
-  {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
-   {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
-   {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
-   {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb", /*is_syscall*/ false}});
+    {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
+     {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
+     {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
+     {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb",
+      /*is_syscall*/ false}});
 
+void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  auto* connector = reinterpret_cast<TCPStatsConnector*>(cb_cookie);
+  auto* event = reinterpret_cast<struct tcp_event_t*>(data);
+  connector->AcceptTcpEvent(*event);
+}
+
+void TCPStatsConnector::AcceptTcpEvent(const struct tcp_event_t& event) {
+  events_.push_back(event);
+}
+
+void HandleTcpEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
+  // TODO(RagalahariP): Add stats counter.
+  std::cout << "Lost data event" << std::endl;
+}
+
+const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
+    {"tcp_events", HandleTcpEvent, HandleTcpEventLoss, kPerfBufferPerCPUSizeBytes,
+     bpf_tools::PerfBufferSizeCategory::kData},
+});
 
 Status TCPStatsConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(InitBPFProgram(tcpstats_bcc_script));
   PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";
   return Status::OK();
@@ -55,47 +78,29 @@ Status TCPStatsConnector::StopImpl() {
 }
 
 void TCPStatsConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  if ( FLAGS_JsonOutput != true ) {
-    /* TODO: Support other output formats. */
-    return;
-  }
+  PollPerfBuffers();
 
   rapidjson::Document document;
   document.SetObject();
-  rapidjson::Document::AllocatorType & allocator = document.GetAllocator();
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
   rapidjson::Value metricsArray(rapidjson::kArrayType);
 
-  constexpr bool kClearTable = true;
-
-  if (data_tables_[kTCPTXStatsTableNum] != nullptr) {
-    std::vector < std::pair < ip_key_t, uint64_t >> tx_items =
-     GetHashTable<ip_key_t, uint64_t>("sent_bytes").get_table_offline(kClearTable);
-    json_output::CreateRecords(allocator, metricsArray, tx_items, json_output::tx_metric);
-  }
-
-  if (data_tables_[kTCPTXStatsTableNum] != nullptr) {
-     std::vector < std::pair < ip_key_t, uint64_t >> rx_items =
-       GetHashTable < ip_key_t, uint64_t > ("recv_bytes").get_table_offline(kClearTable);
-     json_output::CreateRecords(allocator, metricsArray, rx_items, json_output::rx_metric);
-  }
-
-  if (data_tables_[kTCPRetransStatsTableNum] != nullptr) {
-     std::vector < std::pair < ip_key_t, uint64_t >> retrans_items =
-       GetHashTable < ip_key_t, uint64_t > ("retrans").get_table_offline(kClearTable);
-     json_output::CreateRecords(allocator, metricsArray, retrans_items, json_output::retrans_metric);
-  }
+  json_output::CreatePerfRecords(allocator, metricsArray, events_);
 
   rapidjson::Value data(rapidjson::kObjectType);
   data.AddMember(json_output::StringRef(json_output::metrics_str), metricsArray.Move(), allocator);
-  document.AddMember(json_output::StringRef(json_output::version_str), json_output::StringRef(json_output::version_value), allocator);
+  document.AddMember(json_output::StringRef(json_output::version_str),
+                     json_output::StringRef(json_output::version_value), allocator);
   rapidjson::Value dataArray(rapidjson::kArrayType);
   dataArray.PushBack(data.Move(), allocator);
   document.AddMember(json_output::StringRef(json_output::data_str), dataArray.Move(), allocator);
 
   rapidjson::StringBuffer strbuf;
-  rapidjson::Writer < rapidjson::StringBuffer > writer(strbuf);
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
   document.Accept(writer);
   std::cout << strbuf.GetString() << std::endl;
+
+  events_.clear();
 }
 }  // namespace stirling
 }  // namespace px

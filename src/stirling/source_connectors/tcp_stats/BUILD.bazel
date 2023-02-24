@@ -26,7 +26,7 @@ pl_cc_library(
             "**/*_test.cc",
         ],
     ),
-    hdrs = glob(["*.h"]), 
+    hdrs = glob(["*.h"]),
     deps = [
         "//src/common/metrics:cc_library",
         "//src/stirling/bpf_tools:cc_library",

@@ -21,12 +21,12 @@
 #
 # SPDX-License-Identifier: MIT
 
-
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 
 package(default_visibility = [
-         "//src/stirling/source_connectors/tcp_stats:__subpackages__",
-         "//src/stirling/source_connectors/tcp_stats/bcc_bpf:__pkg__"])
+    "//src/stirling/source_connectors/tcp_stats:__subpackages__",
+    "//src/stirling/source_connectors/tcp_stats/bcc_bpf:__pkg__",
+])
 
 # To examine the preprocessing output, build :tcpstats_bpf_preprocess.
 pl_bpf_cc_resource(

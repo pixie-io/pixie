@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "src/stirling/upid/upid.h"
+
 #define MAX_CMD_SIZE 32
 
 union sockaddress_t {
@@ -27,8 +29,46 @@ union sockaddress_t {
 };
 
 struct ip_key_t {
-    // The process name of this process
-    char name[MAX_CMD_SIZE];
-    // IP address of the remote endpoint.
-    union sockaddress_t addr;
+  // The process name of this process
+  char name[MAX_CMD_SIZE];
+
+  // IP address of the remote endpoint.
+  union sockaddress_t addr;
+};
+
+enum tcp_event_type_t {
+  // Unknown Event.
+  kUnknownEvent,
+
+  // TCP egress data event.
+  kTcpTx,
+
+  // TCP ingress data event.
+  kTcpRx,
+
+  // TCP retransmissions.
+  kTcpRetransmissions,
+
+  // TCP latency.
+  kTcpLatency
+};
+
+struct tcp_event_t {
+  // The time when this was captured in the BPF time.
+  uint64_t timestamp_ns;
+
+  // The unique identifier of the process.
+  struct upid_t upid;
+
+  // The process name of this process.
+  char name[MAX_CMD_SIZE];
+
+  // IP address of the remote endpoint.
+  union sockaddress_t addr;
+
+  // Number of bytes.
+  uint64_t size;
+
+  // Source of event.
+  enum tcp_event_type_t type;
 };

@@ -24,10 +24,10 @@
 #include <string>
 #include <vector>
 
-#include "src/stirling/core/output.h"
-#include "src/stirling/core/types.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/core/output.h"
 #include "src/stirling/core/source_connector.h"
+#include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/tcp_stats/bcc_bpf_intf/tcp_stats.h"
 #include "src/stirling/source_connectors/tcp_stats/canonical_types.h"
 #include "src/stirling/utils/monitor.h"
