@@ -18,7 +18,6 @@
 
 #include <random>
 
-#include "src/common/metrics/metrics.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
@@ -41,8 +40,6 @@ class ConnTrackersManagerTest : public ::testing::Test {
     VLOG(1) << "CleanupTrackers";
     trackers_mgr_.CleanupTrackers();
   }
-
-  void TearDown() override { TestOnlyResetMetricsRegistry(); }
 
   void TransferStreamsProxy(double mark_for_death_probability, int death_countdown) {
     for (auto& tracker : trackers_mgr_.active_trackers()) {

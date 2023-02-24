@@ -91,6 +91,14 @@ class ConnTrackerGenerations {
  */
 class ConnTrackersManager {
  public:
+  enum class StatKey {
+    kTotal,
+    kReadyForDestruction,
+
+    kCreated,
+    kDestroyed,
+    kDestroyedGens,
+  };
 
   ConnTrackersManager();
 
@@ -145,7 +153,8 @@ class ConnTrackersManager {
   // This is useful for avoiding memory reallocations.
   ConnTrackerPool trackers_pool_;
 
-  // Records statistics of ConnTracker for reporting.
+  // Records statistics of ConnTracker for reporting and consistency check.
+  utils::StatCounter<StatKey> stats_;
   utils::StatCounter<traffic_protocol_t> protocol_stats_;
 
   prometheus::Gauge& total_conn_trackers_;

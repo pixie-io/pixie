@@ -22,7 +22,6 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include "src/common/metrics/metrics.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 
@@ -68,8 +67,6 @@ class ConnStatsTest : public ::testing::Test {
 
   ConnTrackersManager conn_trackers_mgr_;
   ConnStats conn_stats_;
-
-  void TearDown() override { TestOnlyResetMetricsRegistry(); }
 };
 
 auto AggKeyIs(int tgid, std::string_view remote_addr, int remote_port) {

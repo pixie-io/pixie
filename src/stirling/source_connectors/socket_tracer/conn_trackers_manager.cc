@@ -134,6 +134,8 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
 
+    stats_.Increment(StatKey::kTotal);
+    stats_.Increment(StatKey::kCreated);
     total_conn_trackers_.Increment();
     conn_tracker_created_.Increment();
   }
@@ -169,6 +171,8 @@ void ConnTrackersManager::CleanupTrackers() {
       const auto& tracker = *iter;
       if (tracker->ReadyForDestruction()) {
         active_trackers_.erase(iter++);
+
+        stats_.Increment(StatKey::kReadyForDestruction);
         ready_for_destruction_.Increment();
       } else {
         ++iter;
@@ -179,7 +183,8 @@ void ConnTrackersManager::CleanupTrackers() {
   // As a performance optimization, we only clean up trackers once we reach a certain threshold
   // of trackers that are ready for destruction.
   // Trade-off is just how quickly we release memory and BPF map entries.
-  double percent_destroyable = 1.0 * ready_for_destruction_.Value() / total_conn_trackers_.Value();
+  double percent_destroyable =
+      1.0 * stats_.Get(StatKey::kReadyForDestruction) / stats_.Get(StatKey::kTotal);
   if (percent_destroyable > FLAGS_stirling_conn_tracker_cleanup_threshold) {
     // Outer loop iterates through tracker sets (keyed by PID+FD),
     // while inner loop iterates through generations of trackers for that PID+FD pair.
@@ -189,12 +194,18 @@ void ConnTrackersManager::CleanupTrackers() {
 
       int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
 
+      stats_.Decrement(StatKey::kTotal, num_erased);
+      stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
+      stats_.Increment(StatKey::kDestroyed, num_erased);
+
       total_conn_trackers_.Decrement(num_erased);
       ready_for_destruction_.Decrement(num_erased);
       conn_tracker_destroyed_.Increment(num_erased);
 
       if (tracker_generations.empty()) {
         conn_id_tracker_generations_.erase(iter++);
+
+        stats_.Increment(StatKey::kDestroyedGens);
         destroyed_gens_.Increment();
       } else {
         ++iter;
@@ -206,8 +217,8 @@ void ConnTrackersManager::CleanupTrackers() {
 }
 
 void ConnTrackersManager::DebugChecks() const {
-  DCHECK_EQ(total_conn_trackers_.Value(),
-            static_cast<int64_t>(active_trackers_.size()) + ready_for_destruction_.Value());
+  DCHECK_EQ(stats_.Get(StatKey::kTotal), static_cast<int64_t>(active_trackers_.size()) +
+                                             stats_.Get(StatKey::kReadyForDestruction));
 }
 
 std::string ConnTrackersManager::DebugInfo() const {
@@ -226,12 +237,7 @@ std::string ConnTrackersManager::DebugInfo() const {
 }
 
 std::string ConnTrackersManager::StatsString() const {
-  return absl::StrCat(
-      absl::Substitute(
-          "kTotal=$0 kReadyForDestruction=$1 kCreated=$2 kDestroyed=$3 kDestroyedGens=$4",
-          total_conn_trackers_.Value(), ready_for_destruction_.Value(),
-          conn_tracker_created_.Value(), conn_tracker_destroyed_.Value(), destroyed_gens_.Value()),
-      protocol_stats_.Print());
+  return absl::StrCat(stats_.Print(), protocol_stats_.Print());
 }
 
 void ConnTrackersManager::ComputeProtocolStats() {
