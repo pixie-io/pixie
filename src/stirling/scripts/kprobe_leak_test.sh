@@ -33,9 +33,9 @@
 # Amount of time after start, after which we kill the executable.
 Tkill=3
 
-if [ $# -eq 0 ]; then
+if [ $# -ne 1 ]; then
   echo "Usage: $0 <command to test for leaks>"
-  echo "Example: ./kprobe_leak_test.sh \$(bazel info bazel-bin)/src/stirling/binaries/stirling_wrapper"
+  echo "Example: kprobe_leak_test.sh bazel-bin/src/stirling/binaries/stirling_wrapper"
   exit 1
 fi
 

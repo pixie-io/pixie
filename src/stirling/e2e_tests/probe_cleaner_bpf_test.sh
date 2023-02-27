@@ -22,13 +22,14 @@
 # It runs an instance of stirling_wrapper, and then does a SIGKILL to ensure it leaks probes.
 # Then it runs the cleaner to clean those probes up.
 
-if [ -z "$1" ]; then
-    stirling_wrapper_bin=$(bazel info bazel-bin)/src/stirling/binaries/stirling_wrapper
-    probe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/bpf_tools/probe_cleaner_standalone
-else
-    stirling_wrapper_bin=$1
-    probe_cleaner_bin=$2
+if [ $# -ne 2 ]; then
+  echo "Usage: $0 <stirling_wrapper> <probe_cleaner_bin>"
+  echo "Example: probe_cleaner_bpf_test.sh bazel-bin/src/stirling/binaries/stirling_wrapper bazel-bin/src/stirling/bpf_tools/probe_cleaner_standalone"
+  exit 1
 fi
+
+stirling_wrapper_bin=$1
+probe_cleaner_bin=$2
 
 # Switch to root user.
 if [[ $EUID -ne 0 ]]; then
