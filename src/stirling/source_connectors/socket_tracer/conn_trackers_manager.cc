@@ -112,10 +112,6 @@ uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>
 
 ConnTrackersManager::ConnTrackersManager()
     : trackers_pool_(kMaxConnTrackerPoolSize),
-      total_conn_trackers_(
-          BuildGauge("total_conn_trackers", "Total number of conn trackers in use")),
-      ready_for_destruction_(BuildGauge("ready_for_destruction",
-                                        "Number of conn trackers that are ready for destruction")),
       conn_tracker_created_(BuildCounter("conn_tracker_created",
                                          "Counter that tracks when a conn tracker is created")),
       conn_tracker_destroyed_(BuildCounter("conn_tracker_destroyed",
@@ -136,7 +132,6 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
 
     stats_.Increment(StatKey::kTotal);
     stats_.Increment(StatKey::kCreated);
-    total_conn_trackers_.Increment();
     conn_tracker_created_.Increment();
   }
 
@@ -173,7 +168,6 @@ void ConnTrackersManager::CleanupTrackers() {
         active_trackers_.erase(iter++);
 
         stats_.Increment(StatKey::kReadyForDestruction);
-        ready_for_destruction_.Increment();
       } else {
         ++iter;
       }
@@ -198,8 +192,6 @@ void ConnTrackersManager::CleanupTrackers() {
       stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
       stats_.Increment(StatKey::kDestroyed, num_erased);
 
-      total_conn_trackers_.Decrement(num_erased);
-      ready_for_destruction_.Decrement(num_erased);
       conn_tracker_destroyed_.Increment(num_erased);
 
       if (tracker_generations.empty()) {

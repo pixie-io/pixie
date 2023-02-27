@@ -157,8 +157,6 @@ class ConnTrackersManager {
   utils::StatCounter<StatKey> stats_;
   utils::StatCounter<traffic_protocol_t> protocol_stats_;
 
-  prometheus::Gauge& total_conn_trackers_;
-  prometheus::Gauge& ready_for_destruction_;
   prometheus::Counter& conn_tracker_created_;
   prometheus::Counter& conn_tracker_destroyed_;
   prometheus::Counter& destroyed_gens_;
