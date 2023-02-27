@@ -98,7 +98,7 @@ absl::flat_hash_map<std::string, uint64_t> KeepNLeafSyms(
     const auto end_iter = symbols.end();
 
     const auto leaf_syms = absl::StrJoin(begin_iter, end_iter, ";");
-    leaf_histo[leaf_syms] = count;
+    leaf_histo[leaf_syms] += count;
   }
   return leaf_histo;
 }
@@ -309,8 +309,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
 
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
-    // TODO(jps): This is extremely flaky on Jenkins. Please fix and re-enable.
-    // EXPECT_LT(ratio, 2.0 + kRatioMargin);
+    EXPECT_LT(ratio, 2.0 + kRatioMargin);
 
     EXPECT_EQ(source_->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
   }
@@ -452,8 +451,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
       CheckExpectedCounts(KeepNLeafSyms(3, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
 }
 
-// TODO(jps/oazizi): This test is flaky.
-TEST_F(PerfProfileBPFTest, DISABLED_GraalVM_AOT_Test) {
+TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
   const std::string app_path = "ProfilerTest";
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
