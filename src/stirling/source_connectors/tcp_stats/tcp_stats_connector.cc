@@ -79,6 +79,12 @@ Status TCPStatsConnector::StopImpl() {
 }
 
 void TCPStatsConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
+  if (FLAGS_JsonOutput != true) {
+    /* TODO: Support other output formats. */
+    return;
+  }
+  DCHECK_EQ(data_tables_.size(), 3U) << "Only three tables are allowed per TCPStatsConnector.";
+
   PollPerfBuffers();
 
   rapidjson::Document document;

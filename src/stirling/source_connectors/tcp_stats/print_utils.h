@@ -17,7 +17,7 @@
  */
 
 // This file contains helper functions and variables that are required
-// to export data in New Relic compatable JSON format
+// to export data in New Relic compatible JSON format
 
 #pragma once
 

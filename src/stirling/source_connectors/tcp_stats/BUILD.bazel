@@ -14,9 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = ["//src/stirling:__pkg__"])
 
 pl_cc_library(
     name = "cc_library",
@@ -28,10 +28,21 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/common/metrics:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
         "//src/stirling/source_connectors/tcp_stats/bcc_bpf:tcpstats",
         "//src/stirling/source_connectors/tcp_stats/bcc_bpf_intf:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "tcp_stats_connector_test",
+    srcs = ["tcp_stats_connector_test.cc"],
+    tags = [
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
     ],
 )
