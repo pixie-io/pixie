@@ -56,5 +56,6 @@ filegroup(
         ":test_go_1_17_binary",
         ":test_go_1_18_binary",
         ":test_go_1_19_binary",
+        ":test_go_1_20_binary",
     ],
 )

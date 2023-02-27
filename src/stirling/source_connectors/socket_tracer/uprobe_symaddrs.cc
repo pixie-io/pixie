@@ -142,19 +142,35 @@ StatusOr<std::string> InferHTTP2SymAddrVendorPrefix(ElfReader* elf_reader) {
   return vendor_prefix;
 }
 
+std::optional<int64_t> ResolveSymbolWithEachGoPrefix(ElfReader* elf_reader,
+                                                     std::string_view symbol) {
+  // In go version 1.20, the symbols for compiler generated types were switched from having a prefix
+  // of `go.` to `go:`. See the go 1.20 release notes: https://tip.golang.org/doc/go1.20
+  static constexpr std::array go_prefixes{"go.", "go:"};
+  for (const auto& prefix : go_prefixes) {
+    auto optional_addr = elf_reader->SymbolAddress(absl::StrCat(prefix, symbol));
+    if (optional_addr != std::nullopt) {
+      return optional_addr;
+    }
+  }
+  return std::nullopt;
+}
+
 Status PopulateCommonTypeAddrs(ElfReader* elf_reader, std::string_view vendor_prefix,
                                struct go_common_symaddrs_t* symaddrs) {
   // Note: we only return error if a *mandatory* symbol is missing. Only TCPConn is mandatory.
   // Without TCPConn, the uprobe cannot resolve the FD, and becomes pointless.
 
-  LOG_ASSIGN_OPTIONAL(symaddrs->internal_syscallConn,
-                      elf_reader->SymbolAddress(absl::StrCat(
-                          "go.itab.*", vendor_prefix,
-                          "google.golang.org/grpc/credentials/internal.syscallConn,net.Conn")));
+  LOG_ASSIGN_OPTIONAL(
+      symaddrs->internal_syscallConn,
+      ResolveSymbolWithEachGoPrefix(
+          elf_reader,
+          absl::StrCat("itab.*", vendor_prefix,
+                       "google.golang.org/grpc/credentials/internal.syscallConn,net.Conn")));
   LOG_ASSIGN_OPTIONAL(symaddrs->tls_Conn,
-                      elf_reader->SymbolAddress("go.itab.*crypto/tls.Conn,net.Conn"));
+                      ResolveSymbolWithEachGoPrefix(elf_reader, "itab.*crypto/tls.Conn,net.Conn"));
   LOG_ASSIGN_OPTIONAL(symaddrs->net_TCPConn,
-                      elf_reader->SymbolAddress("go.itab.*net.TCPConn,net.Conn"));
+                      ResolveSymbolWithEachGoPrefix(elf_reader, "itab.*net.TCPConn,net.Conn"));
 
   // TODO(chengruizhe): Refer to setGStructOffsetElf in dlv for a more accurate way of setting
   // g_addr_offset using elf.
@@ -199,12 +215,15 @@ Status PopulateHTTP2TypeAddrs(ElfReader* elf_reader, std::string_view vendor_pre
   // Note: we only return error if a *mandatory* symbol is missing. Only TCPConn is mandatory.
   // Without TCPConn, the uprobe cannot resolve the FD, and becomes pointless.
 
-  LOG_ASSIGN_OPTIONAL(symaddrs->http_http2bufferedWriter,
-                      elf_reader->SymbolAddress("go.itab.*net/http.http2bufferedWriter,io.Writer"));
-  LOG_ASSIGN_OPTIONAL(symaddrs->transport_bufWriter,
-                      elf_reader->SymbolAddress(absl::StrCat(
-                          "go.itab.*", vendor_prefix,
-                          "google.golang.org/grpc/internal/transport.bufWriter,io.Writer")));
+  LOG_ASSIGN_OPTIONAL(
+      symaddrs->http_http2bufferedWriter,
+      ResolveSymbolWithEachGoPrefix(elf_reader, "itab.*net/http.http2bufferedWriter,io.Writer"));
+  LOG_ASSIGN_OPTIONAL(
+      symaddrs->transport_bufWriter,
+      ResolveSymbolWithEachGoPrefix(
+          elf_reader,
+          absl::StrCat("itab.*", vendor_prefix,
+                       "google.golang.org/grpc/internal/transport.bufWriter,io.Writer")));
 
   return Status::OK();
 }
