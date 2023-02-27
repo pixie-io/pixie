@@ -50,7 +50,7 @@ pl_cc_test(
         px_jattach,
         "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib",
         "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
-        "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-fib",
+        "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-test",
     ],
     defines = ['JDK_IMAGE_NAMES=\\"%s\\"' % ",".join(jdk_image_names)],
     shard_count = 3,

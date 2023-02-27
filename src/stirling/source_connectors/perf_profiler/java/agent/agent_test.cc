@@ -31,7 +31,7 @@ using ::px::testing::BazelRunfilePath;
 using ::testing::HasSubstr;
 
 TEST(JavaAgentTest, ExpectedSymbolsTest) {
-  constexpr std::string_view kJavaAppName = "fib_with_agent";
+  constexpr std::string_view kJavaAppName = "profiler_test_with_agent";
 
   using fs_path = std::filesystem::path;
   const fs_path kPathToJavaTesting = "src/stirling/source_connectors/perf_profiler/testing/java";
@@ -63,13 +63,13 @@ TEST(JavaAgentTest, ExpectedSymbolsTest) {
 
   const absl::flat_hash_set<std::string> expected_symbols = {
       "()J",
-      "fibs1x",
-      "fibs2x",
+      "leaf1x",
+      "leaf2x",
       "([B[B)Z",
-      "LJavaFib;",
       "call_stub",
       "Interpreter",
       "vtable stub",
+      "LProfilerTest;",
       "Ljava/lang/Math;",
       "()Ljava/lang/String;",
       "(Ljava/lang/Object;)I",

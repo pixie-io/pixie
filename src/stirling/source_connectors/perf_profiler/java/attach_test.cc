@@ -57,7 +57,7 @@ StatusOr<std::string> GetAbsPathLibsArg() {
 }  // namespace
 
 // This test does the following:
-// 1. Starts a target Java process (the fib app).
+// 1. Starts a target Java process (the profiler test app).
 // 2. Uses the AgentAttach class to inject a JVMTI agent (our symbolization agent).
 // 3. Finds the resulting symbol file and verifies that it has some symbols.
 // Before doing any of the above, we setup some file paths for the target app,
@@ -66,7 +66,7 @@ TEST(JavaAttachTest, ExpectedSymbolsTest) {
   // Form the file name w/ user login to make it pedantically unique.
   // Also, this is the same as in agent_test, so we keep the test logic consistent.
 
-  constexpr std::string_view kJavaAppName = "fib";
+  constexpr std::string_view kJavaAppName = "profiler_test";
 
   using fs_path = std::filesystem::path;
   const fs_path java_testing_path = "src/stirling/source_connectors/perf_profiler/testing/java";
@@ -131,13 +131,13 @@ TEST(JavaAttachTest, ExpectedSymbolsTest) {
   // Check to see if the symbol file has some symbols.
   const absl::flat_hash_set<std::string> expected_symbols = {
       "()J",
-      "fibs1x",
-      "fibs2x",
+      "leaf1x",
+      "leaf2x",
       "([B[B)Z",
-      "LJavaFib;",
       "call_stub",
       "Interpreter",
       "vtable stub",
+      "LProfilerTest;",
       "Ljava/lang/Math;",
       "()Ljava/lang/String;",
       "(Ljava/lang/Object;)I",
