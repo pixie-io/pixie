@@ -1,0 +1,7 @@
+---
+include:
+- gdb
+- llvm-15
+- lldb-15
+path_excludes:
+- usr/lib/llvm-15/build
