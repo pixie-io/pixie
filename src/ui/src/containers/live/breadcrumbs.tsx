@@ -100,6 +100,9 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   extras: {
     textAlign: 'right',
     marginRight: spacing(2.5),
+    marginTop: spacing(0.5),
+    marginBottom: spacing(-2),
+    zIndex: 1, // So it's clickable above the padding of the widgets
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
