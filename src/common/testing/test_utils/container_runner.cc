@@ -56,7 +56,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
 ContainerRunner::~ContainerRunner() {
   Stop();
 
-  std::string podman_rm_cmd = absl::Substitute("podman rm -q -f $0 &>/dev/null", container_name_);
+  std::string podman_rm_cmd = absl::Substitute("podman rm -f $0 &>/dev/null", container_name_);
   LOG(INFO) << podman_rm_cmd;
   StatusOr<std::string> s = px::Exec(podman_rm_cmd);
   LOG_IF(ERROR, !s.ok()) << absl::Substitute(
