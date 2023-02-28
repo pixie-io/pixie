@@ -104,6 +104,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   std::vector<std::string> podman_run_cmd;
   podman_run_cmd.push_back("podman");
   podman_run_cmd.push_back("run");
+  podman_run_cmd.push_back(absl::Substitute("--timeout=$0", container_lifetime.count()));
   podman_run_cmd.push_back("--rm");
   podman_run_cmd.push_back("-q");
   if (use_host_pid_namespace) {
@@ -117,7 +118,6 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   for (const auto& arg : args) {
     podman_run_cmd.push_back(arg);
   }
-  podman_run_cmd.push_back(absl::Substitute("--timeout=$0", container_lifetime.count()));
   LOG(INFO) << podman_run_cmd;
   PX_RETURN_IF_ERROR(podman_.Start(podman_run_cmd, /* stderr_to_stdout */ true));
 
