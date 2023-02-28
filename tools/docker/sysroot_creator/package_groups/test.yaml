@@ -16,6 +16,8 @@ include:
 - busybox-static
 # stirling_signal_test requires mktemp which is provided by coreutils.
 - coreutils
+# bpf_map_leak_bpf_test requires curl
+- curl
 # Deps for podman
 - iptables
 - aardvark-dns
