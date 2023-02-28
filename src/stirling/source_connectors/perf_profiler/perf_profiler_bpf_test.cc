@@ -228,8 +228,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
-    // Just check that the test author populated the necessary,
-    // and did not corrupt the cumulative sum already.
+    // Sanity check; column pointers should be populated already.
     ASSERT_TRUE(column_ptrs_populated_);
 
     for (const auto row_idx : target_row_idxs) {
