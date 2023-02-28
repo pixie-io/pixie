@@ -178,12 +178,11 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
   void StartAll() override {
     const system::ProcParser proc_parser;
     const auto timeout = std::chrono::seconds{2 * FLAGS_test_run_time};
+    const std::vector<std::string> options;
     const std::vector<std::string> args;
     static constexpr bool kUseHostPidNamespace = false;
 
     for (size_t i = 0; i < kNumSubProcs; ++i) {
-      const std::string cpu_set = absl::Substitute("--cpuset-cpus=$0", i);
-      const std::vector<std::string> options = {cpu_set};
       sub_processes_[i]->Run(timeout, options, args, kUseHostPidNamespace);
 
       // Grab the PID and generate a UPID.
