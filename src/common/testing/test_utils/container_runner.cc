@@ -46,10 +46,11 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
   std::vector<std::string_view> lines = absl::StrSplit(out, "\n", absl::SkipWhitespace());
   CHECK(!lines.empty());
   std::string_view image_line = lines.back();
-  constexpr std::string_view kLoadedImagePrefix = "Loaded image(s): ";
-  CHECK(absl::StartsWith(image_line, kLoadedImagePrefix));
-  image_line.remove_prefix(kLoadedImagePrefix.length());
-  image_ = image_line;
+  constexpr std::string_view kLoadedImagePrefix = "Loaded image";
+  std::vector<std::string> splits = absl::StrSplit(image_line, absl::ByString(": "));
+  CHECK_EQ(splits.size(), 2);
+  CHECK(absl::StartsWith(splits[0], kLoadedImagePrefix));
+  image_ = splits[1];
 }
 
 ContainerRunner::~ContainerRunner() {
