@@ -29,7 +29,7 @@ constexpr int kSleepSeconds = 1;
 ContainerRunner::ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
                                  std::string_view ready_message)
     : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
-  std::string out = px::Exec("podman pull " + image_).ConsumeValueOrDie();
+  std::string out = px::Exec("podman pull -q" + image_).ConsumeValueOrDie();
   LOG(INFO) << out;
 }
 
@@ -37,7 +37,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
                                  std::string_view instance_name_prefix,
                                  std::string_view ready_message)
     : instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
-  std::string podman_load_cmd = absl::Substitute("podman load -i $0", image_tar.string());
+  std::string podman_load_cmd = absl::Substitute("podman load -q -i $0", image_tar.string());
   VLOG(1) << podman_load_cmd;
   std::string out = px::Exec(podman_load_cmd).ConsumeValueOrDie();
   LOG(INFO) << out;
@@ -56,7 +56,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
 ContainerRunner::~ContainerRunner() {
   Stop();
 
-  std::string podman_rm_cmd = absl::Substitute("podman rm -f $0 &>/dev/null", container_name_);
+  std::string podman_rm_cmd = absl::Substitute("podman rm -q -f $0 &>/dev/null", container_name_);
   LOG(INFO) << podman_rm_cmd;
   StatusOr<std::string> s = px::Exec(podman_rm_cmd);
   LOG_IF(ERROR, !s.ok()) << absl::Substitute(
@@ -104,6 +104,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   podman_run_cmd.push_back("podman");
   podman_run_cmd.push_back("run");
   podman_run_cmd.push_back("--rm");
+  podman_run_cmd.push_back("--q");
   if (use_host_pid_namespace) {
     podman_run_cmd.push_back("--pid=host");
   }
