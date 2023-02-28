@@ -18,10 +18,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "bq",
-    srcs = ["table.go"],
+    srcs = [
+        "batch_inserter.go",
+        "table.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/bq",
     visibility = ["//visibility:public"],
     deps = [
+        "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go_bigquery//:bigquery",
         "@org_golang_google_api//googleapi",
     ],
