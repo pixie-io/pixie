@@ -113,7 +113,8 @@ inside_tmpdir() {
 
   relativize_symlinks "${root_dir}"
 
-  tar -C "${root_dir}" -czf "${output_tar_path}" .
+  # Pick a deterministic mtime so that the sha sums only change if there are actual changes to the sysroot.
+  tar --mtime="2023-01-01 00:00:00 UTC" -C "${root_dir}" -czf "${output_tar_path}" .
 }
 
 tmpdir="$(mktemp -d)"
