@@ -94,7 +94,8 @@ StatusOr<int> ContainerPID(std::string_view container_name) {
 StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
                                            const std::vector<std::string>& options,
                                            const std::vector<std::string>& args,
-                                           const bool use_host_pid_namespace) {
+                                           const bool use_host_pid_namespace,
+                                           const std::chrono::seconds& container_lifetime) {
   // Now run the container.
   // Run with timeout, as a backup in case we don't clean things up properly.
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
@@ -115,18 +116,9 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   for (const auto& arg : args) {
     podman_run_cmd.push_back(arg);
   }
-
+  podman_run_cmd.push_back(absl::Substitute("--timeout=$0", container_lifetime.count()));
   LOG(INFO) << podman_run_cmd;
   PX_RETURN_IF_ERROR(podman_.Start(podman_run_cmd, /* stderr_to_stdout */ true));
-
-  // If the process receives a SIGKILL, then the run command above would leak.
-  // As a safety net for such cases, we spawn off a delayed kill command to clean-up.
-  std::string podman_kill_cmd = absl::Substitute("(sleep $0 && podman rm -f $1 &>/dev/null)",
-                                                 timeout.count(), container_name_);
-  FILE* pipe = popen(podman_kill_cmd.c_str(), "r");
-  // We deliberately don't ever call pclose() -- even in the destructor -- otherwise, we'd block.
-  // This spawned process is meant to potentially outlive the current process as a safety net.
-  PX_UNUSED(pipe);
 
   // It may take some time for the container to come up, so we keep polling.
   // But keep count of the attempts, because we don't want to poll infinitely.
