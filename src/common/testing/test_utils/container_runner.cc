@@ -104,7 +104,7 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   podman_run_cmd.push_back("podman");
   podman_run_cmd.push_back("run");
   podman_run_cmd.push_back("--rm");
-  podman_run_cmd.push_back("--q");
+  podman_run_cmd.push_back("-q");
   if (use_host_pid_namespace) {
     podman_run_cmd.push_back("--pid=host");
   }
