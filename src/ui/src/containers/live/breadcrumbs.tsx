@@ -35,6 +35,7 @@ import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
 import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
+import { BreadcrumbExtras } from 'configurable/breadcrumb-extras';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
 
 import { Variable } from './vis';
@@ -94,6 +95,11 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     margin: `${spacing(-0.5)} ${spacing(2.5)}`,
     padding: spacing(0.5),
     overflow: 'auto hidden',
+    position: 'relative',
+  },
+  extras: {
+    textAlign: 'right',
+    marginRight: spacing(2.5),
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
@@ -251,6 +257,8 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
     return <></>;
   }
 
+  const extras = <BreadcrumbExtras />;
+
   return (
     <>
       <div className={classes.breadcrumbs}>
@@ -262,6 +270,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           breadcrumbs={argBreadcrumbs}
         />
       </div>
+      { extras && <div className={classes.extras}><BreadcrumbExtras /></div> }
     </>
   );
 });
