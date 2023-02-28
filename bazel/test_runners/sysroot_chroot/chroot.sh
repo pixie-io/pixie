@@ -73,6 +73,8 @@ cat > "${unshare_script}" <<EOF
   mkdir -p "${chroot_dir}/scripts"
   cp "${chroot_script}" "${chroot_dir}${chroot_script_internal_name}"
 
+  # Change the shell to bash since we don't want to use the user's SHELL setting.
+  export SHELL=/bin/bash
   # TODO(james): maybe don't rely on system chroot (although it should be present on most systems).
   /usr/sbin/chroot "${chroot_dir}" /bin/bash ${chroot_bash_args[@]}
 EOF
