@@ -26,6 +26,9 @@
 #include <utility>
 #include <vector>
 
+#include <prometheus/counter.h>
+#include <prometheus/gauge.h>
+
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/utils/obj_pool.h"
 #include "src/stirling/utils/stat_counter.h"
@@ -153,6 +156,10 @@ class ConnTrackersManager {
   // Records statistics of ConnTracker for reporting and consistency check.
   utils::StatCounter<StatKey> stats_;
   utils::StatCounter<traffic_protocol_t> protocol_stats_;
+
+  prometheus::Counter& conn_tracker_created_;
+  prometheus::Counter& conn_tracker_destroyed_;
+  prometheus::Counter& destroyed_gens_;
 };
 
 }  // namespace stirling
