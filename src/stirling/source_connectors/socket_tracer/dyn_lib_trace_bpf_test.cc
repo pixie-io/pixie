@@ -178,7 +178,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          px::Exec(absl::Substitute("pgrep --parent $0", server.process_pid())).ValueOrDie();
+          px::Exec(absl::Substitute("pgrep -P $0", server.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
