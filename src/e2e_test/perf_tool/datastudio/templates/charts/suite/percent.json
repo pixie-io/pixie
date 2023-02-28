@@ -1,0 +1,132 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "title": "{{.ChartTitle}}",
+  "data": [
+    {
+      "name": "default",
+      "transform": [
+        {
+          "type": "project",
+          "fields": [
+            "$dimension0",
+            "$dimension1",
+            "$dimension2",
+            "$dimension3",
+            "$dimension4",
+            "$dimension5",
+            "$dimension6",
+            "$metric0"
+          ],
+          "as": [
+            "suite",
+            "workload",
+            "parameters",
+            "commit_sha",
+            "pod",
+            "topo_order",
+            "experiment_link",
+            "median_percent_value"
+          ]
+        },
+        {
+          "type": "formula",
+          "expr": "datum.suite+datum.workload+datum.parameters",
+          "as": "color_key"
+        },
+        {
+          "type": "formula",
+          "expr": "(datum.pod)?datum.pod:\"\"",
+          "as": "pod"
+        }
+      ]
+    }
+  ],
+
+  "scales": [
+    {
+      "name": "commits",
+      "type": "band",
+      "domain": {
+        "data": "default",
+        "field": "commit_sha",
+        "sort": {"op": "mean", "field": "topo_order", "order": "ascending"}
+      },
+      "padding": 1,
+      "range": "width",
+      "round": true
+    },
+    {
+      "name": "percent",
+      "range": "height",
+      "nice": true,
+      "padding": 1,
+      "domain": {"data": "default", "field": "median_percent_value"}
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": "category",
+      "domain": {
+        "data": "default",
+        "field": "color_key",
+        "sort": true
+      }
+    }
+  ],
+
+  "axes": [
+    {
+      "orient": "left",
+      "scale": "percent",
+      "title": ["%"],
+      "format": "%"
+    },
+    {
+      "orient": "bottom",
+      "scale": "commits",
+      "labels": true,
+      "labelAngle": 90,
+      "labelAlign": "left",
+      "title": "Commits",
+      "encode": {
+        "labels": {
+          "interactive": true,
+          "update": {
+            "href": {
+              "signal": "\"https://github.com/pixie-io/pixie/commit/\" + datum.value"
+            },
+            "text": {"signal": "slice(datum.value, 0, 6)"}
+          }
+        }
+      }
+    }
+  ],
+
+  "marks": [
+        {
+          "type": "symbol",
+          "from": {"data": "default"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "commits", "field": "commit_sha"},
+              "y": {
+                "scale": "percent",
+                "field": "median_percent_value"
+              },
+              "fill": {
+                "scale": "color",
+                "field": "color_key"
+              },
+              "tooltip": {
+                "signal": "{\"Suite\": datum.suite, \"Workload\": datum.workload, \"Parameters\": datum.parameters, \"Pod\": datum.pod, \"Commit\": datum.commit_sha, \"Value\": datum.median_percent_value}"
+              }
+            },
+            "update": {
+              "href": {
+                "field": "experiment_link"
+              }
+            }
+          }
+        }
+  ]
+}
