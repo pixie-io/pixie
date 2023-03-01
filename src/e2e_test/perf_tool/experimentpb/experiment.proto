@@ -26,34 +26,28 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // ExperimentSpec fully specifies how to run a single perf experiment.
 // An Experiment is fully specified by specifying all of the following:
-//  - version of the Pixie repo (commit) to use to build the components of the experiment (see
-//  VizierSpec).
 //  - parameters to use when building/running Vizier.
 //  - specifications for other workloads to run on the same cluster during the experiment (see
 //  WorkloadSpec).
 //  - specifications for metrics to record during the experiment (see MetricSpec).
 //  - specifications for the cluster that the experiment runs on (see ClusterSpec).
+//  - the commit the experiment was run from.
 message ExperimentSpec {
-  // VersionSpec specifies what version of the pixie repo to use to build the various components of
-  // the experiment.
-  VersionSpec version_spec = 1;
   // vizier_spec specifies parameters around building and deploying the vizier workload for the
   // experiment.
-  WorkloadSpec vizier_spec = 2;
+  WorkloadSpec vizier_spec = 1;
   // Each workload spec specifies parameters for building and deploying a workload for the
   // experiment.
-  repeated WorkloadSpec workload_specs = 3;
+  repeated WorkloadSpec workload_specs = 2;
   // Each metric spec specifies parameters for building and recording a metric during the
   // experiment.
-  repeated MetricSpec metric_specs = 4;
+  repeated MetricSpec metric_specs = 3;
   // ClusterSpec specifies what type of cluster to run the experiment on.
-  ClusterSpec cluster_spec = 5;
+  ClusterSpec cluster_spec = 4;
+  reserved 5;
+  // commit_sha of the commit the experiment was run from.
+  string commit_sha = 6 [ (gogoproto.customname) = "CommitSHA" ];
 }
-
-// VersionSpec specifies the version of the Pixie repo to use for running the Experiment.
-// It specifies the base commit via a commit SHA, and allows specifying patches on top of that
-// commit.
-message VersionSpec {}
 
 // WorkloadSpec specifies how to build, deploy and teardown a particular workload.
 // Example workloads include: Vizier, Sock shop, or an HTTP protocol loadtest (see
@@ -70,5 +64,3 @@ message MetricSpec {}
 // Cluster parameters currently include things like machine type, and number of nodes in the
 // cluster.
 message ClusterSpec {}
-
-message Empty {}
