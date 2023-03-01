@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-client
+  namespace: px-grpc-test
+  labels:
+    name: grpc-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: grpc-client
+  template:
+    metadata:
+      labels:
+        name: grpc-client
+    spec:
+      containers:
+      - name: grpc-client
+        image: gcr.io/pixie-oss/pixie-dev/src/stirling/testing/demo_apps/go_grpc_tls_pl/client:latest
+        args:
+        - --address=grpc-server:50400
+        - --count=100000
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
