@@ -100,8 +100,6 @@ describe('String search utils', () => {
   });
 
   it('Scoring of multiple types of matches results in a reasonable ordering', () => {
-    // TODO: This ordering is still not ideal... substring preference should probably be even stronger to fix it?
-
     // Each of these searches should end up with the following order of lowest distance to highest.
     // The balancing on how to score different scenarios is delicate, but should result in something that makes the
     // most sense to a user. We're aiming for relevance, not similarity: find what the user _meant_.
