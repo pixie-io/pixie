@@ -29,13 +29,39 @@ stirling_wrapper=$1
 trace_script=$2
 
 ###############################################################################
+# Workload for test: This test needs binaries running in the background for
+# stirling_wrapper to capture.
+###############################################################################
+workload() {
+    for _ in {1..120}; do
+	sleep 1
+    done
+}
+
+workload &
+workload_pid=$!
+
+###############################################################################
 # Main test: Run stirling_wrapper.
 ###############################################################################
 
 echo "Running stirling_wrapper"
-flags="--timeout_secs=60 --trace=$trace_script"
-# shellcheck disable=SC2086
-out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
+flags=("--timeout_secs=60" "--trace=$trace_script")
+
+stirling_wrapper_log=$(mktemp --suffix=".log")
+stirling_wrapper_pid_file=$(mktemp --suffix=".pid")
+already_killed=0
+("$stirling_wrapper" "${flags[@]}" & echo $! > "${stirling_wrapper_pid_file}") 2>&1 | tee "${stirling_wrapper_log}" |\
+    while read -r line; do
+	echo "${line}"
+	# Once we see any exec_snoop records we can stop stirling_wrapper to exit early.
+	record_count=$(echo "${line}" | grep -c -e "^\[exec_snoop_table\]" || true)
+	if [[ "${record_count}" -gt "0" && "${already_killed}" -eq "0" ]]; then
+	    already_killed=1
+	    stirling_wrapper_pid=$(cat "${stirling_wrapper_pid_file}")
+	    kill "${stirling_wrapper_pid}" > /dev/null 2>&1 || true
+	fi
+    done
 
 ###############################################################################
 # Check output for errors/warnings.
@@ -43,7 +69,6 @@ out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 check_dynamic_trace_deployment() {
   out=$1
-  echo "$out"
 
   # Look for GLOG errors or warnings, which start with E or W respectively.
   err_count=$(echo "$out" | grep -c -e ^E -e ^W || true)
@@ -71,4 +96,7 @@ check_dynamic_trace_deployment() {
   return 0
 }
 
-check_dynamic_trace_deployment "$out"
+# We can stop the workload generator now that stirling_wrapper has quit.
+kill "${workload_pid}" > /dev/null 2>&1 || true
+
+check_dynamic_trace_deployment "$(cat "${stirling_wrapper_log}")"
