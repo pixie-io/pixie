@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "root.go",
         "run.go",
+        "test_gke_cluster.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/cmd",
     visibility = ["//visibility:public"],
@@ -28,8 +29,10 @@ go_library(
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/bq",
         "//src/e2e_test/perf_tool/pkg/cluster",
+        "//src/e2e_test/perf_tool/pkg/cluster/gke",
         "//src/e2e_test/perf_tool/pkg/pixie",
         "//src/e2e_test/perf_tool/pkg/run",
+        "//src/pixie_cli/pkg/components",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
         "@com_github_sirupsen_logrus//:logrus",
