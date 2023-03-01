@@ -610,11 +610,14 @@ class NATSClientContainer : public ContainerRunner {
 
 class ProductCatalogService : public ContainerRunner {
  public:
-  ProductCatalogService() : ContainerRunner(kImage, kContainerNamePrefix, kReadyMessage) {}
+  ProductCatalogService()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
 
  private:
-  static constexpr std::string_view kImage =
-      "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "productcatalogservice_v0_2_0.tar";
   static constexpr std::string_view kContainerNamePrefix = "pcs";
   static constexpr std::string_view kReadyMessage = "starting grpc server";
 };
