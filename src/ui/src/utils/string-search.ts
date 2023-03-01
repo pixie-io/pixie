@@ -58,7 +58,7 @@ function isMatchGoodEnough(searchLen: number, sourceLen: number, distance: numbe
   // Must highlight at least half of the smaller string
   if (highlights.length <= Math.ceil(min / 2)) return false;
   // Edit distance should be within reason (too high, and we probably have a totally unrelated string)
-  if (distance >= (Math.max(searchLen, sourceLen) * 0.75)) return false;
+  if (distance >= (Math.max(searchLen, sourceLen) * 0.8)) return false;
   return true;
 }
 
@@ -183,18 +183,23 @@ export function highlightScoredMatch(search: string, source: string): ScoredStri
     // Exact prefix is even better than exact substring, but not as good as a perfect match
     return {
       isMatch: true,
-      distance: Math.abs(searchNorm.length - sourceNorm.length) / 4,
+      distance: Math.abs(searchNorm.length - sourceNorm.length) / 5,
       highlights: Array(searchNorm.length).fill(0).map((_, i) => i),
     };
   } else if (exactSubstringIndex >= 0) {
     const start = sourceChars[exactSubstringIndex].i;
     // The edit distance for a substring is quite high, but substring matches are often better than typo matches.
-    const distance = Math.ceil((sourceChars.length - searchChars.length) / 3);
+    const distance = Math.abs(sourceChars.length - searchChars.length) / 4;
     const highlights = Array(searchChars.length);
     for (let j = 0; j < searchChars.length; j++) {
       highlights[j] = start + searchChars[j].i;
     }
-    if (isMatchGoodEnough(search.length, source.length, distance * 3, highlights)) {
+    if (isMatchGoodEnough(
+      search.length,
+      source.length,
+      Math.abs(sourceChars.length - searchChars.length),
+      highlights,
+    )) {
       return { isMatch: true, distance, highlights };
     } else {
       // Too far apart, return early
@@ -226,16 +231,40 @@ export function highlightNamespacedScoredMatch(
   source: string,
   namespaceDelimiter: string,
 ): ScoredStringMatch {
-  if (search.includes(namespaceDelimiter) || !source.includes(namespaceDelimiter)) {
+  if (!source.includes(namespaceDelimiter)) {
     return highlightScoredMatch(search, source);
   }
+
+  let splitCost = 0;
   const parts = source.split(namespaceDelimiter).filter(p => p);
+  if (search.includes(namespaceDelimiter)) {
+    const searchParts = search.split(namespaceDelimiter).filter(p => p);
+    if (searchParts.length === parts.length) {
+      const matches = searchParts.map((p, i) => highlightScoredMatch(p, parts[i]));
+      if (matches.every(m => m.isMatch)) {
+        let sumLen = 0;
+        for (let i = 0; i < parts.length; i++) {
+          const match = matches[i];
+          for (let j = 0; j < match.highlights.length; j++) match.highlights[j] += sumLen;
+          sumLen += 1 + parts[i].length;
+        }
+        return {
+          isMatch: true,
+          distance: matches.reduce((a, c) => a + c.distance, 0),
+          highlights: matches.map(m => m.highlights).flat(1),
+        };
+      }
+    }
+    splitCost = 1; // We failed to find matches in every part, so consider the delimiter as part of the distance below.
+  }
+
   const matches = [highlightScoredMatch(search, source)];
   let sumLen = 0;
   for (let i = 0; i < parts.length; i++) {
     const match = highlightScoredMatch(search, parts[i]);
     for (let j = 0; j < match.highlights.length; j++) match.highlights[j] += sumLen;
     sumLen += 1 + parts[i].length;
+    match.distance += splitCost + parts.filter((_, k) => k !== i).reduce((a, c) => a + c.length / 4, 0);
     matches.push(match);
   }
   matches.sort((a, b) => a.distance - b.distance);
