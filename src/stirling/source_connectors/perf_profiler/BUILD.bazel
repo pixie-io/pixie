@@ -58,8 +58,6 @@ pl_cc_test(
         "cpu:16",
         "exclusive",
         "requires_bpf",
-        # Disabling this test because it has a 25% pass rate on main at the moment.
-        "disabled_flaky_test",
     ],
     deps = [
         ":cc_library",
