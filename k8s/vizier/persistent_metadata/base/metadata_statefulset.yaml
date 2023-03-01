@@ -108,3 +108,20 @@ spec:
       - name: metadata-volume
         persistentVolumeClaim:
           claimName: metadata-pv-claim
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
