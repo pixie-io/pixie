@@ -94,7 +94,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
   PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=false"}));
+      {"--http2=false", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();
@@ -131,7 +131,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
   PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=true"}));
+      {"--http2=true", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();
