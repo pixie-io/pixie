@@ -135,7 +135,8 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
 
     // If all goes well with exec, we never reach here.
     DCHECK_EQ(retval, -1);
-    LOG(ERROR) << absl::Substitute("exec failed! error = $0", std::strerror(errno));
+    LOG(ERROR) << absl::Substitute("exec failed! error = $0, binary = $1", std::strerror(errno),
+                                   exec_args.front());
     exit(1);
   } else {
     // TODO(yzhao): Move this else branch outside of this if block.
