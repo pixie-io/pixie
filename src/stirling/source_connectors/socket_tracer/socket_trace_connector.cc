@@ -290,9 +290,9 @@ const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
      {"close", ProbeType::kReturn, "syscall__probe_ret_close"},
      {"mmap", ProbeType::kEntry, "syscall__probe_entry_mmap"},
      {"sock_alloc", ProbeType::kReturn, "probe_ret_sock_alloc", /*is_syscall*/ false},
-     {"security_socket_sendmsg", ProbeType::kEntry, "probe_entry_security_socket_sendmsg",
+     {"sock_sendmsg", ProbeType::kEntry, "probe_entry_sock_sendmsg",
       /*is_syscall*/ false},
-     {"security_socket_recvmsg", ProbeType::kEntry, "probe_entry_security_socket_recvmsg",
+     {"sock_recvmsg", ProbeType::kEntry, "probe_entry_sock_recvmsg",
       /*is_syscall*/ false}});
 
 using bpf_tools::PerfBufferSizeCategory;
