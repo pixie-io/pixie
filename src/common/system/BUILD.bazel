@@ -85,7 +85,11 @@ pl_cc_test(
     flaky = 1,
     # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
     # network state making it flaky.
-    tags = ["exclusive"],
+    tags = [
+        "exclusive",
+        # The NETLINK_SOCK_DIAG protocol we use is not supported by userspace QEMU.
+        "requires_full_qemu_emulation",
+    ],
     deps = [
         ":cc_library",
     ],
