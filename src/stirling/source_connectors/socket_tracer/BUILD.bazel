@@ -314,8 +314,6 @@ pl_cc_test(
     flaky = True,
     shard_count = 3,
     tags = [
-        # TODO: This test has a <90% pass rate in CI, please fix and re-enable.
-        "disabled_flaky_test",
         "requires_bpf",
         "cpu:16",
         # This test runs Go gRPC client & server, which causes other tests to attach & detach
