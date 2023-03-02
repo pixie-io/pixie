@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/vzconn",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/shared/messages",
         "//src/cloud/vzconn/bridge",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
@@ -36,7 +37,6 @@ go_library(
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",

@@ -21,15 +21,14 @@ package main
 import (
 	"net/http"
 	_ "net/http/pprof"
-	"strings"
 
 	"github.com/nats-io/nats.go"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
+	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/vzconn/bridge"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
@@ -41,18 +40,13 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
-var (
-	natsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_error_count",
-		Help: "NATS message bus error",
-	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
-)
+var natsErrorCounter *messages.NatsErrorCounter
 
 func init() {
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
-	prometheus.MustRegister(natsErrorCount)
+	natsErrorCounter = messages.NewNatsErrorCounter()
 }
 
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
@@ -69,18 +63,6 @@ func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceC
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
 }
 
-// Extracts information from the subject and return shard, vizierID, messageType.
-func extractMessageInfo(subject string) (string, string, string) {
-	vals := strings.Split(subject, ":")
-	if len(vals) > 0 {
-		strings.Split(vals[0], ".")
-		if len(vals) >= 4 {
-			return vals[1], vals[2], vals[3]
-		}
-	}
-	return "", "", ""
-}
-
 func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 	nc := msgbus.MustConnectNATS()
 	js := msgbus.MustConnectJetStream(nc)
@@ -89,20 +71,7 @@ func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 		log.WithError(err).Fatal("Could not start JetStream streamer")
 	}
 
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		if err != nil {
-			log.WithError(err).
-				WithField("Subject", subscription.Subject).
-				Error("Got NATS error")
-		}
-		shard, vizierID, messageType := extractMessageInfo(subscription.Subject)
-		switch err {
-		case nats.ErrSlowConsumer:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
-		default:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
-		}
-	})
+	nc.SetErrorHandler(natsErrorCounter.HandleNatsError)
 	return nc, strmr
 }
 

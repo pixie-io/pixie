@@ -31,6 +31,7 @@ import (
 	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/metrics/controllers"
+	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
@@ -39,12 +40,16 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
+var natsErrorCounter *messages.NatsErrorCounter
+
 func init() {
 	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
 
 	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
 	pflag.String("bq_dataset_loc", "", "The location for the BigQuery dataset. Used during creation.")
+
+	natsErrorCounter = messages.NewNatsErrorCounter()
 }
 
 func main() {
@@ -61,6 +66,8 @@ func main() {
 
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
+
+	nc.SetErrorHandler(natsErrorCounter.HandleNatsError)
 
 	// Connect to BigQuery.
 	var client *bigquery.Client
