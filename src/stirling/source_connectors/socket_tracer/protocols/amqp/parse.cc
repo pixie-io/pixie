@@ -91,7 +91,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
   packet->channel = channel;
   packet->payload_size = payload_size;
   if (decoder.BufSize() <= payload_size) {
-    return ParseState::kInvalid;
+    return ParseState::kNeedsMoreData;
   }
 
   // Check end byte is valid
