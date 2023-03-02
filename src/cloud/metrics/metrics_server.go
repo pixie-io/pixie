@@ -22,8 +22,11 @@ import (
 	"context"
 	"net/http"
 	_ "net/http/pprof"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/nats-io/nats.go"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -39,12 +42,33 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
+var (
+	natsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "nats_error_count",
+		Help: "NATS message bus error",
+	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
+)
+
+// Extracts information from the subject and return shard, vizierID, messageType.
+func extractMessageInfo(subject string) (string, string, string) {
+	vals := strings.Split(subject, ":")
+	if len(vals) > 0 {
+		strings.Split(vals[0], ".")
+		if len(vals) >= 4 {
+			return vals[1], vals[2], vals[3]
+		}
+	}
+	return "", "", ""
+}
+
 func init() {
 	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
 
 	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
 	pflag.String("bq_dataset_loc", "", "The location for the BigQuery dataset. Used during creation.")
+
+	prometheus.MustRegister(natsErrorCount)
 }
 
 func main() {
@@ -61,6 +85,21 @@ func main() {
 
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
+
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		if err != nil {
+			log.WithError(err).
+				WithField("Subject", subscription.Subject).
+				Error("Got NATS error")
+		}
+		shard, vizierID, messageType := extractMessageInfo(subscription.Subject)
+		switch err {
+		case nats.ErrSlowConsumer:
+			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
+		default:
+			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
+		}
+	})
 
 	// Connect to BigQuery.
 	var client *bigquery.Client
