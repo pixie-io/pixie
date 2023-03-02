@@ -90,7 +90,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet)
   packet->frame_type = frame_type;
   packet->channel = channel;
   packet->payload_size = payload_size;
-  if (decoder.BufSize() < payload_size) {
+  if (decoder.BufSize() <= payload_size) {
     return ParseState::kInvalid;
   }
 
