@@ -26,24 +26,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// NatsErrorCount counts the number of errors that occurs over NATs.
-var (
-	NatsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_error_count",
-		Help: "NATS message bus error",
-	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
-)
+// NatsErrorCounter is a counter for NATS errors.
+type NatsErrorCounter struct {
+	count *prometheus.CounterVec
+}
 
-func extractShardMessageInfo(subject string) (string, string, string) {
-	vals := strings.Split(subject, ".")
-	if len(vals) >= 4 {
-		return vals[1], vals[2], vals[3]
+// NewNatsErrorCounter creates a new counter for NATS errors.
+func NewNatsErrorCounter() *NatsErrorCounter {
+	c := &NatsErrorCounter{
+		count: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "nats_error_count",
+			Help: "NATS message bus error",
+		}, []string{"shardID", "vizierID", "messageKind", "errorKind"}),
 	}
-	return "", "", ""
+	prometheus.MustRegister(c.count)
+	return c
 }
 
 // HandleNatsError handles the Nats error by logging and tracking metrics.
-func HandleNatsError(conn *nats.Conn, sub *nats.Subscription, err error) {
+func (c *NatsErrorCounter) HandleNatsError(conn *nats.Conn, sub *nats.Subscription, err error) {
 	if err != nil {
 		log.WithError(err).
 			WithField("Subject", sub.Subject).
@@ -52,8 +53,16 @@ func HandleNatsError(conn *nats.Conn, sub *nats.Subscription, err error) {
 	shard, vizierID, messageType := extractShardMessageInfo(sub.Subject)
 	switch err {
 	case nats.ErrSlowConsumer:
-		NatsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
+		c.count.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
 	default:
-		NatsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
+		c.count.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
 	}
+}
+
+func extractShardMessageInfo(subject string) (string, string, string) {
+	vals := strings.Split(subject, ".")
+	if len(vals) >= 4 {
+		return vals[1], vals[2], vals[3]
+	}
+	return "", "", ""
 }

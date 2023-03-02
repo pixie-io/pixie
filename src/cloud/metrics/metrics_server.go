@@ -24,7 +24,6 @@ import (
 	_ "net/http/pprof"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -41,6 +40,8 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
+var natsErrorCounter *messages.NatsErrorCounter
+
 func init() {
 	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
@@ -48,7 +49,7 @@ func init() {
 	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
 	pflag.String("bq_dataset_loc", "", "The location for the BigQuery dataset. Used during creation.")
 
-	prometheus.MustRegister(messages.NatsErrorCount)
+	natsErrorCounter = messages.NewNatsErrorCounter()
 }
 
 func main() {
@@ -66,7 +67,7 @@ func main() {
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
 
-	nc.SetErrorHandler(messages.HandleNatsError)
+	nc.SetErrorHandler(natsErrorCounter.HandleNatsError)
 
 	// Connect to BigQuery.
 	var client *bigquery.Client

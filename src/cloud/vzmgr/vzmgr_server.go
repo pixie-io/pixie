@@ -27,7 +27,6 @@ import (
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -50,11 +49,13 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
+var natsErrorCounter *messages.NatsErrorCounter
+
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
-	prometheus.MustRegister(messages.NatsErrorCount)
+	natsErrorCounter = messages.NewNatsErrorCounter()
 }
 
 // NewArtifactTrackerServiceClient creates a new artifact tracker RPC client stub.
@@ -92,7 +93,7 @@ func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 		log.WithError(err).Fatal("Could not start JetStream streamer")
 	}
 
-	nc.SetErrorHandler(messages.HandleNatsError)
+	nc.SetErrorHandler(natsErrorCounter.HandleNatsError)
 	return nc, strmr
 }
 
