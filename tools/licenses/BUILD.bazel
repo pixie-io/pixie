@@ -18,6 +18,7 @@
 # This includes the C API, Java API, and protocol buffer files.
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@rules_python//python:defs.bzl", "py_binary")
 load("//bazel:licenses.bzl", "fetch_licenses")
 load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
@@ -69,6 +70,11 @@ fetch_licenses(
     out_missing = "deps_licenses_missing.json",
 )
 
+py_binary(
+    name = "combine_licenses",
+    srcs = ["combine_licenses.py"],
+)
+
 genrule(
     name = "all_licenses",
     srcs = [
@@ -80,14 +86,14 @@ genrule(
         "all_licenses.json",
     ],
     cmd = """
-        python3 $(location combine_licenses.py) \
+        $(location combine_licenses) \
             $(location go_licenses.json) \
             $(location deps_licenses.json) \
             $(location //src/ui:npm_licenses) \
             --output $(location all_licenses.json)
     """,
     tools = [
-        "combine_licenses.py",
+        ":combine_licenses",
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,20 @@
+diff --git a/python/repositories.bzl b/python/repositories.bzl
+index 395ef0e..c1093e3 100644
+--- a/python/repositories.bzl
++++ b/python/repositories.bzl
+@@ -151,6 +151,7 @@ py_runtime(
+     name = "py3_runtime",
+     files = [":files"],
+     interpreter = "{python_path}",
++    stub_shebang="#!/usr/bin/env -S /bin/bash -c '$0.runfiles/{interpreter_name}/bin/python3 $0 \\"$@\\"'",
+     python_version = "PY3",
+ )
+ 
+@@ -162,6 +163,7 @@ py_runtime_pair(
+ """.format(
+         python_path = python_bin,
+         python_version = python_short_version,
++        interpreter_name = rctx.attr.name,
+     )
+     rctx.file("BUILD.bazel", build_content)
+ 

@@ -1,0 +1,18 @@
+build:sysroot-base --experimental_use_hermetic_linux_sandbox
+build:sysroot-base --sandbox_add_mount_pair="/proc"
+build:sysroot-base --sandbox_add_mount_pair="/sys"
+build:sysroot-base --sandbox_add_mount_pair="/bin"
+build:sysroot-base --sandbox_add_mount_pair="/usr/bin"
+build:sysroot-base --sandbox_add_mount_pair="/lib"
+build:sysroot-base --sandbox_add_mount_pair="/lib64"
+build:sysroot-base --sandbox_add_mount_pair="/etc"
+# We need /opt for the UI build
+build:sysroot-base --sandbox_add_mount_pair="/opt"
+# Some java programs have issues without locale in the sandbox.
+build:sysroot-base --sandbox_add_mount_pair="/usr/lib/locale"
+# We currently require openssl in the build for building certs for a demo app.
+build:sysroot-base --sandbox_add_mount_pair="/usr/lib/ssl/openssl.cnf"
+# Bison/flex need things in /usr/share
+build:sysroot-base --sandbox_add_mount_pair="/usr/share"
+# We still use host GCC for building the java agent.
+build:sysroot-base --sandbox_add_mount_pair="/usr/lib/gcc"

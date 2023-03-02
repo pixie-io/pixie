@@ -243,7 +243,7 @@ def _pl_deps():
     _bazel_repo("io_bazel_rules_k8s")
     _bazel_repo("io_bazel_rules_closure")
     _bazel_repo("io_bazel_rules_docker", patches = ["//bazel/external:rules_docker.patch", "//bazel/external:rules_docker_arch.patch"], patch_args = ["-p1"])
-    _bazel_repo("rules_python")
+    _bazel_repo("rules_python", patches = ["//bazel/external:rules_python.patch"], patch_args = ["-p1"])
     _bazel_repo("rules_pkg")
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("com_github_fmeum_rules_meta")

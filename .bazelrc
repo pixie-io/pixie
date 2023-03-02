@@ -79,6 +79,7 @@ build:clang-base --//bazel/cc_toolchains:libc_version=glibc_host
 
 # We build our own chroot for the sysroot tests, which doesn't work well under bazel's sandbox.
 build:sysroot-base --//bazel/test_runners:test_runner=sysroot_chroot
+import %workspace%/bazel/cc_toolchains/sysroots/sandbox.bazelrc
 test:sysroot-base --strategy TestRunner=standalone
 test:sysroot-base --run_under="bazel/test_runners/sysroot_chroot/test_runner.sh"
 
