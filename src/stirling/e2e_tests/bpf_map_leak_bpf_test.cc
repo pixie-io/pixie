@@ -48,8 +48,9 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
 
   std::string_view server_path_param = GetParam();
 
-  const int kInactivitySeconds = 10;
-  ConnTracker::set_inactivity_duration(std::chrono::seconds(kInactivitySeconds));
+  std::chrono::milliseconds kInactivityPeriod{100};
+  ConnTracker::set_inactivity_duration(
+      std::chrono::duration_cast<std::chrono::seconds>(kInactivityPeriod));
 
   // Create and run the server with a leaky FD.
   std::filesystem::path server_path = BazelRunfilePath(server_path_param);
@@ -58,25 +59,43 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   SubProcess server;
   ASSERT_OK(server.Start({server_path}, /* stderr_to_stdout */ true));
 
-  // Sleep a bit, just to make sure server is ready.
-  usleep(100000);
+  // Wait for the server to come online.
+  std::string server_stdout;
+  bool server_started = false;
+  for (int iters = 0; iters < 60; iters++) {
+    ASSERT_OK(server.Stdout(&server_stdout));
+    if (absl::StrContains(server_stdout, "Listening for connections on port")) {
+      server_started = true;
+      break;
+    }
+    // Sleep a bit to wait for the server to become ready.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  ASSERT_TRUE(server_started);
 
   // Now connect to the server.
   SubProcess client;
   ASSERT_OK(client.Start({"curl", "-s", "localhost:8080"}));
 
-  // Sleep a little, to make sure connection is made.
-  usleep(100000);
-
-  // Get the FD of the connection from the server's logs.
-  std::string server_stdout;
-  ASSERT_OK(server.Stdout(&server_stdout));
-  std::regex regex(".*Accepted connection on fd=(\\d+).*");
-  std::smatch match;
-  ASSERT_TRUE(std::regex_search(server_stdout, match, regex));
-  std::string fd_str = match[1];
+  // Wait for the client connection to be made.
+  bool matched = false;
   int32_t fd;
-  ASSERT_TRUE(absl::SimpleAtoi(fd_str, &fd));
+  for (int iters = 0; iters < 60; iters++) {
+    ASSERT_OK(server.Stdout(&server_stdout));
+
+    std::regex regex(".*Accepted connection on fd=(\\d+).*");
+    std::smatch match;
+    LOG(INFO) << server_stdout;
+    if (std::regex_search(server_stdout, match, regex)) {
+      // Get the FD of the connection from the server's logs.
+      std::string fd_str = match[1];
+      ASSERT_TRUE(absl::SimpleAtoi(fd_str, &fd));
+      matched = true;
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+  ASSERT_TRUE(matched);
 
   // Now we know the bpf map key that should leak.
   uint64_t pid = server.child_pid();
@@ -86,8 +105,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   // Now kill the server, which should cause a BPF map entry to leak.
   LOG(INFO) << "Killing server";
   server.Signal(SIGINT);
-
-  usleep(100000);
+  server.Wait();
 
   // At this point, server should have been traced.
   // And because it was killed, it should have leaked a BPF map entry.
@@ -112,7 +130,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   entries = conn_info_map.get_table_offline();
   EXPECT_THAT(entries, Contains(Key(server_bpf_map_key)));
 
-  sleep(kInactivitySeconds);
+  std::this_thread::sleep_for(kInactivityPeriod);
 
   // This TransferData should cause the connection tracker to be marked for death.
   source_->TransferData(ctx_.get());
