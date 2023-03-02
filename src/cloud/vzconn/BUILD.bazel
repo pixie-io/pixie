@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/vzconn",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/shared/messages",
         "//src/cloud/vzconn/bridge",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",

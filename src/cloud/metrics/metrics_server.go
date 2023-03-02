@@ -22,7 +22,6 @@ import (
 	"context"
 	"net/http"
 	_ "net/http/pprof"
-	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/nats-io/nats.go"
@@ -34,6 +33,7 @@ import (
 	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/metrics/controllers"
+	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
@@ -42,25 +42,6 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
-var (
-	natsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_error_count",
-		Help: "NATS message bus error",
-	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
-)
-
-// Extracts information from the subject and return shard, vizierID, messageType.
-func extractMessageInfo(subject string) (string, string, string) {
-	vals := strings.Split(subject, ":")
-	if len(vals) > 0 {
-		strings.Split(vals[0], ".")
-		if len(vals) >= 4 {
-			return vals[1], vals[2], vals[3]
-		}
-	}
-	return "", "", ""
-}
-
 func init() {
 	pflag.String("bq_project", "", "The BigQuery project to write metrics to.")
 	pflag.String("bq_sa_key_path", "", "The service account for the BigQuery instance that should be used.")
@@ -68,7 +49,7 @@ func init() {
 	pflag.String("bq_dataset", "vizier_metrics", "The BigQuery dataset to write metrics to.")
 	pflag.String("bq_dataset_loc", "", "The location for the BigQuery dataset. Used during creation.")
 
-	prometheus.MustRegister(natsErrorCount)
+	prometheus.MustRegister(messages.NatsErrorCount)
 }
 
 func main() {
@@ -87,18 +68,7 @@ func main() {
 	nc := msgbus.MustConnectNATS()
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		if err != nil {
-			log.WithError(err).
-				WithField("Subject", subscription.Subject).
-				Error("Got NATS error")
-		}
-		shard, vizierID, messageType := extractMessageInfo(subscription.Subject)
-		switch err {
-		case nats.ErrSlowConsumer:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
-		default:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
-		}
+		messages.HandleNatsError(subscription, err)
 	})
 
 	// Connect to BigQuery.

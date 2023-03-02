@@ -22,7 +22,8 @@ import (
 	"errors"
 	"net/http"
 	_ "net/http/pprof"
-	"strings"
+
+	"px.dev/pixie/src/cloud/shared/messages"
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
@@ -49,18 +50,11 @@ import (
 	"px.dev/pixie/src/shared/services/server"
 )
 
-var (
-	natsErrorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "nats_error_count",
-		Help: "NATS message bus error",
-	}, []string{"shardID", "vizierID", "messageKind", "errorKind"})
-)
-
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
-	prometheus.MustRegister(natsErrorCount)
+	prometheus.MustRegister(messages.NatsErrorCount)
 }
 
 // NewArtifactTrackerServiceClient creates a new artifact tracker RPC client stub.
@@ -90,18 +84,6 @@ func (r *readinessCheck) Check() error {
 	return r.err
 }
 
-// Extracts information from the subject and return shard, vizierID, messageType.
-func extractMessageInfo(subject string) (string, string, string) {
-	vals := strings.Split(subject, ":")
-	if len(vals) > 0 {
-		strings.Split(vals[0], ".")
-		if len(vals) >= 4 {
-			return vals[1], vals[2], vals[3]
-		}
-	}
-	return "", "", ""
-}
-
 func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 	nc := msgbus.MustConnectNATS()
 	js := msgbus.MustConnectJetStream(nc)
@@ -111,18 +93,7 @@ func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		if err != nil {
-			log.WithError(err).
-				WithField("Subject", subscription.Subject).
-				Error("Got NATS error")
-		}
-		shard, vizierID, messageType := extractMessageInfo(subscription.Subject)
-		switch err {
-		case nats.ErrSlowConsumer:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrSlowConsumer").Inc()
-		default:
-			natsErrorCount.WithLabelValues(shard, vizierID, messageType, "ErrUnknown").Inc()
-		}
+		messages.HandleNatsError(subscription, err)
 	})
 	return nc, strmr
 }
