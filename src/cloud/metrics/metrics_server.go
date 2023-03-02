@@ -24,7 +24,6 @@ import (
 	_ "net/http/pprof"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/nats-io/nats.go"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -67,9 +66,7 @@ func main() {
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
 
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		messages.HandleNatsError(subscription, err)
-	})
+	nc.SetErrorHandler(messages.HandleNatsError)
 
 	// Connect to BigQuery.
 	var client *bigquery.Client

@@ -70,9 +70,7 @@ func mustSetupNATSAndJetStream() (*nats.Conn, msgbus.Streamer) {
 		log.WithError(err).Fatal("Could not start JetStream streamer")
 	}
 
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		messages.HandleNatsError(subscription, err)
-	})
+	nc.SetErrorHandler(messages.HandleNatsError)
 	return nc, strmr
 }
 
