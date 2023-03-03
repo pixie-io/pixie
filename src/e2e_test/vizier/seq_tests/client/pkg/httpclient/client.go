@@ -31,6 +31,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 
 	"px.dev/pixie/src/e2e_test/util"
 )
@@ -43,12 +44,14 @@ type HTTPSeqClient struct {
 	numConns    int
 	reqSize     int
 	respSize    int
+	targetRPS   int
 
-	rps float64
+	rps        float64
+	rpsLimiter *rate.Limiter
 }
 
 // New creates a new HTTP seq client.
-func New(addr string, startSeq, numMessages, numConns, reqSize, respSize int) *HTTPSeqClient {
+func New(addr string, startSeq, numMessages, numConns, reqSize, respSize, targetRPS int) *HTTPSeqClient {
 	return &HTTPSeqClient{
 		addr:        addr,
 		startSeq:    startSeq,
@@ -56,6 +59,8 @@ func New(addr string, startSeq, numMessages, numConns, reqSize, respSize int) *H
 		numConns:    numConns,
 		reqSize:     reqSize,
 		respSize:    respSize,
+		targetRPS:   targetRPS,
+		rpsLimiter:  rate.NewLimiter(rate.Limit(targetRPS), targetRPS),
 	}
 }
 
@@ -139,6 +144,10 @@ func (c *HTTPSeqClient) worker(wg *sync.WaitGroup, jobs <-chan int, results chan
 	}
 
 	for j := range jobs {
+		if err := c.rpsLimiter.Wait(context.Background()); err != nil {
+			results <- err
+			continue
+		}
 		results <- makeSingleRequest(client, c.addr, j, c.reqSize, c.respSize)
 	}
 }
@@ -146,11 +155,11 @@ func (c *HTTPSeqClient) worker(wg *sync.WaitGroup, jobs <-chan int, results chan
 func makeSingleRequest(client *http.Client, addr string, seqID, reqSize, respSize int) error {
 	body := struct {
 		SeqID          int    `json:"seq_id"`
-		RespSize       int    `json:"resp_size"`
+		BodySize       int    `json:"body_size"`
 		RequestPadData string `json:"request_pad_data"`
 	}{
 		SeqID:          seqID,
-		RespSize:       respSize,
+		BodySize:       respSize,
 		RequestPadData: string(util.RandPrintable(reqSize)),
 	}
 
