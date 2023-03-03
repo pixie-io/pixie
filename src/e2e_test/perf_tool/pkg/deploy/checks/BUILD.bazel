@@ -18,11 +18,17 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "checks",
-    srcs = ["common.go"],
+    srcs = [
+        "common.go",
+        "k8s_healthcheck.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/checks",
     visibility = ["//visibility:public"],
     deps = [
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
+        "@com_github_cenkalti_backoff_v4//:backoff",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
     ],
 )
