@@ -228,7 +228,8 @@ def pl_cc_test(
         defines = [],
         coverage = True,
         local = False,
-        flaky = False):
+        flaky = False,
+        **kwargs):
     test_lib_tags = list(tags)
     if coverage:
         test_lib_tags.append("coverage_test_lib")
@@ -261,6 +262,7 @@ def pl_cc_test(
         local = local,
         flaky = flaky,
         features = pl_default_features(),
+        **kwargs
     )
 
 # PL C++ test related libraries (that want gtest, gmock) should be specified
