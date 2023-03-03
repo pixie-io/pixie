@@ -48,7 +48,7 @@ run_uprobe_target "$go_grpc_server" "$go_grpc_client"
 echo "Running stirling_wrapper container."
 
 flags="--timeout_secs=0"
-out=$(podman run --init --rm \
+out=$(podman run --rm \
  -v /:/host \
  -v /sys:/sys \
  --env PL_HOST_PATH=/host \
