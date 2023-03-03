@@ -69,6 +69,7 @@ message WorkloadSpec {
 message DeployStep {
   oneof deploy_type {
     PrerenderedDeploy prerendered = 1;
+    SkaffoldDeploy skaffold = 2;
   }
 }
 
@@ -121,6 +122,15 @@ message PatchTarget {
 message PrerenderedDeploy {
   repeated string yaml_paths = 1 [ (gogoproto.customname) = "YAMLPaths" ];
   repeated PatchSpec patches = 2;
+}
+
+// SkaffoldDeploy specifies how to use skaffold to deploy a component. SkaffoldDeploy is currently
+// limited to deploying to a single namespace. To deploy to multiple namespaces use separate
+// DeploySteps for each namespace.
+message SkaffoldDeploy {
+  string skaffold_path = 1;
+  repeated string skaffold_args = 2;
+  repeated PatchSpec patches = 3;
 }
 
 // MetricSpec specifies how to record a set of metrics for an experiment.

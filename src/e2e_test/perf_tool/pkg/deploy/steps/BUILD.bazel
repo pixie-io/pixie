@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "common.go",
         "prerendered.go",
+        "skaffold.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/steps",
     visibility = ["//visibility:public"],
@@ -29,6 +30,7 @@ go_library(
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/utils/shared/k8s",
         "@com_github_masterminds_sprig_v3//:sprig",
+        "@com_github_sirupsen_logrus//:logrus",
         "@in_gopkg_yaml_v3//:yaml_v3",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
