@@ -112,7 +112,7 @@ class PerfProfilerTestSubProcesses {
   const std::vector<int>& pids() const { return pids_; }
   const std::vector<struct upid_t>& struct_upids() const { return struct_upids_; }
   const absl::flat_hash_set<md::UPID>& upids() const { return upids_; }
-  static constexpr size_t kNumSubProcs = 1;
+  static constexpr size_t kNumSubProcs = 4;
   virtual ~PerfProfilerTestSubProcesses() = default;
 
  protected:
