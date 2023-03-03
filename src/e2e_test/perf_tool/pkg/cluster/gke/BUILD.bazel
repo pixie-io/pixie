@@ -21,15 +21,20 @@ go_library(
     srcs = [
         "cluster_ops.go",
         "gke.go",
+        "kubeconfig.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/gke",
     visibility = ["//visibility:public"],
     deps = [
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
+        "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go//container/apiv1",
         "@go_googleapis//google/container/v1:container_go_proto",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@org_golang_google_api//option",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )
