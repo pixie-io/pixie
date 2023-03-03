@@ -22,8 +22,10 @@ go_library(
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/steps",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/utils/shared/k8s",
+        "@com_github_masterminds_sprig_v3//:sprig",
         "@in_gopkg_yaml_v3//:yaml_v3",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",

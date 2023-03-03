@@ -71,6 +71,26 @@ message DeployStep {}
 // HealthCheck specifies how to run a single check on a workload.
 message HealthCheck {}
 
+// PatchSpec specifies how to patch the generated yamls for any deploy steps that produce yamls to
+// apply.
+message PatchSpec {
+  string yaml = 1 [ (gogoproto.customname) = "YAML" ];
+  PatchTarget target = 2;
+}
+
+// PatchTarget specifies how to select resources to patch. This fields are the same as in kustomize,
+// see: https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/
+// All fields are optional, but at least one must be specified.
+message PatchTarget {
+  string api_group = 1 [ (gogoproto.customname) = "APIGroup" ];
+  string api_version = 2 [ (gogoproto.customname) = "APIVersion" ];
+  string kind = 3;
+  string name = 4;
+  string namespace = 5;
+  string label_selector = 6;
+  string annotation_selector = 7;
+}
+
 // MetricSpec specifies how to record a set of metrics for an experiment.
 // Currently, PxL scripts are the only supported way of recording metrics.
 message MetricSpec {}
