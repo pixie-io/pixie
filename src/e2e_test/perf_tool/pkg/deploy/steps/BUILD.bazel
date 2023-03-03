@@ -21,5 +21,11 @@ go_library(
     srcs = ["common.go"],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/steps",
     visibility = ["//visibility:public"],
-    deps = ["//src/e2e_test/perf_tool/pkg/cluster"],
+    deps = [
+        "//src/e2e_test/perf_tool/pkg/cluster",
+        "//src/utils/shared/k8s",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+    ],
 )
