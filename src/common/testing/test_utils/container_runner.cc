@@ -233,6 +233,8 @@ StatusOr<std::string> ContainerRunner::Run(const std::chrono::seconds& timeout,
   return container_out;
 }
 
+Status ContainerRunner::Stdout(std::string* out) { return podman_.Stdout(out); }
+
 void ContainerRunner::Stop() {
   // Clean-up the container.
   if (podman_.IsRunning()) {
@@ -241,6 +243,6 @@ void ContainerRunner::Stop() {
   podman_.Wait();
 }
 
-void ContainerRunner::Wait() { podman_.Wait(); }
+void ContainerRunner::Wait(bool close_pipe) { podman_.Wait(close_pipe); }
 
 }  // namespace px
