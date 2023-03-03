@@ -198,8 +198,7 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const px::md::PIDStartedEve
   // Truncate cmdline to fit in the NATS message.
   auto cmdline = ev.pid_info.cmdline();
   if (cmdline.length() > kCmdlineTruncationLimit) {
-    cmdline.resize(kCmdlineTruncationLimit);
-    cmdline.append(kTruncatedMsg);
+    cmdline.replace(cmdline.begin() + kCmdlineTruncationLimit, cmdline.end(), kTruncatedMsg);
   }
   process_info->set_cmdline(cmdline);
   process_info->set_cid(ev.pid_info.cid());
