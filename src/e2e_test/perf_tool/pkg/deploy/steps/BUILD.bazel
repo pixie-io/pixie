@@ -18,7 +18,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "steps",
-    srcs = ["common.go"],
+    srcs = [
+        "common.go",
+        "prerendered.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/steps",
     visibility = ["//visibility:public"],
     deps = [

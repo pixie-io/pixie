@@ -66,7 +66,11 @@ message WorkloadSpec {
 }
 
 // DeployStep specifies a single step in the process of deploying a workload.
-message DeployStep {}
+message DeployStep {
+  oneof deploy_type {
+    PrerenderedDeploy prerendered = 1;
+  }
+}
 
 // HealthCheck specifies how to run a single check on a workload.
 message HealthCheck {
@@ -98,6 +102,15 @@ message PatchTarget {
   string namespace = 5;
   string label_selector = 6;
   string annotation_selector = 7;
+}
+
+// PrerenderedDeploy specifies a set of paths to YAMLs that are prerendered. In other words,
+// YAMLs that can be directly applied to deploy a workload and don't require image building and
+// tagging ala skaffold. PrerenderedDeploy is currently limited to deploying to a single namespace.
+// To deploy to multiple namespaces use separate DeploySteps for each namespace.
+message PrerenderedDeploy {
+  repeated string yaml_paths = 1 [ (gogoproto.customname) = "YAMLPaths" ];
+  repeated PatchSpec patches = 2;
 }
 
 // MetricSpec specifies how to record a set of metrics for an experiment.
