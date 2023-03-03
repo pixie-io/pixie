@@ -52,7 +52,17 @@ message ExperimentSpec {
 // WorkloadSpec specifies how to run a particular workload.
 // Example workloads include: Vizier, Sock shop, or an HTTP protocol loadtest (see
 // src/e2e_test/protocol_loadtest).
-message WorkloadSpec {}
+message WorkloadSpec {
+  string name = 1;
+  repeated DeployStep deploy_steps = 2;
+  repeated HealthCheck healthchecks = 3;
+}
+
+// DeployStep specifies a single step in the process of deploying a workload.
+message DeployStep {}
+
+// HealthCheck specifies how to run a single check on a workload.
+message HealthCheck {}
 
 // MetricSpec specifies how to record a set of metrics for an experiment.
 // Currently, PxL scripts are the only supported way of recording metrics.
