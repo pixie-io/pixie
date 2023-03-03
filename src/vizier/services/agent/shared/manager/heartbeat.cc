@@ -201,7 +201,7 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const px::md::PIDStartedEve
     cmdline.resize(kCmdlineTruncationLimit);
     cmdline.append(kTruncatedMsg);
   }
-  process_info->set_cmdline(ev.pid_info.cmdline());
+  process_info->set_cmdline(cmdline);
   process_info->set_cid(ev.pid_info.cid());
 }
 
