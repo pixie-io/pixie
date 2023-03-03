@@ -75,7 +75,13 @@ class ContainerRunner {
   /**
    * Wait for container to terminate.
    */
-  void Wait();
+  void Wait(bool close_pipe = true);
+
+  /**
+   * Returns the stdout of the container. Needs to be combined with the full output from Run
+   * to ensure the entire result is present.
+   */
+  Status Stdout(std::string* out);
 
   /**
    * The PID of the process within the container.
