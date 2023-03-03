@@ -512,6 +512,19 @@ class RedisContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "# Server initialized";
 };
 
+class RedisClientContainer : public ContainerRunner {
+ public:
+  RedisClientContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "redis_client";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 //-----------------------------------------------------------------------------
 // RabbitMQ
 //-----------------------------------------------------------------------------
