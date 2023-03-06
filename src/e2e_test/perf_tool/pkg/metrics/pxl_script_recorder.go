@@ -215,6 +215,11 @@ func newHandlerFromSpec(spec *experimentpb.PxLScriptOutputSpec, resultCh chan<- 
 			resultCh: resultCh,
 			spec:     spec.GetSingleMetric(),
 		}, nil
+	case *experimentpb.PxLScriptOutputSpec_DataLossCounter:
+		return &dataLossHandler{
+			resultCh: resultCh,
+			spec:     spec.GetDataLossCounter(),
+		}, nil
 	}
 	return nil, errors.New("invalid pxl script output spec type")
 }

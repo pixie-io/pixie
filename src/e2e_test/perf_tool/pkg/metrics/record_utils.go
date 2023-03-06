@@ -69,6 +69,25 @@ func getColumnAsFloat(r *types.Record, colName string, specName string) (float64
 	return val, nil
 }
 
+func getColumnAsInt64(r *types.Record, colName string, specName string) (int64, error) {
+	d, err := getDatum(r, colName, specName)
+	if err != nil {
+		return 0.0, err
+	}
+	var val int64
+	switch d.Type() {
+	case vizierpb.INT64:
+		val = d.(*types.Int64Value).Value()
+	default:
+		return 0.0, fmt.Errorf(
+			"'%s' specified an int64 column named '%s', but that column is not an INT64 value",
+			specName,
+			colName,
+		)
+	}
+	return val, nil
+}
+
 func getColumnAsString(r *types.Record, colName string, specName string) (string, error) {
 	d, err := getDatum(r, colName, specName)
 	if err != nil {

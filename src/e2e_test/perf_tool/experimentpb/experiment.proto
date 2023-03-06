@@ -180,6 +180,7 @@ message PxLScriptOutputList {
 message PxLScriptOutputSpec {
   oneof output_spec {
     SingleMetricPxLOutput single_metric = 1;
+    DataLossCounterOutput data_loss_counter = 2;
   }
 }
 
@@ -190,6 +191,17 @@ message SingleMetricPxLOutput {
   string metric_name = 2;
   string value_col = 3;
   repeated string tag_cols = 4;
+}
+
+// DataLossCounterOutput specifies using a particular column of a PxL script to generate a data loss
+// metric. The seq_id_col of the PxL script should output a sequence of increasing ids, such that
+// any missing ids from the sequence indicate an instance of data loss. These sequence IDs are then
+// tracked, and any missing ones contribute to a data loss metric.
+message DataLossCounterOutput {
+  string timestamp_col = 1;
+  string metric_name = 2;
+  string seq_id_col = 3 [ (gogoproto.customname) = "SeqIDCol" ];
+  google.protobuf.Duration output_period = 4;
 }
 
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
