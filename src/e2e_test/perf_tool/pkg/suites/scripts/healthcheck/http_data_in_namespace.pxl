@@ -14,23 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+import px
 
-go_library(
-    name = "suites",
-    srcs = [
-        "clusters.go",
-        "suites.go",
-        "workloads.go",
-    ],
-    embedsrcs = [
-        "scripts/healthcheck/http_data_in_namespace.pxl",
-        "scripts/healthcheck/vizier.pxl",
-    ],
-    importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/suites",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
-        "@com_github_sirupsen_logrus//:logrus",
-    ],
-)
+df = px.DataFrame('http_events', start_time='-30s')
+df.namespace = df.ctx['namespace']
+df = df[df.namespace == '{{.Namespace}}']
+
+df = df.agg(count=('time_', px.count))
+df.success = (df.count > 0)
+px.display(df[['success']])
