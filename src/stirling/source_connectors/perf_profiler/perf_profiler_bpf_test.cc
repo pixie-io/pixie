@@ -130,21 +130,27 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   void StartAll() override {
     ASSERT_TRUE(fs::Exists(binary_path_));
     ASSERT_TRUE(fs::Exists(kTasksetBinPath));
+    const auto processor_count = std::thread::hardware_concurrency();
+    if (processor_count > 0) {
+      ASSERT_GE(processor_count, kNumSubProcs);
+    }
+
     const system::ProcParser proc_parser;
 
     for (size_t i = 0; i < kNumSubProcs; ++i) {
-      sub_processes_.push_back(std::make_unique<SubProcess>());
+      auto sub_process = std::make_unique<SubProcess>();
 
       // Run the sub-process & pin it to a CPU.
-      const std::string kTasksetBinPath = "/usr/bin/taskset";
-      ASSERT_OK(sub_processes_[i]->Start({kTasksetBinPath, "-c", std::to_string(i), binary_path_}));
+      std::string mask = absl::StrFormat("%#x", 1 << i);
+      ASSERT_OK(sub_process->Start({std::string(kTasksetBinPath), mask, binary_path_}));
 
       // Grab the PID and generate a UPID.
-      const int pid = sub_processes_[i]->child_pid();
+      const int pid = sub_process->child_pid();
       ASSERT_OK_AND_ASSIGN(const uint64_t ts, proc_parser.GetPIDStartTimeTicks(pid));
       pids_.push_back(pid);
       struct_upids_.push_back({{static_cast<uint32_t>(pid)}, ts});
       upids_.emplace(0, pid, ts);
+      sub_processes_.emplace_back(std::move(sub_process));
     }
   }
 
@@ -158,7 +164,7 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   }
 
  private:
-  static constexpr std::string_view kTasksetBinPath = "/usr/bin/taskset";
+  static constexpr std::string_view kTasksetBinPath = "/bin/taskset";
   std::vector<std::unique_ptr<SubProcess>> sub_processes_;
   const std::string binary_path_;
 };
