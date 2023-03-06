@@ -56,7 +56,7 @@ var RunCmd = &cobra.Command{
 		viper.BindPFlags(cmd.Flags())
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCmd(context.Background(), cmd)
+		return runCmdWithInterrruptableContext(runCmd, cmd)
 	},
 }
 
