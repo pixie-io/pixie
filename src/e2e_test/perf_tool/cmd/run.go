@@ -33,11 +33,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/gke"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/local"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/run"
 )
@@ -75,6 +77,8 @@ func init() {
 
 	RunCmd.Flags().String("container_repo", "gcr.io/pl-dev-infra", "The container repo to push necessary containers to for the experiment")
 
+	RunCmd.Flags().Bool("use_local_cluster", false, "Use your local kubeconfig to get the cluster to use instead of creating a GKE cluster")
+
 	RootCmd.AddCommand(RunCmd)
 }
 
@@ -110,16 +114,32 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 	}
 
 	var c cluster.Provider
-	c, err = gke.NewClusterProvider(&gke.ClusterOptions{
-		Project:       viper.GetString("gke_project"),
-		Zone:          viper.GetString("gke_zone"),
-		Network:       viper.GetString("gke_network"),
-		Subnet:        viper.GetString("gke_subnet"),
-		SecurityGroup: viper.GetString("gke_security_group"),
-	})
-	if err != nil {
-		log.WithError(err).Error("failed to create GKE cluster provider")
-		return err
+	if viper.GetBool("use_local_cluster") {
+		c = &local.ClusterProvider{}
+		numNodes, err := getNumNodesInCluster(ctx, c)
+		if err != nil {
+			log.WithError(err).Error("failed to get number of nodes in local cluster")
+			return err
+		}
+		if len(specs) > 1 {
+			err = errors.New("cannot run multiple experiments on local cluster")
+			return err
+		}
+		// We set the cluster spec to match the number of nodes in the local cluster.
+		// Otherwise, healthchecks that rely on cluster spec's num nodes will fail.
+		specs[0].ClusterSpec.NumNodes = int32(numNodes)
+	} else {
+		c, err = gke.NewClusterProvider(&gke.ClusterOptions{
+			Project:       viper.GetString("gke_project"),
+			Zone:          viper.GetString("gke_zone"),
+			Network:       viper.GetString("gke_network"),
+			Subnet:        viper.GetString("gke_subnet"),
+			SecurityGroup: viper.GetString("gke_security_group"),
+		})
+		if err != nil {
+			log.WithError(err).Error("failed to create GKE cluster provider")
+			return err
+		}
 	}
 
 	resultTable, err := createResultTable()
@@ -218,6 +238,20 @@ func createSpecTable() (*bq.Table, error) {
 	bqDatasetLoc := viper.GetString("bq_dataset_loc")
 	var timePartitioning *bigquery.TimePartitioning
 	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, bq.SpecRow{})
+}
+
+func getNumNodesInCluster(ctx context.Context, c cluster.Provider) (int, error) {
+	clusterCtx, cleanup, err := c.GetCluster(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer cleanup()
+
+	nl, err := clusterCtx.Clientset().CoreV1().Nodes().List(ctx, v1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Error("failed to list cluster nodes")
+	}
+	return len(nl.Items), nil
 }
 
 func getWorkspaceRoot() (string, error) {

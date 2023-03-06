@@ -30,6 +30,7 @@ go_library(
         "//src/e2e_test/perf_tool/pkg/bq",
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/e2e_test/perf_tool/pkg/cluster/gke",
+        "//src/e2e_test/perf_tool/pkg/cluster/local",
         "//src/e2e_test/perf_tool/pkg/pixie",
         "//src/e2e_test/perf_tool/pkg/run",
         "//src/pixie_cli/pkg/components",
@@ -39,5 +40,6 @@ go_library(
         "@com_github_spf13_cobra//:cobra",
         "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_bigquery//:bigquery",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
     ],
 )
