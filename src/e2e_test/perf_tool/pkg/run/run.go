@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -162,6 +163,25 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 		return nil
 	}
 	log.Info("Experiment finished tearing down")
+
+	// The experiment succeeded so we write the spec to bigquery.
+	encodedSpec, err := (&jsonpb.Marshaler{}).MarshalToString(spec)
+	if err != nil {
+		return err
+	}
+	specRow := &bq.SpecRow{
+		ExperimentID: expID.String(),
+		Spec:         encodedSpec,
+	}
+
+	inserter := r.specTable.Inserter()
+	inserter.SkipInvalidRows = false
+
+	putCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	if err := inserter.Put(putCtx, specRow); err != nil {
+		return err
+	}
 
 	metricsChCloseOnce.Do(func() { close(metricsResultCh) })
 	r.wg.Wait()
