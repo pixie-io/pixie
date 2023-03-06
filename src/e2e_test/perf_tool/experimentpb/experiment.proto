@@ -61,4 +61,13 @@ message MetricSpec {}
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
 // Cluster parameters currently include things like machine type, and number of nodes in the
 // cluster.
-message ClusterSpec {}
+message ClusterSpec {
+  int32 num_nodes = 1;
+  NodeSpec node = 2;
+}
+
+// NodeSpec specifies parameters for each node in the cluster. For example, the machine type of the
+// node.
+message NodeSpec {
+  string machine_type = 1;
+}
