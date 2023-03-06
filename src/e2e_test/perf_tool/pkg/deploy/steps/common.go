@@ -19,7 +19,17 @@
 package steps
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
+
+	"gopkg.in/yaml.v3"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 // DeployStep is the interface for running a stage in a given workloads deploy process.
@@ -30,4 +40,83 @@ type DeployStep interface {
 	Deploy(*cluster.Context) ([]string, error)
 	// Name returns a printable name for the deploy step.
 	Name() string
+}
+
+type renderedYAML struct {
+	namespace string
+	yaml      []byte
+}
+
+// Unused will be removed when renderedYAML is used within this package.
+func Unused() {
+	_ = (&renderedYAML{}).deploy(nil)
+}
+
+func (r *renderedYAML) deploy(clusterCtx *cluster.Context) error {
+	ns, err := r.getNamespace()
+	if err != nil {
+		return err
+	}
+	if err := createNamespaceIfNotExists(clusterCtx, ns); err != nil {
+		return err
+	}
+	return k8s.ApplyYAML(
+		clusterCtx.Clientset(),
+		clusterCtx.RestConfig(),
+		ns,
+		bytes.NewReader(r.yaml),
+		true,
+	)
+}
+
+type k8sYAML struct {
+	Metadata *metadata
+}
+type metadata struct {
+	Namespace string
+}
+
+func (r *renderedYAML) getNamespace() (string, error) {
+	if r.namespace != "" {
+		return r.namespace, nil
+	}
+
+	namespaces := make(map[string]bool)
+	namespace := ""
+
+	d := yaml.NewDecoder(bytes.NewReader(r.yaml))
+	for {
+		var y k8sYAML
+		if err := d.Decode(&y); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err
+		}
+		if y.Metadata.Namespace != "" {
+			namespaces[y.Metadata.Namespace] = true
+			namespace = y.Metadata.Namespace
+		}
+	}
+
+	if len(namespaces) > 1 {
+		return "", errors.New("Rendered YAML deploys (skaffold or prerendered) only support a single namespace per DeployStep")
+	}
+
+	return namespace, nil
+}
+
+func createNamespaceIfNotExists(clusterCtx *cluster.Context, namespace string) error {
+	_, err := clusterCtx.Clientset().CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
+	if err == nil {
+		// The namespace already exists skip creating it.
+		return nil
+	}
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	_, err = clusterCtx.Clientset().CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	return err
 }
