@@ -86,6 +86,7 @@ func init() {
 	RunCmd.Flags().Bool("use_local_cluster", false, "Use your local kubeconfig to get the cluster to use instead of creating a GKE cluster")
 
 	RunCmd.Flags().Int("max_retries", 3, "Number of times to retry a failing experiment")
+	RunCmd.Flags().Int("num_runs", 1, "Number of times to repeat each experiment")
 
 	RootCmd.AddCommand(RunCmd)
 }
@@ -163,18 +164,21 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 
 	containerRegistryRepo := viper.GetString("container_repo")
 	maxRetries := viper.GetInt("max_retries")
+	numRuns := viper.GetInt("num_runs")
 
 	wg := sync.WaitGroup{}
 	for _, spec := range specs {
 		spec.Tags = append(spec.Tags, tags...)
 		spec.CommitSHA = commitSHA
-		wg.Add(1)
-		go func(spec *experimentpb.ExperimentSpec) {
-			defer wg.Done()
-			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo, maxRetries); err != nil {
-				log.WithError(err).Error("failed to run experiment")
-			}
-		}(spec)
+		for i := 0; i < numRuns; i++ {
+			wg.Add(1)
+			go func(spec *experimentpb.ExperimentSpec) {
+				defer wg.Done()
+				if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo, maxRetries); err != nil {
+					log.WithError(err).Error("failed to run experiment")
+				}
+			}(spec)
+		}
 	}
 	wg.Wait()
 	return nil
