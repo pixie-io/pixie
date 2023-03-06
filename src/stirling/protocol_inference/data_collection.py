@@ -16,26 +16,28 @@
 
 import os
 import subprocess
-import json
 import argparse
+
 
 def create_pod2pid(runtime):
     """
     Builds a mapping of running pod names to host pids.
     """
 
-    # This command prints one line of output per container where each line is the pid of the container, a 
+    # This command prints one line of output per container where each line is the pid of the container, a
     # single space and the name of the k8s pod determined by the io.kubernetes.pod.name container label.
     # See the output below for example output:
 
-    # $ sudo crictl ps -q | sudo xargs crictl inspect --template '{{.info.pid}} {{index .info.config.labels "io.kubernetes.pod.name"}}' -o go-template
+    # $ sudo crictl ps -q | sudo xargs crictl inspect --template \
+    #     '{{.info.pid}} {{index .info.config.labels "io.kubernetes.pod.name"}}' -o go-template
     # 3635260 vizier-pem-sx7pr
     # 3634678 kelvin-cdf78c57c-qlzlb
 
     list_ps_cmd = '''kubectl node-shell ''' + node + ''' -- sudo bash -c "crictl ps -q | \
-    xargs crictl inspect -o go-template --template '{{.info.pid}} {{index .info.config.labels \\"io.kubernetes.pod.name\\"}}'"'''
+    xargs crictl inspect -o go-template \
+    --template '{{.info.pid}} {{index .info.config.labels \\"io.kubernetes.pod.name\\"}}'"'''
     if runtime == 'docker':
-      list_ps_cmd = '''kubectl node-shell ''' + node + ''' -- sudo bash -c "docker ps -q | \
+        list_ps_cmd = '''kubectl node-shell ''' + node + ''' -- sudo bash -c "docker ps -q | \
     xargs docker inspect --format '{{.State.Pid}} {{index .Config.Labels \\"io.kubernetes.pod.name\\"}}'"'''
 
     pod2pid = {}
@@ -46,8 +48,8 @@ def create_pod2pid(runtime):
         split_row = row.split()
 
         if len(split_row) != 2:
-          print(f"Failed to parse config for row: {row}. Skipping to new pid")
-          continue
+            print(f"Failed to parse config for row: {row}. Skipping to new pid")
+            continue
 
         pid, pod_name = split_row
         pod2pid[pod_name] = pid
