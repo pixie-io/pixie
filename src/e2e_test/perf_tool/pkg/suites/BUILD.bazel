@@ -18,7 +18,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "suites",
-    srcs = ["suites.go"],
+    srcs = [
+        "clusters.go",
+        "suites.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/suites",
     visibility = ["//visibility:public"],
     deps = ["//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto"],
