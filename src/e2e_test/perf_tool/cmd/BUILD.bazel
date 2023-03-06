@@ -18,10 +18,20 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "cmd",
-    srcs = ["root.go"],
+    srcs = [
+        "root.go",
+        "run.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
+        "//src/e2e_test/perf_tool/pkg/bq",
+        "//src/e2e_test/perf_tool/pkg/cluster",
+        "//src/e2e_test/perf_tool/pkg/pixie",
+        "//src/e2e_test/perf_tool/pkg/run",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//proto",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_cobra//:cobra",
         "@com_github_spf13_viper//:viper",
