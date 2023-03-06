@@ -76,12 +76,22 @@ message DeployStep {
 message HealthCheck {
   oneof check_type {
     K8SPodsReadyCheck k8s = 1 [ (gogoproto.customname) = "K8S" ];
+    PxLHealthCheck pxl = 2 [ (gogoproto.customname) = "PxL" ];
   }
 }
 
 // K8sPodsReadyCheck checks that all of the pods in the given namespace have a status of RUNNING.
 message K8SPodsReadyCheck {
   string namespace = 1;
+}
+
+// PxLHealthCheck checks that a component is live by running a PxL script. The PxL script should
+// return a single boolean column where true means healthy.
+message PxLHealthCheck {
+  // Healthcheck scripts are templatized and passed the ClusterSpec as a template argument.
+  // The script should write a single true or false row in the column named by success_column.
+  string script = 1;
+  string success_column = 2;
 }
 
 // PatchSpec specifies how to patch the generated yamls for any deploy steps that produce yamls to

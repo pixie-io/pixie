@@ -67,6 +67,8 @@ func NewWorkload(pxCtx *pixie.Context, containerRegistryRepo string, spec *exper
 		switch checkSpec.CheckType.(type) {
 		case *experimentpb.HealthCheck_K8S:
 			healthchecks[i] = checks.NewK8SHealthCheck(checkSpec.GetK8S())
+		case *experimentpb.HealthCheck_PxL:
+			healthchecks[i] = checks.NewPxLHealthCheck(pxCtx, checkSpec.GetPxL())
 		}
 	}
 
