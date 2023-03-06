@@ -152,6 +152,17 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 		return err
 	}
 
+	// Add a row to the results with the time when workloads were deployed.
+	row := &metrics.ResultRow{
+		Timestamp: time.Now(),
+		Name:      "workloads_deployed",
+		Value:     0.0,
+	}
+	select {
+	case <-ctx.Done():
+	case metricsResultCh <- row:
+	}
+
 	// Wait for the experiment duration specified in the RunSpec.
 	// During this time, Vizier and workloads are deployed and metrics are recording.
 	dur, err := types.DurationFromProto(spec.RunSpec.Duration)
