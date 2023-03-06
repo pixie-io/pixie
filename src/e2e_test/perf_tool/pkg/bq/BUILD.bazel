@@ -20,6 +20,7 @@ go_library(
     name = "bq",
     srcs = [
         "batch_inserter.go",
+        "row.go",
         "table.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/bq",
