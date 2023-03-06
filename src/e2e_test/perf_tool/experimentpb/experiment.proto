@@ -155,7 +155,20 @@ message PxLScriptOutputList {
 }
 
 // PxLScriptOutputSpec specifies how to extract a metric from the PxL script.
-message PxLScriptOutputSpec {}
+message PxLScriptOutputSpec {
+  oneof output_spec {
+    SingleMetricPxLOutput single_metric = 1;
+  }
+}
+
+// SingleMetricPxLOutput specifies getting a single metric from a PxL script, as the value of a
+// column.
+message SingleMetricPxLOutput {
+  string timestamp_col = 1;
+  string metric_name = 2;
+  string value_col = 3;
+  repeated string tag_cols = 4;
+}
 
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
 // Cluster parameters currently include things like machine type, and number of nodes in the
