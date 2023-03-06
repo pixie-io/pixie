@@ -20,6 +20,7 @@ package run
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
@@ -74,6 +75,47 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	}
 	defer r.clusterCleanup()
 	defer r.clusterCtx.Close()
+
+	log.Info("Deploying Vizier")
+	if err := r.vizier.Start(r.clusterCtx); err != nil {
+		return fmt.Errorf("failed to deploy vizier: %w", err)
+	}
+	defer r.vizier.Close()
+
+	log.Info("Waiting for Vizier HealthCheck")
+	if err := r.vizier.WaitForHealthCheck(ctx, r.clusterCtx, spec.ClusterSpec); err != nil {
+		return err
+	}
+
+	// Deploy the workloads.
+	log.Info("Deploying workloads")
+	for i, w := range r.workloads {
+		log.WithField("workload", spec.WorkloadSpecs[i].Name).Trace("deploying workload")
+		if err := w.Start(r.clusterCtx); err != nil {
+			return fmt.Errorf("failed to start workload deployment: %w", err)
+		}
+		defer w.Close()
+	}
+
+	// Wait for workload healthchecks.
+	eg = errgroup.Group{}
+	for i, w := range r.workloads {
+		name := spec.WorkloadSpecs[i].Name
+		workload := w
+		eg.Go(func() error {
+			log.WithField("workload", name).Trace("Waiting for workload healthcheck")
+			if err := workload.WaitForHealthCheck(ctx, r.clusterCtx, spec.ClusterSpec); err != nil {
+				return err
+			}
+			log.WithField("workload", name).Trace("HealthCheck passed")
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
