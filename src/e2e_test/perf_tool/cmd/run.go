@@ -37,6 +37,7 @@ import (
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/gke"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/run"
 )
@@ -65,6 +66,12 @@ func init() {
 	RunCmd.Flags().String("bq_project", "pl-pixies", "The gcloud project to put bigquery results/specs in")
 	RunCmd.Flags().String("bq_dataset", "px_perf", "The name of the bigquery dataset to put results/specs in")
 	RunCmd.Flags().String("bq_dataset_loc", "us-west1", "The gcloud region for the bigquery dataset")
+
+	RunCmd.Flags().String("gke_project", "pl-pixies", "The gcloud project to use for GKE clusters")
+	RunCmd.Flags().String("gke_zone", "us-west1-a", "The gcloud zone to use for GKE clusters")
+	RunCmd.Flags().String("gke_network", "dev", "The gcloud network to use for GKE clusters")
+	RunCmd.Flags().String("gke_subnet", "", "The subnetwork to use for GKE clusters, if empty a subnetwork will be created on demand")
+	RunCmd.Flags().String("gke_security_group", "gke-security-groups@pixielabs.ai", "The security group to use for GKE clusters")
 
 	RootCmd.AddCommand(RunCmd)
 }
@@ -101,6 +108,17 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 	}
 
 	var c cluster.Provider
+	c, err = gke.NewClusterProvider(&gke.ClusterOptions{
+		Project:       viper.GetString("gke_project"),
+		Zone:          viper.GetString("gke_zone"),
+		Network:       viper.GetString("gke_network"),
+		Subnet:        viper.GetString("gke_subnet"),
+		SecurityGroup: viper.GetString("gke_security_group"),
+	})
+	if err != nil {
+		log.WithError(err).Error("failed to create GKE cluster provider")
+		return err
+	}
 
 	resultTable, err := createResultTable()
 	if err != nil {
