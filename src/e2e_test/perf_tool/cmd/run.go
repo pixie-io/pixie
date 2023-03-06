@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 
+	"cloud.google.com/go/bigquery"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
@@ -60,6 +61,10 @@ func init() {
 
 	RunCmd.Flags().String("api_key", "", "The Pixie API key to use for deploying pixie")
 	RunCmd.Flags().String("cloud_addr", "withpixie.ai:443", "The Pixie Cloud address to use for deploying pixie")
+
+	RunCmd.Flags().String("bq_project", "pl-pixies", "The gcloud project to put bigquery results/specs in")
+	RunCmd.Flags().String("bq_dataset", "px_perf", "The name of the bigquery dataset to put results/specs in")
+	RunCmd.Flags().String("bq_dataset_loc", "us-west1", "The gcloud region for the bigquery dataset")
 
 	RootCmd.AddCommand(RunCmd)
 }
@@ -97,6 +102,17 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 
 	var c cluster.Provider
 
+	resultTable, err := createResultTable()
+	if err != nil {
+		log.WithError(err).Error("failed to create results table")
+		return err
+	}
+	specTable, err := createSpecTable()
+	if err != nil {
+		log.WithError(err).Error("failed to create spec table")
+		return err
+	}
+
 	wg := sync.WaitGroup{}
 	for _, spec := range specs {
 		spec.Tags = append(spec.Tags, tags...)
@@ -104,7 +120,7 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		wg.Add(1)
 		go func(spec *experimentpb.ExperimentSpec) {
 			defer wg.Done()
-			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, nil, nil, ""); err != nil {
+			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, ""); err != nil {
 				log.WithError(err).Error("failed to run experiment")
 			}
 		}(spec)
@@ -161,6 +177,25 @@ func getExperimentSpecs() ([]*experimentpb.ExperimentSpec, error) {
 		return nil, err
 	}
 	return []*experimentpb.ExperimentSpec{spec}, nil
+}
+
+func createResultTable() (*bq.Table, error) {
+	bqProject := viper.GetString("bq_project")
+	bqDataset := viper.GetString("bq_dataset")
+	bqDatasetLoc := viper.GetString("bq_dataset_loc")
+	timePartitioning := &bigquery.TimePartitioning{
+		Type:  bigquery.DayPartitioningType,
+		Field: "timestamp",
+	}
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "results", timePartitioning, bq.ResultRow{})
+}
+
+func createSpecTable() (*bq.Table, error) {
+	bqProject := viper.GetString("bq_project")
+	bqDataset := viper.GetString("bq_dataset")
+	bqDatasetLoc := viper.GetString("bq_dataset_loc")
+	var timePartitioning *bigquery.TimePartitioning
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, bq.SpecRow{})
 }
 
 func getWorkspaceRoot() (string, error) {
