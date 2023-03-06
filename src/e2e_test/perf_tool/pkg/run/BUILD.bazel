@@ -26,6 +26,7 @@ go_library(
         "//src/e2e_test/perf_tool/pkg/bq",
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/e2e_test/perf_tool/pkg/deploy",
+        "//src/e2e_test/perf_tool/pkg/metrics",
         "//src/e2e_test/perf_tool/pkg/pixie",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//types",
