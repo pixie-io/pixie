@@ -26,8 +26,10 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
@@ -78,6 +80,8 @@ func init() {
 	RunCmd.Flags().String("container_repo", "gcr.io/pl-dev-infra", "The container repo to push necessary containers to for the experiment")
 
 	RunCmd.Flags().Bool("use_local_cluster", false, "Use your local kubeconfig to get the cluster to use instead of creating a GKE cluster")
+
+	RunCmd.Flags().Int("max_retries", 3, "Number of times to retry a failing experiment")
 
 	RootCmd.AddCommand(RunCmd)
 }
@@ -154,6 +158,7 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 	}
 
 	containerRegistryRepo := viper.GetString("container_repo")
+	maxRetries := viper.GetInt("max_retries")
 
 	wg := sync.WaitGroup{}
 	for _, spec := range specs {
@@ -162,13 +167,29 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		wg.Add(1)
 		go func(spec *experimentpb.ExperimentSpec) {
 			defer wg.Done()
-			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo); err != nil {
+			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo, maxRetries); err != nil {
 				log.WithError(err).Error("failed to run experiment")
 			}
 		}(spec)
 	}
 	wg.Wait()
 	return nil
+}
+
+type maxRetryBackoff struct {
+	MaxRetries int
+	retries    int
+}
+
+func (bo *maxRetryBackoff) NextBackOff() time.Duration {
+	bo.retries++
+	if bo.retries >= bo.MaxRetries {
+		return backoff.Stop
+	}
+	return time.Duration(0)
+}
+func (bo *maxRetryBackoff) Reset() {
+	bo.retries = 0
 }
 
 func runExperiment(
@@ -180,19 +201,29 @@ func runExperiment(
 	resultTable *bq.Table,
 	specTable *bq.Table,
 	containerRegistryRepo string,
+	maxRetries int,
 ) error {
-	pxCtx := pixie.NewContext(pxAPIKey, pxCloudAddr)
-	r := run.NewRunner(c, pxCtx, resultTable, specTable, containerRegistryRepo)
-	expID, err := uuid.NewV4()
-	if err != nil {
-		return err
+	bo := &maxRetryBackoff{
+		MaxRetries: maxRetries,
 	}
-	log.WithField("experiment_id", expID).Info("Running experiment")
+	op := func() error {
+		pxCtx := pixie.NewContext(pxAPIKey, pxCloudAddr)
+		r := run.NewRunner(c, pxCtx, resultTable, specTable, containerRegistryRepo)
+		expID, err := uuid.NewV4()
+		if err != nil {
+			return err
+		}
+		log.WithField("experiment_id", expID).Info("Running experiment")
 
-	if err := r.RunExperiment(ctx, expID, spec); err != nil {
-		return err
+		if err := r.RunExperiment(ctx, expID, spec); err != nil {
+			return err
+		}
+		return nil
 	}
-	return nil
+	notify := func(err error, dur time.Duration) {
+		log.WithError(err).Error("failed to run experiment, retrying...")
+	}
+	return backoff.RetryNotify(op, bo, notify)
 }
 
 func loadExperimentSpec(path string) (*experimentpb.ExperimentSpec, error) {
