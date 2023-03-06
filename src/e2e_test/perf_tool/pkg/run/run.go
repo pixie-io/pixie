@@ -22,6 +22,8 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
@@ -36,6 +38,9 @@ type Runner struct {
 	resultTable           *bq.Table
 	specTable             *bq.Table
 	containerRegistryRepo string
+
+	clusterCtx     *cluster.Context
+	clusterCleanup func()
 }
 
 // NewRunner creates a new Runner for the given contexts.
@@ -51,5 +56,30 @@ func NewRunner(c cluster.Provider, pxCtx *pixie.Context, resultTable *bq.Table, 
 
 // RunExperiment runs an experiment according to the given ExperimentSpec.
 func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *experimentpb.ExperimentSpec) error {
+	eg := errgroup.Group{}
+	eg.Go(func() error { return r.getCluster(ctx, spec.ClusterSpec) })
+
+	if err := eg.Wait(); err != nil {
+		if r.clusterCleanup != nil {
+			r.clusterCleanup()
+		}
+		if r.clusterCtx != nil {
+			r.clusterCtx.Close()
+		}
+		return err
+	}
+	defer r.clusterCleanup()
+	defer r.clusterCtx.Close()
+	return nil
+}
+
+func (r *Runner) getCluster(ctx context.Context, spec *experimentpb.ClusterSpec) error {
+	log.Info("Getting cluster")
+	clusterCtx, cleanup, err := r.c.GetCluster(ctx, spec)
+	if err != nil {
+		return err
+	}
+	r.clusterCtx = clusterCtx
+	r.clusterCleanup = cleanup
 	return nil
 }
