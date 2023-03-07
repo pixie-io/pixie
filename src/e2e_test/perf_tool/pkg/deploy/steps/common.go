@@ -53,12 +53,6 @@ type renderedYAML struct {
 	yaml      []byte
 }
 
-// Unused will be removed when renderedYAML is used within this package.
-func Unused() {
-	_ = (&renderedYAML{}).deploy(nil)
-	_ = (&renderedYAML{}).patch(nil)
-}
-
 func (r *renderedYAML) deploy(clusterCtx *cluster.Context) error {
 	ns, err := r.getNamespace()
 	if err != nil {

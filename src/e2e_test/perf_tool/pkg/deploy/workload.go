@@ -54,8 +54,14 @@ type workloadImpl struct {
 
 // NewWorkload creates a new Workload capable of deploying according to the spec given.
 func NewWorkload(pxCtx *pixie.Context, containerRegistryRepo string, spec *experimentpb.WorkloadSpec) (Workload, error) {
-	// Add deploy steps and healthchecks from spec once those are implemented.
 	deploySteps := make([]steps.DeployStep, len(spec.DeploySteps))
+	for i, stepSpec := range spec.DeploySteps {
+		switch stepSpec.DeployType.(type) {
+		case *experimentpb.DeployStep_Prerendered:
+			deploySteps[i] = steps.NewPrerenderedDeploy(stepSpec.GetPrerendered())
+		}
+	}
+	// Add healthchecks from spec once those are implemented.
 	healthchecks := make([]checks.HealthCheck, len(spec.Healthchecks))
 	for i, checkSpec := range spec.Healthchecks {
 		switch checkSpec.CheckType.(type) {
