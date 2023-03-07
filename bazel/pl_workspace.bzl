@@ -62,6 +62,8 @@ def pl_workspace_setup():
     k8s_repositories()
     k8s_go_deps(go_version = None)
 
+    qemu_with_kernel_deps()
+
 def pl_container_images():
     _package_manager_setup()
     _container_images_setup()
@@ -81,4 +83,19 @@ def pl_model_files():
         url = "https://storage.googleapis.com/pixie-dev-public/ml-data/models/current-sentencepiece-model.proto",
         downloaded_file_path = "sentencepiece.proto",
         sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
+    )
+
+def qemu_with_kernel_deps():
+    http_file(
+        name = "linux_build_5_18_19_x86_64",
+        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-5.18.19.tar.gz",
+        sha256 = "3da6271916d253810e4ef2e587dd426ad1f9d1bbb98b5624994c378604e3de23",
+        downloaded_file_path = "linux-build.tar.gz",
+    )
+    http_file(
+        name = "busybox",
+        url = "https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox",
+        sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
+        downloaded_file_path = "busybox",
+        executable = True,
     )
