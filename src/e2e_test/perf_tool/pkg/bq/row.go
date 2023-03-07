@@ -19,7 +19,12 @@
 package bq
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/gofrs/uuid"
+
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/metrics"
 )
 
 // ResultRow represents a single datapoint for a single metric, to be stored in bigquery.
@@ -44,4 +49,19 @@ type SpecRow struct {
 	// CommitTopoOrder is the number of commits since the beginning of history for the commit this experiment was run on.
 	// This is used to order experiments in datastudio views.
 	CommitTopoOrder int `bigquery:"commit_topo_order"`
+}
+
+// MetricsRowToResultRow converts a `metrics.ResultRow` into a `bq.ResultRow`.
+func MetricsRowToResultRow(expID uuid.UUID, row *metrics.ResultRow) (*ResultRow, error) {
+	encodedTags, err := json.Marshal(row.Tags)
+	if err != nil {
+		return nil, err
+	}
+	return &ResultRow{
+		ExperimentID: expID.String(),
+		Timestamp:    row.Timestamp,
+		Name:         row.Name,
+		Value:        row.Value,
+		Tags:         string(encodedTags),
+	}, nil
 }
