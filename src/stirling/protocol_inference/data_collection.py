@@ -95,7 +95,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Protocol Dataset Collection")
     parser.add_argument('--node', type=str, required=True)
     parser.add_argument('--container-runtime-cli',
-                        type=str, default='crictl', help='The cli to use to find running containers, defaults to crictl')
+                        type=str, default='crictl',
+                        help='The cli to use to find running containers, defaults to crictl')
     parser.add_argument('--pods', '-p', type=str, default="pod_names.txt")
     parser.add_argument('--duration', type=int, default=30)
     args = parser.parse_args()
