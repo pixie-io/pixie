@@ -23,11 +23,17 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
+	"os/exec"
+	"path"
+	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
@@ -50,6 +56,7 @@ type renderedYAML struct {
 // Unused will be removed when renderedYAML is used within this package.
 func Unused() {
 	_ = (&renderedYAML{}).deploy(nil)
+	_ = (&renderedYAML{}).patch(nil)
 }
 
 func (r *renderedYAML) deploy(clusterCtx *cluster.Context) error {
@@ -67,6 +74,66 @@ func (r *renderedYAML) deploy(clusterCtx *cluster.Context) error {
 		bytes.NewReader(r.yaml),
 		true,
 	)
+}
+
+const kustomizeForPatchesTmpl = `
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- resources.yaml
+patches:
+{{range $p := .}}
+- patch: |-
+{{ indent 4 $p.YAML }}
+  target:
+    {{ if ne $p.Target.APIGroup "" }}group: {{ $p.Target.APIGroup }}{{end}}
+    {{ if ne $p.Target.APIVersion "" }}version: {{ $p.Target.APIVersion }}{{end}}
+    {{ if ne $p.Target.Kind "" }}kind: {{ $p.Target.Kind }}{{end}}
+    {{ if ne $p.Target.Name "" }}name: {{ $p.Target.Name }}{{end}}
+    {{ if ne $p.Target.Namespace "" }}namespace: {{ $p.Target.Namespace }}{{end}}
+    {{ if ne $p.Target.LabelSelector "" }}labelSelector: "{{ $p.Target.LabelSelector }}"{{end}}
+    {{ if ne $p.Target.AnnotationSelector "" }}annotationSelector: "{{ $p.Target.AnnotationSelect }}"{{end}}
+{{- end -}}
+`
+
+func (r *renderedYAML) patch(patches []*experimentpb.PatchSpec) error {
+	if len(patches) == 0 {
+		return nil
+	}
+
+	tmpdir, err := os.MkdirTemp("", "*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpdir)
+
+	if err := os.WriteFile(path.Join(tmpdir, "resources.yaml"), r.yaml, 0666); err != nil {
+		return err
+	}
+
+	f, err := os.Create(path.Join(tmpdir, "kustomization.yaml"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	t, err := template.New("").Funcs(sprig.TxtFuncMap()).Parse(kustomizeForPatchesTmpl)
+	if err != nil {
+		return err
+	}
+	if err := t.Execute(f, patches); err != nil {
+		return err
+	}
+
+	cmd := exec.Command("kustomize", "build", tmpdir)
+	out := &bytes.Buffer{}
+	cmd.Stdout = out
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	r.yaml = out.Bytes()
+	return nil
 }
 
 type k8sYAML struct {
