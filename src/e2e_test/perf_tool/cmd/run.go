@@ -58,6 +58,9 @@ func init() {
 	RunCmd.Flags().String("commit_sha", "", "Commit SHA to set on the experiment spec. Should be the local commit sha")
 	RunCmd.Flags().StringSlice("tags", []string{}, "Tags to add to the experiments, eg 'nightly' or 'PR#XXX'")
 
+	RunCmd.Flags().String("api_key", "", "The Pixie API key to use for deploying pixie")
+	RunCmd.Flags().String("cloud_addr", "withpixie.ai:443", "The Pixie Cloud address to use for deploying pixie")
+
 	RootCmd.AddCommand(RunCmd)
 }
 
@@ -79,6 +82,13 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		return err
 	}
 
+	pxAPIKey := viper.GetString("api_key")
+	if pxAPIKey == "" {
+		err = errors.New("--api_key or PX_API_KEY is required")
+		return err
+	}
+	pxCloudAddr := viper.GetString("cloud_addr")
+
 	specs, err := getExperimentSpecs()
 	if err != nil {
 		log.WithError(err).Error("failed to get experiment specs from the flags provided")
@@ -94,7 +104,7 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		wg.Add(1)
 		go func(spec *experimentpb.ExperimentSpec) {
 			defer wg.Done()
-			if err := runExperiment(ctx, spec, c, "", "", nil, nil, ""); err != nil {
+			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, nil, nil, ""); err != nil {
 				log.WithError(err).Error("failed to run experiment")
 			}
 		}(spec)
