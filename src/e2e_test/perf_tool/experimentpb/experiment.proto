@@ -22,6 +22,7 @@ package px.perf_tool;
 
 option go_package = "experimentpb";
 
+import "google/protobuf/duration.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // ExperimentSpec fully specifies how to run a single perf experiment.
@@ -44,7 +45,9 @@ message ExperimentSpec {
   repeated MetricSpec metric_specs = 3;
   // ClusterSpec specifies what type of cluster to run the experiment on.
   ClusterSpec cluster_spec = 4;
-  reserved 5;
+  // RunSpec specifies parameters for running the experiment. For example, how long to run the
+  // experiment for.
+  RunSpec run_spec = 5;
   // commit_sha of the commit the experiment was run from.
   string commit_sha = 6 [ (gogoproto.customname) = "CommitSHA" ];
 }
@@ -80,4 +83,11 @@ message ClusterSpec {
 // node.
 message NodeSpec {
   string machine_type = 1;
+}
+
+// RunSpec specifies parameters for the execution of the experiment. Currently, it specifies how
+// long to run different phases of the experiment.
+message RunSpec {
+  google.protobuf.Duration duration = 1;
+  google.protobuf.Duration pre_workload_duration = 2;
 }
