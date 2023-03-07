@@ -35,8 +35,9 @@ int main(int argc, char** argv) {
   }
 
   unsigned char statusb = (unsigned char)status;
-  // Since we can't output 0, we output 2*status + 1.
-  outb((status << 1) | 0x01, EXIT_PORT);
+  // QEMU transforms this into 2*status + 1.
+  outb(statusb, EXIT_PORT);
+
   // Should never get here.
   printf(
       "Exit failed. Make sure to include '-device isa-debug-exit,iobase=0xf4,iosize=0x4'"
