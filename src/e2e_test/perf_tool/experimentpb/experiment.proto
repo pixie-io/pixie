@@ -50,6 +50,10 @@ message ExperimentSpec {
   RunSpec run_spec = 5;
   // commit_sha of the commit the experiment was run from.
   string commit_sha = 6 [ (gogoproto.customname) = "CommitSHA" ];
+  // Tags can be used to identify experiments within the bigquery datastore. For example,
+  // experiments run from github actions could be tagged with "github-actions", or experiments using
+  // the http loadtest workload could be tagged "workload/http-loadtest".
+  repeated string tags = 7;
 }
 
 // WorkloadSpec specifies how to run a particular workload.
