@@ -19,6 +19,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "cmd",
     srcs = [
+        "github_matrix.go",
         "root.go",
         "run.go",
         "test_gke_cluster.go",
