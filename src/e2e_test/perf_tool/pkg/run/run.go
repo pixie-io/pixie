@@ -28,6 +28,7 @@ import (
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 )
 
@@ -41,6 +42,8 @@ type Runner struct {
 
 	clusterCtx     *cluster.Context
 	clusterCleanup func()
+	vizier         deploy.Workload
+	workloads      []deploy.Workload
 }
 
 // NewRunner creates a new Runner for the given contexts.
@@ -58,6 +61,7 @@ func NewRunner(c cluster.Provider, pxCtx *pixie.Context, resultTable *bq.Table, 
 func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *experimentpb.ExperimentSpec) error {
 	eg := errgroup.Group{}
 	eg.Go(func() error { return r.getCluster(ctx, spec.ClusterSpec) })
+	eg.Go(func() error { return r.prepareWorkloads(ctx, spec) })
 
 	if err := eg.Wait(); err != nil {
 		if r.clusterCleanup != nil {
@@ -81,5 +85,31 @@ func (r *Runner) getCluster(ctx context.Context, spec *experimentpb.ClusterSpec)
 	}
 	r.clusterCtx = clusterCtx
 	r.clusterCleanup = cleanup
+	return nil
+}
+
+func (r *Runner) prepareWorkloads(ctx context.Context, spec *experimentpb.ExperimentSpec) error {
+	vizier, err := deploy.NewWorkload(r.pxCtx, r.containerRegistryRepo, spec.VizierSpec)
+	if err != nil {
+		return err
+	}
+	r.vizier = vizier
+	log.Trace("Preparing Vizier deployment")
+	if err := r.vizier.Prepare(); err != nil {
+		return err
+	}
+	workloads := make([]deploy.Workload, len(spec.WorkloadSpecs))
+	for i, s := range spec.WorkloadSpecs {
+		w, err := deploy.NewWorkload(r.pxCtx, r.containerRegistryRepo, s)
+		if err != nil {
+			return err
+		}
+		log.Tracef("Preparing %s deployment", s.Name)
+		if err := w.Prepare(); err != nil {
+			return err
+		}
+		workloads[i] = w
+	}
+	r.workloads = workloads
 	return nil
 }
