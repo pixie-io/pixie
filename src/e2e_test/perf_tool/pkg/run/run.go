@@ -21,8 +21,10 @@ package run
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
@@ -87,6 +89,17 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 		return err
 	}
 
+	// Wait for the PreWorkloadDuration specified in the RunSpec.
+	// During this time, Vizier will be deployed, metrics are recording but no workloads are deployed.
+	preWorkloadDur, err := types.DurationFromProto(spec.RunSpec.PreWorkloadDuration)
+	if err != nil {
+		return err
+	}
+	log.Infof("Waiting %v before deploying workloads", preWorkloadDur)
+	if sleep(ctx, preWorkloadDur) {
+		return nil
+	}
+
 	// Deploy the workloads.
 	log.Info("Deploying workloads")
 	for i, w := range r.workloads {
@@ -116,7 +129,28 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 		return err
 	}
 
+	// Wait for the experiment duration specified in the RunSpec.
+	// During this time, Vizier and workloads are deployed and metrics are recording.
+	dur, err := types.DurationFromProto(spec.RunSpec.Duration)
+	if err != nil {
+		return err
+	}
+	log.Infof("Experiment running for %v", dur)
+	if sleep(ctx, dur) {
+		return nil
+	}
+	log.Info("Experiment finished tearing down")
+
 	return nil
+}
+
+func sleep(ctx context.Context, dur time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	case <-time.After(dur):
+		return false
+	}
 }
 
 func (r *Runner) getCluster(ctx context.Context, spec *experimentpb.ClusterSpec) error {
