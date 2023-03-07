@@ -57,6 +57,13 @@ func NewWorkload(pxCtx *pixie.Context, containerRegistryRepo string, spec *exper
 	// Add deploy steps and healthchecks from spec once those are implemented.
 	deploySteps := make([]steps.DeployStep, len(spec.DeploySteps))
 	healthchecks := make([]checks.HealthCheck, len(spec.Healthchecks))
+	for i, checkSpec := range spec.Healthchecks {
+		switch checkSpec.CheckType.(type) {
+		case *experimentpb.HealthCheck_K8S:
+			healthchecks[i] = checks.NewK8SHealthCheck(checkSpec.GetK8S())
+		}
+	}
+
 	return &workloadImpl{
 		name:               spec.Name,
 		spec:               spec,

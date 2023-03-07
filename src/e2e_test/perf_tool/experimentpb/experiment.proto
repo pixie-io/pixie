@@ -69,7 +69,16 @@ message WorkloadSpec {
 message DeployStep {}
 
 // HealthCheck specifies how to run a single check on a workload.
-message HealthCheck {}
+message HealthCheck {
+  oneof check_type {
+    K8SPodsReadyCheck k8s = 1 [ (gogoproto.customname) = "K8S" ];
+  }
+}
+
+// K8sPodsReadyCheck checks that all of the pods in the given namespace have a status of RUNNING.
+message K8SPodsReadyCheck {
+  string namespace = 1;
+}
 
 // PatchSpec specifies how to patch the generated yamls for any deploy steps that produce yamls to
 // apply.
