@@ -35,6 +35,7 @@ type ClusterOptions struct {
 	Zone          string
 	Network       string
 	Subnet        string
+	DynamicSubnet bool
 	CIDR          string
 	ServicesCIDR  string
 	SecurityGroup string
@@ -82,6 +83,9 @@ func addDefaults(clusterOpts *ClusterOptions) {
 	}
 	if clusterOpts.DiskSizeGB == 0 {
 		clusterOpts.DiskSizeGB = defaultDiskSizeGB
+	}
+	if clusterOpts.Subnet == "" {
+		clusterOpts.DynamicSubnet = true
 	}
 }
 

@@ -214,6 +214,7 @@ func (p *ClusterProvider) createCluster(ctx context.Context, spec *experimentpb.
 				MonitoringService: `none`,
 				IpAllocationPolicy: &containerpb.IPAllocationPolicy{
 					UseIpAliases:          true,
+					CreateSubnetwork:      p.clusterOpts.DynamicSubnet,
 					ClusterIpv4CidrBlock:  p.clusterOpts.CIDR,
 					ServicesIpv4CidrBlock: p.clusterOpts.ServicesCIDR,
 				},

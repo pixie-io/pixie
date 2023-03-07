@@ -50,7 +50,7 @@ func init() {
 	TestGKEClusterCmd.Flags().String("gke_project", "pl-pixies", "The gcloud project to use for GKE clusters")
 	TestGKEClusterCmd.Flags().String("gke_zone", "us-west1-a", "The gcloud zone to use for GKE clusters")
 	TestGKEClusterCmd.Flags().String("gke_network", "dev", "The gcloud network to use for GKE clusters")
-	TestGKEClusterCmd.Flags().String("gke_subnet", "us-west1-1", "The subnetwork to use for GKE clusters")
+	TestGKEClusterCmd.Flags().String("gke_subnet", "", "The subnetwork to use for GKE clusters, if empty a subnetwork will be created on demand")
 	TestGKEClusterCmd.Flags().String("gke_security_group", "gke-security-groups@pixielabs.ai", "The security group to use for GKE clusters")
 	RootCmd.AddCommand(TestGKEClusterCmd)
 }
