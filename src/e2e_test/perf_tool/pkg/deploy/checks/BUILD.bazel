@@ -21,12 +21,17 @@ go_library(
     srcs = [
         "common.go",
         "k8s_healthcheck.go",
+        "pxl_healthcheck.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/checks",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/go/pxapi",
+        "//src/api/go/pxapi/types",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
+        "//src/e2e_test/perf_tool/pkg/pixie",
         "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
