@@ -102,7 +102,37 @@ message PatchTarget {
 
 // MetricSpec specifies how to record a set of metrics for an experiment.
 // Currently, PxL scripts are the only supported way of recording metrics.
-message MetricSpec {}
+message MetricSpec {
+  oneof metric_type {
+    PxLScriptSpec pxl = 1 [ (gogoproto.customname) = "PxL" ];
+  }
+}
+
+// PxLScriptSpec specifies a PxL script and how to use it to collect a set of metrics.
+message PxLScriptSpec {
+  // Script is a template for the PxL script, the template engine is passed this PxLScriptSpec, to
+  // fill out the template. Arbitrary strings can be added to template_values to use them in the
+  // template.
+  string script = 1;
+  // Stream script execution.
+  bool streaming = 2;
+  // If this is not a streaming script, this specifies how often to run the script.
+  google.protobuf.Duration collection_period = 3;
+  // template_values are used to pass arbitrary strings into the PxL script template.
+  map<string, string> template_values = 4;
+
+  // For each table in the PxL script, define a set of output specs for the rows in that table.
+  // The string "*" will assign the given output specs to all tables.
+  map<string, PxLScriptOutputList> table_outputs = 5;
+}
+
+// PxLScriptOutputList is a list of specs for metrics to collect from the output of a PxL script.
+message PxLScriptOutputList {
+  repeated PxLScriptOutputSpec outputs = 1;
+}
+
+// PxLScriptOutputSpec specifies how to extract a metric from the PxL script.
+message PxLScriptOutputSpec {}
 
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
 // Cluster parameters currently include things like machine type, and number of nodes in the

@@ -30,7 +30,16 @@ type Recorder interface {
 }
 
 // NewMetricsRecorder creates a new Recorder for the given MetricSpec.
-// Currently, no recorders are implemented.
+// Currently, only supports PxL script recorders.
 func NewMetricsRecorder(pxCtx *pixie.Context, spec *experimentpb.MetricSpec, resultCh chan<- *ResultRow) Recorder {
+	switch spec.MetricType.(type) {
+	case *experimentpb.MetricSpec_PxL:
+		return &pxlScriptRecorderImpl{
+			pxCtx: pxCtx,
+			spec:  spec.GetPxL(),
+
+			resultCh: resultCh,
+		}
+	}
 	return nil
 }
