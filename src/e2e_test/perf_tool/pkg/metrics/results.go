@@ -28,11 +28,6 @@ type ResultRow struct {
 	Tags      map[string]string
 }
 
-// Unused will be removed once newResultRow is used elsewhere in the package.
-func Unused() {
-	_ = newResultRow()
-}
-
 func newResultRow() *ResultRow {
 	return &ResultRow{
 		Tags: make(map[string]string),

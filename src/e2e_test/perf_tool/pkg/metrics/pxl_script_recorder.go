@@ -209,6 +209,12 @@ func (p *recordHandlerProxy) HandleDone(ctx context.Context) error {
 }
 
 func newHandlerFromSpec(spec *experimentpb.PxLScriptOutputSpec, resultCh chan<- *ResultRow) (pxapi.TableRecordHandler, error) {
-	// There are currently no output handlers implemented.
+	switch spec.OutputSpec.(type) {
+	case *experimentpb.PxLScriptOutputSpec_SingleMetric:
+		return &singleMetricHandler{
+			resultCh: resultCh,
+			spec:     spec.GetSingleMetric(),
+		}, nil
+	}
 	return nil, errors.New("invalid pxl script output spec type")
 }

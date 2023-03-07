@@ -20,14 +20,17 @@ go_library(
     name = "metrics",
     srcs = [
         "pxl_script_recorder.go",
+        "record_utils.go",
         "recorder.go",
         "results.go",
+        "single_metric_handler.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/metrics",
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/types",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/pixie",
         "@com_github_gogo_protobuf//types",
