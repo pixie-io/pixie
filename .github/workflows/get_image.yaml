@@ -5,6 +5,10 @@ on:
       image-base-name:
         required: true
         type: string
+      ref:
+        type: string
+        required: false
+        default: ''
     outputs:
       image-with-tag:
         description: "A image with tag (from docker.properties) for the requested image"
@@ -16,6 +20,8 @@ jobs:
       image-with-tag: ${{ steps.get-version.outputs.image }}
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ inputs.ref }}
     - id: get-version
       run: >-
         IMAGE_NAME="gcr.io/pixie-oss/pixie-dev-public/${{ inputs.image-base-name }}";
