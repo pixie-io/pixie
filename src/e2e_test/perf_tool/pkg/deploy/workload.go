@@ -59,6 +59,8 @@ func NewWorkload(pxCtx *pixie.Context, containerRegistryRepo string, spec *exper
 		switch stepSpec.DeployType.(type) {
 		case *experimentpb.DeployStep_Prerendered:
 			deploySteps[i] = steps.NewPrerenderedDeploy(stepSpec.GetPrerendered())
+		case *experimentpb.DeployStep_Skaffold:
+			deploySteps[i] = steps.NewSkaffoldDeploy(stepSpec.GetSkaffold(), containerRegistryRepo)
 		}
 	}
 	// Add healthchecks from spec once those are implemented.
