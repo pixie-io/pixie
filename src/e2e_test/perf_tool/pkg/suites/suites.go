@@ -30,11 +30,11 @@ type ExperimentSuite func() map[string]*pb.ExperimentSpec
 
 // ExperimentSuiteRegistry contains all the ExperimentSuite, keyed by name.
 var ExperimentSuiteRegistry = map[string]ExperimentSuite{
-	"main":      mainExperimentSuite,
+	"nightly":   nightlyExperimentSuite,
 	"http-grid": httpGridSuite,
 }
 
-func mainExperimentSuite() map[string]*pb.ExperimentSpec {
+func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
 	defaultMetricPeriod := 30 * time.Second
 	preDur := 5 * time.Minute
 	dur := 40 * time.Minute
@@ -45,7 +45,7 @@ func mainExperimentSuite() map[string]*pb.ExperimentSpec {
 		"sock-shop":              SockShopExperiment(defaultMetricPeriod, preDur, dur),
 	}
 	for _, e := range exps {
-		addTags(e, "suite/main")
+		addTags(e, "suite/nightly")
 	}
 	return exps
 }
