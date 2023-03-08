@@ -8,16 +8,9 @@ permissions:
   contents: read
 jobs:
   get-dev-image:
-    runs-on: ubuntu-latest
-    outputs:
-      image-with-tag: ${{ steps.get-version.outputs.image }}
-    steps:
-    - uses: actions/checkout@v3
-    - id: get-version
-      run: >-
-        IMAGE_NAME="gcr.io/pixie-oss/pixie-dev-public/dev_image";
-        IMAGE_TAG="$(cat docker.properties | cut -d'=' -f2)";
-        echo "image=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image"
   populate-caches:
     runs-on: ubuntu-latest-8-cores
     needs: get-dev-image
