@@ -21,6 +21,7 @@ package run
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -32,6 +33,7 @@ import (
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/metrics"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 )
 
@@ -47,6 +49,7 @@ type Runner struct {
 	clusterCleanup func()
 	vizier         deploy.Workload
 	workloads      []deploy.Workload
+	wg             sync.WaitGroup
 }
 
 // NewRunner creates a new Runner for the given contexts.
@@ -65,6 +68,13 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	eg := errgroup.Group{}
 	eg.Go(func() error { return r.getCluster(ctx, spec.ClusterSpec) })
 	eg.Go(func() error { return r.prepareWorkloads(ctx, spec) })
+
+	metricsResultCh := make(chan *metrics.ResultRow)
+	metricsChCloseOnce := sync.Once{}
+	defer metricsChCloseOnce.Do(func() { close(metricsResultCh) })
+
+	r.wg.Add(1)
+	go r.runBQInserter(expID, metricsResultCh)
 
 	if err := eg.Wait(); err != nil {
 		if r.clusterCleanup != nil {
@@ -87,6 +97,18 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	log.Info("Waiting for Vizier HealthCheck")
 	if err := r.vizier.WaitForHealthCheck(ctx, r.clusterCtx, spec.ClusterSpec); err != nil {
 		return err
+	}
+
+	log.Info("Starting metric recorders")
+	// Start the metric recorders.
+	mrs := make([]metrics.Recorder, len(spec.MetricSpecs))
+	for i, ms := range spec.MetricSpecs {
+		recorder := metrics.NewMetricsRecorder(r.pxCtx, ms, metricsResultCh)
+		mrs[i] = recorder
+		if err := recorder.Start(); err != nil {
+			return fmt.Errorf("failed to start metrics recorder: %s", err)
+		}
+		defer recorder.Close()
 	}
 
 	// Wait for the PreWorkloadDuration specified in the RunSpec.
@@ -141,6 +163,9 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	}
 	log.Info("Experiment finished tearing down")
 
+	metricsChCloseOnce.Do(func() { close(metricsResultCh) })
+	r.wg.Wait()
+
 	return nil
 }
 
@@ -188,4 +213,27 @@ func (r *Runner) prepareWorkloads(ctx context.Context, spec *experimentpb.Experi
 	}
 	r.workloads = workloads
 	return nil
+}
+
+func (r *Runner) runBQInserter(expID uuid.UUID, resultCh <-chan *metrics.ResultRow) {
+	defer r.wg.Done()
+
+	bqCh := make(chan interface{})
+	defer close(bqCh)
+
+	inserter := &bq.BatchInserter{
+		Table:       r.resultTable,
+		BatchSize:   512,
+		PushTimeout: 2 * time.Minute,
+	}
+	go inserter.Run(bqCh)
+
+	for row := range resultCh {
+		bqRow, err := bq.MetricsRowToResultRow(expID, row)
+		if err != nil {
+			log.WithError(err).Error("Failed to convert result row")
+			continue
+		}
+		bqCh <- bqRow
+	}
 }
