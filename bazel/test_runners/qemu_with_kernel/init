@@ -15,32 +15,108 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# This script sets up the basic system and launches the test runner.
+
+set -e
+
+function err {
+  retval="${?:-9}"
+  /bin/exit_qemu_with_status "${retval}"
+}
+
+trap err EXIT
+trap err ERR
+
+function mount_system_dirs() {
+  mount -t sysfs none /sys
+  mount -t debugfs none /sys/kernel/debug
+  mount -t cgroup2 none /sys/fs/cgroup
+  mount -t bpf none /sys/fs/bpf
+  mount -t tracefs none /sys/kernel/tracing
+  mount -t tmpfs tmpfs /run
+
+  mkdir -p /dev/shm
+  mount -t tmpfs tmpfs /dev/shm
+}
+
+function mount_test_fs() {
+  # Mount the test filesystem.
+  mkdir -p /test_fs
+  mount -t 9p -o trans=virtio test_fs /test_fs || true
+}
+
+function setup_networking() {
+  ip link set dev lo up
+
+  if [[ -f "/etc/hostname" ]]; then
+      hostname -F /etc/hostname
+  fi
+
+  if [[ ! -f /etc/hosts ]]; then
+      cat <<EOF > /etc/hosts
+127.0.0.1 localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+
+EOF
+    fi
+}
+
+function setup_containers() {
+  # Remove podman bridge file if it exists.
+  rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+
+  # Write container setup file for podman.
+  cat <<EOF > /etc/containers/containers.conf
+[containers]
+log_driver = "k8s-file"
+
+[engine]
+cgroup_manager = "cgroupfs"
+events_logger="file"
+runtime="crun"
+
+EOF
+}
+
+function link_if_not_exists() {
+  # Creates a link if it does not already exist.
+  s="$1"
+  d="$2"
+  if [[ -z "$s" || -z "$d" ]]; then
+    echo "src and dest are required arguments"
+    exit 1
+  fi
+  if [[ ! -f "$d" ]]; then
+    ln -s "$s" "$d"
+  fi
+}
+
 # We need proc mounted, otherwise the future mounts commands will fail.
 mount -t proc none /proc
 
 # Remount the root filesystem, since it starts out read-only.
 mount -o rw,remount /
 
-mount -t sysfs none /sys
-mount -t debugfs none /sys/kernel/debug
-mount -t cgroup2 none /sys/fs/cgroup
-mount -t bpf none /sys/fs/bpf
-mount -t tracefs none /sys/kernel/tracing
-#mount -t devtmpfs udev /dev
-mount -t tmpfs tmpfs /run
+mount_system_dirs
+mount_test_fs
+setup_networking
+setup_containers
 
-mkdir -p /dev/shm
-mount -t tmpfs tmpfs /dev/shm
-
-# Mount the test filesystem.
-mkdir -p /test_fs
-mount -t 9p -o trans=virtio test_fs /test_fs || true
-
-ip link set dev lo up
-
-if [[ -f "/etc/hostname" ]]; then
-    hostname -F /etc/hostname
-fi
+link_if_not_exists /usr/sbin/iptables-legacy /usr/bin/iptables
+link_if_not_exists /usr/sbin/iptables-legacy /usr/bin/iptables
+link_if_not_exists /usr/sbin/ip6tables-legacy /usr/bin/ip6tables
+link_if_not_exists /usr/sbin/iptables-legacy-save /usr/bin/iptables-save
+link_if_not_exists /usr/sbin/iptables-legacy-restore /usr/bin/iptables-restore
+link_if_not_exists /usr/sbin/ip6tables-legacy-save /usr/bin/ip6tables-save
+link_if_not_exists /usr/sbin/ip6tables-legacy-restore /usr/bin/ip6tables-restore
 
 
 cat <<EOF
@@ -51,9 +127,9 @@ Welcome to PX BPF Runner
 
 EOF
 
-test_runner="/test_fs/test_runner"
+test_runner="/test_fs/test_runner_inside_qemu.sh"
 if [[ -x "${test_runner}" ]]; then
-  exec "${test_runner}"
+  exec /bin/bash -c "${test_runner}"
 else
-  exec /bin/bash
+  exec /bin/exit_qemu_with_status 3
 fi
