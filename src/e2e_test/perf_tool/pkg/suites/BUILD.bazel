@@ -20,17 +20,22 @@ go_library(
     name = "suites",
     srcs = [
         "clusters.go",
+        "metrics.go",
         "suites.go",
         "workloads.go",
     ],
     embedsrcs = [
         "scripts/healthcheck/http_data_in_namespace.pxl",
         "scripts/healthcheck/vizier.pxl",
+        "scripts/heap_size.pxl",
+        "scripts/http_data_loss.pxl",
+        "scripts/process_stats.pxl",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/suites",
     visibility = ["//visibility:public"],
     deps = [
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
+        "@com_github_gogo_protobuf//types",
         "@com_github_sirupsen_logrus//:logrus",
     ],
 )
