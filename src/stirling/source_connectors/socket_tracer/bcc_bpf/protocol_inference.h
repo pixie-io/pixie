@@ -553,6 +553,11 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
   static const int8_t kRerr = -128;
   static const int8_t kRerrOld = 127;
   uint32_t mux_header_size = 8;
+
+  static const uint8_t kReplyStatusOk = 0;
+  static const uint8_t kReplyStatusError = 1;
+  static const uint8_t kReplyStatusNack = 2;
+
   // TODO(ddelnano): Determine why mux-framer text in T/Rinit is
   // 6 bytes after the mux header
   int32_t mux_framer_pos = mux_header_size + 6;
@@ -599,6 +604,32 @@ static __inline enum message_type_t infer_mux_message(const char* buf, size_t co
 
   if (tag < 1 || tag > ((1 << 23) - 1)) {
     return kUnknown;
+  }
+
+  if (mux_type == kTdispatch) {
+    // The first context key will start after the header, type, tag, # context fields and first
+    // context key length.  See src/stirling/source_connectors/socket_tracer/protocols/mux/types.h
+    // for a description of the complete frame layout.
+    int first_ctx_pos = 12;
+
+    // While mux is flexible enough to support arbitrary context keys, finagle is
+    // the only implementation of the protocol and Twitter's context fields
+    // com.twitter.finagle.tracing.{TraceContext, ClientIdContext, Deadline} are
+    // the only ones that exist today.
+    if (buf[first_ctx_pos] != 'c' || buf[first_ctx_pos + 1] != 'o' ||
+        buf[first_ctx_pos + 2] != 'm' || buf[first_ctx_pos + 3] != '.' ||
+        buf[first_ctx_pos + 4] != 't' || buf[first_ctx_pos + 5] != 'w' ||
+        buf[first_ctx_pos + 6] != 'i' || buf[first_ctx_pos + 7] != 't' ||
+        buf[first_ctx_pos + 8] != 't' || buf[first_ctx_pos + 9] != 'e' ||
+        buf[first_ctx_pos + 10] != 'r')
+      return kUnknown;
+  }
+
+  if (mux_type == kRdispatch) {
+    uint8_t reply_status = buf[8];
+    if (reply_status != kReplyStatusOk && reply_status != kReplyStatusError &&
+        reply_status != kReplyStatusNack)
+      return kUnknown;
   }
 
   return msg_type;
