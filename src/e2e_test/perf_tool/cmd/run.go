@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -44,6 +45,7 @@ import (
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/local"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/run"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/suites"
 )
 
 // RunCmd launches a perf experiment by sending queueing the experiment for the px-perf cloud to handle.
@@ -60,6 +62,8 @@ var RunCmd = &cobra.Command{
 
 func init() {
 	RunCmd.Flags().String("experiment_proto", "", "Path to experiment proto file")
+	RunCmd.Flags().String("suite", "", "The suite of experiments to run")
+	RunCmd.Flags().String("experiment_name", "", "The name of the experiment within the suite")
 
 	RunCmd.Flags().String("commit_sha", "", "Commit SHA to set on the experiment spec. Should be the local commit sha")
 	RunCmd.Flags().StringSlice("tags", []string{}, "Tags to add to the experiments, eg 'nightly' or 'PR#XXX'")
@@ -241,15 +245,38 @@ func loadExperimentSpec(path string) (*experimentpb.ExperimentSpec, error) {
 
 func getExperimentSpecs() ([]*experimentpb.ExperimentSpec, error) {
 	expProtoPath := viper.GetString("experiment_proto")
+	suiteName := viper.GetString("suite")
+	suiteExperimentName := viper.GetString("experiment_name")
+
 	if expProtoPath != "" {
-		return nil, errors.New("must --experiment_proto")
+		spec, err := loadExperimentSpec(expProtoPath)
+		if err != nil {
+			return nil, err
+		}
+		return []*experimentpb.ExperimentSpec{spec}, nil
 	}
 
-	spec, err := loadExperimentSpec(expProtoPath)
-	if err != nil {
-		return nil, err
+	if suiteName != "" {
+		suite, ok := suites.ExperimentSuiteRegistry[suiteName]
+		if !ok {
+			return nil, fmt.Errorf("no suite '%s' in ExperimentSuiteRegistry", suiteName)
+		}
+		suiteSpecs := suite()
+		if suiteExperimentName == "" {
+			out := make([]*experimentpb.ExperimentSpec, 0, len(suiteSpecs))
+			for _, spec := range suiteSpecs {
+				out = append(out, spec)
+			}
+			return out, nil
+		}
+		spec, ok := suiteSpecs[suiteExperimentName]
+		if !ok {
+			return nil, fmt.Errorf("suite '%s' does not have experiment '%s'", suiteName, suiteExperimentName)
+		}
+		return []*experimentpb.ExperimentSpec{spec}, nil
 	}
-	return []*experimentpb.ExperimentSpec{spec}, nil
+
+	return nil, errors.New("must specify one of --experiment_proto or --suite")
 }
 
 func createResultTable() (*bq.Table, error) {

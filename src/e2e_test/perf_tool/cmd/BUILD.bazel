@@ -33,6 +33,7 @@ go_library(
         "//src/e2e_test/perf_tool/pkg/cluster/local",
         "//src/e2e_test/perf_tool/pkg/pixie",
         "//src/e2e_test/perf_tool/pkg/run",
+        "//src/e2e_test/perf_tool/pkg/suites",
         "//src/pixie_cli/pkg/components",
         "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_gofrs_uuid//:uuid",
