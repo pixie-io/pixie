@@ -19,6 +19,9 @@
 package suites
 
 import (
+	"fmt"
+	"time"
+
 	pb "px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 )
 
@@ -26,4 +29,66 @@ import (
 type ExperimentSuite func() map[string]*pb.ExperimentSpec
 
 // ExperimentSuiteRegistry contains all the ExperimentSuite, keyed by name.
-var ExperimentSuiteRegistry = map[string]ExperimentSuite{}
+var ExperimentSuiteRegistry = map[string]ExperimentSuite{
+	"main":      mainExperimentSuite,
+	"http-grid": httpGridSuite,
+}
+
+func mainExperimentSuite() map[string]*pb.ExperimentSpec {
+	defaultMetricPeriod := 30 * time.Second
+	preDur := 5 * time.Minute
+	dur := 40 * time.Minute
+	httpNumConns := 100
+	exps := map[string]*pb.ExperimentSpec{
+		"http-loadtest/100/100":  HTTPLoadTestExperiment(httpNumConns, 100, defaultMetricPeriod, preDur, dur),
+		"http-loadtest/100/3000": HTTPLoadTestExperiment(httpNumConns, 3000, defaultMetricPeriod, preDur, dur),
+		"sock-shop":              SockShopExperiment(defaultMetricPeriod, preDur, dur),
+	}
+	for _, e := range exps {
+		addTags(e, "suite/main")
+	}
+	return exps
+}
+
+func httpGridSuite() map[string]*pb.ExperimentSpec {
+	defaultMetricPeriod := 30 * time.Second
+	preDur := 5 * time.Minute
+	dur := 40 * time.Minute
+
+	conns := []int{
+		10,
+		100,
+		250,
+		500,
+	}
+	rps := []int{
+		100,
+		1000,
+		2500,
+		5000,
+	}
+	type param struct {
+		numConns  int
+		targetRPS int
+	}
+	combos := make([]*param, 0, len(conns)*len(rps))
+	for _, numConns := range conns {
+		for _, targetRPS := range rps {
+			combos = append(combos, &param{
+				numConns:  numConns,
+				targetRPS: targetRPS,
+			})
+		}
+	}
+
+	exps := make(map[string]*pb.ExperimentSpec)
+	for _, p := range combos {
+		name := fmt.Sprintf("http-loadtest/%d/%d", p.numConns, p.targetRPS)
+		exps[name] = HTTPLoadTestExperiment(p.numConns, p.targetRPS, defaultMetricPeriod, preDur, dur)
+	}
+
+	for _, e := range exps {
+		addTags(e, "suite/http-grid")
+	}
+	return exps
+}
