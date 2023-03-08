@@ -134,7 +134,7 @@ def parse_protocol(frame_protocol):
     """
     # Putting http after http2/grpc since it can overlap with http2 and grpc.
     protocols = ["http2", "mysql", "pgsql", "cql", "amqp", "redis", "dns", "mongo", "http", "ssh",
-                 "kafka", "mux"]
+                 "kafka", "mux", "tls"]
     for protocol in protocols:
         if protocol in frame_protocol:
             return protocol
