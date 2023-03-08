@@ -19,7 +19,9 @@
 package cmd
 
 import (
+	"context"
 	"os"
+	"os/signal"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -36,6 +38,25 @@ func init() {
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("PX")
+}
+
+func runCmdWithInterrruptableContext(f func(context.Context, *cobra.Command) error, cmd *cobra.Command) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	defer signal.Stop(c)
+	go func() {
+		<-c
+		log.Info("Ignoring interrupt. Interrupt again to stop")
+		<-c
+		cancel()
+		log.Info("Received interrupt. Cleaning up...")
+		<-c
+		log.Info("Received second interrupt. Exiting ungracefully...")
+		os.Exit(1)
+	}()
+	return f(ctx, cmd)
 }
 
 // RootCmd is the base command used to add other commands.
