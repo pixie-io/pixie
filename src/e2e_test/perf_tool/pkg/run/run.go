@@ -19,8 +19,12 @@
 package run
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,6 +70,11 @@ func NewRunner(c cluster.Provider, pxCtx *pixie.Context, resultTable *bq.Table, 
 
 // RunExperiment runs an experiment according to the given ExperimentSpec.
 func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *experimentpb.ExperimentSpec) error {
+	commitTopoOrder, err := getTopoOrder()
+	if err != nil {
+		return err
+	}
+
 	eg := errgroup.Group{}
 	eg.Go(func() error { return r.getCluster(ctx, spec.ClusterSpec) })
 	eg.Go(func() error { return r.prepareWorkloads(ctx, spec) })
@@ -204,8 +213,9 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 		return err
 	}
 	specRow := &bq.SpecRow{
-		ExperimentID: expID.String(),
-		Spec:         encodedSpec,
+		ExperimentID:    expID.String(),
+		Spec:            encodedSpec,
+		CommitTopoOrder: commitTopoOrder,
 	}
 
 	inserter := r.specTable.Inserter()
@@ -290,4 +300,14 @@ func (r *Runner) runBQInserter(expID uuid.UUID, resultCh <-chan *metrics.ResultR
 		}
 		bqCh <- bqRow
 	}
+}
+
+func getTopoOrder() (int, error) {
+	cmd := exec.Command("git", "rev-list", "--count", "HEAD")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.Trim(stdout.String(), " \n"))
 }
