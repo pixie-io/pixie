@@ -20,6 +20,7 @@ go_library(
     name = "suites",
     srcs = [
         "clusters.go",
+        "experiments.go",
         "metrics.go",
         "suites.go",
         "workloads.go",
