@@ -21,6 +21,7 @@ go_library(
     srcs = [
         "common.go",
         "prerendered.go",
+        "px.go",
         "skaffold.go",
     ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy/steps",
@@ -28,7 +29,9 @@ go_library(
     deps = [
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
+        "//src/e2e_test/perf_tool/pkg/pixie",
         "//src/utils/shared/k8s",
+        "@com_github_gofrs_uuid//:uuid",
         "@com_github_masterminds_sprig_v3//:sprig",
         "@com_github_sirupsen_logrus//:logrus",
         "@in_gopkg_yaml_v3//:yaml_v3",

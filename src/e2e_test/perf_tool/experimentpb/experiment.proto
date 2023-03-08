@@ -70,6 +70,7 @@ message DeployStep {
   oneof deploy_type {
     PrerenderedDeploy prerendered = 1;
     SkaffoldDeploy skaffold = 2;
+    PxCLIDeploy px = 3;
   }
 }
 
@@ -131,6 +132,17 @@ message SkaffoldDeploy {
   string skaffold_path = 1;
   repeated string skaffold_args = 2;
   repeated PatchSpec patches = 3;
+}
+
+// PxCLIDeploy specifies how to deploy a component using the pixie CLI.
+// eg. `px deploy` to deploy vizier or `px demo deploy px-sock-shop` to deploy sock shop.
+message PxCLIDeploy {
+  repeated string args = 1;
+  // Namespaces to delete on teardown.
+  repeated string namespaces = 2;
+  // Whether to set the PixieContext's cluster ID after running this deploy step. This should be set
+  // to true for the step that deploys vizier.
+  bool set_cluster_id = 3 [ (gogoproto.customname) = "SetClusterID" ];
 }
 
 // MetricSpec specifies how to record a set of metrics for an experiment.
