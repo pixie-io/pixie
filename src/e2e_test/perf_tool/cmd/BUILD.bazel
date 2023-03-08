@@ -43,5 +43,6 @@ go_library(
         "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_bigquery//:bigquery",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@org_golang_x_sync//errgroup",
     ],
 )

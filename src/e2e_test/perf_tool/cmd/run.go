@@ -21,8 +21,10 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,6 +38,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
@@ -88,10 +91,16 @@ func init() {
 	RunCmd.Flags().Int("max_retries", 3, "Number of times to retry a failing experiment")
 	RunCmd.Flags().Int("num_runs", 1, "Number of times to repeat each experiment")
 
+	RunCmd.Flags().String("ds_report_id", "9701de3b-f906-4dd2-a1e9-48ca0b1e07e6", "The unique ID of the datastudio report, used to print links to datastudio views")
+	RunCmd.Flags().String("ds_experiment_page_id", "p_g7fj6pf4yc", "The unique ID of the datastudio experiment page, used to print links to datastudio views")
+	RunCmd.Flags().Bool("pretty", false, "Pretty print output json")
+
 	RootCmd.AddCommand(RunCmd)
 }
 
 func runCmd(ctx context.Context, cmd *cobra.Command) error {
+	log.SetOutput(os.Stderr)
+
 	workspaceRoot, err := getWorkspaceRoot()
 	if err != nil {
 		log.WithError(err).Error("failed to get workspace root")
@@ -136,7 +145,9 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		}
 		// We set the cluster spec to match the number of nodes in the local cluster.
 		// Otherwise, healthchecks that rely on cluster spec's num nodes will fail.
-		specs[0].ClusterSpec.NumNodes = int32(numNodes)
+		for _, spec := range specs {
+			spec.ClusterSpec.NumNodes = int32(numNodes)
+		}
 	} else {
 		c, err = gke.NewClusterProvider(&gke.ClusterOptions{
 			Project:       viper.GetString("gke_project"),
@@ -166,22 +177,61 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 	maxRetries := viper.GetInt("max_retries")
 	numRuns := viper.GetInt("num_runs")
 
-	wg := sync.WaitGroup{}
-	for _, spec := range specs {
+	eg := errgroup.Group{}
+	experiments := make(chan *exp, len(specs)*numRuns)
+	expCloseOnce := sync.Once{}
+	defer expCloseOnce.Do(func() { close(experiments) })
+	for name, spec := range specs {
 		spec.Tags = append(spec.Tags, tags...)
 		spec.CommitSHA = commitSHA
 		for i := 0; i < numRuns; i++ {
-			wg.Add(1)
-			go func(spec *experimentpb.ExperimentSpec) {
-				defer wg.Done()
-				if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo, maxRetries); err != nil {
+			idx := i
+			s := spec
+			n := name
+			eg.Go(func() error {
+				expID, err := runExperiment(ctx, s, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo, maxRetries)
+				if err != nil {
 					log.WithError(err).Error("failed to run experiment")
+					return err
 				}
-			}(spec)
+				experiments <- &exp{
+					ExperimentID:   expID,
+					ExperimentName: n,
+					RunIndex:       idx,
+				}
+				return nil
+			})
 		}
 	}
-	wg.Wait()
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+	expCloseOnce.Do(func() { close(experiments) })
+
+	dsReportID := viper.GetString("ds_report_id")
+	dsExperimentPageID := viper.GetString("ds_experiment_page_id")
+	out := make([]*exp, 0)
+	for e := range experiments {
+		e.Suite = viper.GetString("suite")
+		e.DatastudioURL = datastudioLink(dsReportID, dsExperimentPageID, e.ExperimentID)
+		out = append(out, e)
+	}
+	enc := json.NewEncoder(os.Stdout)
+	if viper.GetBool("pretty") {
+		enc.SetIndent("", "  ")
+	}
+	if err := enc.Encode(out); err != nil {
+		log.WithError(err).Fatal("failed to encode json output")
+	}
 	return nil
+}
+
+type exp struct {
+	ExperimentID   uuid.UUID `json:"experiment_id"`
+	Suite          string    `json:"suite"`
+	ExperimentName string    `json:"experiment_name"`
+	RunIndex       int       `json:"run_index,omitempty"`
+	DatastudioURL  string    `json:"datastudio_url"`
 }
 
 type maxRetryBackoff struct {
@@ -210,14 +260,16 @@ func runExperiment(
 	specTable *bq.Table,
 	containerRegistryRepo string,
 	maxRetries int,
-) error {
+) (uuid.UUID, error) {
+	var expID uuid.UUID
 	bo := &maxRetryBackoff{
 		MaxRetries: maxRetries,
 	}
 	op := func() error {
 		pxCtx := pixie.NewContext(pxAPIKey, pxCloudAddr)
 		r := run.NewRunner(c, pxCtx, resultTable, specTable, containerRegistryRepo)
-		expID, err := uuid.NewV4()
+		var err error
+		expID, err = uuid.NewV4()
 		if err != nil {
 			return err
 		}
@@ -231,7 +283,10 @@ func runExperiment(
 	notify := func(err error, dur time.Duration) {
 		log.WithError(err).Error("failed to run experiment, retrying...")
 	}
-	return backoff.RetryNotify(op, bo, notify)
+	if err := backoff.RetryNotify(op, bo, notify); err != nil {
+		return uuid.UUID{}, err
+	}
+	return expID, nil
 }
 
 func loadExperimentSpec(path string) (*experimentpb.ExperimentSpec, error) {
@@ -247,7 +302,7 @@ func loadExperimentSpec(path string) (*experimentpb.ExperimentSpec, error) {
 	return e, nil
 }
 
-func getExperimentSpecs() ([]*experimentpb.ExperimentSpec, error) {
+func getExperimentSpecs() (map[string]*experimentpb.ExperimentSpec, error) {
 	expProtoPath := viper.GetString("experiment_proto")
 	suiteName := viper.GetString("suite")
 	suiteExperimentName := viper.GetString("experiment_name")
@@ -257,7 +312,7 @@ func getExperimentSpecs() ([]*experimentpb.ExperimentSpec, error) {
 		if err != nil {
 			return nil, err
 		}
-		return []*experimentpb.ExperimentSpec{spec}, nil
+		return map[string]*experimentpb.ExperimentSpec{"unnamed": spec}, nil
 	}
 
 	if suiteName != "" {
@@ -267,17 +322,13 @@ func getExperimentSpecs() ([]*experimentpb.ExperimentSpec, error) {
 		}
 		suiteSpecs := suite()
 		if suiteExperimentName == "" {
-			out := make([]*experimentpb.ExperimentSpec, 0, len(suiteSpecs))
-			for _, spec := range suiteSpecs {
-				out = append(out, spec)
-			}
-			return out, nil
+			return suiteSpecs, nil
 		}
 		spec, ok := suiteSpecs[suiteExperimentName]
 		if !ok {
 			return nil, fmt.Errorf("suite '%s' does not have experiment '%s'", suiteName, suiteExperimentName)
 		}
-		return []*experimentpb.ExperimentSpec{spec}, nil
+		return map[string]*experimentpb.ExperimentSpec{suiteExperimentName: spec}, nil
 	}
 
 	return nil, errors.New("must specify one of --experiment_proto or --suite")
@@ -329,4 +380,10 @@ func getWorkspaceRoot() (string, error) {
 		return "", err
 	}
 	return strings.Trim(stdout.String(), " \n"), nil
+}
+
+func datastudioLink(dsReportID string, dsExperimentPageID string, expID uuid.UUID) string {
+	params := fmt.Sprintf(`{"experiment_ids":"%s"}`, expID.String())
+	encodedParams := url.QueryEscape(params)
+	return fmt.Sprintf("https://datastudio.google.com/reporting/%s/page/%s?params=%s", dsReportID, dsExperimentPageID, encodedParams)
 }
