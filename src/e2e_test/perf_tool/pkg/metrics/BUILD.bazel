@@ -19,6 +19,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "metrics",
     srcs = [
+        "data_loss_handler.go",
         "pxl_script_recorder.go",
         "record_utils.go",
         "recorder.go",
