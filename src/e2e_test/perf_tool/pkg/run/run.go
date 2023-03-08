@@ -164,6 +164,29 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	}
 	log.Info("Experiment finished tearing down")
 
+	// Teardown the experiment. First teardown metrics, then workloads, then the vizier.
+	// This is a different order than the defers would occur.
+	// Since all of the Close() methods should be idempotent, it should be fine that we call Close() twice.
+	// We report the first error from any of the Close() methods, the defers will take care of tearing down the rest.
+	log.Trace("Tearing down metric recorders")
+	for _, recorder := range mrs {
+		if err := recorder.Close(); err != nil {
+			return err
+		}
+	}
+
+	log.Trace("Tearing down workloads")
+	for _, w := range r.workloads {
+		if err := w.Close(); err != nil {
+			return err
+		}
+	}
+
+	log.Trace("Tearing down vizier")
+	if err := r.vizier.Close(); err != nil {
+		return err
+	}
+
 	// The experiment succeeded so we write the spec to bigquery.
 	encodedSpec, err := (&jsonpb.Marshaler{}).MarshalToString(spec)
 	if err != nil {
