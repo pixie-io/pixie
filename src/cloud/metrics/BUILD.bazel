@@ -55,6 +55,7 @@ go_library(
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",
+        "//src/shared/services/metrics",
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
         "@com_github_sirupsen_logrus//:logrus",
