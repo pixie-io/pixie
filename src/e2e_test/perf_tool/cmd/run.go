@@ -73,6 +73,8 @@ func init() {
 	RunCmd.Flags().String("gke_subnet", "", "The subnetwork to use for GKE clusters, if empty a subnetwork will be created on demand")
 	RunCmd.Flags().String("gke_security_group", "gke-security-groups@pixielabs.ai", "The security group to use for GKE clusters")
 
+	RunCmd.Flags().String("container_repo", "gcr.io/pl-dev-infra", "The container repo to push necessary containers to for the experiment")
+
 	RootCmd.AddCommand(RunCmd)
 }
 
@@ -131,6 +133,8 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		return err
 	}
 
+	containerRegistryRepo := viper.GetString("container_repo")
+
 	wg := sync.WaitGroup{}
 	for _, spec := range specs {
 		spec.Tags = append(spec.Tags, tags...)
@@ -138,7 +142,7 @@ func runCmd(ctx context.Context, cmd *cobra.Command) error {
 		wg.Add(1)
 		go func(spec *experimentpb.ExperimentSpec) {
 			defer wg.Done()
-			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, ""); err != nil {
+			if err := runExperiment(ctx, spec, c, pxAPIKey, pxCloudAddr, resultTable, specTable, containerRegistryRepo); err != nil {
 				log.WithError(err).Error("failed to run experiment")
 			}
 		}(spec)
