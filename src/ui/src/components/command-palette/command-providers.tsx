@@ -18,49 +18,40 @@
 
 import * as React from 'react';
 
-import { makeCancellable } from 'app/utils/cancellable-promise';
-
-import { CommandProvider, CommandProviderResult } from './providers/command-provider';
+import { CommandProvider, CommandProviderState } from './providers/command-provider';
 import {
-  useScriptCommandProvider,
   useScriptCommandIsValidProvider,
   useEmptyInputScriptProvider,
+  useMissingScriptProvider,
+  useScriptCommandFromKeyedValueProvider,
+  useScriptCommandFromValueProvider,
 } from './providers/script';
-
-function isFulfilled<T>(res: PromiseSettledResult<T>): res is PromiseFulfilledResult<T> {
-  return res.status === 'fulfilled';
-}
 
 /** Hook to passively update suggestions as the input and selection change in the command palette. */
 export const useCommandProviders: (
   input: string, selection: [start: number, end: number],
-) => CommandProviderResult[] = (
+) => CommandProviderState[] = (
   input, selection,
 ) => {
   const providers: ReturnType<CommandProvider>[] = [
     useScriptCommandIsValidProvider(),
     useEmptyInputScriptProvider(),
-    useScriptCommandProvider(),
+    useMissingScriptProvider(),
+    useScriptCommandFromKeyedValueProvider(),
+    useScriptCommandFromValueProvider(),
   ];
 
-  const promises = React.useMemo(
-    () => providers.map((provide) => provide(input, selection)),
-    // Providers array doesn't change, its contents do.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [input, selection, ...providers],
-  );
-
-  const [out, setOut] = React.useState<CommandProviderResult[]>([]);
-
   React.useEffect(() => {
-    const cancellable = makeCancellable(Promise.allSettled(promises));
-    cancellable.then((results) => {
-      setOut(results
-        .filter(isFulfilled) // Ignore providers that threw errors; we're updating too often to worry about them.
-        .map(res => res.value));
-    });
-    return () => cancellable.cancel();
-  }, [promises]);
+    for (const p of providers) {
+      p[1]({ type: 'cancel' });
+      p[1]({ type: 'invoke', input, selection });
+    }
+    // Not monitoring changes to the providers themselves, as this would cause an infinite render loop.
+    // The output of a useReducer changes whenever the state within it does, and triggering a cancel does exactly that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, ...selection]);
 
-  return out;
+  const states = providers.map(p => p[0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return React.useMemo(() => states, [...states]);
 };
