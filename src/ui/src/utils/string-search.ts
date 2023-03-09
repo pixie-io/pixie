@@ -18,6 +18,18 @@
 
 const ALLOWED_CHARS = new Set('abcdefghijklmnopqrstuvwxyz01234567890/'.split(''));
 
+// Scoring by relevance involves a bit of math based on what properties a match has.
+// These numbers were determined experimentally, by trying a variety of search strings against
+// the full list of PxL script names until the ordering consistently got desirable results.
+const PREFIX_DISTANCE_FACTOR = 0.2;
+const SUBSTRING_DISTANCE_FACTOR = 0.25;
+const MAX_DISTANCE_RATIO = 0.8;
+const INSERT_COST = 1;
+const DELETE_COST = 1;
+const SUBSTITUTE_COST = 0.75;
+const NEAR_SWAP_COST = 0.50;
+const FAR_SWAP_COST = 0.70;
+
 interface ScoredStringMatch {
   /** Whether the search string is a reasonably confident match for the source string */
   isMatch: boolean;
@@ -58,7 +70,7 @@ function isMatchGoodEnough(searchLen: number, sourceLen: number, distance: numbe
   // Must highlight at least half of the smaller string
   if (highlights.length <= Math.ceil(min / 2)) return false;
   // Edit distance should be within reason (too high, and we probably have a totally unrelated string)
-  if (distance >= (Math.max(searchLen, sourceLen) * 0.8)) return false;
+  if (distance >= (Math.max(searchLen, sourceLen) * MAX_DISTANCE_RATIO)) return false;
   return true;
 }
 
@@ -98,12 +110,12 @@ function optimalStringAlignmentAndHighlight(
 
       // Insert and delete "cost" more than substitution, which costs more than swapping.
       // This means we're not tracking "how many edits does it take"; we're preferring edits that look better to humans.
-      const deleteDist = d[k - 1][l] + 1;
-      const insertDist = d[k][l - 1] + 1;
-      const substituteDist = canSubstitute ? d[k - 1][l - 1] + 0.75 : Infinity;
+      const deleteDist = d[k - 1][l] + DELETE_COST;
+      const insertDist = d[k][l - 1] + INSERT_COST;
+      const substituteDist = canSubstitute ? d[k - 1][l - 1] + SUBSTITUTE_COST : Infinity;
       const noopDist = canSubstitute ? Infinity : d[k - 1][l - 1];
-      const swapDist = canSwap ? d[k - 2][l - 2] + 0.50 : Infinity;
-      const farSwapDist = canSwapFar ? d[k - 3][l - 3] + 0.70 : Infinity;
+      const swapDist = canSwap ? d[k - 2][l - 2] + NEAR_SWAP_COST : Infinity;
+      const farSwapDist = canSwapFar ? d[k - 3][l - 3] + FAR_SWAP_COST : Infinity;
       d[k][l] = Math.min(deleteDist, insertDist, substituteDist, noopDist, swapDist, farSwapDist);
 
       // Keep track of the path we took, so we can trace it back for highlights later
@@ -183,13 +195,13 @@ export function highlightScoredMatch(search: string, source: string): ScoredStri
     // Exact prefix is even better than exact substring, but not as good as a perfect match
     return {
       isMatch: true,
-      distance: Math.abs(searchNorm.length - sourceNorm.length) / 5,
+      distance: Math.abs(searchNorm.length - sourceNorm.length) * PREFIX_DISTANCE_FACTOR,
       highlights: Array(searchNorm.length).fill(0).map((_, i) => i),
     };
   } else if (exactSubstringIndex >= 0) {
     const start = sourceChars[exactSubstringIndex].i;
     // The edit distance for a substring is quite high, but substring matches are often better than typo matches.
-    const distance = Math.abs(sourceChars.length - searchChars.length) / 4;
+    const distance = Math.abs(sourceChars.length - searchChars.length) * SUBSTRING_DISTANCE_FACTOR;
     const highlights = Array(searchChars.length);
     for (let j = 0; j < searchChars.length; j++) {
       highlights[j] = start + searchChars[j].i;
@@ -264,7 +276,8 @@ export function highlightNamespacedScoredMatch(
     const match = highlightScoredMatch(search, parts[i]);
     for (let j = 0; j < match.highlights.length; j++) match.highlights[j] += sumLen;
     sumLen += 1 + parts[i].length;
-    match.distance += splitCost + parts.filter((_, k) => k !== i).reduce((a, c) => a + c.length / 4, 0);
+    match.distance += splitCost + parts.filter((_, k) => k !== i).reduce(
+      (a, c) => a + c.length * SUBSTRING_DISTANCE_FACTOR, 0);
     matches.push(match);
   }
   matches.sort((a, b) => a.distance - b.distance);
