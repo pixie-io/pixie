@@ -11,6 +11,11 @@ spec:
     metadata:
       labels:
         name: metrics-server
+        monitoring.gke.io/scrape: 'true'
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '50800'
+        prometheus.io/scheme: 'https'
     spec:
       containers:
       - name: metrics-server
