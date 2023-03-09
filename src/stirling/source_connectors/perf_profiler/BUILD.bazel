@@ -53,10 +53,12 @@ pl_cc_test(
         "//src/stirling/source_connectors/perf_profiler/testing/java:graal-vm-aot-test",
     ],
     defines = ['JDK_IMAGE_NAMES=\\"%s\\"' % ",".join(jdk_image_names)],
+    env = {"QEMU_CPU_COUNT": "4"},
     shard_count = 3,
     tags = [
         "cpu:16",
         "exclusive",
+        "no_qemu",
         "requires_bpf",
     ],
     deps = [
