@@ -73,7 +73,13 @@ jobs:
     - id: create-gcloud-key
       env:
         SERVICE_ACCOUNT_KEY: ${{ secrets.PERF_GCLOUD_KEY }}
-      run: echo "$SERVICE_ACCOUNT_KEY" | base64 --decode > /tmp/gcloud.json && chmod 600 /tmp/gcloud.json
+      run: |
+        if [[ -n "$SERVICE_ACCOUNT_KEY" ]]; then
+          echo "$SERVICE_ACCOUNT_KEY" | base64 --decode > /tmp/gcloud.json && chmod 600 /tmp/gcloud.json
+        else
+          echo "SERVICE_ACCOUNT_KEY is empty"
+          exit 3
+        fi
     - id: get-commit-sha
       run: |
         echo "commit-sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
