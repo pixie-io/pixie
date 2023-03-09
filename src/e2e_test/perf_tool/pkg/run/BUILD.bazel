@@ -23,11 +23,11 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
-        "//src/e2e_test/perf_tool/pkg/bq",
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/e2e_test/perf_tool/pkg/deploy",
         "//src/e2e_test/perf_tool/pkg/metrics",
         "//src/e2e_test/perf_tool/pkg/pixie",
+        "//src/shared/bq",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//jsonpb",
         "@com_github_gogo_protobuf//types",

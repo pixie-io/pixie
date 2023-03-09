@@ -35,11 +35,11 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
-	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/deploy"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/metrics"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
+	"px.dev/pixie/src/shared/bq"
 )
 
 // Runner is responsible for running experiments using the ClusterProvider to get a cluster for the experiment.
