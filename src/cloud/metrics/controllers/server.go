@@ -96,7 +96,7 @@ func (s *Server) Start() {
 		bqWriteChan := make(chan interface{}, 4096)
 		bqBatchInserter := bq.BatchInserter{
 			BatchSize:   1024,
-			PushTimeout: 10 * time.Second,
+			PushTimeout: 5 * time.Minute,
 			Table:       t,
 		}
 
