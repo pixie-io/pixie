@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package bq
+package run
 
 import (
 	"encoding/json"

@@ -20,14 +20,11 @@ go_library(
     name = "bq",
     srcs = [
         "batch_inserter.go",
-        "row.go",
         "table.go",
     ],
-    importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/bq",
+    importpath = "px.dev/pixie/src/shared/bq",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/e2e_test/perf_tool/pkg/metrics",
-        "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_google_cloud_go_bigquery//:bigquery",
         "@org_golang_google_api//googleapi",
