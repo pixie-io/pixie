@@ -34,6 +34,7 @@ go_library(
         "//src/e2e_test/perf_tool/pkg/run",
         "//src/e2e_test/perf_tool/pkg/suites",
         "//src/pixie_cli/pkg/components",
+        "//src/shared/bq",
         "@com_github_cenkalti_backoff_v4//:backoff",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//proto",
@@ -41,7 +42,6 @@ go_library(
         "@com_github_spf13_cobra//:cobra",
         "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_bigquery//:bigquery",
-        "@dev_px_pixie//src/e2e_test/perf_tool/pkg/bq:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
     ],
 )

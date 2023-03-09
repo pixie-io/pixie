@@ -39,13 +39,13 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
-	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/gke"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/local"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/run"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/suites"
+	"px.dev/pixie/src/shared/bq"
 )
 
 // RunCmd launches a perf experiment by sending queueing the experiment for the px-perf cloud to handle.
