@@ -1,0 +1,107 @@
+---
+name: perf-eval
+on:
+  issue_comment:
+    types: [created]
+  schedule:
+  # Run at 23:49 PST (07:49 UTC) every day. Github suggests not running actions on the hour.
+  - cron: '49 7 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or commit'
+        required: true
+        type: string
+      suite:
+        description: 'Experiment suite'
+        type: string
+        required: true
+      tags:
+        description: 'Tags (comma separated)'
+        type: string
+        required: false
+
+jobs:
+  nightly-perf-eval:
+    name: Nightly Performance Evaluation
+    if: github.event.schedule
+    uses: ./.github/workflows/perf_common.yaml
+    with:
+      suites: "nightly"
+    secrets: inherit
+
+  manual-perf-eval:
+    name: Manual Performance Evaluation
+    if: inputs.ref && inputs.suite
+    uses: ./.github/workflows/perf_common.yaml
+    with:
+      ref: ${{ inputs.ref }}
+      suites: ${{ inputs.suite }}
+      tags: ${{ inputs.tags }}
+    secrets: inherit
+
+  pr-perf-setup:
+    runs-on: ubuntu-latest
+    if: github.event.issue.pull_request
+    outputs:
+      suites: ${{ steps.parse.outputs.suites }}
+      tags: ${{ steps.default-tags.outputs.tags }}
+    steps:
+    - name: Check for /perf command
+      uses: xt0rted/slash-command-action@v2
+      id: command
+      with:
+        command: perf
+        reaction: true
+        reaction-type: rocket
+        allow-edits: false
+        permission-level: admin
+    - name: Parse /perf command
+      id: parse
+      run: |
+        args="${{ steps.command.outputs.command-arguments }}"
+        suites="$(echo ${args} | cut -d" " -f1)"
+        tags="$(echo "${args}" | cut -s -d" " -f2)"
+        echo "suites=${suites}" >> $GITHUB_OUTPUT
+        echo "tags=${tags}" >> $GITHUB_OUTPUT
+    - name: Add default tags
+      id: default-tags
+      run: |
+        default_tags="PR#${{ github.event.issue.number }},ignore"
+        tags="${{ steps.parse.outputs.tags }}"
+        if [[ -n "${tags}" ]]; then
+          tags="${tags},"
+        fi
+        tags="${tags}${default_tags}"
+        echo "tags=${tags}" >> $GITHUB_OUTPUT
+  pr-perf-eval:
+    name: PR Performance Evaluation
+    needs: pr-perf-setup
+    uses: ./.github/workflows/perf_common.yaml
+    with:
+      suites: ${{ needs.pr-perf-setup.outputs.suites }}
+      tags: ${{ needs.pr-perf-setup.outputs.tags }}
+      ref: refs/pull/${{ github.event.issue.number }}/head
+    secrets: inherit
+  pr-perf-comment:
+    name: Comment results on PR
+    needs: pr-perf-eval
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v6
+      with:
+        script: |
+          const experiments = JSON.parse('${{ needs.pr-perf-eval.outputs.experiments }}');
+          let comment = `Perf eval finished:
+            | Suite | Experiment Name | URL |
+            | ----- | --------------- | --- |
+          `
+          for (const exp of experiments) {
+            comment += `| ${exp.suite} | ${exp.experiment_name} | ${exp.datastudio_url} |\n`
+          }
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment,
+          })
