@@ -212,7 +212,7 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	if err != nil {
 		return err
 	}
-	specRow := &bq.SpecRow{
+	specRow := &SpecRow{
 		ExperimentID:    expID.String(),
 		Spec:            encodedSpec,
 		CommitTopoOrder: commitTopoOrder,
@@ -293,7 +293,7 @@ func (r *Runner) runBQInserter(expID uuid.UUID, resultCh <-chan *metrics.ResultR
 	go inserter.Run(bqCh)
 
 	for row := range resultCh {
-		bqRow, err := bq.MetricsRowToResultRow(expID, row)
+		bqRow, err := MetricsRowToResultRow(expID, row)
 		if err != nil {
 			log.WithError(err).Error("Failed to convert result row")
 			continue

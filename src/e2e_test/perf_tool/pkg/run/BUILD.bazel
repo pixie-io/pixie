@@ -18,7 +18,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "run",
-    srcs = ["run.go"],
+    srcs = [
+        "row.go",
+        "run.go",
+    ],
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/pkg/run",
     visibility = ["//visibility:public"],
     deps = [

@@ -291,7 +291,7 @@ func createResultTable() (*bq.Table, error) {
 		Type:  bigquery.DayPartitioningType,
 		Field: "timestamp",
 	}
-	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "results", timePartitioning, bq.ResultRow{})
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "results", timePartitioning, run.ResultRow{})
 }
 
 func createSpecTable() (*bq.Table, error) {
@@ -299,7 +299,7 @@ func createSpecTable() (*bq.Table, error) {
 	bqDataset := viper.GetString("bq_dataset")
 	bqDatasetLoc := viper.GetString("bq_dataset_loc")
 	var timePartitioning *bigquery.TimePartitioning
-	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, bq.SpecRow{})
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, run.SpecRow{})
 }
 
 func getNumNodesInCluster(ctx context.Context, c cluster.Provider) (int, error) {
