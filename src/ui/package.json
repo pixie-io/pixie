@@ -170,7 +170,6 @@
     "multicast-dns": "7.2.3",
     "resize-img": "^2.0.0",
     "sharp": "0.30.5",
-    "vega-functions": "5.13.0",
     "d3-interpolate": "3.0.1"
   }
 }
