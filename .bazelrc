@@ -104,11 +104,18 @@ build:clang --build_tag_filters=-no_libcpp
 build:clang --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
 
 
-
 # Build for Clang with libstdc++:
 build:clang-libstdc++ --config=clang-base
 build:clang-libstdc++ --//bazel/cc_toolchains:compiler=clang
 build:clang-libstdc++ --//bazel/cc_toolchains:libc_version=gnu
+
+build:qemu-bpf --config=clang
+build:qemu-bpf --sandbox_fake_username
+build:qemu-bpf --//bazel/cc_toolchains:libc_version=glibc2_36
+build:qemu-bpf --//bazel/test_runners:test_runner=qemu_with_kernel
+build:qemu-bpf --run_under="bazel/test_runners/qemu_with_kernel/test_runner.sh"
+build:qemu-bpf --build_tag_filters=requires_bpf,-no_qemu
+test:qemu-bpf --test_tag_filters=requires_bpf,-disabled,-no_qemu
 
 # Build for GCC.
 # These are copts because they apply to both c++ and c files.

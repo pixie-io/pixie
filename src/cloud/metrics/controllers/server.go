@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"px.dev/pixie/src/shared/bq"
+
 	"cloud.google.com/go/bigquery"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -85,11 +87,21 @@ func (s *Server) Start() {
 		log.WithError(err).Fatal("Failed to get table from BigQuery")
 	}
 
+	t := &bq.Table{
+		Schema: schema,
+		Table:  table,
+	}
+
 	for _, shard := range vzshard.GenerateShardRange() {
-		bqWriteChan := make(chan []*bigquery.StructSaver, 2048)
+		bqWriteChan := make(chan interface{}, 4096)
+		bqBatchInserter := bq.BatchInserter{
+			BatchSize:   1024,
+			PushTimeout: 5 * time.Minute,
+			Table:       t,
+		}
 
 		s.startShardedHandler(shard, bqWriteChan)
-		go s.startBqWriteProcessor(table, bqWriteChan)
+		go bqBatchInserter.Run(bqWriteChan)
 	}
 }
 
@@ -116,7 +128,7 @@ func (s *Server) createOrGetBQTable() (*bigquery.Table, error) {
 	return table, nil
 }
 
-func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []*bigquery.StructSaver) {
+func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- interface{}) {
 	if s.nc == nil {
 		return
 	}
@@ -147,35 +159,14 @@ func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- []*bigquer
 					continue
 				}
 				for _, ts := range wr.Timeseries {
-					bqWriteChan <- tsToStructSavers(ts, s.schema)
+					tsToRows(ts, s.schema, bqWriteChan)
 				}
 			}
 		}
 	}()
 }
 
-func (s *Server) startBqWriteProcessor(table *bigquery.Table, bqWriteChan <-chan []*bigquery.StructSaver) {
-	inserter := table.Inserter()
-	inserter.SkipInvalidRows = true
-	for {
-		select {
-		case <-s.done:
-			return
-		case batch := <-bqWriteChan:
-			// Put retries on errors, use a timeout so that we don't hang forever.
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			err := inserter.Put(ctx, batch)
-			if err != nil {
-				log.WithError(err).Warn("bigquery insertion failed")
-			}
-			cancel()
-		}
-	}
-}
-
-func tsToStructSavers(timeseries *prompb.TimeSeries, schema bigquery.Schema) []*bigquery.StructSaver {
-	batch := make([]*bigquery.StructSaver, 0, len(timeseries.Samples))
-
+func tsToRows(timeseries *prompb.TimeSeries, schema bigquery.Schema, bqWriteChan chan<- interface{}) {
 	var metricName string
 	labels := make(map[string]string)
 	for _, l := range timeseries.Labels {
@@ -193,17 +184,15 @@ func tsToStructSavers(timeseries *prompb.TimeSeries, schema bigquery.Schema) []*
 			continue
 		}
 
-		batch = append(batch, &bigquery.StructSaver{
-			Struct: Row{
-				Metric:    metricName,
-				Labels:    string(labelsJSON),
-				Value:     v,
-				Timestamp: timestamp.Time(s.Timestamp),
-			},
-			Schema: schema,
-		})
+		r := Row{
+			Metric:    metricName,
+			Labels:    string(labelsJSON),
+			Value:     v,
+			Timestamp: timestamp.Time(s.Timestamp),
+		}
+
+		bqWriteChan <- r
 	}
-	return batch
 }
 
 // Stop performs any necessary cleanup before shutdown.

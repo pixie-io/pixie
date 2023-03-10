@@ -42,13 +42,13 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
-	"px.dev/pixie/src/e2e_test/perf_tool/pkg/bq"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/gke"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster/local"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/run"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/suites"
+	"px.dev/pixie/src/shared/bq"
 )
 
 // RunCmd launches a perf experiment by sending queueing the experiment for the px-perf cloud to handle.
@@ -341,7 +341,7 @@ func createResultTable() (*bq.Table, error) {
 		Type:  bigquery.DayPartitioningType,
 		Field: "timestamp",
 	}
-	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "results", timePartitioning, bq.ResultRow{})
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "results", timePartitioning, run.ResultRow{})
 }
 
 func createSpecTable() (*bq.Table, error) {
@@ -349,7 +349,7 @@ func createSpecTable() (*bq.Table, error) {
 	bqDataset := viper.GetString("bq_dataset")
 	bqDatasetLoc := viper.GetString("bq_dataset_loc")
 	var timePartitioning *bigquery.TimePartitioning
-	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, bq.SpecRow{})
+	return bq.NewTableForStruct(bqProject, bqDataset, bqDatasetLoc, "specs", timePartitioning, run.SpecRow{})
 }
 
 func getNumNodesInCluster(ctx context.Context, c cluster.Provider) (int, error) {
