@@ -28,14 +28,6 @@ union sockaddress_t {
   struct sockaddr_in6 in6;
 };
 
-struct ip_key_t {
-  // The process name of this process
-  char name[MAX_CMD_SIZE];
-
-  // IP address of the remote endpoint.
-  union sockaddress_t addr;
-};
-
 enum tcp_event_type_t {
   // Unknown Event.
   kUnknownEvent,
@@ -64,7 +56,7 @@ struct tcp_event_t {
   char name[MAX_CMD_SIZE];
 
   // IP address of the remote endpoint.
-  union sockaddress_t addr;
+  union sockaddress_t remote_addr;
 
   // Number of bytes.
   uint64_t size;

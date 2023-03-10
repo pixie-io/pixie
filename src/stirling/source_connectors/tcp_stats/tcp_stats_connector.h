@@ -25,16 +25,12 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system/system.h"
-#include "src/shared/metadata/metadata.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/canonical_types.h"
-#include "src/stirling/core/output.h"
 #include "src/stirling/core/source_connector.h"
-#include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/tcp_stats/canonical_types.h"
+#include "src/stirling/source_connectors/tcp_stats/tcp_stats.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats_table.h"
-#include "src/stirling/utils/monitor.h"
 
 namespace px {
 namespace stirling {
@@ -42,13 +38,10 @@ namespace stirling {
 class TCPStatsConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr std::string_view kName = "tcp_stats";
-  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{20000};
-  static constexpr auto kPushPeriod = std::chrono::milliseconds{20000};
-  static constexpr auto kTables =
-      MakeArray(kTCPTXStatsTable, kTCPRXStatsTable, kTCPRetransStatsTable);
-  static constexpr uint32_t kTCPTXStatsTableNum = TableNum(kTables, kTCPTXStatsTable);
-  static constexpr uint32_t kTCPRXStatsTableNum = TableNum(kTables, kTCPRXStatsTable);
-  static constexpr uint32_t kTCPRetransStatsTableNum = TableNum(kTables, kTCPRetransStatsTable);
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
+  static constexpr auto kTables = MakeArray(tcp_stats::kTCPStatsTable);
+  static constexpr uint32_t kTCPStatsTableNum = TableNum(kTables, tcp_stats::kTCPStatsTable);
 
   TCPStatsConnector() = delete;
   ~TCPStatsConnector() override = default;
@@ -69,6 +62,7 @@ class TCPStatsConnector : public SourceConnector, public bpf_tools::BCCWrapper {
 
  private:
   std::vector<struct tcp_event_t> events_;
+  TcpStats conn_stats_;
 };
 }  // namespace stirling
 }  // namespace px

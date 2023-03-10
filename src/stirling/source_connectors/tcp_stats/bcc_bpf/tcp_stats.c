@@ -55,17 +55,17 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, int size) {
   BPF_PROBE_READ_KERNEL_VAR(family, &sk_common->skc_family);
 
   struct tcp_event_t event = {};
-  event.addr.sa.sa_family = family;
+  event.remote_addr.sa.sa_family = family;
   event.timestamp_ns = bpf_ktime_get_ns();
   event.upid.tgid = tgid;
   event.upid.start_time_ticks = get_tgid_start_time();
 
   if (family == AF_INET) {
-    event.addr.in4.sin_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
+    event.remote_addr.in4.sin_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
-    event.addr.in6.sin6_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
+    event.remote_addr.in6.sin6_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
   }
 
   bpf_get_current_comm(&event.name, sizeof(event.name));
@@ -125,16 +125,16 @@ int probe_entry_tcp_cleanup_rbuf(struct pt_regs* ctx, struct sock* sk, int copie
   BPF_PROBE_READ_KERNEL_VAR(family, &sk->__sk_common.skc_family);
 
   struct tcp_event_t event = {};
-  event.addr.sa.sa_family = family;
+  event.remote_addr.sa.sa_family = family;
 
   bpf_get_current_comm(&event.name, sizeof(event.name));
 
   if (family == AF_INET) {
-    event.addr.in4.sin_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_daddr);
+    event.remote_addr.in4.sin_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.addr.in6.sin6_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in6.sin6_addr, &sk->__sk_common.skc_v6_daddr);
+    event.remote_addr.in6.sin6_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk->__sk_common.skc_v6_daddr);
   }
 
   event.timestamp_ns = bpf_ktime_get_ns();
@@ -161,15 +161,15 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   BPF_PROBE_READ_KERNEL_VAR(family, &skp->__sk_common.skc_family);
 
   struct tcp_event_t event = {};
-  event.addr.sa.sa_family = family;
+  event.remote_addr.sa.sa_family = family;
 
   bpf_get_current_comm(&event.name, sizeof(event.name));
   if (family == AF_INET) {
-    event.addr.in4.sin_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in4.sin_addr.s_addr, &skp->__sk_common.skc_daddr);
+    event.remote_addr.in4.sin_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &skp->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.addr.in6.sin6_port = ntohs(port);
-    BPF_PROBE_READ_KERNEL_VAR(event.addr.in6.sin6_addr, &skp->__sk_common.skc_v6_daddr);
+    event.remote_addr.in6.sin6_port = port;
+    BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &skp->__sk_common.skc_v6_daddr);
   }
 
   event.timestamp_ns = bpf_ktime_get_ns();

@@ -34,49 +34,40 @@
 
 namespace px {
 namespace stirling {
+namespace tcp_stats {
 
 // clang-format off
-static constexpr DataElement kTCPTXElements[] = {
+static constexpr DataElement kTCPStatsElements[] = {
+      canonical_data_elements::kTime,
+      canonical_data_elements::kUPID,
       canonical_data_elements_net::kRemoteAddr,
-      {"cmd", "Process command line",
-       types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"bytes_sent", "The number of bytes sent to the remote endpoint(s).",
+      canonical_data_elements_net::kRemotePort,
+      {"tx", "The number of bytes sent to the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_GAUGE},
-};
-
-static constexpr DataElement kTCPRXElements[] = {
-      canonical_data_elements_net::kRemoteAddr,
-      {"cmd", "Process command line",
-       types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"bytes_received", "The number of bytes received to the remote endpoint(s).",
+      {"rx", "The number of retransmissions to the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_GAUGE},
-};
-
-static constexpr DataElement kTCPRetransElements[] = {
-      canonical_data_elements_net::kRemoteAddr,
-      {"cmd", "Process command line",
-       types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-      {"retrans", "The number of retransmissions to the remote endpoint(s).",
+      {"retransmits", "The number of retransmissions to the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
 };
 
-constexpr DataTableSchema kTCPTXStatsTable(
-        "tcp_tx_stats",
-        "TCP tx stats. This table contains statistics on the number of TCP bytes sent",
-        kTCPTXElements
+// clang-format on
+
+constexpr auto kTCPStatsTable = DataTableSchema(
+        "tcp_stats_events",
+        "TCP stats. This table contains TCP connection statistics",
+        kTCPStatsElements
 );
 
-constexpr DataTableSchema kTCPRXStatsTable(
-        "tcp_rx_stats",
-        "TCP rx stats. This table contains statistics on the number of TCP bytes received",
-        kTCPRXElements
-);
+DEFINE_PRINT_TABLE(TCPStats);
 
-constexpr DataTableSchema kTCPRetransStatsTable(
-        "tcp_retrans_stats",
-        "TCP retrans stats. This table contains statistics on the number of TCP retransmissions",
-        kTCPRetransElements
-);
+constexpr int kTcpTimeIdx = kTCPStatsTable.ColIndex("time_");
+constexpr int kTcpUPIDIdx = kTCPStatsTable.ColIndex("upid");
+constexpr int kTcpRemoteAddrIdx = kTCPStatsTable.ColIndex("remote_addr");
+constexpr int kTcpRemotePortIdx = kTCPStatsTable.ColIndex("remote_port");
+constexpr int kTcpBytesSentIdx = kTCPStatsTable.ColIndex("tx");
+constexpr int kTcpBytesReceivedIdx = kTCPStatsTable.ColIndex("rx");
+constexpr int kTcpRetransmitsIdx = kTCPStatsTable.ColIndex("retransmits");
 
+}  // namespace tcp_stats
 }  // namespace stirling
 }  // namespace px

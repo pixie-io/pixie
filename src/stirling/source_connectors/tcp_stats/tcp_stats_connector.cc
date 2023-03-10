@@ -21,9 +21,11 @@
 #include <arpa/inet.h>
 #include <string>
 #include <utility>
+
 #include "src/common/base/base.h"
+#include "src/common/base/inet_utils.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/tcp_stats/print_utils.h"
+#include "src/stirling/source_connectors/tcp_stats/tcp_stats.h"
 
 OBJ_STRVIEW(tcpstats_bcc_script, tcpstats);
 DEFINE_bool(JsonOutput, true, "Standard output in Json format");
@@ -68,8 +70,7 @@ Status TCPStatsConnector::InitImpl() {
   PX_RETURN_IF_ERROR(InitBPFProgram(tcpstats_bcc_script));
   PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
-  LOG(INFO) << "Probes successfully deployed.";
+  LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
   return Status::OK();
 }
 
@@ -78,34 +79,34 @@ Status TCPStatsConnector::StopImpl() {
   return Status::OK();
 }
 
-void TCPStatsConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  if (FLAGS_JsonOutput != true) {
-    /* TODO: Support other output formats. */
-    return;
-  }
-  DCHECK_EQ(data_tables_.size(), 3U) << "Only three tables are allowed per TCPStatsConnector.";
+void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
+  DCHECK_EQ(data_tables_.size(), 1U) << "Only one table is allowed per TCPStatsConnector.";
 
   PollPerfBuffers();
 
-  rapidjson::Document document;
-  document.SetObject();
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-  rapidjson::Value metricsArray(rapidjson::kArrayType);
+  DataTable* data_table = data_tables_[0];
+  auto& agg_stats = conn_stats_.UpdateStats(events_);
+  uint64_t time = AdjustedSteadyClockNowNS();
+  absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
-  json_output::CreatePerfRecords(allocator, metricsArray, events_);
+  auto iter = agg_stats.begin();
+  while (iter != agg_stats.end()) {
+    const auto& key = iter->first;
+    auto& stats = iter->second;
 
-  rapidjson::Value data(rapidjson::kObjectType);
-  data.AddMember(json_output::StringRef(json_output::metrics_str), metricsArray.Move(), allocator);
-  document.AddMember(json_output::StringRef(json_output::version_str),
-                     json_output::StringRef(json_output::version_value), allocator);
-  rapidjson::Value dataArray(rapidjson::kArrayType);
-  dataArray.PushBack(data.Move(), allocator);
-  document.AddMember(json_output::StringRef(json_output::data_str), dataArray.Move(), allocator);
+    md::UPID upid(ctx->GetASID(), key.upid.pid, key.upid.start_time_ticks);
 
-  rapidjson::StringBuffer strbuf;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  document.Accept(writer);
-  std::cout << strbuf.GetString() << std::endl;
+    DataTable::RecordBuilder<&tcp_stats::kTCPStatsTable> r(data_table, time);
+    r.Append<tcp_stats::kTcpTimeIdx>(time);
+    r.Append<tcp_stats::kTcpUPIDIdx>(upid.value());
+    r.Append<tcp_stats::kTcpRemoteAddrIdx>(key.remote_addr);
+    r.Append<tcp_stats::kTcpRemotePortIdx>(key.remote_port);
+    r.Append<tcp_stats::kTcpBytesReceivedIdx>(stats.bytes_recv);
+    r.Append<tcp_stats::kTcpBytesSentIdx>(stats.bytes_sent);
+    r.Append<tcp_stats::kTcpRetransmitsIdx>(stats.retransmissions);
+
+    agg_stats.erase(iter++);
+  }
 
   events_.clear();
 }
