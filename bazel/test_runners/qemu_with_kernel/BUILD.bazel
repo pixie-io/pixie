@@ -14,9 +14,74 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("//bazel/test_runners/qemu_with_kernel:runner.bzl", "qemu_with_kernel_test_runner")
+
+string_flag(
+    name = "kernel_version",
+    build_setting_default = "latest",
+    values = [
+        "oldest",
+        "4.14.304",
+        "5.15.90",
+        "5.18.19",
+        "6.1.8",
+        "latest",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "kernel_version_oldest",
+    flag_values = {
+        ":kernel_version": "oldest",
+    },
+)
+
+config_setting(
+    name = "kernel_version_4_14_304",
+    flag_values = {
+        ":kernel_version": "4.14.304",
+    },
+)
+
+config_setting(
+    name = "kernel_version_5_15_90",
+    flag_values = {
+        ":kernel_version": "5.15.90",
+    },
+)
+
+config_setting(
+    name = "kernel_version_5_18_19",
+    flag_values = {
+        ":kernel_version": "5.18.19",
+    },
+)
+
+config_setting(
+    name = "kernel_version_6_1_8",
+    flag_values = {
+        ":kernel_version": "6.1.8",
+    },
+)
+
+config_setting(
+    name = "kernel_version_latest",
+    flag_values = {
+        ":kernel_version": "latest",
+    },
+)
 
 qemu_with_kernel_test_runner(
     name = "runner",
+    kernel_image = select({
+        ":kernel_version_4_14_304": "@linux_build_4_14_304_x86_64//file:linux-build.tar.gz",
+        ":kernel_version_5_15_90": "@linux_build_5_15_90_x86_64//file:linux-build.tar.gz",
+        ":kernel_version_5_18_19": "@linux_build_5_18_19_x86_64//file:linux-build.tar.gz",
+        ":kernel_version_6_1_8": "@linux_build_6_1_8_x86_64//file:linux-build.tar.gz",
+        ":kernel_version_latest": "@linux_build_6_1_8_x86_64//file:linux-build.tar.gz",
+        ":kernel_version_oldest": "@linux_build_4_14_304_x86_64//file:linux-build.tar.gz",
+    }),
     visibility = ["//visibility:public"],
 )
