@@ -144,11 +144,11 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
 
         const ids = scriptIds.filter(s => !input || s === SCRATCH_SCRIPT.id || matches.get(s)?.isMatch);
 
-        // First, sort by quality of the match
-        ids.sort((a, b) => (matches.get(a)?.distance ?? Infinity) - (matches.get(b)?.distance ?? Infinity));
-
         // The `px` namespace should appear before all others
         ids.sort((a, b) => Number(b.startsWith('px/')) - Number(a.startsWith('px/')));
+
+        // Higher quality matches appear before lower ones (with the `px/` namespace winning on a tie)
+        ids.sort((a, b) => (matches.get(a)?.distance ?? Infinity) - (matches.get(b)?.distance ?? Infinity));
 
         // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
         // unless it's the only thing in the list.
