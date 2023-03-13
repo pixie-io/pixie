@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
@@ -77,7 +78,12 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 
 	eg := errgroup.Group{}
 	eg.Go(func() error { return r.getCluster(ctx, spec.ClusterSpec) })
-	eg.Go(func() error { return r.prepareWorkloads(ctx, spec) })
+	eg.Go(func() error {
+		if err := r.prepareWorkloads(ctx, spec); err != nil {
+			return backoff.Permanent(err)
+		}
+		return nil
+	})
 
 	metricsResultCh := make(chan *metrics.ResultRow)
 	metricsChCloseOnce := sync.Once{}
