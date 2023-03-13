@@ -46,7 +46,7 @@ StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(
   auto pixie_module = std::shared_ptr<PixieModule>(
       new PixieModule(graph, compiler_state, ast_visitor, func_based_exec, reserved_names));
 
-  PL_RETURN_IF_ERROR(pixie_module->Init());
+  PX_RETURN_IF_ERROR(pixie_module->Init());
   return pixie_module;
 }
 
@@ -61,14 +61,14 @@ StatusOr<QLObjectPtr> UDFHandler(IR* graph, std::string name, const pypa::AstPtr
     expr_args.push_back(static_cast<ExprObject*>(arg.get())->expr());
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
-  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
+  PX_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
   return ExprObject::Create(node, visitor);
 }
 
 Status PixieModule::RegisterUDFFuncs() {
   auto func_names = compiler_state_->registry_info()->func_names();
   for (const auto& name : func_names) {
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         std::shared_ptr<FuncObject> fn_obj,
         FuncObject::Create(name, {}, {},
                            /* has_variable_len_args */ true,
@@ -167,10 +167,10 @@ StatusOr<QLObjectPtr> UDTFSourceHandler(CompilerState* compiler_state, IR* graph
   absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
   for (const auto& arg : udtf_source_spec.args()) {
     DCHECK(args.args().contains(arg.name()));
-    PL_ASSIGN_OR_RETURN(IRNode * arg_node, GetArgAs<IRNode>(ast, args, arg.name()));
-    PL_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateUDTFArg(graph, arg_node, arg));
+    PX_ASSIGN_OR_RETURN(IRNode * arg_node, GetArgAs<IRNode>(ast, args, arg.name()));
+    PX_ASSIGN_OR_RETURN(arg_map[arg.name()], EvaluateUDTFArg(graph, arg_node, arg));
   }
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       UDTFSourceIR * udtf_source,
       graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_map, udtf_source_spec));
   return Dataframe::Create(compiler_state, udtf_source, visitor);
@@ -184,11 +184,11 @@ Status PixieModule::RegisterUDTFs() {
       argument_names.push_back(arg.name());
       if (arg.has_default_value()) {
         DCHECK_EQ(arg.default_value().data_type(), arg.arg_type());
-        PL_ASSIGN_OR_RETURN(default_values[arg.name()], PrepareDefaultUDTFArg(arg.default_value()));
+        PX_ASSIGN_OR_RETURN(default_values[arg.name()], PrepareDefaultUDTFArg(arg.default_value()));
       }
     }
 
-    PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> fn_obj,
+    PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> fn_obj,
                         FuncObject::Create(udtf.name(), argument_names, default_values,
                                            /* has_variable_len_args */ false,
                                            /* has_variable_len_kwargs */ false,
@@ -204,7 +204,7 @@ Status PixieModule::RegisterUDTFs() {
 
 StatusOr<QLObjectPtr> NowEval(CompilerState* compiler_state, IR* graph, const pypa::AstPtr& ast,
                               const ParsedArgs&, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IntIR * time_now,
+  PX_ASSIGN_OR_RETURN(IntIR * time_now,
                       graph->CreateNode<IntIR>(ast, compiler_state->time_now().val));
   return ExprObject::Create(time_now, visitor);
 }
@@ -214,21 +214,21 @@ StatusOr<QLObjectPtr> TimeEval(IR* graph, std::chrono::nanoseconds scale_ns,
                                ASTVisitor* visitor) {
   std::vector<ExpressionIR*> expr_args;
 
-  PL_ASSIGN_OR_RETURN(IntIR * unit, GetArgAs<IntIR>(ast, args, "unit"));
+  PX_ASSIGN_OR_RETURN(IntIR * unit, GetArgAs<IntIR>(ast, args, "unit"));
   // TODO(philkuz) cast as durationnanos.
-  PL_ASSIGN_OR_RETURN(IntIR * duration_nanos,
+  PX_ASSIGN_OR_RETURN(IntIR * duration_nanos,
                       graph->CreateNode<IntIR>(ast, unit->val() * scale_ns.count()));
   return ExprObject::Create(duration_nanos, visitor);
 }
 
 StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                         ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(ast, args, "uuid"));
+  PX_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(ast, args, "uuid"));
   auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
   if (!upid_or_s.ok()) {
     return uuid_str->CreateIRNodeError(upid_or_s.msg());
   }
-  PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir,
+  PX_ASSIGN_OR_RETURN(UInt128IR * uint128_ir,
                       graph->CreateNode<UInt128IR>(ast, upid_or_s.ConsumeValueOrDie().value()));
 
   return ExprObject::Create(uint128_ir, visitor);
@@ -236,9 +236,9 @@ StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast, cons
 
 StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                       ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IntIR * asid_ir, GetArgAs<IntIR>(ast, args, "asid"));
-  PL_ASSIGN_OR_RETURN(IntIR * pid_ir, GetArgAs<IntIR>(ast, args, "pid"));
-  PL_ASSIGN_OR_RETURN(IntIR * ts_ns_ir, GetArgAs<IntIR>(ast, args, "ts_ns"));
+  PX_ASSIGN_OR_RETURN(IntIR * asid_ir, GetArgAs<IntIR>(ast, args, "asid"));
+  PX_ASSIGN_OR_RETURN(IntIR * pid_ir, GetArgAs<IntIR>(ast, args, "pid"));
+  PX_ASSIGN_OR_RETURN(IntIR * ts_ns_ir, GetArgAs<IntIR>(ast, args, "ts_ns"));
   // Check to make sure asid and pid values are within range of the uint32 values.
 
   if (asid_ir->val() > UINT32_MAX || asid_ir->val() < 0) {
@@ -254,7 +254,7 @@ StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast, const 
   }
 
   auto upid = md::UPID(asid_ir->val(), pid_ir->val(), ts_ns_ir->val());
-  PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir, graph->CreateNode<UInt128IR>(ast, upid.value()));
+  PX_ASSIGN_OR_RETURN(UInt128IR * uint128_ir, graph->CreateNode<UInt128IR>(ast, upid.value()));
   uint128_ir->SetTypeCast(ValueType::Create(uint128_ir->EvaluatedDataType(), types::ST_UPID));
 
   return ExprObject::Create(uint128_ir, visitor);
@@ -262,16 +262,16 @@ StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast, const 
 
 StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                               ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(ast, args, "date_string"));
-  PL_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(ast, args, "format"));
-  PL_ASSIGN_OR_RETURN(int64_t time_ns, ParseAbsFmt(date_str_ir, format_str_ir->str()));
-  PL_ASSIGN_OR_RETURN(IntIR * time_count, graph->CreateNode<IntIR>(ast, time_ns));
+  PX_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(ast, args, "date_string"));
+  PX_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(ast, args, "format"));
+  PX_ASSIGN_OR_RETURN(int64_t time_ns, ParseAbsFmt(date_str_ir, format_str_ir->str()));
+  PX_ASSIGN_OR_RETURN(IntIR * time_count, graph->CreateNode<IntIR>(ast, time_ns));
   return StatusOr<QLObjectPtr>(ExprObject::Create(time_count, visitor));
 }
 
 StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                 ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(ExpressionIR * value_ir, GetArgAs<ExpressionIR>(ast, args, "value"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * value_ir, GetArgAs<ExpressionIR>(ast, args, "value"));
   auto comparisons = args.GetArg("comparisons");
   if (!CollectionObject::IsCollection(comparisons)) {
     return comparisons->CreateError("'comparisons' must be a collection");
@@ -290,7 +290,7 @@ StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const Parsed
     }
     auto comparison_expr = static_cast<ExprObject*>(value.get())->expr();
     FuncIR::Op equal{FuncIR::eq, "equal", "equal"};
-    PL_ASSIGN_OR_RETURN(auto new_equals, graph->CreateNode<FuncIR>(comparison_expr->ast(), equal,
+    PX_ASSIGN_OR_RETURN(auto new_equals, graph->CreateNode<FuncIR>(comparison_expr->ast(), equal,
                                                                    std::vector<ExpressionIR*>{
                                                                        value_ir, comparison_expr}));
     if (or_expr == nullptr) {
@@ -298,7 +298,7 @@ StatusOr<QLObjectPtr> EqualsAny(IR* graph, const pypa::AstPtr& ast, const Parsed
       continue;
     }
     FuncIR::Op logicalOr{FuncIR::logor, "logicalOr", "logicalOr"};
-    PL_ASSIGN_OR_RETURN(or_expr,
+    PX_ASSIGN_OR_RETURN(or_expr,
                         graph->CreateNode<FuncIR>(comparison_expr->ast(), logicalOr,
                                                   std::vector<ExpressionIR*>{or_expr, new_equals}));
   }
@@ -313,7 +313,7 @@ StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast, const 
                                       ASTVisitor* visitor) {
   std::vector<ExpressionIR*> udf_args;
 
-  PL_ASSIGN_OR_RETURN(ExpressionIR * label_ir, GetArgAs<ExpressionIR>(ast, args, "label"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * label_ir, GetArgAs<ExpressionIR>(ast, args, "label"));
   if (!Match(label_ir, Func()) && !Match(label_ir, String()) && !Match(label_ir, ColumnNode())) {
     return label_ir->CreateIRNodeError(
         "Expected first argument 'label' of function 'script_reference' to be of type string, "
@@ -321,7 +321,7 @@ StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast, const 
         label_ir->type_string());
   }
 
-  PL_ASSIGN_OR_RETURN(ExpressionIR * script_ir, GetArgAs<ExpressionIR>(ast, args, "script"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * script_ir, GetArgAs<ExpressionIR>(ast, args, "script"));
   if (!Match(script_ir, Func()) && !Match(script_ir, String()) && !Match(script_ir, ColumnNode())) {
     return script_ir->CreateIRNodeError(
         "Expected first argument 'script' of function 'script_reference' to be of type string, "
@@ -346,8 +346,8 @@ StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast, const 
   CHECK_EQ(values.size(), keys.size());
 
   for (const auto& [idx, key] : Enumerate(keys)) {
-    PL_ASSIGN_OR_RETURN(StringIR * key_str_ir, GetArgAs<StringIR>(ast, key, "key"));
-    PL_ASSIGN_OR_RETURN(ExpressionIR * val_ir, GetArgAs<ExpressionIR>(ast, values[idx], "label"));
+    PX_ASSIGN_OR_RETURN(StringIR * key_str_ir, GetArgAs<StringIR>(ast, key, "key"));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * val_ir, GetArgAs<ExpressionIR>(ast, values[idx], "label"));
 
     if (!Match(val_ir, Func()) && !Match(val_ir, String()) && !Match(val_ir, ColumnNode())) {
       return val_ir->CreateIRNodeError(
@@ -361,37 +361,37 @@ StatusOr<QLObjectPtr> ScriptReference(IR* graph, const pypa::AstPtr& ast, const 
   }
 
   FuncIR::Op op{FuncIR::Opcode::non_op, "", "_script_reference"};
-  PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, udf_args));
+  PX_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, udf_args));
   return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * duration_string, GetArgAs<StringIR>(ast, args, "duration"));
+  PX_ASSIGN_OR_RETURN(StringIR * duration_string, GetArgAs<StringIR>(ast, args, "duration"));
   auto int_or_s = StringToTimeInt(duration_string->str());
   if (!int_or_s.ok()) {
     return WrapAstError(duration_string->ast(), int_or_s.status());
   }
 
-  PL_ASSIGN_OR_RETURN(IntIR * node, graph->CreateNode<IntIR>(ast, int_or_s.ConsumeValueOrDie()));
+  PX_ASSIGN_OR_RETURN(IntIR * node, graph->CreateNode<IntIR>(ast, int_or_s.ConsumeValueOrDie()));
   return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> ParseTime(int64_t time_now, IR* graph, const pypa::AstPtr& ast,
                                 const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(ExpressionIR * time_ir, GetArgAs<ExpressionIR>(ast, args, "time"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * time_ir, GetArgAs<ExpressionIR>(ast, args, "time"));
 
   auto int_or_s = ParseAllTimeFormats(time_now, time_ir);
   if (!int_or_s.ok()) {
     return WrapAstError(time_ir->ast(), int_or_s.status());
   }
 
-  PL_ASSIGN_OR_RETURN(TimeIR * node, graph->CreateNode<TimeIR>(ast, int_or_s.ConsumeValueOrDie()));
+  PX_ASSIGN_OR_RETURN(TimeIR * node, graph->CreateNode<TimeIR>(ast, int_or_s.ConsumeValueOrDie()));
   return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
+  PX_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
 
   QLObjectPtr spec = args.GetArg("export_spec");
   if (!Exporter::IsExporter(spec)) {
@@ -399,55 +399,55 @@ StatusOr<QLObjectPtr> Export(const pypa::AstPtr& ast, const ParsedArgs& args, AS
   }
 
   auto exporter = std::static_pointer_cast<Exporter>(spec);
-  PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
+  PX_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
 
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
 Status PixieModule::RegisterCompileTimeFuncs() {
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
       FuncObject::Create(kNowOpID, {}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(&NowEval, compiler_state_, graph_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(now_fn->SetDocString(kNowOpDocstring));
+  PX_RETURN_IF_ERROR(now_fn->SetDocString(kNowOpDocstring));
   AddMethod(kNowOpID, now_fn);
 
   for (const auto& [time_fn_id, time_scale_ns] : kTimeFuncValues) {
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         std::shared_ptr<FuncObject> time_fn,
         FuncObject::Create(time_fn_id, {"unit"}, {},
                            /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                            std::bind(&TimeEval, graph_, time_scale_ns, std::placeholders::_1,
                                      std::placeholders::_2, std::placeholders::_3),
                            ast_visitor()));
-    PL_RETURN_IF_ERROR(time_fn->SetDocString(absl::Substitute(kTimeFuncDocstringTpl, time_fn_id)));
+    PX_RETURN_IF_ERROR(time_fn->SetDocString(absl::Substitute(kTimeFuncDocstringTpl, time_fn_id)));
     AddMethod(time_fn_id, time_fn);
   }
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> uuid_str_fn,
       FuncObject::Create(kUInt128ConversionID, {"uuid"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(&UInt128Conversion, graph_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(uuid_str_fn->SetDocString(kUInt128ConversionDocstring));
+  PX_RETURN_IF_ERROR(uuid_str_fn->SetDocString(kUInt128ConversionDocstring));
   AddMethod(kUInt128ConversionID, uuid_str_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> upid_constructor_fn,
       FuncObject::Create(kMakeUPIDID, {"asid", "pid", "ts_ns"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(&UPIDConstructor, graph_, std::placeholders::_1,
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
-  PL_RETURN_IF_ERROR(upid_constructor_fn->SetDocString(kMakeUPIDDocstring));
+  PX_RETURN_IF_ERROR(upid_constructor_fn->SetDocString(kMakeUPIDDocstring));
   AddMethod(kMakeUPIDID, upid_constructor_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> abs_time_fn,
       FuncObject::Create(kAbsTimeOpID, {"date_string", "format"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
@@ -455,10 +455,10 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                                    std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(abs_time_fn->SetDocString(kAbsTimeDocstring));
+  PX_RETURN_IF_ERROR(abs_time_fn->SetDocString(kAbsTimeDocstring));
   AddMethod(kAbsTimeOpID, abs_time_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> equals_any_fn,
       FuncObject::Create(kEqualsAnyID, {"value", "comparisons"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
@@ -466,10 +466,10 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                                    std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(equals_any_fn->SetDocString(kEqualsAnyDocstring));
+  PX_RETURN_IF_ERROR(equals_any_fn->SetDocString(kEqualsAnyDocstring));
   AddMethod(kEqualsAnyID, equals_any_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> script_reference_fn,
       FuncObject::Create(kScriptReferenceID, {"label", "script", "args"}, {{"args", "{}"}},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
@@ -477,10 +477,10 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(script_reference_fn->SetDocString(kScriptReferenceDocstring));
+  PX_RETURN_IF_ERROR(script_reference_fn->SetDocString(kScriptReferenceDocstring));
   AddMethod(kScriptReferenceID, script_reference_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> parse_duration_fn,
       FuncObject::Create(kParseDurationOpID, {"duration"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
@@ -488,10 +488,10 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseDurationDocstring));
+  PX_RETURN_IF_ERROR(parse_duration_fn->SetDocString(kParseDurationDocstring));
   AddMethod(kParseDurationOpID, parse_duration_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> parse_time_fn,
       FuncObject::Create(
           kParseTimeOpID, {"time"}, {},
@@ -500,59 +500,59 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(parse_time_fn->SetDocString(kParseTimeDocstring));
+  PX_RETURN_IF_ERROR(parse_time_fn->SetDocString(kParseTimeDocstring));
   AddMethod(kParseTimeOpID, parse_time_fn);
   return Status::OK();
 }
 
 Status PixieModule::RegisterTypeObjs() {
-  PL_ASSIGN_OR_RETURN(auto time_type_object, TypeObject::Create(IRNodeType::kTime, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kTimeTypeName, time_type_object));
+  PX_ASSIGN_OR_RETURN(auto time_type_object, TypeObject::Create(IRNodeType::kTime, ast_visitor()));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kTimeTypeName, time_type_object));
 
   // Service
-  PL_ASSIGN_OR_RETURN(auto service_type_object,
+  PX_ASSIGN_OR_RETURN(auto service_type_object,
                       TypeObject::Create(types::STRING, types::ST_SERVICE_NAME, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kServiceTypeName, service_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kServiceTypeName, service_type_object));
 
   // Pod
-  PL_ASSIGN_OR_RETURN(auto pod_type_object,
+  PX_ASSIGN_OR_RETURN(auto pod_type_object,
                       TypeObject::Create(types::STRING, types::ST_POD_NAME, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPodTypeName, pod_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPodTypeName, pod_type_object));
 
   // Node
-  PL_ASSIGN_OR_RETURN(auto node_type_object,
+  PX_ASSIGN_OR_RETURN(auto node_type_object,
                       TypeObject::Create(types::STRING, types::ST_NODE_NAME, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNodeTypeName, node_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNodeTypeName, node_type_object));
 
   // Namespace
-  PL_ASSIGN_OR_RETURN(auto namespace_type_object,
+  PX_ASSIGN_OR_RETURN(auto namespace_type_object,
                       TypeObject::Create(types::STRING, types::ST_NAMESPACE_NAME, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNamespaceTypeName, namespace_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNamespaceTypeName, namespace_type_object));
 
   // Container
-  PL_ASSIGN_OR_RETURN(auto container_type_object,
+  PX_ASSIGN_OR_RETURN(auto container_type_object,
                       TypeObject::Create(types::STRING, types::ST_CONTAINER_NAME, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kContainerTypeName, container_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kContainerTypeName, container_type_object));
 
   // UPID
-  PL_ASSIGN_OR_RETURN(auto upid_type_object,
+  PX_ASSIGN_OR_RETURN(auto upid_type_object,
                       TypeObject::Create(types::UINT128, types::ST_UPID, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kUPIDTypeName, upid_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kUPIDTypeName, upid_type_object));
 
   // Bytes
-  PL_ASSIGN_OR_RETURN(auto bytes_type_object,
+  PX_ASSIGN_OR_RETURN(auto bytes_type_object,
                       TypeObject::Create(types::INT64, types::ST_BYTES, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kBytesTypeName, bytes_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kBytesTypeName, bytes_type_object));
 
   // Duration ns
-  PL_ASSIGN_OR_RETURN(auto duration_type_object,
+  PX_ASSIGN_OR_RETURN(auto duration_type_object,
                       TypeObject::Create(types::INT64, types::ST_DURATION_NS, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kDurationNSTypeName, duration_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kDurationNSTypeName, duration_type_object));
 
   // Percent
-  PL_ASSIGN_OR_RETURN(auto percent_type_object,
+  PX_ASSIGN_OR_RETURN(auto percent_type_object,
                       TypeObject::Create(types::FLOAT64, types::ST_PERCENT, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPercentTypeName, percent_type_object));
+  PX_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPercentTypeName, percent_type_object));
 
   return Status::OK();
 }
@@ -567,10 +567,10 @@ StatusOr<QLObjectPtr> NoopDisplayHandler(IR*, CompilerState*, const pypa::AstPtr
 StatusOr<QLObjectPtr> DisplayHandler(IR* graph, CompilerState* compiler_state,
                                      const pypa::AstPtr& ast, const ParsedArgs& args,
                                      ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
-  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
+  PX_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
+  PX_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
-  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), df->op(),
+  PX_RETURN_IF_ERROR(AddResultSink(graph, ast, name->str(), df->op(),
                                    compiler_state->result_address(),
                                    compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
@@ -580,8 +580,8 @@ StatusOr<QLObjectPtr> DebugDisplayHandler(IR* graph, CompilerState* compiler_sta
                                           const absl::flat_hash_set<std::string>& reserved_names,
                                           const pypa::AstPtr& ast, const ParsedArgs& args,
                                           ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
-  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
+  PX_ASSIGN_OR_RETURN(auto df, GetAsDataFrame(args.GetArg("out")));
+  PX_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(ast, args, "name"));
 
   std::string out_name = PixieModule::kDebugTablePrefix + name->str();
   std::string out_name_base = out_name;
@@ -592,20 +592,20 @@ StatusOr<QLObjectPtr> DebugDisplayHandler(IR* graph, CompilerState* compiler_sta
     ++i;
   }
 
-  PL_RETURN_IF_ERROR(AddResultSink(graph, ast, out_name, df->op(), compiler_state->result_address(),
+  PX_RETURN_IF_ERROR(AddResultSink(graph, ast, out_name, df->op(), compiler_state->result_address(),
                                    compiler_state->result_ssl_targetname()));
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
 Status PixieModule::Init() {
-  PL_RETURN_IF_ERROR(RegisterUDFFuncs());
-  PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
-  PL_RETURN_IF_ERROR(RegisterUDTFs());
-  PL_RETURN_IF_ERROR(RegisterTypeObjs());
+  PX_RETURN_IF_ERROR(RegisterUDFFuncs());
+  PX_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
+  PX_RETURN_IF_ERROR(RegisterUDTFs());
+  PX_RETURN_IF_ERROR(RegisterTypeObjs());
 
   auto display_handler = func_based_exec_ ? &NoopDisplayHandler : &DisplayHandler;
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> display_fn,
       FuncObject::Create(kDisplayOpID, {"out", "name", "cols"},
                          {{"name", "'output'"}, {"cols", "[]"}},
@@ -615,10 +615,10 @@ Status PixieModule::Init() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(display_fn->SetDocString(kDisplayOpDocstring));
+  PX_RETURN_IF_ERROR(display_fn->SetDocString(kDisplayOpDocstring));
   AddMethod(kDisplayOpID, display_fn);
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> export_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> export_fn,
                       FuncObject::Create(kExportOpID, {"out", "export_spec"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -626,10 +626,10 @@ Status PixieModule::Init() {
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
 
-  PL_RETURN_IF_ERROR(export_fn->SetDocString(kExportOpDocstring));
+  PX_RETURN_IF_ERROR(export_fn->SetDocString(kExportOpDocstring));
   AddMethod(kExportOpID, export_fn);
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> debug_fn,
       FuncObject::Create(
           kDebugOpID, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
@@ -639,20 +639,20 @@ Status PixieModule::Init() {
                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(debug_fn->SetDocString(kDebugOpDocstring));
+  PX_RETURN_IF_ERROR(debug_fn->SetDocString(kDebugOpDocstring));
   AddMethod(kDebugOpID, debug_fn);
 
-  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(compiler_state_, graph_, ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpID, base_df));
-  PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
-  PL_RETURN_IF_ERROR(AssignAttribute(kVisAttrID, viz));
+  PX_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(compiler_state_, graph_, ast_visitor()));
+  PX_RETURN_IF_ERROR(AssignAttribute(kDataframeOpID, base_df));
+  PX_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
+  PX_RETURN_IF_ERROR(AssignAttribute(kVisAttrID, viz));
 
-  PL_ASSIGN_OR_RETURN(auto otel, OTelModule::Create(compiler_state_, ast_visitor(), graph_));
-  PL_RETURN_IF_ERROR(AssignAttribute("otel", otel));
+  PX_ASSIGN_OR_RETURN(auto otel, OTelModule::Create(compiler_state_, ast_visitor(), graph_));
+  PX_RETURN_IF_ERROR(AssignAttribute("otel", otel));
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto plugin, PluginModule::Create(compiler_state_->plugin_config(), ast_visitor(), graph_));
-  PL_RETURN_IF_ERROR(AssignAttribute("plugin", plugin));
+  PX_RETURN_IF_ERROR(AssignAttribute("plugin", plugin));
   return Status::OK();
 }
 

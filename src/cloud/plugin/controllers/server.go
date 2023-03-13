@@ -28,11 +28,11 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"gopkg.in/segmentio/analytics-go.v3"
 	"gopkg.in/yaml.v2"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
@@ -745,6 +745,7 @@ func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetReten
 	}
 	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs, OrgID: utils.ProtoFromUUID(orgID)})
 	if err != nil {
+		log.WithField("orgID", orgID.String()).WithError(err).Error("Failed to fetch cron scripts for retention scripts for org")
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron scripts")
 	}
 

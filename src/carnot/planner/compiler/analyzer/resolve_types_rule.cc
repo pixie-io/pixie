@@ -31,7 +31,7 @@ StatusOr<bool> ResolveTypesRule::Apply(IRNode* ir_node) {
   if (op->is_type_resolved()) {
     return false;
   }
-  PL_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state_));
+  PX_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state_));
 
   return true;
 }

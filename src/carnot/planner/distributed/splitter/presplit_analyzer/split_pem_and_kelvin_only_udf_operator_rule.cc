@@ -57,14 +57,14 @@ SplitPEMAndKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
   // Check the root expression first.
   // In the event both this function and its child are both PEM-only UDFs, we should
   // move them both together, rather than moving the child then this parent after.
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto is_scalar_func_executor,
       IsFuncWithExecutor(compiler_state_, expr, udfspb::UDFSourceExecutor::UDF_PEM));
   if (!is_scalar_func_executor) {
     // Even if this func itself isn't a PEM-only UDF, its children still might be.
     // Optionally update all of the child expressions of this expression.
     for (ExpressionIR* arg : func->args()) {
-      PL_ASSIGN_OR_RETURN(auto arg_col_names,
+      PX_ASSIGN_OR_RETURN(auto arg_col_names,
                           OptionallyUpdateExpression(func, arg, pem_only_map, used_column_names));
       new_col_names.insert(arg_col_names.begin(), arg_col_names.end());
     }
@@ -74,15 +74,15 @@ SplitPEMAndKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
   // Create the column that will replace the expression in the operator we are splitting.
   auto output_col_name = GetUniqueOutputName(func, used_column_names);
   new_col_names.insert(output_col_name);
-  PL_ASSIGN_OR_RETURN(auto input_col, graph->CreateNode<ColumnIR>(expr->ast(), output_col_name,
+  PX_ASSIGN_OR_RETURN(auto input_col, graph->CreateNode<ColumnIR>(expr->ast(), output_col_name,
                                                                   /*parent_op_idx*/ 0));
   // This column should have the same type as the expression, since it's just a projection.
-  PL_RETURN_IF_ERROR(input_col->SetResolvedType(expr->resolved_type()));
+  PX_RETURN_IF_ERROR(input_col->SetResolvedType(expr->resolved_type()));
 
   // Add the PEM-only expression to the PEM-only map.
   // It will get deleted from its original parent next.
   auto col_expr = ColumnExpression(output_col_name, expr);
-  PL_RETURN_IF_ERROR(pem_only_map->AddColExpr(col_expr));
+  PX_RETURN_IF_ERROR(pem_only_map->AddColExpr(col_expr));
 
   // Update the original expression's parent to point to the new column in the PEM-only map.
   // We may want to refactor this logic into a utility for updating Operator expressions,
@@ -90,13 +90,13 @@ SplitPEMAndKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
   // expression with a new expression.
   if (Match(expr_parent, Filter())) {
     auto filter = static_cast<FilterIR*>(expr_parent);
-    PL_RETURN_IF_ERROR(filter->SetFilterExpr(input_col));
+    PX_RETURN_IF_ERROR(filter->SetFilterExpr(input_col));
   } else if (Match(expr_parent, Map())) {
     auto map = static_cast<MapIR*>(expr_parent);
-    PL_RETURN_IF_ERROR(map->UpdateColExpr(expr, input_col));
+    PX_RETURN_IF_ERROR(map->UpdateColExpr(expr, input_col));
   } else if (Match(expr_parent, Func())) {
     auto func = static_cast<FuncIR*>(expr_parent);
-    PL_RETURN_IF_ERROR(func->UpdateArg(expr, input_col));
+    PX_RETURN_IF_ERROR(func->UpdateArg(expr, input_col));
   } else {
     return error::Internal("Unexpected parent expression type: $0", expr_parent->type_string());
   }
@@ -108,10 +108,10 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
     return false;
   }
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto has_pem_only_udf,
       HasFuncWithExecutor(compiler_state_, node, udfspb::UDFSourceExecutor::UDF_PEM));
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       auto has_kelvin_only_udf,
       HasFuncWithExecutor(compiler_state_, node, udfspb::UDFSourceExecutor::UDF_KELVIN));
 
@@ -146,7 +146,7 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
 
   // Create a new Map node to handle all of the PEM-only expressions.
   // It will become the parent of the current operator.
-  PL_ASSIGN_OR_RETURN(MapIR * pem_map,
+  PX_ASSIGN_OR_RETURN(MapIR * pem_map,
                       graph->CreateNode<MapIR>(node->ast(), parent, ColExpressionVector({}),
                                                /* keep_input_columns */ false));
   // Optionally update each expression.
@@ -158,14 +158,14 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   absl::flat_hash_set<std::string> used_column_names(parent_col_names.begin(),
                                                      parent_col_names.end());
   for (ExpressionIR* operator_expression : operator_expressions) {
-    PL_ASSIGN_OR_RETURN(auto new_col_names, OptionallyUpdateExpression(op, operator_expression,
+    PX_ASSIGN_OR_RETURN(auto new_col_names, OptionallyUpdateExpression(op, operator_expression,
                                                                        pem_map, used_column_names));
     used_column_names.insert(new_col_names.begin(), new_col_names.end());
   }
 
   // PEM-only map must contain all of the input columns to the operator `op`.
   // We do this last, because some of those required inputs may no longer be required.
-  PL_ASSIGN_OR_RETURN(auto required_inputs_per_parent, op->RequiredInputColumns());
+  PX_ASSIGN_OR_RETURN(auto required_inputs_per_parent, op->RequiredInputColumns());
   if (required_inputs_per_parent.size() != 1) {
     return op->CreateIRNodeError("Operator unexpectedly has $0 parents, expected 1",
                                  op->parents().size());
@@ -180,22 +180,22 @@ StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
     if (!parent_table_type->HasColumn(required_input_col)) {
       continue;
     }
-    PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(op->ast(), required_input_col,
+    PX_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(op->ast(), required_input_col,
                                                                    /*parent_op_idx*/ 0));
-    PL_RETURN_IF_ERROR(ResolveExpressionType(col_node, compiler_state_, {parent_table_type}));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(col_node, compiler_state_, {parent_table_type}));
     sorted_col_exprs.emplace(op->resolved_table_type()->GetColumnIndex(required_input_col),
                              ColumnExpression(required_input_col, col_node));
   }
 
   for (const auto& [_, col_expr] : sorted_col_exprs) {
-    PL_RETURN_IF_ERROR(pem_map->AddColExpr(col_expr));
+    PX_RETURN_IF_ERROR(pem_map->AddColExpr(col_expr));
   }
 
   // Update the relation of the PEM-only map.
   // The relation of the parent should be unchanged, since it is just a reassignment
   // of the same output value.
-  PL_RETURN_IF_ERROR(ResolveOperatorType(pem_map, compiler_state_));
-  PL_RETURN_IF_ERROR(op->ReplaceParent(parent, pem_map));
+  PX_RETURN_IF_ERROR(ResolveOperatorType(pem_map, compiler_state_));
+  PX_RETURN_IF_ERROR(op->ReplaceParent(parent, pem_map));
   return true;
 }
 

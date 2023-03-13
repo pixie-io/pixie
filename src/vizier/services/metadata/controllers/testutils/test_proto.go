@@ -489,7 +489,6 @@ metadata {
   namespace: "a_namespace"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   owner_references {
     kind: "pod"
     name: "test"
@@ -530,7 +529,6 @@ metadata {
   namespace: "a_namespace"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   creation_timestamp_ns: 4
   deletion_timestamp_ns: 6
 }
@@ -557,7 +555,6 @@ metadata {
   name: "object_md"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   owner_references {
     kind: "pod"
     name: "test"
@@ -587,7 +584,6 @@ metadata {
   name: "object_md"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   owner_references {
     kind: "pod"
     name: "test"
@@ -628,7 +624,6 @@ metadata {
   name: "object_md"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   owner_references {
     kind: "pod"
     name: "test"
@@ -670,7 +665,6 @@ metadata {
   name: "object_md"
   uid: "ijkl"
   resource_version: "1",
-  cluster_name: "a_cluster",
   owner_references {
     kind: "pod"
     name: "test"
@@ -713,7 +707,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "12345"
 	resource_version: "1"
-	cluster_name: "a_cluster"
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
 	labels {
@@ -765,7 +758,6 @@ spec {
 			namespace: "a_namespace"
 			uid: "ijkl"
 			resource_version: "1",
-			cluster_name: "a_cluster",
 			owner_references {
 			  kind: "pod"
 			  name: "test"
@@ -806,7 +798,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1"
-	cluster_name: "a_cluster"
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
 	owner_references {
@@ -858,7 +849,6 @@ spec {
 			namespace: "a_namespace"
 			uid: "ijkl"
 			resource_version: "1",
-			cluster_name: "a_cluster",
 			owner_references {
 				kind: "ReplicaSet"
 				name: "pod1"

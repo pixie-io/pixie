@@ -1,0 +1,31 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+go_library(
+    name = "wrk_sweeper_lib",
+    srcs = ["wrk_sweeper.go"],
+    importpath = "px.dev/pixie/src/stirling/demo_apps/wrk_sweeper",
+)
+
+pl_go_binary(
+    name = "wrk_sweeper",
+    embed = [":wrk_sweeper_lib"],
+)

@@ -37,7 +37,7 @@
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-DEFINE_string(stirling_profiler_px_jattach_path, "/pl/px_jattach", "Path to px_jattach app.");
+DEFINE_string(stirling_profiler_px_jattach_path, "/px/px_jattach", "Path to px_jattach app.");
 
 namespace px {
 

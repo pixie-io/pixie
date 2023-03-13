@@ -56,6 +56,8 @@ struct IntfImplTypeInfo {
 StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> ExtractGolangInterfaces(
     ElfReader* elf_reader);
 
+void PrintTo(const std::vector<IntfImplTypeInfo>& infos, std::ostream* os);
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace px

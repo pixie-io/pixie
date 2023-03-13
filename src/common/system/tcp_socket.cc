@@ -63,7 +63,7 @@ TCPSocket::TCPSocket(sa_family_t sa_family, int internal)
   memset(&addr_, 0, kSockAddrSize);
 
   // Required to differentiate the private vs public TCPSocket constructor.
-  PL_UNUSED(internal);
+  PX_UNUSED(internal);
 }
 
 TCPSocket::~TCPSocket() { Close(); }

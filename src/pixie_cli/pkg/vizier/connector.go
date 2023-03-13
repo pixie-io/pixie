@@ -32,6 +32,7 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
@@ -55,21 +56,31 @@ const (
 // Connector is an interface to Vizier.
 type Connector struct {
 	// The ID of the vizier.
-	id        uuid.UUID
-	conn      *grpc.ClientConn
-	vz        vizierpb.VizierServiceClient
-	vzDebug   vizierpb.VizierDebugServiceClient
-	cloudAddr string
+	id           uuid.UUID
+	conn         *grpc.ClientConn
+	vz           vizierpb.VizierServiceClient
+	vzDebug      vizierpb.VizierDebugServiceClient
+	cloudAddr    string
+	directVzAddr string
+	directVzKey  string
 }
 
 // NewConnector returns a new connector.
-func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Connector, error) {
-	c := &Connector{
-		id: utils.UUIDFromProtoOrNil(vzInfo.ID),
+func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, directVzAddr string, directVzKey string) (*Connector, error) {
+	c := &Connector{}
+	if vzInfo != nil {
+		c.id = utils.UUIDFromProtoOrNil(vzInfo.ID)
 	}
 	c.cloudAddr = cloudAddr
+	c.directVzAddr = directVzAddr
+	c.directVzKey = directVzKey
 
-	err := c.connect(cloudAddr)
+	addr := cloudAddr
+	if directVzAddr != "" {
+		addr = directVzAddr
+	}
+
+	err := c.connect(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +316,13 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		QueryName:         scriptName,
 	}
 
-	resp, err := c.vz.ExecuteScript(auth.CtxWithCreds(ctx), reqPB)
+	if c.directVzAddr != "" {
+		ctx = metadata.AppendToOutgoingContext(ctx, "X-DIRECT-VIZIER-KEY", c.directVzKey)
+	} else {
+		ctx = auth.CtxWithCreds(ctx)
+	}
+
+	resp, err := c.vz.ExecuteScript(ctx, reqPB)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +348,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 				}
 				return
 			}
-			s.resp, err = c.restartConnAndResumeExecute(auth.CtxWithCreds(ctx), s.queryID)
+			s.resp, err = c.restartConnAndResumeExecute(ctx, s.queryID)
 			if err != nil {
 				continue
 			}

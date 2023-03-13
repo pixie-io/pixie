@@ -1,0 +1,54 @@
+{
+  "builders": [
+    {
+      "commit": true,
+      "image": "{{ user `base_image_and_tag` }}",
+      "type": "docker"
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "repository": "{{ user `generated_image_repository` }}",
+        "tags": [
+          "{{ user `generated_image_tag` }}"
+        ],
+        "type": "docker-tag"
+      },
+      "docker-push"
+    ]
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "apt-get -y update; DEBIAN_FRONTEND=noninteractive apt-get install -y curl"
+      ],
+      "type": "shell"
+    },
+    {
+      "cookbook_paths": [
+        "cookbooks"
+      ],
+      "prevent_sudo": true,
+      "roles_path": "roles",
+      "run_list": [
+        "recipe[px_dev::linux]"
+      ],
+      "type": "chef-solo",
+      "version": "17.8.25"
+    },
+    {
+      "inline": [
+        "rm -rf /tmp/*",
+        "rm -rf /opt/chef",
+        "rm -rf /var/lib/apt/lists/*"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "base_image_and_tag": "",
+    "generated_image_repository": "",
+    "generated_image_tag": ""
+  }
+}

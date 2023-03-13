@@ -42,16 +42,16 @@ std::shared_ptr<Table> TestTable() {
   auto rb1 = schema::RowBatch(schema::RowDescriptor(rel.col_types()), 3);
   std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
-  PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  PL_CHECK_OK(table->WriteRowBatch(rb1));
+  PX_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  PX_CHECK_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  PX_CHECK_OK(table->WriteRowBatch(rb1));
 
   auto rb2 = schema::RowBatch(schema::RowDescriptor(rel.col_types()), 2);
   std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
   std::vector<types::Int64Value> col2_in2 = {5, 6};
-  PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-  PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-  PL_CHECK_OK(table->WriteRowBatch(rb2));
+  PX_CHECK_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  PX_CHECK_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  PX_CHECK_OK(table->WriteRowBatch(rb2));
 
   return table;
 }

@@ -8,13 +8,13 @@
     },
     {
       "name": "namespace",
-      "type": "PX_STRING",
+      "type": "PX_NAMESPACE",
       "description": "The namespace to query.",
       "defaultValue": ""
     },
     {
       "name": "pod_filter",
-      "type": "PX_STRING",
+      "type": "PX_POD",
       "description": "Filter on DNS requests where the source pod contains the provided string.",
       "defaultValue": ""
     },

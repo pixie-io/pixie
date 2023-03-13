@@ -42,7 +42,7 @@ namespace distributed {
 StatusOr<std::unique_ptr<Coordinator>> Coordinator::Create(
     CompilerState* compiler_state, const distributedpb::DistributedState& distributed_state) {
   std::unique_ptr<Coordinator> coordinator(new CoordinatorImpl());
-  PL_RETURN_IF_ERROR(coordinator->Init(compiler_state, distributed_state));
+  PX_RETURN_IF_ERROR(coordinator->Init(compiler_state, distributed_state));
   return coordinator;
 }
 
@@ -64,7 +64,7 @@ Status CoordinatorImpl::InitImpl(CompilerState* compiler_state,
   compiler_state_ = compiler_state;
   distributed_state_ = &distributed_state;
   for (int64_t i = 0; i < distributed_state.carnot_info_size(); ++i) {
-    PL_RETURN_IF_ERROR(ProcessConfig(distributed_state.carnot_info()[i]));
+    PX_RETURN_IF_ERROR(ProcessConfig(distributed_state.carnot_info()[i]));
   }
   if (data_store_nodes_.size() == 0) {
     return error::InvalidArgument(
@@ -118,13 +118,13 @@ StatusOr<AgentToPlanMap> GetUniquePEMPlans(IR* query, DistributedPlan* plan,
                                            const std::vector<int64_t>& carnot_instances,
                                            const SchemaToAgentsMap& schema_map) {
   absl::flat_hash_set<int64_t> all_agents(carnot_instances.begin(), carnot_instances.end());
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       OperatorToAgentSet removable_ops_to_agents,
       MapRemovableOperatorsRule::GetRemovableOperators(plan, schema_map, all_agents, query));
   AgentToPlanMap agent_to_plan_map;
   if (removable_ops_to_agents.empty()) {
     // Create the default single PEM map.
-    PL_ASSIGN_OR_RETURN(auto default_ir_uptr, query->Clone());
+    PX_ASSIGN_OR_RETURN(auto default_ir_uptr, query->Clone());
     auto default_ir = default_ir_uptr.get();
     agent_to_plan_map.plan_pool.push_back(std::move(default_ir_uptr));
     for (int64_t carnot_i : carnot_instances) {
@@ -141,7 +141,7 @@ StatusOr<AgentToPlanMap> GetUniquePEMPlans(IR* query, DistributedPlan* plan,
     clusters.emplace_back(remaining_agents, absl::flat_hash_set<OperatorIR*>{});
   }
   for (const auto& c : clusters) {
-    PL_ASSIGN_OR_RETURN(auto cluster_plan_uptr, c.CreatePlan(query));
+    PX_ASSIGN_OR_RETURN(auto cluster_plan_uptr, c.CreatePlan(query));
     auto cluster_plan = cluster_plan_uptr.get();
     if (cluster_plan->FindNodesThatMatch(Operator()).empty()) {
       continue;
@@ -165,7 +165,7 @@ StatusOr<SchemaToAgentsMap> LoadSchemaMap(
   for (const auto& schema : distributed_state.schema_info()) {
     absl::flat_hash_set<int64_t> agent_ids;
     for (const auto& uid_pb : schema.agent_list()) {
-      PL_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(uid_pb));
+      PX_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(uid_pb));
       if (!uuid_to_id_map.contains(uuid)) {
         VLOG(1) << absl::Substitute("UUID $0 not found in agent_id_to_plan_id map", uuid.str());
         continue;
@@ -179,16 +179,16 @@ StatusOr<SchemaToAgentsMap> LoadSchemaMap(
 
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
   // TODO(zasgar) set support_partial_agg to true to enable partial aggs.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<Splitter> splitter,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<Splitter> splitter,
                       Splitter::Create(compiler_state_, /* support_partial_agg */ false));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       splitter->SplitKelvinAndAgents(logical_plan));
   auto distributed_plan = std::make_unique<DistributedPlan>();
-  PL_ASSIGN_OR_RETURN(int64_t remote_node_id, distributed_plan->AddCarnot(GetRemoteProcessor()));
+  PX_ASSIGN_OR_RETURN(int64_t remote_node_id, distributed_plan->AddCarnot(GetRemoteProcessor()));
   // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.
   // TODO(philkuz) (PL-1469) Future support for grabbing data from multiple Kelvin nodes.
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan_uptr, split_plan->original_plan->Clone());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan_uptr, split_plan->original_plan->Clone());
   CarnotInstance* remote_carnot = distributed_plan->Get(remote_node_id);
 
   IR* remote_plan = remote_plan_uptr.get();
@@ -197,22 +197,22 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
 
   std::vector<int64_t> source_node_ids;
   for (const auto& [i, data_store_info] : Enumerate(data_store_nodes_)) {
-    PL_ASSIGN_OR_RETURN(int64_t source_node_id, distributed_plan->AddCarnot(data_store_info));
+    PX_ASSIGN_OR_RETURN(int64_t source_node_id, distributed_plan->AddCarnot(data_store_info));
     distributed_plan->AddEdge(source_node_id, remote_node_id);
     source_node_ids.push_back(source_node_id);
   }
 
-  PL_ASSIGN_OR_RETURN(auto agent_schema_map,
+  PX_ASSIGN_OR_RETURN(auto agent_schema_map,
                       LoadSchemaMap(*distributed_state_, distributed_plan->uuid_to_id_map()));
 
-  PL_ASSIGN_OR_RETURN(auto agent_to_plan_map,
+  PX_ASSIGN_OR_RETURN(auto agent_to_plan_map,
                       GetUniquePEMPlans(split_plan->before_blocking.get(), distributed_plan.get(),
                                         source_node_ids, agent_schema_map));
 
   // Add the PEM plans to the distributed plan.
   for (const auto carnot_id : source_node_ids) {
     if (!agent_to_plan_map.agent_to_plan_map.contains(carnot_id)) {
-      PL_RETURN_IF_ERROR(distributed_plan->DeleteNode(carnot_id));
+      PX_RETURN_IF_ERROR(distributed_plan->DeleteNode(carnot_id));
       continue;
     }
     distributed_plan->Get(carnot_id)->AddPlan(agent_to_plan_map.agent_to_plan_map[carnot_id]);
@@ -224,7 +224,7 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
 
   // Prune unnecessary sources from the Kelvin plan.
   DistributedPruneUnavailableSourcesRule prune_sources_rule(agent_schema_map);
-  PL_RETURN_IF_ERROR(prune_sources_rule.Apply(remote_carnot));
+  PX_RETURN_IF_ERROR(prune_sources_rule.Apply(remote_carnot));
 
   distributed_plan->SetKelvin(remote_carnot);
   distributed_plan->AddPlanToAgentMap(std::move(agent_to_plan_map.plan_to_agents));

@@ -65,7 +65,7 @@ static inline int64_t FillTableHot(Table* table, int64_t table_size, int64_t bat
   int64_t time_counter = 0;
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
     auto batch = MakeHotBatch(batch_length, &time_counter);
-    PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
+    PX_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
   }
   return time_counter;
 }
@@ -75,9 +75,9 @@ static inline int64_t FillTableCold(Table* table, int64_t table_size, int64_t ba
   int64_t time_counter = 0;
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
     auto batch = MakeHotBatch(batch_length, &time_counter);
-    PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
+    PX_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
     // Run compaction every time to ensure that all batches get put into cold.
-    PL_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
+    PX_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
   }
   return time_counter;
 }
@@ -203,7 +203,7 @@ static void BM_TableWriteEmpty(benchmark::State& state) {
     int64_t time_counter = 0;
     auto batch = MakeHotBatch(batch_length, &time_counter);
     state.ResumeTiming();
-    PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
+    PX_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
     state.PauseTiming();
     // Reset table each time to ensure no expiration is required on write.
     table = MakeTable(table_size, compaction_size);
@@ -228,7 +228,7 @@ static void BM_TableWriteFull(benchmark::State& state) {
     int64_t time_counter = 0;
     auto batch = MakeHotBatch(batch_length, &time_counter);
     state.ResumeTiming();
-    PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
+    PX_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
   }
 
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
@@ -247,7 +247,7 @@ static void BM_TableCompaction(benchmark::State& state) {
   FillTableHot(table.get(), table_size, batch_length);
 
   for (auto _ : state) {
-    PL_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
+    PX_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
     state.PauseTiming();
     FillTableHot(table.get(), table_size, batch_length);
     state.ResumeTiming();
@@ -278,10 +278,10 @@ static void BM_TableThreaded(benchmark::State& state) {
 
   std::thread compaction_thread([table_ptr, done]() {
     while (!done->WaitForNotificationWithTimeout(absl::Milliseconds(50))) {
-      PL_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
+      PX_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
     }
     // Do one last compaction after writer thread has finished writing.
-    PL_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
+    PX_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
   });
 
   auto writer_work = [&]() {
@@ -294,7 +294,7 @@ static void BM_TableThreaded(benchmark::State& state) {
       col_wrapper->AppendFromVector(time_col);
       wrapper_batch->push_back(col_wrapper);
       auto start = std::chrono::high_resolution_clock::now();
-      PL_CHECK_OK(table_ptr->TransferRecordBatch(std::move(wrapper_batch)));
+      PX_CHECK_OK(table_ptr->TransferRecordBatch(std::move(wrapper_batch)));
       auto end = std::chrono::high_resolution_clock::now();
       auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
       {

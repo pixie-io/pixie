@@ -1,4 +1,4 @@
 {
-   "run_list": [ "role[pl_workstation]" ],
+   "run_list": [ "role[px_workstation]" ],
    "env": "base"
 }

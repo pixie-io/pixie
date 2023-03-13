@@ -144,6 +144,7 @@ func convertConfigs(config *vizierpb.Configs) *plannerpb.Configs {
 			URL:      config.OTelEndpointConfig.URL,
 			Headers:  config.OTelEndpointConfig.Headers,
 			Insecure: config.OTelEndpointConfig.Insecure,
+			Timeout:  config.OTelEndpointConfig.Timeout,
 		}
 	}
 

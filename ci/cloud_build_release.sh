@@ -29,7 +29,6 @@ parse_args() {
   while test $# -gt 0; do
       case "$1" in
         -r) RELEASE=true
-            prod="True"
             shift
             ;;
         -p) PUBLIC=true
@@ -39,8 +38,6 @@ parse_args() {
       esac
   done
 }
-
-prod="False"
 
 parse_args "$@"
 
@@ -56,8 +53,8 @@ echo "The image tag is: ${image_tag}"
 
 # We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
 if [[ "$PUBLIC" == "true" ]]; then
-  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-      --define public=True //k8s/cloud:cloud_images_push
+  bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+      --//k8s:build_type=public //k8s/cloud:cloud_images_push
 
   bazel build //tools/licenses:all_licenses --action_env=GOOGLE_APPLICATION_CREDENTIALS
 
@@ -65,20 +62,20 @@ if [[ "$PUBLIC" == "true" ]]; then
   gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
 
   # Write YAMLs + image paths to a tar file to support easy deployment.
-  mkdir -p "${repo_path}/pixie_cloud"
   mkdir -p "${repo_path}/pixie_cloud/yamls"
   image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
 
   kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-  kustomize build "k8s/cloud_deps/base/elastic/operator" >> "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+  kustomize build "k8s/cloud_deps/base/elastic/operator" > "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
   kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
 
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq > "${image_list_file}"
-  #shellcheck disable=SC2002
-  cat "${repo_path}/pixie_cloud/yamls/cloud.yaml" |  yq e '.. | .image? | select(.)' -o=json - | jq 'strings' | sort | uniq >> "${image_list_file}"
+  deploy_yamls=(
+    "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+    "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+    "${repo_path}/pixie_cloud/yamls/cloud.yaml"
+  )
+
+  bazel run @com_github_mikefarah_yq_v4//:v4 -- '..|.image?|select(.|type == "!!str")' -o=json "${deploy_yamls[@]}" | sort | uniq > "${image_list_file}"
 
   cd "${repo_path}"
   tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
@@ -88,16 +85,16 @@ if [[ "$PUBLIC" == "true" ]]; then
   exit 0
 fi
 
-bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-    --define prod="${prod}" //k8s/cloud:cloud_images_push
+bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+    --//k8s:build_type=proprietary //k8s/cloud:cloud_images_push
 
 yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
 # Build prod YAMLs.
 if [[ "$RELEASE" == "true" ]]; then
   yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:prod_cloud_yamls
+  bazel build --stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_prod_cloud
 else # Build staging YAMLs.
-  bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" //k8s/cloud:staging_cloud_yamls
+  bazel build --stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_staging_cloud
 fi
 
 kubectl apply -f "$yaml_path"

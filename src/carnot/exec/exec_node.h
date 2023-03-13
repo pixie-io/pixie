@@ -195,7 +195,7 @@ class ExecNode {
     DCHECK(is_initialized_);
     DCHECK(type() == ExecNodeType::kSourceNode);
     stats_->ResumeTotalTimer();
-    PL_RETURN_IF_ERROR(GenerateNextImpl(exec_state));
+    PX_RETURN_IF_ERROR(GenerateNextImpl(exec_state));
     stats_->StopTotalTimer();
     return Status::OK();
   }
@@ -220,7 +220,7 @@ class ExecNode {
     }
     stats_->AddInputStats(rb);
     stats_->ResumeTotalTimer();
-    PL_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, rb, parent_index));
+    PX_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, rb, parent_index));
     stats_->StopTotalTimer();
     return Status::OK();
   }
@@ -285,7 +285,7 @@ class ExecNode {
   Status SendRowBatchToChildren(ExecState* exec_state, const table_store::schema::RowBatch& rb) {
     stats_->ResumeChildTimer();
     for (size_t i = 0; i < children_.size(); ++i) {
-      PL_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
+      PX_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
     }
     stats_->StopChildTimer();
     stats_->AddOutputStats(rb);
@@ -362,7 +362,7 @@ class SourceNode : public ExecNode {
   Status SendEndOfStream(ExecState* exec_state) {
     // TODO(philkuz) this part is not tracked w/ the timer. Need to include this in NVI or cut
     // losses.
-    PL_ASSIGN_OR_RETURN(auto rb, table_store::schema::RowBatch::WithZeroRows(
+    PX_ASSIGN_OR_RETURN(auto rb, table_store::schema::RowBatch::WithZeroRows(
                                      *output_descriptor_, /*eow*/ true, /*eos*/ true));
     return SendRowBatchToChildren(exec_state, *rb);
   }

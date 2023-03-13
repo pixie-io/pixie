@@ -25,7 +25,7 @@ namespace carnot {
 namespace planner {
 
 Status GroupByIR::Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(AddParent(parent));
   return SetGroups(groups);
 }
 
@@ -33,7 +33,7 @@ Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   DCHECK(groups_.empty());
   groups_.resize(groups.size());
   for (size_t i = 0; i < groups.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, groups[i]));
+    PX_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, groups[i]));
   }
   return Status::OK();
 }
@@ -43,7 +43,7 @@ Status GroupByIR::CopyFromNodeImpl(const IRNode* source,
   const GroupByIR* group_by = static_cast<const GroupByIR*>(source);
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : group_by->groups_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
   return SetGroups(new_groups);

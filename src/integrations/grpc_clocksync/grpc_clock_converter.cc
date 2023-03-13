@@ -87,7 +87,7 @@ StatusOr<::clocksync::CurrentReferenceTimeReply> GRPCClockConverter::GetCurrentR
 }
 
 Status GRPCClockConverter::PollForRefTime() {
-  PL_ASSIGN_OR_RETURN(auto resp, GetCurrentReferenceTime());
+  PX_ASSIGN_OR_RETURN(auto resp, GetCurrentReferenceTime());
   realtime_to_reftime_.Emplace(resp.local_time(), resp.reference_time());
   return Status::OK();
 }

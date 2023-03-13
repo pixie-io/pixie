@@ -1,0 +1,18 @@
+diff --git a/clang/utils/TableGen/CMakeLists.txt b/clang/utils/TableGen/CMakeLists.txt
+index 04aa72cde..2818ee7b8 100644
+--- a/clang/utils/TableGen/CMakeLists.txt
++++ b/clang/utils/TableGen/CMakeLists.txt
+@@ -26,3 +26,4 @@ add_tablegen(clang-tblgen CLANG
+ target_link_libraries(clang-tblgen PRIVATE clangSupport)
+ 
+ set_target_properties(clang-tblgen PROPERTIES FOLDER "Clang tablegenning")
++install(TARGETS clang-tblgen)
+diff --git a/llvm/utils/TableGen/CMakeLists.txt b/llvm/utils/TableGen/CMakeLists.txt
+index 725c99b8e..e3cb242b0 100644
+--- a/llvm/utils/TableGen/CMakeLists.txt
++++ b/llvm/utils/TableGen/CMakeLists.txt
+@@ -61,3 +61,4 @@ add_tablegen(llvm-tblgen LLVM
+   )
+ target_link_libraries(llvm-tblgen PRIVATE LLVMTableGenGlobalISel)
+ set_target_properties(llvm-tblgen PROPERTIES FOLDER "Tablegenning")
++install(TARGETS llvm-tblgen)

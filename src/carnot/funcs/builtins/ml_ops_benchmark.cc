@@ -19,9 +19,9 @@
 #include <gflags/gflags.h>
 
 #include <benchmark/benchmark.h>
-#include "src/carnot/exec/ml/model_pool.h"
 #include "src/carnot/exec/ml/transformer_executor.h"
 #include "src/carnot/funcs/builtins/ml_ops.h"
+#include "src/carnot/udf/model_pool.h"
 #include "src/common/perf/perf.h"
 
 DEFINE_string(sentencepiece_dir, "", "Path to sentencepiece.proto");
@@ -62,7 +62,7 @@ static void BM_TransformerModel(benchmark::State& state) {
   px::carnot::builtins::TransformerUDF udf(FLAGS_embedding_dir);
   auto ints = random_ints(64);
   auto json = px::carnot::builtins::write_ints_to_json(ints.data(), 64);
-  auto model_pool = px::carnot::exec::ml::ModelPool::Create();
+  auto model_pool = px::carnot::udf::ModelPool::Create();
   auto model =
       model_pool->GetModelExecutor<px::carnot::exec::ml::TransformerExecutor>(FLAGS_embedding_dir);
   model.reset();

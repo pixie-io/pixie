@@ -49,14 +49,15 @@ constexpr char kBCCProgram[] = R"(
 // It is not enough to resolve symlinks, because the two paths may come from two
 // instances of the same container image, which appear to be separate paths,
 // but which have share the same file inode behind the scenes.
-TEST(BCCWrapper, UnexpectedExtraTrigger) {
+// Disabling this test since this bug doesn't seem to reproduce with podman.
+TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
-  ::px::stirling::testing::Go1_16_GRPCServerContainer server1;
-  ::px::stirling::testing::Go1_16_GRPCServerContainer server2;
-  ::px::stirling::testing::Go1_16_GRPCClientContainer client1;
-  ::px::stirling::testing::Go1_16_GRPCClientContainer client2;
+  ::px::stirling::testing::Go1_19_GRPCServerContainer server1;
+  ::px::stirling::testing::Go1_19_GRPCServerContainer server2;
+  ::px::stirling::testing::Go1_19_GRPCClientContainer client1;
+  ::px::stirling::testing::Go1_19_GRPCClientContainer client2;
 
   // A Uprobe template for the GRPCServerContainer.
   // Binary path is set later.
@@ -68,7 +69,7 @@ TEST(BCCWrapper, UnexpectedExtraTrigger) {
   };
 
   // A templated path to the server. We will replace $0 with the pid of the server instance.
-  const std::string kServerPath = "/proc/$0/root/golang_1_16_grpc_tls_server_binary";
+  const std::string kServerPath = "/proc/$0/root/golang_1_19_grpc_tls_server_binary";
 
   // Run server 1 and attach uprobes to it.
   ASSERT_OK(server1.Run(std::chrono::seconds{60}));

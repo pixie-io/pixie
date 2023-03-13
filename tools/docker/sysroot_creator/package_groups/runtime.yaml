@@ -1,0 +1,13 @@
+---
+include:
+- ca-certificates
+- libtinfo6
+- libc6
+- libelf1
+- libstdc++6
+- zlib1g
+- libunwind8
+path_excludes:
+- usr/share/
+extra_dirs:
+- tmp/

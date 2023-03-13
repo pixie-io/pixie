@@ -23,6 +23,7 @@ linters:
   # So we include gofmt here.
   - gofmt
   - gosimple
+  - govet
   - ineffassign
   - makezero
   - misspell
@@ -44,13 +45,12 @@ linters:
   # This is because we have autofix hooks for these linters.
   - goimports
   - golint
-  - govet
   disable-all: false
 
 linters-settings:
   errcheck:
     # yamllint disable-line rule:line-length
-    ignore: io:Close,github.com/fatih/color,github.com/spf13/pflag:MarkHidden,github.com/spf13/viper:(BindEnv|BindPFlag),github.com/spf13/cobra:(Help|MarkFlagRequired|Usage),gopkg.in/segmentio/analytics-go.v3:Enqueue,database/sql:Rollback,github.com/nats-io/nats.go:Unsubscribe
+    ignore: io:Close,github.com/fatih/color,github.com/spf13/pflag:MarkHidden,github.com/spf13/viper:(BindEnv|BindPFlag),github.com/spf13/cobra:(Help|MarkFlagRequired|Usage),github.com/segmentio/analytics-go/v3:Enqueue,database/sql:Rollback,github.com/nats-io/nats.go:Unsubscribe
   goimports:
     local-prefixes: px.dev
   nakedret:

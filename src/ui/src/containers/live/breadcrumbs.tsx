@@ -30,11 +30,12 @@ import {
 } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
+import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/live/autocomplete-utils';
 import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
-import { highlightMatch, normalize } from 'app/utils/string-search';
+import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
+import { BreadcrumbExtras } from 'configurable/breadcrumb-extras';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
 
 import { Variable } from './vis';
@@ -94,6 +95,14 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     margin: `${spacing(-0.5)} ${spacing(2.5)}`,
     padding: spacing(0.5),
     overflow: 'auto hidden',
+    position: 'relative',
+  },
+  extras: {
+    textAlign: 'right',
+    marginRight: spacing(2.5),
+    marginTop: spacing(0.5),
+    marginBottom: spacing(-2),
+    zIndex: 1, // So it's clickable above the padding of the widgets
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
@@ -131,13 +140,12 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       allowTyping: true,
       divider: true,
       getListItems: async (input) => {
-        const normalizedInput = normalize(input);
-        const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
+        const matches = new Map(input ? scriptIds.map(s => [s, highlightNamespacedScoredMatch(input, s, '/')]) : []);
 
-        const ids = !input ? [...scriptIds] : scriptIds.filter((s) => {
-          const ns = normalize(s);
-          return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
-        });
+        const ids = scriptIds.filter(s => !input || s === SCRATCH_SCRIPT.id || matches.get(s)?.isMatch);
+
+        // First, sort by quality of the match
+        ids.sort((a, b) => (matches.get(a)?.distance ?? Infinity) - (matches.get(b)?.distance ?? Infinity));
 
         // The `px` namespace should appear before all others
         ids.sort((a, b) => Number(b.startsWith('px/')) - Number(a.startsWith('px/')));
@@ -157,7 +165,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           value: scriptId,
           description: scripts.get(scriptId).description,
           autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
-          highlights: scriptId === SCRATCH_SCRIPT.id ? [] : highlightMatch(input, scriptId),
+          highlights: scriptId === SCRATCH_SCRIPT.id ? [] : (matches.get(scriptId)?.highlights ?? []),
         }));
         return { items, hasMoreItems: false };
       },
@@ -198,11 +206,16 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
       if (variable?.validValues?.length) {
         argProps.getListItems = async (input) => ({
           items: variable.validValues
-            .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)
-            .map((suggestion) => ({
-              value: suggestion,
+            .map(value => ({
+              value,
+              match: input === '' ? { isMatch: true, distance: 0, highlights: [] } : highlightScoredMatch(input, value),
+            }))
+            .filter(({ match }) => match.isMatch)
+            .sort((a, b) => a.match.distance - b.match.distance)
+            .map(({ value, match }) => ({
+              value,
               description: '',
-              highlights: highlightMatch(input, suggestion),
+              highlights: match.highlights,
             })),
           hasMoreItems: false,
         });
@@ -247,6 +260,8 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
     return <></>;
   }
 
+  const extras = <BreadcrumbExtras />;
+
   return (
     <>
       <div className={classes.breadcrumbs}>
@@ -258,6 +273,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           breadcrumbs={argBreadcrumbs}
         />
       </div>
+      { extras && <div className={classes.extras}><BreadcrumbExtras /></div> }
     </>
   );
 });

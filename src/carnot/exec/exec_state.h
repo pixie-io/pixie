@@ -29,8 +29,9 @@
 #include <sole.hpp>
 
 #include "src/carnot/carnotpb/carnot.pb.h"
+#include "src/carnot/exec/exec_metrics.h"
 #include "src/carnot/exec/grpc_router.h"
-#include "src/carnot/exec/ml/model_pool.h"
+#include "src/carnot/udf/model_pool.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"
@@ -69,8 +70,9 @@ class ExecState {
       const ResultSinkStubGenerator& stub_generator,
       const MetricsStubGenerator& metrics_stub_generator,
       const TraceStubGenerator& trace_stub_generator, const sole::uuid& query_id,
-      ml::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
-      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {})
+      udf::ModelPool* model_pool, GRPCRouter* grpc_router = nullptr,
+      std::function<void(grpc::ClientContext*)> add_auth_func = [](grpc::ClientContext*) {},
+      ExecMetrics* exec_metrics = nullptr)
       : func_registry_(func_registry),
         table_store_(std::move(table_store)),
         stub_generator_(stub_generator),
@@ -79,7 +81,8 @@ class ExecState {
         query_id_(query_id),
         model_pool_(model_pool),
         grpc_router_(grpc_router),
-        add_auth_to_grpc_client_context_func_(add_auth_func) {}
+        add_auth_to_grpc_client_context_func_(add_auth_func),
+        exec_metrics_(exec_metrics) {}
 
   ~ExecState() {
     if (grpc_router_ != nullptr) {
@@ -97,17 +100,17 @@ class ExecState {
 
   const sole::uuid& query_id() const { return query_id_; }
 
-  ml::ModelPool* model_pool() { return model_pool_; }
+  udf::ModelPool* model_pool() { return model_pool_; }
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetScalarUDFDefinition(name, arg_types));
+    PX_ASSIGN_OR_RETURN(auto def, func_registry_->GetScalarUDFDefinition(name, arg_types));
     id_to_scalar_udf_map_[id] = def;
     return Status::OK();
   }
 
   Status AddUDA(int64_t id, const std::string& name, const std::vector<types::DataType> arg_types) {
-    PL_ASSIGN_OR_RETURN(auto def, func_registry_->GetUDADefinition(name, arg_types));
+    PX_ASSIGN_OR_RETURN(auto def, func_registry_->GetUDADefinition(name, arg_types));
     id_to_uda_map_[id] = def;
     return Status::OK();
   }
@@ -197,6 +200,8 @@ class ExecState {
     add_auth_to_grpc_client_context_func_(ctx);
   }
 
+  ExecMetrics* exec_metrics() { return exec_metrics_; }
+
  private:
   udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
@@ -207,9 +212,10 @@ class ExecState {
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
-  ml::ModelPool* model_pool_;
+  udf::ModelPool* model_pool_;
   GRPCRouter* grpc_router_ = nullptr;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_client_context_func_;
+  ExecMetrics* exec_metrics_;
 
   int64_t current_source_ = 0;
   bool current_source_set_ = false;

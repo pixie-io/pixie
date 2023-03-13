@@ -53,7 +53,7 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
     for (const auto& op_child_id : op_children) {
       auto child_node = node->graph()->Get(op_child_id);
       if (Match(child_node, Func())) {
-        PL_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, child_node, valid));
+        PX_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, child_node, valid));
         if (!res.success) {
           return res;
         }
@@ -68,13 +68,13 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
   auto func = static_cast<FuncIR*>(node);
 
   for (const auto& arg : func->args()) {
-    PL_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, arg, valid));
+    PX_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, arg, valid));
     if (!res.success) {
       return res;
     }
   }
 
-  PL_ASSIGN_OR_RETURN(auto udf_type,
+  PX_ASSIGN_OR_RETURN(auto udf_type,
                       compiler_state->registry_info()->GetUDFExecType(func->func_name()));
   if (udf_type != UDFExecType::kUDF) {
     return UDFCheckerResult::Success();
@@ -83,7 +83,7 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
   if (!func->HasRegistryArgTypes()) {
     return error::Internal("func '$0' doesn't have RegistryArgTypes set.", func->func_name());
   }
-  PL_ASSIGN_OR_RETURN(auto executor, compiler_state->registry_info()->GetUDFSourceExecutor(
+  PX_ASSIGN_OR_RETURN(auto executor, compiler_state->registry_info()->GetUDFSourceExecutor(
                                          func->func_name(), func->registry_arg_types()));
   if (!valid.contains(executor)) {
     return UDFCheckerResult::Fail(func->func_name());
@@ -98,7 +98,7 @@ const absl::flat_hash_set<udfspb::UDFSourceExecutor> kValidKelvinUDFExecutors{
 
 StatusOr<bool> ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(CompilerState* compiler_state,
                                                             OperatorIR* op) {
-  PL_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, op, kValidPEMUDFExecutors));
+  PX_ASSIGN_OR_RETURN(auto res, CheckScalarFuncExecutor(compiler_state, op, kValidPEMUDFExecutors));
   return res.success;
 }
 
@@ -106,7 +106,7 @@ StatusOr<bool> ScalarUDFsRunOnPEMRule::Apply(IRNode* node) {
   if (!Match(node, Operator())) {
     return false;
   }
-  PL_ASSIGN_OR_RETURN(auto res,
+  PX_ASSIGN_OR_RETURN(auto res,
                       CheckScalarFuncExecutor(compiler_state_, node, kValidPEMUDFExecutors));
   if (!res.success) {
     return node->CreateIRNodeError(
@@ -118,7 +118,7 @@ StatusOr<bool> ScalarUDFsRunOnPEMRule::Apply(IRNode* node) {
 
 StatusOr<bool> ScalarUDFsRunOnKelvinRule::OperatorUDFsRunOnKelvin(CompilerState* compiler_state,
                                                                   OperatorIR* op) {
-  PL_ASSIGN_OR_RETURN(auto res,
+  PX_ASSIGN_OR_RETURN(auto res,
                       CheckScalarFuncExecutor(compiler_state, op, kValidKelvinUDFExecutors));
   return res.success;
 }
@@ -127,7 +127,7 @@ StatusOr<bool> ScalarUDFsRunOnKelvinRule::Apply(IRNode* node) {
   if (!Match(node, Operator())) {
     return false;
   }
-  PL_ASSIGN_OR_RETURN(auto res,
+  PX_ASSIGN_OR_RETURN(auto res,
                       CheckScalarFuncExecutor(compiler_state_, node, kValidKelvinUDFExecutors));
   if (!res.success) {
     return node->CreateIRNodeError(

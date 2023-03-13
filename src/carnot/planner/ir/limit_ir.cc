@@ -24,7 +24,7 @@ namespace carnot {
 namespace planner {
 
 Status LimitIR::Init(OperatorIR* parent, int64_t limit_value, bool pem_only) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(AddParent(parent));
   SetLimitValue(limit_value);
   pem_only_ = pem_only;
   return Status::OK();

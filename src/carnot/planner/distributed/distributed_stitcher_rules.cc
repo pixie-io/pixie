@@ -46,13 +46,13 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::Apply(CarnotInstance* from_car
        from_carnot_instance->distributed_plan()->dag().DependenciesOf(from_carnot_instance->id())) {
     CarnotInstance* to_carnot_instance =
         from_carnot_instance->distributed_plan()->Get(to_carnot_instance_id);
-    PL_ASSIGN_OR_RETURN(bool did_connect_this_graph,
+    PX_ASSIGN_OR_RETURN(bool did_connect_this_graph,
                         ConnectGraphs(from_carnot_instance->plan(), {from_carnot_instance->id()},
                                       to_carnot_instance->plan()));
     did_connect_any_graph |= did_connect_this_graph;
   }
   // Make sure we can connect to self.
-  PL_ASSIGN_OR_RETURN(bool did_connect_graph_to_self,
+  PX_ASSIGN_OR_RETURN(bool did_connect_graph_to_self,
                       ConnectGraphs(from_carnot_instance->plan(), {from_carnot_instance->id()},
                                     from_carnot_instance->plan()));
   did_connect_any_graph |= did_connect_graph_to_self;
@@ -87,7 +87,7 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(
 
   bool did_connect_graph = false;
   for (const auto& [source_group, sink] : grpc_bridges) {
-    PL_RETURN_IF_ERROR(source_group->AddGRPCSink(sink, from_agents));
+    PX_RETURN_IF_ERROR(source_group->AddGRPCSink(sink, from_agents));
     did_connect_graph = true;
   }
 

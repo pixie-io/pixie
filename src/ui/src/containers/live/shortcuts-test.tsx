@@ -75,10 +75,10 @@ describe('Shortcut keys', () => {
     const map = getKeyMap();
     expect(Object.keys(map).length).toBeGreaterThan(0);
     for (const mapping of Object.values(map)) {
-      expect(mapping.description).not.toBeFalsy();
+      expect(mapping.description).not.toBeUndefined();
       expect(typeof mapping.sequence).not.toBeFalsy();
       expect(typeof mapping.displaySequence).not.toBeFalsy();
-      expect(mapping.description && mapping.sequence && mapping.displaySequence).toBeTruthy();
+      expect(mapping.sequence && mapping.displaySequence).toBeTruthy();
     }
   });
 

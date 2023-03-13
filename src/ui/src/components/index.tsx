@@ -28,8 +28,7 @@ export type { PixienautBoxProps } from './auth/pixienaut-box';
 export { SignupMarcom } from './auth/signup-marcom';
 
 export { Autocomplete } from './autocomplete/autocomplete';
-export { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
-export type { AutocompleteContextProps } from 'app/components/autocomplete/autocomplete-context';
+export { AutocompleteContext, type AutocompleteContextProps } from './autocomplete/autocomplete-context';
 export { Completion, Completions } from './autocomplete/completions';
 export type {
   CompletionHeader,
@@ -38,20 +37,7 @@ export type {
   CompletionItem,
   CompletionItems,
 } from './autocomplete/completions';
-export { FormFieldInput } from './autocomplete/form';
-export { FormInput, Input } from './autocomplete/input';
-export { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
-export type { AutocompleteField } from 'app/components/autocomplete/command-autocomplete-input';
-export { CommandAutocomplete } from 'app/components/autocomplete/command-autocomplete';
-export type { TabSuggestion } from 'app/components/autocomplete/command-autocomplete';
-export { useAutocomplete } from './autocomplete/use-autocomplete';
-export type { GetCompletionsFunc } from './autocomplete/use-autocomplete';
-export {
-  findNextItem,
-  getDisplayStringFromTabStops,
-  TabStopParser,
-} from './autocomplete/utils';
-export type { ItemsMap, TabStop } from './autocomplete/utils';
+export { Input } from './autocomplete/input';
 
 export { Breadcrumbs } from './breadcrumbs/breadcrumbs';
 export type { BreadcrumbOptions } from './breadcrumbs/breadcrumbs';

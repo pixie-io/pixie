@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@px//bazel:llvm_cmake.bzl", "add_llvm_cache_entries", "llvm_build_data_deps")
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 licenses(["notice"])
@@ -30,7 +31,8 @@ cmake(
         "-j`nproc`",
         "-l`nproc`",
     ],
-    cache_entries = {
+    build_data = llvm_build_data_deps(),
+    cache_entries = add_llvm_cache_entries({
         "BUILD_FUZZ": "OFF",
         "BUILD_TESTING": "OFF",
 
@@ -53,9 +55,7 @@ cmake(
         "LIBBPF_INCLUDE_DIRS": "$EXT_BUILD_DEPS/libbpf/include",
         "LIBBPF_LIBRARIES": "$EXT_BUILD_DEPS/libbpf/lib64/libbpf.a",
         "LIBCEREAL_INCLUDE_DIRS": "$EXT_BUILD_DEPS/include",
-        "LLVM_REQUESTED_VERSION": "15.0.6",
-        "LLVM_ROOT": "/opt/clang-15.0",
-    },
+    }),
     lib_source = ":bpftrace_source",
     linkopts = [
         "-lelf",
@@ -78,6 +78,6 @@ cmake(
         "@com_github_USCiLab_cereal//:cereal",
         "@com_github_iovisor_bcc//:bcc",
         "@com_github_libbpf_libbpf//:libbpf",
-        "@com_llvm_lib//:llvm",
+        "@px//:llvm",
     ],
 )

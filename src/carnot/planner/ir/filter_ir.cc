@@ -24,7 +24,7 @@ namespace carnot {
 namespace planner {
 
 Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
-  PL_RETURN_IF_ERROR(AddParent(parent));
+  PX_RETURN_IF_ERROR(AddParent(parent));
   return SetFilterExpr(expr);
 }
 
@@ -35,18 +35,18 @@ std::string FilterIR::DebugString() const {
 Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   auto old_filter_expr = filter_expr_;
   if (old_filter_expr) {
-    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_filter_expr));
+    PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_filter_expr));
   }
-  PL_ASSIGN_OR_RETURN(filter_expr_, graph()->OptionallyCloneWithEdge(this, expr));
+  PX_ASSIGN_OR_RETURN(filter_expr_, graph()->OptionallyCloneWithEdge(this, expr));
   if (old_filter_expr) {
-    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_filter_expr->id()));
+    PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_filter_expr->id()));
   }
   return Status::OK();
 }
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
   DCHECK(is_type_resolved());
-  PL_ASSIGN_OR_RETURN(auto filter_cols, filter_expr_->InputColumnNames());
+  PX_ASSIGN_OR_RETURN(auto filter_cols, filter_expr_->InputColumnNames());
   filter_cols.insert(resolved_table_type()->ColumnNames().begin(),
                      resolved_table_type()->ColumnNames().end());
   return std::vector<absl::flat_hash_set<std::string>>{filter_cols};
@@ -73,22 +73,22 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   }
 
   auto expr = pb->mutable_expression();
-  PL_RETURN_IF_ERROR(filter_expr_->ToProto(expr));
+  PX_RETURN_IF_ERROR(filter_expr_->ToProto(expr));
   return Status::OK();
 }
 
 Status FilterIR::CopyFromNodeImpl(const IRNode* node,
                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const FilterIR* filter = static_cast<const FilterIR*>(node);
-  PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
+  PX_ASSIGN_OR_RETURN(ExpressionIR * new_node,
                       graph()->CopyNode(filter->filter_expr_, copied_nodes_map));
-  PL_RETURN_IF_ERROR(SetFilterExpr(new_node));
+  PX_RETURN_IF_ERROR(SetFilterExpr(new_node));
   return Status::OK();
 }
 
 Status FilterIR::ResolveType(CompilerState* compiler_state) {
-  PL_RETURN_IF_ERROR(ResolveExpressionType(filter_expr_, compiler_state, parent_types()));
-  PL_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
+  PX_RETURN_IF_ERROR(ResolveExpressionType(filter_expr_, compiler_state, parent_types()));
+  PX_ASSIGN_OR_RETURN(auto type_ptr, OperatorIR::DefaultResolveType(parent_types()));
   return SetResolvedType(type_ptr);
 }
 

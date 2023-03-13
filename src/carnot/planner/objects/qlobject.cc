@@ -41,7 +41,7 @@ void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
 
 StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& ast,
                                                            std::string_view attr) const {
-  PL_ASSIGN_OR_RETURN(auto object, GetAttributeInternal(ast, attr));
+  PX_ASSIGN_OR_RETURN(auto object, GetAttributeInternal(ast, attr));
   object->SetAst(ast);
   return object;
 }

@@ -1,0 +1,4 @@
+---
+short: Cassandra Flow Graph
+long: >
+  Graph of Cassandra messages in the cluster, with latency stats.

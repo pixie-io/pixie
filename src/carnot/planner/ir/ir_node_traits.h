@@ -60,7 +60,7 @@ class OperatorTraits {
             std::enable_if_t<!OperatorTraits<Q>::HasResolveType() && !Q::FailOnResolveType(),
                              std::nullptr_t> = nullptr>
   static auto ResolveType(TOpIR* inst, CompilerState* /* compiler_state */) {
-    PL_ASSIGN_OR_RETURN(auto type_, TOpIR::DefaultResolveType(inst->parent_types()));
+    PX_ASSIGN_OR_RETURN(auto type_, TOpIR::DefaultResolveType(inst->parent_types()));
     return inst->SetResolvedType(type_);
   }
 

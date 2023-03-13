@@ -97,13 +97,13 @@ StatusOr<std::string_view> NATSDecoder::ExtractCommand() {
 
 // For messages formatted as: <command> <options>\r\n
 Status ParseMessageOptions(NATSDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(msg->options, decoder->ExtractStringUntil(kMessageTerminateMarker));
+  PX_ASSIGN_OR_RETURN(msg->options, decoder->ExtractStringUntil(kMessageTerminateMarker));
   absl::StripTrailingAsciiWhitespace(&msg->options);
   return Status::OK();
 }
 
 StatusOr<std::vector<std::string_view>> GetMessageFields(NATSDecoder* decoder) {
-  PL_ASSIGN_OR_RETURN(std::string_view msg_str,
+  PX_ASSIGN_OR_RETURN(std::string_view msg_str,
                       decoder->ExtractStringUntil(kMessageTerminateMarker));
   std::vector<std::string_view> msg_fields =
       absl::StrSplit(msg_str, absl::ByAnyChar(kMessageFieldDelimiters), absl::SkipEmpty());
@@ -123,13 +123,13 @@ std::map<std::string_view, std::string_view> Zip(const std::vector<std::string_v
 
 Status ParseMessageWithFields(NATSDecoder* decoder,
                               const std::vector<std::string_view>& msg_field_names, Message* msg) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string_view> msg_fields, GetMessageFields(decoder));
+  PX_ASSIGN_OR_RETURN(std::vector<std::string_view> msg_fields, GetMessageFields(decoder));
   msg->options = ToJSONString(Zip(msg_field_names, msg_fields));
   return Status::OK();
 }
 
 Status ParseSubOptions(NATSDecoder* decoder, Message* msg) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string_view> msg_fields, GetMessageFields(decoder));
+  PX_ASSIGN_OR_RETURN(std::vector<std::string_view> msg_fields, GetMessageFields(decoder));
 
   constexpr size_t kFieldNumWithQueueGroup = 3;
   constexpr std::string_view kSubjectKey = "subject";
@@ -149,7 +149,7 @@ Status ParseSubOptions(NATSDecoder* decoder, Message* msg) {
 
 Status ParseMessageWithPayload(NATSDecoder* decoder,
                                const std::vector<std::string_view>& msg_field_names, Message* msg) {
-  PL_ASSIGN_OR_RETURN(std::string_view msg_str,
+  PX_ASSIGN_OR_RETURN(std::string_view msg_str,
                       decoder->ExtractStringUntil(kMessageTerminateMarker));
 
   std::vector<std::string_view> msg_fields =
@@ -161,7 +161,7 @@ Status ParseMessageWithPayload(NATSDecoder* decoder,
   std::map<std::string_view, std::string_view> options = Zip(msg_field_names, msg_fields);
 
   constexpr std::string_view kPayloadKey = "payload";
-  PL_ASSIGN_OR_RETURN(std::string_view payload,
+  PX_ASSIGN_OR_RETURN(std::string_view payload,
                       decoder->ExtractStringUntil(kMessageTerminateMarker));
   options[kPayloadKey] = payload;
 
@@ -177,26 +177,26 @@ Status ParseMessage(std::string_view* buf, Message* msg) {
 
   NATSDecoder decoder(*buf);
 
-  PL_ASSIGN_OR_RETURN(msg->command, decoder.ExtractCommand());
+  PX_ASSIGN_OR_RETURN(msg->command, decoder.ExtractCommand());
 
   if (msg->command == kInfo) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#info
-    PL_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
+    PX_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
   } else if (msg->command == kConnect) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#connect
-    PL_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
+    PX_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
   } else if (msg->command == kSub) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#sub
-    PL_RETURN_IF_ERROR(ParseSubOptions(&decoder, msg));
+    PX_RETURN_IF_ERROR(ParseSubOptions(&decoder, msg));
   } else if (msg->command == kUnsub) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#unsub
-    PL_RETURN_IF_ERROR(ParseMessageWithFields(&decoder, {"sid", "max_msgs"}, msg));
+    PX_RETURN_IF_ERROR(ParseMessageWithFields(&decoder, {"sid", "max_msgs"}, msg));
   } else if (msg->command == kPub) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#pub
-    PL_RETURN_IF_ERROR(ParseMessageWithPayload(&decoder, {"subject", "reply-to"}, msg));
+    PX_RETURN_IF_ERROR(ParseMessageWithPayload(&decoder, {"subject", "reply-to"}, msg));
   } else if (msg->command == kMsg) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#msg
-    PL_RETURN_IF_ERROR(ParseMessageWithPayload(&decoder, {"subject", "sid", "reply-to"}, msg));
+    PX_RETURN_IF_ERROR(ParseMessageWithPayload(&decoder, {"subject", "sid", "reply-to"}, msg));
   } else if (msg->command == kPing) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#ping
     decoder.ExtractStringUntil(kMessageTerminateMarker);
@@ -208,7 +208,7 @@ Status ParseMessage(std::string_view* buf, Message* msg) {
     decoder.ExtractStringUntil(kMessageTerminateMarker);
   } else if (msg->command == kERR) {
     // https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#okerr
-    PL_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
+    PX_RETURN_IF_ERROR(ParseMessageOptions(&decoder, msg));
   } else {
     return error::InvalidArgument("Invalid command: $0", *buf);
   }

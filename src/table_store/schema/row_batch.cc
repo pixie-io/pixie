@@ -72,7 +72,7 @@ int64_t RowBatch::NumBytes() const {
   int64_t total_bytes = 0;
   for (auto col : columns_) {
 #define TYPE_CASE(_dt_) total_bytes += types::GetArrowArrayBytes<_dt_>(col.get());
-    PL_SWITCH_FOREACH_DATATYPE(types::ArrowToDataType(col->type_id()), TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(types::ArrowToDataType(col->type_id()), TYPE_CASE);
 #undef TYPE_CASE
   }
   return total_bytes;
@@ -80,7 +80,7 @@ int64_t RowBatch::NumBytes() const {
 
 // Serialize/deserialize from protobuf.
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 template <DataType T>
 constexpr auto GetMutablePBDataColumn(table_store::schemapb::Column* data_col) {
   if constexpr (T == DataType::BOOLEAN) {
@@ -145,16 +145,16 @@ Status CopyFromInputPB(std::shared_ptr<arrow::Array>* output_column,
 
   auto builder = MakeArrowBuilder(T, arrow::default_memory_pool());
   auto input_data = GetPBDataColumn<T>(input_column);
-  PL_RETURN_IF_ERROR(builder->Reserve(input_data.data_size()));
+  PX_RETURN_IF_ERROR(builder->Reserve(input_data.data_size()));
 
   for (const auto& datum : input_data.data()) {
     if constexpr (T == DataType::UINT128) {
-      PL_RETURN_IF_ERROR(CopyValue<T>(builder.get(), types::UInt128Value(datum).val));
+      PX_RETURN_IF_ERROR(CopyValue<T>(builder.get(), types::UInt128Value(datum).val));
     } else {
-      PL_RETURN_IF_ERROR(CopyValue<T>(builder.get(), datum));
+      PX_RETURN_IF_ERROR(CopyValue<T>(builder.get(), datum));
     }
   }
-  PL_RETURN_IF_ERROR(builder->Finish(output_column));
+  PX_RETURN_IF_ERROR(builder->Finish(output_column));
   return Status::OK();
 }
 
@@ -169,14 +169,14 @@ Status RowBatch::ToProto(table_store::schemapb::RowBatchData* proto) const {
     auto dt = desc_.type(col_idx);
 
 #define TYPE_CASE(_dt_) CopyIntoOutputPB<_dt_>(output_col_data, input_col);
-    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+    PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
 
   return Status::OK();
 }
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 StatusOr<DataType> ProtoDataType(const table_store::schemapb::Column& proto) {
   switch (proto.col_data_case()) {
     case table_store::schemapb::Column::kBooleanData:
@@ -203,11 +203,11 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromProto(
   std::vector<std::shared_ptr<arrow::Array>> data_columns(proto.cols_size());
 
   for (auto i = 0; i < proto.cols_size(); ++i) {
-    PL_ASSIGN_OR_RETURN(types[i], ProtoDataType(proto.cols(i)));
+    PX_ASSIGN_OR_RETURN(types[i], ProtoDataType(proto.cols(i)));
     std::shared_ptr<arrow::Array> output_array;
 
-#define TYPE_CASE(_dt_) PL_RETURN_IF_ERROR(CopyFromInputPB<_dt_>(&data_columns[i], proto.cols(i)));
-    PL_SWITCH_FOREACH_DATATYPE(types[i], TYPE_CASE);
+#define TYPE_CASE(_dt_) PX_RETURN_IF_ERROR(CopyFromInputPB<_dt_>(&data_columns[i], proto.cols(i)));
+    PX_SWITCH_FOREACH_DATATYPE(types[i], TYPE_CASE);
 #undef TYPE_CASE
   }
 
@@ -217,7 +217,7 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromProto(
   output_rb->set_eos(proto.eos());
 
   for (auto i = 0; i < proto.cols_size(); ++i) {
-    PL_RETURN_IF_ERROR(output_rb->AddColumn(data_columns[i]));
+    PX_RETURN_IF_ERROR(output_rb->AddColumn(data_columns[i]));
   }
 
   return output_rb;
@@ -235,8 +235,8 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromColumnBuilders(
 
   for (auto& column_builder : *builders) {
     std::shared_ptr<arrow::Array> output_array;
-    PL_RETURN_IF_ERROR(column_builder->Finish(&output_array));
-    PL_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
+    PX_RETURN_IF_ERROR(column_builder->Finish(&output_array));
+    PX_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
   }
 
   return output_rb;
@@ -247,7 +247,7 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::WithZeroRows(const RowDescriptor& 
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> builders(desc.size());
   for (size_t i = 0; i < desc.size(); ++i) {
     builders[i] = types::MakeArrowBuilder(desc.type(i), arrow::default_memory_pool());
-    PL_RETURN_IF_ERROR(builders[i]->Reserve(0));
+    PX_RETURN_IF_ERROR(builders[i]->Reserve(0));
   }
   return RowBatch::FromColumnBuilders(desc, eow, eos, &builders);
 }
@@ -260,7 +260,7 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::Slice(int64_t offset, int64_t leng
   std::unique_ptr<RowBatch> output_rb = std::make_unique<RowBatch>(desc(), length);
   for (int64_t input_col_idx = 0; input_col_idx < num_columns(); ++input_col_idx) {
     auto col = ColumnAt(input_col_idx);
-    PL_RETURN_IF_ERROR(output_rb->AddColumn(col->Slice(offset, length)));
+    PX_RETURN_IF_ERROR(output_rb->AddColumn(col->Slice(offset, length)));
   }
   return output_rb;
 }

@@ -69,7 +69,24 @@ const CommandPaletteContextProviderInner = React.memo<WithChildren>(({
   const { tokens, selectedTokens } = parse(inputValue, selection);
 
   const groupedCompletions = useCommandProviders(inputValue, selection);
-  const allCompletions = React.useMemo(() => groupedCompletions.map(g => g.completions).flat(), [groupedCompletions]);
+  const allCompletions = React.useMemo(() => {
+    const all = groupedCompletions.map(g => g.completions).flat();
+    // useAutocomplete's `groupBy` option only considers neighbors, so we have to group them manually ahead of time.
+    // That is, if the options appear in groups ordered A, B, B, A, it creates two groups called 'A' instead of one.
+    // This is a known issue since at least 2020: https://github.com/mui/material-ui/issues/19109
+    // It was briefly fixed, but reverted in 2021: https://github.com/mui/material-ui/pull/19121#issuecomment-760781296
+
+    // Simple way: out.sort((a, b) => (a.heading ?? '').localeCompare(b.heading ?? ''));
+    // But we can't do that because we want the groups to appear in the same order as they originally did.
+    const groups = new Map<string, CommandCompletion[]>();
+    for (const completion of all) {
+      const group = groups.get(completion.heading ?? '') ?? [];
+      group.push(completion);
+      groups.set(completion.heading ?? '', group);
+    }
+
+    return [...groups.values()].flat(1);
+  }, [groupedCompletions]);
 
   const activateCompletion = React.useCallback((option: CommandCompletion) => {
     if (typeof option === 'string' || !option?.key) {
@@ -96,15 +113,18 @@ const CommandPaletteContextProviderInner = React.memo<WithChildren>(({
   const cta = React.useMemo(() => {
     if (highlightedCompletion?.cta) {
       return highlightedCompletion.cta;
-    } else if (highlightedCompletion) {
-      return groupedCompletions.find((res) => res.completions.includes(highlightedCompletion))?.cta ?? null;
-    } else {
-      // Pick the first matching provider that has a CTA, or if there are none, the first provider at all with a CTA.
-      // Providers should not offer a CTA if they aren't relevant to the current input.
-      return groupedCompletions.find((res) => res.completions.length > 0 && res.cta)?.cta
-        ?? groupedCompletions.find((res) => res.cta)?.cta
-        ?? null;
     }
+
+    if (highlightedCompletion) {
+      const match = groupedCompletions.find((res) => res.completions.includes(highlightedCompletion) && res.cta)?.cta;
+      if (match) return match;
+    }
+
+    // Pick the first matching provider that has a CTA, or if there are none, the first provider at all with a CTA.
+    // Providers should not offer a CTA if they aren't relevant to the current input.
+    return groupedCompletions.find((res) => res.completions.length > 0 && res.cta)?.cta
+      ?? groupedCompletions.find((res) => res.cta)?.cta
+      ?? null;
   }, [groupedCompletions, highlightedCompletion]);
 
   const ctx = React.useMemo(() => ({

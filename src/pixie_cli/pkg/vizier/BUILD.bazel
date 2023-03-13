@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
     name = "vizier",
@@ -46,19 +47,20 @@ go_library(
         "//src/utils/shared/k8s",
         "@com_github_fatih_color//:color",
         "@com_github_gofrs_uuid//:uuid",
+        "@com_github_segmentio_analytics_go_v3//:analytics-go",
         "@com_github_sirupsen_logrus//:logrus",
-        "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//rest",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",
         "@org_golang_x_sync//errgroup",
     ],
 )
 
-go_test(
+pl_go_test(
     name = "vizier_test",
     srcs = ["data_formatter_test.go"],
     deps = [

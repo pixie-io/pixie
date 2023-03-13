@@ -1,20 +1,9 @@
-# The default assignees if none of the subpaths match.
+# Order matters here and the last owner takes precedence
+
+# The default assignees if none of the subpaths match
 *               @pixie-io/core-maintainers
 
-# Build files.
-/Jenkinsfile    @pixie-io/build
-/bazel/         @pixie-io/build
-/ci/            @pixie-io/build
-/scripts/       @pixie-io/build
-/third_party/   @pixie-io/build
-/tools/         @pixie-io/build
-.arc*           @pixie-io/build
-go.mod          @pixie-io/build
-package.json    @pixie-io/build
-WORKSPACE       @pixie-io/build
-*.bzl           @pixie-io/build
-
-# Main source code paths.
+# Main source code paths
 /src/           @pixie-io/vizier
 /src/cloud/     @pixie-io/cloud
 /src/common/    @pixie-io/maintainers
@@ -22,3 +11,26 @@ WORKSPACE       @pixie-io/build
 /src/stirling/  @pixie-io/stirling
 /src/ui/        @pixie-io/ui
 /src/vizier/    @pixie-io/vizier
+
+# Build files
+/Jenkinsfile    @pixie-io/build
+/bazel/         @pixie-io/build
+/ci/            @pixie-io/build
+/scripts/       @pixie-io/build
+/tools/         @pixie-io/build
+WORKSPACE       @pixie-io/build
+.arc*           @pixie-io/build
+*.bzl           @pixie-io/build
+
+# Third party code
+/third_party/             @pixie-io/third-party-reviewers
+container_images.bzl      @pixie-io/third-party-reviewers
+go.mod                    @pixie-io/third-party-reviewers
+go.sum                    @pixie-io/third-party-reviewers
+package.json              @pixie-io/third-party-reviewers
+repositories.bzl          @pixie-io/third-party-reviewers
+repository_locations.bzl  @pixie-io/third-party-reviewers
+requirements.txt          @pixie-io/third-party-reviewers
+yarn.lock                 @pixie-io/third-party-reviewers
+Dockerfile                @pixie-io/third-party-reviewers
+

@@ -21,6 +21,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = [
@@ -28,15 +29,15 @@ package(default_visibility = [
     "//src/stirling/source_connectors/proc_exit/bcc_bpf:__pkg__",
 ])
 
-filegroup(
+cc_library(
     name = "headers",
-    srcs = glob(["*.h"]),
+    hdrs = glob(["*.h"]),
 )
 
 pl_cc_library(
     name = "cc_library",
     srcs = [],
-    hdrs = [
+    deps = [
         ":headers",
         "//src/stirling/bpf_tools/bcc_bpf_intf:headers",
     ],

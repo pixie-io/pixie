@@ -19,71 +19,78 @@
 package testingutils
 
 import (
+	"errors"
 	"fmt"
+	"net"
+	"net/url"
+	"os"
 	"time"
 
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/server/v3/embed"
+	"go.uber.org/zap/zapcore"
 )
 
 // SetupEtcd starts up an embedded etcd server on some free ports.
-func SetupEtcd() (*clientv3.Client, func()) {
-	pool, err := dockertest.NewPool("")
+func SetupEtcd() (*clientv3.Client, func(), error) {
+	cfg := embed.NewConfig()
+
+	dir, err := os.MkdirTemp("", "etcd")
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		return nil, nil, err
 	}
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "quay.io/coreos/etcd",
-		Tag:        "v3.3.18",
-		// It's safe to hardcode these ports because they are local to the Docker environment.
-		Cmd: []string{"/usr/local/bin/etcd",
-			"--data-dir=/etcd-data",
-			"--name=node1",
-			"--initial-advertise-peer-urls=http://0.0.0.0:2380",
-			"--listen-peer-urls=http://0.0.0.0:2380",
-			"--advertise-client-urls=http://0.0.0.0:2379",
-			"--listen-client-urls=http://0.0.0.0:2379",
-			"--initial-cluster=node1=http://0.0.0.0:2380",
-		},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+	cfg.Dir = dir
+	cfg.InitialElectionTickAdvance = false
+	cfg.TickMs = 10
+	cfg.ElectionMs = 50
+	cfg.LogLevel = zapcore.ErrorLevel.String()
+
+	// Find and immediately free an empty port.
+	// Hope that it doesn't get recycled before etcd starts.
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return nil, nil, err
+	}
+	err = listener.Close()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	clientURL, err := url.Parse(fmt.Sprintf("http://%s", listener.Addr().String()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfg.LPUrls = []url.URL{}
+	cfg.LCUrls = []url.URL{*clientURL}
+
+	e, err := embed.StartEtcd(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	select {
+	case <-e.Server.ReadyNotify():
+		log.Debug("Server is ready!")
+	case <-time.After(60 * time.Second):
+		e.Server.Stop() // trigger a shutdown
+		log.Error("Server took too long to start!")
+		return nil, nil, errors.New("timed out waiting for etcd")
+	}
+
+	client, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{clientURL.String()},
+		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		log.Fatal(err)
-	}
-	// Set a 5 minute expiration on resources.
-	err = resource.Expire(300)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	clientPort := resource.GetPort("2379/tcp")
-
-	var client *clientv3.Client
-	if err = pool.Retry(func() error {
-		var err error
-		hostname := resource.Container.NetworkSettings.Gateway
-		client, err = clientv3.New(clientv3.Config{
-			Endpoints:   []string{fmt.Sprintf("http://%s:%s", hostname, clientPort)},
-			DialTimeout: 5 * time.Second,
-		})
-		if err != nil {
-			log.Errorf("Failed to connect to etcd: #{err}")
-		}
-		return err
-	}); err != nil {
-		log.Fatalf("Cannot start etcd: %v", err)
+		return nil, nil, err
 	}
 
 	cleanup := func() {
 		client.Close()
-		if err := pool.Purge(resource); err != nil {
-			log.Fatalf("Could not purge resource: %s", err)
-		}
+		e.Close()
 	}
 
-	return client, cleanup
+	return client, cleanup, nil
 }

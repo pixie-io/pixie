@@ -368,7 +368,7 @@ class BCCWrapper {
    */
   Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
                               const uint64_t config) {
-    PL_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
+    PX_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
     return Status::OK();
   }
 

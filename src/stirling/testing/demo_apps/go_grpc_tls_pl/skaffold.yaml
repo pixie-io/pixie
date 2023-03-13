@@ -1,0 +1,28 @@
+---
+apiVersion: skaffold/v4beta1
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pixie-oss/pixie-dev/src/stirling/testing/demo_apps/go_grpc_tls_pl/server
+    context: .
+    bazel:
+      target: //src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_20_grpc_tls_server.tar
+  - image: gcr.io/pixie-oss/pixie-dev/src/stirling/testing/demo_apps/go_grpc_tls_pl/client
+    context: .
+    bazel:
+      target: //src/stirling/testing/demo_apps/go_grpc_tls_pl/client:golang_1_20_grpc_tls_client.tar
+  tagPolicy:
+    dateTime: {}
+  local:
+    push: true
+manifests:
+  kustomize:
+    paths:
+    - src/stirling/testing/demo_apps/go_grpc_tls_pl/k8s
+profiles:
+- name: aarch64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=aarch64_sysroot

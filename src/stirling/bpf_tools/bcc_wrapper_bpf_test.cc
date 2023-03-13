@@ -25,6 +25,7 @@
 #include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
 
 // A function which we will uprobe on, to trigger our BPF code.
@@ -55,7 +56,7 @@ class TestExeWrapper {
     // Copy test_exe to temp directory so we can remove it to simulate non-existent file.
     const obj_tools::TestExeFixture kTestExeFixture;
     test_exe_path_ = temp_dir_.path() / "test_exe";
-    PL_CHECK_OK(fs::Copy(kTestExeFixture.Path(), test_exe_path_));
+    PX_CHECK_OK(fs::Copy(kTestExeFixture.Path(), test_exe_path_));
   }
 
   std::filesystem::path& path() { return test_exe_path_; }
@@ -140,14 +141,15 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
 
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
-  int64_t self_pid = getpid();
-  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string(), self_pid));
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
+  const int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto converter,
+                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), self_pid));
 
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
-  ASSERT_OK_AND_ASSIGN(
-      uint64_t symbol_addr,
-      elf_reader->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger)));
+  uint64_t symbol_addr =
+      converter->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger));
 
   UProbeSpec uprobe{.binary_path = self_path,
                     .symbol = {},  // Keep GCC happy.

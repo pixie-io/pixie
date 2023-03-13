@@ -23,10 +23,10 @@
 #include "src/common/base/base.h"
 #include "src/shared/bloomfilter/bloomfilter.h"
 
-PL_SUPPRESS_WARNINGS_START()
+PX_SUPPRESS_WARNINGS_START()
 // NOLINTNEXTLINE: build/include_subdir
 #include "xxhash.h"
-PL_SUPPRESS_WARNINGS_END()
+PX_SUPPRESS_WARNINGS_END()
 
 namespace px {
 namespace bloomfilter {

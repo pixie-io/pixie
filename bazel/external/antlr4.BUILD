@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+load("@rules_java//java:defs.bzl", "java_binary")
 
 filegroup(
     name = "all",
@@ -28,6 +29,9 @@ cmake(
         "-j`nproc`",
         "-l`nproc`",
     ],
+    cache_entries = {
+        "ANTLR_BUILD_CPP_TESTS": "OFF",
+    },
     lib_source = ":all",
     out_include_dir = "include/antlr4-runtime",
     out_static_libs = [
@@ -35,4 +39,14 @@ cmake(
     ],
     visibility = ["//visibility:public"],
     working_directory = "runtime/Cpp",
+)
+
+java_binary(
+    name = "antlr",
+    jvm_flags = ["-Xmx500m"],
+    main_class = "org.antlr.v4.Tool",
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "@px_deps//:org_antlr_antlr4",
+    ],
 )

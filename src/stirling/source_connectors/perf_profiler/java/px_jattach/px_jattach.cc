@@ -51,7 +51,7 @@ namespace {
 StatusOr<uint32_t> GetNSPid(const int pid) {
   const system::ProcParser proc_parser;
   std::vector<std::string> ns_pids;
-  PL_RETURN_IF_ERROR(proc_parser.ReadNSPid(pid, &ns_pids));
+  PX_RETURN_IF_ERROR(proc_parser.ReadNSPid(pid, &ns_pids));
   const std::string& ns_pid_string = ns_pids.back();
   const uint32_t ns_pid = std::stol(ns_pid_string);
   return ns_pid;
@@ -136,8 +136,8 @@ void AgentAttachApp::CreateArtifactsPathOrDie() {
   }
 
   // As with the agent libs, the path containing them need to belong to the target process.
-  PL_EXIT_IF_ERROR(fs::CreateDirectories(artifacts_path));
-  PL_EXIT_IF_ERROR(fs::Chown(artifacts_path, target_uid_, target_gid_));
+  PX_EXIT_IF_ERROR(fs::CreateDirectories(artifacts_path));
+  PX_EXIT_IF_ERROR(fs::Chown(artifacts_path, target_uid_, target_gid_));
 }
 
 void AgentAttachApp::CopyAgentLibsOrDie() {
@@ -155,8 +155,8 @@ void AgentAttachApp::CopyAgentLibsOrDie() {
     const std::filesystem::path basename = std::filesystem::path(src_path).filename();
     const std::filesystem::path dst_path = artifacts_path / basename;
 
-    PL_EXIT_IF_ERROR(fs::Copy(src_path, dst_path, copy_options));
-    PL_EXIT_IF_ERROR(fs::Chown(dst_path, target_uid_, target_gid_));
+    PX_EXIT_IF_ERROR(fs::Copy(src_path, dst_path, copy_options));
+    PX_EXIT_IF_ERROR(fs::Chown(dst_path, target_uid_, target_gid_));
   }
 
   for (std::filesystem::path& agent_lib : agent_libs_) {
@@ -171,10 +171,10 @@ void AgentAttachApp::CopyAgentLibsOrDie() {
 void AgentAttachApp::SelectLibWithDLOpenOrDie() {
   // Enter pid & mount namespace for target pid so that use of dlopen correctly links
   // vs. the available libs in that namespace.
-  PL_ASSIGN_OR(std::unique_ptr<system::ScopedNamespace> pid_scoped_namespace,
+  PX_ASSIGN_OR(std::unique_ptr<system::ScopedNamespace> pid_scoped_namespace,
                system::ScopedNamespace::Create(target_upid_.pid, "pid"),
                { LOG(FATAL) << "Could not enter pid namespace."; });
-  PL_ASSIGN_OR(std::unique_ptr<system::ScopedNamespace> mnt_scoped_namespace,
+  PX_ASSIGN_OR(std::unique_ptr<system::ScopedNamespace> mnt_scoped_namespace,
                system::ScopedNamespace::Create(target_upid_.pid, "mnt"),
                { LOG(FATAL) << "Could not enter mnt namespace."; });
 

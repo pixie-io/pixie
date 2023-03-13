@@ -113,7 +113,7 @@ class Splitter : public NotCopyable {
   static StatusOr<std::unique_ptr<Splitter>> Create(CompilerState* compiler_state,
                                                     bool support_partial_agg) {
     std::unique_ptr<Splitter> splitter = std::unique_ptr<Splitter>(new Splitter(compiler_state));
-    PL_RETURN_IF_ERROR(splitter->Init(support_partial_agg));
+    PX_RETURN_IF_ERROR(splitter->Init(support_partial_agg));
     return splitter;
   }
 

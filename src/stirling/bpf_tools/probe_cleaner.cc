@@ -103,11 +103,11 @@ Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
                                 marker);
 
   std::vector<std::string> leaked_probes;
-  PL_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes));
-  PL_RETURN_IF_ERROR(RemoveProbes(file_path, leaked_probes));
+  PX_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes));
+  PX_RETURN_IF_ERROR(RemoveProbes(file_path, leaked_probes));
 
   std::vector<std::string> leaked_probes_after;
-  PL_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes_after));
+  PX_RETURN_IF_ERROR(SearchForAttachedProbes(file_path, marker, &leaked_probes_after));
   if (!leaked_probes_after.empty()) {
     return error::Internal(
         "Wasn't able to remove all Stirling probes: "
@@ -122,8 +122,8 @@ Status CleanProbesFromSysFile(const char* file_path, std::string_view marker) {
 }  // namespace
 
 Status CleanProbes(std::string_view marker) {
-  PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedKProbesFile, marker));
-  PL_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedUProbesFile, marker));
+  PX_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedKProbesFile, marker));
+  PX_RETURN_IF_ERROR(CleanProbesFromSysFile(kAttachedUProbesFile, marker));
   return Status::OK();
 }
 

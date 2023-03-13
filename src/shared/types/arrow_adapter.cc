@@ -39,21 +39,21 @@ using arrow::Type;
 DataType ArrowToDataType(const arrow::Type::type& arrow_type) {
 #define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
 #define TYPE_CASE(_dt_) return _dt_;
-  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
 #undef EXPR_CASE
 #undef TYPE_CASE
 }
 
 arrow::Type::type ToArrowType(const DataType& udf_type) {
 #define TYPE_CASE(_dt_) return DataTypeTraits<_dt_>::arrow_type_id;
-  PL_SWITCH_FOREACH_DATATYPE(udf_type, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(udf_type, TYPE_CASE);
 #undef TYPE_CASE
 }
 
 int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
 #define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
 #define TYPE_CASE(_dt_) return sizeof(DataTypeTraits<_dt_>::native_type);
-  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE_WITHEXPR(arrow_type, EXPR_CASE, TYPE_CASE);
 #undef EXPR_CASE
 #undef TYPE_CASE
 }
@@ -65,7 +65,7 @@ int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
 std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
                                                       arrow::MemoryPool* mem_pool) {
 #define TYPE_CASE(_dt_) return GetArrowBuilder<_dt_>(mem_pool);
-  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
 }
 
@@ -77,7 +77,7 @@ std::unique_ptr<TypeErasedArrowBuilder> MakeTypeErasedArrowBuilder(const DataTyp
   auto arrow_builder = GetArrowBuilder<_dt_>(mem_pool); \
   return std::unique_ptr<TypeErasedArrowBuilder>(       \
       new TypeErasedArrowBuilderImpl<_dt_>(std::move(arrow_builder)));
-  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
 }
 

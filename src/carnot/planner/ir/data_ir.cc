@@ -74,7 +74,7 @@ StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
 }
 
 StatusOr<DataIR*> DataIR::ZeroValueForType(IR* ir, types::DataType type) {
-  PL_ASSIGN_OR_RETURN(auto ir_type, DataTypeToIRNodeType(type));
+  PX_ASSIGN_OR_RETURN(auto ir_type, DataTypeToIRNodeType(type));
   return ZeroValueForType(ir, ir_type);
 }
 

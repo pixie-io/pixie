@@ -21,10 +21,10 @@ package(default_visibility = ["//src/stirling/bpf_tools:__subpackages__"])
 pl_bpf_cc_resource(
     name = "get_tgid_start_time",
     src = "get_tgid_start_time.c",
-    hdrs = [
+    deps = [
         "//src/stirling/bpf_tools/bcc_bpf:headers",
+        "//src/stirling/bpf_tools/bcc_bpf/system-headers",
     ],
-    syshdrs = "//src/stirling/bpf_tools/bcc_bpf/system-headers",
 )
 
 pl_cc_resource(

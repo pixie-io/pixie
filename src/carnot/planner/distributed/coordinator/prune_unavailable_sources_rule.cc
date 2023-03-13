@@ -61,12 +61,12 @@ Status DeleteSourceAndChildren(OperatorIR* source_op) {
 
 StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneMemorySource(MemorySourceIR* mem_src) {
   if (!AgentSupportsMemorySources()) {
-    PL_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
+    PX_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
     return true;
   }
 
   if (!AgentHasTable(mem_src->table_name())) {
-    PL_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
+    PX_RETURN_IF_ERROR(DeleteSourceAndChildren(mem_src));
     return true;
   }
   return false;
@@ -88,7 +88,7 @@ StatusOr<bool> PruneUnavailableSourcesRule::MaybePruneUDTFSource(UDTFSourceIR* u
     return false;
   }
   // Otherwise, we remove the source.
-  PL_RETURN_IF_ERROR(DeleteSourceAndChildren(udtf_src));
+  PX_RETURN_IF_ERROR(DeleteSourceAndChildren(udtf_src));
   return true;
 }
 

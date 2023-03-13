@@ -49,7 +49,7 @@ class DefaultArgumentsTest : public OperatorTests {
     google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto);
 
     auto info = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(info->Init(udf_proto));
+    PX_CHECK_OK(info->Init(udf_proto));
     return info;
   }
 
@@ -187,7 +187,7 @@ class TestQLObject : public QLObject {
             .ConsumeValueOrDie();
     AddMethod("default_func", func_obj);
     if (has_attr) {
-      PL_CHECK_OK(AssignAttribute(kSpecialAttr, std::make_shared<NoneObject>(visitor)));
+      PX_CHECK_OK(AssignAttribute(kSpecialAttr, std::make_shared<NoneObject>(visitor)));
     }
   }
 

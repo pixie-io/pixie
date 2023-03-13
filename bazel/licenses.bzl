@@ -42,7 +42,7 @@ fetch_licenses = rule(
     implementation = _fetch_licenses_impl,
     attrs = dict({
         "disallow_missing": attr.bool(),
-        "fetch_tool": attr.label(mandatory = True, allow_single_file = True),
+        "fetch_tool": attr.label(mandatory = True, allow_single_file = True, cfg = "exec"),
         "manual_licenses": attr.label(mandatory = True, allow_single_file = True),
         "out_found": attr.output(mandatory = True),
         "out_missing": attr.output(),

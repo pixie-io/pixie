@@ -31,6 +31,7 @@ func init() {
 	HTTPSeqCmd.PersistentFlags().IntP("num_conns", "c", 10, "Number of concurrent connections")
 	HTTPSeqCmd.PersistentFlags().IntP("req_size", "r", 16, "The size of the request body")
 	HTTPSeqCmd.PersistentFlags().IntP("resp_size", "z", 16, "The size of the response body")
+	HTTPSeqCmd.PersistentFlags().Int("target_rps", 5000, "The requests per second to aim for")
 }
 
 // HTTPSeqCmd is the generates HTTP sequence messages.
@@ -45,6 +46,7 @@ var HTTPSeqCmd = &cobra.Command{
 		numConns, _ := cmd.Flags().GetInt("num_conns")
 		reqSize, _ := cmd.Flags().GetInt("req_size")
 		respSize, _ := cmd.Flags().GetInt("resp_size")
+		targetRPS, _ := cmd.Flags().GetInt("target_rps")
 		log.
 			WithField("addr", addr).
 			WithField("start_sequence", startSequence).
@@ -52,9 +54,10 @@ var HTTPSeqCmd = &cobra.Command{
 			WithField("num_conns", numConns).
 			WithField("req_size", reqSize).
 			WithField("resp_size", respSize).
+			WithField("target_rps", targetRPS).
 			Info("Running HTTP sequence tests")
 
-		c := httpclient.New(addr, startSequence, numMessages, numConns, reqSize, respSize)
+		c := httpclient.New(addr, startSequence, numMessages, numConns, reqSize, respSize, targetRPS)
 		_ = c.Run()
 		_ = c.PrintStats()
 	},

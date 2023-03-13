@@ -106,12 +106,25 @@ class SubProcess : public NotCopyMoveable {
   int child_pid() const { return child_pid_; }
 
  private:
+  class Pipe {
+   public:
+    ~Pipe();
+    Status Open(int flags);
+    int ReadFd();
+    int WriteFd();
+    void CloseRead();
+    void CloseWrite();
+
+   private:
+    enum PipeDirection {
+      ReadDirection = 0,
+      WriteDirection = 1,
+    };
+    void CloseIfNotClosed(PipeDirection direction);
+    int fd_[2] = {-1, -1};
+  };
   // Setup the child runtime environment. This can only be called inside the child process.
   void SetupChild(StartOptions options);
-
-  // Handy constants to access the pipe's two file descriptor array.
-  const int kRead = 0;
-  const int kWrite = 1;
 
   // The PID of a process that runs inside another mount namespace.
   // If set, the subprocess is executed inside the mount namespace of this process.
@@ -124,7 +137,7 @@ class SubProcess : public NotCopyMoveable {
   bool started_ = false;
 
   // This is a pipe used to fetch the child process' STDOUT.
-  int pipefd_[2] = {};
+  Pipe pipe_;
 };
 
 }  // namespace px

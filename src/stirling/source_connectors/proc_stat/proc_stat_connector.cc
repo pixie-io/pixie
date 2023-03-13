@@ -106,7 +106,7 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
 }
 
 void ProcStatConnector::TransferDataImpl(ConnectorContext* /*ctx*/) {
-  DCHECK_EQ(data_tables_.size(), 1);
+  DCHECK_EQ(data_tables_.size(), 1U);
   auto* data_table = data_tables_[0];
 
   if (data_table == nullptr) {

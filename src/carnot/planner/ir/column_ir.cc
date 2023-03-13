@@ -32,7 +32,7 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx) {
 }
 
 StatusOr<int64_t> ColumnIR::GetColumnIndex() const {
-  PL_ASSIGN_OR_RETURN(auto op, ReferencedOperator());
+  PX_ASSIGN_OR_RETURN(auto op, ReferencedOperator());
   auto col_index = op->resolved_table_type()->GetColumnIndex(col_name());
   if (col_index == -1) {
     return DExitOrIRNodeError("Column '$0' does not exist in $1", col_name(),
@@ -42,9 +42,9 @@ StatusOr<int64_t> ColumnIR::GetColumnIndex() const {
 }
 
 Status ColumnIR::ToProto(planpb::Column* column_pb) const {
-  PL_ASSIGN_OR_RETURN(int64_t ref_op_id, ReferenceID());
+  PX_ASSIGN_OR_RETURN(int64_t ref_op_id, ReferenceID());
   column_pb->set_node(ref_op_id);
-  PL_ASSIGN_OR_RETURN(auto index, GetColumnIndex());
+  PX_ASSIGN_OR_RETURN(auto index, GetColumnIndex());
   column_pb->set_index(index);
   return Status::OK();
 }
@@ -87,7 +87,7 @@ StatusOr<std::vector<OperatorIR*>> ColumnIR::ContainingOperators() const {
 
 StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
   DCHECK(container_op_parent_idx_set_);
-  PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> containing_ops, ContainingOperators());
+  PX_ASSIGN_OR_RETURN(std::vector<OperatorIR*> containing_ops, ContainingOperators());
   if (!containing_ops.size()) {
     return CreateIRNodeError(
         "Got no containing operators for $0 when looking up referenced operator.", DebugString());
@@ -103,7 +103,7 @@ StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
 
 Status ColumnIR::CopyFromNode(const IRNode* source,
                               absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  PL_RETURN_IF_ERROR(ExpressionIR::CopyFromNode(source, copied_nodes_map));
+  PX_RETURN_IF_ERROR(ExpressionIR::CopyFromNode(source, copied_nodes_map));
   const ColumnIR* column = static_cast<const ColumnIR*>(source);
   col_name_ = column->col_name_;
   col_name_set_ = column->col_name_set_;
@@ -121,7 +121,7 @@ bool ColumnIR::NodeMatches(IRNode* node) { return Match(node, ColumnNode()); }
 Status ColumnIR::ResolveType(CompilerState* /* compiler_state */,
                              const std::vector<TypePtr>& parent_types) {
   DCHECK(container_op_parent_idx_set_);
-  DCHECK_LT(container_op_parent_idx_, parent_types.size());
+  DCHECK_LT(container_op_parent_idx_, static_cast<int64_t>(parent_types.size()));
   auto parent_table = std::static_pointer_cast<TableType>(parent_types[container_op_parent_idx_]);
   auto type_or_s = parent_table->GetColumnType(col_name_);
   if (!type_or_s.ok()) {

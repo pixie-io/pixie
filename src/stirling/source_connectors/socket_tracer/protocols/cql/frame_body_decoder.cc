@@ -49,14 +49,14 @@ StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
 
 template <typename TCharType>
 StatusOr<std::basic_string<TCharType>> FrameBodyDecoder::ExtractBytesCore(int64_t len) {
-  PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
+  PX_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
                       binary_decoder_.ExtractString<TCharType>(len));
   return std::basic_string<TCharType>(tbuf);
 }
 
 template <typename TCharType, size_t N>
 Status FrameBodyDecoder::ExtractBytesCore(TCharType* out) {
-  PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
+  PX_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
                       binary_decoder_.ExtractString<TCharType>(N));
   memcpy(out, tbuf.data(), N);
   return Status::OK();
@@ -82,13 +82,13 @@ StatusOr<double> ExtractDouble(std::string_view* buf) { return ExtractFloatCore<
 
 // [string] A [short] n, followed by n bytes representing an UTF-8 string.
 StatusOr<std::string> FrameBodyDecoder::ExtractString() {
-  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
   return ExtractBytesCore<char>(len);
 }
 
 // [long string] An [int] n, followed by n bytes representing an UTF-8 string.
 StatusOr<std::string> FrameBodyDecoder::ExtractLongString() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
   return ExtractBytesCore<char>(len);
 }
@@ -106,10 +106,10 @@ StatusOr<sole::uuid> FrameBodyDecoder::ExtractUUID() {
   //   output: {8 ............ 15}{6  7}{4  5}{0  1  2  3}
   //
   // Equivalent code would be:
-  //   PL_ASSIGN_OR_RETURN(uint64_t time_low, ExtractInt(buf));
-  //   PL_ASSIGN_OR_RETURN(uint64_t time_mid, ExtractShort(buf));
-  //   PL_ASSIGN_OR_RETURN(uint64_t time_hi_version, ExtractShort(buf));
-  //   PL_ASSIGN_OR_RETURN(uint64_t clock_seq_and_node, ExtractLong(buf));
+  //   PX_ASSIGN_OR_RETURN(uint64_t time_low, ExtractInt(buf));
+  //   PX_ASSIGN_OR_RETURN(uint64_t time_mid, ExtractShort(buf));
+  //   PX_ASSIGN_OR_RETURN(uint64_t time_hi_version, ExtractShort(buf));
+  //   PX_ASSIGN_OR_RETURN(uint64_t clock_seq_and_node, ExtractLong(buf));
   //
   // But then we constitute the components according to the following formula,
   // from uuid1() in sole.hpp:
@@ -123,19 +123,19 @@ StatusOr<sole::uuid> FrameBodyDecoder::ExtractUUID() {
   //
   // And we realize that we can achieve this directly with the following shortcut:
 
-  PL_ASSIGN_OR_RETURN(uuid.ab, ExtractLong());
-  PL_ASSIGN_OR_RETURN(uuid.cd, ExtractLong());
+  PX_ASSIGN_OR_RETURN(uuid.ab, ExtractLong());
+  PX_ASSIGN_OR_RETURN(uuid.cd, ExtractLong());
 
   return uuid;
 }
 
 // [string list] A [short] n, followed by n [string].
 StatusOr<StringList> FrameBodyDecoder::ExtractStringList() {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringList string_list;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string s, ExtractString());
+    PX_ASSIGN_OR_RETURN(std::string s, ExtractString());
     string_list.push_back(std::move(s));
   }
 
@@ -145,7 +145,7 @@ StatusOr<StringList> FrameBodyDecoder::ExtractStringList() {
 // [bytes] A [int] n, followed by n bytes if n >= 0. If n < 0,
 //         no byte should follow and the value represented is `null`.
 StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractBytes() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   len = std::max(len, 0);
   return ExtractBytesCore<uint8_t>(len);
 }
@@ -155,7 +155,7 @@ StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractBytes() {
 //         If n == -2 no byte should follow and the value represented is
 //         `not set` not resulting in any change to the existing value.
 StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractValue() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt());
   if (len == -1) {
     return std::basic_string<uint8_t>();
   }
@@ -171,7 +171,7 @@ StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractValue() {
 
 // [short bytes]  A [short] n, followed by n bytes if n >= 0.
 StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractShortBytes() {
-  PL_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t len, ExtractShort());
   return ExtractBytesCore<uint8_t>(len);
 }
 
@@ -181,7 +181,7 @@ StatusOr<std::basic_string<uint8_t>> FrameBodyDecoder::ExtractShortBytes() {
 //        either 4 (IPv4) or 16 (IPv6)), following by one [int]
 //        representing the port.
 StatusOr<SockAddr> FrameBodyDecoder::ExtractInet() {
-  PL_ASSIGN_OR_RETURN(uint8_t n, ExtractByte());
+  PX_ASSIGN_OR_RETURN(uint8_t n, ExtractByte());
 
   SockAddr addr;
 
@@ -189,14 +189,14 @@ StatusOr<SockAddr> FrameBodyDecoder::ExtractInet() {
     case 4: {
       addr.family = SockAddrFamily::kIPv4;
       auto& addr4 = addr.addr.emplace<SockAddrIPv4>();
-      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 4>(reinterpret_cast<uint8_t*>(&addr4.addr))));
-      PL_ASSIGN_OR_RETURN(addr4.port, ExtractInt());
+      PX_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 4>(reinterpret_cast<uint8_t*>(&addr4.addr))));
+      PX_ASSIGN_OR_RETURN(addr4.port, ExtractInt());
     } break;
     case 16: {
       addr.family = SockAddrFamily::kIPv6;
       auto& addr6 = addr.addr.emplace<SockAddrIPv6>();
-      PL_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 16>(reinterpret_cast<uint8_t*>(&addr6.addr))));
-      PL_ASSIGN_OR_RETURN(addr6.port, ExtractInt());
+      PX_RETURN_IF_ERROR((ExtractBytesCore<uint8_t, 16>(reinterpret_cast<uint8_t*>(&addr6.addr))));
+      PX_ASSIGN_OR_RETURN(addr6.port, ExtractInt());
     } break;
   }
 
@@ -206,12 +206,12 @@ StatusOr<SockAddr> FrameBodyDecoder::ExtractInet() {
 // [string map] A [short] n, followed by n pair <k><v> where <k> and <v>
 //              are [string].
 StatusOr<StringMap> FrameBodyDecoder::ExtractStringMap() {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMap string_map;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string key, ExtractString());
-    PL_ASSIGN_OR_RETURN(std::string val, ExtractString());
+    PX_ASSIGN_OR_RETURN(std::string key, ExtractString());
+    PX_ASSIGN_OR_RETURN(std::string val, ExtractString());
     string_map.insert({std::move(key), std::move(val)});
   }
 
@@ -221,12 +221,12 @@ StatusOr<StringMap> FrameBodyDecoder::ExtractStringMap() {
 // [string multimap] A [short] n, followed by n pair <k><v> where <k> is a
 //                   [string] and <v> is a [string list].
 StatusOr<StringMultiMap> FrameBodyDecoder::ExtractStringMultiMap() {
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
 
   StringMultiMap string_multimap;
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(std::string key, ExtractString());
-    PL_ASSIGN_OR_RETURN(StringList val, ExtractStringList());
+    PX_ASSIGN_OR_RETURN(std::string key, ExtractString());
+    PX_ASSIGN_OR_RETURN(StringList val, ExtractStringList());
     string_multimap.insert({std::move(key), std::move(val)});
   }
 
@@ -235,18 +235,18 @@ StatusOr<StringMultiMap> FrameBodyDecoder::ExtractStringMultiMap() {
 
 StatusOr<Option> FrameBodyDecoder::ExtractOption() {
   Option col_spec;
-  PL_ASSIGN_OR_RETURN(uint16_t id, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t id, ExtractShort());
   col_spec.type = static_cast<DataType>(id);
   if (col_spec.type == DataType::kCustom) {
-    PL_ASSIGN_OR_RETURN(col_spec.value, ExtractString());
+    PX_ASSIGN_OR_RETURN(col_spec.value, ExtractString());
   }
   if (col_spec.type == DataType::kList || col_spec.type == DataType::kSet) {
-    PL_ASSIGN_OR_RETURN(Option type, ExtractOption());
+    PX_ASSIGN_OR_RETURN(Option type, ExtractOption());
     // For now, we're throwing the result away. Could consider recording if desired.
   }
   if (col_spec.type == DataType::kMap) {
-    PL_ASSIGN_OR_RETURN(Option key_type, ExtractOption());
-    PL_ASSIGN_OR_RETURN(Option val_type, ExtractOption());
+    PX_ASSIGN_OR_RETURN(Option key_type, ExtractOption());
+    PX_ASSIGN_OR_RETURN(Option val_type, ExtractOption());
     // For now, we're throwing the result away. Could consider recording if desired.
   }
 
@@ -261,9 +261,9 @@ StatusOr<NameValuePair> FrameBodyDecoder::ExtractNameValuePair(bool with_names) 
   NameValuePair nv;
 
   if (with_names) {
-    PL_ASSIGN_OR_RETURN(nv.name, ExtractString());
+    PX_ASSIGN_OR_RETURN(nv.name, ExtractString());
   }
-  PL_ASSIGN_OR_RETURN(nv.value, ExtractValue());
+  PX_ASSIGN_OR_RETURN(nv.value, ExtractValue());
 
   return nv;
 }
@@ -271,9 +271,9 @@ StatusOr<NameValuePair> FrameBodyDecoder::ExtractNameValuePair(bool with_names) 
 StatusOr<std::vector<NameValuePair>> FrameBodyDecoder::ExtractNameValuePairList(bool with_names) {
   std::vector<NameValuePair> values;
 
-  PL_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t n, ExtractShort());
   for (int i = 0; i < n; ++i) {
-    PL_ASSIGN_OR_RETURN(NameValuePair v, ExtractNameValuePair(with_names));
+    PX_ASSIGN_OR_RETURN(NameValuePair v, ExtractNameValuePair(with_names));
     values.push_back(std::move(v));
   }
 
@@ -283,8 +283,8 @@ StatusOr<std::vector<NameValuePair>> FrameBodyDecoder::ExtractNameValuePairList(
 StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   QueryParameters qp;
 
-  PL_ASSIGN_OR_RETURN(qp.consistency, ExtractShort());
-  PL_ASSIGN_OR_RETURN(qp.flags, ExtractByte());
+  PX_ASSIGN_OR_RETURN(qp.consistency, ExtractShort());
+  PX_ASSIGN_OR_RETURN(qp.flags, ExtractByte());
 
   bool flag_values = qp.flags & 0x01;
   bool flag_skip_metadata = qp.flags & 0x02;
@@ -293,26 +293,26 @@ StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
   bool flag_with_serial_consistency = qp.flags & 0x10;
   bool flag_with_default_timestamp = qp.flags & 0x20;
   bool flag_with_names_for_values = qp.flags & 0x40;
-  PL_UNUSED(flag_skip_metadata);
+  PX_UNUSED(flag_skip_metadata);
 
   if (flag_values) {
-    PL_ASSIGN_OR_RETURN(qp.values, ExtractNameValuePairList(flag_with_names_for_values));
+    PX_ASSIGN_OR_RETURN(qp.values, ExtractNameValuePairList(flag_with_names_for_values));
   }
 
   if (flag_page_size) {
-    PL_ASSIGN_OR_RETURN(qp.page_size, ExtractInt());
+    PX_ASSIGN_OR_RETURN(qp.page_size, ExtractInt());
   }
 
   if (flag_with_paging_state) {
-    PL_ASSIGN_OR_RETURN(qp.paging_state, ExtractBytes());
+    PX_ASSIGN_OR_RETURN(qp.paging_state, ExtractBytes());
   }
 
   if (flag_with_serial_consistency) {
-    PL_ASSIGN_OR_RETURN(qp.serial_consistency, ExtractShort());
+    PX_ASSIGN_OR_RETURN(qp.serial_consistency, ExtractShort());
   }
 
   if (flag_with_default_timestamp) {
-    PL_ASSIGN_OR_RETURN(qp.timestamp, ExtractLong());
+    PX_ASSIGN_OR_RETURN(qp.timestamp, ExtractLong());
   }
 
   return qp;
@@ -320,17 +320,17 @@ StatusOr<QueryParameters> FrameBodyDecoder::ExtractQueryParameters() {
 
 StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata(bool prepared_result_metadata) {
   ResultMetadata r;
-  PL_ASSIGN_OR_RETURN(r.flags, ExtractInt());
-  PL_ASSIGN_OR_RETURN(r.columns_count, ExtractInt());
+  PX_ASSIGN_OR_RETURN(r.flags, ExtractInt());
+  PX_ASSIGN_OR_RETURN(r.columns_count, ExtractInt());
 
   // Version 4+ of the protocol has partition-key bind indexes
   // when the metadata is in response to a PREPARE request.
   bool has_pk = prepared_result_metadata && (version_ >= 4);
   if (has_pk) {
-    PL_ASSIGN_OR_RETURN(int32_t pk_count, ExtractInt());
+    PX_ASSIGN_OR_RETURN(int32_t pk_count, ExtractInt());
     for (int i = 0; i < pk_count; ++i) {
-      PL_ASSIGN_OR_RETURN(uint16_t pk_index_i, ExtractShort());
-      PL_UNUSED(pk_index_i);
+      PX_ASSIGN_OR_RETURN(uint16_t pk_index_i, ExtractShort());
+      PX_UNUSED(pk_index_i);
     }
   }
 
@@ -339,23 +339,23 @@ StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata(bool prepared_r
   bool flag_no_metadata = r.flags & 0x0004;
 
   if (flag_has_more_pages) {
-    PL_ASSIGN_OR_RETURN(r.paging_state, ExtractBytes());
+    PX_ASSIGN_OR_RETURN(r.paging_state, ExtractBytes());
   }
 
   if (!flag_no_metadata) {
     if (flag_global_tables_spec) {
-      PL_ASSIGN_OR_RETURN(r.gts_keyspace_name, ExtractString());
-      PL_ASSIGN_OR_RETURN(r.gts_table_name, ExtractString());
+      PX_ASSIGN_OR_RETURN(r.gts_keyspace_name, ExtractString());
+      PX_ASSIGN_OR_RETURN(r.gts_table_name, ExtractString());
     }
 
     for (int i = 0; i < r.columns_count; ++i) {
       ColSpec col_spec;
       if (!flag_global_tables_spec) {
-        PL_ASSIGN_OR_RETURN(col_spec.ks_name, ExtractString());
-        PL_ASSIGN_OR_RETURN(col_spec.table_name, ExtractString());
+        PX_ASSIGN_OR_RETURN(col_spec.ks_name, ExtractString());
+        PX_ASSIGN_OR_RETURN(col_spec.table_name, ExtractString());
       }
-      PL_ASSIGN_OR_RETURN(col_spec.name, ExtractString());
-      PL_ASSIGN_OR_RETURN(col_spec.type, ExtractOption());
+      PX_ASSIGN_OR_RETURN(col_spec.name, ExtractString());
+      PX_ASSIGN_OR_RETURN(col_spec.type, ExtractOption());
       r.col_specs.push_back(std::move(col_spec));
     }
   }
@@ -366,18 +366,18 @@ StatusOr<ResultMetadata> FrameBodyDecoder::ExtractResultMetadata(bool prepared_r
 StatusOr<SchemaChange> FrameBodyDecoder::ExtractSchemaChange() {
   SchemaChange sc;
 
-  PL_ASSIGN_OR_RETURN(sc.change_type, ExtractString());
-  PL_ASSIGN_OR_RETURN(sc.target, ExtractString());
-  PL_ASSIGN_OR_RETURN(sc.keyspace, ExtractString());
+  PX_ASSIGN_OR_RETURN(sc.change_type, ExtractString());
+  PX_ASSIGN_OR_RETURN(sc.target, ExtractString());
+  PX_ASSIGN_OR_RETURN(sc.keyspace, ExtractString());
 
   if (sc.target != "KEYSPACE") {
     // Targets TABLE, TYPE, FUNCTION and AGGREGATE all have a name.
-    PL_ASSIGN_OR_RETURN(sc.name, ExtractString());
+    PX_ASSIGN_OR_RETURN(sc.name, ExtractString());
   }
 
   if (sc.target == "FUNCTION" || sc.target == "AGGREGATE") {
     // Targets FUNCTION and AGGREGATE also have argument types.
-    PL_ASSIGN_OR_RETURN(sc.arg_types, ExtractStringList());
+    PX_ASSIGN_OR_RETURN(sc.arg_types, ExtractStringList());
   }
 
   return sc;
@@ -386,57 +386,57 @@ StatusOr<SchemaChange> FrameBodyDecoder::ExtractSchemaChange() {
 StatusOr<StartupReq> ParseStartupReq(Frame* frame) {
   StartupReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMap());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMap());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<AuthResponseReq> ParseAuthResponseReq(Frame* frame) {
   AuthResponseReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<OptionsReq> ParseOptionsReq(Frame* frame) {
   OptionsReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<RegisterReq> ParseRegisterReq(Frame* frame) {
   RegisterReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.event_types, decoder.ExtractStringList());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.event_types, decoder.ExtractStringList());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<QueryReq> ParseQueryReq(Frame* frame) {
   QueryReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
-  PL_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
+  PX_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<PrepareReq> ParsePrepareReq(Frame* frame) {
   PrepareReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.query, decoder.ExtractLongString());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<ExecuteReq> ParseExecuteReq(Frame* frame) {
   ExecuteReq r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.id, decoder.ExtractShortBytes());
-  PL_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.id, decoder.ExtractShortBytes());
+  PX_ASSIGN_OR_RETURN(r.qp, decoder.ExtractQueryParameters());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
@@ -444,22 +444,22 @@ StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
   BatchReq r;
 
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(uint8_t type_raw, decoder.ExtractByte());
-  PL_ASSIGN_OR_RETURN(r.type, EnumCast<BatchReqType>(type_raw));
+  PX_ASSIGN_OR_RETURN(uint8_t type_raw, decoder.ExtractByte());
+  PX_ASSIGN_OR_RETURN(r.type, EnumCast<BatchReqType>(type_raw));
 
-  PL_ASSIGN_OR_RETURN(uint16_t n, decoder.ExtractShort());
+  PX_ASSIGN_OR_RETURN(uint16_t n, decoder.ExtractShort());
 
   for (uint i = 0; i < n; ++i) {
     BatchQuery q;
-    PL_ASSIGN_OR_RETURN(uint8_t kind_raw, decoder.ExtractByte());
-    PL_ASSIGN_OR_RETURN(q.kind, EnumCast<BatchQueryKind>(kind_raw));
+    PX_ASSIGN_OR_RETURN(uint8_t kind_raw, decoder.ExtractByte());
+    PX_ASSIGN_OR_RETURN(q.kind, EnumCast<BatchQueryKind>(kind_raw));
     switch (q.kind) {
       case BatchQueryKind::kString: {
-        PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
+        PX_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractLongString());
         break;
       }
       case BatchQueryKind::kID: {
-        PL_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
+        PX_ASSIGN_OR_RETURN(q.query_or_id, decoder.ExtractShortBytes());
         break;
       }
       default:
@@ -468,12 +468,12 @@ StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
     }
 
     // See note below about flag_with_names_for_values.
-    PL_ASSIGN_OR_RETURN(q.values, decoder.ExtractNameValuePairList(false));
+    PX_ASSIGN_OR_RETURN(q.values, decoder.ExtractNameValuePairList(false));
     r.queries.push_back(std::move(q));
   }
 
-  PL_ASSIGN_OR_RETURN(r.consistency, decoder.ExtractShort());
-  PL_ASSIGN_OR_RETURN(r.flags, decoder.ExtractByte());
+  PX_ASSIGN_OR_RETURN(r.consistency, decoder.ExtractShort());
+  PX_ASSIGN_OR_RETURN(r.flags, decoder.ExtractByte());
 
   bool flag_with_serial_consistency = r.flags & 0x10;
   bool flag_with_default_timestamp = r.flags & 0x20;
@@ -490,17 +490,17 @@ StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
   // to implement. This will be fixed in a future version of the native
   // protocol. See https://issues.apache.org/jira/browse/CASSANDRA-10246 for
   // more details].
-  PL_UNUSED(flag_with_names_for_values);
+  PX_UNUSED(flag_with_names_for_values);
 
   if (flag_with_serial_consistency) {
-    PL_ASSIGN_OR_RETURN(r.serial_consistency, decoder.ExtractShort());
+    PX_ASSIGN_OR_RETURN(r.serial_consistency, decoder.ExtractShort());
   }
 
   if (flag_with_default_timestamp) {
-    PL_ASSIGN_OR_RETURN(r.timestamp, decoder.ExtractLong());
+    PX_ASSIGN_OR_RETURN(r.timestamp, decoder.ExtractLong());
   }
 
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
 
   return r;
 }
@@ -508,48 +508,48 @@ StatusOr<BatchReq> ParseBatchReq(Frame* frame) {
 StatusOr<ErrorResp> ParseErrorResp(Frame* frame) {
   ErrorResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.error_code, decoder.ExtractInt());
-  PL_ASSIGN_OR_RETURN(r.error_msg, decoder.ExtractString());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.error_code, decoder.ExtractInt());
+  PX_ASSIGN_OR_RETURN(r.error_msg, decoder.ExtractString());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<ReadyResp> ParseReadyResp(Frame* frame) {
   ReadyResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<SupportedResp> ParseSupportedResp(Frame* frame) {
   SupportedResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMultiMap());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.options, decoder.ExtractStringMultiMap());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<AuthenticateResp> ParseAuthenticateResp(Frame* frame) {
   AuthenticateResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.authenticator_name, decoder.ExtractString());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.authenticator_name, decoder.ExtractString());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<AuthSuccessResp> ParseAuthSuccessResp(Frame* frame) {
   AuthSuccessResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
 StatusOr<AuthChallengeResp> ParseAuthChallengeResp(Frame* frame) {
   AuthChallengeResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
-  PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.token, decoder.ExtractBytes());
+  PX_RETURN_IF_ERROR(decoder.ExpectEOF());
   return r;
 }
 
@@ -557,42 +557,42 @@ namespace {
 
 StatusOr<ResultVoidResp> ParseResultVoid(FrameBodyDecoder* decoder) {
   ResultVoidResp r;
-  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  PX_RETURN_IF_ERROR(decoder->ExpectEOF());
   return r;
 }
 
 // See section 4.2.5.2 of the spec.
 StatusOr<ResultRowsResp> ParseResultRows(FrameBodyDecoder* decoder) {
   ResultRowsResp r;
-  PL_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata());
-  PL_ASSIGN_OR_RETURN(r.rows_count, decoder->ExtractInt());
+  PX_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata());
+  PX_ASSIGN_OR_RETURN(r.rows_count, decoder->ExtractInt());
   // Skip grabbing the row content for now.
-  // PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  // PX_RETURN_IF_ERROR(decoder->ExpectEOF());
   return r;
 }
 
 StatusOr<ResultSetKeyspaceResp> ParseResultSetKeyspace(FrameBodyDecoder* decoder) {
   ResultSetKeyspaceResp r;
-  PL_ASSIGN_OR_RETURN(r.keyspace_name, decoder->ExtractString());
-  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.keyspace_name, decoder->ExtractString());
+  PX_RETURN_IF_ERROR(decoder->ExpectEOF());
   return r;
 }
 
 StatusOr<ResultPreparedResp> ParseResultPrepared(FrameBodyDecoder* decoder) {
   ResultPreparedResp r;
-  PL_ASSIGN_OR_RETURN(r.id, decoder->ExtractShortBytes());
+  PX_ASSIGN_OR_RETURN(r.id, decoder->ExtractShortBytes());
   // Note that two metadata are sent back. The first communicates the col specs for the Prepared
   // statement, while the second communicates the metadata for future EXECUTE statements.
-  PL_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata(/* has_pk */ true));
-  PL_ASSIGN_OR_RETURN(r.result_metadata, decoder->ExtractResultMetadata());
-  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.metadata, decoder->ExtractResultMetadata(/* has_pk */ true));
+  PX_ASSIGN_OR_RETURN(r.result_metadata, decoder->ExtractResultMetadata());
+  PX_RETURN_IF_ERROR(decoder->ExpectEOF());
   return r;
 }
 
 StatusOr<ResultSchemaChangeResp> ParseResultSchemaChange(FrameBodyDecoder* decoder) {
   ResultSchemaChangeResp r;
-  PL_ASSIGN_OR_RETURN(r.sc, decoder->ExtractSchemaChange());
-  PL_RETURN_IF_ERROR(decoder->ExpectEOF());
+  PX_ASSIGN_OR_RETURN(r.sc, decoder->ExtractSchemaChange());
+  PX_RETURN_IF_ERROR(decoder->ExpectEOF());
   return r;
 }
 
@@ -601,28 +601,28 @@ StatusOr<ResultSchemaChangeResp> ParseResultSchemaChange(FrameBodyDecoder* decod
 StatusOr<ResultResp> ParseResultResp(Frame* frame) {
   ResultResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(int32_t kind_raw, decoder.ExtractInt());
-  PL_ASSIGN_OR_RETURN(r.kind, EnumCast<ResultRespKind>(kind_raw));
+  PX_ASSIGN_OR_RETURN(int32_t kind_raw, decoder.ExtractInt());
+  PX_ASSIGN_OR_RETURN(r.kind, EnumCast<ResultRespKind>(kind_raw));
 
   switch (r.kind) {
     case ResultRespKind::kVoid: {
-      PL_ASSIGN_OR_RETURN(r.resp, ParseResultVoid(&decoder));
+      PX_ASSIGN_OR_RETURN(r.resp, ParseResultVoid(&decoder));
       break;
     }
     case ResultRespKind::kRows: {
-      PL_ASSIGN_OR_RETURN(r.resp, ParseResultRows(&decoder));
+      PX_ASSIGN_OR_RETURN(r.resp, ParseResultRows(&decoder));
       break;
     }
     case ResultRespKind::kSetKeyspace: {
-      PL_ASSIGN_OR_RETURN(r.resp, ParseResultSetKeyspace(&decoder));
+      PX_ASSIGN_OR_RETURN(r.resp, ParseResultSetKeyspace(&decoder));
       break;
     }
     case ResultRespKind::kPrepared: {
-      PL_ASSIGN_OR_RETURN(r.resp, ParseResultPrepared(&decoder));
+      PX_ASSIGN_OR_RETURN(r.resp, ParseResultPrepared(&decoder));
       break;
     }
     case ResultRespKind::kSchemaChange: {
-      PL_ASSIGN_OR_RETURN(r.resp, ParseResultSchemaChange(&decoder));
+      PX_ASSIGN_OR_RETURN(r.resp, ParseResultSchemaChange(&decoder));
       break;
     }
     default:
@@ -636,16 +636,16 @@ StatusOr<ResultResp> ParseResultResp(Frame* frame) {
 StatusOr<EventResp> ParseEventResp(Frame* frame) {
   EventResp r;
   FrameBodyDecoder decoder(*frame);
-  PL_ASSIGN_OR_RETURN(r.event_type, decoder.ExtractString());
+  PX_ASSIGN_OR_RETURN(r.event_type, decoder.ExtractString());
 
   if (r.event_type == "TOPOLOGY_CHANGE" || r.event_type == "STATUS_CHANGE") {
-    PL_ASSIGN_OR_RETURN(r.change_type, decoder.ExtractString());
-    PL_ASSIGN_OR_RETURN(r.addr, decoder.ExtractInet());
-    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+    PX_ASSIGN_OR_RETURN(r.change_type, decoder.ExtractString());
+    PX_ASSIGN_OR_RETURN(r.addr, decoder.ExtractInet());
+    PX_RETURN_IF_ERROR(decoder.ExpectEOF());
     return r;
   } else if (r.event_type == "SCHEMA_CHANGE") {
-    PL_ASSIGN_OR_RETURN(r.sc, decoder.ExtractSchemaChange());
-    PL_RETURN_IF_ERROR(decoder.ExpectEOF());
+    PX_ASSIGN_OR_RETURN(r.sc, decoder.ExtractSchemaChange());
+    PX_RETURN_IF_ERROR(decoder.ExpectEOF());
     return r;
   }
 

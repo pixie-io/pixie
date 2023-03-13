@@ -51,7 +51,7 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata/cc:stripped_exe",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debug_target",
         "//src/stirling/obj_tools/testdata/cc:test_exe_debuglink_target",
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
     ],
     deps = [
         ":cc_library",
@@ -74,7 +74,7 @@ pl_cc_test(
     data = [
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
         "//src/stirling/obj_tools/testdata/go:test_binaries",
-        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_16_grpc_tls_server_binary",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary",
     ],
     deps = [
         ":cc_library",
@@ -119,7 +119,7 @@ pl_cc_test(
     name = "go_syms_test",
     srcs = ["go_syms_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/go:test_go_1_16_binary",
+        "//src/stirling/obj_tools/testdata/go:test_go_1_19_binary",
     ],
     deps = [
         ":cc_library",
@@ -130,7 +130,7 @@ pl_cc_test(
     name = "raw_fptr_manager_test",
     srcs = ["raw_fptr_manager_test.cc"],
     data = [
-        "//src/stirling/obj_tools/testdata/c:library",
+        "//src/stirling/obj_tools/testdata/c:library.so",
     ],
     deps = [
         ":cc_library",
@@ -140,6 +140,14 @@ pl_cc_test(
 pl_cc_binary(
     name = "elf_reader_tool",
     srcs = ["elf_reader_tool.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "vaddr_to_baddr_tool",
+    srcs = ["vaddr_to_baddr_tool.cc"],
     deps = [
         ":cc_library",
     ],
@@ -156,8 +164,9 @@ pl_cc_binary(
 
 pl_cc_binary(
     name = "dwarf_reader_benchmark",
+    testonly = 1,
     srcs = ["dwarf_reader_benchmark.cc"],
-    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_16_grpc_tls_server_binary"],
+    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary"],
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",

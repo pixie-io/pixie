@@ -30,7 +30,7 @@ namespace kafka {
 
 template <typename TCharType>
 StatusOr<std::basic_string<TCharType>> PacketDecoder::ExtractBytesCore(int32_t len) {
-  PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
+  PX_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
                       binary_decoder_.ExtractString<TCharType>(len));
   return std::basic_string<TCharType>(tbuf);
 }
@@ -43,7 +43,7 @@ StatusOr<int64_t> PacketDecoder::ExtractUnsignedVarintCore() {
 
   int64_t value = 0;
   for (int i = 0; i < TMaxLength; i += kByteLength) {
-    PL_ASSIGN_OR_RETURN(uint64_t b, binary_decoder_.ExtractChar());
+    PX_ASSIGN_OR_RETURN(uint64_t b, binary_decoder_.ExtractChar());
     if (!(b & kFirstBitMask)) {
       value |= (b << i);
       return value;
@@ -55,7 +55,7 @@ StatusOr<int64_t> PacketDecoder::ExtractUnsignedVarintCore() {
 
 template <uint8_t TMaxLength>
 StatusOr<int64_t> PacketDecoder::ExtractVarintCore() {
-  PL_ASSIGN_OR_RETURN(int64_t value, ExtractUnsignedVarintCore<TMaxLength>());
+  PX_ASSIGN_OR_RETURN(int64_t value, ExtractUnsignedVarintCore<TMaxLength>());
   // Casting to uint64_t for logical right shift.
   return (static_cast<uint64_t>(value) >> 1) ^ (-(value & 1));
 }
@@ -89,12 +89,12 @@ StatusOr<int64_t> PacketDecoder::ExtractVarlong() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractRegularString() {
-  PL_ASSIGN_OR_RETURN(int16_t len, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int16_t len, ExtractInt16());
   return ExtractBytesCore<char>(len);
 }
 
 StatusOr<std::string> PacketDecoder::ExtractRegularNullableString() {
-  PL_ASSIGN_OR_RETURN(int16_t len, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int16_t len, ExtractInt16());
   if (len == -1) {
     return std::string();
   }
@@ -102,7 +102,7 @@ StatusOr<std::string> PacketDecoder::ExtractRegularNullableString() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractCompactString() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
   // length N + 1 is encoded.
   len -= 1;
   if (len < 0) {
@@ -112,7 +112,7 @@ StatusOr<std::string> PacketDecoder::ExtractCompactString() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractCompactNullableString() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
   // length N + 1 is encoded.
   len -= 1;
   if (len < -1) {
@@ -139,12 +139,12 @@ StatusOr<std::string> PacketDecoder::ExtractNullableString() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractRegularBytes() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
   return ExtractBytesCore<char>(len);
 }
 
 StatusOr<std::string> PacketDecoder::ExtractRegularNullableBytes() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractInt16());
   if (len == -1) {
     return std::string();
   }
@@ -152,7 +152,7 @@ StatusOr<std::string> PacketDecoder::ExtractRegularNullableBytes() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractCompactBytes() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
   // length N + 1 is encoded.
   len -= 1;
   if (len < 0) {
@@ -162,7 +162,7 @@ StatusOr<std::string> PacketDecoder::ExtractCompactBytes() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractCompactNullableBytes() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
   // length N + 1 is encoded.
   len -= 1;
   if (len < -1) {
@@ -189,7 +189,7 @@ StatusOr<std::string> PacketDecoder::ExtractNullableBytes() {
 }
 
 StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
-  PL_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
+  PX_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
   if (len < -1) {
     return error::Internal("Not enough bytes in ExtractBytesZigZag.");
   }
@@ -204,17 +204,17 @@ Status PacketDecoder::ExtractTagSection() {
     return Status::OK();
   }
 
-  PL_ASSIGN_OR_RETURN(int32_t num_fields, ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t num_fields, ExtractUnsignedVarint());
   for (int i = 0; i < num_fields; ++i) {
-    PL_RETURN_IF_ERROR(ExtractTaggedField());
+    PX_RETURN_IF_ERROR(ExtractTaggedField());
   }
   return Status::OK();
 }
 
 Status PacketDecoder::ExtractTaggedField() {
-  PL_RETURN_IF_ERROR(/* tag */ ExtractUnsignedVarint());
-  PL_ASSIGN_OR_RETURN(int32_t length, ExtractUnsignedVarint());
-  PL_RETURN_IF_ERROR(/* data */ ExtractBytesCore<char>(length));
+  PX_RETURN_IF_ERROR(/* tag */ ExtractUnsignedVarint());
+  PX_ASSIGN_OR_RETURN(int32_t length, ExtractUnsignedVarint());
+  PX_RETURN_IF_ERROR(/* data */ ExtractBytesCore<char>(length));
   return Status::OK();
 }
 
@@ -223,23 +223,23 @@ Status PacketDecoder::ExtractTaggedField() {
  */
 
 Status PacketDecoder::ExtractReqHeader(Request* req) {
-  PL_ASSIGN_OR_RETURN(int16_t api_key, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(int16_t api_key, ExtractInt16());
   req->api_key = static_cast<APIKey>(api_key);
 
-  PL_ASSIGN_OR_RETURN(req->api_version, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(req->api_version, ExtractInt16());
   SetAPIInfo(req->api_key, req->api_version);
 
-  PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
+  PX_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
   // client_id is not compact, regardless of flexibility.
-  PL_ASSIGN_OR_RETURN(req->client_id, ExtractRegularNullableString());
+  PX_ASSIGN_OR_RETURN(req->client_id, ExtractRegularNullableString());
 
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return Status::OK();
 }
 
 Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
-  PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
 
   return Status::OK();
 }

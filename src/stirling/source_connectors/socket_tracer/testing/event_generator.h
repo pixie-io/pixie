@@ -207,7 +207,7 @@ void SetIPv4RemoteAddr(struct socket_control_event_t* conn, std::string_view add
   conn->open.addr.in4.sin_family = AF_INET;
   conn->open.addr.in4.sin_port = htons(port);
   // Note that address is outside of the CIDR block specified below.
-  PL_CHECK_OK(ParseIPv4Addr(addr_str, &conn->open.addr.in4.sin_addr));
+  PX_CHECK_OK(ParseIPv4Addr(addr_str, &conn->open.addr.in4.sin_addr));
 }
 
 void SetIPv6RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
@@ -216,7 +216,7 @@ void SetIPv6RemoteAddr(struct socket_control_event_t* conn, std::string_view add
   conn->open.addr.in6.sin6_family = AF_INET6;
   conn->open.addr.in6.sin6_port = htons(port);
   // Note that address is outside of the CIDR block specified below.
-  PL_CHECK_OK(ParseIPv6Addr(addr_str, &conn->open.addr.in6.sin6_addr));
+  PX_CHECK_OK(ParseIPv6Addr(addr_str, &conn->open.addr.in6.sin6_addr));
 }
 
 }  // namespace testing

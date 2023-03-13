@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/carnot/exec/ml/model_pool.h"
+#include "src/carnot/udf/model_pool.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 
@@ -36,14 +36,14 @@ namespace udf {
 class FunctionContext {
  public:
   explicit FunctionContext(std::shared_ptr<const md::AgentMetadataState> metadata_state,
-                           exec::ml::ModelPool* model_pool)
+                           ModelPool* model_pool)
       : metadata_state_(metadata_state), model_pool_(model_pool) {}
   const px::md::AgentMetadataState* metadata_state() const { return metadata_state_.get(); }
-  exec::ml::ModelPool* model_pool() { return model_pool_; }
+  ModelPool* model_pool() { return model_pool_; }
 
  private:
   std::shared_ptr<const px::md::AgentMetadataState> metadata_state_;
-  exec::ml::ModelPool* model_pool_;
+  ModelPool* model_pool_;
 };
 
 /**

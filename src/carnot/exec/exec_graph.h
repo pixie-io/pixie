@@ -184,7 +184,7 @@ class ExecutionGraph {
       input_descriptors.push_back(input_desc->second);
     }
     // Get output descriptor.
-    PL_ASSIGN_OR_RETURN(auto output_rel, node.OutputRelation(*schema_, *plan_state_, parents));
+    PX_ASSIGN_OR_RETURN(auto output_rel, node.OutputRelation(*schema_, *plan_state_, parents));
     table_store::schema::RowDescriptor output_descriptor(output_rel.col_types());
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});

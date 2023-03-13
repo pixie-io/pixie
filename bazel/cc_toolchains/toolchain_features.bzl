@@ -16,9 +16,11 @@
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load(
     "@bazel_tools//tools/cpp:cc_toolchain_config_lib.bzl",
+    "action_config",
     "feature",
     "flag_group",
     "flag_set",
+    "tool",
 )
 
 # pl_toolchain_{pre,post}_features are used to extend the toolchain features of the default cc_toolchain_config.
@@ -85,6 +87,7 @@ PL_EXTRA_CC_CONFIG_ATTRS = dict(
         },
     ),
     unfiltered_link_flags = attr.string_list(),
+    libcxx_path = attr.string(),
 )
 
 all_compile_actions = [
@@ -132,7 +135,6 @@ def _libstdcpp(ctx):
                         flag_group(
                             flags = [
                                 "-l:libstdc++.a",
-                                "-static-libgcc",
                             ],
                         ),
                     ],
@@ -153,6 +155,7 @@ def _libcpp(ctx):
                         flag_group(
                             flags = [
                                 "-stdlib=libc++",
+                                "-isystem{libcxx_path}/include/c++/v1".format(libcxx_path = ctx.attr.libcxx_path),
                             ],
                         ),
                     ],
@@ -162,6 +165,7 @@ def _libcpp(ctx):
                     flag_groups = [
                         flag_group(
                             flags = [
+                                "-L{libcxx_path}/lib".format(libcxx_path = ctx.attr.libcxx_path),
                                 "-l:libc++.a",
                                 "-l:libc++abi.a",
                             ],
@@ -221,7 +225,7 @@ def _asan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
@@ -254,7 +258,7 @@ def _msan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
@@ -287,7 +291,7 @@ def _tsan(ctx):
                 ),
             ],
             provides = ["sanitizer"],
-            implies = ["libstdc++"],
+            implies = ["libc++"],
         ),
     ]
 
@@ -384,4 +388,28 @@ def _external_dep(ctx):
                 ),
             ],
         ),
+    ]
+
+def _objcopy_action(ctx):
+    return action_config(
+        action_name = "objcopy",
+        enabled = True,
+        tools = [
+            tool(path = ctx.attr.tool_paths["objcopy"]),
+        ],
+    )
+
+def _cpp_action(ctx):
+    return action_config(
+        action_name = "c-preprocess",
+        enabled = True,
+        tools = [
+            tool(path = ctx.attr.tool_paths["cpp"]),
+        ],
+    )
+
+def pl_action_configs(ctx):
+    return [
+        _objcopy_action(ctx),
+        _cpp_action(ctx),
     ]

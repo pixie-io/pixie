@@ -59,7 +59,7 @@ Status UDTFSourceNode::InitImpl(const plan::Operator& plan_node) {
 Status UDTFSourceNode::PrepareImpl(ExecState* exec_state) {
   // Always has more batches to start with.
   has_more_batches_ = true;
-  PL_ASSIGN_OR_RETURN(udtf_def_,
+  PX_ASSIGN_OR_RETURN(udtf_def_,
                       exec_state->func_registry()->GetUDTFDefinition(plan_node_->name()));
   return Status::OK();
 }
@@ -116,7 +116,7 @@ Status UDTFSourceNode::GenerateNextImpl(ExecState* exec_state) {
   auto has_more_batches = udtf_def_->ExecBatchUpdate(udtf_inst_.get(), function_ctx_.get(),
                                                      kUDTFBatchSize, &outputs_raw);
 
-  DCHECK_GT(outputs.size(), 0);
+  DCHECK_GT(outputs.size(), 0U);
 
   auto rb_or_s = table_store::schema::RowBatch::FromColumnBuilders(
       *output_descriptor_, /*eow*/ !has_more_batches, /*eow*/ !has_more_batches, &outputs);

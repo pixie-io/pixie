@@ -464,23 +464,8 @@ func TestMonitor_repairVizier_PVC(t *testing.T) {
 		updateCalled bool
 	}{
 		{
-			name:         "MetadataPVCMissing",
-			state:        &vizierState{Reason: status.MetadataPVCMissing},
-			updateCalled: true,
-		},
-		{
 			name:         "MetadataPVCStorageClassUnavailable",
 			state:        &vizierState{Reason: status.MetadataPVCStorageClassUnavailable},
-			updateCalled: true,
-		},
-		{
-			name:         "MetadataPVCPendingBinding",
-			state:        &vizierState{Reason: status.MetadataPVCPendingBinding},
-			updateCalled: true,
-		},
-		{
-			name:         "MetadataStatefulSetPodPending",
-			state:        &vizierState{Reason: status.MetadataStatefulSetPodPending},
 			updateCalled: true,
 		},
 		{
@@ -1309,31 +1294,8 @@ func TestMonitor_repairVizier_consolidateVizierDeployments(t *testing.T) {
 				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
 			},
 			hasEtcdOperator:   true,
-			repairCallsUpdate: true,
+			repairCallsUpdate: false,
 			forceUpdate:       false,
-		},
-		{
-			name:  "UseEtcdOperator - persistent not running leads to etcd",
-			state: &vizierState{Reason: status.ControlPlanePodsPending},
-			pods: []runtime.Object{
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vizier-metadata",
-						Namespace: "pl",
-					},
-				},
-				&appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vizier-metadata",
-						Namespace: "pl",
-					},
-				},
-				makePod("vizier-metadata-0", v1.PodPending, "StatefulSet"),
-				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
-			},
-			hasEtcdOperator:   true,
-			repairCallsUpdate: true,
-			forceUpdate:       true,
 		},
 		{
 			name:  "!UseEtcdOperator - persistent running defaults to persistent",
@@ -1355,30 +1317,7 @@ func TestMonitor_repairVizier_consolidateVizierDeployments(t *testing.T) {
 				makePod("vizier-metadata-9dk39aj", v1.PodRunning, "Deployment"),
 			},
 			hasEtcdOperator:   false,
-			repairCallsUpdate: true,
-			forceUpdate:       true,
-		},
-		{
-			name:  "!UseEtcdOperator - persistent not running leads to etcd",
-			state: &vizierState{Reason: status.ControlPlanePodsPending},
-			pods: []runtime.Object{
-				&appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vizier-metadata",
-						Namespace: "pl",
-					},
-				},
-				&appsv1.StatefulSet{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vizier-metadata",
-						Namespace: "pl",
-					},
-				},
-				makePod("vizier-metadata-0", v1.PodPending, "StatefulSet"),
-				makePod("vizier-metadata-9dk39aj", v1.PodPending, "Deployment"),
-			},
-			hasEtcdOperator:   false,
-			repairCallsUpdate: true,
+			repairCallsUpdate: false,
 			forceUpdate:       false,
 		},
 		{

@@ -85,12 +85,12 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   // Get timestamp so all updates happen at the same timestamp.
   // TODO(zasgar): Change this to an injected clock.
   int64_t ts = CurrentTimeNS();
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       ApplyK8sUpdates(ts, shadow_state.get(), metadata_filter_, &incoming_k8s_updates_));
 
   if (collects_data_) {
     // Update PID information.
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         ProcessPIDUpdates(ts, proc_parser_, shadow_state.get(), md_reader_.get(), &pid_updates_));
   }
 
@@ -108,7 +108,7 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   }
 
   if (epoch_id % kEpochsBetweenObjectDeletion == 0) {
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         DeleteMetadataForDeadObjects(shadow_state.get(), kMinObjectRetentionAfterDeathNS));
   }
 
@@ -132,34 +132,34 @@ Status ApplyK8sUpdates(
     int64_t ts, AgentMetadataState* state, AgentMetadataFilter* metadata_filter,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
   std::unique_ptr<ResourceUpdate> update(nullptr);
-  PL_UNUSED(ts);
+  PX_UNUSED(ts);
 
   // Returns false when no more items.
   while (updates->try_dequeue(update)) {
     switch (update->update_case()) {
       case ResourceUpdate::kPodUpdate:
-        PL_RETURN_IF_ERROR(HandlePodUpdate(update->pod_update(), state, metadata_filter));
+        PX_RETURN_IF_ERROR(HandlePodUpdate(update->pod_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kContainerUpdate:
-        PL_RETURN_IF_ERROR(
+        PX_RETURN_IF_ERROR(
             HandleContainerUpdate(update->container_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kServiceUpdate:
-        PL_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state, metadata_filter));
+        PX_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kNamespaceUpdate:
-        PL_RETURN_IF_ERROR(
+        PX_RETURN_IF_ERROR(
             HandleNamespaceUpdate(update->namespace_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kNodeUpdate:
-        PL_RETURN_IF_ERROR(HandleNodeUpdate(update->node_update(), state, metadata_filter));
+        PX_RETURN_IF_ERROR(HandleNodeUpdate(update->node_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kReplicaSetUpdate:
-        PL_RETURN_IF_ERROR(
+        PX_RETURN_IF_ERROR(
             HandleReplicaSetUpdate(update->replica_set_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kDeploymentUpdate:
-        PL_RETURN_IF_ERROR(
+        PX_RETURN_IF_ERROR(
             HandleDeploymentUpdate(update->deployment_update(), state, metadata_filter));
         break;
       default:
@@ -173,7 +173,7 @@ Status ApplyK8sUpdates(
 namespace {
 
 StatusOr<UPID> InitUPID(const system::ProcParser& proc_parser, uint32_t asid, uint32_t pid) {
-  PL_ASSIGN_OR_RETURN(int64_t pid_start_time, proc_parser.GetPIDStartTimeTicks(pid));
+  PX_ASSIGN_OR_RETURN(int64_t pid_start_time, proc_parser.GetPIDStartTimeTicks(pid));
   return UPID(asid, pid, pid_start_time);
 }
 
@@ -299,7 +299,7 @@ Status ProcessPIDUpdates(
 }
 
 Status DeleteMetadataForDeadObjects(AgentMetadataState* state, int64_t retention_time) {
-  PL_RETURN_IF_ERROR(state->k8s_metadata_state()->CleanupExpiredMetadata(retention_time));
+  PX_RETURN_IF_ERROR(state->k8s_metadata_state()->CleanupExpiredMetadata(retention_time));
   return Status::OK();
 }
 
@@ -310,9 +310,9 @@ std::string PrependK8sNamespace(std::string_view ns, std::string_view name) {
 Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state,
                        AgentMetadataFilter* md_filter) {
   VLOG(2) << "Pod Update: " << update.DebugString();
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_NAME, update.name()));
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_NAME, update.name()));
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(
       MetadataType::POD_NAME, PrependK8sNamespace(update.namespace_(), update.name())));
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
@@ -320,9 +320,9 @@ Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state,
 Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state,
                            AgentMetadataFilter* md_filter) {
   VLOG(2) << "Service Update: " << update.DebugString();
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_NAME, update.name()));
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_NAME, update.name()));
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(
       MetadataType::SERVICE_NAME, PrependK8sNamespace(update.namespace_(), update.name())));
 
   return state->k8s_metadata_state()->HandleServiceUpdate(update);
@@ -331,7 +331,7 @@ Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* stat
 Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state,
                              AgentMetadataFilter* md_filter) {
   VLOG(2) << "Container Update: " << update.DebugString();
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::CONTAINER_ID, update.cid()));
+  PX_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::CONTAINER_ID, update.cid()));
   return state->k8s_metadata_state()->HandleContainerUpdate(update);
 }
 

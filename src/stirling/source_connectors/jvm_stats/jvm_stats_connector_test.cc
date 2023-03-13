@@ -44,8 +44,8 @@ using ::testing::Each;
 using ::testing::SizeIs;
 
 struct JavaHelloWorld : SubProcess {
-  inline static const std::string kClassPath =
-      BazelRunfilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld.jar");
+  inline static const std::string javaBinPath =
+      BazelRunfilePath("src/stirling/source_connectors/jvm_stats/testing/HelloWorld");
 
   ~JavaHelloWorld() {
     Kill();
@@ -53,7 +53,7 @@ struct JavaHelloWorld : SubProcess {
   }
 
   Status Start() {
-    auto status = SubProcess::Start({"java", "-cp", kClassPath, "-Xms1m", "-Xmx4m", "HelloWorld"});
+    auto status = SubProcess::Start({javaBinPath, "--jvm_flags=-Xms1m -Xmx4m", "HelloWorld"});
     // Sleep 2 seconds for the process to create the data file.
     std::this_thread::sleep_for(std::chrono::seconds(2));
     return status;

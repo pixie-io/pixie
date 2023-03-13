@@ -104,7 +104,7 @@ TEST_F(RowTupleDeathTest, read_wrong_type) {
 }
 
 TEST_F(RowTupleDeathTest, should_debug_die_on_different_types) {
-  EXPECT_DEBUG_DEATH(PL_UNUSED((rt1_ == rt3_)), ".*types.*");
+  EXPECT_DEBUG_DEATH(PX_UNUSED((rt1_ == rt3_)), ".*types.*");
 }
 
 TEST_F(RowTupleDeathTest, should_debug_die_on_bad_order) {
@@ -118,7 +118,7 @@ TEST_F(RowTupleDeathTest, should_debug_die_on_bad_order) {
   rt4_.SetValue(1, types::StringValue("abc"));
   rt4_.SetValue(2, types::Int64Value(1));
 
-  EXPECT_DEBUG_DEATH(PL_UNUSED((rt3_ == rt4_)), ".*write ordering mismatch.*");
+  EXPECT_DEBUG_DEATH(PX_UNUSED((rt3_ == rt4_)), ".*write ordering mismatch.*");
   EXPECT_DEBUG_DEATH(rt4_.Hash(), ".*write ordering mismatch.*");
 }
 

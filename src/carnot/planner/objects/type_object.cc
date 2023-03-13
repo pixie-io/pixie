@@ -34,7 +34,7 @@ Status TypeObject::Init() {
       std::vector<std::string>({std::string(types::ToString(data_type_)),
                                 std::string(types::ToString(semantic_type_)), "cast"}),
       "_");
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> constructor_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> constructor_fn,
                       FuncObject::Create(func_name, {"expr"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -50,7 +50,7 @@ StatusOr<QLObjectPtr> CastHandler::Eval(types::DataType data_type,
                                         types::SemanticType semantic_type, const pypa::AstPtr&,
                                         const ParsedArgs& args, ASTVisitor*) {
   auto expr_ptr = args.GetArg("expr");
-  PL_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(expr_ptr, "expr"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(expr_ptr, "expr"));
   auto new_type = ValueType::Create(data_type, semantic_type);
   expr->SetTypeCast(new_type);
   return expr_ptr;

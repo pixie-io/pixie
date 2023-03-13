@@ -71,7 +71,7 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
     DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
     // If so we just need to convert to output descriptor and transfer it.
     for (int64_t input_col_idx : plan_node_->selected_cols()) {
-      PL_RETURN_IF_ERROR(output_rb.AddColumn(rb.ColumnAt(input_col_idx)));
+      PX_RETURN_IF_ERROR(output_rb.AddColumn(rb.ColumnAt(input_col_idx)));
     }
     records_processed_ += rb.num_rows();
     output_rb.set_eos(rb.eos());
@@ -83,7 +83,7 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
   DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
   for (int64_t input_col_idx : plan_node_->selected_cols()) {
     auto col = rb.ColumnAt(input_col_idx);
-    PL_RETURN_IF_ERROR(output_rb.AddColumn(col->Slice(0, remainder_records)));
+    PX_RETURN_IF_ERROR(output_rb.AddColumn(col->Slice(0, remainder_records)));
   }
   output_rb.set_eow(true);
   output_rb.set_eos(true);

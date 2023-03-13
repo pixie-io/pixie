@@ -66,12 +66,12 @@ Status FilterNode::PrepareImpl(ExecState* exec_state) {
 }
 
 Status FilterNode::OpenImpl(ExecState* exec_state) {
-  PL_RETURN_IF_ERROR(evaluator_->Open(exec_state));
+  PX_RETURN_IF_ERROR(evaluator_->Open(exec_state));
   return Status::OK();
 }
 
 Status FilterNode::CloseImpl(ExecState* exec_state) {
-  PL_RETURN_IF_ERROR(evaluator_->Close(exec_state));
+  PX_RETURN_IF_ERROR(evaluator_->Close(exec_state));
   return Status::OK();
 }
 
@@ -84,15 +84,15 @@ Status PredicateCopyValues(const types::BoolValueColumnWrapper& pred, const arro
   auto output_col_builder_generic = MakeArrowBuilder(T, arrow::default_memory_pool());
   auto* output_col_builder = static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(
       output_col_builder_generic.get());
-  PL_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
+  PX_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
   for (size_t idx = 0; idx < num_input_records; ++idx) {
     if (udf::UnWrap(pred[idx])) {
       output_col_builder->UnsafeAppend(types::GetValueFromArrowArray<T>(input_col, idx));
     }
   }
   std::shared_ptr<arrow::Array> output_array;
-  PL_RETURN_IF_ERROR(output_col_builder->Finish(&output_array));
-  PL_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
+  PX_RETURN_IF_ERROR(output_col_builder->Finish(&output_array));
+  PX_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
   return Status::OK();
 }
 
@@ -110,8 +110,8 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& p
   auto* output_col_builder = static_cast<types::DataTypeTraits<types::STRING>::arrow_builder_type*>(
       output_col_builder_generic.get());
 
-  PL_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
-  PL_RETURN_IF_ERROR(output_col_builder->ReserveData(reserved));
+  PX_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
+  PX_RETURN_IF_ERROR(output_col_builder->ReserveData(reserved));
   for (size_t idx = 0; idx < num_input_records; ++idx) {
     if (udf::UnWrap(pred[idx])) {
       auto res = types::GetValueFromArrowArray<types::STRING>(input_col, idx);
@@ -119,20 +119,20 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& p
       while (total_size >= reserved) {
         reserved *= 2;
       }
-      PL_RETURN_IF_ERROR(output_col_builder->ReserveData(reserved));
+      PX_RETURN_IF_ERROR(output_col_builder->ReserveData(reserved));
       output_col_builder->UnsafeAppend(std::move(res));
     }
   }
   std::shared_ptr<arrow::Array> output_array;
-  PL_RETURN_IF_ERROR(output_col_builder->Finish(&output_array));
-  PL_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
+  PX_RETURN_IF_ERROR(output_col_builder->Finish(&output_array));
+  PX_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
   return Status::OK();
 }
 
 Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   // Current implementation does not merge across row batches, we should
   // consider this for cases where the filter has really low selectivity.
-  PL_ASSIGN_OR_RETURN(auto pred_col, evaluator_->EvaluateSingleExpression(
+  PX_ASSIGN_OR_RETURN(auto pred_col, evaluator_->EvaluateSingleExpression(
                                          exec_state, rb, *plan_node_->expression()));
 
   // Verify that the type of the column is boolean.
@@ -159,14 +159,14 @@ Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, si
     auto input_col = rb.ColumnAt(input_col_idx);
     auto col_type = output_descriptor_->type(output_col_idx);
 #define TYPE_CASE(_dt_) \
-  PL_RETURN_IF_ERROR(PredicateCopyValues<_dt_>(pred_col_wrapper, input_col.get(), &output_rb));
-    PL_SWITCH_FOREACH_DATATYPE(col_type, TYPE_CASE);
+  PX_RETURN_IF_ERROR(PredicateCopyValues<_dt_>(pred_col_wrapper, input_col.get(), &output_rb));
+    PX_SWITCH_FOREACH_DATATYPE(col_type, TYPE_CASE);
 #undef TYPE_CASE
   }
 
   output_rb.set_eow(rb.eow());
   output_rb.set_eos(rb.eos());
-  PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+  PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
   return Status::OK();
 }
 

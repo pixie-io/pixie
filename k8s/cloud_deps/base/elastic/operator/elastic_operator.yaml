@@ -4830,6 +4830,9 @@ spec:
       serviceAccountName: elastic-operator
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10100
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - image: "docker.elastic.co/eck/eck-operator:1.8.0"
           imagePullPolicy: IfNotPresent
@@ -4860,6 +4863,15 @@ spec:
             - containerPort: 9443
               name: https-webhook
               protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 10100
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - mountPath: "/conf"
               name: conf

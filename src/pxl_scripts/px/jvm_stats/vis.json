@@ -9,12 +9,12 @@
     {
       "name": "node_name",
       "type": "PX_STRING",
-      "description": "The full/partial hostname to fitler by",
+      "description": "The full/partial hostname to filter by",
       "defaultValue": ""
     },
     {
       "name": "pod",
-      "type": "PX_STRING",
+      "type": "PX_POD",
       "description": "The full/partial name of the pod to use as filter. Format: ns/pod_name",
       "defaultValue": ""
     }

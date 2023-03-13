@@ -14,28 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 package(default_visibility = ["//src:__subpackages__"])
-
-go_library(
-    name = "go",
-    srcs = ["types.go"],
-    importpath = "px.dev/pixie/src/shared/types/go",
-    deps = [
-        "//src/shared/types/typespb:types_pl_go_proto",
-    ],
-)
-
-go_test(
-    name = "go_test",
-    srcs = ["types_test.go"],
-    embed = [":go"],
-    deps = [
-        "//src/shared/types/typespb:types_pl_go_proto",
-        "@com_github_stretchr_testify//assert",
-    ],
-)
 
 go_library(
     name = "gotypes",
@@ -44,7 +26,7 @@ go_library(
     deps = ["//src/shared/types/typespb:types_pl_go_proto"],
 )
 
-go_test(
+pl_go_test(
     name = "gotypes_test",
     srcs = ["types_test.go"],
     embed = [":gotypes"],

@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: stirling-wrapper
+  namespace: {{NAMESPACE}}
+  labels:
+    app: pl-monitoring
+spec:
+  selector:
+    matchLabels:
+      name: stirling-wrapper
+  template:
+    metadata:
+      labels:
+        name: stirling-wrapper
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      imagePullSecrets:
+      - name: image-pull-secret
+      containers:
+      - name: stirling-wrapper
+        image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
+        args: []
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 2048Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
+              - SYS_ADMIN
+          privileged: true
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+          readOnly: true
+        - name: sys
+          mountPath: /sys
+          readOnly: true
+        env:
+        - name: PL_HOST_PATH
+          value: "/host"
+        - name: STIRLING_AUTO_TRACE
+          value: |
+              import pxtrace
+              import px
+              # This is a placeholder example. To use, update UPID and other fields.
+              upid = "00000000-0000-0000-0000-000000000000"
+              table_name = 'placeholder_table'
+              tp_name = table_name
+              @pxtrace.probe("SomeFunction")
+              def probe_func():
+                  return [{
+                      'latency': pxtrace.FunctionLatency(),
+                      'id': pxtrace.ArgExpr('id')
+                  }]
+              pxtrace.UpsertTracepoint(table_name,
+                                       table_name,
+                                       probe_func,
+                                       px.uint128(upid),
+                                       "30m")
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: host-root
+        hostPath:
+            path: /
+            type: Directory
+      - name: sys
+        hostPath:
+            path: /sys
+            type: Directory

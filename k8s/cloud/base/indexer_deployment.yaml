@@ -73,6 +73,20 @@ spec:
           mountPath: /certs
         - name: es-certs
           mountPath: /es-certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10100
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
       - name: certs
         secret:

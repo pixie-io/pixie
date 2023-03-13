@@ -60,29 +60,29 @@ StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
       auto assign = PYPA_PTR_CAST(Assign, ast);
       std::string assign_str;
       for (const auto& target : assign->targets) {
-        PL_ASSIGN_OR_RETURN(auto target_str, AstToString(target));
+        PX_ASSIGN_OR_RETURN(auto target_str, AstToString(target));
         assign_str += target_str + ", ";
       }
       assign_str.pop_back();
       assign_str.pop_back();
-      PL_ASSIGN_OR_RETURN(auto value_str, AstToString(assign->value));
+      PX_ASSIGN_OR_RETURN(auto value_str, AstToString(assign->value));
       return absl::Substitute("$0 = $1", assign_str, value_str);
     }
     case pypa::AstType::Return: {
       auto ret = PYPA_PTR_CAST(Return, ast);
-      PL_ASSIGN_OR_RETURN(auto value_str, AstToString(ret->value));
+      PX_ASSIGN_OR_RETURN(auto value_str, AstToString(ret->value));
       return absl::Substitute("return $0", value_str);
     }
     case pypa::AstType::Attribute: {
       auto attr = PYPA_PTR_CAST(Attribute, ast);
-      PL_ASSIGN_OR_RETURN(auto value, AstToString(attr->value));
-      PL_ASSIGN_OR_RETURN(auto attribute, AstToString(attr->attribute));
+      PX_ASSIGN_OR_RETURN(auto value, AstToString(attr->value));
+      PX_ASSIGN_OR_RETURN(auto attribute, AstToString(attr->attribute));
       return absl::Substitute("$0.$1", value, attribute);
     }
     case pypa::AstType::BinOp: {
       auto binop = PYPA_PTR_CAST(BinOp, ast);
-      PL_ASSIGN_OR_RETURN(auto left, AstToString(binop->left));
-      PL_ASSIGN_OR_RETURN(auto right, AstToString(binop->right));
+      PX_ASSIGN_OR_RETURN(auto left, AstToString(binop->left));
+      PX_ASSIGN_OR_RETURN(auto right, AstToString(binop->right));
       return absl::Substitute("$0 $1 $2", left, pypa::to_string(binop->op), right);
     }
     case pypa::AstType::BoolOp: {
@@ -90,20 +90,20 @@ StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
       if (boolop->values.size() != 2) {
         return CreateAstError(ast, "Expected two arguments to '$0'.", pypa::to_string(boolop->op));
       }
-      PL_ASSIGN_OR_RETURN(auto left, AstToString(boolop->values[0]));
-      PL_ASSIGN_OR_RETURN(auto right, AstToString(boolop->values[1]));
+      PX_ASSIGN_OR_RETURN(auto left, AstToString(boolop->values[0]));
+      PX_ASSIGN_OR_RETURN(auto right, AstToString(boolop->values[1]));
       return absl::Substitute("$0 $1 $2", left, pypa::to_string(boolop->op), right);
     }
     case pypa::AstType::Call: {
       auto call = PYPA_PTR_CAST(Call, ast);
-      PL_ASSIGN_OR_RETURN(auto function, AstToString(call->function));
+      PX_ASSIGN_OR_RETURN(auto function, AstToString(call->function));
       std::vector<std::string> args(call->arguments.size());
       for (const auto& [i, arg] : Enumerate(call->arguments)) {
-        PL_ASSIGN_OR_RETURN(args[i], AstToString(arg));
+        PX_ASSIGN_OR_RETURN(args[i], AstToString(arg));
       }
       for (const auto& kwarg : call->keywords) {
-        PL_ASSIGN_OR_RETURN(auto value, AstToString(kwarg->value));
-        PL_ASSIGN_OR_RETURN(auto name, AstToString(kwarg->name));
+        PX_ASSIGN_OR_RETURN(auto value, AstToString(kwarg->value));
+        PX_ASSIGN_OR_RETURN(auto name, AstToString(kwarg->name));
         args.push_back(absl::Substitute("$0=$1", name, value));
       }
       return absl::StrCat(function, "(", absl::StrJoin(args, ", "), ")");
@@ -112,8 +112,8 @@ StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
       auto dict = PYPA_PTR_CAST(Dict, ast);
       std::vector<std::string> args(dict->keys.size());
       for (const auto& [i, key] : Enumerate(dict->keys)) {
-        PL_ASSIGN_OR_RETURN(auto k, AstToString(key));
-        PL_ASSIGN_OR_RETURN(auto v, AstToString(dict->values[i]));
+        PX_ASSIGN_OR_RETURN(auto k, AstToString(key));
+        PX_ASSIGN_OR_RETURN(auto v, AstToString(dict->values[i]));
         args[i] = absl::Substitute("$0: $1", k, v);
       }
       return absl::StrCat("{", absl::StrJoin(args, ", "), "}");
@@ -122,7 +122,7 @@ StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
       auto list = PYPA_PTR_CAST(List, ast);
       std::vector<std::string> elms(list->elements.size());
       for (const auto& [i, elm] : Enumerate(list->elements)) {
-        PL_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
+        PX_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
       }
       return absl::StrCat("[", absl::StrJoin(elms, ", "), "]");
     }
@@ -148,24 +148,24 @@ StatusOr<std::string> AstToString(const std::shared_ptr<pypa::Ast>& ast) {
     }
     case pypa::AstType::Subscript: {
       auto subscript = PYPA_PTR_CAST(Subscript, ast);
-      PL_ASSIGN_OR_RETURN(auto value, AstToString(subscript->value));
+      PX_ASSIGN_OR_RETURN(auto value, AstToString(subscript->value));
       if (subscript->slice->type != pypa::AstType::Index) {
         return CreateAstError(ast, "Only index slices are supported");
       }
-      PL_ASSIGN_OR_RETURN(auto index, AstToString(PYPA_PTR_CAST(Index, subscript->slice)->value));
+      PX_ASSIGN_OR_RETURN(auto index, AstToString(PYPA_PTR_CAST(Index, subscript->slice)->value));
       return absl::StrCat(value, "[", index, "]");
     }
     case pypa::AstType::Tuple: {
       auto list = PYPA_PTR_CAST(Tuple, ast);
       std::vector<std::string> elms(list->elements.size());
       for (const auto& [i, elm] : Enumerate(list->elements)) {
-        PL_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
+        PX_ASSIGN_OR_RETURN(elms[i], AstToString(elm));
       }
       return absl::StrCat("(", absl::StrJoin(elms, ", "), ")");
     }
     case pypa::AstType::UnaryOp: {
       auto unaryop = PYPA_PTR_CAST(UnaryOp, ast);
-      PL_ASSIGN_OR_RETURN(auto operand, AstToString(unaryop->operand));
+      PX_ASSIGN_OR_RETURN(auto operand, AstToString(unaryop->operand));
       return absl::Substitute("$0$1", pypa::to_string(unaryop->op), operand);
     }
     default:

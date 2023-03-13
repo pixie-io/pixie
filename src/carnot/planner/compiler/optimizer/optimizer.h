@@ -40,7 +40,7 @@ class Optimizer : public RuleExecutor<IR> {
  public:
   static StatusOr<std::unique_ptr<Optimizer>> Create(CompilerState* compiler_state) {
     std::unique_ptr<Optimizer> optimizer(new Optimizer(compiler_state));
-    PL_RETURN_IF_ERROR(optimizer->Init());
+    PX_RETURN_IF_ERROR(optimizer->Init());
     return optimizer;
   }
 

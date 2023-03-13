@@ -37,7 +37,7 @@ StatusOr<std::string> OTelGenerator::GetUnusedVarName(CompilerState* compiler_st
                                                       const std::string& script,
                                                       const std::string& base_name) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
 
   bool func_based_exec = false;
   absl::flat_hash_set<std::string> reserved_names;
@@ -45,12 +45,12 @@ StatusOr<std::string> OTelGenerator::GetUnusedVarName(CompilerState* compiler_st
   compiler::MutationsIR mutations_ir;
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   auto var_table = compiler::VarTable::Create();
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
+  PX_ASSIGN_OR_RETURN(auto ast_walker,
                       compiler::ASTVisitorImpl::Create(
                           ir.get(), var_table, &mutations_ir, compiler_state, &module_handler,
                           func_based_exec, absl::flat_hash_set<std::string>{}));
 
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   auto cur_name = base_name;
   int64_t counter = 0;
   while (var_table->HasVariable(cur_name)) {
@@ -70,7 +70,7 @@ StatusOr<std::vector<DisplayLine>> OTelGenerator::GetPxDisplayLines(const std::s
   // Check for any calls to px.display().
   // Make sure the arguments are expected and valid.
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
   std::vector<DisplayLine> display_lines;
 
   std::vector<std::string> all_script_lines = absl::StrSplit(script, '\n');
@@ -140,7 +140,7 @@ StatusOr<std::vector<DisplayLine>> OTelGenerator::GetPxDisplayLines(const std::s
     auto table_name = PYPA_PTR_CAST(Str, call->arguments[1])->value;
 
     // Somehow parse this from the string.
-    PL_ASSIGN_OR_RETURN(auto dataframe_argument, AstToString(call->arguments[0]));
+    PX_ASSIGN_OR_RETURN(auto dataframe_argument, AstToString(call->arguments[0]));
 
     auto statement_str = absl::StrJoin(all_script_lines.begin() + first_line,
                                        all_script_lines.begin() + last_line + 1, "\n");
@@ -160,15 +160,15 @@ StatusOr<std::vector<DisplayLine>> OTelGenerator::GetPxDisplayLines(const std::s
 StatusOr<absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation>>
 OTelGenerator::CalculateOutputSchemas(compiler::Compiler* compiler, CompilerState* compiler_state,
                                       const std::string& pxl_script) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
                       compiler->CompileToIR(pxl_script, compiler_state, {}));
 
   absl::flat_hash_map<std::string, ::px::table_store::schemapb::Relation> output_schemas;
   for (const auto& n : single_node_plan->FindNodesThatMatch(ExternalGRPCSink())) {
     auto gsink = static_cast<GRPCSinkIR*>(n);
-    PL_ASSIGN_OR_RETURN(auto relation, gsink->resolved_table_type()->ToRelation());
+    PX_ASSIGN_OR_RETURN(auto relation, gsink->resolved_table_type()->ToRelation());
     table_store::schemapb::Relation* relation_pb = &output_schemas[gsink->name()];
-    PL_RETURN_IF_ERROR(relation.ToProto(relation_pb));
+    PX_RETURN_IF_ERROR(relation.ToProto(relation_pb));
   }
   return output_schemas;
 }
@@ -220,11 +220,11 @@ class DataFrameCallModifier {
       switch (statement->type) {
         case pypa::AstType::ExpressionStatement: {
           auto expr_statement = PYPA_PTR_CAST(ExpressionStatement, statement);
-          PL_ASSIGN_OR_RETURN(auto mod_expression, InExpression(expr_statement->expr));
+          PX_ASSIGN_OR_RETURN(auto mod_expression, InExpression(expr_statement->expr));
 
           if (mod_expression.has_value()) {
             expr_statement->expr = mod_expression.value();
-            PL_ASSIGN_OR_RETURN(auto modified_line, AstToString(expr_statement));
+            PX_ASSIGN_OR_RETURN(auto modified_line, AstToString(expr_statement));
             dataframe_calls.push_back(DataFrameCall{
                 original_line,
                 absl::StrCat(indent, modified_line),
@@ -238,20 +238,20 @@ class DataFrameCallModifier {
           bool has_modified = false;
           auto assign = PYPA_PTR_CAST(Assign, statement);
           for (const auto& [i, target] : Enumerate(assign->targets)) {
-            PL_ASSIGN_OR_RETURN(auto mod_target, InExpression(target));
+            PX_ASSIGN_OR_RETURN(auto mod_target, InExpression(target));
             if (!mod_target.has_value()) {
               continue;
             }
             has_modified = true;
             assign->targets[i] = mod_target.value();
           }
-          PL_ASSIGN_OR_RETURN(auto mod_value, InExpression(assign->value));
+          PX_ASSIGN_OR_RETURN(auto mod_value, InExpression(assign->value));
           if (mod_value.has_value()) {
             has_modified = true;
             assign->value = mod_value.value();
           }
           if (has_modified) {
-            PL_ASSIGN_OR_RETURN(auto modified_line, AstToString(assign));
+            PX_ASSIGN_OR_RETURN(auto modified_line, AstToString(assign));
             dataframe_calls.push_back(DataFrameCall{
                 original_line,
                 absl::StrCat(indent, modified_line),
@@ -267,7 +267,7 @@ class DataFrameCallModifier {
             return CreateAstError(function_def->body, "function body of type $0 not allowed",
                                   GetAstTypeName(function_def->body->type));
           }
-          PL_ASSIGN_OR_RETURN(auto in_fn_dataframe_calls,
+          PX_ASSIGN_OR_RETURN(auto in_fn_dataframe_calls,
                               InAstSuite(PYPA_PTR_CAST(Suite, function_def->body), all_script_lines,
                                          last_statement_line));
           dataframe_calls.insert(dataframe_calls.end(), in_fn_dataframe_calls.begin(),
@@ -276,10 +276,10 @@ class DataFrameCallModifier {
         }
         case pypa::AstType::Return: {
           auto return_statement = PYPA_PTR_CAST(Return, statement);
-          PL_ASSIGN_OR_RETURN(auto mod_value, InExpression(return_statement->value));
+          PX_ASSIGN_OR_RETURN(auto mod_value, InExpression(return_statement->value));
           if (mod_value.has_value()) {
             return_statement->value = mod_value.value();
-            PL_ASSIGN_OR_RETURN(auto modified_line, AstToString(return_statement));
+            PX_ASSIGN_OR_RETURN(auto modified_line, AstToString(return_statement));
             dataframe_calls.push_back(DataFrameCall{
                 original_line,
                 absl::StrCat(indent, modified_line),
@@ -389,13 +389,13 @@ class DataFrameCallModifier {
           return ModifyDataFrameCall(call);
         }
         // Otherwise we modify the Call function, arguments, etc.
-        PL_ASSIGN_OR_RETURN(auto mod_fn, InExpression(call->function));
+        PX_ASSIGN_OR_RETURN(auto mod_fn, InExpression(call->function));
         if (mod_fn.has_value()) {
           has_modified = true;
           call->function = mod_fn.value();
         }
         for (const auto& [i, arg] : Enumerate(call->arguments)) {
-          PL_ASSIGN_OR_RETURN(auto mod_arg, InExpression(arg));
+          PX_ASSIGN_OR_RETURN(auto mod_arg, InExpression(arg));
           if (mod_arg.has_value()) {
             has_modified = true;
             call->arguments[i] = mod_arg.value();
@@ -410,12 +410,12 @@ class DataFrameCallModifier {
       case pypa::AstType::Attribute: {
         bool has_modified = false;
         auto attr = PYPA_PTR_CAST(Attribute, expr);
-        PL_ASSIGN_OR_RETURN(auto mod_value, InExpression(attr->value));
+        PX_ASSIGN_OR_RETURN(auto mod_value, InExpression(attr->value));
         if (mod_value.has_value()) {
           attr->value = mod_value.value();
           has_modified = true;
         }
-        PL_ASSIGN_OR_RETURN(auto mod_id, InExpression(attr->value));
+        PX_ASSIGN_OR_RETURN(auto mod_id, InExpression(attr->value));
         if (mod_id.has_value()) {
           attr->value = mod_id.value();
           has_modified = true;
@@ -429,7 +429,7 @@ class DataFrameCallModifier {
         bool has_modified = false;
         auto list = PYPA_PTR_CAST(List, expr);
         for (const auto& [i, elm] : Enumerate(list->elements)) {
-          PL_ASSIGN_OR_RETURN(auto mod_elm, InExpression(elm));
+          PX_ASSIGN_OR_RETURN(auto mod_elm, InExpression(elm));
           if (mod_elm.has_value()) {
             has_modified = true;
             list->elements[i] = mod_elm.value();
@@ -444,7 +444,7 @@ class DataFrameCallModifier {
         bool has_modified = false;
         auto tuple = PYPA_PTR_CAST(Tuple, expr);
         for (const auto& [i, elm] : Enumerate(tuple->elements)) {
-          PL_ASSIGN_OR_RETURN(auto mod_elm, InExpression(elm));
+          PX_ASSIGN_OR_RETURN(auto mod_elm, InExpression(elm));
           if (mod_elm.has_value()) {
             has_modified = true;
             tuple->elements[i] = mod_elm.value();
@@ -458,7 +458,7 @@ class DataFrameCallModifier {
       case pypa::AstType::Subscript: {
         bool has_modified = false;
         auto subscript = PYPA_PTR_CAST(Subscript, expr);
-        PL_ASSIGN_OR_RETURN(auto mod_value, InExpression(subscript->value));
+        PX_ASSIGN_OR_RETURN(auto mod_value, InExpression(subscript->value));
 
         if (mod_value.has_value()) {
           has_modified = true;
@@ -470,7 +470,7 @@ class DataFrameCallModifier {
                                 GetAstTypeName(subscript->slice->type));
         }
         auto index = PYPA_PTR_CAST(Index, subscript->slice);
-        PL_ASSIGN_OR_RETURN(auto mod_slice, InExpression(index->value));
+        PX_ASSIGN_OR_RETURN(auto mod_slice, InExpression(index->value));
         if (mod_slice.has_value()) {
           has_modified = true;
           index->value = mod_slice.value();
@@ -556,7 +556,7 @@ class DataFrameCallModifier {
 StatusOr<std::vector<DataFrameCall>> OTelGenerator::ReplaceDataFrameTimes(
     const std::string& script) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+  PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
 
   std::vector<std::string> all_script_lines = absl::StrSplit(script, '\n');
 
@@ -662,13 +662,13 @@ StatusOr<std::string> OTelGenerator::RelationToOTelExport(
 StatusOr<std::string> OTelGenerator::GenerateOTelScript(compiler::Compiler* compiler,
                                                         CompilerState* compiler_state,
                                                         const std::string& pxl_script) {
-  PL_ASSIGN_OR_RETURN(auto schema,
+  PX_ASSIGN_OR_RETURN(auto schema,
                       OTelGenerator::CalculateOutputSchemas(compiler, compiler_state, pxl_script));
   if (schema.size() == 0) {
     return error::InvalidArgument("script does not have any output tables");
   }
 
-  PL_ASSIGN_OR_RETURN(auto display_lines, OTelGenerator::GetPxDisplayLines(pxl_script));
+  PX_ASSIGN_OR_RETURN(auto display_lines, OTelGenerator::GetPxDisplayLines(pxl_script));
   if (display_lines.size() != schema.size()) {
     return error::InvalidArgument("script has $0 output tables, but $1 px.display calls",
                                   schema.size(), display_lines.size());
@@ -684,7 +684,7 @@ StatusOr<std::string> OTelGenerator::GenerateOTelScript(compiler::Compiler* comp
     table_names.insert(display_call.table_name);
   }
 
-  PL_ASSIGN_OR_RETURN(auto unique_df_name,
+  PX_ASSIGN_OR_RETURN(auto unique_df_name,
                       OTelGenerator::GetUnusedVarName(compiler_state, pxl_script, "otel_df"));
 
   std::vector<std::string> all_script_lines = absl::StrSplit(pxl_script, '\n');
@@ -706,7 +706,7 @@ StatusOr<std::string> OTelGenerator::GenerateOTelScript(compiler::Compiler* comp
     }
 
     auto relation = schema.at(display_call.table_name);
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         std::string export_statement,
         OTelGenerator::RelationToOTelExport(display_call.table_name, unique_df_name, relation));
     out_lines.push_back(export_statement);
@@ -723,7 +723,7 @@ StatusOr<std::string> OTelGenerator::GenerateOTelScript(compiler::Compiler* comp
   std::string otel_script = absl::StrJoin(blocks, "\n\n");
 
   // Parse and replace the DataFrame calls with DataFrame calls that use plugin start/end variables.
-  PL_ASSIGN_OR_RETURN(auto dataframe_calls, ReplaceDataFrameTimes(otel_script));
+  PX_ASSIGN_OR_RETURN(auto dataframe_calls, ReplaceDataFrameTimes(otel_script));
 
   std::vector<std::string> split_again = absl::StrSplit(otel_script, '\n');
   std::vector<std::string> out_lines;

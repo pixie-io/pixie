@@ -78,7 +78,7 @@ TEST(DnsStitcherTest, RecordOutput) {
   InetAddr ip_addr;
   ip_addr.family = InetAddrFamily::kIPv4;
   struct in_addr addr_tmp;
-  PL_CHECK_OK(ParseIPv4Addr("1.2.3.4", &addr_tmp));
+  PX_CHECK_OK(ParseIPv4Addr("1.2.3.4", &addr_tmp));
   ip_addr.addr = addr_tmp;
 
   std::vector<DNSRecord> dns_records;
@@ -117,7 +117,7 @@ TEST(DnsStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> resp_frames;
   RecordsWithErrorCount<Record> result;
 
-  PL_SET_FOR_SCOPE(FLAGS_include_respless_dns_requests, true);
+  PX_SET_FOR_SCOPE(FLAGS_include_respless_dns_requests, true);
 
   int t = 0;
 

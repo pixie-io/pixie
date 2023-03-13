@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
@@ -23,7 +24,6 @@ load("@io_bazel_rules_docker//scala:image.bzl", _scala_image_repos = "repositori
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 load("//bazel:container_images.bzl", "base_images", "stirling_test_images")
-load("//bazel:gcs.bzl", "gcs_file")
 load("//bazel:linux_headers.bzl", "linux_headers")
 load("//bazel/external/ubuntu_packages:packages.bzl", "download_ubuntu_packages")
 
@@ -62,6 +62,8 @@ def pl_workspace_setup():
     k8s_repositories()
     k8s_go_deps(go_version = None)
 
+    qemu_with_kernel_deps()
+
 def pl_container_images():
     _package_manager_setup()
     _container_images_setup()
@@ -69,18 +71,31 @@ def pl_container_images():
 
 def pl_model_files():
     # Download model files
-    gcs_file(
+    http_file(
         name = "embedding_model",
-        bucket = "gs://pixie-dev-public",
+        url = "https://storage.googleapis.com/pixie-dev-public/ml-data/models/current-embedding-model.proto",
         downloaded_file_path = "embedding.proto",
-        file = "ml-data/models/current-embedding-model.proto",
         sha256 = "a23c515c139670e71c0cad5c962f7e2d968fcc57ab251e49f4b5636134628813",
     )
 
-    gcs_file(
+    http_file(
         name = "sentencepiece_model",
-        bucket = "gs://pixie-dev-public",
+        url = "https://storage.googleapis.com/pixie-dev-public/ml-data/models/current-sentencepiece-model.proto",
         downloaded_file_path = "sentencepiece.proto",
-        file = "ml-data/models/current-sentencepiece-model.proto",
         sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
+    )
+
+def qemu_with_kernel_deps():
+    http_file(
+        name = "linux_build_5_18_19_x86_64",
+        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-5.18.19.tar.gz",
+        sha256 = "3da6271916d253810e4ef2e587dd426ad1f9d1bbb98b5624994c378604e3de23",
+        downloaded_file_path = "linux-build.tar.gz",
+    )
+    http_file(
+        name = "busybox",
+        url = "https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox",
+        sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
+        downloaded_file_path = "busybox",
+        executable = True,
     )

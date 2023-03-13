@@ -28,32 +28,32 @@ StatusOr<MetadataReqTopic> PacketDecoder::ExtractMetadataReqTopic() {
   MetadataReqTopic r;
 
   if (api_version_ >= 10) {
-    PL_ASSIGN_OR_RETURN(r.topic_id, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.topic_id, ExtractString());
   }
 
   if (api_version_ <= 9) {
-    PL_ASSIGN_OR_RETURN(r.name, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.name, ExtractString());
   } else {
-    PL_ASSIGN_OR_RETURN(r.name, ExtractNullableString());
+    PX_ASSIGN_OR_RETURN(r.name, ExtractNullableString());
   }
 
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<MetadataReq> PacketDecoder::ExtractMetadataReq() {
   MetadataReq r;
 
-  PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractMetadataReqTopic));
+  PX_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractMetadataReqTopic));
   if (api_version_ >= 4) {
-    PL_ASSIGN_OR_RETURN(r.allow_auto_topic_creation, ExtractBool());
+    PX_ASSIGN_OR_RETURN(r.allow_auto_topic_creation, ExtractBool());
   }
 
   if (api_version_ >= 8) {
-    PL_ASSIGN_OR_RETURN(r.include_cluster_authorized_operations, ExtractBool());
-    PL_ASSIGN_OR_RETURN(r.include_topic_authorized_operations, ExtractBool());
+    PX_ASSIGN_OR_RETURN(r.include_cluster_authorized_operations, ExtractBool());
+    PX_ASSIGN_OR_RETURN(r.include_topic_authorized_operations, ExtractBool());
   }
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 

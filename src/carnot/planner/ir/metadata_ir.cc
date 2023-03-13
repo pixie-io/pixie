@@ -29,7 +29,7 @@ std::string MetadataIR::DebugString() const {
 /* Metadata IR */
 Status MetadataIR::Init(const std::string& metadata_str, int64_t parent_op_idx) {
   // Note, metadata_str is a temporary name. It is updated in ResolveMetadataColumn.
-  PL_RETURN_IF_ERROR(ColumnIR::Init(metadata_str, parent_op_idx));
+  PX_RETURN_IF_ERROR(ColumnIR::Init(metadata_str, parent_op_idx));
   metadata_name_ = metadata_str;
   return Status::OK();
 }

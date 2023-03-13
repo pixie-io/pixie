@@ -78,8 +78,8 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // Stirling will run after this unblocks, as part of SocketTraceBPFTestFixture SetUp().
     StatusOr<std::string> run_result =
         server_.Run(std::chrono::seconds{60}, {}, {"--use-tls", "true"});
-    PL_CHECK_OK(run_result);
-    PL_CHECK_OK(this->RunThriftMuxClient());
+    PX_CHECK_OK(run_result);
+    PX_CHECK_OK(this->RunThriftMuxClient());
 
     // Sleep an additional second, just to be safe.
     sleep(1);
@@ -96,7 +96,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // This command adds this CA to java's keystore so ssl
     // verification works as expected.
     std::string keytool_cmd = absl::Substitute(
-        "docker exec $0 /usr/lib/jvm/java-11-openjdk-amd64/bin/keytool -importcert -keystore "
+        "podman exec $0 /usr/lib/jvm/java-11-openjdk-amd64/bin/keytool -importcert -keystore "
         "/etc/ssl/certs/java/cacerts -file /etc/ssl/ca.crt -noprompt -storepass changeit",
         server_.container_name());
     px::Exec(keytool_cmd);
@@ -104,9 +104,9 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // Runs the Client entrypoint inside the server container
     // capturing the Client process's pid for easier debugging.
     std::string cmd = absl::Substitute(
-        "docker exec $0 /usr/bin/java -cp $1 Client --use-tls true & echo $$! && wait",
+        "podman exec $0 /usr/bin/java -cp $1 Client --use-tls true & echo $$! && wait",
         server_.container_name(), classpath);
-    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
+    PX_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
 
     LOG(INFO) << absl::Substitute("thriftmux client command output: '$0'", out);
 

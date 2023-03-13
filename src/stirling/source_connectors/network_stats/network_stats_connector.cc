@@ -41,7 +41,7 @@ Status NetworkStatsConnector::InitImpl() {
 Status NetworkStatsConnector::StopImpl() { return Status::OK(); }
 
 void NetworkStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 1) << "NetworkStatsConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "NetworkStatsConnector only has one data table.";
 
   if (data_tables_[kNetStatsTableNum] != nullptr) {
     TransferNetworkStatsTable(ctx, data_tables_[kNetStatsTableNum]);
@@ -55,7 +55,7 @@ void NetworkStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx,
   int64_t timestamp = AdjustedSteadyClockNowNS();
 
   for (const auto& [pod_name, pod_id] : k8s_md.pods_by_name()) {
-    PL_UNUSED(pod_name);
+    PX_UNUSED(pod_name);
 
     auto* pod_info = k8s_md.PodInfoByID(pod_id);
     // TODO(zasgar): Fix condition for dead pods after helper function is added.

@@ -84,6 +84,7 @@ class OTelModule : public QLObject {
       header of the request.
     insecure (bool, optional): Whether to allow insecure connections to the OpenTelemetry
       collector. False by default.
+    timeout (int, optional): The number of seconds before the request should timeout when exporting to the OTel collector.
   )doc";
 
  protected:
@@ -223,22 +224,25 @@ class EndpointConfig : public QLObject {
   };
   static StatusOr<std::shared_ptr<EndpointConfig>> Create(
       ASTVisitor* ast_visitor, std::string url,
-      std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure);
+      std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure, int64_t timeout);
 
   Status ToProto(planpb::OTelEndpointConfig* endpoint_config);
 
  protected:
   EndpointConfig(ASTVisitor* ast_visitor, std::string url,
-                 std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure)
+                 std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure,
+                 int64_t timeout)
       : QLObject(EndpointType, ast_visitor),
         url_(std::move(url)),
         attributes_(std::move(attributes)),
-        insecure_(insecure) {}
+        insecure_(insecure),
+        timeout_(timeout) {}
 
  private:
   std::string url_;
   std::vector<EndpointConfig::ConnAttribute> attributes_;
   bool insecure_;
+  int64_t timeout_;
 };
 
 class OTelDataContainer : public QLObject {

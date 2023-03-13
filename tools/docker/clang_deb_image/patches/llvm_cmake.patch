@@ -1,0 +1,78 @@
+diff -Naur a/lib/cmake/clang/ClangTargets.cmake b/lib/cmake/clang/ClangTargets.cmake
+--- a/lib/cmake/clang/ClangTargets.cmake        2023-01-24 08:18:53.311528588 +0000
++++ b/lib/cmake/clang/ClangTargets.cmake        2023-01-24 08:20:26.747399145 +0000
+@@ -413,46 +413,6 @@
+ # Cleanup temporary variables.
+ set(_IMPORT_PREFIX)
+ 
+-# Loop over all imported files and verify that they actually exist
+-foreach(_cmake_target IN LISTS _cmake_import_check_targets)
+-  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
+-    if(NOT EXISTS "${_cmake_file}")
+-      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
+-   \"${_cmake_file}\"
+-but this file does not exist.  Possible reasons include:
+-* The file was deleted, renamed, or moved to another location.
+-* An install or uninstall procedure did not complete successfully.
+-* The installation package was faulty and contained
+-   \"${CMAKE_CURRENT_LIST_FILE}\"
+-but not all the files it references.
+-")
+-    endif()
+-  endforeach()
+-  unset(_cmake_file)
+-  unset("_cmake_import_check_files_for_${_cmake_target}")
+-endforeach()
+-unset(_cmake_target)
+-unset(_cmake_import_check_targets)
+-
+-# Make sure the targets which have been exported in some other
+-# export set exist.
+-unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+-foreach(_target "LLVMSupport" "LLVMFrontendOpenMP" "LLVMMC" "LLVMMCParser" "LLVMBinaryFormat" "LLVMCore" "LLVMAnalysis" "LLVMBitReader" "LLVMBitWriter" "LLVMCoroutines" "LLVMCoverage" "LLVMDemangle" "LLVMExtensions" "LLVMipo" "LLVMIRReader" "LLVMAggressiveInstCombine" "LLVMInstCombine" "LLVMInstrumentation" "LLVMLTO" "LLVMLinker" "LLVMObjCARCOpts" "LLVMObject" "LLVMPasses" "LLVMProfileData" "LLVMRemarks" "LLVMScalarOpts" "LLVMTarget" "LLVMTransformUtils" "LLVMOption" "LLVMWindowsDriver" "LLVMBitstreamReader" "LLVMBPFCodeGen" "LLVMBPFAsmParser" "LLVMBPFDesc" "LLVMBPFDisassembler" "LLVMBPFInfo" "LLVMX86CodeGen" "LLVMX86AsmParser" "LLVMX86Desc" "LLVMX86Disassembler" "LLVMX86Info" "LLVMAArch64CodeGen" "LLVMAArch64AsmParser" "LLVMAArch64Desc" "LLVMAArch64Disassembler" "LLVMAArch64Info" "LLVMAArch64Utils" "LLVMOrcJIT" "LLVMCodeGen" "LLVMExecutionEngine" "LLVMMCJIT" "LLVMRuntimeDyld" "LLVMSelectionDAG" )
+-  if(NOT TARGET "${_target}" )
+-    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets "${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets} ${_target}")
+-  endif()
+-endforeach()
+-
+-if(DEFINED ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+-  if(CMAKE_FIND_PACKAGE_NAME)
+-    set( ${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+-    set( ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+-  else()
+-    message(FATAL_ERROR "The following imported targets are referenced, but are missing: ${${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets}")
+-  endif()
+-endif()
+-unset(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE_targets)
+-
+ # Commands beyond this point should not need to know the version.
+ set(CMAKE_IMPORT_FILE_VERSION)
+ cmake_policy(POP)
+diff -Naur a/lib/cmake/llvm/LLVMExports.cmake b/lib/cmake/llvm/LLVMExports.cmake
+--- a/lib/cmake/llvm/LLVMExports.cmake  2023-01-24 08:18:53.315528583 +0000
++++ b/lib/cmake/llvm/LLVMExports.cmake  2023-01-24 08:20:45.987372487 +0000
+@@ -740,24 +740,6 @@
+ # Cleanup temporary variables.
+ set(_IMPORT_PREFIX)
+ 
+-# Loop over all imported files and verify that they actually exist
+-foreach(_cmake_target IN LISTS _cmake_import_check_targets)
+-  foreach(_cmake_file IN LISTS "_cmake_import_check_files_for_${_cmake_target}")
+-    if(NOT EXISTS "${_cmake_file}")
+-      message(FATAL_ERROR "The imported target \"${_cmake_target}\" references the file
+-   \"${_cmake_file}\"
+-but this file does not exist.  Possible reasons include:
+-* The file was deleted, renamed, or moved to another location.
+-* An install or uninstall procedure did not complete successfully.
+-* The installation package was faulty and contained
+-   \"${CMAKE_CURRENT_LIST_FILE}\"
+-but not all the files it references.
+-")
+-    endif()
+-  endforeach()
+-  unset(_cmake_file)
+-  unset("_cmake_import_check_files_for_${_cmake_target}")
+-endforeach()
+ unset(_cmake_target)
+ unset(_cmake_import_check_targets)
+ 

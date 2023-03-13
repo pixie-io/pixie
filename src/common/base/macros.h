@@ -22,41 +22,41 @@
 
 // Warn if a result is unused.
 #ifdef __clang__
-#define PL_MUST_USE_RESULT __attribute__((warn_unused_result))
+#define PX_MUST_USE_RESULT __attribute__((warn_unused_result))
 #else
-#define PL_MUST_USE_RESULT
+#define PX_MUST_USE_RESULT
 #endif
 
-#define PL_UNUSED(x) (void)(x)
+#define PX_UNUSED(x) (void)(x)
 
 // Internal helper for concatenating macro values.
-#define PL_CONCAT_NAME_INNER(x, y) x##y
-#define PL_CONCAT_NAME(x, y) PL_CONCAT_NAME_INNER(x, y)
-#define PL_UNIQUE_NAME(name) PL_CONCAT_NAME(name, __COUNTER__)
+#define PX_CONCAT_NAME_INNER(x, y) x##y
+#define PX_CONCAT_NAME(x, y) PX_CONCAT_NAME_INNER(x, y)
+#define PX_UNIQUE_NAME(name) PX_CONCAT_NAME(name, __COUNTER__)
 
 // Disable clang format since it insists on inlining these macros.
 // clang-format off
 #if defined(__clang__)
 
-#define PL_SUPPRESS_WARNINGS_START()                          \
+#define PX_SUPPRESS_WARNINGS_START()                          \
   _Pragma("clang diagnostic push")                            \
   _Pragma("clang diagnostic ignored \"-Weverything\"")
 
-#define PL_SUPPRESS_WARNINGS_END()                            \
+#define PX_SUPPRESS_WARNINGS_END()                            \
   _Pragma("clang diagnostic pop")
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 
 // GCC does not support disabling all warnings, so we just suppress the most common one.
 // We can add to this list if needed.
-#define PL_SUPPRESS_WARNINGS_START()                         \
+#define PX_SUPPRESS_WARNINGS_START()                         \
   _Pragma("GCC diagnostic push")                             \
   _Pragma("GCC diagnostic ignored \"-Wunused-variable\"")    \
   _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"")   \
   _Pragma("GCC diagnostic ignored \"-Wold-style-cast\"")
 
 
-#define PL_SUPPRESS_WARNINGS_END()                           \
+#define PX_SUPPRESS_WARNINGS_END()                           \
   _Pragma("GCC diagnostic pop")
 
 #else
@@ -65,14 +65,14 @@
 
 // Branch predictor macros to use mostly in debug code to disable it.
 #if defined(__GNUC__)
-#define PL_LIKELY(x) (__builtin_expect((x), 1))
-#define PL_UNLIKELY(x) (__builtin_expect((x), 0))
+#define PX_LIKELY(x) (__builtin_expect((x), 1))
+#define PX_UNLIKELY(x) (__builtin_expect((x), 0))
 #else
-#define PL_LIKELY(x) (x)
-#define PL_UNLIKELY(x) (x)
+#define PX_LIKELY(x) (x)
+#define PX_UNLIKELY(x) (x)
 #endif
 
 // For debugging.
-#define PL_LOG_VAR(var) LOG(INFO) << #var ": " << var;
+#define PX_LOG_VAR(var) LOG(INFO) << #var ": " << var;
 
 // clang-format on

@@ -28,7 +28,7 @@ namespace px {
 namespace stirling {
 
 TEST(MonitorTest, DisablesJavaIfCrashInWindow) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
   StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
   constexpr struct upid_t kUPID = {{0}, 0};
   monitor.NotifyJavaProcessAttach(kUPID);
@@ -39,7 +39,7 @@ TEST(MonitorTest, DisablesJavaIfCrashInWindow) {
 }
 
 TEST(MonitorTest, DoesNotDisableAfterTrackerClear) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
   StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
 
   constexpr struct upid_t kUPID = {{1}, 0};
@@ -52,7 +52,7 @@ TEST(MonitorTest, DoesNotDisableAfterTrackerClear) {
 }
 
 TEST(MonitorTest, DoesNotDisableJavaIfNotInCrashInWindow) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
   StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
 
   constexpr struct upid_t kUPID = {{2}, 0};

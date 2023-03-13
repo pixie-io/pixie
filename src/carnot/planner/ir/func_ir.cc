@@ -50,7 +50,7 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::unary_op_map{
 Status FuncIR::Init(Op op, const std::vector<ExpressionIR*>& args) {
   op_ = op;
   for (auto a : args) {
-    PL_RETURN_IF_ERROR(AddOrCloneArg(a));
+    PX_RETURN_IF_ERROR(AddOrCloneArg(a));
   }
   return Status::OK();
 }
@@ -91,9 +91,9 @@ Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
       args_[idx - init_args_.size()] = arg;
     }
   }
-  PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));
-  PL_RETURN_IF_ERROR(graph()->OptionallyCloneWithEdge(this, arg));
-  PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_arg->id()));
+  PX_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));
+  PX_RETURN_IF_ERROR(graph()->OptionallyCloneWithEdge(this, arg));
+  PX_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_arg->id()));
   return Status::OK();
 }
 
@@ -111,7 +111,7 @@ Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
   if (arg == nullptr) {
     return error::Internal("Argument for FuncIR is null.");
   }
-  PL_ASSIGN_OR_RETURN(auto updated_arg, graph()->OptionallyCloneWithEdge(this, arg));
+  PX_ASSIGN_OR_RETURN(auto updated_arg, graph()->OptionallyCloneWithEdge(this, arg));
   all_args_.push_back(updated_arg);
   return Status::OK();
 }
@@ -121,13 +121,13 @@ Status FuncIR::ToProto(planpb::ScalarExpression* expr) const {
   func_pb->set_name(func_name());
   func_pb->set_id(func_id_);
   for (DataIR* init_arg : init_args()) {
-    PL_RETURN_IF_ERROR(init_arg->ToProto(func_pb->add_init_args()));
+    PX_RETURN_IF_ERROR(init_arg->ToProto(func_pb->add_init_args()));
   }
   if (!HasRegistryArgTypes()) {
     return CreateIRNodeError("arg types not resolved");
   }
   for (const auto& [idx, arg] : Enumerate(args())) {
-    PL_RETURN_IF_ERROR(arg->ToProto(func_pb->add_args()));
+    PX_RETURN_IF_ERROR(arg->ToProto(func_pb->add_args()));
     func_pb->add_args_data_types(registry_arg_types_[idx + init_args().size()]);
   }
   return Status::OK();
@@ -166,21 +166,21 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node,
   is_init_args_split_ = func->is_init_args_split_;
 
   for (const DataIR* init_arg : func->init_args_) {
-    PL_ASSIGN_OR_RETURN(DataIR * new_arg, graph()->CopyNode(init_arg, copied_nodes_map));
-    PL_RETURN_IF_ERROR(AddInitArg(new_arg));
+    PX_ASSIGN_OR_RETURN(DataIR * new_arg, graph()->CopyNode(init_arg, copied_nodes_map));
+    PX_RETURN_IF_ERROR(AddInitArg(new_arg));
   }
 
   for (const ExpressionIR* arg : func->args_) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph()->CopyNode(arg, copied_nodes_map));
-    PL_RETURN_IF_ERROR(AddArg(new_arg));
+    PX_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph()->CopyNode(arg, copied_nodes_map));
+    PX_RETURN_IF_ERROR(AddArg(new_arg));
   }
 
   // This branch is hit only when the above two for loops looped over nothing.
   if (!is_init_args_split_) {
     for (const ExpressionIR* arg : func->all_args_) {
-      PL_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph()->CopyNode(arg, copied_nodes_map));
+      PX_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph()->CopyNode(arg, copied_nodes_map));
       all_args_.push_back(new_arg);
-      PL_RETURN_IF_ERROR(graph()->AddEdge(this, new_arg));
+      PX_RETURN_IF_ERROR(graph()->AddEdge(this, new_arg));
     }
   }
   return Status::OK();
@@ -198,9 +198,9 @@ Status FuncIR::SetInfoFromRegistry(CompilerState* compiler_state,
   }
 
   if (!is_init_args_split_) {
-    PL_ASSIGN_OR_RETURN(size_t num_init_args, compiler_state->registry_info()->GetNumInitArgs(
+    PX_ASSIGN_OR_RETURN(size_t num_init_args, compiler_state->registry_info()->GetNumInitArgs(
                                                   func_name(), registry_arg_types));
-    PL_RETURN_IF_ERROR(SplitInitArgs(num_init_args));
+    PX_RETURN_IF_ERROR(SplitInitArgs(num_init_args));
   }
 
   std::vector<uint64_t> init_arg_hashes;
@@ -214,7 +214,7 @@ Status FuncIR::SetInfoFromRegistry(CompilerState* compiler_state,
       break;
     }
     case UDFExecType::kUDA: {
-      PL_ASSIGN_OR_RETURN(supports_partial_, compiler_state->registry_info()->DoesUDASupportPartial(
+      PX_ASSIGN_OR_RETURN(supports_partial_, compiler_state->registry_info()->DoesUDASupportPartial(
                                                  func_name(), registry_arg_types));
       func_id_ =
           compiler_state->GetUDAID(IDRegistryKey(func_name(), registry_arg_types, init_arg_hashes));
@@ -233,7 +233,7 @@ Status FuncIR::ResolveType(CompilerState* compiler_state,
   std::vector<ValueTypePtr> arg_types;
   std::vector<types::DataType> arg_data_types;
   for (auto expr : all_args_) {
-    PL_RETURN_IF_ERROR(ResolveExpressionType(expr, compiler_state, parent_types));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(expr, compiler_state, parent_types));
     auto type = expr->resolved_value_type();
     arg_types.push_back(type);
     arg_data_types.push_back(type->data_type());
@@ -241,9 +241,9 @@ Status FuncIR::ResolveType(CompilerState* compiler_state,
 
   // In the future, we should refactor RegistryInfo to work with ValueTypePtrs instead of
   // types::DataTypes.
-  PL_RETURN_IF_ERROR(SetInfoFromRegistry(compiler_state, arg_data_types));
+  PX_RETURN_IF_ERROR(SetInfoFromRegistry(compiler_state, arg_data_types));
 
-  PL_ASSIGN_OR_RETURN(auto type_,
+  PX_ASSIGN_OR_RETURN(auto type_,
                       compiler_state->registry_info()->ResolveUDFType(func_name(), arg_types));
   return SetResolvedType(type_);
 }

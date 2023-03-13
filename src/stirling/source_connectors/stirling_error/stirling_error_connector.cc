@@ -29,7 +29,7 @@ Status StirlingErrorConnector::InitImpl() {
   // Set Stirling start_time.
   pid_ = getpid();
   const std::string proc_pid_path = std::string("/proc/") + std::to_string(pid_);
-  PL_ASSIGN_OR_RETURN(start_time_, system::GetPIDStartTimeTicks(proc_pid_path));
+  PX_ASSIGN_OR_RETURN(start_time_, system::GetPIDStartTimeTicks(proc_pid_path));
 
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
@@ -39,7 +39,7 @@ Status StirlingErrorConnector::InitImpl() {
 Status StirlingErrorConnector::StopImpl() { return Status::OK(); }
 
 void StirlingErrorConnector::TransferDataImpl(ConnectorContext* ctx) {
-  DCHECK_EQ(data_tables_.size(), 2) << "StirlingErrorConnector has two data tables.";
+  DCHECK_EQ(data_tables_.size(), 2U) << "StirlingErrorConnector has two data tables.";
 
   if (data_tables_[kStirlingErrorTableNum] != nullptr) {
     TransferStirlingErrorTable(ctx, data_tables_[kStirlingErrorTableNum]);

@@ -13,7 +13,7 @@
     },
     {
       "name": "from_entity_filter",
-      "type": "PX_STRING",
+      "type": "PX_POD",
       "description": "The partial string to match the 'from_entity' (source pod).",
       "defaultValue": ""
     },

@@ -37,7 +37,7 @@ static constexpr std::string_view input_chunk = R"input(
 // NOLINTNEXTLINE : runtime/references.
 static void BM_RedactPII(benchmark::State& state) {
   RedactPIIUDF udf;
-  PL_UNUSED(udf.Init(nullptr));
+  PX_UNUSED(udf.Init(nullptr));
 
   std::string text_chunk(input_chunk);
   std::string text;

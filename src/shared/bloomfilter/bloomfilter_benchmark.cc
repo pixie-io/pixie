@@ -69,7 +69,7 @@ BENCHMARK_DEFINE_F(BloomFilterBenchmark, LookupTest)(benchmark::State& state) {
       result = lookup_bf_->Contains(random_str);
     }
   }
-  PL_UNUSED(result);
+  PX_UNUSED(result);
   state.SetBytesProcessed(state.iterations() * random_strs_.size() * random_strs_[0].size());
   state.SetItemsProcessed(state.iterations() * random_strs_.size());
 }

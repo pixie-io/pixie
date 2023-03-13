@@ -15,8 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 package(default_visibility = ["//src/cloud:__subpackages__"])
 
@@ -27,6 +27,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/shared/messages",
         "//src/cloud/shared/pgmigrate",
         "//src/cloud/shared/vzshard",
         "//src/cloud/vzmgr/controllers",
@@ -43,7 +44,6 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
@@ -51,12 +51,12 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "vzmgr_server",
     embed = [":vzmgr_lib"],
 )
 
-go_image(
+pl_go_image(
     name = "vzmgr_server_image",
     binary = ":vzmgr_server",
     importpath = "px.dev/pixie",

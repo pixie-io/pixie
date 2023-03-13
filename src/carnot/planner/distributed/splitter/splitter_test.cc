@@ -53,7 +53,7 @@ class SplitterTest : public ASTVisitorTest {
     compiler_state_->relation_map()->erase("cpu");
     compiler_state_->relation_map()->emplace("cpu", cpu_relation);
 
-    PL_CHECK_OK(compiler_state_->registry_info()->Init(testutils::UDFInfoWithTestUDTF()));
+    PX_CHECK_OK(compiler_state_->registry_info()->Init(testutils::UDFInfoWithTestUDTF()));
   }
   void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
     IRNode* maybe_op_node = test_graph->Get(id);

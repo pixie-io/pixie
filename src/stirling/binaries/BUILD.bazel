@@ -15,11 +15,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
+
+container_image(
+    name = "stirling_binary_base_image",
+    base = "//:pl_cc_base_debug_image",
+    layers = ["//src/stirling:bpf_layer"],
+)
 
 pl_cc_binary(
     name = "stirling_wrapper",
@@ -48,7 +54,7 @@ pl_cc_binary(
 
 cc_image(
     name = "stirling_wrapper_image",
-    base = "//:pl_cc_bpf_debug_image",
+    base = ":stirling_binary_base_image",
     binary = ":stirling_wrapper",
 )
 
@@ -72,7 +78,7 @@ pl_cc_binary(
 
 cc_image(
     name = "stirling_dt_image",
-    base = "//:pl_cc_bpf_debug_image",
+    base = ":stirling_binary_base_image",
     binary = ":stirling_dt",
 )
 
@@ -96,7 +102,7 @@ pl_cc_binary(
 
 cc_image(
     name = "stirling_profiler_image",
-    base = "//:pl_cc_bpf_debug_image",
+    base = ":stirling_binary_base_image",
     binary = ":stirling_profiler",
 )
 

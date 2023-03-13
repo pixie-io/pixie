@@ -110,7 +110,7 @@ const TriggerWrapper = React.memo(() => {
       className={classes.root}
       type='button'
       onClick={onClick}
-      aria-label={`Open command palette (shortcut: ${[displaySequence].flat().join('+')}`}
+      aria-label={`Open command palette (shortcut: ${[displaySequence].flat().join('+')})`}
     >
       <SearchIcon className={classes.leftIcon} />
       <span className={classes.info}>Run a command...</span>

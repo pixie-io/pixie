@@ -72,7 +72,6 @@ func TestDatastore_AddFullResourceUpdate(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -109,7 +108,6 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 					Name:            "object_md",
 					UID:             "ijkl",
 					ResourceVersion: "1",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",
@@ -135,7 +133,6 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 					Name:            "object_md",
 					UID:             "abcd",
 					ResourceVersion: "2",
-					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
 						{
 							Kind: "pod",

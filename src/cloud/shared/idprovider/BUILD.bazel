@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
     name = "idprovider",
@@ -36,7 +37,7 @@ go_library(
     ],
 )
 
-go_test(
+pl_go_test(
     name = "idprovider_test",
     srcs = [
         "client_test.go",

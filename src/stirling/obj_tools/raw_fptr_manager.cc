@@ -36,7 +36,7 @@ RawFptrManager::RawFptrManager(std::string lib_path) : lib_path_(std::move(lib_p
 
 Status RawFptrManager::LazyInit() {
   if (elf_reader_ == nullptr) {
-    PL_ASSIGN_OR_RETURN(elf_reader_, ElfReader::Create(lib_path_));
+    PX_ASSIGN_OR_RETURN(elf_reader_, ElfReader::Create(lib_path_));
   }
 
   if (dl_vmem_start_ == 0) {
@@ -70,7 +70,7 @@ Status RawFptrManager::LazyInit() {
 
 StatusOr<void*> RawFptrManager::RawSymbolToFptrImpl(const std::string& symbol_name) {
   // Doesn't do anything if it has been called before.
-  PL_RETURN_IF_ERROR(LazyInit());
+  PX_RETURN_IF_ERROR(LazyInit());
 
   auto sym_addr = elf_reader_->SymbolAddress(symbol_name).value();
   if (!sym_addr) {

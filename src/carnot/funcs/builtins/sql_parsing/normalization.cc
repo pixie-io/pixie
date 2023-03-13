@@ -74,9 +74,9 @@ std::string NormalizeResult::ToJSON() const {
   rapidjson::StringBuffer sb;
   rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
   writer.StartObject();
-  if (!errmsg.empty()) {
+  if (!error.empty()) {
     writer.Key(kErrorKey);
-    writer.String(errmsg.c_str());
+    writer.String(error.c_str());
   } else {
     writer.Key(kQueryKey);
     writer.String(normalized_query.c_str());
@@ -96,13 +96,13 @@ NormalizeResult NormalizeResult::FromJSON(std::string json_str) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(json_str.data());
   if (ok == nullptr) {
-    result.errmsg = "Failed to parse JSON while constructing NormalizeResult";
+    result.error = "Failed to parse JSON while constructing NormalizeResult";
     return result;
   }
   for (rapidjson::Value::ConstMemberIterator itr = d.MemberBegin(); itr != d.MemberEnd(); ++itr) {
     auto name = itr->name.GetString();
     if (name == kErrorKey) {
-      result.errmsg = std::string(itr->value.GetString());
+      result.error = std::string(itr->value.GetString());
     }
     if (name == kQueryKey) {
       result.normalized_query = std::string(itr->value.GetString());
@@ -137,8 +137,8 @@ StatusOr<NormalizeResult> normalize_mysql(std::string sql,
 }
 
 std::ostream& operator<<(std::ostream& os, const NormalizeResult& result) {
-  if (result.errmsg != "") {
-    return os << "error: " << result.errmsg;
+  if (result.error != "") {
+    return os << "error: " << result.error;
   }
   return os << absl::Substitute("query: $0\nparams:\n\t$1\n", result.normalized_query,
                                 absl::StrJoin(result.params, "\n\t"));

@@ -29,7 +29,7 @@ using table_store::schema::Relation;
 
 StatusOr<bool> SetupJoinTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, RightJoin())) {
-    PL_RETURN_IF_ERROR(ConvertRightJoinToLeftJoin(static_cast<JoinIR*>(ir_node)));
+    PX_RETURN_IF_ERROR(ConvertRightJoinToLeftJoin(static_cast<JoinIR*>(ir_node)));
     return true;
   }
   return false;
@@ -50,11 +50,11 @@ Status SetupJoinTypeRule::ConvertRightJoinToLeftJoin(JoinIR* join_ir) {
 
   std::vector<OperatorIR*> old_parents = join_ir->parents();
   for (OperatorIR* parent : old_parents) {
-    PL_RETURN_IF_ERROR(join_ir->RemoveParent(parent));
+    PX_RETURN_IF_ERROR(join_ir->RemoveParent(parent));
   }
 
-  PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[1]));
-  PL_RETURN_IF_ERROR(join_ir->AddParent(old_parents[0]));
+  PX_RETURN_IF_ERROR(join_ir->AddParent(old_parents[1]));
+  PX_RETURN_IF_ERROR(join_ir->AddParent(old_parents[0]));
 
   FlipColumns(join_ir->left_on_columns());
   FlipColumns(join_ir->right_on_columns());

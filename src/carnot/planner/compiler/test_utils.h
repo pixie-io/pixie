@@ -309,7 +309,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   auto info = std::make_shared<RegistryInfo>();
   udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  PL_RETURN_IF_ERROR(info->Init(info_pb));
+  PX_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state = std::make_unique<CompilerState>(
       std::make_unique<RelationMap>(), /* sensitive_columns */ SensitiveColumnMap{}, info.get(),
       /* time_now */ types::Time64NSValue(0),
@@ -317,7 +317,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
       /* redaction_options */ RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
   compiler::ModuleHandler module_handler;
   compiler::MutationsIR dynamic_trace;
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
+  PX_ASSIGN_OR_RETURN(auto ast_walker,
                       compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                        compiler_state.get(), &module_handler));
 
@@ -333,7 +333,7 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   }
 
   if (pypa::parse(lexer, ast, symbols, options)) {
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   } else {
     return error::InvalidArgument("Parsing was unsuccessful, likely because of broken argument.");
   }
@@ -840,7 +840,7 @@ class CleanUpStrayIRNodesRule : public Rule {
       }
       return false;
     }
-    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
+    PX_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
     return true;
   }
 
@@ -1153,13 +1153,13 @@ class ASTVisitorTest : public OperatorTests {
   Status ParseScript(const std::shared_ptr<compiler::VarTable>& var_table,
                      const std::string& script) {
     Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
+    PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(script));
 
     bool func_based_exec = false;
     absl::flat_hash_set<std::string> reserved_names;
     compiler::ModuleHandler module_handler;
     compiler::MutationsIR mutations_ir;
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
+    PX_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(graph.get(), var_table, &mutations_ir,
                                                          compiler_state_.get(), &module_handler,
                                                          func_based_exec, reserved_names));
@@ -1171,7 +1171,7 @@ class ASTVisitorTest : public OperatorTests {
       const std::string& query, const std::vector<plannerpb::FuncToExecute>& exec_funcs,
       const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl = {}) {
     Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+    PX_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     bool func_based_exec = exec_funcs.size() > 0;
@@ -1182,28 +1182,28 @@ class ASTVisitorTest : public OperatorTests {
 
     compiler::ModuleHandler module_handler;
     compiler::MutationsIR probe_ir;
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
+    PX_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &probe_ir, compiler_state_.get(),
                                                          &module_handler, func_based_exec,
                                                          reserved_names, module_name_to_pxl));
 
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     if (func_based_exec) {
-      PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+      PX_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
     }
     return ir;
   }
 
   StatusOr<std::shared_ptr<compiler::ASTVisitorImpl>> CompileInspectAST(const std::string& query) {
     Parser parser;
-    PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
+    PX_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
     compiler::MutationsIR dynamic_trace;
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
+    PX_ASSIGN_OR_RETURN(auto ast_walker,
                         compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
                                                          compiler_state_.get(), &module_handler));
-    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker;
   }
 
@@ -1514,13 +1514,13 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   EXPECT_EQ(new_ir->type(), old_ir->type()) << err_string;
 
   switch (new_ir->type()) {
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME)                                                                    \
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME)                                                             \
   case IRNodeType::k##NAME:                                                                 \
     return CompareCloneNode(static_cast<NAME##IR*>(new_ir), static_cast<NAME##IR*>(old_ir), \
                             err_string);
 #include "src/carnot/planner/ir/ir_nodes.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
 
     case IRNodeType::kAny:
     case IRNodeType::number_of_types:

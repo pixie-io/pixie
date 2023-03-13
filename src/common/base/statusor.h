@@ -133,19 +133,19 @@ StatusOr<T>::StatusOr(const T& value) : value_(value) {}
 
 template <typename T>
 const T& StatusOr<T>::ValueOrDie() const {
-  PL_CHECK_OK(status_);
+  PX_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T& StatusOr<T>::ValueOrDie() {
-  PL_CHECK_OK(status_);
+  PX_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T StatusOr<T>::ConsumeValueOrDie() {
-  PL_CHECK_OK(status_);
+  PX_CHECK_OK(status_);
   return std::move(value_);
 }
 
@@ -177,26 +177,26 @@ StatusOr<T>::StatusOr(T&& value) {
   }
 }
 
-// PL_UNUSED(__s__) is useful if the caller does not use the status.
-#define PL_ASSIGN_OR_IMPL(statusor, lhs, rexpr, ...) \
+// PX_UNUSED(__s__) is useful if the caller does not use the status.
+#define PX_ASSIGN_OR_IMPL(statusor, lhs, rexpr, ...) \
   auto statusor = (rexpr);                           \
   if (!statusor.ok()) {                              \
     auto& __s__ = statusor;                          \
-    PL_UNUSED(__s__);                                \
+    PX_UNUSED(__s__);                                \
     __VA_ARGS__;                                     \
   }                                                  \
   lhs = std::move(statusor.ValueOrDie())
 
-// When using PL_ASSIGN_OR(), use  '__s__' to access the statusor object in the 'or' case.
-// See PL_ASSIGN_OR_RETURN for an example.
-#define PL_ASSIGN_OR(lhs, rexpr, ...) \
-  PL_ASSIGN_OR_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr, __VA_ARGS__)
+// When using PX_ASSIGN_OR(), use  '__s__' to access the statusor object in the 'or' case.
+// See PX_ASSIGN_OR_RETURN for an example.
+#define PX_ASSIGN_OR(lhs, rexpr, ...) \
+  PX_ASSIGN_OR_IMPL(PX_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr, __VA_ARGS__)
 
-#define PL_ASSIGN_OR_RETURN(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, return __s__.status())
+#define PX_ASSIGN_OR_RETURN(lhs, rexpr) PX_ASSIGN_OR(lhs, rexpr, return __s__.status())
 
 // Be careful using this, since it will exit the whole binary.
 // Meant for use in top-level main() of binaries.
-#define PL_ASSIGN_OR_EXIT(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, LOG(ERROR) << __s__.msg(); exit(1);)
+#define PX_ASSIGN_OR_EXIT(lhs, rexpr) PX_ASSIGN_OR(lhs, rexpr, LOG(ERROR) << __s__.msg(); exit(1);)
 
 // Adapter for status.
 template <typename T>

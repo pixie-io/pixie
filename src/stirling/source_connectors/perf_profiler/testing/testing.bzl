@@ -23,6 +23,10 @@ px_jattach = "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_
 agent_libs_arg = ",".join(["$(location %s)" % lib for lib in agent_libs])
 px_jattach_arg = "$(location %s)" % px_jattach
 
+stirling_profiler_attach_args = [
+    "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,
+]
+
 stirling_profiler_java_args = [
     "-stirling_profiler_java_agent_libs %s" % agent_libs_arg,
     "-stirling_profiler_px_jattach_path %s" % px_jattach_arg,

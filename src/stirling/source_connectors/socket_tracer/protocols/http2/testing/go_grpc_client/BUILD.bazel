@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_supported_go_sdk_versions")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -31,35 +32,17 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "client",
     embed = [":grpc_client_lib"],
 )
 
-go_cross_binary(
-    name = "golang_1_16_grpc_client",
-    sdk_version = "1.16",
-    tags = ["manual"],
-    target = ":client",
-)
-
-go_cross_binary(
-    name = "golang_1_17_grpc_client",
-    sdk_version = "1.17",
-    tags = ["manual"],
-    target = ":client",
-)
-
-go_cross_binary(
-    name = "golang_1_18_grpc_client",
-    sdk_version = "1.18",
-    tags = ["manual"],
-    target = ":client",
-)
-
-go_cross_binary(
-    name = "golang_1_19_grpc_client",
-    sdk_version = "1.19",
-    tags = ["manual"],
-    target = ":client",
-)
+[
+    go_cross_binary(
+        name = "golang_%s_grpc_client" % sdk_version.replace(".", "_"),
+        sdk_version = sdk_version,
+        tags = ["manual"],
+        target = ":client",
+    )
+    for sdk_version in pl_supported_go_sdk_versions
+]

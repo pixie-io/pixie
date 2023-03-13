@@ -84,9 +84,9 @@ void BM_GRPCSinkNodeSplitting(benchmark::State& state) {
 
   RowDescriptor input_rd(std::vector<DataType>(num_columns, DataType::STRING));
   RowDescriptor output_rd(std::vector<DataType>(num_columns, DataType::STRING));
-  PL_CHECK_OK(node.Init(*plan_node, output_rd, {input_rd}));
-  PL_CHECK_OK(node.Prepare(exec_state.get()));
-  PL_CHECK_OK(node.Open(exec_state.get()));
+  PX_CHECK_OK(node.Init(*plan_node, output_rd, {input_rd}));
+  PX_CHECK_OK(node.Prepare(exec_state.get()));
+  PX_CHECK_OK(node.Open(exec_state.get()));
 
   std::string big_string(string_size, 'X');
   std::vector<px::types::StringValue> data(num_rows, big_string);
@@ -98,7 +98,7 @@ void BM_GRPCSinkNodeSplitting(benchmark::State& state) {
   auto rb = row_batch_builder.get();
 
   for (auto _ : state) {
-    PL_CHECK_OK(node.ConsumeNext(exec_state.get(), rb, 0));
+    PX_CHECK_OK(node.ConsumeNext(exec_state.get(), rb, 0));
     state.SetBytesProcessed(num_rows * num_columns * string_size);
   }
 }

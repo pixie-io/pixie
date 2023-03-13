@@ -30,7 +30,7 @@
 
 namespace px {
 
-class PL_MUST_USE_RESULT Status {
+class PX_MUST_USE_RESULT Status {
  public:
   // Success status.
   Status() = default;
@@ -147,7 +147,7 @@ inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s)
 
 }  // namespace px
 
-#define PL_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
+#define PX_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
   do {                                                     \
     const auto& __status_name__ = (__status);              \
     if (!__status_name__.ok()) {                           \
@@ -157,9 +157,9 @@ inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s)
 
 // Early-returns the status if it is in error; otherwise, proceeds.
 // The argument expression is guaranteed to be evaluated exactly once.
-#define PL_RETURN_IF_ERROR(__status) PL_RETURN_IF_ERROR_IMPL(PL_UNIQUE_NAME(__status__), __status)
+#define PX_RETURN_IF_ERROR(__status) PX_RETURN_IF_ERROR_IMPL(PX_UNIQUE_NAME(__status__), __status)
 
-#define PL_EXIT_IF_ERROR(__status)  \
+#define PX_EXIT_IF_ERROR(__status)  \
   {                                 \
     if (!__status.ok()) {           \
       LOG(ERROR) << __status.msg(); \
@@ -167,16 +167,16 @@ inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s)
     }                               \
   }
 
-#define PL_CHECK_OK_PREPEND(to_call, msg)             \
+#define PX_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \
     auto _s = (to_call);                              \
     CHECK(_s.ok()) << (msg) << ": " << _s.ToString(); \
   } while (false)
 
 #ifdef NDEBUG
-#define PL_DCHECK_OK(val) PL_UNUSED(val);
+#define PX_DCHECK_OK(val) PX_UNUSED(val);
 #else
-#define PL_DCHECK_OK(val) PL_CHECK_OK_PREPEND(val, "Bad Status");
+#define PX_DCHECK_OK(val) PX_CHECK_OK_PREPEND(val, "Bad Status");
 #endif
 
-#define PL_CHECK_OK(val) PL_CHECK_OK_PREPEND(val, "Bad Status")
+#define PX_CHECK_OK(val) PX_CHECK_OK_PREPEND(val, "Bad Status")

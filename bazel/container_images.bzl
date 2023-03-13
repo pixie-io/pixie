@@ -42,20 +42,21 @@ def base_images():
     )
 
     _gcr_io_image(
+        # https://hub.docker.com/layers/openresty/openresty/1.21.4.1-4-bullseye/images/sha256-edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d?context=explore
         "openresty",
-        "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
+        "sha256:edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d",
         "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
     )
 
     _gcr_io_image(
         "base_image",
-        "sha256:34e96e21516698913035a62ef1ce484d91184de8a44209a33c7e134547e20dee",
+        "sha256:6424eb0738952803e98b9067a27ec5f410aae54ebc21dabec4e8bb93a30af30b",
         "distroless/base",
     )
 
     _gcr_io_image(
         "base_image_debug",
-        "sha256:970c15d5174a9412290b8aa9d3dbc63b6a9016fb00384097ad06be194956c973",
+        "sha256:5fa21aeb39b7b6852bab06fe32e49071fe246e7bd479b80ebdc5797a587308e7",
         "distroless/base",
     )
 
@@ -270,6 +271,14 @@ def stirling_test_images():
         "rabbitmq_3_management",
         "sha256:650c7e0093842739ddfaadec0d45946c052dba42941bd5c0a082cbe914451c25",
         "pixie-oss/demo-apps/rabbitmq/rabbitmq:3-management",
+    )
+
+    # Tag: productcatalogservice:v0.2.0
+    # Arch: linux/amd64
+    _gcr_io_image(
+        "productcatalogservice_v0_2_0",
+        "sha256:1726e4dd813190ad1eae7f3c42483a3a83dd1676832bb7b04256455c8968d82a",
+        "google-samples/microservices-demo/productcatalogservice:v0.2.0",
     )
 
     # Built and pushed by src/stirling/testing/demo_apps/py_grpc/update_gcr.sh

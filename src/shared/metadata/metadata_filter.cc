@@ -85,7 +85,7 @@ MetadataInfo AgentMetadataFilterImpl::ToProtoImpl() const {
 StatusOr<std::unique_ptr<AgentMetadataFilter>> AgentMetadataFilterImpl::FromProto(
     const MetadataInfo& proto) {
   DCHECK_EQ(proto.filter_case(), MetadataInfo::FilterCase::kXxhash64BloomFilter);
-  PL_ASSIGN_OR_RETURN(auto bf, XXHash64BloomFilter::FromProto(proto.xxhash64_bloom_filter()));
+  PX_ASSIGN_OR_RETURN(auto bf, XXHash64BloomFilter::FromProto(proto.xxhash64_bloom_filter()));
   absl::flat_hash_set<MetadataType> types;
   for (auto i = 0; i < proto.metadata_fields_size(); ++i) {
     types.insert(proto.metadata_fields(i));

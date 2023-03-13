@@ -28,12 +28,12 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/auth/authpb"

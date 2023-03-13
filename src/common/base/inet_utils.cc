@@ -114,12 +114,12 @@ StatusOr<std::string> IPv6AddrToString(const struct in6_addr& in6_addr) {
 }
 
 StatusOr<std::string> IPv4SockAddrToString(const struct sockaddr_in& a) {
-  PL_ASSIGN_OR_RETURN(std::string addr_str, IPv4AddrToString(a.sin_addr));
+  PX_ASSIGN_OR_RETURN(std::string addr_str, IPv4AddrToString(a.sin_addr));
   return absl::Substitute("[family=$0 addr=$1 port=$2]", a.sin_family, addr_str, a.sin_port);
 }
 
 StatusOr<std::string> IPv6SockAddrToString(const struct sockaddr_in6& a) {
-  PL_ASSIGN_OR_RETURN(std::string addr_str, IPv6AddrToString(a.sin6_addr));
+  PX_ASSIGN_OR_RETURN(std::string addr_str, IPv6AddrToString(a.sin6_addr));
   return absl::Substitute("[family=$0 addr=$1 port=$2]", a.sin6_family, addr_str, a.sin6_port);
 }
 
@@ -289,7 +289,7 @@ Status ParseCIDRBlock(std::string_view cidr_str, CIDRBlock* cidr) {
   }
 
   InetAddr addr;
-  PL_RETURN_IF_ERROR(ParseIPAddress(fields[0], &addr));
+  PX_RETURN_IF_ERROR(ParseIPAddress(fields[0], &addr));
 
   if (addr.family == InetAddrFamily::kIPv4 && prefix_length > kIPv4BitLen) {
     return error::InvalidArgument("Prefix length for IPv4 CIDR block must be <=$0, got: '$1'",

@@ -108,7 +108,7 @@ class AgentMetadataFilterImpl : public AgentMetadataFilter {
  public:
   static StatusOr<std::unique_ptr<AgentMetadataFilter>> Create(
       int64_t max_entries, double error_rate, const absl::flat_hash_set<MetadataType>& types) {
-    PL_ASSIGN_OR_RETURN(auto bf, XXHash64BloomFilter::Create(max_entries, error_rate));
+    PX_ASSIGN_OR_RETURN(auto bf, XXHash64BloomFilter::Create(max_entries, error_rate));
     return std::unique_ptr<AgentMetadataFilter>(new AgentMetadataFilterImpl(std::move(bf), types));
   }
 

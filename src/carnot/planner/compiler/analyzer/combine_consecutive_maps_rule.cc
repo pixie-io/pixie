@@ -74,21 +74,21 @@ Status CombineConsecutiveMapsRule::CombineMaps(
       // Overwrite it in the parent with the child if it's a name reassignment.
       for (const ColumnExpression& parent_col_expr : parent->col_exprs()) {
         if (parent_col_expr.name == child_col_expr.name) {
-          PL_RETURN_IF_ERROR(parent->UpdateColExpr(parent_col_expr.name, child_expr));
+          PX_RETURN_IF_ERROR(parent->UpdateColExpr(parent_col_expr.name, child_expr));
         }
       }
     } else {
       // Otherwise just append it to the list.
-      PL_RETURN_IF_ERROR(parent->AddColExpr(child_col_expr));
+      PX_RETURN_IF_ERROR(parent->AddColExpr(child_col_expr));
     }
-    PL_RETURN_IF_ERROR(child_expr->graph()->DeleteEdge(child, child_expr));
+    PX_RETURN_IF_ERROR(child_expr->graph()->DeleteEdge(child, child_expr));
   }
 
-  PL_RETURN_IF_ERROR(child->RemoveParent(parent));
+  PX_RETURN_IF_ERROR(child->RemoveParent(parent));
   for (auto grandchild : child->Children()) {
-    PL_RETURN_IF_ERROR(grandchild->ReplaceParent(child, parent));
+    PX_RETURN_IF_ERROR(grandchild->ReplaceParent(child, parent));
   }
-  PL_RETURN_IF_ERROR(child->graph()->DeleteNode(child->id()));
+  PX_RETURN_IF_ERROR(child->graph()->DeleteNode(child->id()));
   return Status::OK();
 }
 
@@ -114,7 +114,7 @@ StatusOr<bool> CombineConsecutiveMapsRule::Apply(IRNode* ir_node) {
   if (!ShouldCombineMaps(parent, child, parent_cols)) {
     return false;
   }
-  PL_RETURN_IF_ERROR(CombineMaps(parent, child, parent_cols));
+  PX_RETURN_IF_ERROR(CombineMaps(parent, child, parent_cols));
   return true;
 }
 

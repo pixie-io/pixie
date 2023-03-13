@@ -57,17 +57,17 @@ class OTelExportTest : public QLObjectTest {
     auto src = MakeMemSource("table");
     auto df = Dataframe::Create(compiler_state.get(), src, ast_visitor.get()).ConsumeValueOrDie();
     var_table->Add("df", df);
-    PL_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
+    PX_ASSIGN_OR_RETURN(auto sp, ParseExpression(otel_export_expression));
     if (!Exporter::IsExporter(sp)) {
       return error::InvalidArgument("Expected exporter, received $0", sp->name());
     }
     auto exporter = static_cast<Exporter*>(sp.get());
-    PL_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
+    PX_RETURN_IF_ERROR(exporter->Export(ast, df.get()));
     auto child = src->Children();
     auto otel_sink = static_cast<OTelExportSinkIR*>(child[0]);
-    PL_RETURN_IF_ERROR(src->ResolveType(compiler_state.get()));
+    PX_RETURN_IF_ERROR(src->ResolveType(compiler_state.get()));
     otel_sink->PullParentTypes();
-    PL_RETURN_IF_ERROR(otel_sink->ResolveType(compiler_state.get()));
+    PX_RETURN_IF_ERROR(otel_sink->ResolveType(compiler_state.get()));
     return otel_sink;
   }
 };
@@ -129,6 +129,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 5
   }
   resource {
     attributes {
@@ -184,6 +185,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -239,6 +241,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -310,6 +313,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -381,6 +385,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -443,6 +448,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -507,6 +513,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 5
   }
   resource {
     attributes {
@@ -589,6 +596,55 @@ otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
     insecure: true
+    timeout: 5
+  }
+  resource {
+    attributes {
+      name: "service.name"
+      column {
+        column_type: STRING
+        column_index: 0
+        can_be_json_encoded_array: true
+      }
+    }
+  }
+  metrics {
+    name: "runtime.jvm.gc.collection"
+    time_column_index: 1
+    unit: "ns"
+    gauge {
+      int_column_index: 2
+    }
+  }
+})pb"},
+        {"timeout_endpoint",
+         R"pxl(
+otel.Data(
+  endpoint=otel.Endpoint(
+    url='0.0.0.0:55690',
+    timeout=5,
+  ),
+  resource={
+      'service.name' : df.service,
+  },
+  data=[
+    otelmetric.Gauge(
+      name='runtime.jvm.gc.collection',
+      value=df.young_gc_time,
+    )
+  ]
+))pxl",
+         table_store::schema::Relation{
+             {types::STRING, types::TIME64NS, types::INT64},
+             {"service", "time_", "young_gc_time"},
+             {types::ST_SERVICE_NAME, types::ST_NONE, types::ST_DURATION_NS},
+         },
+         R"pb(
+op_type: OTEL_EXPORT_SINK_OPERATOR
+otel_sink_op {
+  endpoint_config {
+    url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -636,6 +692,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -688,6 +745,7 @@ op_type: OTEL_EXPORT_SINK_OPERATOR
 otel_sink_op {
   endpoint_config {
     url: "0.0.0.0:55690"
+    timeout: 5
   }
   resource {
     attributes {
@@ -862,6 +920,7 @@ otel_sink_op {
       key: "apikey"
       value: "12345"
     }
+    timeout: 6
   }
   resource {
     attributes {
@@ -888,6 +947,7 @@ otel_sink_op {
   };
   auto endpoint_config = std::make_unique<planpb::OTelEndpointConfig>();
   endpoint_config->set_url(("px.dev:55690"));
+  endpoint_config->set_timeout(6);
   (*endpoint_config->mutable_headers())["apikey"] = "12345";
   CompilerState compiler_state(std::make_unique<RelationMap>(),
                                /* sensitive_columns */ SensitiveColumnMap{}, info.get(),

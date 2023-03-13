@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@privy_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 package(default_visibility = ["//privy:__subpackages__"])
@@ -23,6 +24,7 @@ py_test(
     srcs = ["test_providers.py"],
     srcs_version = "PY3",
     deps = [
+        ":test_utils",
         "//privy:privy_library",
     ],
 )
@@ -36,7 +38,11 @@ py_test(
     ],
     srcs_version = "PY3",
     deps = [
+        # httpx is transitively required by starlette.testclient but doesn't get
+        # automatically included by rules_python
+        requirement("httpx"),
         "//privy:privy_library",
+        ":test_utils",
     ],
 )
 
@@ -49,16 +55,17 @@ py_test(
     ],
     srcs_version = "PY3",
     deps = [
+        # httpx is transitively required by starlette.testclient but doesn't get
+        # automatically included by rules_python
+        requirement("httpx"),
         "//privy:privy_library",
+        ":test_utils",
     ],
 )
 
 py_library(
-    name = "privy_tests",
+    name = "test_utils",
     testonly = True,
-    srcs = glob([
-        "*.py",
-        "**/*.py",
-    ]),
+    srcs = ["utils.py"],
     srcs_version = "PY3",
 )

@@ -16,8 +16,13 @@
 
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
-load("@io_bazel_rules_go//go:def.bzl", "go_context", "go_library")
+
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_python//python:defs.bzl", "py_test")
+
+pl_supported_go_sdk_versions = ["1.16", "1.17", "1.18", "1.19", "1.20"]
 
 def pl_copts():
     posix_options = [
@@ -223,7 +228,8 @@ def pl_cc_test(
         defines = [],
         coverage = True,
         local = False,
-        flaky = False):
+        flaky = False,
+        **kwargs):
     test_lib_tags = list(tags)
     if coverage:
         test_lib_tags.append("coverage_test_lib")
@@ -248,7 +254,7 @@ def pl_cc_test(
             repository + "//src/shared/version:test_version_linkstamp",
         ] + _default_external_deps(),
         args = args,
-        data = data,
+        data = data + ["//bazel/test_runners:test_runner_dep"],
         tags = tags + ["coverage_test"],
         shard_count = shard_count,
         size = size,
@@ -256,6 +262,7 @@ def pl_cc_test(
         local = local,
         flaky = flaky,
         features = pl_default_features(),
+        **kwargs
     )
 
 # PL C++ test related libraries (that want gtest, gmock) should be specified
@@ -383,10 +390,55 @@ pl_bindata = rule(
         "strip_external": attr.bool(default = False),
         "_bindata": attr.label(
             executable = True,
-            cfg = "host",
+            cfg = "exec",
             # Modification of go_bindata repo from kevinburke to the go-bindata repo.
             default = "@com_github_go_bindata_go_bindata//go-bindata:go-bindata",
         ),
         "_go_context_data": attr.label(default = "@io_bazel_rules_go//:go_context_data"),
     },
 )
+
+def pl_go_image(**kwargs):
+    base = "//:pl_go_base_image"
+    if "base" not in kwargs:
+        kwargs["base"] = base
+    go_image(
+        **kwargs
+    )
+
+def _add_no_pie(kwargs):
+    if "gc_linkopts" not in kwargs:
+        kwargs["gc_linkopts"] = []
+    kwargs["gc_linkopts"].append("-extldflags")
+    kwargs["gc_linkopts"].append("-no-pie")
+
+def _add_test_runner(kwargs):
+    if "data" not in kwargs:
+        kwargs["data"] = []
+    kwargs["data"].append("//bazel/test_runners:test_runner_dep")
+
+def _add_no_sysroot(kwargs):
+    if "target_compatible_with" not in kwargs:
+        kwargs["target_compatible_with"] = []
+    kwargs["target_compatible_with"] = kwargs["target_compatible_with"] + select({
+        "//bazel/cc_toolchains:libc_version_glibc_host": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    })
+
+def pl_go_test(**kwargs):
+    _add_no_pie(kwargs)
+    _add_test_runner(kwargs)
+    go_test(**kwargs)
+
+def pl_go_binary(**kwargs):
+    _add_no_pie(kwargs)
+    go_binary(**kwargs)
+
+def pl_py_test(**kwargs):
+    _add_test_runner(kwargs)
+    _add_no_sysroot(kwargs)
+    py_test(**kwargs)
+
+def pl_sh_test(**kwargs):
+    _add_test_runner(kwargs)
+    native.sh_test(**kwargs)

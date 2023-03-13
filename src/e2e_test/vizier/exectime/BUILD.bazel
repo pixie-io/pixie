@@ -13,7 +13,8 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary")
 
 go_library(
     name = "exectime_lib",
@@ -26,7 +27,7 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "exectime",
     embed = [":exectime_lib"],
     visibility = ["//visibility:public"],

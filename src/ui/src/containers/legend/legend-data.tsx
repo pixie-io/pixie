@@ -18,7 +18,7 @@
 
 import { View } from 'vega-typings';
 
-import { COLOR_SCALE } from 'app/containers/live/convert-to-vega-spec';
+import { COLOR_SCALE } from 'app/containers/live/convert-to-vega-spec/convert-to-vega-spec';
 
 export interface LegendEntry {
   key: string;

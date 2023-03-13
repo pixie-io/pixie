@@ -36,7 +36,7 @@
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/types/typespb/types.pb.h"
-#include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/shared/manager/manager.h"
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace px {

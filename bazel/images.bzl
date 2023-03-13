@@ -14,112 +14,67 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-def image_map_with_bundle_version(image_map, replace):
-    with_version = {}
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
-    for k, v in image_map.items():
-        image_tag = k
+PROPRIETARY_PREFIX = "gcr.io/pl-dev-infra/"
+PUBLIC_PREFIX = "gcr.io/pixie-oss/pixie-prod/"
+DEV_PREFIX = "gcr.io/pixie-oss/pixie-dev/"
 
-        for old, new in replace.items():
-            image_tag = image_tag.replace(old, new)
-        k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
-        with_version[k_with_version] = v
+def image_replacements(image_map, existing_prefix, new_prefix):
+    replacements = {}
 
-    return with_version
+    for image in image_map.keys():
+        image = image.removeprefix("$(IMAGE_PREFIX)").removesuffix(":$(BUNDLE_VERSION)")
+        replacements[existing_prefix + image] = new_prefix + image + ":{BUNDLE_VERSION}"
 
-def generate_cloud_yamls(name, srcs, out, image_map, yaml_dir, replace):
-    kustomize_edits = []
+    return replacements
 
-    for k in image_map.keys():
-        image_path = k
-        for old, new in replace.items():
-            image_path = image_path.replace(old, new)
-        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
+def _bundle_version_provider_impl(ctx):
+    return [
+        platform_common.TemplateVariableInfo({
+            "BUNDLE_VERSION": ctx.attr._bundle_version[BuildSettingInfo].value,
+        }),
+    ]
 
-    merged_edits = "\n".join(kustomize_edits)
-    native.genrule(
-        name = name,
-        srcs = srcs,
-        outs = [out],
-        cmd = """
-        T=`mktemp -d`
-        cp -aL k8s/cloud $$T
+bundle_version_provider = rule(
+    implementation = _bundle_version_provider_impl,
+    attrs = {
+        "_bundle_version": attr.label(default = "//k8s:image_version"),
+    },
+)
 
-        # Update the bundle versions.
-        pushd $$T/cloud/{0} &>/dev/null
-        {1}
-        popd &>/dev/null
+def _image_prefix_provider_impl(ctx):
+    return [
+        platform_common.TemplateVariableInfo({
+            "IMAGE_PREFIX": ctx.attr.image_prefix,
+        }),
+    ]
 
-        kustomize build $$T/cloud/{0} -o $@
-        """.format(yaml_dir, merged_edits),
+image_prefix_provider = rule(
+    implementation = _image_prefix_provider_impl,
+    attrs = {
+        "image_prefix": attr.string(mandatory = True),
+    },
+)
+
+def _list_image_bundle(ctx):
+    exe = ctx.actions.declare_file(ctx.attr.name)
+    exe_content = ""
+    for image_tag in ctx.attr.images:
+        image_tag = image_tag.replace("$(IMAGE_PREFIX)", ctx.var["IMAGE_PREFIX"])
+        image_tag = image_tag.replace("$(BUNDLE_VERSION)", ctx.var["BUNDLE_VERSION"])
+        exe_content += "echo '{}'\n".format(image_tag)
+    ctx.actions.write(exe, exe_content)
+
+    return DefaultInfo(
+        files = depset([exe]),
+        executable = exe,
     )
 
-def generate_vizier_yamls(name, srcs, out, image_map, replace):
-    kustomize_edits = []
-    for k in image_map.keys():
-        image_path = k
-        for old, new in replace.items():
-            image_path = image_path.replace(old, new)
-        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
-
-    merged_edits = "\n".join(kustomize_edits)
-    native.genrule(
-        name = name,
-        srcs = srcs,
-        outs = [out + "/base.yaml", out + "/autopilot.yaml"],
-        cmd = """
-        T=`mktemp -d`
-        cp -aL k8s/vizier $$T
-
-        # Update the bundle versions.
-        pushd $$T/vizier/etcd_metadata &>/dev/null
-        {0}
-        popd &>/dev/null
-        pushd $$T/vizier/etcd_metadata/autopilot &>/dev/null
-        {0}
-        popd &>/dev/null
-
-        for i in $(OUTS); do
-          if [[ $$i == *"autopilot"* ]]; then
-            kustomize build $$T/vizier/etcd_metadata/autopilot -o $$i
-          else
-            kustomize build $$T/vizier/etcd_metadata -o $$i
-          fi
-        done
-	""".format(merged_edits),
-    )
-
-def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
-    kustomize_edits = []
-    for k in image_map.keys():
-        image_path = k
-        for old, new in replace.items():
-            image_path = image_path.replace(old, new)
-        kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
-
-    merged_edits = "\n".join(kustomize_edits)
-    native.genrule(
-        name = name,
-        srcs = srcs,
-        outs = [out + "/base.yaml", out + "/autopilot.yaml"],
-        cmd = """
-        T=`mktemp -d`
-        cp -aL k8s/vizier $$T
-
-        # Update the bundle versions.
-        pushd $$T/vizier/persistent_metadata &>/dev/null
-        {0}
-        popd &>/dev/null
-        pushd $$T/vizier/persistent_metadata/autopilot &>/dev/null
-        {0}
-        popd &>/dev/null
-
-        for i in $(OUTS); do
-          if [[ $$i == *"autopilot"* ]]; then
-            kustomize build $$T/vizier/persistent_metadata/autopilot -o $$i
-          else
-            kustomize build $$T/vizier/persistent_metadata -o $$i
-          fi
-        done
-        """.format(merged_edits),
-    )
+list_image_bundle = rule(
+    implementation = _list_image_bundle,
+    executable = True,
+    attrs = dict(
+        images = attr.string_dict(),
+    ),
+)

@@ -22,6 +22,7 @@
  * importing them everywhere.
  */
 
+#include "src/common/base/arch.h"           // IWYU pragma: export
 #include "src/common/base/byte_utils.h"     // IWYU pragma: export
 #include "src/common/base/defer.h"          // IWYU pragma: export
 #include "src/common/base/enum_utils.h"     // IWYU pragma: export

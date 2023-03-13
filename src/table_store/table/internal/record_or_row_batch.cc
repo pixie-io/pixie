@@ -123,14 +123,14 @@ Status RecordOrRowBatch::AddBatchSliceToRowBatch(size_t row_start, size_t batch_
                 record_batch_w_cache.cache_validity[col_idx] = true;
               }
               auto arr = record_batch_w_cache.arrow_cache[col_idx]->Slice(row_start, batch_size);
-              PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+              PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
             }
             return Status::OK();
           },
           [row_start, batch_size, cols, output_rb](const schema::RowBatch& row_batch) {
             for (auto col_idx : cols) {
               auto arr = row_batch.ColumnAt(col_idx)->Slice(row_start, batch_size);
-              PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
+              PX_RETURN_IF_ERROR(output_rb->AddColumn(arr));
             }
             return Status::OK();
           },
@@ -152,7 +152,7 @@ void RecordOrRowBatch::UnsafeAppendColumnToBuilder(types::TypeErasedArrowBuilder
   auto iterable = types::ColumnWrapperIterator<_dt_>(record_batch[col_idx].get()); \
   auto typed_builder = types::GetTypedArrowBuilder<_dt_>(builder);                 \
   typed_builder->UnsafeAppendValues(iterable.begin() + start_row, iterable.begin() + end_row);
-            PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+            PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
           },
           [builder, data_type, col_idx, start_row, end_row](const schema::RowBatch& row_batch) {
@@ -160,7 +160,7 @@ void RecordOrRowBatch::UnsafeAppendColumnToBuilder(types::TypeErasedArrowBuilder
   auto iterable = types::ArrowArrayIterator<_dt_>(row_batch.ColumnAt(col_idx).get()); \
   auto typed_builder = types::GetTypedArrowBuilder<_dt_>(builder);                    \
   typed_builder->UnsafeAppendValues(iterable.begin() + start_row, iterable.begin() + end_row);
-            PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+            PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
           },
       },

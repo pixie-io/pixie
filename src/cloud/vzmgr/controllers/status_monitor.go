@@ -25,8 +25,8 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/events"

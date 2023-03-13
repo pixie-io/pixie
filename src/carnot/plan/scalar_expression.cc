@@ -50,7 +50,7 @@ px::Status ScalarValue::Init(const px::carnot::planpb::ScalarValue& pb) {
   return Status::OK();
 }
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 
 int64_t ScalarValue::Int64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
@@ -100,7 +100,7 @@ bool ScalarValue::IsNull() const {
   return pb_.value_case() == planpb::ScalarValue::VALUE_NOT_SET;
 }
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES
 std::string ScalarValue::DebugString() const {
   DCHECK(is_initialized_) << "Not initialized";
   if (IsNull()) {
@@ -186,7 +186,7 @@ StatusOr<types::DataType> Column::OutputDataType(
   DCHECK(is_initialized_) << "Not initialized";
   StatusOr<const table_store::schema::Relation> s = input_schema.GetRelation(NodeID());
 
-  PL_RETURN_IF_ERROR(s);
+  PX_RETURN_IF_ERROR(s);
   const auto& relation = s.ValueOrDie();
   if (!relation.HasColumn(Index())) {
     return error::InvalidArgument("Mismatch between plan and table schema");
@@ -211,7 +211,7 @@ template <typename T, typename TProto>
 StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto& pb) {
   auto expr = std::make_unique<T>();
   auto s = expr->Init(pb);
-  PL_RETURN_IF_ERROR(s);
+  PX_RETURN_IF_ERROR(s);
   return std::unique_ptr<ScalarExpression>(std::move(expr));
 }
 
@@ -242,7 +242,7 @@ Status ScalarFunc::Init(const planpb::ScalarFunc& pb) {
   }
   for (int i = 0; i < pb.init_args_size(); ++i) {
     ScalarValue sv;
-    PL_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
+    PX_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
     init_arguments_.push_back(sv);
 
     registry_arg_types_.push_back(pb.init_args(i).data_type());
@@ -294,19 +294,19 @@ StatusOr<types::DataType> ScalarFunc::OutputDataType(
                      registry_args.push_back(init_arg.DataType());
                    }
                    for (const auto& child_result : child_results) {
-                     PL_RETURN_IF_ERROR(child_result);
+                     PX_RETURN_IF_ERROR(child_result);
                      registry_args.push_back(child_result.ValueOrDie());
                    }
                    auto s =
                        state.func_registry()->GetScalarUDFDefinition(func.name(), registry_args);
-                   PL_RETURN_IF_ERROR(s);
+                   PX_RETURN_IF_ERROR(s);
                    return s.ValueOrDie()->exec_return_type();
                  })
                  .Walk(*this);
 
   // TODO(zasgar): Why is this necessary? For some reason the proper constructor is
   // not getting invoked.
-  PL_RETURN_IF_ERROR(res);
+  PX_RETURN_IF_ERROR(res);
   return res.ValueOrDie();
 }
 
@@ -336,7 +336,7 @@ Status AggregateExpression::Init(const planpb::AggregateExpression& pb) {
   }
   for (int64_t i = 0; i < pb.init_args_size(); ++i) {
     ScalarValue sv;
-    PL_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
+    PX_RETURN_IF_ERROR(sv.Init(pb.init_args(i)));
     init_arguments_.push_back(sv);
 
     registry_arg_types_.push_back(pb.init_args(i).data_type());
@@ -375,7 +375,7 @@ StatusOr<types::DataType> AggregateExpression::OutputDataType(
   // The output data type of a function is based on the computed types of the init_args + args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
-  PL_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, registry_arg_types_));
+  PX_ASSIGN_OR_RETURN(auto s, state.func_registry()->GetUDADefinition(name_, registry_arg_types_));
   return s->finalize_return_type();
 }
 

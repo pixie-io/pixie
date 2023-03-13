@@ -119,7 +119,7 @@ inline std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(
   for (int idx : indices) {                                             \
     out->Append(src.Get<types::DataTypeTraits<_dt_>::value_type>(idx)); \
   }
-  PL_SWITCH_FOREACH_DATATYPE(src.data_type(), TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(src.data_type(), TYPE_CASE);
 #undef TYPE_CASE
 
   return out;

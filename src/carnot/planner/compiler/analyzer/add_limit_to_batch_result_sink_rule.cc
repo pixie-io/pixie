@@ -63,10 +63,10 @@ StatusOr<bool> AddLimitToBatchResultSinkRule::Apply(IRNode* ir_node) {
     return false;
   }
 
-  PL_ASSIGN_OR_RETURN(auto limit,
+  PX_ASSIGN_OR_RETURN(auto limit,
                       mem_sink->graph()->CreateNode<LimitIR>(
                           mem_sink->ast(), parent, compiler_state_->max_output_rows_per_table()));
-  PL_RETURN_IF_ERROR(mem_sink->ReplaceParent(parent, limit));
+  PX_RETURN_IF_ERROR(mem_sink->ReplaceParent(parent, limit));
   return true;
 }
 

@@ -126,7 +126,7 @@ class ScalarUDFDocBuilder : public UDFDocBuilder<ScalarUDFDocBuilder> {
    */
   template <typename TUDF>
   Status ToProto(udfspb::Doc* doc) {
-    PL_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
+    PX_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
 
     const auto& init_args = ScalarUDFTraits<TUDF>::InitArguments();
     const auto& exec_args = ScalarUDFTraits<TUDF>::ExecArguments();
@@ -172,7 +172,7 @@ class UDADocBuilder : public UDFDocBuilder<UDADocBuilder> {
    */
   template <typename TUDA>
   Status ToProto(udfspb::Doc* doc) {
-    PL_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
+    PX_RETURN_IF_ERROR(UDFDocBuilder::ToProtoBase(doc));
 
     const auto& init_args = UDATraits<TUDA>::InitArguments();
     const auto& update_args = UDATraits<TUDA>::UpdateArgumentTypes();

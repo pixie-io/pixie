@@ -41,9 +41,9 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
   auto graph = groupby->graph();
   auto groupby_id = groupby->id();
   auto groupby_children = graph->dag().DependenciesOf(groupby->id());
-  PL_RETURN_IF_ERROR(graph->DeleteNode(groupby_id));
+  PX_RETURN_IF_ERROR(graph->DeleteNode(groupby_id));
   for (const auto& child_id : groupby_children) {
-    PL_RETURN_IF_ERROR(graph->DeleteOrphansInSubtree(child_id));
+    PX_RETURN_IF_ERROR(graph->DeleteOrphansInSubtree(child_id));
   }
   return true;
 }

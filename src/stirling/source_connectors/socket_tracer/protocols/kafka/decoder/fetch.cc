@@ -26,124 +26,124 @@ namespace kafka {
 
 StatusOr<FetchReqTopic> PacketDecoder::ExtractFetchReqTopic() {
   FetchReqTopic r;
-  PL_ASSIGN_OR_RETURN(r.name, ExtractString());
-  PL_ASSIGN_OR_RETURN(r.partitions,
+  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  PX_ASSIGN_OR_RETURN(r.partitions,
                       ExtractArray<FetchReqPartition>(&PacketDecoder::ExtractFetchReqPartition));
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchReqPartition> PacketDecoder::ExtractFetchReqPartition() {
   FetchReqPartition r;
-  PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(r.index, ExtractInt32());
   if (api_version_ >= 9) {
-    PL_ASSIGN_OR_RETURN(r.current_leader_epoch, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.current_leader_epoch, ExtractInt32());
   }
-  PL_ASSIGN_OR_RETURN(r.fetch_offset, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(r.fetch_offset, ExtractInt64());
   if (api_version_ >= 12) {
-    PL_ASSIGN_OR_RETURN(r.last_fetched_epoch, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.last_fetched_epoch, ExtractInt32());
   }
   if (api_version_ >= 5) {
-    PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
+    PX_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
   }
-  PL_ASSIGN_OR_RETURN(r.partition_max_bytes, ExtractInt32());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.partition_max_bytes, ExtractInt32());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchForgottenTopicsData> PacketDecoder::ExtractFetchForgottenTopicsData() {
   FetchForgottenTopicsData r;
-  PL_ASSIGN_OR_RETURN(r.name, ExtractString());
-  PL_ASSIGN_OR_RETURN(r.partition_indices, ExtractArray<int32_t>(&PacketDecoder::ExtractInt32));
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  PX_ASSIGN_OR_RETURN(r.partition_indices, ExtractArray<int32_t>(&PacketDecoder::ExtractInt32));
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchReq> PacketDecoder::ExtractFetchReq() {
   FetchReq r;
-  PL_ASSIGN_OR_RETURN(r.replica_id, ExtractInt32());
-  PL_RETURN_IF_ERROR(/*max_wait_ms*/ ExtractInt32());
-  PL_RETURN_IF_ERROR(/*min_bytes*/ ExtractInt32());
+  PX_ASSIGN_OR_RETURN(r.replica_id, ExtractInt32());
+  PX_RETURN_IF_ERROR(/*max_wait_ms*/ ExtractInt32());
+  PX_RETURN_IF_ERROR(/*min_bytes*/ ExtractInt32());
 
   if (api_version_ >= 3) {
-    PL_RETURN_IF_ERROR(/*max_bytes*/ ExtractInt32());
+    PX_RETURN_IF_ERROR(/*max_bytes*/ ExtractInt32());
   }
 
   if (api_version_ >= 4) {
-    PL_RETURN_IF_ERROR(/*isolation_level*/ ExtractInt8());
+    PX_RETURN_IF_ERROR(/*isolation_level*/ ExtractInt8());
   }
 
   if (api_version_ >= 7) {
-    PL_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
-    PL_ASSIGN_OR_RETURN(r.session_epoch, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.session_epoch, ExtractInt32());
   }
 
-  PL_ASSIGN_OR_RETURN(r.topics, ExtractArray<FetchReqTopic>(&PacketDecoder::ExtractFetchReqTopic));
+  PX_ASSIGN_OR_RETURN(r.topics, ExtractArray<FetchReqTopic>(&PacketDecoder::ExtractFetchReqTopic));
 
   if (api_version_ >= 7) {
-    PL_ASSIGN_OR_RETURN(r.forgotten_topics, ExtractArray<FetchForgottenTopicsData>(
+    PX_ASSIGN_OR_RETURN(r.forgotten_topics, ExtractArray<FetchForgottenTopicsData>(
                                                 &PacketDecoder::ExtractFetchForgottenTopicsData));
   }
 
   if (api_version_ >= 11) {
-    PL_ASSIGN_OR_RETURN(r.rack_id, ExtractString());
+    PX_ASSIGN_OR_RETURN(r.rack_id, ExtractString());
   }
 
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchRespAbortedTransaction> PacketDecoder::ExtractFetchRespAbortedTransaction() {
   FetchRespAbortedTransaction r;
-  PL_ASSIGN_OR_RETURN(r.producer_id, ExtractInt64());
-  PL_ASSIGN_OR_RETURN(r.first_offset, ExtractInt64());
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.producer_id, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(r.first_offset, ExtractInt64());
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchRespPartition> PacketDecoder::ExtractFetchRespPartition() {
   FetchRespPartition r;
 
-  PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
-  PL_ASSIGN_OR_RETURN(r.high_watermark, ExtractInt64());
+  PX_ASSIGN_OR_RETURN(r.index, ExtractInt32());
+  PX_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+  PX_ASSIGN_OR_RETURN(r.high_watermark, ExtractInt64());
   if (api_version_ >= 4) {
-    PL_ASSIGN_OR_RETURN(r.last_stable_offset, ExtractInt64());
+    PX_ASSIGN_OR_RETURN(r.last_stable_offset, ExtractInt64());
   }
   if (api_version_ >= 5) {
-    PL_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
+    PX_ASSIGN_OR_RETURN(r.log_start_offset, ExtractInt64());
   }
   if (api_version_ >= 4) {
-    PL_ASSIGN_OR_RETURN(r.aborted_transactions,
+    PX_ASSIGN_OR_RETURN(r.aborted_transactions,
                         ExtractArray(&PacketDecoder::ExtractFetchRespAbortedTransaction));
   }
   if (api_version_ >= 11) {
-    PL_ASSIGN_OR_RETURN(r.preferred_read_replica, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.preferred_read_replica, ExtractInt32());
   }
-  PL_ASSIGN_OR_RETURN(r.message_set, ExtractMessageSet());
+  PX_ASSIGN_OR_RETURN(r.message_set, ExtractMessageSet());
   // No tag section here, since it's been handled in MessageSet.
   return r;
 }
 
 StatusOr<FetchRespTopic> PacketDecoder::ExtractFetchRespTopic() {
   FetchRespTopic r;
-  PL_ASSIGN_OR_RETURN(r.name, ExtractString());
-  PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractFetchRespPartition));
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.name, ExtractString());
+  PX_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractFetchRespPartition));
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 
 StatusOr<FetchResp> PacketDecoder::ExtractFetchResp() {
   FetchResp r;
   if (api_version_ >= 1) {
-    PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
   }
   if (api_version_ >= 7) {
-    PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
-    PL_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
+    PX_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+    PX_ASSIGN_OR_RETURN(r.session_id, ExtractInt32());
   }
-  PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractFetchRespTopic));
-  PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  PX_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractFetchRespTopic));
+  PX_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   return r;
 }
 

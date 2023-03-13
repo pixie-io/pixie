@@ -1,0 +1,34 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: strace
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      name: strace
+  template:
+    metadata:
+      labels:
+        name: strace
+    spec:
+      containers:
+      - name: strace
+        image: jess/strace
+        # Replace the PID after -p for the process you are interested.
+        args: ["-p", "<PID>", "-f", "-v", "-s", "1024"]
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 2048Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        securityContext:
+          capabilities:
+            add:
+            - SYS_PTRACE
+            - SYS_ADMIN
+          privileged: true
+      hostPID: true

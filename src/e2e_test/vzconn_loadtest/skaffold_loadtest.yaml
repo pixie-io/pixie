@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -9,7 +9,7 @@ build:
       target: //src/e2e_test/vzconn_loadtest:server_image.tar
   tagPolicy:
     dateTime: {}
-deploy:
+manifests:
   kustomize:
     paths:
     - src/e2e_test/vzconn_loadtest/k8s

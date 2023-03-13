@@ -99,6 +99,43 @@ class StitchFramesTest : public ::testing::Test {
   State state_;
 };
 
+// This test populates the message queue with a single request without a matching response.
+// The goal is to simulate the situation when a response arrives just after the first call
+// to StitchFrames. Previously the stitcher would incorrectly drop the request as explained
+// further in https://github.com/pixie-io/pixie/issues/697.
+TEST_F(StitchFramesTest, VerifyUnconsumedRequestsSurvive) {
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseData1));
+
+  // Pick a response that does not match kParseData1 (Parse message -- 'P'). This is necessary so
+  // that the core loop within StitchFrames runs atleast once. kParamDescData is a Parameter
+  // Description message ('t'). This will cause the stitcher to record a single error, as asserted
+  // below, since the response is discarded without a match.
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> non_matching_resps,
+                       ParseRegularMessages(kParamDescData));
+
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
+      StitchFrames(&reqs, &non_matching_resps, &state_);
+  EXPECT_THAT(reqs, Not(IsEmpty()));
+  EXPECT_THAT(non_matching_resps, IsEmpty());
+  EXPECT_EQ(1, records_and_err_count.error_count);
+
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(kParseCmplData));
+
+  for (auto& resp : resps) {
+    // Increment response timestamp_ns, so they all start after requests, which makes the test more
+    // easier to reason with.
+    resp.timestamp_ns += 10;
+  }
+
+  // Simulate that the matching response arrived later in time (after initial stitch attempt)
+  // and verify that records are consumed and have no errors
+  RecordsWithErrorCount<pgsql::Record> consumed_records = StitchFrames(&reqs, &resps, &state_);
+  EXPECT_THAT(reqs, IsEmpty());
+  EXPECT_THAT(resps, IsEmpty());
+  EXPECT_NE(0, consumed_records.records.front().req.payload.size());
+  EXPECT_EQ(0, consumed_records.error_count);
+}
+
 TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
   ASSERT_OK_AND_ASSIGN(
       std::deque<RegularMessage> reqs,

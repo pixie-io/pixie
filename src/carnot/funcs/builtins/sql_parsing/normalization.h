@@ -126,7 +126,7 @@ class ParserRuleFragmentListener : public antlr4::tree::ParseTreeListener {
 struct NormalizeResult {
   std::string normalized_query;
   std::vector<std::string> params;
-  std::string errmsg = "";
+  std::string error = "";
 
   static inline constexpr char kErrorKey[] = "error";
   static inline constexpr char kQueryKey[] = "query";
@@ -233,7 +233,7 @@ StatusOr<NormalizeResult> normalize_sql(std::string sql,
   ParserRuleFragmentListener listener({ParserTypeTraits<TParser>::constant_rule_index,
                                        ParserTypeTraits<TParser>::param_placeholder_rule_index},
                                       {SQLFragment::CONSTANT, SQLFragment::PARAM_PLACEHOLDER});
-  PL_RETURN_IF_ERROR(parser.ParseWalk(&listener));
+  PX_RETURN_IF_ERROR(parser.ParseWalk(&listener));
 
   NormalizationState state;
   NormalizeResult result;
@@ -256,10 +256,10 @@ StatusOr<NormalizeResult> normalize_sql(std::string sql,
   for (const auto& fragment : sorted_fragments) {
     switch (fragment.type) {
       case SQLFragment::CONSTANT:
-        PL_RETURN_IF_ERROR(constant_handler.HandleFragment(fragment));
+        PX_RETURN_IF_ERROR(constant_handler.HandleFragment(fragment));
         break;
       case SQLFragment::PARAM_PLACEHOLDER:
-        PL_RETURN_IF_ERROR(param_handler.HandleFragment(fragment));
+        PX_RETURN_IF_ERROR(param_handler.HandleFragment(fragment));
         break;
     }
   }

@@ -53,16 +53,11 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
   typename TClientServerContainers::ServerContainer server_;
   typename TClientServerContainers::ClientContainer client_;
-};
-
-struct Go1_16GRPCClientServerContainers {
-  using ServerContainer = ::px::stirling::testing::Go1_16_GRPCServerContainer;
-  using ClientContainer = ::px::stirling::testing::Go1_16_GRPCClientContainer;
 };
 
 struct Go1_17GRPCClientServerContainers {
@@ -80,9 +75,13 @@ struct Go1_19GRPCClientServerContainers {
   using ClientContainer = ::px::stirling::testing::Go1_19_GRPCClientContainer;
 };
 
-// Use a typed test to run the test for Go 1.16 - Go 1.19.
-typedef ::testing::Types<Go1_16GRPCClientServerContainers, Go1_17GRPCClientServerContainers,
-                         Go1_18GRPCClientServerContainers, Go1_19GRPCClientServerContainers>
+struct Go1_20GRPCClientServerContainers {
+  using ServerContainer = ::px::stirling::testing::Go1_20_GRPCServerContainer;
+  using ClientContainer = ::px::stirling::testing::Go1_20_GRPCClientContainer;
+};
+
+typedef ::testing::Types<Go1_17GRPCClientServerContainers, Go1_18GRPCClientServerContainers,
+                         Go1_19GRPCClientServerContainers, Go1_20GRPCClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
@@ -90,7 +89,7 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(this->client_.Run(
+  PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())}));
   this->client_.Wait();
@@ -149,7 +148,7 @@ class ProductCatalogServiceTraceTest
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the HTTP image.
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
   }
 
   ::px::stirling::testing::ProductCatalogService server_;
@@ -160,7 +159,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(client_.Run(std::chrono::seconds{10},
+  PX_CHECK_OK(client_.Run(std::chrono::seconds{10},
                           {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 

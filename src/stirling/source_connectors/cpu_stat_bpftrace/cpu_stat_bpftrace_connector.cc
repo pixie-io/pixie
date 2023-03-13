@@ -37,9 +37,9 @@ Status CPUStatBPFTraceConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PL_RETURN_IF_ERROR(
+  PX_RETURN_IF_ERROR(
       CompileForMapOutput(kCPUStatBTScript, std::vector<std::string>({std::to_string(cpu_id_)})));
-  PL_RETURN_IF_ERROR(Deploy());
+  PX_RETURN_IF_ERROR(Deploy());
 
   return Status::OK();
 }
@@ -50,7 +50,7 @@ Status CPUStatBPFTraceConnector::StopImpl() {
 }
 
 void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1) << "CPUStatBPFTraceConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "CPUStatBPFTraceConnector only has one data table.";
 
   auto* data_table = data_tables_[0];
 

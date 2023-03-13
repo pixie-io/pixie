@@ -16,9 +16,8 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/jdk:local_java_repository.bzl", "local_java_repository")
+load("@bazel_tools//tools/jdk:remote_java_repository.bzl", "remote_java_repository")
 load("//bazel/cc_toolchains:deps.bzl", "cc_toolchain_config_repo")
-load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
 load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "LOCAL_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
 
 # Make all contents of an external repository accessible under a filegroup.
@@ -106,8 +105,17 @@ def _include_all_repo(name, **kwargs):
     _http_archive_repo_impl(name, **kwargs)
 
 def _com_llvm_lib():
-    _bazel_repo("com_llvm_lib", build_file = "//bazel/external:llvm.BUILD")
-    _bazel_repo("com_llvm_lib_libcpp", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_x86_64_glibc_host", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_x86_64_glibc_host", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_x86_64_glibc_host_asan", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_x86_64_glibc_host_msan", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_x86_64_glibc_host_tsan", build_file = "//bazel/external:llvm.BUILD")
+
+    _bazel_repo("com_llvm_lib_x86_64_glibc2_36", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_x86_64_glibc2_36", build_file = "//bazel/external:llvm.BUILD")
+
+    _bazel_repo("com_llvm_lib_aarch64_glibc2_36", build_file = "//bazel/external:llvm.BUILD")
+    _bazel_repo("com_llvm_lib_libcpp_aarch64_glibc2_36", build_file = "//bazel/external:llvm.BUILD")
 
 def _cc_deps():
     # Dependencies with native bazel build files.
@@ -123,7 +131,8 @@ def _cc_deps():
     _bazel_repo("com_github_google_glog")
     _bazel_repo("com_google_absl")
     _bazel_repo("com_google_flatbuffers")
-    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow.patch"], patch_args = ["-p1"])
+    _bazel_repo("cpuinfo", patches = ["//bazel/external:cpuinfo.patch"], patch_args = ["-p1"])
+    _bazel_repo("org_tensorflow", patches = ["//bazel/external:tensorflow_disable_llvm.patch", "//bazel/external:tensorflow_disable_mirrors.patch", "//bazel/external:tensorflow_disable_py.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_neargye_magic_enum")
     _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("com_googlesource_code_re2", patches = ["//bazel/external:re2_warning.patch"], patch_args = ["-p1"])
@@ -138,18 +147,17 @@ def _cc_deps():
     _bazel_repo("com_github_ariafallah_csv_parser", build_file = "//bazel/external:csv_parser.BUILD")
     _bazel_repo("com_github_arun11299_cpp_jwt", build_file = "//bazel/external:cpp_jwt.BUILD")
     _bazel_repo("com_github_cameron314_concurrentqueue", build_file = "//bazel/external:concurrentqueue.BUILD")
-    _bazel_repo("com_github_cmcqueen_aes_min", patches = ["//bazel/external:aes_min.patch"], patch_args = ["-p1"], build_file = "//bazel/external:aes_min.BUILD")
     _bazel_repo("com_github_cyan4973_xxhash", build_file = "//bazel/external:xxhash.BUILD")
     _bazel_repo("com_github_nlohmann_json", build_file = "//bazel/external:nlohmann_json.BUILD")
     _bazel_repo("com_github_packetzero_dnsparser", build_file = "//bazel/external:dnsparser.BUILD")
-    _bazel_repo("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
+    _bazel_repo("com_github_rlyeh_sole", patches = ["//bazel/external:sole.patch"], patch_args = ["-p1"], build_file = "//bazel/external:sole.BUILD")
     _bazel_repo("com_github_serge1_elfio", build_file = "//bazel/external:elfio.BUILD")
     _bazel_repo("com_github_derrickburns_tdigest", build_file = "//bazel/external:tdigest.BUILD")
     _bazel_repo("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
     _bazel_repo("com_github_vinzenz_libpypa", build_file = "//bazel/external:libpypa.BUILD")
     _bazel_repo("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _bazel_repo("com_github_google_sentencepiece", build_file = "//bazel/external:sentencepiece.BUILD", patches = ["//bazel/external:sentencepiece.patch"], patch_args = ["-p1"])
-    _bazel_repo("com_github_antlr_antlr4", build_file = "//bazel/external:antlr4.BUILD", patches = ["//bazel/external:antlr4.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_github_antlr_antlr4", build_file = "//bazel/external:antlr4.BUILD")
     _bazel_repo("com_github_antlr_grammars_v4", build_file = "//bazel/external:antlr_grammars.BUILD", patches = ["//bazel/external:antlr_grammars.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_pgcodekeeper_pgcodekeeper", build_file = "//bazel/external:pgsql_grammar.BUILD", patches = ["//bazel/external:pgsql_grammar.patch"], patch_args = ["-p1"])
     _bazel_repo("com_github_simdutf_simdutf", build_file = "//bazel/external:simdutf.BUILD")
@@ -171,28 +179,37 @@ def _cc_deps():
 
     # Dependencies used in foreign cc rules (e.g. cmake-based builds)
     _include_all_repo("com_github_gperftools_gperftools")
-    _include_all_repo("com_github_openssl_openssl")
     _include_all_repo("com_github_nats_io_natsc")
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive", patches = ["//bazel/external:libarchive.patch"], patch_args = ["-p1"])
 
 def _java_deps():
     _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
-    local_java_repository(
-        name = "openjdk_graal",
+    remote_java_repository(
+        name = "remotejdk_openjdk_graal_17",
         version = "17",
-        java_home = "/opt/graalvm-ce-java17-22.3.0",
+        prefix = "remotejdk_openjdk_graal",
+        target_compatible_with = [
+            "@platforms//os:linux",
+        ],
+        sha256 = "102db28b450ff5eb8c497aacaececc5263a4e50e64b7cdc5c7baa8b216e73531",
+        urls = [
+            "https://storage.googleapis.com/pixie-dev-public/graalvm-native-image-22.3.0-pl1.tar.gz",
+        ],
     )
 
 def _list_pl_deps(name):
-    repo_urls = list()
+    modules = dict()
     for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
+        if "manual_license_name" in repo_config:
+            modules["#manual-license-name:" + repo_config["manual_license_name"]] = True
+            continue
         urls = repo_config["urls"]
         best_url = None
         for url in urls:
             if url.startswith("https://github.com") or best_url == None:
                 best_url = url
-        repo_urls.append(best_url)
+        modules[best_url] = True
 
     for repo_name, repo_config in GIT_REPOSITORY_LOCATIONS.items():
         remote = repo_config["remote"]
@@ -200,33 +217,37 @@ def _list_pl_deps(name):
             remote = remote[:-len(".git")]
         if repo_config["commit"]:
             remote = remote + "/commit/" + repo_config["commit"]
-        repo_urls.append(remote)
+        modules[remote] = True
+
+    module_lines = []
+    for key in modules.keys():
+        module_lines.append(key)
 
     native.genrule(
         name = name,
         outs = ["{}.out".format(name)],
-        cmd = 'echo "{}" > $@'.format("\n".join(repo_urls)),
+        cmd = 'echo "{}" > $@'.format("\n".join(module_lines)),
         visibility = ["//visibility:public"],
     )
 
-def _pl_deps():
+def _pl_cc_toolchain_deps():
     _bazel_repo("bazel_skylib")
+    cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
+
+def _pl_deps():
     _bazel_repo("bazel_gazelle")
-    _bazel_repo("io_bazel_rules_go")
+    _bazel_repo("io_bazel_rules_go", patches = ["//bazel/external:rules_go.patch"], patch_args = ["-p1"])
     _bazel_repo("io_bazel_rules_scala")
     _bazel_repo("rules_jvm_external")
     _bazel_repo("rules_foreign_cc")
     _bazel_repo("io_bazel_rules_k8s")
     _bazel_repo("io_bazel_rules_closure")
-    _bazel_repo("io_bazel_rules_docker", patches = ["//bazel/external:rules_docker.patch"], patch_args = ["-p1"])
+    _bazel_repo("io_bazel_rules_docker", patches = ["//bazel/external:rules_docker.patch", "//bazel/external:rules_docker_arch.patch"], patch_args = ["-p1"])
     _bazel_repo("rules_python")
     _bazel_repo("rules_pkg")
     _bazel_repo("com_github_bazelbuild_buildtools")
     _bazel_repo("com_github_fmeum_rules_meta")
     _bazel_repo("com_google_protobuf_javascript", patches = ["//bazel/external:protobuf_javascript.patch"], patch_args = ["-p1"])
-
-    cc_toolchain_config_repo("unix_cc_toolchain_config", patch = "//bazel/cc_toolchains:unix_cc_toolchain_config.patch")
-    pl_register_cc_toolchains()
 
     _com_llvm_lib()
     _cc_deps()
@@ -235,3 +256,4 @@ def _pl_deps():
 
 list_pl_deps = _list_pl_deps
 pl_deps = _pl_deps
+pl_cc_toolchain_deps = _pl_cc_toolchain_deps

@@ -97,7 +97,7 @@ class SocketTraceBPFTest
     : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   StatusOr<const ConnTracker*> GetConnTracker(int pid, int fd) {
-    PL_ASSIGN_OR_RETURN(const ConnTracker* tracker, source_->GetConnTracker(pid, fd));
+    PX_ASSIGN_OR_RETURN(const ConnTracker* tracker, source_->GetConnTracker(pid, fd));
     if (tracker == nullptr) {
       return error::Internal("No ConnTracker found for pid=$0 fd=$1", pid, fd);
     }

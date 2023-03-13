@@ -201,7 +201,7 @@ class DwarfReader {
    */
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
                                            std::string_view member_name) {
-    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
+    PX_ASSIGN_OR_RETURN(StructMemberInfo member_info,
                         GetStructMemberInfo(struct_name, llvm::dwarf::DW_TAG_structure_type,
                                             member_name, llvm::dwarf::DW_TAG_member));
     return member_info.offset;
@@ -209,7 +209,7 @@ class DwarfReader {
 
   StatusOr<uint64_t> GetClassMemberOffset(std::string_view class_name,
                                           std::string_view member_name) {
-    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
+    PX_ASSIGN_OR_RETURN(StructMemberInfo member_info,
                         GetStructMemberInfo(class_name, llvm::dwarf::DW_TAG_class_type, member_name,
                                             llvm::dwarf::DW_TAG_member));
     return member_info.offset;
@@ -217,7 +217,7 @@ class DwarfReader {
 
   StatusOr<uint64_t> GetClassParentOffset(std::string_view class_name,
                                           std::string_view parent_name) {
-    PL_ASSIGN_OR_RETURN(StructMemberInfo member_info,
+    PX_ASSIGN_OR_RETURN(StructMemberInfo member_info,
                         GetStructMemberInfo(class_name, llvm::dwarf::DW_TAG_class_type, parent_name,
                                             llvm::dwarf::DW_TAG_inheritance));
     return member_info.offset;

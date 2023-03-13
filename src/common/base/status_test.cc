@@ -51,7 +51,7 @@ TEST(Status, EqDiffCode) {
 }
 
 Status MacroTestFn(const Status& s) {
-  PL_RETURN_IF_ERROR(s);
+  PX_RETURN_IF_ERROR(s);
   return Status::OK();
 }
 
@@ -68,7 +68,7 @@ TEST(Status, pl_return_if_error_test) {
     return Status::OK();
   };
   auto test_fn = [&]() -> Status {
-    PL_RETURN_IF_ERROR(fn());
+    PX_RETURN_IF_ERROR(fn());
     return Status::OK();
   };
   EXPECT_OK(test_fn());

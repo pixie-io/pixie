@@ -21,7 +21,6 @@ package main
 import (
 	"encoding/json"
 	"os"
-	"os/exec"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/gogo/protobuf/jsonpb"
@@ -36,34 +35,25 @@ import (
 )
 
 func init() {
-	pflag.String("pxl_doc_extractor", "src/carnot/planner/docs/doc_extractor", "The file that holds Pxl docs serialized as protobuf. Will attempt to use bazel runfiles if unspecified")
-	pflag.String("py_api_docs", "src/api/python/doc/py_api_docs.json", "The file to write output JSON to. Will attempt to use bazel runfiles if unspecified")
 	pflag.String("output_json", "output.json", "The file to write output JSON to")
 }
 
 func main() {
 	services.PostFlagSetupAndParse()
 
+	internalPxlDocsPath, err := bazel.Runfile("src/carnot/planner/docs/internal_pxl_docs.pb")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Read the raw pxlDocs File.
 	pxlDocs := &docspb.InternalPXLDocs{}
 
-	log.Info("Extracting cpp documentation")
-	extractor, err := bazel.Runfile(viper.GetString("pxl_doc_extractor"))
+	pxlBytes, err := os.ReadFile(internalPxlDocsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	internalPxlDocsPath := "internal_pxl_docs.pb"
-	_, err = exec.Command(extractor, "--output_file", internalPxlDocsPath).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pxlB, err := os.ReadFile(internalPxlDocsPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = proto.UnmarshalText(string(pxlB), pxlDocs)
+	err = proto.UnmarshalText(string(pxlBytes), pxlDocs)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,8 +64,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Info("Extracting py api docs")
-	pyAPIDocsPath, err := bazel.Runfile(viper.GetString("py_api_docs"))
+	pyAPIDocsPath, err := bazel.Runfile("src/api/python/doc/py_api_docs.json")
 	if err != nil {
 		log.Fatal(err)
 	}

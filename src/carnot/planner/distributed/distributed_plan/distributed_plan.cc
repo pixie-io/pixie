@@ -35,7 +35,7 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
                                                   carnot->id());
     DCHECK(carnot->plan()) << absl::Substitute("$0 doesn't have a plan set.",
                                                carnot->DebugString());
-    PL_ASSIGN_OR_RETURN(auto plan_proto, carnot->PlanProto());
+    PX_ASSIGN_OR_RETURN(auto plan_proto, carnot->PlanProto());
     for (int64_t parent_i : dag_.ParentsOf(i)) {
       *(plan_proto.add_incoming_agent_ids()) = Get(parent_i)->carnot_info().agent_id();
     }
@@ -63,9 +63,9 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
 StatusOr<int64_t> DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& carnot_info) {
   int64_t carnot_id = id_counter_;
   ++id_counter_;
-  PL_ASSIGN_OR_RETURN(auto instance, CarnotInstance::Create(carnot_id, carnot_info, this));
+  PX_ASSIGN_OR_RETURN(auto instance, CarnotInstance::Create(carnot_id, carnot_info, this));
   id_to_node_map_.emplace(carnot_id, std::move(instance));
-  PL_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
+  PX_ASSIGN_OR_RETURN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
   uuid_to_id_map_[uuid] = carnot_id;
   dag_.AddNode(carnot_id);
   return carnot_id;
@@ -74,7 +74,7 @@ StatusOr<int64_t> DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& ca
 StatusOr<std::unique_ptr<CarnotInstance>> CarnotInstance::Create(
     int64_t id, const distributedpb::CarnotInfo& carnot_info, DistributedPlan* parent_plan) {
   if (carnot_info.has_metadata_info()) {
-    PL_ASSIGN_OR_RETURN(auto bf, md::AgentMetadataFilter::FromProto(carnot_info.metadata_info()));
+    PX_ASSIGN_OR_RETURN(auto bf, md::AgentMetadataFilter::FromProto(carnot_info.metadata_info()));
     return std::unique_ptr<CarnotInstance>(
         new CarnotInstance(id, carnot_info, parent_plan, std::move(bf)));
   }

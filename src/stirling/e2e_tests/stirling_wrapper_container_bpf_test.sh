@@ -34,7 +34,7 @@ go_grpc_client=$3
 ###############################################################################
 
 image_name=bazel/src/stirling/binaries:stirling_wrapper_image
-docker load -i "$stirling_image"
+podman load -i "$stirling_image"
 
 echo "Running trace target."
 
@@ -48,12 +48,11 @@ run_uprobe_target "$go_grpc_server" "$go_grpc_client"
 echo "Running stirling_wrapper container."
 
 flags="--timeout_secs=0"
-out=$(docker run --init --rm \
+out=$(podman run --rm \
  -v /:/host \
  -v /sys:/sys \
  --env PL_HOST_PATH=/host \
  --privileged \
- --pid=host \
  "$image_name" $flags 2>&1)
 
 ###############################################################################

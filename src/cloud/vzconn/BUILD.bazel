@@ -15,8 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//bazel:go_image_alias.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
 package(default_visibility = ["//src/cloud:__subpackages__"])
 
@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/vzconn",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/shared/messages",
         "//src/cloud/vzconn/bridge",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
@@ -36,7 +37,6 @@ go_library(
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
@@ -44,12 +44,12 @@ go_library(
     ],
 )
 
-go_binary(
+pl_go_binary(
     name = "vzconn_server",
     embed = [":vzconn_lib"],
 )
 
-go_image(
+pl_go_image(
     name = "vzconn_server_image",
     binary = ":vzconn_server",
     importpath = "px.dev/pixie",

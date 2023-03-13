@@ -70,7 +70,7 @@ class CompilerTest : public ::testing::Test {
     google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);
 
     info_ = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(info_->Init(udf_proto));
+    PX_CHECK_OK(info_->Init(udf_proto));
   }
 
   void SetUp() override {

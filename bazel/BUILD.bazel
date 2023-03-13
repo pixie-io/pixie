@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,20 +35,34 @@ config_setting(
 config_setting(
     name = "clang_build",
     flag_values = {
-        "@bazel_tools//tools/cpp:compiler": "clang",
+        "//bazel/cc_toolchains:compiler": "clang",
     },
 )
 
 config_setting(
     name = "gcc_build",
     flag_values = {
-        "@bazel_tools//tools/cpp:compiler": "gcc",
+        "//bazel/cc_toolchains:compiler": "gcc",
     },
+)
+
+bool_flag(
+    name = "enable_libcpp",
+    build_setting_default = False,
 )
 
 config_setting(
     name = "use_libcpp",
-    values = {"define": "use_libcpp=1"},
+    flag_values = {
+        "//bazel:enable_libcpp": "True",
+    },
+)
+
+config_setting(
+    name = "use_libstdcpp",
+    flag_values = {
+        "//bazel:enable_libcpp": "False",
+    },
 )
 
 config_setting(
@@ -58,6 +73,45 @@ config_setting(
 config_setting(
     name = "stamped",
     values = {"stamp": "true"},
+)
+
+string_flag(
+    name = "sanitizer",
+    build_setting_default = "none",
+    values = [
+        "none",
+        "asan",
+        "tsan",
+        "msan",
+    ],
+)
+
+config_setting(
+    name = "sanitizer_none",
+    flag_values = {
+        "//bazel:sanitizer": "none",
+    },
+)
+
+config_setting(
+    name = "sanitizer_asan",
+    flag_values = {
+        "//bazel:sanitizer": "asan",
+    },
+)
+
+config_setting(
+    name = "sanitizer_msan",
+    flag_values = {
+        "//bazel:sanitizer": "msan",
+    },
+)
+
+config_setting(
+    name = "sanitizer_tsan",
+    flag_values = {
+        "//bazel:sanitizer": "tsan",
+    },
 )
 
 # Jenkins uses `bazel query` to find the reverse dependencies of a changed file.

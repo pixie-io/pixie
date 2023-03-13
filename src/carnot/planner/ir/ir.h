@@ -91,8 +91,8 @@ class IR {
 
   template <typename TOperator, typename... Args>
   StatusOr<TOperator*> CreateNode(const pypa::AstPtr& ast, Args&&... args) {
-    PL_ASSIGN_OR_RETURN(TOperator * op, MakeNode<TOperator>(ast));
-    PL_RETURN_IF_ERROR(op->Init(std::forward<Args>(args)...));
+    PX_ASSIGN_OR_RETURN(TOperator * op, MakeNode<TOperator>(ast));
+    PX_RETURN_IF_ERROR(op->Init(std::forward<Args>(args)...));
     return op;
   }
 
@@ -124,8 +124,8 @@ class IR {
     // Use the source's ID if we are copying in to a different graph.
     auto new_node_id = this == source->graph() ? id_node_counter : source->id();
     DCHECK(!HasNode(new_node_id)) << source->DebugString();
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(source->type(), new_node_id));
-    PL_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
+    PX_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(source->type(), new_node_id));
+    PX_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
     copied_nodes_map->emplace(source, new_node);
     CHECK_EQ(new_node->type(), source->type());
     return static_cast<TIRNodeType*>(new_node);
@@ -165,9 +165,9 @@ class IR {
   StatusOr<TChildType*> OptionallyCloneWithEdge(IRNode* parent, TChildType* child) {
     TChildType* returned_child = child;
     if (HasEdge(parent, child)) {
-      PL_ASSIGN_OR_RETURN(returned_child, CopyNode(child));
+      PX_ASSIGN_OR_RETURN(returned_child, CopyNode(child));
     }
-    PL_RETURN_IF_ERROR(AddEdge(parent, returned_child));
+    PX_RETURN_IF_ERROR(AddEdge(parent, returned_child));
     return returned_child;
   }
 

@@ -560,7 +560,7 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
 
 // TODO(yzhao): Swap order of expr and dst, to be consistent with MoveBackStrVec().
 #define MOVE_BACK_STR_VEC(expr, dst)                           \
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
   MoveBackStrVec(std::move(str_vec), dst);
 
 // TODO(yzhao): Wrap map stash action inside "{}" to avoid variable naming conflict.
@@ -629,7 +629,7 @@ StatusOr<std::string> GenScalarVarPrintk(
 
   ScalarType type = GetScalarVariableType(*iter->second);
 
-  PL_ASSIGN_OR_RETURN(std::string_view format_code, GetPrintFormatCode(type));
+  PX_ASSIGN_OR_RETURN(std::string_view format_code, GetPrintFormatCode(type));
 
   return absl::Substitute(R"(bpf_trace_printk("$0: %$1\n", $0);)", printk.scalar(), format_code);
 }
@@ -707,7 +707,7 @@ Status BCCCodeGenerator::GenVariable(
 
       for (const auto& fa : st_var.field_assignments()) {
         if (fa.value_oneof_case() == StructVariable::FieldAssignment::kVariableName) {
-          PL_RETURN_IF_ERROR(
+          PX_RETURN_IF_ERROR(
               CheckVarExists(vars, fa.variable_name(),
                              absl::Substitute("StructVariable '$0' field assignment '$1'",
                                               st_var.name(), fa.ShortDebugString())));
@@ -765,7 +765,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateConditionalBlock(
 
     vars[var_name] = &var;
 
-    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
+    PX_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
   if (!cond_block.return_value().empty()) {
@@ -806,26 +806,26 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
       vars[var_name] = &var;
     }
 
-    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
+    PX_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
   for (const auto& block : probe.cond_blocks()) {
-    PL_ASSIGN_OR_RETURN(std::vector<std::string> cond_code_lines, GenerateConditionalBlock(block));
+    PX_ASSIGN_OR_RETURN(std::vector<std::string> cond_code_lines, GenerateConditionalBlock(block));
 
     code_lines.insert(code_lines.end(), std::move_iterator(cond_code_lines.begin()),
                       std::move_iterator(cond_code_lines.end()));
   }
 
   for (const auto& action : probe.map_stash_actions()) {
-    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
+    PX_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
                                       absl::Substitute("BPF map '$0' key", action.map_name())));
-    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.value_variable_name(),
+    PX_RETURN_IF_ERROR(CheckVarExists(vars, action.value_variable_name(),
                                       absl::Substitute("BPF map '$0' value", action.map_name())));
     MOVE_BACK_STR_VEC(GenMapStashAction(action), &code_lines);
   }
 
   for (const auto& action : probe.map_delete_actions()) {
-    PL_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
+    PX_RETURN_IF_ERROR(CheckVarExists(vars, action.key_variable_name(),
                                       absl::Substitute("BPF map '$0' key", action.map_name())));
     code_lines.push_back(GenMapDeleteAction(action));
   }
@@ -849,7 +849,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 
     vars[var_name] = &var;
 
-    PL_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
+    PX_RETURN_IF_ERROR(GenVariable(var, vars, &code_lines));
   }
 
   for (const auto& action : probe.output_actions()) {
@@ -861,7 +861,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& printk : probe.printks()) {
-    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(vars, printk));
+    PX_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(vars, printk));
     code_lines.push_back(std::move(code_line));
   }
 
@@ -874,8 +874,8 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 namespace {
 
 StatusOr<std::vector<std::string>> GenMap(const Map& map) {
-  PL_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(map.key_type()));
-  PL_ASSIGN_OR_RETURN(std::string value_code, GenVariableType(map.value_type()));
+  PX_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(map.key_type()));
+  PX_ASSIGN_OR_RETURN(std::string value_code, GenVariableType(map.value_type()));
   std::vector<std::string> code_lines = {
       absl::Substitute("BPF_HASH($0, $1, $2);", map.name(), key_code, value_code)};
   return code_lines;
@@ -886,7 +886,7 @@ StatusOr<std::vector<std::string>> GenArray(const PerCPUArray& array) {
     return error::InvalidArgument("Input array capacity cannot be less than 1, got: $0",
                                   array.capacity());
   }
-  PL_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(array.type()));
+  PX_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(array.type()));
   std::vector<std::string> code_lines = {
       absl::Substitute("BPF_PERCPU_ARRAY($0, $1, $2);", array.name(), key_code, array.capacity())};
   return code_lines;
@@ -1041,7 +1041,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
 
 StatusOr<std::string> GenBCCProgram(const Program& program) {
   BCCCodeGenerator generator(program);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
   return absl::StrJoin(code_lines, "\n");
 }
 

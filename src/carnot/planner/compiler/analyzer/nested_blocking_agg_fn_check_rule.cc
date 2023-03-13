@@ -29,7 +29,7 @@ StatusOr<bool> NestedBlockingAggFnCheckRule::Apply(IRNode* ir_node) {
     return false;
   }
   for (const auto& expr : static_cast<BlockingAggIR*>(ir_node)->aggregate_expressions()) {
-    PL_RETURN_IF_ERROR(CheckExpression(expr));
+    PX_RETURN_IF_ERROR(CheckExpression(expr));
   }
   return false;
 }

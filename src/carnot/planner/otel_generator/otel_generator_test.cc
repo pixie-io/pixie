@@ -48,7 +48,7 @@ class OTelGeneratorTest : public ::testing::Test {
   void SetUp() {
     info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
     registry_info_ = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(registry_info_->Init(info_));
+    PX_CHECK_OK(registry_info_->Init(info_));
   }
   udfspb::UDFInfo info_;
   std::unique_ptr<planner::RegistryInfo> registry_info_;

@@ -56,18 +56,18 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
     if (dropped_columns.contains(input_col_name)) {
       continue;
     }
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
+    PX_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         ir_graph->CreateNode<ColumnIR>(drop_ir->ast(), input_col_name,
                                                        /*parent_op_idx*/ 0));
-    PL_RETURN_IF_ERROR(ResolveExpressionType(column_ir, compiler_state_, {parent_table_type}));
+    PX_RETURN_IF_ERROR(ResolveExpressionType(column_ir, compiler_state_, {parent_table_type}));
     col_exprs.emplace_back(input_col_name, column_ir);
   }
 
   // Init the map from the drop.
-  PL_ASSIGN_OR_RETURN(MapIR * map_ir,
+  PX_ASSIGN_OR_RETURN(MapIR * map_ir,
                       ir_graph->CreateNode<MapIR>(drop_ir->ast(), parent_op, col_exprs,
                                                   /* keep_input_columns */ false));
-  PL_RETURN_IF_ERROR(ResolveOperatorType(map_ir, compiler_state_));
+  PX_RETURN_IF_ERROR(ResolveOperatorType(map_ir, compiler_state_));
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {
@@ -76,10 +76,10 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
           "Received unexpected non-operator dependency on Drop node.");
     }
     auto casted_node = static_cast<OperatorIR*>(dep);
-    PL_RETURN_IF_ERROR(casted_node->ReplaceParent(drop_ir, map_ir));
+    PX_RETURN_IF_ERROR(casted_node->ReplaceParent(drop_ir, map_ir));
   }
-  PL_RETURN_IF_ERROR(drop_ir->RemoveParent(parent_op));
-  PL_RETURN_IF_ERROR(ir_graph->DeleteNode(drop_ir->id()));
+  PX_RETURN_IF_ERROR(drop_ir->RemoveParent(parent_op));
+  PX_RETURN_IF_ERROR(ir_graph->DeleteNode(drop_ir->id()));
   return true;
 }
 

@@ -34,6 +34,7 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//src/carnot/udf:cc_library",
         "//src/shared/types:cc_library",
         "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_tencent_rapidjson//:rapidjson",
@@ -51,28 +52,6 @@ pl_cc_test_library(
     ],
     deps = [
         "@org_tensorflow//third_party/eigen3",
-    ],
-)
-
-pl_cc_test(
-    name = "borrow_pool_test",
-    srcs = ["borrow_pool_test.cc"],
-    deps = [
-        ":cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "model_pool_test",
-    srcs = ["model_pool_test.cc"],
-    args = [
-        "--embedding_dir=$(location //:embedding.proto)",
-    ],
-    data = [
-        "//:embedding.proto",
-    ],
-    deps = [
-        ":cc_library",
     ],
 )
 

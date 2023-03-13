@@ -38,7 +38,7 @@ using ::testing::UnorderedElementsAre;
 
 StatusOr<QLObjectPtr> UDFHandler(IR* graph, const std::string& name, const pypa::AstPtr& ast,
                                  const ParsedArgs&, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(FuncIR * node,
+  PX_ASSIGN_OR_RETURN(FuncIR * node,
                       graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name},
                                                 std::vector<ExpressionIR*>{}));
   return ExprObject::Create(node, visitor);

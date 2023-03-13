@@ -37,7 +37,7 @@ StatusOr<bool> ResolveMetadataPropertyRule::Apply(IRNode* ir_node) {
     return metadata->CreateIRNodeError("'$0' unavailable metadata key.", metadata->name());
   }
 
-  PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
+  PX_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
   metadata->set_property(md_property);
   return true;
 }

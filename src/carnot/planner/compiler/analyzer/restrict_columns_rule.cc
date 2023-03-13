@@ -50,7 +50,7 @@ StatusOr<bool> RestrictColumnsRule::Apply(IRNode* ir_node) {
     return false;
   }
 
-  PL_ASSIGN_OR_RETURN(auto new_op, redaction_impl_(memsrc));
+  PX_ASSIGN_OR_RETURN(auto new_op, redaction_impl_(memsrc));
   // Update all of memsrc's dependencies to point to the new node.
   for (const auto& dep : memsrc->Children()) {
     if (!dep->IsOperator()) {
@@ -60,10 +60,10 @@ StatusOr<bool> RestrictColumnsRule::Apply(IRNode* ir_node) {
       continue;
     }
     auto casted_node = static_cast<OperatorIR*>(dep);
-    PL_RETURN_IF_ERROR(casted_node->ReplaceParent(memsrc, new_op));
+    PX_RETURN_IF_ERROR(casted_node->ReplaceParent(memsrc, new_op));
   }
 
-  PL_RETURN_IF_ERROR(PropagateTypeChangesFromNode(memsrc->graph(), new_op, compiler_state_));
+  PX_RETURN_IF_ERROR(PropagateTypeChangesFromNode(memsrc->graph(), new_op, compiler_state_));
 
   // Insert new node in between the memory source and the next operator.
   return true;
@@ -74,14 +74,14 @@ StatusOr<OperatorIR*> RestrictColumnsRule::RedactAllData(MemorySourceIR* memsrc)
   for (const auto& input_col_name : memsrc->resolved_table_type()->ColumnNames()) {
     if (IsRestrictedColumn(compiler_state_, memsrc->table_name(), input_col_name)) {
       // Replace column with restricted value.
-      PL_ASSIGN_OR_RETURN(StringIR * restricted_ir,
+      PX_ASSIGN_OR_RETURN(StringIR * restricted_ir,
                           memsrc->graph()->CreateNode<StringIR>(memsrc->ast(), "REDACTED"));
       col_exprs.emplace_back(input_col_name, restricted_ir);
       continue;
     }
 
     // Copy the column otherwise.
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
+    PX_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         memsrc->graph()->CreateNode<ColumnIR>(memsrc->ast(), input_col_name,
                                                               /*parent_op_idx*/ 0));
     col_exprs.emplace_back(input_col_name, column_ir);
@@ -94,13 +94,13 @@ StatusOr<OperatorIR*> RestrictColumnsRule::RedactAllData(MemorySourceIR* memsrc)
 StatusOr<OperatorIR*> RestrictColumnsRule::RedactPIIData(MemorySourceIR* memsrc) {
   ColExpressionVector col_exprs;
   for (const auto& input_col_name : memsrc->resolved_table_type()->ColumnNames()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
+    PX_ASSIGN_OR_RETURN(ColumnIR * column_ir,
                         memsrc->graph()->CreateNode<ColumnIR>(memsrc->ast(), input_col_name,
                                                               /*parent_op_idx*/ 0));
     ExpressionIR* new_col_expr_ir = column_ir;
     if (IsRestrictedColumn(compiler_state_, memsrc->table_name(), input_col_name)) {
       // Replace column with call to px.redact_pii_best_effort.
-      PL_ASSIGN_OR_RETURN(
+      PX_ASSIGN_OR_RETURN(
           FuncIR * restricted_ir,
           memsrc->graph()->CreateNode<FuncIR>(
               memsrc->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", "redact_pii_best_effort"},

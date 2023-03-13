@@ -7,29 +7,8 @@
       <option name="MOVE_ALL_STDLIB_IMPORTS_IN_ONE_GROUP" value="true" />
       <option name="GROUP_STDLIB_IMPORTS" value="true" />
     </GoCodeStyleSettings>
-    <HTMLCodeStyleSettings>
-      <option name="HTML_SPACE_INSIDE_EMPTY_TAG" value="true" />
-    </HTMLCodeStyleSettings>
-    <TypeScriptCodeStyleSettings version="0">
-      <option name="USE_DOUBLE_QUOTES" value="false" />
-      <option name="SPACES_WITHIN_OBJECT_LITERAL_BRACES" value="true" />
-      <option name="SPACES_WITHIN_IMPORTS" value="true" />
-      <option name="USE_CHAINED_CALLS_GROUP_INDENTS" value="true" />
-      <option name="IMPORT_PREFER_ABSOLUTE_PATH" value="TRUE" />
-    </TypeScriptCodeStyleSettings>
-    <codeStyleSettings language="TypeScript">
-      <indentOptions>
-        <option name="INDENT_SIZE" value="2" />
-        <option name="CONTINUATION_INDENT_SIZE" value="2" />
-        <option name="TAB_SIZE" value="2" />
-      </indentOptions>
-    </codeStyleSettings>
-    <codeStyleSettings language="go">
-      <option name="CALL_PARAMETERS_LPAREN_ON_NEXT_LINE" value="false" />
-      <option name="CALL_PARAMETERS_RPAREN_ON_NEXT_LINE" value="false" />
-      <indentOptions>
-        <option name="CONTINUATION_INDENT_SIZE" value="8" />
-      </indentOptions>
-    </codeStyleSettings>
+    <clangFormatSettings>
+      <option name="ENABLED" value="true" />
+    </clangFormatSettings>
   </code_scheme>
 </component>

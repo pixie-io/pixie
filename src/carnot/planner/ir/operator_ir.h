@@ -152,7 +152,7 @@ class OperatorIR : public IRNode {
   // This function gets called after all the parent types are resolved but before ResolveType is
   // called on the operator.
   Status UpdateOpAfterParentTypesResolved() {
-    PL_RETURN_IF_ERROR(UpdateOpAfterParentTypesResolvedImpl());
+    PX_RETURN_IF_ERROR(UpdateOpAfterParentTypesResolvedImpl());
     return Status::OK();
   }
 

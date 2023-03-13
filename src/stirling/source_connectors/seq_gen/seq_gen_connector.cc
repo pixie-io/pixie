@@ -28,7 +28,7 @@ Status SeqGenConnector::InitImpl() {
 }
 
 void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 2);
+  DCHECK_EQ(data_tables_.size(), 2U);
 
   std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
 

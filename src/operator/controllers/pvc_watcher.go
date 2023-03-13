@@ -21,7 +21,9 @@ package controllers
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -46,8 +48,10 @@ func metadataPVCState(clientset kubernetes.Interface, pvc *v1.PersistentVolumeCl
 	}
 
 	_, err := clientset.StorageV1().StorageClasses().Get(context.Background(), *pvc.Spec.StorageClassName, metav1.GetOptions{})
-	if err != nil {
+	if err != nil && k8serrors.IsNotFound(err) { // If no storage class is available, we cannot dynamically provision the PV.
 		return &vizierState{Reason: status.MetadataPVCStorageClassUnavailable}
+	} else if err != nil {
+		log.WithError(err).Error("Failed to get storageclasses")
 	}
 	return &vizierState{Reason: status.MetadataPVCPendingBinding}
 }

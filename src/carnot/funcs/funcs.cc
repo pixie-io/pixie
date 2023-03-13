@@ -21,6 +21,7 @@
 #include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/funcs/net/net_ops.h"
+#include "src/carnot/funcs/os/process_ops.h"
 #include "src/carnot/funcs/protocols/protocol_ops.h"
 
 namespace px {
@@ -32,6 +33,7 @@ void RegisterFuncsOrDie(udf::Registry* registry) {
   metadata::RegisterMetadataOpsOrDie(registry);
   net::RegisterNetOpsOrDie(registry);
   protocols::RegisterProtocolOpsOrDie(registry);
+  os::RegisterProcessOpsOrDie(registry);
 }
 
 }  // namespace funcs

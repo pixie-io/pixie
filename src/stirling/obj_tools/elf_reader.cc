@@ -30,7 +30,6 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/utils.h"
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/init.h"
 
 namespace px {
@@ -125,7 +124,7 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
   // Next try using debug-link.
   if (!debug_link.empty()) {
     std::filesystem::path debug_link_path(debug_link);
-    PL_ASSIGN_OR_RETURN(std::filesystem::path binary_path, fs::Canonical(binary_path_));
+    PX_ASSIGN_OR_RETURN(std::filesystem::path binary_path, fs::Canonical(binary_path_));
     std::filesystem::path binary_path_parent = binary_path.parent_path();
 
     std::filesystem::path candidate1 = fs::JoinPath({&binary_path_parent, &debug_link_path});
@@ -160,15 +159,13 @@ Status ElfReader::LocateDebugSymbols(const std::filesystem::path& debug_file_dir
 }
 
 // TODO(oazizi): Consider changing binary_path to std::filesystem::path.
-StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path,
-                                                       const std::filesystem::path& debug_file_dir,
-                                                       int64_t pid) {
+StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
+    const std::string& binary_path, const std::filesystem::path& debug_file_dir) {
   VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
                               debug_file_dir.string());
   auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
 
   elf_reader->binary_path_ = binary_path;
-  elf_reader->pid_ = pid;
 
   if (!elf_reader->elf_reader_.load_header_and_sections(binary_path)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
@@ -221,7 +218,7 @@ StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
 // This function should be able to handle any section, but for the time being its is limited
 // in scope.
 StatusOr<int32_t> ElfReader::FindSegmentOffsetOfSection(std::string_view section_name) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
+  PX_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section_name));
   auto section_offset = text_section->get_offset();
 
   for (int i = 0; i < elf_reader_.segments.size() - 1; ++i) {
@@ -251,7 +248,7 @@ static auto NoTextStartAddrError =
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
     std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type,
     bool stop_at_first_match) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   std::vector<SymbolInfo> symbol_infos;
 
@@ -286,7 +283,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
 
 StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
     std::string_view search_symbol, SymbolMatchType match_type) {
-  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
                       SearchSymbols(search_symbol, match_type, /*symbol_type*/ ELFIO::STT_FUNC));
 
   absl::flat_hash_set<uint64_t> symbol_addrs;
@@ -306,7 +303,7 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::ListFuncSymbols(
 }
 
 StatusOr<ElfReader::SymbolInfo> ElfReader::SearchTheOnlySymbol(std::string_view symbol) {
-  PL_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
+  PX_ASSIGN_OR_RETURN(std::vector<ElfReader::SymbolInfo> symbol_infos,
                       SearchSymbols(symbol, SymbolMatchType::kExact, /*symbol_type*/ std::nullopt,
                                     /*stop_at_first_match*/ true));
   if (symbol_infos.empty()) {
@@ -320,7 +317,7 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
   if (symbol_infos_or.ok()) {
     const auto& symbol_infos = symbol_infos_or.ValueOrDie();
     if (!symbol_infos.empty()) {
-      DCHECK_EQ(symbol_infos.size(), 1);
+      DCHECK_EQ(symbol_infos.size(), 1U);
       return symbol_infos.front().address;
     }
   }
@@ -328,11 +325,9 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
 }
 
 StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
-
-  PL_ASSIGN_OR_RETURN(sym_addr, VirtualAddrToBinaryAddr(sym_addr));
 
   // Call ELFIO to get symbol by address.
   // ELFIO looks up the symbol and then populates name, size, type, etc.
@@ -356,9 +351,7 @@ StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
 // TODO(oazizi): Optimize by indexing or switching to binary search if we can guarantee addresses
 //               are ordered.
 StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
-
-  PL_ASSIGN_OR_RETURN(sym_addr, VirtualAddrToBinaryAddr(sym_addr));
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
   for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
@@ -383,7 +376,7 @@ StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_add
 }
 
 StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+  PX_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   auto symbolizer = std::make_unique<ElfReader::Symbolizer>();
 
@@ -402,7 +395,6 @@ StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
     if (type == ELFIO::STT_FUNC) {
-      PL_ASSIGN_OR_RETURN(addr, BinaryAddrToVirtualAddr(addr));
       symbolizer->AddEntry(addr, size, llvm::demangle(name));
     }
   }
@@ -439,31 +431,18 @@ std::string_view ElfReader::Symbolizer::Lookup(size_t addr) const {
 
 namespace {
 
-/**
- * RAII wrapper around LLVMDisasmContextRef.
- */
-class LLVMDisasmContext {
- public:
-  LLVMDisasmContext() {
-    InitLLVMOnce();
-
-    // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
-    // See https://llvm.org/doxygen/Triple_8h_source.html
-    // TODO(yzhao): Change to get TripleName from the system, instead of hard coding.
-    ref_ = LLVMCreateDisasm(/*TripleName*/ "x86_64-pc-linux",
-                            /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
-                            /*LLVMSymbolLookupCallback*/ nullptr);
-  }
-
-  ~LLVMDisasmContext() { LLVMDisasmDispose(ref_); }
-
-  LLVMDisasmContextRef ref() const { return ref_; }
-
- private:
-  LLVMDisasmContextRef ref_ = nullptr;
+enum Arch {
+  ArchX86_64,
+  ArchAarch64,
 };
+constexpr char x86_64_triple[] = "x86_64-pc-linux";
+constexpr char aarch64_triple[] = "aarch64-pc-linux";
 
-bool IsRetInst(uint8_t code) {
+bool IsRetInstX86_64(const uint8_t* bytes, int inst_size) {
+  if (inst_size < 1) {
+    return false;
+  }
+  uint8_t opcode = *bytes;
   // https://c9x.me/x86/html/file_module_x86_id_280.html for full list.
   //
   // Near return to calling procedure.
@@ -478,17 +457,89 @@ bool IsRetInst(uint8_t code) {
   // Far return to calling procedure and pop imm16 bytes from stack.
   constexpr uint8_t kRetfImm = '\xca';
 
-  return code == kRetn || code == kRetf || code == kRetnImm || code == kRetfImm;
+  return opcode == kRetn || opcode == kRetf || opcode == kRetnImm || opcode == kRetfImm;
 }
 
-std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
+bool IsRetInstAarch64(const uint8_t* bytes, int inst_size) {
+  // A64 has fixed width instructions.
+  static constexpr int kInstrBytes = 4;
+  if (inst_size != kInstrBytes) {
+    return false;
+  }
+  uint32_t instr;
+  // TODO(james): this will fail on non-little endian machines.
+  // eg. if we're processing a little endian arm elf file on an x86_64 machine.
+  memcpy(&instr, bytes, kInstrBytes);
+
+  // Per the A64 docs the RET instruction encodes the branch target register in bits 5:9, so we mask
+  // out those bits.
+  constexpr uint32_t ret_reg_mask = ~(0b11111 << 5);
+  // Per the A64 docs a RET instruction sets all these bits exactly as below (ignoring 5:9 in the
+  // mask above).
+  constexpr uint32_t ret_instr_bits = 0b11010110010111110000000000000000;
+
+  return (instr & ret_reg_mask) == ret_instr_bits;
+}
+
+/**
+ * RAII wrapper around LLVMDisasmContextRef.
+ */
+class LLVMDisasmContext {
+  using IsRetInstFn = std::function<bool(const uint8_t*, int)>;
+
+ public:
+  explicit LLVMDisasmContext(Arch arch) {
+    InitLLVMOnce();
+
+    const char* triple = "";
+    switch (arch) {
+      case ArchX86_64:
+        triple = x86_64_triple;
+        is_ret_inst_impl_ = IsRetInstX86_64;
+        break;
+      case ArchAarch64:
+        triple = aarch64_triple;
+        is_ret_inst_impl_ = IsRetInstAarch64;
+        break;
+    }
+
+    ref_ = LLVMCreateDisasm(triple,
+                            /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
+                            /*LLVMSymbolLookupCallback*/ nullptr);
+  }
+
+  bool IsRetInst(const uint8_t* bytes, int instr_size) {
+    return is_ret_inst_impl_(bytes, instr_size);
+  }
+
+  ~LLVMDisasmContext() { LLVMDisasmDispose(ref_); }
+
+  LLVMDisasmContextRef ref() const { return ref_; }
+
+ private:
+  LLVMDisasmContextRef ref_ = nullptr;
+  IsRetInstFn is_ret_inst_impl_;
+};
+
+std::unique_ptr<absl::flat_hash_map<Arch, std::unique_ptr<LLVMDisasmContext>>> g_disasm_registry;
+
+LLVMDisasmContext* GetLLVMDisasmContextForArch(Arch arch) {
+  if (g_disasm_registry == nullptr) {
+    g_disasm_registry =
+        std::make_unique<absl::flat_hash_map<Arch, std::unique_ptr<LLVMDisasmContext>>>();
+  }
+  if (!g_disasm_registry->contains(arch)) {
+    (*g_disasm_registry)[arch] = std::make_unique<LLVMDisasmContext>(arch);
+  }
+  return (*g_disasm_registry)[arch].get();
+}
+
+std::vector<uint64_t> FindRetInsts(Arch arch, utils::u8string_view byte_code) {
   if (byte_code.empty()) {
     return {};
   }
 
-  // TODO(yzhao): This is a short-term quick way to avoid unnecessary overheads.
-  // We should create LLVMDisasmContext object inside SocketTraceConnector and pass it around.
-  static const LLVMDisasmContext kLLVMDisasmContext;
+  auto disasm = GetLLVMDisasmContextForArch(arch);
 
   // Size of the buffer to hold disassembled assembly code. Since we do not really use the assembly
   // code, we just provide a small buffer.
@@ -504,14 +555,13 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
 
   std::vector<uint64_t> res;
   do {
-    if (IsRetInst(*codes)) {
+    if (disasm->IsRetInst(codes, inst_size)) {
       res.push_back(pc);
     }
     // TODO(yzhao): MCDisassembler::getInst() works better here, because it returns a MCInst, with
     // an opcode for examination. Unfortunately, MCDisassembler is difficult to create without
     // class LLVMDisasmContex, which is not exposed.
-    inst_size =
-        LLVMDisasmInstruction(kLLVMDisasmContext.ref(), codes, codes_size, pc, buf, kBufSize);
+    inst_size = LLVMDisasmInstruction(disasm->ref(), codes, codes_size, pc, buf, kBufSize);
 
     pc += inst_size;
     codes += inst_size;
@@ -520,12 +570,25 @@ std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
   return res;
 }
 
+StatusOr<Arch> GetArchFromELFMachine(ELFIO::Elf_Half machine) {
+  switch (machine) {
+    case ELFIO::EM_X86_64:
+      return ArchX86_64;
+    case ELFIO::EM_AARCH64:
+      return ArchAarch64;
+    default:
+      return Status(statuspb::INVALID_ARGUMENT,
+                    absl::Substitute("ELF file uses unsupported architecture: $0", machine));
+  }
+}
+
 }  // namespace
 
 StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
   constexpr std::string_view kDotText = ".text";
-  PL_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
-  std::vector<uint64_t> addrs = FindRetInsts(byte_code);
+  PX_ASSIGN_OR_RETURN(utils::u8string byte_code, SymbolByteCode(kDotText, func_symbol));
+  PX_ASSIGN_OR_RETURN(auto arch, GetArchFromELFMachine(elf_reader_.get_machine()));
+  std::vector<uint64_t> addrs = FindRetInsts(arch, byte_code);
   for (auto& offset : addrs) {
     offset += func_symbol.address;
   }
@@ -544,7 +607,7 @@ StatusOr<ELFIO::section*> ElfReader::SectionWithName(std::string_view section_na
 
 StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
                                                     const SymbolInfo& symbol) {
-  PL_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));
+  PX_ASSIGN_OR_RETURN(ELFIO::section * text_section, SectionWithName(section));
   int offset = symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);
@@ -564,62 +627,7 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
   return byte_code;
 }
 
-StatusOr<uint64_t> ElfReader::VirtualAddrToBinaryAddr(uint64_t virtual_addr) {
-  PL_RETURN_IF_ERROR(EnsureVirtToBinaryCalculated());
-  return virtual_addr + *virtual_to_binary_addr_offset_;
-}
-
-StatusOr<uint64_t> ElfReader::BinaryAddrToVirtualAddr(uint64_t binary_addr) {
-  PL_RETURN_IF_ERROR(EnsureVirtToBinaryCalculated());
-  return binary_addr - *virtual_to_binary_addr_offset_;
-}
-
-Status ElfReader::EnsureVirtToBinaryCalculated() {
-  if (virtual_to_binary_addr_offset_.has_value()) {
-    return Status::OK();
-  }
-  return CalculateVirtToBinaryAddrConversion();
-}
-
-/**
- * The calculated offset is used to convert between virtual addresses (eg. the address you
- * would get from a function pointer) and "binary" addresses (i.e. the address that `nm` would
- * display for a given function).
- *
- * This conversion is non-trivial and requires information from both the ELF file of the binary in
- * question, as well as the /proc/PID/maps file for the PID of the process in question.
- *
- * For non-PIE executables, this conversion is trivial as the virtual addresses in the ELF file are
- * used directly when loading.
- *
- * However, for PIE, the loaded virtual address can be whatever. So to calculate the offset we look
- * at the first loadable segment in the ELF file and compare it to the first entry in the
- *  /proc/PID/maps file to see how the loader changed the virtual address. This works because the
- * loader guarantees that the relative offsets of the different segments remain the same, regardless
- * of where in virtual address space it ends up putting the segment.
- *
- **/
-Status ElfReader::CalculateVirtToBinaryAddrConversion() {
-  if (pid_ == -1) {
-    return {statuspb::INVALID_ARGUMENT,
-            "Must specify PID to use symbol resolution functions in ElfReader"};
-  }
-  system::ProcParser parser;
-  std::vector<system::ProcParser::ProcessSMaps> map_entries;
-  // This is a little inefficient as we only need the first entry.
-  PL_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid_, &map_entries));
-  if (map_entries.size() < 1) {
-    return {statuspb::INTERNAL, "Failed to parse /proc/$pid/maps to work out address conversion"};
-  }
-  auto mapped_virt_addr = map_entries[0].vmem_start;
-  uint64_t mapped_offset;
-  if (!absl::SimpleHexAtoi(map_entries[0].offset, &mapped_offset)) {
-    return {statuspb::INTERNAL,
-            "Failed to parse offset in /proc/$pid/maps to work out address conversion"};
-  }
-
-  uint64_t mapped_segment_start = mapped_virt_addr - mapped_offset;
-
+StatusOr<uint64_t> ElfReader::GetVirtualAddrAtOffsetZero() {
   const ELFIO::segment* first_loadable_segment = nullptr;
   for (int i = 0; i < elf_reader_.segments.size(); i++) {
     ELFIO::segment* segment = elf_reader_.segments[i];
@@ -630,17 +638,14 @@ Status ElfReader::CalculateVirtToBinaryAddrConversion() {
   }
 
   if (first_loadable_segment == nullptr) {
-    return {statuspb::INTERNAL,
-            "Calculating virtual to binary offset failed because there are no loadable segments in "
-            "elf file"};
+    return Status(statuspb::INTERNAL, "No loadable segments in ELF file");
   }
-  uint64_t elf_virt_addr = first_loadable_segment->get_virtual_address();
-  uint64_t elf_offset = first_loadable_segment->get_offset();
-  uint64_t elf_segment_start = elf_virt_addr - elf_offset;
-
-  virtual_to_binary_addr_offset_ = elf_segment_start - mapped_segment_start;
-  return Status::OK();
+  uint64_t virt_addr = first_loadable_segment->get_virtual_address();
+  uint64_t offset = first_loadable_segment->get_offset();
+  return virt_addr - offset;
 }
+
+ELFIO::Elf_Half ElfReader::ELFType() { return elf_reader_.get_type(); }
 
 }  // namespace obj_tools
 }  // namespace stirling

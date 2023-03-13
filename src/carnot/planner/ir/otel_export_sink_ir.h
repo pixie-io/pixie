@@ -76,7 +76,7 @@ struct OTelAttribute {
     }
 
     column_pb->set_column_type(column_data_type);
-    PL_ASSIGN_OR_RETURN(auto index, column_reference->GetColumnIndex());
+    PX_ASSIGN_OR_RETURN(auto index, column_reference->GetColumnIndex());
     column_pb->set_column_index(index);
     return Status::OK();
   }
@@ -144,7 +144,7 @@ class OTelExportSinkIR : public OperatorIR {
   explicit OTelExportSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kOTelExportSink) {}
 
   Status Init(OperatorIR* parent, const OTelData& data) {
-    PL_RETURN_IF_ERROR(ProcessConfig(data));
+    PX_RETURN_IF_ERROR(ProcessConfig(data));
     return AddParent(parent);
   }
 
@@ -154,9 +154,9 @@ class OTelExportSinkIR : public OperatorIR {
     if (column == nullptr) {
       return CreateIRNodeError("column not defined");
     }
-    PL_ASSIGN_OR_RETURN(auto copied_column, graph()->CopyNode(column));
+    PX_ASSIGN_OR_RETURN(auto copied_column, graph()->CopyNode(column));
     required_column_names_.insert(copied_column->col_name());
-    PL_RETURN_IF_ERROR(graph()->AddEdge(this, copied_column));
+    PX_RETURN_IF_ERROR(graph()->AddEdge(this, copied_column));
     columns_to_resolve_.push_back(copied_column);
     return copied_column;
   }

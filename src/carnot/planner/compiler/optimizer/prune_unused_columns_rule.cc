@@ -34,12 +34,12 @@ StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
   if (operator_to_required_outputs_.contains(op)) {
     auto required_outs = operator_to_required_outputs_.at(op);
     auto prev_type = op->resolved_table_type();
-    PL_RETURN_IF_ERROR(op->PruneOutputColumnsTo(required_outs));
+    PX_RETURN_IF_ERROR(op->PruneOutputColumnsTo(required_outs));
     auto new_type = op->resolved_table_type();
     changed = !prev_type->Equals(new_type);
   }
 
-  PL_ASSIGN_OR_RETURN(auto required_inputs, op->RequiredInputColumns());
+  PX_ASSIGN_OR_RETURN(auto required_inputs, op->RequiredInputColumns());
   for (const auto& [parent_idx, required_columns] : Enumerate(required_inputs)) {
     auto parent_ptr = op->parents()[parent_idx];
     operator_to_required_outputs_[parent_ptr].insert(required_columns.begin(),

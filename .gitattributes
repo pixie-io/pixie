@@ -1,8 +1,8 @@
-*.pb.* -diff
-*.gen.go -diff
-*_pb.js -diff
-*_pb.d.ts -diff
-go_deps.bzl -diff
-src/ui/.yarn/releases/** -diff
-src/ui/.yarn/plugins/** -diff
+*.pb.* -diff linguist-generated=true
+*.gen.go -diff linguist-generated=true
+*_pb.js -diff linguist-generated=true
+*_pb.d.ts -diff linguist-generated=true
+go_deps.bzl -diff linguist-generated=true
+src/ui/.yarn/releases/** -diff linguist-generated=true
+src/ui/.yarn/plugins/** -diff linguist-generated=true
 *.pxl linguist-language=python

@@ -28,7 +28,15 @@ cc_static_musl_binary = meta.wrap_with_transition(
 java_graal_binary = meta.wrap_with_transition(
     native.java_binary,
     {
-        "java_runtime_version": meta.replace_with("openjdk_graal_17"),
+        "java_runtime_version": meta.replace_with("remotejdk_openjdk_graal_17"),
+    },
+    executable = True,
+)
+
+cc_clang_binary = meta.wrap_with_transition(
+    native.cc_binary,
+    {
+        "@//bazel/cc_toolchains:compiler": meta.replace_with("clang"),
     },
     executable = True,
 )

@@ -25,9 +25,9 @@ go_library(
     importpath = "px.dev/pixie/src/shared/services/events",
     visibility = ["//src:__subpackages__"],
     deps = [
+        "@com_github_segmentio_analytics_go_v3//:analytics-go",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
-        "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",
     ],
 )

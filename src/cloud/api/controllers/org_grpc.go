@@ -23,9 +23,9 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
+	"github.com/segmentio/analytics-go/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"

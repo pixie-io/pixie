@@ -30,13 +30,20 @@ resetcolor="\e[0m"
 
 # Docker image information.
 docker_image_base=gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
+os="$(uname)"
 version=$(grep DOCKER_IMAGE_TAG "${workspace_root}/docker.properties" | cut -d= -f2)
 docker_image_with_tag="${docker_image_base}:${version}"
-docker_host_gid=$(getent group docker | awk -F: '{print $3}')
 
-if [[ -z "${docker_host_gid}" ]]; then
-    echo "${red}Docker needs to be enabled in order to run the dev container.{$resetcolor}"
-    exit 1
+# Skip checking docker group for Mac because group is not required for docker-machine in Mac.
+if [[ "${os}" != "Darwin" ]]; then
+    docker_host_gid=$(getent group docker | awk -F: '{print $3}')
+    if [[ -z "${docker_host_gid}" ]]; then
+        echo "${red}Docker needs to be enabled in order to run the dev container.{$resetcolor}"
+        exit 1
+    fi
+else
+    # Set PX_DOCKER_RUN_AS_ROOT to True for Mac
+    PX_DOCKER_RUN_AS_ROOT=True
 fi
 
 shell=/bin/bash
@@ -94,12 +101,14 @@ for arg in "${PX_RUN_DOCKER_EXTRA_ARGS[@]}"; do
 done
 
 configs=(
+    # Mount shm from the host, otherwise docker will restrict to 64MB by default.
+    -v /dev/shm:/dev/shm
     # Mount the home directory.
     -v "${HOME}:/home/${USER}"
     # Allow docker to run within the container.
     -v /var/run/docker.sock:/var/run/docker.sock
     # Mount the workspace root within the build directory.
-    -v "${workspace_root}:/pl/src/px.dev/pixie"
+    -v "${workspace_root}:/px/src/px.dev/pixie"
     # Use the host network so we can easily access build caches, etc.
     "--network=host"
 )
@@ -125,7 +134,7 @@ echo -e "\t${bold}Shell: \t\t\t ${green}${shell}${resetcolor}"
 
 container_args=(
   --rm
-  --hostname px-dev-docker
+  --hostname "px-dev-docker-$(hostname)"
 )
 
 if [ -t 1 ]; then

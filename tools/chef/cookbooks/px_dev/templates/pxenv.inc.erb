@@ -1,0 +1,29 @@
+# If changing this file, make sure to also update the ENV in tools/chef/packer_docker_dev.json.
+# DO NOT EDIT! This is an automatically generated file by Chef and may be changed.
+export CLANG_PATH=/opt/px_dev/tools/clang-15.0
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+export PATH=/opt/px_dev/tools/node/bin:$PATH
+export PATH=/opt/px_dev/tools/golang/bin:$PATH
+export PATH=/opt/px_dev/gopath/bin:$PATH
+export PATH=/opt/google-cloud-sdk/bin:$PATH
+export PATH=${CLANG_PATH}/bin:$PATH
+
+export LD_LIBRARY_PATH=${CLANG_PATH}/lib:${LD_LIBRARY_PATH}
+
+export CC=clang
+export CXX=clang++
+
+export ASAN_SYMBOLIZER_PATH=${CLANG_PATH}/bin/llvm-symbolizer
+
+if [ -n "`$SHELL -c 'echo $ZSH_VERSION'`" ]; then
+   # Assume Zsh.
+   source /opt/google-cloud-sdk/path.zsh.inc
+   source /opt/google-cloud-sdk/completion.zsh.inc
+elif [ -n "`$SHELL -c 'echo $BASH_VERSION'`" ]; then
+   # Assume Bash.
+   source /opt/google-cloud-sdk/path.bash.inc
+   source /opt/google-cloud-sdk/completion.bash.inc
+fi
+
+# Always pick our binaries first.
+export PATH=/opt/px_dev/bin:$PATH

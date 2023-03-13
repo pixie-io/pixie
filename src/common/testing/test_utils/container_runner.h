@@ -31,7 +31,7 @@ namespace px {
 class ContainerRunner {
  public:
   /**
-   * Set-up a container runner with image from docker registry.
+   * Set-up a container runner with image from a registry.
    *
    * @param image Image to run.
    * @param instance_name_prefix The container instance name prefix. The instance name will
@@ -68,12 +68,20 @@ class ContainerRunner {
   StatusOr<std::string> Run(const std::chrono::seconds& timeout = std::chrono::seconds{60},
                             const std::vector<std::string>& options = {},
                             const std::vector<std::string>& args = {},
-                            const bool use_host_pid_namespace = true);
+                            const bool use_host_pid_namespace = true,
+                            const std::chrono::seconds& container_lifetime = std::chrono::seconds{
+                                3600});
 
   /**
    * Wait for container to terminate.
    */
-  void Wait();
+  void Wait(bool close_pipe = true);
+
+  /**
+   * Returns the stdout of the container. Needs to be combined with the full output from Run
+   * to ensure the entire result is present.
+   */
+  Status Stdout(std::string* out);
 
   /**
    * The PID of the process within the container.
@@ -110,7 +118,7 @@ class ContainerRunner {
   const std::string ready_message_;
 
   // The subprocess running the container.
-  SubProcess docker_;
+  SubProcess podman_;
 
   // The instance name of the container.
   std::string container_name_;

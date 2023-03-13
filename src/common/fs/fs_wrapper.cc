@@ -85,15 +85,15 @@ std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& 
 
 Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
                                 const std::filesystem::path& link) {
-  PL_RETURN_IF_ERROR(fs::CreateDirectories(link.parent_path()));
+  PX_RETURN_IF_ERROR(fs::CreateDirectories(link.parent_path()));
 
   // Attempt to create the symlink, but ignore the return status.
   // Why? Because if multiple instances are running in parallel, this CreateSymlink could fail.
   // That's okay. The real check to make sure the link is created is below.
   Status s = fs::CreateSymlink(target, link);
-  PL_UNUSED(s);
+  PX_UNUSED(s);
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path actual_target, fs::ReadSymlink(link));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path actual_target, fs::ReadSymlink(link));
   if (target != actual_target) {
     return error::Internal("Symlink not as expected [desired=$0, actual=$1]", target.c_str(),
                            actual_target.c_str());
@@ -248,7 +248,7 @@ StatusOr<std::filesystem::path> GetChildRelPath(std::filesystem::path child,
     return error::InvalidArgument("Path=$0 is not parent of child=$1", parent.string(),
                                   child.string());
   }
-  PL_ASSIGN_OR_RETURN(std::filesystem::path res, Relative(child, parent));
+  PX_ASSIGN_OR_RETURN(std::filesystem::path res, Relative(child, parent));
   // Relative() returns "." when child and parent are the same. "." complicates the path joining.
   if (res == ".") {
     res.clear();

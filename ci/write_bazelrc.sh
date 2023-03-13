@@ -19,9 +19,9 @@
 cp ci/jenkins.bazelrc jenkins.bazelrc
 
 echo "build --remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}" >> jenkins.bazelrc
-echo "build --action_env=GH_API_KEY=${GH_API_KEY}" >> jenkins.bazelrc
+echo "build --client_env=GH_API_KEY=${GH_API_KEY}" >> jenkins.bazelrc
 
-if [[ $JOB_NAME == 'pixie-main/build-and-test-all' ]]; then
+if [[ "$JOB_NAME" == 'pixie-main/build-and-test-all' ]] || [[ "$JOB_NAME" == 'pixie-oss/build-and-test-all' ]]; then
   # Only set ROLE=CI if this is running on main. This controls the whether this
   # run contributes to the test matrix at https://bb.corp.pixielabs.ai/tests/
   echo "build --build_metadata=ROLE=CI" >> jenkins.bazelrc
@@ -29,4 +29,8 @@ else
   # Don't upload to remote cache if this is not running main.
   echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
   echo "build --build_metadata=ROLE=DEV" >> jenkins.bazelrc
+fi
+
+if [[ "$JOB_NAME" == "pixie-oss/"* ]]; then
+  echo "build --build_metadata=VISIBILITY=PUBLIC" >> jenkins.bazelrc
 fi

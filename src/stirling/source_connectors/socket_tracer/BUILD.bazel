@@ -69,7 +69,7 @@ pl_cc_test(
     name = "uprobe_symaddrs_test",
     srcs = ["uprobe_symaddrs_test.cc"],
     data = [
-        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_16_grpc_tls_server_binary",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_19_grpc_tls_server_binary",
         "//src/stirling/testing/demo_apps/node:node_debug",
     ],
     deps = [
@@ -304,10 +304,12 @@ pl_cc_test(
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_17_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_18_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_19_grpc_client",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:golang_1_20_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_16_grpc_server_with_certs",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_17_grpc_server_with_certs",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_18_grpc_server_with_certs",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_19_grpc_server_with_certs",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:golang_1_20_grpc_server_with_certs",
     ],
     flaky = True,
     shard_count = 3,
@@ -434,6 +436,8 @@ pl_cc_test(
     flaky = True,
     shard_count = 2,
     tags = [
+        # TODO: This test has a <90% pass rate in CI, please fix and re-enable.
+        "disabled_flaky_test",
         "cpu:16",
         "no_asan",
         "requires_bpf",

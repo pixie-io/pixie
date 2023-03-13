@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     PrintUsageAndExit(argv[0]);
   }
 
-  PL_ASSIGN_OR_EXIT(auto tracepoint_pb, px::carnot::planner::compiler::CompileTracepoint(query));
-  PL_CHECK_OK(px::WriteFileFromString(output_file, tracepoint_pb.DebugString()));
+  PX_ASSIGN_OR_EXIT(auto tracepoint_pb, px::carnot::planner::compiler::CompileTracepoint(query));
+  PX_CHECK_OK(px::WriteFileFromString(output_file, tracepoint_pb.DebugString()));
   return 0;
 }

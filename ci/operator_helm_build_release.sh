@@ -52,8 +52,7 @@ version: ${VERSION}" > "${helm_path}/Chart.yaml"
 cp "${repo_path}/k8s/operator/crd/base/px.dev_viziers.yaml" "${helm_path}/crds/vizier_crd.yaml"
 
 # Updates templates with Helm-specific template functions.
-#shellcheck disable=SC2016,SC2086
-helm_tmpl_checks="$(cat ${repo_path}/k8s/operator/helm/olm_template_checks.tmpl)"
+helm_tmpl_checks="$(cat "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl")"
 sed -i "1c${helm_tmpl_checks}" "${repo_path}/k8s/operator/helm/templates/00_olm.yaml"
 rm "${repo_path}/k8s/operator/helm/olm_template_checks.tmpl"
 

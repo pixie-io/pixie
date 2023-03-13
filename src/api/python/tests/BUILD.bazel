@@ -14,9 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_python//python:defs.bzl", "py_test")
+load("//bazel:pl_build_system.bzl", "pl_py_test")
 
-py_test(
+pl_py_test(
     name = "api_test",
     srcs = ["api_test.py"],
     imports = [
@@ -30,7 +30,7 @@ py_test(
     ],
 )
 
-py_test(
+pl_py_test(
     name = "data_test",
     srcs = ["data_test.py"],
     imports = [

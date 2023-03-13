@@ -47,7 +47,7 @@ class NATSTraceBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSid
       args = {"--tls", "--tlscert=/etc/ssl/server.crt", "--tlskey=/etc/ssl/server.key",
               "--tlsverify=false"};
     }
-    PL_CHECK_OK(server_container_.Run(std::chrono::seconds{150}, /*options*/ {}, args));
+    PX_CHECK_OK(server_container_.Run(std::chrono::seconds{150}, /*options*/ {}, args));
   }
 
   ::px::stirling::testing::NATSServerContainer server_container_;

@@ -48,20 +48,20 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
       RedactionOptions{}, nullptr, nullptr, planner::DebugInfo{});
 
   Parser parser;
-  PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
+  PX_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
 
   IR ir;
   compiler::MutationsIR probe_ir;
   ModuleHandler module_handler;
 
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
+  PX_ASSIGN_OR_RETURN(auto ast_walker,
                       compiler::ASTVisitorImpl::Create(&ir, &probe_ir, &compiler_state,
                                                        &module_handler, false, {}, {}));
 
-  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  PX_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
 
   plannerpb::CompileMutationsResponse pb;
-  PL_RETURN_IF_ERROR(probe_ir.ToProto(&pb));
+  PX_RETURN_IF_ERROR(probe_ir.ToProto(&pb));
   if (pb.mutations_size() != 1) {
     return error::Internal("Unexpected number of mutations");
   }

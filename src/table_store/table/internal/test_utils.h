@@ -58,9 +58,9 @@ class RecordOrRowBatchParamTest : public ::testing::TestWithParam<std::vector<bo
                                 const std::vector<types::BoolValue>& bools,
                                 const std::vector<types::StringValue>& strings) {
     schema::RowBatch rb(schema::RowDescriptor(rel_->col_types()), times.size());
-    PL_CHECK_OK(rb.AddColumn(types::ToArrow(times, arrow::default_memory_pool())));
-    PL_CHECK_OK(rb.AddColumn(types::ToArrow(bools, arrow::default_memory_pool())));
-    PL_CHECK_OK(rb.AddColumn(types::ToArrow(strings, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb.AddColumn(types::ToArrow(times, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb.AddColumn(types::ToArrow(bools, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb.AddColumn(types::ToArrow(strings, arrow::default_memory_pool())));
     return rb;
   }
 

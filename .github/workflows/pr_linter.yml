@@ -1,0 +1,47 @@
+---
+name: pr-linter
+on:
+  pull_request
+permissions:
+  contents: read
+jobs:
+  get-linter-image:
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "linter_image"
+  run-container-lint:
+    runs-on: ubuntu-latest-8-cores
+    needs: get-linter-image
+    container:
+      image: ${{ needs.get-linter-image.outputs.image-with-tag }}
+      options: --cpus 7
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 100
+    - name: yarn cache
+      uses: actions/cache@v3
+      with:
+        path: ./src/ui/.yarn/cache
+        key: yarn-cache-${{ hashFiles('src/ui/yarn.lock', 'src/ui/.yarnrc.yml') }}
+        restore-keys: |
+          yarn-cache-
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Fetch main
+      run: git fetch origin main:main
+    - name: Check merge base
+      run: git merge-base origin/main HEAD  # This is what arc uses to determine what changes to lint.
+    - name: Run arc lint
+      run: arc lint --apply-patches --trace
+    - name: Fail if any files changed
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        if [[ $(git status --porcelain=v1 | wc -l) -ne 0 ]]; then
+          echo "Please apply the autofix patches suggested by arc lint."
+          echo "Changed files:"
+          git diff --name-only
+          exit 1
+        fi
+      # yamllint enable rule:indentation

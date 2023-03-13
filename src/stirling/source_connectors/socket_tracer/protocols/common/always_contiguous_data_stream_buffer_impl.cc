@@ -208,18 +208,18 @@ void AlwaysContiguousDataStreamBufferImpl::Add(size_t pos, std::string_view data
     }
 
     DCHECK_GE(ppos_front, 0);
-    DCHECK_LE(ppos_front, capacity_);
+    DCHECK_LE(ppos_front, static_cast<ssize_t>(capacity_));
 
     DCHECK_GE(ppos_back, 0);
-    DCHECK_LE(ppos_back, capacity_);
+    DCHECK_LE(ppos_back, static_cast<ssize_t>(capacity_));
 
     ssize_t new_size = ppos_back;
-    DCHECK_LE(new_size, capacity_);
+    DCHECK_LE(new_size, static_cast<ssize_t>(capacity_));
     DCHECK_GE(new_size, 0);
 
     buffer_.resize(new_size);
 
-    DCHECK_GE(buffer_.size(), 0);
+    DCHECK_GE(buffer_.size(), 0U);
     DCHECK_LE(buffer_.size(), capacity_);
   } else {
     // Case 4: Data being added is completely within the buffer. Write it directly.

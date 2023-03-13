@@ -32,6 +32,10 @@ pl_cc_library(
     ),
     visibility = [
         "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
         "//src/vizier:__subpackages__",
+    ],
+    deps = [
+        "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
     ],
 )

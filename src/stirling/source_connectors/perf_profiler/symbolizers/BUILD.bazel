@@ -46,12 +46,13 @@ java_image_tar = "//src/stirling/source_connectors/perf_profiler/testing/java:%s
 
 pl_cc_test(
     name = "symbolizer_test",
+    timeout = "long",
     srcs = ["symbolizer_test.cc"],
     args = stirling_profiler_java_args + [
         "--java_image_name $(location %s)" % java_image_tar,
     ],
     data = [
-        "//src/stirling/source_connectors/perf_profiler/testing/java:fib",
+        "//src/stirling/source_connectors/perf_profiler/testing/java:profiler_test",
         "//src/stirling/source_connectors/perf_profiler/testing/java:java",
     ] + [java_image_tar] + agent_libs + [px_jattach],
     tags = [

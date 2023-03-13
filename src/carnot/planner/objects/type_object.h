@@ -49,7 +49,7 @@ class TypeObject : public QLObject {
 
   static StatusOr<std::shared_ptr<TypeObject>> Create(IRNodeType node_type,
                                                       ASTVisitor* ast_visitor) {
-    PL_ASSIGN_OR_RETURN(types::DataType data_type, IRNodeTypeToDataType(node_type));
+    PX_ASSIGN_OR_RETURN(types::DataType data_type, IRNodeTypeToDataType(node_type));
     return Create(data_type, ast_visitor);
   }
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
@@ -61,7 +61,7 @@ class TypeObject : public QLObject {
                                                       ASTVisitor* ast_visitor) {
     auto type = std::shared_ptr<TypeObject>(
         new TypeObject(types::DATA_TYPE_UNKNOWN, types::ST_NONE, ql_object_type, ast_visitor));
-    PL_RETURN_IF_ERROR(type->Init());
+    PX_RETURN_IF_ERROR(type->Init());
     return type;
   }
 
@@ -70,7 +70,7 @@ class TypeObject : public QLObject {
                                                       ASTVisitor* ast_visitor) {
     auto type = std::shared_ptr<TypeObject>(
         new TypeObject(data_type, semantic_type, QLObjectType::kExpr, ast_visitor));
-    PL_RETURN_IF_ERROR(type->Init());
+    PX_RETURN_IF_ERROR(type->Init());
     return type;
   }
 

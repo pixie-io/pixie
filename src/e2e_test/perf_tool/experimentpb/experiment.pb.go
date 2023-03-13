@@ -7,6 +7,8 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -26,11 +28,13 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ExperimentSpec struct {
-	VersionSpec   *VersionSpec    `protobuf:"bytes,1,opt,name=version_spec,json=versionSpec,proto3" json:"version_spec,omitempty"`
-	VizierSpec    *WorkloadSpec   `protobuf:"bytes,2,opt,name=vizier_spec,json=vizierSpec,proto3" json:"vizier_spec,omitempty"`
-	WorkloadSpecs []*WorkloadSpec `protobuf:"bytes,3,rep,name=workload_specs,json=workloadSpecs,proto3" json:"workload_specs,omitempty"`
-	MetricSpecs   []*MetricSpec   `protobuf:"bytes,4,rep,name=metric_specs,json=metricSpecs,proto3" json:"metric_specs,omitempty"`
-	ClusterSpec   *ClusterSpec    `protobuf:"bytes,5,opt,name=cluster_spec,json=clusterSpec,proto3" json:"cluster_spec,omitempty"`
+	VizierSpec    *WorkloadSpec   `protobuf:"bytes,1,opt,name=vizier_spec,json=vizierSpec,proto3" json:"vizier_spec,omitempty"`
+	WorkloadSpecs []*WorkloadSpec `protobuf:"bytes,2,rep,name=workload_specs,json=workloadSpecs,proto3" json:"workload_specs,omitempty"`
+	MetricSpecs   []*MetricSpec   `protobuf:"bytes,3,rep,name=metric_specs,json=metricSpecs,proto3" json:"metric_specs,omitempty"`
+	ClusterSpec   *ClusterSpec    `protobuf:"bytes,4,opt,name=cluster_spec,json=clusterSpec,proto3" json:"cluster_spec,omitempty"`
+	RunSpec       *RunSpec        `protobuf:"bytes,5,opt,name=run_spec,json=runSpec,proto3" json:"run_spec,omitempty"`
+	CommitSHA     string          `protobuf:"bytes,6,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
+	Tags          []string        `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
 }
 
 func (m *ExperimentSpec) Reset()      { *m = ExperimentSpec{} }
@@ -65,13 +69,6 @@ func (m *ExperimentSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ExperimentSpec proto.InternalMessageInfo
 
-func (m *ExperimentSpec) GetVersionSpec() *VersionSpec {
-	if m != nil {
-		return m.VersionSpec
-	}
-	return nil
-}
-
 func (m *ExperimentSpec) GetVizierSpec() *WorkloadSpec {
 	if m != nil {
 		return m.VizierSpec
@@ -100,48 +97,37 @@ func (m *ExperimentSpec) GetClusterSpec() *ClusterSpec {
 	return nil
 }
 
-type VersionSpec struct {
-}
-
-func (m *VersionSpec) Reset()      { *m = VersionSpec{} }
-func (*VersionSpec) ProtoMessage() {}
-func (*VersionSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_96d7e52dda1e6fe3, []int{1}
-}
-func (m *VersionSpec) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *VersionSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_VersionSpec.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
+func (m *ExperimentSpec) GetRunSpec() *RunSpec {
+	if m != nil {
+		return m.RunSpec
 	}
-}
-func (m *VersionSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VersionSpec.Merge(m, src)
-}
-func (m *VersionSpec) XXX_Size() int {
-	return m.Size()
-}
-func (m *VersionSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_VersionSpec.DiscardUnknown(m)
+	return nil
 }
 
-var xxx_messageInfo_VersionSpec proto.InternalMessageInfo
+func (m *ExperimentSpec) GetCommitSHA() string {
+	if m != nil {
+		return m.CommitSHA
+	}
+	return ""
+}
+
+func (m *ExperimentSpec) GetTags() []string {
+	if m != nil {
+		return m.Tags
+	}
+	return nil
+}
 
 type WorkloadSpec struct {
+	Name         string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	DeploySteps  []*DeployStep  `protobuf:"bytes,2,rep,name=deploy_steps,json=deploySteps,proto3" json:"deploy_steps,omitempty"`
+	Healthchecks []*HealthCheck `protobuf:"bytes,3,rep,name=healthchecks,proto3" json:"healthchecks,omitempty"`
 }
 
 func (m *WorkloadSpec) Reset()      { *m = WorkloadSpec{} }
 func (*WorkloadSpec) ProtoMessage() {}
 func (*WorkloadSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_96d7e52dda1e6fe3, []int{2}
+	return fileDescriptor_96d7e52dda1e6fe3, []int{1}
 }
 func (m *WorkloadSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -170,13 +156,628 @@ func (m *WorkloadSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_WorkloadSpec proto.InternalMessageInfo
 
+func (m *WorkloadSpec) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *WorkloadSpec) GetDeploySteps() []*DeployStep {
+	if m != nil {
+		return m.DeploySteps
+	}
+	return nil
+}
+
+func (m *WorkloadSpec) GetHealthchecks() []*HealthCheck {
+	if m != nil {
+		return m.Healthchecks
+	}
+	return nil
+}
+
+type DeployStep struct {
+	// Types that are valid to be assigned to DeployType:
+	//
+	//	*DeployStep_Prerendered
+	//	*DeployStep_Skaffold
+	//	*DeployStep_Px
+	DeployType isDeployStep_DeployType `protobuf_oneof:"deploy_type"`
+}
+
+func (m *DeployStep) Reset()      { *m = DeployStep{} }
+func (*DeployStep) ProtoMessage() {}
+func (*DeployStep) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{2}
+}
+func (m *DeployStep) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeployStep) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeployStep.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeployStep) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployStep.Merge(m, src)
+}
+func (m *DeployStep) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeployStep) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployStep.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployStep proto.InternalMessageInfo
+
+type isDeployStep_DeployType interface {
+	isDeployStep_DeployType()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type DeployStep_Prerendered struct {
+	Prerendered *PrerenderedDeploy `protobuf:"bytes,1,opt,name=prerendered,proto3,oneof" json:"prerendered,omitempty"`
+}
+type DeployStep_Skaffold struct {
+	Skaffold *SkaffoldDeploy `protobuf:"bytes,2,opt,name=skaffold,proto3,oneof" json:"skaffold,omitempty"`
+}
+type DeployStep_Px struct {
+	Px *PxCLIDeploy `protobuf:"bytes,3,opt,name=px,proto3,oneof" json:"px,omitempty"`
+}
+
+func (*DeployStep_Prerendered) isDeployStep_DeployType() {}
+func (*DeployStep_Skaffold) isDeployStep_DeployType()    {}
+func (*DeployStep_Px) isDeployStep_DeployType()          {}
+
+func (m *DeployStep) GetDeployType() isDeployStep_DeployType {
+	if m != nil {
+		return m.DeployType
+	}
+	return nil
+}
+
+func (m *DeployStep) GetPrerendered() *PrerenderedDeploy {
+	if x, ok := m.GetDeployType().(*DeployStep_Prerendered); ok {
+		return x.Prerendered
+	}
+	return nil
+}
+
+func (m *DeployStep) GetSkaffold() *SkaffoldDeploy {
+	if x, ok := m.GetDeployType().(*DeployStep_Skaffold); ok {
+		return x.Skaffold
+	}
+	return nil
+}
+
+func (m *DeployStep) GetPx() *PxCLIDeploy {
+	if x, ok := m.GetDeployType().(*DeployStep_Px); ok {
+		return x.Px
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*DeployStep) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*DeployStep_Prerendered)(nil),
+		(*DeployStep_Skaffold)(nil),
+		(*DeployStep_Px)(nil),
+	}
+}
+
+type HealthCheck struct {
+	// Types that are valid to be assigned to CheckType:
+	//
+	//	*HealthCheck_K8S
+	//	*HealthCheck_PxL
+	CheckType isHealthCheck_CheckType `protobuf_oneof:"check_type"`
+}
+
+func (m *HealthCheck) Reset()      { *m = HealthCheck{} }
+func (*HealthCheck) ProtoMessage() {}
+func (*HealthCheck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{3}
+}
+func (m *HealthCheck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HealthCheck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HealthCheck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *HealthCheck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HealthCheck.Merge(m, src)
+}
+func (m *HealthCheck) XXX_Size() int {
+	return m.Size()
+}
+func (m *HealthCheck) XXX_DiscardUnknown() {
+	xxx_messageInfo_HealthCheck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HealthCheck proto.InternalMessageInfo
+
+type isHealthCheck_CheckType interface {
+	isHealthCheck_CheckType()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type HealthCheck_K8S struct {
+	K8S *K8SPodsReadyCheck `protobuf:"bytes,1,opt,name=k8s,proto3,oneof" json:"k8s,omitempty"`
+}
+type HealthCheck_PxL struct {
+	PxL *PxLHealthCheck `protobuf:"bytes,2,opt,name=pxl,proto3,oneof" json:"pxl,omitempty"`
+}
+
+func (*HealthCheck_K8S) isHealthCheck_CheckType() {}
+func (*HealthCheck_PxL) isHealthCheck_CheckType() {}
+
+func (m *HealthCheck) GetCheckType() isHealthCheck_CheckType {
+	if m != nil {
+		return m.CheckType
+	}
+	return nil
+}
+
+func (m *HealthCheck) GetK8S() *K8SPodsReadyCheck {
+	if x, ok := m.GetCheckType().(*HealthCheck_K8S); ok {
+		return x.K8S
+	}
+	return nil
+}
+
+func (m *HealthCheck) GetPxL() *PxLHealthCheck {
+	if x, ok := m.GetCheckType().(*HealthCheck_PxL); ok {
+		return x.PxL
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*HealthCheck) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*HealthCheck_K8S)(nil),
+		(*HealthCheck_PxL)(nil),
+	}
+}
+
+type K8SPodsReadyCheck struct {
+	Namespace string `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+}
+
+func (m *K8SPodsReadyCheck) Reset()      { *m = K8SPodsReadyCheck{} }
+func (*K8SPodsReadyCheck) ProtoMessage() {}
+func (*K8SPodsReadyCheck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{4}
+}
+func (m *K8SPodsReadyCheck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *K8SPodsReadyCheck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_K8SPodsReadyCheck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *K8SPodsReadyCheck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_K8SPodsReadyCheck.Merge(m, src)
+}
+func (m *K8SPodsReadyCheck) XXX_Size() int {
+	return m.Size()
+}
+func (m *K8SPodsReadyCheck) XXX_DiscardUnknown() {
+	xxx_messageInfo_K8SPodsReadyCheck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_K8SPodsReadyCheck proto.InternalMessageInfo
+
+func (m *K8SPodsReadyCheck) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+type PxLHealthCheck struct {
+	Script        string `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+	SuccessColumn string `protobuf:"bytes,2,opt,name=success_column,json=successColumn,proto3" json:"success_column,omitempty"`
+}
+
+func (m *PxLHealthCheck) Reset()      { *m = PxLHealthCheck{} }
+func (*PxLHealthCheck) ProtoMessage() {}
+func (*PxLHealthCheck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{5}
+}
+func (m *PxLHealthCheck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PxLHealthCheck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PxLHealthCheck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PxLHealthCheck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PxLHealthCheck.Merge(m, src)
+}
+func (m *PxLHealthCheck) XXX_Size() int {
+	return m.Size()
+}
+func (m *PxLHealthCheck) XXX_DiscardUnknown() {
+	xxx_messageInfo_PxLHealthCheck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PxLHealthCheck proto.InternalMessageInfo
+
+func (m *PxLHealthCheck) GetScript() string {
+	if m != nil {
+		return m.Script
+	}
+	return ""
+}
+
+func (m *PxLHealthCheck) GetSuccessColumn() string {
+	if m != nil {
+		return m.SuccessColumn
+	}
+	return ""
+}
+
+type PatchSpec struct {
+	YAML   string       `protobuf:"bytes,1,opt,name=yaml,proto3" json:"yaml,omitempty"`
+	Target *PatchTarget `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+}
+
+func (m *PatchSpec) Reset()      { *m = PatchSpec{} }
+func (*PatchSpec) ProtoMessage() {}
+func (*PatchSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{6}
+}
+func (m *PatchSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PatchSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PatchSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PatchSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PatchSpec.Merge(m, src)
+}
+func (m *PatchSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *PatchSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_PatchSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PatchSpec proto.InternalMessageInfo
+
+func (m *PatchSpec) GetYAML() string {
+	if m != nil {
+		return m.YAML
+	}
+	return ""
+}
+
+func (m *PatchSpec) GetTarget() *PatchTarget {
+	if m != nil {
+		return m.Target
+	}
+	return nil
+}
+
+type PatchTarget struct {
+	APIGroup           string `protobuf:"bytes,1,opt,name=api_group,json=apiGroup,proto3" json:"api_group,omitempty"`
+	APIVersion         string `protobuf:"bytes,2,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
+	Kind               string `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Name               string `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace          string `protobuf:"bytes,5,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	LabelSelector      string `protobuf:"bytes,6,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`
+	AnnotationSelector string `protobuf:"bytes,7,opt,name=annotation_selector,json=annotationSelector,proto3" json:"annotation_selector,omitempty"`
+}
+
+func (m *PatchTarget) Reset()      { *m = PatchTarget{} }
+func (*PatchTarget) ProtoMessage() {}
+func (*PatchTarget) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{7}
+}
+func (m *PatchTarget) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PatchTarget) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PatchTarget.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PatchTarget) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PatchTarget.Merge(m, src)
+}
+func (m *PatchTarget) XXX_Size() int {
+	return m.Size()
+}
+func (m *PatchTarget) XXX_DiscardUnknown() {
+	xxx_messageInfo_PatchTarget.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PatchTarget proto.InternalMessageInfo
+
+func (m *PatchTarget) GetAPIGroup() string {
+	if m != nil {
+		return m.APIGroup
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetAPIVersion() string {
+	if m != nil {
+		return m.APIVersion
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetKind() string {
+	if m != nil {
+		return m.Kind
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetLabelSelector() string {
+	if m != nil {
+		return m.LabelSelector
+	}
+	return ""
+}
+
+func (m *PatchTarget) GetAnnotationSelector() string {
+	if m != nil {
+		return m.AnnotationSelector
+	}
+	return ""
+}
+
+type PrerenderedDeploy struct {
+	YAMLPaths []string     `protobuf:"bytes,1,rep,name=yaml_paths,json=yamlPaths,proto3" json:"yaml_paths,omitempty"`
+	Patches   []*PatchSpec `protobuf:"bytes,2,rep,name=patches,proto3" json:"patches,omitempty"`
+}
+
+func (m *PrerenderedDeploy) Reset()      { *m = PrerenderedDeploy{} }
+func (*PrerenderedDeploy) ProtoMessage() {}
+func (*PrerenderedDeploy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{8}
+}
+func (m *PrerenderedDeploy) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PrerenderedDeploy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PrerenderedDeploy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PrerenderedDeploy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PrerenderedDeploy.Merge(m, src)
+}
+func (m *PrerenderedDeploy) XXX_Size() int {
+	return m.Size()
+}
+func (m *PrerenderedDeploy) XXX_DiscardUnknown() {
+	xxx_messageInfo_PrerenderedDeploy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PrerenderedDeploy proto.InternalMessageInfo
+
+func (m *PrerenderedDeploy) GetYAMLPaths() []string {
+	if m != nil {
+		return m.YAMLPaths
+	}
+	return nil
+}
+
+func (m *PrerenderedDeploy) GetPatches() []*PatchSpec {
+	if m != nil {
+		return m.Patches
+	}
+	return nil
+}
+
+type SkaffoldDeploy struct {
+	SkaffoldPath string       `protobuf:"bytes,1,opt,name=skaffold_path,json=skaffoldPath,proto3" json:"skaffold_path,omitempty"`
+	SkaffoldArgs []string     `protobuf:"bytes,2,rep,name=skaffold_args,json=skaffoldArgs,proto3" json:"skaffold_args,omitempty"`
+	Patches      []*PatchSpec `protobuf:"bytes,3,rep,name=patches,proto3" json:"patches,omitempty"`
+}
+
+func (m *SkaffoldDeploy) Reset()      { *m = SkaffoldDeploy{} }
+func (*SkaffoldDeploy) ProtoMessage() {}
+func (*SkaffoldDeploy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{9}
+}
+func (m *SkaffoldDeploy) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SkaffoldDeploy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SkaffoldDeploy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SkaffoldDeploy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SkaffoldDeploy.Merge(m, src)
+}
+func (m *SkaffoldDeploy) XXX_Size() int {
+	return m.Size()
+}
+func (m *SkaffoldDeploy) XXX_DiscardUnknown() {
+	xxx_messageInfo_SkaffoldDeploy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SkaffoldDeploy proto.InternalMessageInfo
+
+func (m *SkaffoldDeploy) GetSkaffoldPath() string {
+	if m != nil {
+		return m.SkaffoldPath
+	}
+	return ""
+}
+
+func (m *SkaffoldDeploy) GetSkaffoldArgs() []string {
+	if m != nil {
+		return m.SkaffoldArgs
+	}
+	return nil
+}
+
+func (m *SkaffoldDeploy) GetPatches() []*PatchSpec {
+	if m != nil {
+		return m.Patches
+	}
+	return nil
+}
+
+type PxCLIDeploy struct {
+	Args         []string `protobuf:"bytes,1,rep,name=args,proto3" json:"args,omitempty"`
+	Namespaces   []string `protobuf:"bytes,2,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	SetClusterID bool     `protobuf:"varint,3,opt,name=set_cluster_id,json=setClusterId,proto3" json:"set_cluster_id,omitempty"`
+}
+
+func (m *PxCLIDeploy) Reset()      { *m = PxCLIDeploy{} }
+func (*PxCLIDeploy) ProtoMessage() {}
+func (*PxCLIDeploy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{10}
+}
+func (m *PxCLIDeploy) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PxCLIDeploy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PxCLIDeploy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PxCLIDeploy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PxCLIDeploy.Merge(m, src)
+}
+func (m *PxCLIDeploy) XXX_Size() int {
+	return m.Size()
+}
+func (m *PxCLIDeploy) XXX_DiscardUnknown() {
+	xxx_messageInfo_PxCLIDeploy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PxCLIDeploy proto.InternalMessageInfo
+
+func (m *PxCLIDeploy) GetArgs() []string {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
+
+func (m *PxCLIDeploy) GetNamespaces() []string {
+	if m != nil {
+		return m.Namespaces
+	}
+	return nil
+}
+
+func (m *PxCLIDeploy) GetSetClusterID() bool {
+	if m != nil {
+		return m.SetClusterID
+	}
+	return false
+}
+
 type MetricSpec struct {
+	// Types that are valid to be assigned to MetricType:
+	//
+	//	*MetricSpec_PxL
+	MetricType isMetricSpec_MetricType `protobuf_oneof:"metric_type"`
 }
 
 func (m *MetricSpec) Reset()      { *m = MetricSpec{} }
 func (*MetricSpec) ProtoMessage() {}
 func (*MetricSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_96d7e52dda1e6fe3, []int{3}
+	return fileDescriptor_96d7e52dda1e6fe3, []int{11}
 }
 func (m *MetricSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -205,13 +806,387 @@ func (m *MetricSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MetricSpec proto.InternalMessageInfo
 
+type isMetricSpec_MetricType interface {
+	isMetricSpec_MetricType()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type MetricSpec_PxL struct {
+	PxL *PxLScriptSpec `protobuf:"bytes,1,opt,name=pxl,proto3,oneof" json:"pxl,omitempty"`
+}
+
+func (*MetricSpec_PxL) isMetricSpec_MetricType() {}
+
+func (m *MetricSpec) GetMetricType() isMetricSpec_MetricType {
+	if m != nil {
+		return m.MetricType
+	}
+	return nil
+}
+
+func (m *MetricSpec) GetPxL() *PxLScriptSpec {
+	if x, ok := m.GetMetricType().(*MetricSpec_PxL); ok {
+		return x.PxL
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*MetricSpec) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*MetricSpec_PxL)(nil),
+	}
+}
+
+type PxLScriptSpec struct {
+	Script           string                          `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+	Streaming        bool                            `protobuf:"varint,2,opt,name=streaming,proto3" json:"streaming,omitempty"`
+	CollectionPeriod *types.Duration                 `protobuf:"bytes,3,opt,name=collection_period,json=collectionPeriod,proto3" json:"collection_period,omitempty"`
+	TemplateValues   map[string]string               `protobuf:"bytes,4,rep,name=template_values,json=templateValues,proto3" json:"template_values,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TableOutputs     map[string]*PxLScriptOutputList `protobuf:"bytes,5,rep,name=table_outputs,json=tableOutputs,proto3" json:"table_outputs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *PxLScriptSpec) Reset()      { *m = PxLScriptSpec{} }
+func (*PxLScriptSpec) ProtoMessage() {}
+func (*PxLScriptSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{12}
+}
+func (m *PxLScriptSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PxLScriptSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PxLScriptSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PxLScriptSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PxLScriptSpec.Merge(m, src)
+}
+func (m *PxLScriptSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *PxLScriptSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_PxLScriptSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PxLScriptSpec proto.InternalMessageInfo
+
+func (m *PxLScriptSpec) GetScript() string {
+	if m != nil {
+		return m.Script
+	}
+	return ""
+}
+
+func (m *PxLScriptSpec) GetStreaming() bool {
+	if m != nil {
+		return m.Streaming
+	}
+	return false
+}
+
+func (m *PxLScriptSpec) GetCollectionPeriod() *types.Duration {
+	if m != nil {
+		return m.CollectionPeriod
+	}
+	return nil
+}
+
+func (m *PxLScriptSpec) GetTemplateValues() map[string]string {
+	if m != nil {
+		return m.TemplateValues
+	}
+	return nil
+}
+
+func (m *PxLScriptSpec) GetTableOutputs() map[string]*PxLScriptOutputList {
+	if m != nil {
+		return m.TableOutputs
+	}
+	return nil
+}
+
+type PxLScriptOutputList struct {
+	Outputs []*PxLScriptOutputSpec `protobuf:"bytes,1,rep,name=outputs,proto3" json:"outputs,omitempty"`
+}
+
+func (m *PxLScriptOutputList) Reset()      { *m = PxLScriptOutputList{} }
+func (*PxLScriptOutputList) ProtoMessage() {}
+func (*PxLScriptOutputList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{13}
+}
+func (m *PxLScriptOutputList) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PxLScriptOutputList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PxLScriptOutputList.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PxLScriptOutputList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PxLScriptOutputList.Merge(m, src)
+}
+func (m *PxLScriptOutputList) XXX_Size() int {
+	return m.Size()
+}
+func (m *PxLScriptOutputList) XXX_DiscardUnknown() {
+	xxx_messageInfo_PxLScriptOutputList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PxLScriptOutputList proto.InternalMessageInfo
+
+func (m *PxLScriptOutputList) GetOutputs() []*PxLScriptOutputSpec {
+	if m != nil {
+		return m.Outputs
+	}
+	return nil
+}
+
+type PxLScriptOutputSpec struct {
+	// Types that are valid to be assigned to OutputSpec:
+	//
+	//	*PxLScriptOutputSpec_SingleMetric
+	//	*PxLScriptOutputSpec_DataLossCounter
+	OutputSpec isPxLScriptOutputSpec_OutputSpec `protobuf_oneof:"output_spec"`
+}
+
+func (m *PxLScriptOutputSpec) Reset()      { *m = PxLScriptOutputSpec{} }
+func (*PxLScriptOutputSpec) ProtoMessage() {}
+func (*PxLScriptOutputSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{14}
+}
+func (m *PxLScriptOutputSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PxLScriptOutputSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PxLScriptOutputSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PxLScriptOutputSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PxLScriptOutputSpec.Merge(m, src)
+}
+func (m *PxLScriptOutputSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *PxLScriptOutputSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_PxLScriptOutputSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PxLScriptOutputSpec proto.InternalMessageInfo
+
+type isPxLScriptOutputSpec_OutputSpec interface {
+	isPxLScriptOutputSpec_OutputSpec()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type PxLScriptOutputSpec_SingleMetric struct {
+	SingleMetric *SingleMetricPxLOutput `protobuf:"bytes,1,opt,name=single_metric,json=singleMetric,proto3,oneof" json:"single_metric,omitempty"`
+}
+type PxLScriptOutputSpec_DataLossCounter struct {
+	DataLossCounter *DataLossCounterOutput `protobuf:"bytes,2,opt,name=data_loss_counter,json=dataLossCounter,proto3,oneof" json:"data_loss_counter,omitempty"`
+}
+
+func (*PxLScriptOutputSpec_SingleMetric) isPxLScriptOutputSpec_OutputSpec()    {}
+func (*PxLScriptOutputSpec_DataLossCounter) isPxLScriptOutputSpec_OutputSpec() {}
+
+func (m *PxLScriptOutputSpec) GetOutputSpec() isPxLScriptOutputSpec_OutputSpec {
+	if m != nil {
+		return m.OutputSpec
+	}
+	return nil
+}
+
+func (m *PxLScriptOutputSpec) GetSingleMetric() *SingleMetricPxLOutput {
+	if x, ok := m.GetOutputSpec().(*PxLScriptOutputSpec_SingleMetric); ok {
+		return x.SingleMetric
+	}
+	return nil
+}
+
+func (m *PxLScriptOutputSpec) GetDataLossCounter() *DataLossCounterOutput {
+	if x, ok := m.GetOutputSpec().(*PxLScriptOutputSpec_DataLossCounter); ok {
+		return x.DataLossCounter
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*PxLScriptOutputSpec) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*PxLScriptOutputSpec_SingleMetric)(nil),
+		(*PxLScriptOutputSpec_DataLossCounter)(nil),
+	}
+}
+
+type SingleMetricPxLOutput struct {
+	TimestampCol string   `protobuf:"bytes,1,opt,name=timestamp_col,json=timestampCol,proto3" json:"timestamp_col,omitempty"`
+	MetricName   string   `protobuf:"bytes,2,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
+	ValueCol     string   `protobuf:"bytes,3,opt,name=value_col,json=valueCol,proto3" json:"value_col,omitempty"`
+	TagCols      []string `protobuf:"bytes,4,rep,name=tag_cols,json=tagCols,proto3" json:"tag_cols,omitempty"`
+}
+
+func (m *SingleMetricPxLOutput) Reset()      { *m = SingleMetricPxLOutput{} }
+func (*SingleMetricPxLOutput) ProtoMessage() {}
+func (*SingleMetricPxLOutput) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{15}
+}
+func (m *SingleMetricPxLOutput) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SingleMetricPxLOutput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SingleMetricPxLOutput.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SingleMetricPxLOutput) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SingleMetricPxLOutput.Merge(m, src)
+}
+func (m *SingleMetricPxLOutput) XXX_Size() int {
+	return m.Size()
+}
+func (m *SingleMetricPxLOutput) XXX_DiscardUnknown() {
+	xxx_messageInfo_SingleMetricPxLOutput.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SingleMetricPxLOutput proto.InternalMessageInfo
+
+func (m *SingleMetricPxLOutput) GetTimestampCol() string {
+	if m != nil {
+		return m.TimestampCol
+	}
+	return ""
+}
+
+func (m *SingleMetricPxLOutput) GetMetricName() string {
+	if m != nil {
+		return m.MetricName
+	}
+	return ""
+}
+
+func (m *SingleMetricPxLOutput) GetValueCol() string {
+	if m != nil {
+		return m.ValueCol
+	}
+	return ""
+}
+
+func (m *SingleMetricPxLOutput) GetTagCols() []string {
+	if m != nil {
+		return m.TagCols
+	}
+	return nil
+}
+
+type DataLossCounterOutput struct {
+	TimestampCol string          `protobuf:"bytes,1,opt,name=timestamp_col,json=timestampCol,proto3" json:"timestamp_col,omitempty"`
+	MetricName   string          `protobuf:"bytes,2,opt,name=metric_name,json=metricName,proto3" json:"metric_name,omitempty"`
+	SeqIDCol     string          `protobuf:"bytes,3,opt,name=seq_id_col,json=seqIdCol,proto3" json:"seq_id_col,omitempty"`
+	OutputPeriod *types.Duration `protobuf:"bytes,4,opt,name=output_period,json=outputPeriod,proto3" json:"output_period,omitempty"`
+}
+
+func (m *DataLossCounterOutput) Reset()      { *m = DataLossCounterOutput{} }
+func (*DataLossCounterOutput) ProtoMessage() {}
+func (*DataLossCounterOutput) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{16}
+}
+func (m *DataLossCounterOutput) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DataLossCounterOutput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DataLossCounterOutput.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DataLossCounterOutput) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DataLossCounterOutput.Merge(m, src)
+}
+func (m *DataLossCounterOutput) XXX_Size() int {
+	return m.Size()
+}
+func (m *DataLossCounterOutput) XXX_DiscardUnknown() {
+	xxx_messageInfo_DataLossCounterOutput.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DataLossCounterOutput proto.InternalMessageInfo
+
+func (m *DataLossCounterOutput) GetTimestampCol() string {
+	if m != nil {
+		return m.TimestampCol
+	}
+	return ""
+}
+
+func (m *DataLossCounterOutput) GetMetricName() string {
+	if m != nil {
+		return m.MetricName
+	}
+	return ""
+}
+
+func (m *DataLossCounterOutput) GetSeqIDCol() string {
+	if m != nil {
+		return m.SeqIDCol
+	}
+	return ""
+}
+
+func (m *DataLossCounterOutput) GetOutputPeriod() *types.Duration {
+	if m != nil {
+		return m.OutputPeriod
+	}
+	return nil
+}
+
 type ClusterSpec struct {
+	NumNodes int32     `protobuf:"varint,1,opt,name=num_nodes,json=numNodes,proto3" json:"num_nodes,omitempty"`
+	Node     *NodeSpec `protobuf:"bytes,2,opt,name=node,proto3" json:"node,omitempty"`
 }
 
 func (m *ClusterSpec) Reset()      { *m = ClusterSpec{} }
 func (*ClusterSpec) ProtoMessage() {}
 func (*ClusterSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_96d7e52dda1e6fe3, []int{4}
+	return fileDescriptor_96d7e52dda1e6fe3, []int{17}
 }
 func (m *ClusterSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -240,20 +1215,35 @@ func (m *ClusterSpec) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ClusterSpec proto.InternalMessageInfo
 
-type Empty struct {
+func (m *ClusterSpec) GetNumNodes() int32 {
+	if m != nil {
+		return m.NumNodes
+	}
+	return 0
 }
 
-func (m *Empty) Reset()      { *m = Empty{} }
-func (*Empty) ProtoMessage() {}
-func (*Empty) Descriptor() ([]byte, []int) {
-	return fileDescriptor_96d7e52dda1e6fe3, []int{5}
+func (m *ClusterSpec) GetNode() *NodeSpec {
+	if m != nil {
+		return m.Node
+	}
+	return nil
 }
-func (m *Empty) XXX_Unmarshal(b []byte) error {
+
+type NodeSpec struct {
+	MachineType string `protobuf:"bytes,1,opt,name=machine_type,json=machineType,proto3" json:"machine_type,omitempty"`
+}
+
+func (m *NodeSpec) Reset()      { *m = NodeSpec{} }
+func (*NodeSpec) ProtoMessage() {}
+func (*NodeSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{18}
+}
+func (m *NodeSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *NodeSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Empty.Marshal(b, m, deterministic)
+		return xxx_messageInfo_NodeSpec.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -263,25 +1253,99 @@ func (m *Empty) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *Empty) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Empty.Merge(m, src)
+func (m *NodeSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NodeSpec.Merge(m, src)
 }
-func (m *Empty) XXX_Size() int {
+func (m *NodeSpec) XXX_Size() int {
 	return m.Size()
 }
-func (m *Empty) XXX_DiscardUnknown() {
-	xxx_messageInfo_Empty.DiscardUnknown(m)
+func (m *NodeSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_NodeSpec.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Empty proto.InternalMessageInfo
+var xxx_messageInfo_NodeSpec proto.InternalMessageInfo
+
+func (m *NodeSpec) GetMachineType() string {
+	if m != nil {
+		return m.MachineType
+	}
+	return ""
+}
+
+type RunSpec struct {
+	Duration            *types.Duration `protobuf:"bytes,1,opt,name=duration,proto3" json:"duration,omitempty"`
+	PreWorkloadDuration *types.Duration `protobuf:"bytes,2,opt,name=pre_workload_duration,json=preWorkloadDuration,proto3" json:"pre_workload_duration,omitempty"`
+}
+
+func (m *RunSpec) Reset()      { *m = RunSpec{} }
+func (*RunSpec) ProtoMessage() {}
+func (*RunSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_96d7e52dda1e6fe3, []int{19}
+}
+func (m *RunSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RunSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RunSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RunSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RunSpec.Merge(m, src)
+}
+func (m *RunSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *RunSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_RunSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RunSpec proto.InternalMessageInfo
+
+func (m *RunSpec) GetDuration() *types.Duration {
+	if m != nil {
+		return m.Duration
+	}
+	return nil
+}
+
+func (m *RunSpec) GetPreWorkloadDuration() *types.Duration {
+	if m != nil {
+		return m.PreWorkloadDuration
+	}
+	return nil
+}
 
 func init() {
 	proto.RegisterType((*ExperimentSpec)(nil), "px.perf_tool.ExperimentSpec")
-	proto.RegisterType((*VersionSpec)(nil), "px.perf_tool.VersionSpec")
 	proto.RegisterType((*WorkloadSpec)(nil), "px.perf_tool.WorkloadSpec")
+	proto.RegisterType((*DeployStep)(nil), "px.perf_tool.DeployStep")
+	proto.RegisterType((*HealthCheck)(nil), "px.perf_tool.HealthCheck")
+	proto.RegisterType((*K8SPodsReadyCheck)(nil), "px.perf_tool.K8SPodsReadyCheck")
+	proto.RegisterType((*PxLHealthCheck)(nil), "px.perf_tool.PxLHealthCheck")
+	proto.RegisterType((*PatchSpec)(nil), "px.perf_tool.PatchSpec")
+	proto.RegisterType((*PatchTarget)(nil), "px.perf_tool.PatchTarget")
+	proto.RegisterType((*PrerenderedDeploy)(nil), "px.perf_tool.PrerenderedDeploy")
+	proto.RegisterType((*SkaffoldDeploy)(nil), "px.perf_tool.SkaffoldDeploy")
+	proto.RegisterType((*PxCLIDeploy)(nil), "px.perf_tool.PxCLIDeploy")
 	proto.RegisterType((*MetricSpec)(nil), "px.perf_tool.MetricSpec")
+	proto.RegisterType((*PxLScriptSpec)(nil), "px.perf_tool.PxLScriptSpec")
+	proto.RegisterMapType((map[string]*PxLScriptOutputList)(nil), "px.perf_tool.PxLScriptSpec.TableOutputsEntry")
+	proto.RegisterMapType((map[string]string)(nil), "px.perf_tool.PxLScriptSpec.TemplateValuesEntry")
+	proto.RegisterType((*PxLScriptOutputList)(nil), "px.perf_tool.PxLScriptOutputList")
+	proto.RegisterType((*PxLScriptOutputSpec)(nil), "px.perf_tool.PxLScriptOutputSpec")
+	proto.RegisterType((*SingleMetricPxLOutput)(nil), "px.perf_tool.SingleMetricPxLOutput")
+	proto.RegisterType((*DataLossCounterOutput)(nil), "px.perf_tool.DataLossCounterOutput")
 	proto.RegisterType((*ClusterSpec)(nil), "px.perf_tool.ClusterSpec")
-	proto.RegisterType((*Empty)(nil), "px.perf_tool.Empty")
+	proto.RegisterType((*NodeSpec)(nil), "px.perf_tool.NodeSpec")
+	proto.RegisterType((*RunSpec)(nil), "px.perf_tool.RunSpec")
 }
 
 func init() {
@@ -289,29 +1353,101 @@ func init() {
 }
 
 var fileDescriptor_96d7e52dda1e6fe3 = []byte{
-	// 348 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x3f, 0x4f, 0x02, 0x31,
-	0x18, 0xc6, 0xaf, 0x20, 0x9a, 0xf4, 0x0e, 0x86, 0x9b, 0x90, 0xe1, 0x0d, 0xb9, 0xc9, 0xc5, 0xbb,
-	0x04, 0xdd, 0x70, 0x11, 0xc3, 0xe8, 0xa2, 0x89, 0x26, 0x2e, 0xc4, 0xab, 0x05, 0x2f, 0x72, 0xb4,
-	0x69, 0xcb, 0x1f, 0x9d, 0xfc, 0x08, 0x7e, 0x0c, 0x3f, 0x8a, 0x6e, 0x8c, 0x8c, 0x52, 0x16, 0x47,
-	0x3e, 0x82, 0xa1, 0x45, 0x28, 0x89, 0x89, 0xdb, 0xfb, 0xa4, 0xcf, 0xef, 0x79, 0xdf, 0xb7, 0x2d,
-	0x3e, 0x95, 0x82, 0x24, 0xb4, 0x41, 0x3b, 0x8a, 0x4a, 0x95, 0x70, 0x2a, 0xba, 0x1d, 0xc5, 0x58,
-	0x3f, 0xa1, 0x13, 0x4e, 0x45, 0x96, 0xd3, 0x81, 0xe2, 0xa9, 0x23, 0x62, 0x2e, 0x98, 0x62, 0x61,
-	0xc0, 0x27, 0xf1, 0xc6, 0x5b, 0x3b, 0xee, 0x65, 0xea, 0x71, 0x98, 0xc6, 0x84, 0xe5, 0x49, 0x8f,
-	0xf5, 0x58, 0x62, 0x4c, 0xe9, 0xb0, 0x6b, 0x94, 0x11, 0xa6, 0xb2, 0x70, 0xf4, 0x59, 0xc0, 0x95,
-	0xf6, 0x26, 0xf1, 0x9a, 0x53, 0x12, 0x9e, 0xe1, 0x60, 0x44, 0x85, 0xcc, 0xd8, 0xa0, 0x23, 0x39,
-	0x25, 0x55, 0x54, 0x47, 0x47, 0x7e, 0xe3, 0x30, 0x76, 0xdb, 0xc4, 0x37, 0xd6, 0xb1, 0x02, 0xae,
-	0xfc, 0xd1, 0x56, 0x84, 0x4d, 0xec, 0x8f, 0xb2, 0x97, 0x8c, 0x0a, 0x0b, 0x17, 0x0c, 0x5c, 0xdb,
-	0x85, 0x6f, 0x99, 0x78, 0xea, 0xb3, 0xfb, 0x07, 0x43, 0x63, 0x6b, 0x37, 0xf0, 0x39, 0xae, 0x8c,
-	0xd7, 0x67, 0x06, 0x97, 0xd5, 0x62, 0xbd, 0xf8, 0x0f, 0x5f, 0x1e, 0x3b, 0x4a, 0x86, 0x4d, 0x1c,
-	0xe4, 0x54, 0x89, 0x8c, 0xac, 0x03, 0xf6, 0x4c, 0x40, 0x75, 0x37, 0xe0, 0xd2, 0x38, 0xec, 0xf0,
-	0xf9, 0xa6, 0x96, 0xab, 0xd5, 0x49, 0x7f, 0x28, 0xd5, 0xef, 0xf4, 0xa5, 0xbf, 0x56, 0xbf, 0xb0,
-	0x0e, 0x4b, 0x93, 0xad, 0x88, 0xca, 0xd8, 0x77, 0xae, 0x25, 0xaa, 0xe0, 0xc0, 0x1d, 0x34, 0x0a,
-	0x30, 0xde, 0xf6, 0x5d, 0x99, 0x9d, 0xa0, 0xe8, 0x00, 0x97, 0xda, 0x39, 0x57, 0xcf, 0xad, 0xd6,
-	0x74, 0x0e, 0xde, 0x6c, 0x0e, 0xde, 0x72, 0x0e, 0xe8, 0x55, 0x03, 0x7a, 0xd7, 0x80, 0x3e, 0x34,
-	0xa0, 0xa9, 0x06, 0xf4, 0xa5, 0x01, 0x7d, 0x6b, 0xf0, 0x96, 0x1a, 0xd0, 0xdb, 0x02, 0xbc, 0xe9,
-	0x02, 0xbc, 0xd9, 0x02, 0xbc, 0xbb, 0xc0, 0xfd, 0x22, 0xe9, 0xbe, 0x79, 0xdb, 0x93, 0x9f, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x8d, 0xf9, 0x3b, 0x40, 0x50, 0x02, 0x00, 0x00,
+	// 1504 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x57, 0x4b, 0x73, 0x13, 0xc7,
+	0x16, 0xd6, 0x48, 0xb2, 0x25, 0x1d, 0x3d, 0xc0, 0xed, 0x6b, 0xae, 0x30, 0x2e, 0xc9, 0x88, 0xba,
+	0x55, 0x5c, 0xee, 0x45, 0xba, 0x70, 0xf3, 0x70, 0x80, 0xa4, 0xca, 0x92, 0x49, 0xec, 0x60, 0x40,
+	0x19, 0x11, 0xf2, 0xa8, 0x54, 0x4d, 0xb5, 0x67, 0xda, 0xd2, 0x94, 0xe7, 0xc5, 0x74, 0x0b, 0xe4,
+	0xac, 0xb2, 0xcb, 0x2a, 0x95, 0x2c, 0x92, 0x6d, 0xd6, 0xf9, 0x1f, 0xd9, 0x24, 0x3b, 0x96, 0xac,
+	0x5c, 0x41, 0x6c, 0xb2, 0xe4, 0x1f, 0x24, 0xd5, 0x8f, 0x19, 0xcd, 0xd8, 0xc2, 0x64, 0x91, 0x5d,
+	0xf7, 0xe9, 0xef, 0xfb, 0x4e, 0xf7, 0xe9, 0x73, 0x4e, 0xcf, 0xc0, 0x1b, 0x34, 0x34, 0x3b, 0xe4,
+	0x3a, 0x31, 0x18, 0xa1, 0xac, 0x13, 0x90, 0x70, 0xdf, 0x60, 0xbe, 0xef, 0x74, 0xc8, 0x24, 0x20,
+	0xa1, 0xed, 0x12, 0x8f, 0x05, 0x7b, 0x89, 0x49, 0x3b, 0x08, 0x7d, 0xe6, 0xa3, 0x4a, 0x30, 0x69,
+	0xc7, 0xd8, 0xd5, 0xc6, 0xd0, 0xf7, 0x87, 0x0e, 0xe9, 0x88, 0xb5, 0xbd, 0xf1, 0x7e, 0xc7, 0x1a,
+	0x87, 0x98, 0xd9, 0xbe, 0x27, 0xd1, 0xab, 0x57, 0x87, 0x36, 0x1b, 0x8d, 0xf7, 0xda, 0xa6, 0xef,
+	0x76, 0x86, 0xfe, 0xd0, 0x9f, 0x01, 0xf9, 0x4c, 0x4c, 0xc4, 0x48, 0xc2, 0x5b, 0x7f, 0x64, 0xa1,
+	0x76, 0x3b, 0xf6, 0x38, 0x08, 0x88, 0x89, 0x6e, 0x42, 0xf9, 0xb1, 0xfd, 0xa5, 0x4d, 0x42, 0x83,
+	0x06, 0xc4, 0xac, 0x6b, 0xeb, 0xda, 0xe5, 0xf2, 0xf5, 0xd5, 0x76, 0x72, 0x17, 0xed, 0x4f, 0xfc,
+	0xf0, 0xc0, 0xf1, 0xb1, 0xc5, 0x09, 0x3a, 0x48, 0xb8, 0x20, 0x6f, 0x42, 0xed, 0x89, 0x5a, 0x13,
+	0x74, 0x5a, 0xcf, 0xae, 0xe7, 0x5e, 0xc3, 0xaf, 0x3e, 0x49, 0xcc, 0x28, 0xba, 0x09, 0x15, 0x97,
+	0xb0, 0xd0, 0x36, 0x95, 0x40, 0x4e, 0x08, 0xd4, 0xd3, 0x02, 0x77, 0x05, 0x42, 0xd0, 0xcb, 0x6e,
+	0x3c, 0xa6, 0xe8, 0x16, 0x54, 0x4c, 0x67, 0x4c, 0x59, 0xb4, 0xfb, 0xbc, 0xd8, 0xfd, 0xf9, 0x34,
+	0xb9, 0x27, 0x11, 0x92, 0x6d, 0xce, 0x26, 0xe8, 0x7f, 0x50, 0x0c, 0xc7, 0x9e, 0x64, 0x2e, 0x08,
+	0xe6, 0x4a, 0x9a, 0xa9, 0x8f, 0x3d, 0xc1, 0x2a, 0x84, 0x72, 0x80, 0xfe, 0x0b, 0x60, 0xfa, 0xae,
+	0x6b, 0x33, 0x83, 0x8e, 0x70, 0x7d, 0x71, 0x5d, 0xbb, 0x5c, 0xea, 0x56, 0xa7, 0x47, 0xcd, 0x52,
+	0x4f, 0x58, 0x07, 0xdb, 0x9b, 0x7a, 0x49, 0x02, 0x06, 0x23, 0x8c, 0x10, 0xe4, 0x19, 0x1e, 0xd2,
+	0x7a, 0x61, 0x3d, 0x77, 0xb9, 0xa4, 0x8b, 0x71, 0xeb, 0x47, 0x0d, 0x2a, 0xc9, 0x70, 0x70, 0x90,
+	0x87, 0x5d, 0x22, 0x02, 0x5f, 0xd2, 0xc5, 0x98, 0xc7, 0xc4, 0x22, 0x81, 0xe3, 0x1f, 0x1a, 0x94,
+	0x91, 0x20, 0x0a, 0xea, 0xb1, 0x98, 0x6c, 0x09, 0xc4, 0x80, 0x91, 0x40, 0x2f, 0x5b, 0xf1, 0x98,
+	0xa2, 0x77, 0xa1, 0x32, 0x22, 0xd8, 0x61, 0x23, 0x73, 0x44, 0xcc, 0x83, 0x28, 0xa0, 0xc7, 0x62,
+	0xb2, 0x2d, 0x10, 0x3d, 0x8e, 0xd0, 0x53, 0xf0, 0xd6, 0xaf, 0x1a, 0xc0, 0x4c, 0x1a, 0xf5, 0xa0,
+	0x1c, 0x84, 0x24, 0x24, 0x9e, 0x45, 0x42, 0x62, 0xa9, 0xf4, 0x68, 0xa6, 0xc5, 0xfa, 0x33, 0x80,
+	0x64, 0x6e, 0x67, 0xf4, 0x24, 0x0b, 0xdd, 0x80, 0x22, 0x3d, 0xc0, 0xfb, 0xfb, 0xbe, 0x63, 0xd5,
+	0xb3, 0x42, 0x61, 0x2d, 0xad, 0x30, 0x50, 0xab, 0x31, 0x3d, 0xc6, 0xa3, 0xff, 0x40, 0x36, 0x98,
+	0xd4, 0x73, 0xf3, 0x2e, 0xb6, 0x3f, 0xe9, 0xed, 0xee, 0xc4, 0x94, 0x6c, 0x30, 0xe9, 0x56, 0x41,
+	0x85, 0xc2, 0x60, 0x87, 0x01, 0x69, 0x7d, 0xaf, 0x41, 0x39, 0x71, 0x52, 0x74, 0x0b, 0x72, 0x07,
+	0x1b, 0x74, 0xfe, 0x21, 0xee, 0x6c, 0x0c, 0xfa, 0xbe, 0x45, 0x75, 0x82, 0xad, 0x43, 0x81, 0xee,
+	0x16, 0xa6, 0x47, 0xcd, 0xdc, 0x9d, 0x8d, 0xc1, 0x76, 0x46, 0xe7, 0x34, 0xf4, 0x0e, 0xe4, 0x82,
+	0x89, 0x33, 0xff, 0x00, 0xfd, 0xc9, 0x6e, 0xc2, 0x91, 0xa4, 0x72, 0x5b, 0x46, 0xe7, 0x9c, 0x6e,
+	0x05, 0x40, 0x84, 0x57, 0x6e, 0xeb, 0x1a, 0x2c, 0x9d, 0xf0, 0x86, 0xd6, 0xa0, 0xc4, 0xef, 0x9e,
+	0x06, 0xd8, 0x8c, 0x92, 0x61, 0x66, 0x68, 0xdd, 0x87, 0x5a, 0xda, 0x05, 0x3a, 0x07, 0x8b, 0xd4,
+	0x0c, 0xed, 0x80, 0x29, 0xb0, 0x9a, 0xa1, 0x7f, 0x41, 0x8d, 0x8e, 0x4d, 0x93, 0x50, 0x6a, 0x98,
+	0xbe, 0x33, 0x76, 0x3d, 0xb1, 0xe1, 0x92, 0x5e, 0x55, 0xd6, 0x9e, 0x30, 0xb6, 0xbe, 0x80, 0x52,
+	0x1f, 0x33, 0x73, 0x24, 0x72, 0x70, 0x0d, 0xf2, 0x87, 0xd8, 0x75, 0xa4, 0x52, 0xb7, 0x38, 0x3d,
+	0x6a, 0xe6, 0x3f, 0xdb, 0xbc, 0xbb, 0xab, 0x0b, 0x2b, 0xba, 0x06, 0x8b, 0x0c, 0x87, 0x43, 0xc2,
+	0xd4, 0xd1, 0x8f, 0xdf, 0x02, 0x97, 0x79, 0x20, 0x00, 0xba, 0x02, 0xb6, 0xbe, 0xce, 0x42, 0x39,
+	0x61, 0x47, 0xff, 0x86, 0x12, 0x0e, 0x6c, 0x63, 0x18, 0xfa, 0xe3, 0x40, 0x79, 0xa9, 0x4c, 0x8f,
+	0x9a, 0xc5, 0xcd, 0xfe, 0xce, 0x07, 0xdc, 0xa6, 0x17, 0x71, 0x60, 0x8b, 0x11, 0xea, 0x40, 0x99,
+	0x43, 0x1f, 0x93, 0x90, 0xda, 0xbe, 0xda, 0x7c, 0xb7, 0x36, 0x3d, 0x6a, 0xc2, 0x66, 0x7f, 0xe7,
+	0xa1, 0xb4, 0xea, 0x80, 0x03, 0x5b, 0x8d, 0x79, 0x01, 0x1d, 0xd8, 0x9e, 0x25, 0x52, 0xa4, 0xa4,
+	0x8b, 0x71, 0x5c, 0x54, 0xf9, 0x44, 0x51, 0xa5, 0x02, 0xbc, 0x70, 0x2c, 0xc0, 0x3c, 0x6c, 0x0e,
+	0xde, 0x23, 0x8e, 0x41, 0x89, 0x43, 0x4c, 0xe6, 0x87, 0xb2, 0xba, 0xf5, 0xaa, 0xb0, 0x0e, 0x94,
+	0x11, 0x75, 0x60, 0x19, 0x7b, 0x9e, 0xcf, 0x44, 0x0f, 0x9e, 0x61, 0x0b, 0x02, 0x8b, 0x66, 0x4b,
+	0x11, 0xa1, 0xc5, 0x60, 0xe9, 0x44, 0x79, 0xf0, 0x36, 0xc2, 0x23, 0x6b, 0x04, 0x98, 0x8d, 0x78,
+	0x3a, 0xe6, 0xa2, 0x36, 0xc2, 0xa3, 0xde, 0xe7, 0x46, 0xbd, 0xc4, 0x01, 0x62, 0x88, 0xae, 0x41,
+	0x21, 0xe0, 0xb1, 0x24, 0x51, 0x23, 0xf8, 0xe7, 0x9c, 0x0b, 0x90, 0x7d, 0x4a, 0xe1, 0x5a, 0xdf,
+	0x68, 0x50, 0x4b, 0xd7, 0x14, 0xba, 0x04, 0xd5, 0xa8, 0xa6, 0x84, 0x5f, 0x95, 0x36, 0x95, 0xc8,
+	0xc8, 0x7d, 0xa5, 0x40, 0x38, 0x1c, 0x4a, 0x87, 0x09, 0xd0, 0x66, 0x38, 0x4c, 0xed, 0x27, 0xf7,
+	0x17, 0xf7, 0x73, 0x08, 0xe5, 0x44, 0xb1, 0xf2, 0xeb, 0x11, 0xea, 0x9a, 0x6c, 0x8c, 0x7c, 0x8c,
+	0x1a, 0x00, 0xf1, 0x6d, 0x44, 0x7e, 0x13, 0x16, 0xf4, 0x16, 0xd4, 0x28, 0x61, 0x46, 0xd4, 0xee,
+	0x6d, 0x79, 0xe1, 0xc5, 0xee, 0xd9, 0xe9, 0x51, 0xb3, 0x32, 0x20, 0x4c, 0x75, 0xf9, 0x9d, 0x2d,
+	0xbd, 0x42, 0x67, 0x33, 0xab, 0xf5, 0x31, 0xc0, 0xec, 0xf5, 0x40, 0x1b, 0xb2, 0x86, 0x65, 0x07,
+	0xb8, 0x70, 0xa2, 0x86, 0x07, 0xa2, 0x86, 0x38, 0xf2, 0x44, 0x09, 0x57, 0x41, 0xbd, 0x3c, 0xb2,
+	0x86, 0xa7, 0x39, 0xa8, 0xa6, 0x08, 0xaf, 0x2c, 0xc8, 0x35, 0x28, 0x51, 0x16, 0x12, 0xec, 0xda,
+	0xde, 0x50, 0xa4, 0x73, 0x51, 0x9f, 0x19, 0xd0, 0xfb, 0xb0, 0x64, 0xfa, 0x0e, 0x4f, 0x16, 0x9e,
+	0x50, 0xfc, 0x65, 0xf6, 0xad, 0xb8, 0xdb, 0xc9, 0xc7, 0xbf, 0x1d, 0xbd, 0xe9, 0xed, 0x2d, 0xf5,
+	0xf8, 0xeb, 0x67, 0x67, 0x9c, 0xbe, 0xa0, 0xa0, 0x4f, 0xe1, 0x0c, 0x23, 0x6e, 0xe0, 0x60, 0x46,
+	0x8c, 0xc7, 0xd8, 0x19, 0x13, 0x5a, 0xcf, 0x8b, 0xcb, 0xe9, 0x9c, 0x72, 0xc8, 0xf6, 0x03, 0x45,
+	0x79, 0x28, 0x18, 0xb7, 0x3d, 0x16, 0x1e, 0xea, 0x35, 0x96, 0x32, 0x22, 0x1d, 0xaa, 0x0c, 0xef,
+	0x39, 0xc4, 0xf0, 0xc7, 0x2c, 0x18, 0x33, 0x5a, 0x5f, 0x10, 0xba, 0x57, 0x4f, 0xd5, 0xe5, 0x84,
+	0xfb, 0x12, 0x2f, 0x55, 0x2b, 0x2c, 0x61, 0x5a, 0xdd, 0x84, 0xe5, 0x39, 0xae, 0xd1, 0x59, 0xc8,
+	0x1d, 0x90, 0x43, 0x15, 0x3f, 0x3e, 0x44, 0xff, 0x80, 0x05, 0x71, 0x1a, 0xd5, 0xc4, 0xe4, 0xe4,
+	0x46, 0x76, 0x43, 0x5b, 0xdd, 0x83, 0xa5, 0x13, 0x5e, 0xe6, 0x08, 0xbc, 0x9d, 0x14, 0x28, 0x5f,
+	0xbf, 0xf8, 0x8a, 0x5d, 0x4b, 0x95, 0x5d, 0x9b, 0xb2, 0x84, 0x8f, 0x96, 0x0e, 0xcb, 0x73, 0x10,
+	0xe8, 0x26, 0x14, 0xa2, 0x58, 0x68, 0x22, 0x16, 0xa7, 0xab, 0xca, 0x52, 0x50, 0x8c, 0xd6, 0xcf,
+	0xda, 0x09, 0x51, 0x91, 0x3e, 0x1f, 0x42, 0x95, 0xda, 0xde, 0xd0, 0x21, 0x86, 0x4c, 0x33, 0x95,
+	0xa3, 0x97, 0x8e, 0x3d, 0x94, 0x02, 0x22, 0x13, 0xba, 0x3f, 0xd9, 0x95, 0xfc, 0xed, 0x8c, 0x5e,
+	0xa1, 0x89, 0x05, 0xf4, 0x11, 0x2c, 0x59, 0x98, 0x61, 0xc3, 0xf1, 0xc5, 0x2b, 0x30, 0xf6, 0x18,
+	0x09, 0x55, 0x00, 0x8e, 0xe9, 0x6d, 0x61, 0x86, 0x77, 0x7d, 0xfe, 0x2a, 0x08, 0x50, 0xac, 0x77,
+	0xc6, 0x4a, 0x2f, 0xf0, 0xf4, 0x97, 0x27, 0x10, 0x9f, 0x4b, 0xad, 0x1f, 0x34, 0x58, 0x99, 0xbb,
+	0x17, 0xde, 0x42, 0x98, 0xed, 0x12, 0xca, 0xb0, 0x1b, 0xf0, 0x17, 0x28, 0xea, 0x33, 0xb1, 0xb1,
+	0xe7, 0x3b, 0xa8, 0x19, 0x17, 0x93, 0x68, 0xd3, 0xf2, 0x72, 0x41, 0x9a, 0xee, 0xf1, 0x66, 0x7d,
+	0x01, 0x4a, 0xe2, 0x1a, 0x84, 0x82, 0xec, 0xec, 0x45, 0x61, 0xe0, 0xec, 0xf3, 0x50, 0x64, 0x78,
+	0xc8, 0x97, 0x64, 0x92, 0x97, 0xf4, 0x02, 0xc3, 0xc3, 0x9e, 0xef, 0x88, 0xaf, 0x97, 0x95, 0xb9,
+	0x67, 0xfa, 0x9b, 0xf6, 0x75, 0x05, 0x80, 0x92, 0x47, 0x86, 0x6d, 0xcd, 0x36, 0x26, 0x5f, 0xb2,
+	0x01, 0x79, 0xb4, 0xb3, 0xd5, 0xf3, 0x1d, 0xbd, 0x48, 0xc9, 0xa3, 0x1d, 0x8b, 0x8b, 0xbd, 0x07,
+	0x55, 0x15, 0x32, 0x55, 0xd6, 0xf9, 0xd7, 0x95, 0x75, 0x45, 0xe2, 0x65, 0x49, 0xb7, 0x1e, 0x42,
+	0x39, 0xf1, 0xe9, 0xca, 0x43, 0xe2, 0x8d, 0x5d, 0xc3, 0xf3, 0x2d, 0x22, 0x3f, 0x61, 0x16, 0xf4,
+	0xa2, 0x37, 0x76, 0xef, 0xf1, 0x39, 0xba, 0x02, 0x79, 0xbe, 0xa0, 0x2e, 0xf9, 0x5c, 0xfa, 0x92,
+	0x39, 0x44, 0x24, 0xa1, 0xc0, 0xb4, 0xae, 0x42, 0x31, 0xb2, 0xa0, 0x8b, 0x50, 0x71, 0xb1, 0x39,
+	0xb2, 0x3d, 0x22, 0xda, 0x9a, 0x0a, 0x4a, 0x59, 0xd9, 0x1e, 0xf0, 0x4e, 0xf7, 0xad, 0x06, 0x05,
+	0xf5, 0x21, 0x8c, 0xde, 0x84, 0x62, 0xf4, 0x03, 0xa2, 0xf2, 0xf3, 0x94, 0xd3, 0xc4, 0x50, 0x74,
+	0x17, 0x56, 0x82, 0x90, 0x18, 0xf1, 0xaf, 0x42, 0xac, 0x91, 0x7d, 0x9d, 0xc6, 0x72, 0x10, 0x92,
+	0xe8, 0x73, 0x39, 0x32, 0x76, 0xbb, 0x4f, 0x9f, 0x37, 0x32, 0xcf, 0x9e, 0x37, 0x32, 0x2f, 0x9f,
+	0x37, 0xb4, 0xaf, 0xa6, 0x0d, 0xed, 0xa7, 0x69, 0x43, 0xfb, 0x65, 0xda, 0xd0, 0x9e, 0x4e, 0x1b,
+	0xda, 0x6f, 0xd3, 0x86, 0xf6, 0xfb, 0xb4, 0x91, 0x79, 0x39, 0x6d, 0x68, 0xdf, 0xbd, 0x68, 0x64,
+	0x9e, 0xbe, 0x68, 0x64, 0x9e, 0xbd, 0x68, 0x64, 0x3e, 0xaf, 0x24, 0xff, 0xbb, 0xf6, 0x16, 0x85,
+	0xaf, 0xff, 0xff, 0x19, 0x00, 0x00, 0xff, 0xff, 0x1f, 0x87, 0xc4, 0x4d, 0xa5, 0x0d, 0x00, 0x00,
 }
 
 func (this *ExperimentSpec) Equal(that interface{}) bool {
@@ -331,9 +1467,6 @@ func (this *ExperimentSpec) Equal(that interface{}) bool {
 	if that1 == nil {
 		return this == nil
 	} else if this == nil {
-		return false
-	}
-	if !this.VersionSpec.Equal(that1.VersionSpec) {
 		return false
 	}
 	if !this.VizierSpec.Equal(that1.VizierSpec) {
@@ -358,26 +1491,19 @@ func (this *ExperimentSpec) Equal(that interface{}) bool {
 	if !this.ClusterSpec.Equal(that1.ClusterSpec) {
 		return false
 	}
-	return true
-}
-func (this *VersionSpec) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
+	if !this.RunSpec.Equal(that1.RunSpec) {
+		return false
 	}
-
-	that1, ok := that.(*VersionSpec)
-	if !ok {
-		that2, ok := that.(VersionSpec)
-		if ok {
-			that1 = &that2
-		} else {
+	if this.CommitSHA != that1.CommitSHA {
+		return false
+	}
+	if len(this.Tags) != len(that1.Tags) {
+		return false
+	}
+	for i := range this.Tags {
+		if this.Tags[i] != that1.Tags[i] {
 			return false
 		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
 	}
 	return true
 }
@@ -398,6 +1524,442 @@ func (this *WorkloadSpec) Equal(that interface{}) bool {
 	if that1 == nil {
 		return this == nil
 	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.DeploySteps) != len(that1.DeploySteps) {
+		return false
+	}
+	for i := range this.DeploySteps {
+		if !this.DeploySteps[i].Equal(that1.DeploySteps[i]) {
+			return false
+		}
+	}
+	if len(this.Healthchecks) != len(that1.Healthchecks) {
+		return false
+	}
+	for i := range this.Healthchecks {
+		if !this.Healthchecks[i].Equal(that1.Healthchecks[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *DeployStep) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeployStep)
+	if !ok {
+		that2, ok := that.(DeployStep)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.DeployType == nil {
+		if this.DeployType != nil {
+			return false
+		}
+	} else if this.DeployType == nil {
+		return false
+	} else if !this.DeployType.Equal(that1.DeployType) {
+		return false
+	}
+	return true
+}
+func (this *DeployStep_Prerendered) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeployStep_Prerendered)
+	if !ok {
+		that2, ok := that.(DeployStep_Prerendered)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Prerendered.Equal(that1.Prerendered) {
+		return false
+	}
+	return true
+}
+func (this *DeployStep_Skaffold) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeployStep_Skaffold)
+	if !ok {
+		that2, ok := that.(DeployStep_Skaffold)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Skaffold.Equal(that1.Skaffold) {
+		return false
+	}
+	return true
+}
+func (this *DeployStep_Px) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeployStep_Px)
+	if !ok {
+		that2, ok := that.(DeployStep_Px)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Px.Equal(that1.Px) {
+		return false
+	}
+	return true
+}
+func (this *HealthCheck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*HealthCheck)
+	if !ok {
+		that2, ok := that.(HealthCheck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.CheckType == nil {
+		if this.CheckType != nil {
+			return false
+		}
+	} else if this.CheckType == nil {
+		return false
+	} else if !this.CheckType.Equal(that1.CheckType) {
+		return false
+	}
+	return true
+}
+func (this *HealthCheck_K8S) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*HealthCheck_K8S)
+	if !ok {
+		that2, ok := that.(HealthCheck_K8S)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.K8S.Equal(that1.K8S) {
+		return false
+	}
+	return true
+}
+func (this *HealthCheck_PxL) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*HealthCheck_PxL)
+	if !ok {
+		that2, ok := that.(HealthCheck_PxL)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.PxL.Equal(that1.PxL) {
+		return false
+	}
+	return true
+}
+func (this *K8SPodsReadyCheck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*K8SPodsReadyCheck)
+	if !ok {
+		that2, ok := that.(K8SPodsReadyCheck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Namespace != that1.Namespace {
+		return false
+	}
+	return true
+}
+func (this *PxLHealthCheck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLHealthCheck)
+	if !ok {
+		that2, ok := that.(PxLHealthCheck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Script != that1.Script {
+		return false
+	}
+	if this.SuccessColumn != that1.SuccessColumn {
+		return false
+	}
+	return true
+}
+func (this *PatchSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PatchSpec)
+	if !ok {
+		that2, ok := that.(PatchSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.YAML != that1.YAML {
+		return false
+	}
+	if !this.Target.Equal(that1.Target) {
+		return false
+	}
+	return true
+}
+func (this *PatchTarget) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PatchTarget)
+	if !ok {
+		that2, ok := that.(PatchTarget)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.APIGroup != that1.APIGroup {
+		return false
+	}
+	if this.APIVersion != that1.APIVersion {
+		return false
+	}
+	if this.Kind != that1.Kind {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Namespace != that1.Namespace {
+		return false
+	}
+	if this.LabelSelector != that1.LabelSelector {
+		return false
+	}
+	if this.AnnotationSelector != that1.AnnotationSelector {
+		return false
+	}
+	return true
+}
+func (this *PrerenderedDeploy) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PrerenderedDeploy)
+	if !ok {
+		that2, ok := that.(PrerenderedDeploy)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.YAMLPaths) != len(that1.YAMLPaths) {
+		return false
+	}
+	for i := range this.YAMLPaths {
+		if this.YAMLPaths[i] != that1.YAMLPaths[i] {
+			return false
+		}
+	}
+	if len(this.Patches) != len(that1.Patches) {
+		return false
+	}
+	for i := range this.Patches {
+		if !this.Patches[i].Equal(that1.Patches[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *SkaffoldDeploy) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SkaffoldDeploy)
+	if !ok {
+		that2, ok := that.(SkaffoldDeploy)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.SkaffoldPath != that1.SkaffoldPath {
+		return false
+	}
+	if len(this.SkaffoldArgs) != len(that1.SkaffoldArgs) {
+		return false
+	}
+	for i := range this.SkaffoldArgs {
+		if this.SkaffoldArgs[i] != that1.SkaffoldArgs[i] {
+			return false
+		}
+	}
+	if len(this.Patches) != len(that1.Patches) {
+		return false
+	}
+	for i := range this.Patches {
+		if !this.Patches[i].Equal(that1.Patches[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PxCLIDeploy) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxCLIDeploy)
+	if !ok {
+		that2, ok := that.(PxCLIDeploy)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Args) != len(that1.Args) {
+		return false
+	}
+	for i := range this.Args {
+		if this.Args[i] != that1.Args[i] {
+			return false
+		}
+	}
+	if len(this.Namespaces) != len(that1.Namespaces) {
+		return false
+	}
+	for i := range this.Namespaces {
+		if this.Namespaces[i] != that1.Namespaces[i] {
+			return false
+		}
+	}
+	if this.SetClusterID != that1.SetClusterID {
 		return false
 	}
 	return true
@@ -421,6 +1983,263 @@ func (this *MetricSpec) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if that1.MetricType == nil {
+		if this.MetricType != nil {
+			return false
+		}
+	} else if this.MetricType == nil {
+		return false
+	} else if !this.MetricType.Equal(that1.MetricType) {
+		return false
+	}
+	return true
+}
+func (this *MetricSpec_PxL) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*MetricSpec_PxL)
+	if !ok {
+		that2, ok := that.(MetricSpec_PxL)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.PxL.Equal(that1.PxL) {
+		return false
+	}
+	return true
+}
+func (this *PxLScriptSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLScriptSpec)
+	if !ok {
+		that2, ok := that.(PxLScriptSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Script != that1.Script {
+		return false
+	}
+	if this.Streaming != that1.Streaming {
+		return false
+	}
+	if !this.CollectionPeriod.Equal(that1.CollectionPeriod) {
+		return false
+	}
+	if len(this.TemplateValues) != len(that1.TemplateValues) {
+		return false
+	}
+	for i := range this.TemplateValues {
+		if this.TemplateValues[i] != that1.TemplateValues[i] {
+			return false
+		}
+	}
+	if len(this.TableOutputs) != len(that1.TableOutputs) {
+		return false
+	}
+	for i := range this.TableOutputs {
+		if !this.TableOutputs[i].Equal(that1.TableOutputs[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PxLScriptOutputList) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLScriptOutputList)
+	if !ok {
+		that2, ok := that.(PxLScriptOutputList)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Outputs) != len(that1.Outputs) {
+		return false
+	}
+	for i := range this.Outputs {
+		if !this.Outputs[i].Equal(that1.Outputs[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *PxLScriptOutputSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLScriptOutputSpec)
+	if !ok {
+		that2, ok := that.(PxLScriptOutputSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if that1.OutputSpec == nil {
+		if this.OutputSpec != nil {
+			return false
+		}
+	} else if this.OutputSpec == nil {
+		return false
+	} else if !this.OutputSpec.Equal(that1.OutputSpec) {
+		return false
+	}
+	return true
+}
+func (this *PxLScriptOutputSpec_SingleMetric) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLScriptOutputSpec_SingleMetric)
+	if !ok {
+		that2, ok := that.(PxLScriptOutputSpec_SingleMetric)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.SingleMetric.Equal(that1.SingleMetric) {
+		return false
+	}
+	return true
+}
+func (this *PxLScriptOutputSpec_DataLossCounter) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*PxLScriptOutputSpec_DataLossCounter)
+	if !ok {
+		that2, ok := that.(PxLScriptOutputSpec_DataLossCounter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.DataLossCounter.Equal(that1.DataLossCounter) {
+		return false
+	}
+	return true
+}
+func (this *SingleMetricPxLOutput) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SingleMetricPxLOutput)
+	if !ok {
+		that2, ok := that.(SingleMetricPxLOutput)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.TimestampCol != that1.TimestampCol {
+		return false
+	}
+	if this.MetricName != that1.MetricName {
+		return false
+	}
+	if this.ValueCol != that1.ValueCol {
+		return false
+	}
+	if len(this.TagCols) != len(that1.TagCols) {
+		return false
+	}
+	for i := range this.TagCols {
+		if this.TagCols[i] != that1.TagCols[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *DataLossCounterOutput) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DataLossCounterOutput)
+	if !ok {
+		that2, ok := that.(DataLossCounterOutput)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.TimestampCol != that1.TimestampCol {
+		return false
+	}
+	if this.MetricName != that1.MetricName {
+		return false
+	}
+	if this.SeqIDCol != that1.SeqIDCol {
+		return false
+	}
+	if !this.OutputPeriod.Equal(that1.OutputPeriod) {
+		return false
+	}
 	return true
 }
 func (this *ClusterSpec) Equal(that interface{}) bool {
@@ -442,16 +2261,22 @@ func (this *ClusterSpec) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if this.NumNodes != that1.NumNodes {
+		return false
+	}
+	if !this.Node.Equal(that1.Node) {
+		return false
+	}
 	return true
 }
-func (this *Empty) Equal(that interface{}) bool {
+func (this *NodeSpec) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*Empty)
+	that1, ok := that.(*NodeSpec)
 	if !ok {
-		that2, ok := that.(Empty)
+		that2, ok := that.(NodeSpec)
 		if ok {
 			that1 = &that2
 		} else {
@@ -463,17 +2288,44 @@ func (this *Empty) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if this.MachineType != that1.MachineType {
+		return false
+	}
+	return true
+}
+func (this *RunSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RunSpec)
+	if !ok {
+		that2, ok := that.(RunSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Duration.Equal(that1.Duration) {
+		return false
+	}
+	if !this.PreWorkloadDuration.Equal(that1.PreWorkloadDuration) {
+		return false
+	}
 	return true
 }
 func (this *ExperimentSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 11)
 	s = append(s, "&experimentpb.ExperimentSpec{")
-	if this.VersionSpec != nil {
-		s = append(s, "VersionSpec: "+fmt.Sprintf("%#v", this.VersionSpec)+",\n")
-	}
 	if this.VizierSpec != nil {
 		s = append(s, "VizierSpec: "+fmt.Sprintf("%#v", this.VizierSpec)+",\n")
 	}
@@ -486,15 +2338,11 @@ func (this *ExperimentSpec) GoString() string {
 	if this.ClusterSpec != nil {
 		s = append(s, "ClusterSpec: "+fmt.Sprintf("%#v", this.ClusterSpec)+",\n")
 	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *VersionSpec) GoString() string {
-	if this == nil {
-		return "nil"
+	if this.RunSpec != nil {
+		s = append(s, "RunSpec: "+fmt.Sprintf("%#v", this.RunSpec)+",\n")
 	}
-	s := make([]string, 0, 4)
-	s = append(s, "&experimentpb.VersionSpec{")
+	s = append(s, "CommitSHA: "+fmt.Sprintf("%#v", this.CommitSHA)+",\n")
+	s = append(s, "Tags: "+fmt.Sprintf("%#v", this.Tags)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -502,8 +2350,168 @@ func (this *WorkloadSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 4)
+	s := make([]string, 0, 7)
 	s = append(s, "&experimentpb.WorkloadSpec{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.DeploySteps != nil {
+		s = append(s, "DeploySteps: "+fmt.Sprintf("%#v", this.DeploySteps)+",\n")
+	}
+	if this.Healthchecks != nil {
+		s = append(s, "Healthchecks: "+fmt.Sprintf("%#v", this.Healthchecks)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeployStep) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&experimentpb.DeployStep{")
+	if this.DeployType != nil {
+		s = append(s, "DeployType: "+fmt.Sprintf("%#v", this.DeployType)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeployStep_Prerendered) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.DeployStep_Prerendered{` +
+		`Prerendered:` + fmt.Sprintf("%#v", this.Prerendered) + `}`}, ", ")
+	return s
+}
+func (this *DeployStep_Skaffold) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.DeployStep_Skaffold{` +
+		`Skaffold:` + fmt.Sprintf("%#v", this.Skaffold) + `}`}, ", ")
+	return s
+}
+func (this *DeployStep_Px) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.DeployStep_Px{` +
+		`Px:` + fmt.Sprintf("%#v", this.Px) + `}`}, ", ")
+	return s
+}
+func (this *HealthCheck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.HealthCheck{")
+	if this.CheckType != nil {
+		s = append(s, "CheckType: "+fmt.Sprintf("%#v", this.CheckType)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *HealthCheck_K8S) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.HealthCheck_K8S{` +
+		`K8S:` + fmt.Sprintf("%#v", this.K8S) + `}`}, ", ")
+	return s
+}
+func (this *HealthCheck_PxL) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.HealthCheck_PxL{` +
+		`PxL:` + fmt.Sprintf("%#v", this.PxL) + `}`}, ", ")
+	return s
+}
+func (this *K8SPodsReadyCheck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&experimentpb.K8SPodsReadyCheck{")
+	s = append(s, "Namespace: "+fmt.Sprintf("%#v", this.Namespace)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PxLHealthCheck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.PxLHealthCheck{")
+	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	s = append(s, "SuccessColumn: "+fmt.Sprintf("%#v", this.SuccessColumn)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PatchSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.PatchSpec{")
+	s = append(s, "YAML: "+fmt.Sprintf("%#v", this.YAML)+",\n")
+	if this.Target != nil {
+		s = append(s, "Target: "+fmt.Sprintf("%#v", this.Target)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PatchTarget) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 11)
+	s = append(s, "&experimentpb.PatchTarget{")
+	s = append(s, "APIGroup: "+fmt.Sprintf("%#v", this.APIGroup)+",\n")
+	s = append(s, "APIVersion: "+fmt.Sprintf("%#v", this.APIVersion)+",\n")
+	s = append(s, "Kind: "+fmt.Sprintf("%#v", this.Kind)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "Namespace: "+fmt.Sprintf("%#v", this.Namespace)+",\n")
+	s = append(s, "LabelSelector: "+fmt.Sprintf("%#v", this.LabelSelector)+",\n")
+	s = append(s, "AnnotationSelector: "+fmt.Sprintf("%#v", this.AnnotationSelector)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PrerenderedDeploy) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.PrerenderedDeploy{")
+	s = append(s, "YAMLPaths: "+fmt.Sprintf("%#v", this.YAMLPaths)+",\n")
+	if this.Patches != nil {
+		s = append(s, "Patches: "+fmt.Sprintf("%#v", this.Patches)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SkaffoldDeploy) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&experimentpb.SkaffoldDeploy{")
+	s = append(s, "SkaffoldPath: "+fmt.Sprintf("%#v", this.SkaffoldPath)+",\n")
+	s = append(s, "SkaffoldArgs: "+fmt.Sprintf("%#v", this.SkaffoldArgs)+",\n")
+	if this.Patches != nil {
+		s = append(s, "Patches: "+fmt.Sprintf("%#v", this.Patches)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PxCLIDeploy) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&experimentpb.PxCLIDeploy{")
+	s = append(s, "Args: "+fmt.Sprintf("%#v", this.Args)+",\n")
+	s = append(s, "Namespaces: "+fmt.Sprintf("%#v", this.Namespaces)+",\n")
+	s = append(s, "SetClusterID: "+fmt.Sprintf("%#v", this.SetClusterID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -511,8 +2519,127 @@ func (this *MetricSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 4)
+	s := make([]string, 0, 5)
 	s = append(s, "&experimentpb.MetricSpec{")
+	if this.MetricType != nil {
+		s = append(s, "MetricType: "+fmt.Sprintf("%#v", this.MetricType)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MetricSpec_PxL) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.MetricSpec_PxL{` +
+		`PxL:` + fmt.Sprintf("%#v", this.PxL) + `}`}, ", ")
+	return s
+}
+func (this *PxLScriptSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&experimentpb.PxLScriptSpec{")
+	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	s = append(s, "Streaming: "+fmt.Sprintf("%#v", this.Streaming)+",\n")
+	if this.CollectionPeriod != nil {
+		s = append(s, "CollectionPeriod: "+fmt.Sprintf("%#v", this.CollectionPeriod)+",\n")
+	}
+	keysForTemplateValues := make([]string, 0, len(this.TemplateValues))
+	for k, _ := range this.TemplateValues {
+		keysForTemplateValues = append(keysForTemplateValues, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTemplateValues)
+	mapStringForTemplateValues := "map[string]string{"
+	for _, k := range keysForTemplateValues {
+		mapStringForTemplateValues += fmt.Sprintf("%#v: %#v,", k, this.TemplateValues[k])
+	}
+	mapStringForTemplateValues += "}"
+	if this.TemplateValues != nil {
+		s = append(s, "TemplateValues: "+mapStringForTemplateValues+",\n")
+	}
+	keysForTableOutputs := make([]string, 0, len(this.TableOutputs))
+	for k, _ := range this.TableOutputs {
+		keysForTableOutputs = append(keysForTableOutputs, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTableOutputs)
+	mapStringForTableOutputs := "map[string]*PxLScriptOutputList{"
+	for _, k := range keysForTableOutputs {
+		mapStringForTableOutputs += fmt.Sprintf("%#v: %#v,", k, this.TableOutputs[k])
+	}
+	mapStringForTableOutputs += "}"
+	if this.TableOutputs != nil {
+		s = append(s, "TableOutputs: "+mapStringForTableOutputs+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PxLScriptOutputList) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&experimentpb.PxLScriptOutputList{")
+	if this.Outputs != nil {
+		s = append(s, "Outputs: "+fmt.Sprintf("%#v", this.Outputs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PxLScriptOutputSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.PxLScriptOutputSpec{")
+	if this.OutputSpec != nil {
+		s = append(s, "OutputSpec: "+fmt.Sprintf("%#v", this.OutputSpec)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *PxLScriptOutputSpec_SingleMetric) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.PxLScriptOutputSpec_SingleMetric{` +
+		`SingleMetric:` + fmt.Sprintf("%#v", this.SingleMetric) + `}`}, ", ")
+	return s
+}
+func (this *PxLScriptOutputSpec_DataLossCounter) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&experimentpb.PxLScriptOutputSpec_DataLossCounter{` +
+		`DataLossCounter:` + fmt.Sprintf("%#v", this.DataLossCounter) + `}`}, ", ")
+	return s
+}
+func (this *SingleMetricPxLOutput) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&experimentpb.SingleMetricPxLOutput{")
+	s = append(s, "TimestampCol: "+fmt.Sprintf("%#v", this.TimestampCol)+",\n")
+	s = append(s, "MetricName: "+fmt.Sprintf("%#v", this.MetricName)+",\n")
+	s = append(s, "ValueCol: "+fmt.Sprintf("%#v", this.ValueCol)+",\n")
+	s = append(s, "TagCols: "+fmt.Sprintf("%#v", this.TagCols)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DataLossCounterOutput) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&experimentpb.DataLossCounterOutput{")
+	s = append(s, "TimestampCol: "+fmt.Sprintf("%#v", this.TimestampCol)+",\n")
+	s = append(s, "MetricName: "+fmt.Sprintf("%#v", this.MetricName)+",\n")
+	s = append(s, "SeqIDCol: "+fmt.Sprintf("%#v", this.SeqIDCol)+",\n")
+	if this.OutputPeriod != nil {
+		s = append(s, "OutputPeriod: "+fmt.Sprintf("%#v", this.OutputPeriod)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -520,17 +2647,37 @@ func (this *ClusterSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 4)
+	s := make([]string, 0, 6)
 	s = append(s, "&experimentpb.ClusterSpec{")
+	s = append(s, "NumNodes: "+fmt.Sprintf("%#v", this.NumNodes)+",\n")
+	if this.Node != nil {
+		s = append(s, "Node: "+fmt.Sprintf("%#v", this.Node)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *Empty) GoString() string {
+func (this *NodeSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 4)
-	s = append(s, "&experimentpb.Empty{")
+	s := make([]string, 0, 5)
+	s = append(s, "&experimentpb.NodeSpec{")
+	s = append(s, "MachineType: "+fmt.Sprintf("%#v", this.MachineType)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RunSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&experimentpb.RunSpec{")
+	if this.Duration != nil {
+		s = append(s, "Duration: "+fmt.Sprintf("%#v", this.Duration)+",\n")
+	}
+	if this.PreWorkloadDuration != nil {
+		s = append(s, "PreWorkloadDuration: "+fmt.Sprintf("%#v", this.PreWorkloadDuration)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -562,6 +2709,34 @@ func (m *ExperimentSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Tags) > 0 {
+		for iNdEx := len(m.Tags) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Tags[iNdEx])
+			copy(dAtA[i:], m.Tags[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.Tags[iNdEx])))
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.CommitSHA) > 0 {
+		i -= len(m.CommitSHA)
+		copy(dAtA[i:], m.CommitSHA)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.CommitSHA)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.RunSpec != nil {
+		{
+			size, err := m.RunSpec.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
 	if m.ClusterSpec != nil {
 		{
 			size, err := m.ClusterSpec.MarshalToSizedBuffer(dAtA[:i])
@@ -572,7 +2747,7 @@ func (m *ExperimentSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintExperiment(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x22
 	}
 	if len(m.MetricSpecs) > 0 {
 		for iNdEx := len(m.MetricSpecs) - 1; iNdEx >= 0; iNdEx-- {
@@ -585,7 +2760,7 @@ func (m *ExperimentSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintExperiment(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x1a
 		}
 	}
 	if len(m.WorkloadSpecs) > 0 {
@@ -599,7 +2774,7 @@ func (m *ExperimentSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintExperiment(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x1a
+			dAtA[i] = 0x12
 		}
 	}
 	if m.VizierSpec != nil {
@@ -612,43 +2787,8 @@ func (m *ExperimentSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintExperiment(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if m.VersionSpec != nil {
-		{
-			size, err := m.VersionSpec.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintExperiment(dAtA, i, uint64(size))
-		}
-		i--
 		dAtA[i] = 0xa
 	}
-	return len(dAtA) - i, nil
-}
-
-func (m *VersionSpec) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *VersionSpec) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VersionSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
 	return len(dAtA) - i, nil
 }
 
@@ -672,6 +2812,541 @@ func (m *WorkloadSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Healthchecks) > 0 {
+		for iNdEx := len(m.Healthchecks) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Healthchecks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintExperiment(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.DeploySteps) > 0 {
+		for iNdEx := len(m.DeploySteps) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DeploySteps[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintExperiment(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeployStep) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeployStep) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeployStep) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DeployType != nil {
+		{
+			size := m.DeployType.Size()
+			i -= size
+			if _, err := m.DeployType.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeployStep_Prerendered) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeployStep_Prerendered) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Prerendered != nil {
+		{
+			size, err := m.Prerendered.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *DeployStep_Skaffold) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeployStep_Skaffold) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Skaffold != nil {
+		{
+			size, err := m.Skaffold.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *DeployStep_Px) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeployStep_Px) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Px != nil {
+		{
+			size, err := m.Px.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *HealthCheck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HealthCheck) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HealthCheck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.CheckType != nil {
+		{
+			size := m.CheckType.Size()
+			i -= size
+			if _, err := m.CheckType.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *HealthCheck_K8S) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HealthCheck_K8S) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.K8S != nil {
+		{
+			size, err := m.K8S.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *HealthCheck_PxL) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *HealthCheck_PxL) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.PxL != nil {
+		{
+			size, err := m.PxL.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *K8SPodsReadyCheck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *K8SPodsReadyCheck) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *K8SPodsReadyCheck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PxLHealthCheck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PxLHealthCheck) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLHealthCheck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SuccessColumn) > 0 {
+		i -= len(m.SuccessColumn)
+		copy(dAtA[i:], m.SuccessColumn)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.SuccessColumn)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Script) > 0 {
+		i -= len(m.Script)
+		copy(dAtA[i:], m.Script)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Script)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PatchSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PatchSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PatchSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Target != nil {
+		{
+			size, err := m.Target.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.YAML) > 0 {
+		i -= len(m.YAML)
+		copy(dAtA[i:], m.YAML)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.YAML)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PatchTarget) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PatchTarget) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PatchTarget) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AnnotationSelector) > 0 {
+		i -= len(m.AnnotationSelector)
+		copy(dAtA[i:], m.AnnotationSelector)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.AnnotationSelector)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.LabelSelector) > 0 {
+		i -= len(m.LabelSelector)
+		copy(dAtA[i:], m.LabelSelector)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.LabelSelector)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Kind) > 0 {
+		i -= len(m.Kind)
+		copy(dAtA[i:], m.Kind)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Kind)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.APIVersion) > 0 {
+		i -= len(m.APIVersion)
+		copy(dAtA[i:], m.APIVersion)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.APIVersion)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.APIGroup) > 0 {
+		i -= len(m.APIGroup)
+		copy(dAtA[i:], m.APIGroup)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.APIGroup)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PrerenderedDeploy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PrerenderedDeploy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PrerenderedDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Patches) > 0 {
+		for iNdEx := len(m.Patches) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Patches[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintExperiment(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.YAMLPaths) > 0 {
+		for iNdEx := len(m.YAMLPaths) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.YAMLPaths[iNdEx])
+			copy(dAtA[i:], m.YAMLPaths[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.YAMLPaths[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SkaffoldDeploy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SkaffoldDeploy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SkaffoldDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Patches) > 0 {
+		for iNdEx := len(m.Patches) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Patches[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintExperiment(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.SkaffoldArgs) > 0 {
+		for iNdEx := len(m.SkaffoldArgs) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.SkaffoldArgs[iNdEx])
+			copy(dAtA[i:], m.SkaffoldArgs[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.SkaffoldArgs[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.SkaffoldPath) > 0 {
+		i -= len(m.SkaffoldPath)
+		copy(dAtA[i:], m.SkaffoldPath)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.SkaffoldPath)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PxCLIDeploy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PxCLIDeploy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxCLIDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SetClusterID {
+		i--
+		if m.SetClusterID {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Namespaces) > 0 {
+		for iNdEx := len(m.Namespaces) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Namespaces[iNdEx])
+			copy(dAtA[i:], m.Namespaces[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.Namespaces[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Args[iNdEx])
+			copy(dAtA[i:], m.Args[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.Args[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -695,6 +3370,353 @@ func (m *MetricSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.MetricType != nil {
+		{
+			size := m.MetricType.Size()
+			i -= size
+			if _, err := m.MetricType.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MetricSpec_PxL) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MetricSpec_PxL) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.PxL != nil {
+		{
+			size, err := m.PxL.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *PxLScriptSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PxLScriptSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLScriptSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TableOutputs) > 0 {
+		for k := range m.TableOutputs {
+			v := m.TableOutputs[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintExperiment(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintExperiment(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintExperiment(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.TemplateValues) > 0 {
+		for k := range m.TemplateValues {
+			v := m.TemplateValues[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintExperiment(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintExperiment(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintExperiment(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.CollectionPeriod != nil {
+		{
+			size, err := m.CollectionPeriod.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Streaming {
+		i--
+		if m.Streaming {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Script) > 0 {
+		i -= len(m.Script)
+		copy(dAtA[i:], m.Script)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.Script)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PxLScriptOutputList) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PxLScriptOutputList) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLScriptOutputList) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Outputs) > 0 {
+		for iNdEx := len(m.Outputs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Outputs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintExperiment(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PxLScriptOutputSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PxLScriptOutputSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLScriptOutputSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OutputSpec != nil {
+		{
+			size := m.OutputSpec.Size()
+			i -= size
+			if _, err := m.OutputSpec.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PxLScriptOutputSpec_SingleMetric) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLScriptOutputSpec_SingleMetric) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.SingleMetric != nil {
+		{
+			size, err := m.SingleMetric.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+func (m *PxLScriptOutputSpec_DataLossCounter) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PxLScriptOutputSpec_DataLossCounter) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.DataLossCounter != nil {
+		{
+			size, err := m.DataLossCounter.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *SingleMetricPxLOutput) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SingleMetricPxLOutput) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SingleMetricPxLOutput) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TagCols) > 0 {
+		for iNdEx := len(m.TagCols) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.TagCols[iNdEx])
+			copy(dAtA[i:], m.TagCols[iNdEx])
+			i = encodeVarintExperiment(dAtA, i, uint64(len(m.TagCols[iNdEx])))
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.ValueCol) > 0 {
+		i -= len(m.ValueCol)
+		copy(dAtA[i:], m.ValueCol)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.ValueCol)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.MetricName) > 0 {
+		i -= len(m.MetricName)
+		copy(dAtA[i:], m.MetricName)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.MetricName)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.TimestampCol) > 0 {
+		i -= len(m.TimestampCol)
+		copy(dAtA[i:], m.TimestampCol)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.TimestampCol)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DataLossCounterOutput) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DataLossCounterOutput) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DataLossCounterOutput) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.OutputPeriod != nil {
+		{
+			size, err := m.OutputPeriod.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.SeqIDCol) > 0 {
+		i -= len(m.SeqIDCol)
+		copy(dAtA[i:], m.SeqIDCol)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.SeqIDCol)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.MetricName) > 0 {
+		i -= len(m.MetricName)
+		copy(dAtA[i:], m.MetricName)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.MetricName)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.TimestampCol) > 0 {
+		i -= len(m.TimestampCol)
+		copy(dAtA[i:], m.TimestampCol)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.TimestampCol)))
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -718,10 +3740,27 @@ func (m *ClusterSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Node != nil {
+		{
+			size, err := m.Node.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.NumNodes != 0 {
+		i = encodeVarintExperiment(dAtA, i, uint64(m.NumNodes))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
-func (m *Empty) Marshal() (dAtA []byte, err error) {
+func (m *NodeSpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -731,16 +3770,70 @@ func (m *Empty) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Empty) MarshalTo(dAtA []byte) (int, error) {
+func (m *NodeSpec) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *Empty) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *NodeSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if len(m.MachineType) > 0 {
+		i -= len(m.MachineType)
+		copy(dAtA[i:], m.MachineType)
+		i = encodeVarintExperiment(dAtA, i, uint64(len(m.MachineType)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RunSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RunSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RunSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.PreWorkloadDuration != nil {
+		{
+			size, err := m.PreWorkloadDuration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Duration != nil {
+		{
+			size, err := m.Duration.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintExperiment(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -761,10 +3854,6 @@ func (m *ExperimentSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.VersionSpec != nil {
-		l = m.VersionSpec.Size()
-		n += 1 + l + sovExperiment(uint64(l))
-	}
 	if m.VizierSpec != nil {
 		l = m.VizierSpec.Size()
 		n += 1 + l + sovExperiment(uint64(l))
@@ -785,15 +3874,20 @@ func (m *ExperimentSpec) Size() (n int) {
 		l = m.ClusterSpec.Size()
 		n += 1 + l + sovExperiment(uint64(l))
 	}
-	return n
-}
-
-func (m *VersionSpec) Size() (n int) {
-	if m == nil {
-		return 0
+	if m.RunSpec != nil {
+		l = m.RunSpec.Size()
+		n += 1 + l + sovExperiment(uint64(l))
 	}
-	var l int
-	_ = l
+	l = len(m.CommitSHA)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -803,6 +3897,260 @@ func (m *WorkloadSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if len(m.DeploySteps) > 0 {
+		for _, e := range m.DeploySteps {
+			l = e.Size()
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	if len(m.Healthchecks) > 0 {
+		for _, e := range m.Healthchecks {
+			l = e.Size()
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DeployStep) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DeployType != nil {
+		n += m.DeployType.Size()
+	}
+	return n
+}
+
+func (m *DeployStep_Prerendered) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Prerendered != nil {
+		l = m.Prerendered.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *DeployStep_Skaffold) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Skaffold != nil {
+		l = m.Skaffold.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *DeployStep_Px) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Px != nil {
+		l = m.Px.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *HealthCheck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.CheckType != nil {
+		n += m.CheckType.Size()
+	}
+	return n
+}
+
+func (m *HealthCheck_K8S) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.K8S != nil {
+		l = m.K8S.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *HealthCheck_PxL) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.PxL != nil {
+		l = m.PxL.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *K8SPodsReadyCheck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+
+func (m *PxLHealthCheck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Script)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.SuccessColumn)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+
+func (m *PatchSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.YAML)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if m.Target != nil {
+		l = m.Target.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+
+func (m *PatchTarget) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.APIGroup)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.APIVersion)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.Kind)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.LabelSelector)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.AnnotationSelector)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+
+func (m *PrerenderedDeploy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.YAMLPaths) > 0 {
+		for _, s := range m.YAMLPaths {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	if len(m.Patches) > 0 {
+		for _, e := range m.Patches {
+			l = e.Size()
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *SkaffoldDeploy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.SkaffoldPath)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if len(m.SkaffoldArgs) > 0 {
+		for _, s := range m.SkaffoldArgs {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	if len(m.Patches) > 0 {
+		for _, e := range m.Patches {
+			l = e.Size()
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PxCLIDeploy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Args) > 0 {
+		for _, s := range m.Args {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	if len(m.Namespaces) > 0 {
+		for _, s := range m.Namespaces {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	if m.SetClusterID {
+		n += 2
+	}
 	return n
 }
 
@@ -812,6 +4160,165 @@ func (m *MetricSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.MetricType != nil {
+		n += m.MetricType.Size()
+	}
+	return n
+}
+
+func (m *MetricSpec_PxL) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.PxL != nil {
+		l = m.PxL.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *PxLScriptSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Script)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if m.Streaming {
+		n += 2
+	}
+	if m.CollectionPeriod != nil {
+		l = m.CollectionPeriod.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if len(m.TemplateValues) > 0 {
+		for k, v := range m.TemplateValues {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovExperiment(uint64(len(k))) + 1 + len(v) + sovExperiment(uint64(len(v)))
+			n += mapEntrySize + 1 + sovExperiment(uint64(mapEntrySize))
+		}
+	}
+	if len(m.TableOutputs) > 0 {
+		for k, v := range m.TableOutputs {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovExperiment(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovExperiment(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovExperiment(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *PxLScriptOutputList) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Outputs) > 0 {
+		for _, e := range m.Outputs {
+			l = e.Size()
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *PxLScriptOutputSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.OutputSpec != nil {
+		n += m.OutputSpec.Size()
+	}
+	return n
+}
+
+func (m *PxLScriptOutputSpec_SingleMetric) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.SingleMetric != nil {
+		l = m.SingleMetric.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *PxLScriptOutputSpec_DataLossCounter) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DataLossCounter != nil {
+		l = m.DataLossCounter.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+func (m *SingleMetricPxLOutput) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.TimestampCol)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.MetricName)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.ValueCol)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if len(m.TagCols) > 0 {
+		for _, s := range m.TagCols {
+			l = len(s)
+			n += 1 + l + sovExperiment(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DataLossCounterOutput) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.TimestampCol)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.MetricName)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	l = len(m.SeqIDCol)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if m.OutputPeriod != nil {
+		l = m.OutputPeriod.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
 	return n
 }
 
@@ -821,15 +4328,43 @@ func (m *ClusterSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.NumNodes != 0 {
+		n += 1 + sovExperiment(uint64(m.NumNodes))
+	}
+	if m.Node != nil {
+		l = m.Node.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
 	return n
 }
 
-func (m *Empty) Size() (n int) {
+func (m *NodeSpec) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
+	l = len(m.MachineType)
+	if l > 0 {
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	return n
+}
+
+func (m *RunSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Duration != nil {
+		l = m.Duration.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
+	if m.PreWorkloadDuration != nil {
+		l = m.PreWorkloadDuration.Size()
+		n += 1 + l + sovExperiment(uint64(l))
+	}
 	return n
 }
 
@@ -854,20 +4389,13 @@ func (this *ExperimentSpec) String() string {
 	}
 	repeatedStringForMetricSpecs += "}"
 	s := strings.Join([]string{`&ExperimentSpec{`,
-		`VersionSpec:` + strings.Replace(this.VersionSpec.String(), "VersionSpec", "VersionSpec", 1) + `,`,
 		`VizierSpec:` + strings.Replace(this.VizierSpec.String(), "WorkloadSpec", "WorkloadSpec", 1) + `,`,
 		`WorkloadSpecs:` + repeatedStringForWorkloadSpecs + `,`,
 		`MetricSpecs:` + repeatedStringForMetricSpecs + `,`,
 		`ClusterSpec:` + strings.Replace(this.ClusterSpec.String(), "ClusterSpec", "ClusterSpec", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *VersionSpec) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&VersionSpec{`,
+		`RunSpec:` + strings.Replace(this.RunSpec.String(), "RunSpec", "RunSpec", 1) + `,`,
+		`CommitSHA:` + fmt.Sprintf("%v", this.CommitSHA) + `,`,
+		`Tags:` + fmt.Sprintf("%v", this.Tags) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -876,7 +4404,183 @@ func (this *WorkloadSpec) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForDeploySteps := "[]*DeployStep{"
+	for _, f := range this.DeploySteps {
+		repeatedStringForDeploySteps += strings.Replace(f.String(), "DeployStep", "DeployStep", 1) + ","
+	}
+	repeatedStringForDeploySteps += "}"
+	repeatedStringForHealthchecks := "[]*HealthCheck{"
+	for _, f := range this.Healthchecks {
+		repeatedStringForHealthchecks += strings.Replace(f.String(), "HealthCheck", "HealthCheck", 1) + ","
+	}
+	repeatedStringForHealthchecks += "}"
 	s := strings.Join([]string{`&WorkloadSpec{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`DeploySteps:` + repeatedStringForDeploySteps + `,`,
+		`Healthchecks:` + repeatedStringForHealthchecks + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeployStep) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeployStep{`,
+		`DeployType:` + fmt.Sprintf("%v", this.DeployType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeployStep_Prerendered) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeployStep_Prerendered{`,
+		`Prerendered:` + strings.Replace(fmt.Sprintf("%v", this.Prerendered), "PrerenderedDeploy", "PrerenderedDeploy", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeployStep_Skaffold) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeployStep_Skaffold{`,
+		`Skaffold:` + strings.Replace(fmt.Sprintf("%v", this.Skaffold), "SkaffoldDeploy", "SkaffoldDeploy", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeployStep_Px) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeployStep_Px{`,
+		`Px:` + strings.Replace(fmt.Sprintf("%v", this.Px), "PxCLIDeploy", "PxCLIDeploy", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HealthCheck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HealthCheck{`,
+		`CheckType:` + fmt.Sprintf("%v", this.CheckType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HealthCheck_K8S) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HealthCheck_K8S{`,
+		`K8S:` + strings.Replace(fmt.Sprintf("%v", this.K8S), "K8SPodsReadyCheck", "K8SPodsReadyCheck", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HealthCheck_PxL) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HealthCheck_PxL{`,
+		`PxL:` + strings.Replace(fmt.Sprintf("%v", this.PxL), "PxLHealthCheck", "PxLHealthCheck", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *K8SPodsReadyCheck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&K8SPodsReadyCheck{`,
+		`Namespace:` + fmt.Sprintf("%v", this.Namespace) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLHealthCheck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PxLHealthCheck{`,
+		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
+		`SuccessColumn:` + fmt.Sprintf("%v", this.SuccessColumn) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PatchSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PatchSpec{`,
+		`YAML:` + fmt.Sprintf("%v", this.YAML) + `,`,
+		`Target:` + strings.Replace(this.Target.String(), "PatchTarget", "PatchTarget", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PatchTarget) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PatchTarget{`,
+		`APIGroup:` + fmt.Sprintf("%v", this.APIGroup) + `,`,
+		`APIVersion:` + fmt.Sprintf("%v", this.APIVersion) + `,`,
+		`Kind:` + fmt.Sprintf("%v", this.Kind) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Namespace:` + fmt.Sprintf("%v", this.Namespace) + `,`,
+		`LabelSelector:` + fmt.Sprintf("%v", this.LabelSelector) + `,`,
+		`AnnotationSelector:` + fmt.Sprintf("%v", this.AnnotationSelector) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PrerenderedDeploy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForPatches := "[]*PatchSpec{"
+	for _, f := range this.Patches {
+		repeatedStringForPatches += strings.Replace(f.String(), "PatchSpec", "PatchSpec", 1) + ","
+	}
+	repeatedStringForPatches += "}"
+	s := strings.Join([]string{`&PrerenderedDeploy{`,
+		`YAMLPaths:` + fmt.Sprintf("%v", this.YAMLPaths) + `,`,
+		`Patches:` + repeatedStringForPatches + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SkaffoldDeploy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForPatches := "[]*PatchSpec{"
+	for _, f := range this.Patches {
+		repeatedStringForPatches += strings.Replace(f.String(), "PatchSpec", "PatchSpec", 1) + ","
+	}
+	repeatedStringForPatches += "}"
+	s := strings.Join([]string{`&SkaffoldDeploy{`,
+		`SkaffoldPath:` + fmt.Sprintf("%v", this.SkaffoldPath) + `,`,
+		`SkaffoldArgs:` + fmt.Sprintf("%v", this.SkaffoldArgs) + `,`,
+		`Patches:` + repeatedStringForPatches + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxCLIDeploy) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PxCLIDeploy{`,
+		`Args:` + fmt.Sprintf("%v", this.Args) + `,`,
+		`Namespaces:` + fmt.Sprintf("%v", this.Namespaces) + `,`,
+		`SetClusterID:` + fmt.Sprintf("%v", this.SetClusterID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -886,6 +4590,122 @@ func (this *MetricSpec) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&MetricSpec{`,
+		`MetricType:` + fmt.Sprintf("%v", this.MetricType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MetricSpec_PxL) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MetricSpec_PxL{`,
+		`PxL:` + strings.Replace(fmt.Sprintf("%v", this.PxL), "PxLScriptSpec", "PxLScriptSpec", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLScriptSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForTemplateValues := make([]string, 0, len(this.TemplateValues))
+	for k, _ := range this.TemplateValues {
+		keysForTemplateValues = append(keysForTemplateValues, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTemplateValues)
+	mapStringForTemplateValues := "map[string]string{"
+	for _, k := range keysForTemplateValues {
+		mapStringForTemplateValues += fmt.Sprintf("%v: %v,", k, this.TemplateValues[k])
+	}
+	mapStringForTemplateValues += "}"
+	keysForTableOutputs := make([]string, 0, len(this.TableOutputs))
+	for k, _ := range this.TableOutputs {
+		keysForTableOutputs = append(keysForTableOutputs, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForTableOutputs)
+	mapStringForTableOutputs := "map[string]*PxLScriptOutputList{"
+	for _, k := range keysForTableOutputs {
+		mapStringForTableOutputs += fmt.Sprintf("%v: %v,", k, this.TableOutputs[k])
+	}
+	mapStringForTableOutputs += "}"
+	s := strings.Join([]string{`&PxLScriptSpec{`,
+		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
+		`Streaming:` + fmt.Sprintf("%v", this.Streaming) + `,`,
+		`CollectionPeriod:` + strings.Replace(fmt.Sprintf("%v", this.CollectionPeriod), "Duration", "types.Duration", 1) + `,`,
+		`TemplateValues:` + mapStringForTemplateValues + `,`,
+		`TableOutputs:` + mapStringForTableOutputs + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLScriptOutputList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForOutputs := "[]*PxLScriptOutputSpec{"
+	for _, f := range this.Outputs {
+		repeatedStringForOutputs += strings.Replace(f.String(), "PxLScriptOutputSpec", "PxLScriptOutputSpec", 1) + ","
+	}
+	repeatedStringForOutputs += "}"
+	s := strings.Join([]string{`&PxLScriptOutputList{`,
+		`Outputs:` + repeatedStringForOutputs + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLScriptOutputSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PxLScriptOutputSpec{`,
+		`OutputSpec:` + fmt.Sprintf("%v", this.OutputSpec) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLScriptOutputSpec_SingleMetric) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PxLScriptOutputSpec_SingleMetric{`,
+		`SingleMetric:` + strings.Replace(fmt.Sprintf("%v", this.SingleMetric), "SingleMetricPxLOutput", "SingleMetricPxLOutput", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PxLScriptOutputSpec_DataLossCounter) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PxLScriptOutputSpec_DataLossCounter{`,
+		`DataLossCounter:` + strings.Replace(fmt.Sprintf("%v", this.DataLossCounter), "DataLossCounterOutput", "DataLossCounterOutput", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SingleMetricPxLOutput) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SingleMetricPxLOutput{`,
+		`TimestampCol:` + fmt.Sprintf("%v", this.TimestampCol) + `,`,
+		`MetricName:` + fmt.Sprintf("%v", this.MetricName) + `,`,
+		`ValueCol:` + fmt.Sprintf("%v", this.ValueCol) + `,`,
+		`TagCols:` + fmt.Sprintf("%v", this.TagCols) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DataLossCounterOutput) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DataLossCounterOutput{`,
+		`TimestampCol:` + fmt.Sprintf("%v", this.TimestampCol) + `,`,
+		`MetricName:` + fmt.Sprintf("%v", this.MetricName) + `,`,
+		`SeqIDCol:` + fmt.Sprintf("%v", this.SeqIDCol) + `,`,
+		`OutputPeriod:` + strings.Replace(fmt.Sprintf("%v", this.OutputPeriod), "Duration", "types.Duration", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -895,15 +4715,29 @@ func (this *ClusterSpec) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ClusterSpec{`,
+		`NumNodes:` + fmt.Sprintf("%v", this.NumNodes) + `,`,
+		`Node:` + strings.Replace(this.Node.String(), "NodeSpec", "NodeSpec", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *Empty) String() string {
+func (this *NodeSpec) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&Empty{`,
+	s := strings.Join([]string{`&NodeSpec{`,
+		`MachineType:` + fmt.Sprintf("%v", this.MachineType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RunSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RunSpec{`,
+		`Duration:` + strings.Replace(fmt.Sprintf("%v", this.Duration), "Duration", "types.Duration", 1) + `,`,
+		`PreWorkloadDuration:` + strings.Replace(fmt.Sprintf("%v", this.PreWorkloadDuration), "Duration", "types.Duration", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -947,42 +4781,6 @@ func (m *ExperimentSpec) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VersionSpec", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowExperiment
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthExperiment
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthExperiment
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.VersionSpec == nil {
-				m.VersionSpec = &VersionSpec{}
-			}
-			if err := m.VersionSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field VizierSpec", wireType)
 			}
 			var msglen int
@@ -1017,7 +4815,7 @@ func (m *ExperimentSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WorkloadSpecs", wireType)
 			}
@@ -1051,7 +4849,7 @@ func (m *ExperimentSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MetricSpecs", wireType)
 			}
@@ -1085,7 +4883,7 @@ func (m *ExperimentSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ClusterSpec", wireType)
 			}
@@ -1121,56 +4919,106 @@ func (m *ExperimentSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipExperiment(dAtA[iNdEx:])
-			if err != nil {
-				return err
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RunSpec", wireType)
 			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
 				return ErrInvalidLengthExperiment
 			}
-			if (iNdEx + skippy) > l {
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *VersionSpec) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowExperiment
+			if m.RunSpec == nil {
+				m.RunSpec = &RunSpec{}
 			}
-			if iNdEx >= l {
+			if err := m.RunSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommitSHA", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
+			m.CommitSHA = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
 			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: VersionSpec: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VersionSpec: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tags = append(m.Tags, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipExperiment(dAtA[iNdEx:])
@@ -1221,6 +5069,1367 @@ func (m *WorkloadSpec) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: WorkloadSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeploySteps", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DeploySteps = append(m.DeploySteps, &DeployStep{})
+			if err := m.DeploySteps[len(m.DeploySteps)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Healthchecks", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Healthchecks = append(m.Healthchecks, &HealthCheck{})
+			if err := m.Healthchecks[len(m.Healthchecks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeployStep) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeployStep: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeployStep: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Prerendered", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PrerenderedDeploy{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.DeployType = &DeployStep_Prerendered{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Skaffold", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SkaffoldDeploy{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.DeployType = &DeployStep_Skaffold{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Px", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PxCLIDeploy{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.DeployType = &DeployStep_Px{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HealthCheck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HealthCheck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HealthCheck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field K8S", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &K8SPodsReadyCheck{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.CheckType = &HealthCheck_K8S{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PxL", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PxLHealthCheck{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.CheckType = &HealthCheck_PxL{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *K8SPodsReadyCheck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: K8SPodsReadyCheck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: K8SPodsReadyCheck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PxLHealthCheck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PxLHealthCheck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PxLHealthCheck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Script = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SuccessColumn", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SuccessColumn = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PatchSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PatchSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PatchSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field YAML", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.YAML = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Target", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Target == nil {
+				m.Target = &PatchTarget{}
+			}
+			if err := m.Target.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PatchTarget) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PatchTarget: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PatchTarget: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field APIGroup", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.APIGroup = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field APIVersion", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.APIVersion = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Kind", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Kind = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LabelSelector", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LabelSelector = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AnnotationSelector", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AnnotationSelector = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PrerenderedDeploy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PrerenderedDeploy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PrerenderedDeploy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field YAMLPaths", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.YAMLPaths = append(m.YAMLPaths, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Patches", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Patches = append(m.Patches, &PatchSpec{})
+			if err := m.Patches[len(m.Patches)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SkaffoldDeploy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SkaffoldDeploy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SkaffoldDeploy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SkaffoldPath", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SkaffoldPath = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SkaffoldArgs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SkaffoldArgs = append(m.SkaffoldArgs, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Patches", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Patches = append(m.Patches, &PatchSpec{})
+			if err := m.Patches[len(m.Patches)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PxCLIDeploy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PxCLIDeploy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PxCLIDeploy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Args = append(m.Args, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespaces", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespaces = append(m.Namespaces, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SetClusterID", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SetClusterID = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipExperiment(dAtA[iNdEx:])
@@ -1271,6 +6480,999 @@ func (m *MetricSpec) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: MetricSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PxL", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &PxLScriptSpec{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.MetricType = &MetricSpec_PxL{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PxLScriptSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PxLScriptSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PxLScriptSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Script = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Streaming", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Streaming = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CollectionPeriod", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CollectionPeriod == nil {
+				m.CollectionPeriod = &types.Duration{}
+			}
+			if err := m.CollectionPeriod.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TemplateValues", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TemplateValues == nil {
+				m.TemplateValues = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowExperiment
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowExperiment
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowExperiment
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipExperiment(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.TemplateValues[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TableOutputs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TableOutputs == nil {
+				m.TableOutputs = make(map[string]*PxLScriptOutputList)
+			}
+			var mapkey string
+			var mapvalue *PxLScriptOutputList
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowExperiment
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowExperiment
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowExperiment
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &PxLScriptOutputList{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipExperiment(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthExperiment
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.TableOutputs[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PxLScriptOutputList) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PxLScriptOutputList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PxLScriptOutputList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Outputs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Outputs = append(m.Outputs, &PxLScriptOutputSpec{})
+			if err := m.Outputs[len(m.Outputs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PxLScriptOutputSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PxLScriptOutputSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PxLScriptOutputSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SingleMetric", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &SingleMetricPxLOutput{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.OutputSpec = &PxLScriptOutputSpec_SingleMetric{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataLossCounter", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &DataLossCounterOutput{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.OutputSpec = &PxLScriptOutputSpec_DataLossCounter{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SingleMetricPxLOutput) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SingleMetricPxLOutput: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SingleMetricPxLOutput: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampCol", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TimestampCol = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MetricName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MetricName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueCol", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueCol = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TagCols", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TagCols = append(m.TagCols, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DataLossCounterOutput) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DataLossCounterOutput: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DataLossCounterOutput: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimestampCol", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TimestampCol = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MetricName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MetricName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SeqIDCol", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SeqIDCol = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutputPeriod", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OutputPeriod == nil {
+				m.OutputPeriod = &types.Duration{}
+			}
+			if err := m.OutputPeriod.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipExperiment(dAtA[iNdEx:])
@@ -1321,6 +7523,61 @@ func (m *ClusterSpec) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: ClusterSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NumNodes", wireType)
+			}
+			m.NumNodes = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NumNodes |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Node", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Node == nil {
+				m.Node = &NodeSpec{}
+			}
+			if err := m.Node.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipExperiment(dAtA[iNdEx:])
@@ -1342,7 +7599,7 @@ func (m *ClusterSpec) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Empty) Unmarshal(dAtA []byte) error {
+func (m *NodeSpec) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1365,12 +7622,166 @@ func (m *Empty) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Empty: wiretype end group for non-group")
+			return fmt.Errorf("proto: NodeSpec: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Empty: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: NodeSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MachineType", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MachineType = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipExperiment(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RunSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowExperiment
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RunSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RunSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Duration == nil {
+				m.Duration = &types.Duration{}
+			}
+			if err := m.Duration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PreWorkloadDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowExperiment
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthExperiment
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PreWorkloadDuration == nil {
+				m.PreWorkloadDuration = &types.Duration{}
+			}
+			if err := m.PreWorkloadDuration.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipExperiment(dAtA[iNdEx:])

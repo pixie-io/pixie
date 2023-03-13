@@ -26,8 +26,8 @@ using px::stirling::obj_tools::DwarfReader;
 using px::testing::BazelRunfilePath;
 
 constexpr std::string_view kBinary =
-    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server_binary_/"
-    "golang_1_16_grpc_tls_server_binary";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary_/"
+    "golang_1_19_grpc_tls_server_binary";
 
 struct SymAddrs {
   // Members of net/http.http2serverConn.
@@ -78,7 +78,7 @@ static void BM_noindex(benchmark::State& state) {
   for (auto _ : state) {
     SymAddrs symaddrs;
 
-    PL_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
+    PX_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
                       DwarfReader::CreateWithoutIndexing(kBinary));
 
     for (size_t i = 0; i < num_lookup_iterations; ++i) {
@@ -95,7 +95,7 @@ static void BM_indexed(benchmark::State& state) {
   for (auto _ : state) {
     SymAddrs symaddrs;
 
-    PL_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
+    PX_ASSIGN_OR_EXIT(std::unique_ptr<DwarfReader> dwarf_reader,
                       DwarfReader::CreateIndexingAll(kBinary));
 
     for (size_t i = 0; i < num_lookup_iterations; ++i) {

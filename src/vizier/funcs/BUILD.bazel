@@ -33,6 +33,7 @@ pl_cc_library(
     ),
     visibility = [
         "//src/carnot:__subpackages__",
+        "//src/experimental:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
     deps = [
@@ -41,7 +42,7 @@ pl_cc_library(
         "//src/vizier/funcs/context:cc_library",
         "//src/vizier/funcs/internal:cc_library",
         "//src/vizier/funcs/md_udtfs:cc_library",
-        "//src/vizier/services/agent/manager:cc_headers",
+        "//src/vizier/services/agent/shared/manager:cc_headers",
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
     ],
 )
@@ -59,7 +60,7 @@ pl_cc_binary(
 
 genrule(
     name = "udf_info_pb_txt",
-    srcs = [":export_funcs"],
     outs = ["data/udf.pb"],
     cmd = "$(location :export_funcs) --out_file_path $@ &>/dev/null",
+    tools = [":export_funcs"],
 )

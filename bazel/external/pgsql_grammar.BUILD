@@ -33,12 +33,18 @@ genrule(
         "pgsql_parser/PostgresSQLParserListener.h",
     ],
     cmd = """
-  OUT_DIR=`dirname $(location pgsql_parser/PostgresSQLParser.h)`;
-  OUT_DIR_ABS_PATH=`realpath $$OUT_DIR`;
-  GRAMMAR_DIR=`dirname $(location apgdiff/antlr-src/PostgresSQLParser.g4)`;
-  cd $$GRAMMAR_DIR;
-  java -Xmx500m -jar /opt/antlr/antlr-4.9-complete.jar -Dlanguage=Cpp -o $$OUT_DIR_ABS_PATH -package pgsql_parser -listener PostgresSQLLexer.g4 PostgresSQLParser.g4;
-  """,
+        OUT=`dirname $(location pgsql_parser/PostgresSQLLexer.cpp)`
+
+        $(location @com_github_antlr_antlr4//:antlr) \
+            -Dlanguage=Cpp \
+            -o $$OUT \
+            -package pgsql_parser \
+            -listener \
+            -Xexact-output-dir \
+            $(location apgdiff/antlr-src/PostgresSQLLexer.g4) \
+            $(location apgdiff/antlr-src/PostgresSQLParser.g4)
+    """,
+    tools = ["@com_github_antlr_antlr4//:antlr"],
 )
 
 cc_library(

@@ -40,7 +40,7 @@ import (
 )
 
 func init() {
-	pflag.String("versions_file", "VERSIONS.json", "Path to the versions file")
+	pflag.String("versions_file", "/changelogs/VERSIONS.json", "Path to the versions file")
 	pflag.Bool("check_only", false, "Only run check")
 }
 

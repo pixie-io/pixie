@@ -82,7 +82,7 @@ Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(proc_exit_trace_bcc_script));
+  PX_RETURN_IF_ERROR(InitBPFProgram(proc_exit_trace_bcc_script));
 
   // Writes exit_code_offset to BPF array. Note that the other offsets are injected into BCC code
   // through macros.
@@ -94,13 +94,13 @@ Status ProcExitConnector::InitImpl() {
         TASK_STRUCT_EXIT_CODE_OFFSET_INDEX);
     auto control_values_table_handle =
         GetPerCPUArrayTable<uint64_t>(kProcExitControlValuesArrayName);
-    PL_RETURN_IF_ERROR(bpf_tools::UpdatePerCPUArrayValue(TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,
+    PX_RETURN_IF_ERROR(bpf_tools::UpdatePerCPUArrayValue(TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,
                                                          offset_opt.value().exit_code_offset,
                                                          &control_values_table_handle));
   }
 
-  PL_RETURN_IF_ERROR(AttachTracepoints(kTracepointSpecs));
-  PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  PX_RETURN_IF_ERROR(AttachTracepoints(kTracepointSpecs));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
 
   return Status::OK();
 }

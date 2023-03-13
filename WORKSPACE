@@ -4,7 +4,17 @@ load("//:workspace.bzl", "check_min_bazel_version")
 
 check_min_bazel_version("5.1.1")
 
-load("//bazel:repositories.bzl", "pl_deps")
+load("//bazel:repositories.bzl", "pl_cc_toolchain_deps", "pl_deps")
+
+pl_cc_toolchain_deps()
+
+load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "pl_sysroot_deps")
+
+pl_sysroot_deps()
+
+load("//bazel/cc_toolchains:toolchains.bzl", "pl_register_cc_toolchains")
+
+pl_register_cc_toolchains()
 
 # Install Pixie Labs Dependencies.
 pl_deps()
@@ -23,7 +33,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.19.4",
+    version = "1.20",
 )
 
 go_rules_dependencies()
@@ -81,7 +91,7 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 
 pip_parse(
     name = "ubuntu_package_deps",
-    requirements_lock = "//bazel/external/ubuntu_packages:requirements.txt",
+    requirements_lock = "//bazel/external/ubuntu_packages:requirements.bazel.txt",
 )
 
 load("@ubuntu_package_deps//:requirements.bzl", ubuntu_packages_install_deps = "install_deps")
@@ -172,6 +182,10 @@ fetch_netty_tcnative_jars(netty_tcnative_version)
 
 thrift_deps(scala_version = scala_version)
 
+load("@thrift_deps//:defs.bzl", thrift_pinned_maven_install = "pinned_maven_install")
+
+thrift_pinned_maven_install()
+
 # twitter_scrooge will use incompatible versions of @scrooge_jars and @thrift_jars.
 # These bind statements ensure that the correct versions of finagle libthrift, scrooge core
 # and scrooge generator are used to ensure successful compilation.
@@ -212,22 +226,36 @@ go_download_sdk(
 
 go_download_sdk(
     name = "go_sdk_1_18",
-    version = "1.18.9",
+    version = "1.18.10",
 )
 
 go_download_sdk(
     name = "go_sdk_1_19",
-    version = "1.19.4",
+    version = "1.19.5",
+)
+
+go_download_sdk(
+    name = "go_sdk_1_20",
+    version = "1.20",
 )
 
 pip_parse(
     name = "amqp_gen_reqs",
-    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.txt",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.bazel.txt",
 )
 
 load("@amqp_gen_reqs//:requirements.bzl", amp_gen_install_deps = "install_deps")
 
 amp_gen_install_deps()
+
+pip_parse(
+    name = "protocol_inference",
+    requirements_lock = "//src/stirling/protocol_inference:requirements.bazel.txt",
+)
+
+load("@protocol_inference//:requirements.bzl", protocol_inference_install_deps = "install_deps")
+
+protocol_inference_install_deps()
 
 load(
     "@io_bazel_rules_docker//python3:image.bzl",
@@ -238,13 +266,25 @@ py_image_repos()
 
 pip_parse(
     name = "amqp_bpf_test_requirements",
-    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.txt",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.bazel.txt",
 )
 
 load("@amqp_bpf_test_requirements//:requirements.bzl", ampq_bpf_test_install_deps = "install_deps")
 
 ampq_bpf_test_install_deps()
 
-load("//bazel/graal:toolchain.bzl", "register_graal_toolchains")
+load("@rules_jvm_external//:defs.bzl", "maven_install")
 
-register_graal_toolchains()
+maven_install(
+    name = "px_deps",
+    artifacts = [
+        "org.antlr:antlr4:4.11.1",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+    ],
+)
+
+load("@px_deps//:defs.bzl", px_deps_pinned_maven_install = "pinned_maven_install")
+
+px_deps_pinned_maven_install()

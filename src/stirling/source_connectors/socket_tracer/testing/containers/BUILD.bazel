@@ -121,3 +121,8 @@ container_image(
     name = "py_grpc_helloworld_image",
     base = "@py_grpc_helloworld_image//image",
 )
+
+container_image(
+    name = "productcatalogservice_v0_2_0",
+    base = "@productcatalogservice_v0_2_0//image",
+)

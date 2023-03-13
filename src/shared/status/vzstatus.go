@@ -47,6 +47,8 @@ var reasonToMessageMap = map[VizierReason]string{
 	NATSPodPending:               "NATS message bus pods are still pending. If this status persists, investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
 	NATSPodMissing:               "NATS message bus pods are missing. If this status persists, clobber and redeploy this Pixie instance.",
 	NATSPodFailed:                "NATS message bus pods have failed. Investigate failures on the Pending NATS pods in the Vizier namespace (default `pl`).",
+	EtcdPodsMissing:              "etcd pods are missing. If this status persists, clobber and redeploy this Pixie instance.",
+	EtcdPodsCrashing:             "etcd pods are in CrashLoopBackOff, likely due to loss of quorum. If this status persists, clobber and redeploy this Pixie instance.",
 	UnableToConnectToCloud:       "Failed to connect to Pixie Cloud. Please check the cloud address (and optional dev cloud namespace) in the Vizier object to ensure it is correct and accessible within your firewall and network configurations.",
 	PEMsSomeInsufficientMemory: "Some PEMs are failing to schedule due to insufficient memory available on the nodes. You will not be able to receive data from those failing nodes. " +
 		"Free up memory on those nodes to start scraping Pixie data from those nodes.",
@@ -118,6 +120,11 @@ const (
 	NATSPodMissing VizierReason = "NATSPodMissing"
 	// NATSPodFailed occurs when the nats pod failed to start up.
 	NATSPodFailed VizierReason = "NATSPodFailed"
+
+	// EtcdPodsMissing when the etcd pods are missing.
+	EtcdPodsMissing VizierReason = "EtcdPodsMissing"
+	// EtcdPodsCrashing when the etcd pods are crashing.
+	EtcdPodsCrashing VizierReason = "EtcdPodsCrashing"
 
 	// UnableToConnectToCloud occurs when the Operator cannot make requests to the Pixie Cloud instance.
 	UnableToConnectToCloud VizierReason = "UnableToConnectToCloud"

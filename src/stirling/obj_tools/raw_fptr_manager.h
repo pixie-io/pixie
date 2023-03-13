@@ -38,7 +38,7 @@ class RawFptrManager : NotCopyMoveable {
 
   template <class T>
   StatusOr<T*> RawSymbolToFptr(const std::string& symbol_name) {
-    PL_ASSIGN_OR_RETURN(void* fptr, RawSymbolToFptrImpl(symbol_name));
+    PX_ASSIGN_OR_RETURN(void* fptr, RawSymbolToFptrImpl(symbol_name));
     return reinterpret_cast<T*>(fptr);
   }
 

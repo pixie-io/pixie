@@ -29,31 +29,50 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
 
-public="True"
+build_type="--//k8s:build_type=public"
 bucket="pixie-dev-public"
 extra_bazel_args=()
 if [[ $release_tag == *"-"* ]]; then
-  public="False"
+  build_type="--//k8s:build_type=dev"
+  # TODO(vihang/michelle): Revisit this bucket.
   bucket="pixie-prod-artifacts"
-fi
-if [[ -n $DEV_ARTIFACT_BUCKET ]]; then
-  public="False"
-  bucket="${DEV_ARTIFACT_BUCKET}"
-  if [[ -z $DEV_IMAGE_PREFIX ]]; then
-    echo "Must specify DEV_IMAGE_PREFIX, when specifying a dev release with DEV_ARTIFACT_BUCKET"
-    exit 1
-  fi
-  extra_bazel_args+=("--define" "DEV_VIZIER_IMAGE_PREFIX=${DEV_IMAGE_PREFIX}")
-  extra_bazel_args+=("--//k8s/vizier:use_dev_vizier_images")
 fi
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 latest_output_path="gs://${bucket}/vizier/latest"
 
-bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}"
-bazel build --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
-    --stamp --define public="${public}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
+push_images_for_arch() {
+  arch="$1"
+  bazel run --stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
+      --config="${arch}_sysroot" \
+      --stamp "${build_type}" //k8s/vizier:vizier_images_push "${extra_bazel_args[@]}" > /dev/null
+}
+
+push_images_for_arch "x86_64"
+push_images_for_arch "aarch64"
+
+push_multiarch_image() {
+  multiarch_image="$1"
+  x86_image="${multiarch_image}-x86_64"
+  aarch64_image="${multiarch_image}-aarch64"
+  echo "Building ${multiarch_image} manifest"
+  # If the multiarch manifest list already exists locally, remove it before building a new one.
+  # otherwise, the docker manifest create step will fail because it can't amend manifests to an existing image.
+  # We could use the --amend flag to `manifest create` but it doesn't seem to overwrite existing images with the same tag,
+  # instead it seems to just ignore images that already exist in the local manifest.
+  docker manifest rm "${multiarch_image}" || true
+  docker manifest create "${multiarch_image}" "${x86_image}" "${aarch64_image}"
+  docker manifest push "${multiarch_image}"
+}
+
+while read -r image;
+do
+  push_multiarch_image "${image}"
+done < <(bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
+         --stamp "${build_type}" //k8s/vizier:list_image_bundle "${extra_bazel_args[@]}")
+
+bazel build --stamp -c opt --//k8s:image_version="${release_tag}" \
+    --stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"

@@ -195,25 +195,3 @@ export const Input: React.FC<InputProps> = ({
   );
 };
 Input.displayName = 'Input';
-
-type FormField = [string, string];
-
-interface InputFormProps {
-  onInputChanged: (value: string) => void;
-  form: FormField[];
-}
-
-// eslint-disable-next-line react-memo/require-memo
-export const FormInput: React.FC<InputFormProps> = ({ form }) => {
-  const classes = useStyles();
-  const ref = React.useRef<HTMLTextAreaElement>(null);
-  const [value, setValue] = React.useState<string>('');
-
-  React.useEffect(() => {
-    const combined = form.map(([key, val]) => `${key}:${val}`).join(' ');
-    setValue(combined);
-  }, [form]);
-
-  return <textarea className={classes.textArea} ref={ref} value={value} />;
-};
-FormInput.displayName = 'FormInput';

@@ -14,12 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
     name = "pgtest",
     srcs = ["pgtest.go"],
     importpath = "px.dev/pixie/src/shared/services/pgtest",
+    tags = ["requires_docker"],
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/pg",
@@ -34,7 +36,7 @@ go_library(
     ],
 )
 
-go_test(
+pl_go_test(
     name = "pgtest_test",
     srcs = ["pgtest_test.go"],
     deps = [

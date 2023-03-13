@@ -1,0 +1,8 @@
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: jenkins-oss-ingress-managed-cert
+spec:
+  domains:
+  - jenkins.px.dev

@@ -26,12 +26,21 @@ namespace px {
 namespace stirling {
 
 namespace {
+#define InitTarget(TargetName)                  \
+  do {                                          \
+    LLVMInitialize##TargetName##Target();       \
+    LLVMInitialize##TargetName##TargetInfo();   \
+    LLVMInitialize##TargetName##TargetMC();     \
+    LLVMInitialize##TargetName##AsmPrinter();   \
+    LLVMInitialize##TargetName##AsmParser();    \
+    LLVMInitialize##TargetName##Disassembler(); \
+  } while (0)
+
 void InitLLVMImpl() {
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
-  llvm::InitializeNativeTargetAsmParser();
-  llvm::InitializeNativeTargetDisassembler();
+  InitTarget(X86);
+  InitTarget(AArch64);
 }
+#undef InitTarget
 }  // namespace
 
 void InitLLVMOnce() {

@@ -49,7 +49,7 @@ StatusOr<T*> DLSym(void* handle, const std::string& name) {
 // shared object's dynsym table vs a function in the symtab table.
 TEST(Basic, DlopenBySymbolTypes) {
   std::filesystem::path so_path =
-      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/c/library.so");
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/c/library.so_/library.so");
 
   void* handle = dlopen(so_path.c_str(), RTLD_LAZY);
   ASSERT_NE(handle, nullptr);
@@ -82,7 +82,7 @@ TEST(Basic, DlopenBySymbolTypes) {
 // Tests whether we can call functions from both the dynsym and symtab tables using RawFptrManager.
 TEST(RawFptrManager, OpenDynamicLibraryAndGetFunctionPointers) {
   std::filesystem::path so_path =
-      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/c/library.so");
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/c/library.so_/library.so");
 
   auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(so_path);
 

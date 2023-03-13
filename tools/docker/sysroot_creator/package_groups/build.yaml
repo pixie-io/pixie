@@ -1,0 +1,17 @@
+---
+include:
+- liblzma-dev
+- libunwind-dev
+- libncurses-dev
+- libc6-dev
+- libelf-dev
+- libgcc-12-dev
+- libicu-dev
+- libstdc++-12-dev
+- linux-libc-dev
+- zlib1g-dev
+exclude:
+- dpkg
+# provides NIS(YP) headers which we don't need.
+- libnsl-dev
+- rpcsvc-proto

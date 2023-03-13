@@ -115,6 +115,10 @@ func GetClientAPIConfig() *clientcmdapi.Config {
 	return clientcmd.GetConfigFromFileOrDie(*kubeconfig)
 }
 
+func GetKubeconfigPath() string {
+	return *kubeconfig
+}
+
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h

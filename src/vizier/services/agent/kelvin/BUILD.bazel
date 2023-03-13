@@ -31,7 +31,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/vizier/services/agent/manager:cc_library",
+        "//src/vizier/services/agent/shared/manager:cc_library",
     ],
 )
 

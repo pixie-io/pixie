@@ -22,24 +22,62 @@ CLANG_TAG="${CLANG_VERSION}-${CLANG_SUFFIX}"
 CLANG_DEB_IMAGE_NAME="clang-${CLANG_TAG}.deb"
 CLANG_LINTER_DEB_IMAGE_NAME="clang-linters-${CLANG_TAG}.deb"
 
-LIBCXX_TAR_FILE="libcxx-${CLANG_TAG}.tar.gz"
-LLVM_LIBSTDCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}.tar.gz"
-LLVM_LIBCXX_LIBS_TAR_FILE="llvm-${CLANG_TAG}-libcxx.tar.gz"
+MIN_CLANG_TAR_FILE_NAME="clang-min-${CLANG_TAG}.tar.gz"
+CLANG_NO_DEP_LOCATION="/opt/clang-${CLANG_VERSION}-nodeps-build"
 
-pushd "/opt/libcxx-${CLANG_VERSION}"
-tar -czf "/image/${LIBCXX_TAR_FILE}" lib include
-popd
+tar_libcxx() {
+  sysroot="$1"
+  if [ -n "${sysroot}" ]; then
+    sysroot="-${sysroot}-sysroot"
+  fi
+  dir="/opt/libcxx-${CLANG_VERSION}${sysroot}"
+  tar_file="/image/libcxx-${CLANG_TAG}${sysroot}.tar.gz"
+  pushd "${dir}" > /dev/null
+  tar -czf "${tar_file}" lib include
+  popd > /dev/null
+}
+
+tar_libcxx ""
+tar_libcxx "x86_64"
+tar_libcxx "aarch64"
 
 tar_args=('--exclude=*.so'
 	  '--exclude=*.so.*')
 
-pushd "/opt/llvm-${CLANG_VERSION}-libstdc++"
-tar "${tar_args[@]}" -czf "/image/${LLVM_LIBSTDCXX_LIBS_TAR_FILE}" lib include
-popd
 
-pushd "/opt/llvm-${CLANG_VERSION}-libcxx"
-tar "${tar_args[@]}" -czf "/image/${LLVM_LIBCXX_LIBS_TAR_FILE}" lib include
-popd
+patch_llvm_cmake() {
+  patch -p1 < /patches/llvm_cmake.patch
+}
+
+tar_llvm_libs() {
+  libcxx="$1"
+  sysroot="$2"
+  sanitizer="$3"
+  if [ -n "${sysroot}" ]; then
+    sysroot="-${sysroot}-sysroot"
+  fi
+  if [ -n "${sanitizer}" ]; then
+    sanitizer="-${sanitizer}"
+  fi
+  dir="/opt/llvm-${CLANG_VERSION}-${libcxx}${sysroot}${sanitizer}"
+  tar_file="/image/llvm-${CLANG_TAG}-${libcxx}${sysroot}${sanitizer}.tar.gz"
+
+  pushd "${dir}" > /dev/null
+  patch_llvm_cmake
+  tar "${tar_args[@]}" -czf "${tar_file}" lib include
+  popd > /dev/null
+}
+
+tar_llvm_libs "libcxx" ""
+tar_llvm_libs "libcxx" "" "asan"
+tar_llvm_libs "libcxx" "" "msan"
+tar_llvm_libs "libcxx" "" "tsan"
+tar_llvm_libs "libcxx" "x86_64"
+tar_llvm_libs "libcxx" "aarch64"
+
+tar_llvm_libs "libstdc++" ""
+tar_llvm_libs "libstdc++" "x86_64"
+tar_llvm_libs "libstdc++" "aarch64"
 
 # Create the make deb file hosting clang.
 fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
@@ -47,11 +85,13 @@ fpm -p "/image/${CLANG_DEB_IMAGE_NAME}" \
     -t deb \
     -n "clang-${CLANG_VERSION}" \
     -v "${CLANG_TAG}" \
-    --prefix /opt "clang-${CLANG_VERSION}"
+    --prefix /opt/px_dev/tools "clang-${CLANG_VERSION}"
 
 tmpdir=$(mktemp -d)
-cp -a /opt/"clang-${CLANG_VERSION}"/bin/clang-format "${tmpdir}"
-cp -a /opt/"clang-${CLANG_VERSION}"/bin/clang-tidy "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-format "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/bin/clang-tidy "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/share/clang/clang-tidy-diff.py "${tmpdir}"
+cp -a "${CLANG_NO_DEP_LOCATION}"/share/clang/clang-format-diff.py "${tmpdir}"
 
 pushd "${tmpdir}"
 
@@ -60,6 +100,8 @@ fpm -p "/image/${CLANG_LINTER_DEB_IMAGE_NAME}" \
     -t deb \
     -n "clang-linters-${CLANG_VERSION}" \
     -v "${CLANG_TAG}" \
-    --prefix /opt/px-dev/bin .
+    --prefix /opt/px_dev/bin .
 
 popd
+
+cp "/opt/clang-15.0-min.tar.gz" "/image/${MIN_CLANG_TAR_FILE_NAME}"

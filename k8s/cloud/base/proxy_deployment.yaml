@@ -78,6 +78,22 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FSETID
+            - FOWNER
+            - MKNOD
+            - SETFCAP
+            - SETGID
+            - SETUID
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
       - name: envoy
         imagePullPolicy: IfNotPresent
         image: envoyproxy/envoy:v1.12.2
@@ -108,6 +124,18 @@ spec:
           subPath: envoy.yaml
         - mountPath: /service-certs
           name: service-certs
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
       - name: service-certs
         secret:

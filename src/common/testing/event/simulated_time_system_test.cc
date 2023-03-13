@@ -52,7 +52,7 @@ class SimulatedTimeSystemTest : public testing::Test {
   void AddTask(int64_t delay_ms, char marker) {
     std::chrono::milliseconds delay(delay_ms);
     TimerUPtr timer = dispatcher_->CreateTimer([this, marker, delay]() {
-      PL_UNUSED(delay);
+      PX_UNUSED(delay);
       output_.push_back(marker);
     });
     timer->EnableTimer(delay);

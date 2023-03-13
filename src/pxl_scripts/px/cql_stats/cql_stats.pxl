@@ -111,6 +111,26 @@ def latency_histogram(start_time: str, pod: px.Pod):
     return matching_df.groupby('request_latency').agg(count=('time_', px.count))
 
 
+def cmd_timeseries(start_time: str, pod: px.Pod):
+    ''' Calculate CQL cmd timeseries for CQL traffic per connection to
+    a CQL database pod.
+
+    @start_time The timestamp of data to start at.
+    @pod: The partial/full-name of the pod to monitor.
+
+    Returns: Returns the DataFrame containing Redis cmd time-series for CQL
+    traffic to a CQL database pod.
+    '''
+    df = px.DataFrame(table='cql_events', start_time=start_time)
+    df = format_cql_table(df)
+    df = df[px.contains(df[k8s_object], pod)]
+    df.time_ = px.bin(df.time_, window_ns)
+    df.req_op = px.cql_opcode_name(df.req_op)
+    df = df.groupby(['time_', 'req_op']).agg(
+        throughput_total=('req_op', px.count),
+    )
+    return df
+
 # ----------------------------------------------------------------
 # Utility functions:
 #
@@ -118,6 +138,8 @@ def latency_histogram(start_time: str, pod: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
+
+
 def cql_let_per_pod(start_time: str, pod: px.Pod):
     """ Calculate LET time-series for CQL traffic per Pod, database pair.
 

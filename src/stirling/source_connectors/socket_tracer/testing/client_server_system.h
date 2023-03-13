@@ -104,7 +104,7 @@ class ClientServerSystem {
   template <ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   static void SendData(const TCPSocket& socket, const std::vector<std::string_view>& data) {
     for (auto d : data) {
-      CHECK_EQ(d.length(), (socket.*TSendFn)(d));
+      CHECK_EQ(static_cast<ssize_t>(d.length()), (socket.*TSendFn)(d));
     }
   }
 
@@ -257,12 +257,14 @@ class ClientServerSystem {
   if (client_pid_ == 0) {                                                        \
     client_.Connect(server_);                                                    \
     client_fd_ = client_.sockfd();                                               \
-    CHECK_EQ(write(fd[1], &client_fd_, sizeof(client_fd_)), sizeof(client_fd_)); \
+    CHECK_EQ(static_cast<size_t>(write(fd[1], &client_fd_, sizeof(client_fd_))), \
+             sizeof(client_fd_));                                                \
     RunClient<TRecvFn, TSendFn>(script, client_);                                \
     client_.Close();                                                             \
     exit(0);                                                                     \
   } else {                                                                       \
-    CHECK_EQ(read(fd[0], &client_fd_, sizeof(client_fd_)), sizeof(client_fd_));  \
+    CHECK_EQ(static_cast<size_t>(read(fd[0], &client_fd_, sizeof(client_fd_))),  \
+             sizeof(client_fd_));                                                \
     LOG(INFO) << "Client PID: " << client_pid_;                                  \
     LOG(INFO) << "Client FD: " << client_fd_;                                    \
     close(fd[0]);                                                                \

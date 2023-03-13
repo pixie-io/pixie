@@ -32,8 +32,8 @@ namespace amqp {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::px::operator<<;
-#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
-  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
+#define PX_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 TEST(AMQPFrameDecoderTest, TestParseBufferShort) {
   std::string_view input = CreateStringView<char>("\x02\x00\x01\x00\x00\x00\x19");

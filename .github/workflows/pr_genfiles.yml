@@ -1,0 +1,70 @@
+---
+name: pr-genfile-checker
+on:
+  pull_request
+permissions:
+  contents: read
+jobs:
+  get-dev-image:
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image"
+  run-genfiles:
+    runs-on: ubuntu-latest-8-cores
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 7
+    steps:
+    - uses: actions/checkout@v3
+    - name: go cache
+      uses: actions/cache@v3
+      with:
+        path: /px/pkg/mod
+        key: go-cache-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          go-cache-
+    - name: yarn cache
+      uses: actions/cache@v3
+      with:
+        path: ./src/ui/.yarn/cache
+        key: yarn-cache-${{ hashFiles('src/ui/yarn.lock', 'src/ui/.yarnrc.yml') }}
+        restore-keys: |
+          yarn-cache-
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - uses: dorny/paths-filter@v2.11.1
+      id: changes
+      with:
+        filters: |
+          go:
+          - '**/*.go'
+          graphql:
+          - '**/*.graphql'
+          proto:
+          - '**/*.proto'
+          sql:
+          - '**/*.sql'
+    - name: Run go generate
+      if: ${{ steps.changes.outputs.go == 'true' || steps.changes.outputs.sql == 'true' }}
+      run: go generate ./...
+    - name: Run update go protos
+      if: ${{ steps.changes.outputs.proto == 'true' }}
+      run: scripts/update_go_protos.sh
+    - name: Run update ts protos
+      if: ${{ steps.changes.outputs.proto == 'true' }}
+      run: scripts/update_ts_protos.sh
+    - name: Run update graphql schema
+      if: ${{ steps.changes.outputs.graphql == 'true' }}
+      run: src/cloud/api/controllers/schema/update.sh
+    - name: Fail if any files changed
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        if [[ $(git status --porcelain=v1 | wc -l) -ne 0 ]]; then
+          echo "Please update generated files by running the appropriate script."
+          echo "Changed files:"
+          git diff --name-only
+          exit 1
+        fi
+      # yamllint enable rule:indentation

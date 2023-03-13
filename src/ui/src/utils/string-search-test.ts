@@ -16,30 +16,78 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { normalize, highlightMatch } from './string-search';
+import { highlightNamespacedScoredMatch, highlightScoredMatch } from './string-search';
 
 describe('String search utils', () => {
-  it('Normalizes strings', () => {
-    expect(normalize('')).toBe('');
-    expect(normalize('Foo')).toBe('foo');
-    expect(normalize('   pX/b  __e-*sPo.\tkE123\r\n')).toBe('px/bespoke123');
+  it('Highlights perfect matches of normalized strings', () => {
+    expect(highlightScoredMatch('Foo', 'fOO')).toEqual({ isMatch: true, distance: 0, highlights: [0, 1, 2] });
+    expect(highlightScoredMatch('F_oo', '_fOO')).toEqual({ isMatch: true, distance: 0, highlights: [1, 2, 3] });
   });
 
-  it('Does not highlight if there was no match', () => {
-    expect(highlightMatch('', '')).toEqual([]);
-    expect(highlightMatch('', 'foo')).toEqual([]);
-    expect(highlightMatch('search', '')).toEqual([]);
-    expect(highlightMatch('search', 'foo')).toEqual([]);
+  it('Highlights simple substring matches of normalized strings', () => {
+    // Substring matches are treated as cheaper than typo matches (since it's all contiguos inserts), thus lower scores.
+    expect(highlightScoredMatch('pod', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 1, highlights: [3, 4, 5] });
+    expect(highlightScoredMatch('oba', 'foobar'))
+      .toEqual({ isMatch: true, distance: 1, highlights: [2, 3, 4] });
+    expect(highlightScoredMatch('o!Ba', '  F.o*O!bar__ '))
+      .toEqual({ isMatch: true, distance: 1, highlights: [6, 8, 9] });
   });
 
-  it('Does not highlight if there was a partial match', () => {
-    expect(highlightMatch('foo', 'for')).toEqual([]);
-    expect(highlightMatch('hello', 'heck')).toEqual([]);
+  it('Does not highlight strings that are too different to be reasonable matches', () => {
+    // When the search has nothing in common with the source (zero characters match)
+    expect(highlightScoredMatch('foo', 'bar'))
+      .toEqual({ isMatch: false, distance: Infinity, highlights: [] });
+    // When the highlights are too small of a percentage of the string being searched
+    expect(highlightScoredMatch('a', Array(100).fill('a').join('')))
+      .toEqual({ isMatch: false, distance: Infinity, highlights: [] });
+    // When the edit distance is too high relative to the length of the strings
+    expect(highlightScoredMatch('abcd', 'ade'))
+      .toEqual({ isMatch: false, distance: Infinity, highlights: [] });
+    expect(highlightScoredMatch('a  --Bc@D', 'ade'))
+      .toEqual({ isMatch: false, distance: Infinity, highlights: [] });
   });
 
-  it('Highlights the first configuration it finds', () => {
-    expect(highlightMatch('foo', 'foo')).toEqual([0, 1, 2]);
-    expect(highlightMatch('wor', 'Hello, World!')).toEqual([7, 8, 9]);
-    expect(highlightMatch('Q_LsT', 'px/sql_stats')).toEqual([4, 5, 7, 8]);
+  it('Highlights matches that require Optimal String Alignment to detect', () => {
+    // Note: We're using a slightly customized version of Optimal String Alignment.
+    // Possible edits are:
+    // - Insert a missing character
+    // - Delete a character that isn't in the target string
+    // - Substitute a character that's wrong, but is in the right position
+    // - Transpose a character with its left neighbor (ba -> ab)
+    // - Transpose a character with its left neighbor's left neighbor (cba -> abc)
+    // - Nothing (character is already the same in this position in both strings)
+    // The edits do not all cost the same (normally they'd all cost 1 "edit"); this is so that we can prioritize
+    // edits that the user would believe look closer than edits they would not. That lets highlights look better too.
+    // Thus, `distance` is no longer the actual edit distance, but rather a sort of pathfinding heuristic.
+
+    // One insert and one delete (the x is moved by inserting a new one where it goes and deleting the old one)
+    expect(highlightScoredMatch('p/pxod', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 2, highlights: [0, 2, 3, 4, 5] });
+    expect(highlightScoredMatch('P*/ pxo?D', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 2, highlights: [0, 2, 3, 4, 5] });
+
+    // One close swap (immediately adjacent characters)
+    expect(highlightScoredMatch('ofo', 'foo'))
+      .toEqual({ isMatch: true, distance: .5, highlights: [0, 1, 2] });
+    expect(highlightScoredMatch('! o.fo%% =', 'foo'))
+      .toEqual({ isMatch: true, distance: .5, highlights: [0, 1, 2] });
+
+    // Three insertions, one far swap (two characters that are separated by a third).
+    expect(highlightScoredMatch('dop', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 3.7, highlights: [3, 4, 5] });
+    expect(highlightScoredMatch('D_ o&&p', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 3.7, highlights: [3, 4, 5] });
+
+    // Two transpositions. In this case, every character in the source contributed to the match.
+    expect(highlightScoredMatch('p/xpdo', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 1, highlights: [0, 1, 2, 3, 4, 5] });
+    expect(highlightScoredMatch('P__/ xP*D?!o', 'px/pod'))
+      .toEqual({ isMatch: true, distance: 1, highlights: [0, 1, 2, 3, 4, 5] });
+  });
+
+  it('Splits namespaced searches', () => {
+    expect(highlightNamespacedScoredMatch('pod', 'px/pod', '/'))
+      .toEqual({ isMatch: true, distance: 0, highlights: [3, 4, 5] });
   });
 });

@@ -38,17 +38,6 @@
     "(go\\.sum$)"
   ],
   "linters": {
-    "bpf-naming": {
-      "type": "script-and-regex",
-      "include": [
-        "(.*BUILD\\.bazel$)"
-      ],
-      "exclude": [
-        "(^BUILD\\.bazel$)"
-      ],
-      "script-and-regex.script": "./tools/linters/bpf-test-naming.sh",
-      "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
-    },
     "build-linter": {
       "type": "script-and-regex",
       "include": [
@@ -104,16 +93,11 @@
         "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
     },
-    "experimental-manual": {
-      "type": "script-and-regex",
-      "include": [
-        "(^experimental/.*BUILD\\.bazel$)"
-      ],
-      "script-and-regex.script": "./tools/linters/experimental-manual.sh",
-      "script-and-regex.regex": "/^(?P<severity>)(?P<line>)(?P<file>.*): (?P<message>.*)$/m"
-    },
     "filename": {
-      "type": "filename"
+      "type": "filename",
+      "exclude": [
+        "(^src/shared/metadata/testdata/sysfs.*$)"
+      ]
     },
     "flake8": {
       "type": "flake8",
@@ -156,12 +140,6 @@
     },
     "golint": {
       "type": "golint",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
-    "govet": {
-      "type": "govet",
       "include": [
         "(\\.go$)"
       ]

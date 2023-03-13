@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <vector>
 
 #include "src/carnot/planner/compiler/analyzer/analyzer.h"
@@ -36,7 +37,7 @@ using ::testing::UnorderedElementsAre;
 class MergeNodesTest : public ASTVisitorTest {
  public:
   Status Analyze(std::shared_ptr<IR> ir_graph) {
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
+    PX_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
                         Analyzer::Create(compiler_state_.get()));
     return analyzer->Execute(ir_graph.get());
   }

@@ -196,7 +196,7 @@ inline int64_t ColumnWrapperTmpl<StringValue>::Bytes() const {
   return bytes;
 }
 
-// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+// PX_CARNOT_UPDATE_FOR_NEW_TYPES.
 using BoolValueColumnWrapper = ColumnWrapperTmpl<BoolValue>;
 using Int64ValueColumnWrapper = ColumnWrapperTmpl<Int64Value>;
 using UInt128ValueColumnWrapper = ColumnWrapperTmpl<UInt128Value>;
@@ -236,14 +236,14 @@ inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STR
  * Create a type erased ColumnWrapper from an ArrowArray.
  * @param arr the arrow array.
  * @return A shared_ptr to the ColumnWrapper.
- * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+ * PX_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
 inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow::Array>& arr) {
   auto type_id = arr->type_id();
 #define EXPR_CASE(_dt_) DataTypeTraits<_dt_>::arrow_type_id
 #define TYPE_CASE(_dt_) \
   return FromArrowImpl<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>, _dt_>(arr);
-  PL_SWITCH_FOREACH_DATATYPE_WITHEXPR(type_id, EXPR_CASE, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE_WITHEXPR(type_id, EXPR_CASE, TYPE_CASE);
 #undef EXPR_CASE
 #undef TYPE_CASE
 }
@@ -252,7 +252,7 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(DataType data_type,
                                                     const std::shared_ptr<arrow::Array>& arr) {
 #define TYPE_CASE(_dt_) \
   return FromArrowImpl<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>, _dt_>(arr);
-  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
 }
 
@@ -261,12 +261,12 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(DataType data_type,
  * @param data_type The UDFDataType
  * @param size The length of the column.
  * @return A shared_ptr to the ColumnWrapper.
- * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+ * PX_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
 inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) {
 #define TYPE_CASE(_dt_) \
   return std::make_shared<ColumnWrapperTmpl<DataTypeTraits<_dt_>::value_type>>(size);
-  PL_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
+  PX_SWITCH_FOREACH_DATATYPE(data_type, TYPE_CASE);
 #undef TYPE_CASE
 }
 

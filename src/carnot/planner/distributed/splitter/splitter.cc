@@ -36,7 +36,7 @@ namespace distributed {
 StatusOr<bool> OperatorMustRunOnKelvin(CompilerState* compiler_state, OperatorIR* op) {
   // If the operator can't run on a PEM, or is a blocking operator, we should
   // schedule this node to run on a Kelvin.
-  PL_ASSIGN_OR_RETURN(bool runs_on_pem,
+  PX_ASSIGN_OR_RETURN(bool runs_on_pem,
                       ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(compiler_state, op));
   return !runs_on_pem || op->IsBlocking();
 }
@@ -44,7 +44,7 @@ StatusOr<bool> OperatorMustRunOnKelvin(CompilerState* compiler_state, OperatorIR
 StatusOr<bool> OperatorCanRunOnPEM(CompilerState* compiler_state, OperatorIR* op) {
   // If the operator can't run on a Kelvin, and is not a blocking operator, we can
   // schedule this node to run on a PEM.
-  PL_ASSIGN_OR_RETURN(bool runs_on_pem,
+  PX_ASSIGN_OR_RETURN(bool runs_on_pem,
                       ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(compiler_state, op));
   return runs_on_pem && !op->IsBlocking();
 }
@@ -108,7 +108,7 @@ StatusOr<absl::flat_hash_map<int64_t, bool>> Splitter::GetKelvinNodes(
       }
       // A child is on kelvin if this parent is on Kelvin or if it is a node that must run on
       // Kelvin.
-      PL_ASSIGN_OR_RETURN(bool node_on_kelvin, OperatorMustRunOnKelvin(compiler_state_, child_op));
+      PX_ASSIGN_OR_RETURN(bool node_on_kelvin, OperatorMustRunOnKelvin(compiler_state_, child_op));
       on_kelvin[child_op->id()] = is_parent_on_kelvin || node_on_kelvin;
       child_q.push(child_op);
     }
@@ -117,16 +117,16 @@ StatusOr<absl::flat_hash_map<int64_t, bool>> Splitter::GetKelvinNodes(
 }
 
 StatusOr<std::unique_ptr<BlockingSplitPlan>> Splitter::SplitKelvinAndAgents(const IR* input_plan) {
-  PL_ASSIGN_OR_RETURN(auto logical_plan, input_plan->Clone());
+  PX_ASSIGN_OR_RETURN(auto logical_plan, input_plan->Clone());
 
   // Run the pre-split analysis step.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitAnalyzer> analyzer,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitAnalyzer> analyzer,
                       PreSplitAnalyzer::Create(compiler_state_));
-  PL_RETURN_IF_ERROR(analyzer->Execute(logical_plan.get()));
+  PX_RETURN_IF_ERROR(analyzer->Execute(logical_plan.get()));
   // Run the pre-split optimization step.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitOptimizer> optimizer,
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitOptimizer> optimizer,
                       PreSplitOptimizer::Create(compiler_state_));
-  PL_RETURN_IF_ERROR(optimizer->Execute(logical_plan.get()));
+  PX_RETURN_IF_ERROR(optimizer->Execute(logical_plan.get()));
 
   // Source_ids are necessary because we will make a clone of the plan at which point we will no
   // longer be able to use IRNode pointers and only IDs will be valid.
@@ -135,26 +135,26 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> Splitter::SplitKelvinAndAgents(cons
     source_ids.push_back(src->id());
   }
 
-  PL_ASSIGN_OR_RETURN(auto on_kelvin, GetKelvinNodes(logical_plan.get(), source_ids));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan,
+  PX_ASSIGN_OR_RETURN(auto on_kelvin, GetKelvinNodes(logical_plan.get(), source_ids));
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan,
                       CreateGRPCBridgePlan(logical_plan.get(), on_kelvin, source_ids));
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> pem_plan, grpc_bridge_plan->Clone());
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> kelvin_plan, grpc_bridge_plan->Clone());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> pem_plan, grpc_bridge_plan->Clone());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> kelvin_plan, grpc_bridge_plan->Clone());
 
   BlockingSplitNodeIDGroups nodes = GetSplitGroups(kelvin_plan.get(), on_kelvin);
   // Removes all of the nodes that are not on PEM.
-  PL_RETURN_IF_ERROR(pem_plan->Prune(nodes.after_blocking_nodes));
+  PX_RETURN_IF_ERROR(pem_plan->Prune(nodes.after_blocking_nodes));
   // Removes all of the nodes that are not on Kelvin.
-  PL_RETURN_IF_ERROR(kelvin_plan->Prune(nodes.before_blocking_nodes));
+  PX_RETURN_IF_ERROR(kelvin_plan->Prune(nodes.before_blocking_nodes));
 
   // Will error out if a Kelvin-only UDF has been scheduled on the PEM portion of the plan.
   ScalarUDFsRunOnPEMRule pem_rule(compiler_state_);
-  PL_RETURN_IF_ERROR(pem_rule.Execute(pem_plan.get()));
+  PX_RETURN_IF_ERROR(pem_rule.Execute(pem_plan.get()));
 
   // Will error out if a PEM-only UDF has been scheduled on the Kelvin portion of the plan.
   ScalarUDFsRunOnKelvinRule kelvin_rule(compiler_state_);
-  PL_RETURN_IF_ERROR(kelvin_rule.Execute(kelvin_plan.get()));
+  PX_RETURN_IF_ERROR(kelvin_rule.Execute(kelvin_plan.get()));
 
   auto split_plan = std::make_unique<BlockingSplitPlan>();
   split_plan->after_blocking = std::move(kelvin_plan);
@@ -298,7 +298,7 @@ Status Splitter::ExtractBridgesFromGRPCBridgeTree(
     auto op = bridge_node.starting_op;
 
     while (op->Children().size() == 1) {
-      PL_ASSIGN_OR_RETURN(bool on_pem, OperatorCanRunOnPEM(compiler_state_, op->Children()[0]));
+      PX_ASSIGN_OR_RETURN(bool on_pem, OperatorCanRunOnPEM(compiler_state_, op->Children()[0]));
       if (!on_pem) {
         break;
       }
@@ -316,7 +316,7 @@ Status Splitter::ExtractBridgesFromGRPCBridgeTree(
   // And then run through the child bridge nodes, which will either have it's own partial operator
   // or will just create a grpc bridge around the blob.
   for (const auto& child_bridge_node : bridge_node.children) {
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         ExtractBridgesFromGRPCBridgeTree(child_bridge_node, new_grpc_bridges, old_grpc_bridges));
   }
   return Status::OK();
@@ -333,7 +333,7 @@ StatusOr<absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>> Splitter::C
     bridge_tree.starting_op = src;
     ConstructGRPCBridgeTree(src, &bridge_tree, grpc_bridges);
     // Consolidate GRPCBridges using the tree structure.
-    PL_RETURN_IF_ERROR(
+    PX_RETURN_IF_ERROR(
         ExtractBridgesFromGRPCBridgeTree(bridge_tree, &new_grpc_bridges, grpc_bridges));
   }
 
@@ -414,13 +414,13 @@ Status Splitter::InsertGRPCBridge(IR* plan, OperatorIR* parent,
   // assumes that network costs are greater than processing costs, so we just minimize network
   // costs here.
   if (!AllHavePartialMgr(blocking_children)) {
-    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(parent, grpc_id_counter_));
-    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+    PX_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(parent, grpc_id_counter_));
+    PX_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
                         CreateGRPCSourceGroup(parent, grpc_id_counter_));
     DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
     // Go through the blocking_children and replace the parent with the new child.
     for (auto child : blocking_children) {
-      PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
+      PX_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
     }
     ++grpc_id_counter_;
     return Status::OK();
@@ -431,24 +431,24 @@ Status Splitter::InsertGRPCBridge(IR* plan, OperatorIR* parent,
     // Create the prepare version of the operator.
     PartialOperatorMgr* mgr = GetPartialOperatorMgr(c);
     DCHECK(mgr) << "mgr not found for " << c->DebugString();
-    PL_ASSIGN_OR_RETURN(OperatorIR * prepare_op, mgr->CreatePrepareOperator(plan, c));
+    PX_ASSIGN_OR_RETURN(OperatorIR * prepare_op, mgr->CreatePrepareOperator(plan, c));
     DCHECK(prepare_op->IsChildOf(parent)) << absl::Substitute(
         "'$0' is not a child of '$1'", prepare_op->DebugString(), parent->DebugString());
 
     // Create the GRPC Bridge from the prepare_op.
-    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(prepare_op, grpc_id_counter_));
-    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+    PX_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(prepare_op, grpc_id_counter_));
+    PX_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
                         CreateGRPCSourceGroup(prepare_op, grpc_id_counter_));
     DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 
     // Create the finalize version of the operator, getting input from the grpc_source_group.
-    PL_ASSIGN_OR_RETURN(OperatorIR * finalize_op,
+    PX_ASSIGN_OR_RETURN(OperatorIR * finalize_op,
                         mgr->CreateMergeOperator(plan, grpc_source_group, c));
     // Replace this child's children with the new parent.
     for (auto grandchild : c->Children()) {
-      PL_RETURN_IF_ERROR(grandchild->ReplaceParent(c, finalize_op));
+      PX_RETURN_IF_ERROR(grandchild->ReplaceParent(c, finalize_op));
     }
-    PL_RETURN_IF_ERROR(plan->DeleteNode(c->id()));
+    PX_RETURN_IF_ERROR(plan->DeleteNode(c->id()));
     ++grpc_id_counter_;
   }
   return Status::OK();
@@ -457,13 +457,13 @@ Status Splitter::InsertGRPCBridge(IR* plan, OperatorIR* parent,
 StatusOr<std::unique_ptr<IR>> Splitter::CreateGRPCBridgePlan(
     const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
     const std::vector<int64_t>& sources) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan, logical_plan->Clone());
+  PX_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan, logical_plan->Clone());
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> edges_to_break =
       GetEdgesToBreak(grpc_bridge_plan.get(), on_kelvin, sources);
 
-  PL_ASSIGN_OR_RETURN(edges_to_break, ConsolidateEdges(grpc_bridge_plan.get(), edges_to_break));
+  PX_ASSIGN_OR_RETURN(edges_to_break, ConsolidateEdges(grpc_bridge_plan.get(), edges_to_break));
   for (const auto& [parent, children] : edges_to_break) {
-    PL_RETURN_IF_ERROR(InsertGRPCBridge(grpc_bridge_plan.get(), parent, children));
+    PX_RETURN_IF_ERROR(InsertGRPCBridge(grpc_bridge_plan.get(), parent, children));
   }
   return grpc_bridge_plan;
 }
@@ -472,9 +472,9 @@ StatusOr<GRPCSinkIR*> Splitter::CreateGRPCSink(OperatorIR* parent_op, int64_t gr
   DCHECK(parent_op->is_type_resolved()) << parent_op->DebugString();
   IR* graph = parent_op->graph();
 
-  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
+  PX_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
                       graph->CreateNode<GRPCSinkIR>(parent_op->ast(), parent_op, grpc_id));
-  PL_RETURN_IF_ERROR(grpc_sink->SetResolvedType(parent_op->resolved_type()));
+  PX_RETURN_IF_ERROR(grpc_sink->SetResolvedType(parent_op->resolved_type()));
   return grpc_sink;
 }
 
@@ -483,7 +483,7 @@ StatusOr<GRPCSourceGroupIR*> Splitter::CreateGRPCSourceGroup(OperatorIR* parent_
   DCHECK(parent_op->is_type_resolved()) << parent_op->DebugString();
   IR* graph = parent_op->graph();
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       GRPCSourceGroupIR * grpc_source_group,
       graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast(), grpc_id, parent_op->resolved_type()));
   return grpc_source_group;

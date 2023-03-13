@@ -21,3 +21,4 @@
 export * from './empty-input-provider';
 export * from './missing-script-provider';
 export * from './script-provider';
+export * from './script-command-is-valid-provider';

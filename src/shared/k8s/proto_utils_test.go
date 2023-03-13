@@ -45,7 +45,6 @@ name: "object_md"
 namespace: "a_namespace"
 uid: "ijkl"
 resource_version: "1",
-cluster_name: "a_cluster",
 owner_references {
   kind: "pod"
   name: "test"
@@ -129,7 +128,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1",
-	cluster_name: "a_cluster",
 	owner_references {
 	  kind: "pod"
 	  name: "test"
@@ -173,7 +171,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1",
-	cluster_name: "a_cluster",
 	owner_references {
 	  kind: "pod"
 	  name: "test"
@@ -216,7 +213,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1",
-	cluster_name: "a_cluster",
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
 	owner_references {
@@ -364,7 +360,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1",
-	cluster_name: "a_cluster",
 	owner_references {
 	  kind: "pod"
 	  name: "test"
@@ -457,7 +452,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1"
-	cluster_name: "a_cluster"
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
 	labels {
@@ -509,7 +503,6 @@ spec {
 			namespace: "a_namespace"
 			uid: "ijkl"
 			resource_version: "1",
-			cluster_name: "a_cluster",
 			owner_references {
 			  kind: "pod"
 			  name: "test"
@@ -549,7 +542,6 @@ metadata {
 	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1"
-	cluster_name: "a_cluster"
 	creation_timestamp_ns: 4
 	deletion_timestamp_ns: 6
 	owner_references {
@@ -601,7 +593,6 @@ spec {
 			namespace: "a_namespace"
 			uid: "ijkl"
 			resource_version: "1",
-			cluster_name: "a_cluster",
 			owner_references {
 				kind: "ReplicaSet"
 				name: "pod1"
@@ -699,7 +690,6 @@ func TestObjectMetadataToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		OwnerReferences:   ownerRefs,
 		Labels:            labels,
 		CreationTimestamp: creationTime,
@@ -766,7 +756,6 @@ func TestObjectMetadataFromProto(t *testing.T) {
 	assert.Equal(t, "a_namespace", obj.Namespace)
 	assert.Equal(t, types.UID("ijkl"), obj.UID)
 	assert.Equal(t, "1", obj.ResourceVersion)
-	assert.Equal(t, "a_cluster", obj.ClusterName)
 	assert.Equal(t, 2, len(obj.Labels))
 	assert.Equal(t, "value", obj.Labels["test"])
 	assert.Equal(t, "another_value", obj.Labels["label"])
@@ -879,7 +868,6 @@ func TestPodToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		OwnerReferences:   ownerRefs,
 		CreationTimestamp: creationTime,
 	}
@@ -956,7 +944,6 @@ func TestTerminatedPodToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		OwnerReferences:   ownerRefs,
 		CreationTimestamp: creationTime,
 		DeletionTimestamp: &delTime,
@@ -1047,7 +1034,6 @@ func TestNamespaceToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		CreationTimestamp: creationTime,
 		DeletionTimestamp: &delTime,
 		OwnerReferences:   ownerRefs,
@@ -1462,7 +1448,6 @@ func TestServiceToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		OwnerReferences:   ownerRefs,
 		CreationTimestamp: creationTime,
 		DeletionTimestamp: &delTime,
@@ -1644,7 +1629,6 @@ func TestReplicaSetToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		CreationTimestamp: metav1.Unix(0, 4),
 		DeletionTimestamp: &deletionTime,
 		OwnerReferences: []metav1.OwnerReference{
@@ -1694,7 +1678,6 @@ func TestReplicaSetToProto(t *testing.T) {
 				Namespace:       "a_namespace",
 				UID:             "ijkl",
 				ResourceVersion: "1",
-				ClusterName:     "a_cluster",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "pod",
@@ -1756,7 +1739,6 @@ func TestDeploymentToProto(t *testing.T) {
 		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
-		ClusterName:       "a_cluster",
 		CreationTimestamp: metav1.Unix(0, 4),
 		DeletionTimestamp: &deletionTime,
 		OwnerReferences: []metav1.OwnerReference{
@@ -1806,7 +1788,6 @@ func TestDeploymentToProto(t *testing.T) {
 				Namespace:       "a_namespace",
 				UID:             "ijkl",
 				ResourceVersion: "1",
-				ClusterName:     "a_cluster",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind: "ReplicaSet",

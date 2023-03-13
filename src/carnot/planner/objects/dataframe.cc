@@ -43,14 +43,14 @@ StatusOr<std::shared_ptr<Dataframe>> GetAsDataFrame(QLObjectPtr obj) {
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(CompilerState* compiler_state,
                                                        OperatorIR* op, ASTVisitor* visitor) {
   std::shared_ptr<Dataframe> df(new Dataframe(compiler_state, op, op->graph(), visitor));
-  PL_RETURN_IF_ERROR(df->Init());
+  PX_RETURN_IF_ERROR(df->Init());
   return df;
 }
 
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(CompilerState* compiler_state, IR* graph,
                                                        ASTVisitor* visitor) {
   std::shared_ptr<Dataframe> df(new Dataframe(compiler_state, nullptr, graph, visitor));
-  PL_RETURN_IF_ERROR(df->Init());
+  PX_RETURN_IF_ERROR(df->Init());
   return df;
 }
 
@@ -66,7 +66,7 @@ StatusOr<std::vector<TIRNodeType*>> ParseAsListOf(QLObjectPtr obj, std::string_v
     if (with_index) {
       name = absl::Substitute("$0 (index $1)", arg_name, idx);
     }
-    PL_ASSIGN_OR_RETURN(auto casted, GetArgAs<TIRNodeType>(item, name));
+    PX_ASSIGN_OR_RETURN(auto casted, GetArgAs<TIRNodeType>(item, name));
     result.push_back(casted);
   }
   return result;
@@ -82,7 +82,7 @@ StatusOr<OperatorIR*> GetOperator(const QLObjectPtr& obj) {
 StatusOr<std::vector<OperatorIR*>> ParseAsListOfOperators(QLObjectPtr obj) {
   std::vector<OperatorIR*> result;
   for (const auto& [idx, item] : Enumerate(ObjectAsCollection(obj))) {
-    PL_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
+    PX_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
     result.push_back(casted);
   }
   return result;
@@ -90,7 +90,7 @@ StatusOr<std::vector<OperatorIR*>> ParseAsListOfOperators(QLObjectPtr obj) {
 
 StatusOr<std::vector<std::string>> ParseAsListOfStrings(QLObjectPtr obj,
                                                         std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(auto string_irs, ParseAsListOf<StringIR>(obj, arg_name));
+  PX_ASSIGN_OR_RETURN(auto string_irs, ParseAsListOf<StringIR>(obj, arg_name));
   std::vector<std::string> strs;
   strs.reserve(string_irs.size());
   for (StringIR* str : string_irs) {
@@ -105,22 +105,22 @@ StatusOr<std::vector<std::string>> ParseAsListOfStrings(QLObjectPtr obj,
 StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* graph,
                                            const pypa::AstPtr& ast, const ParsedArgs& args,
                                            ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+  PX_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(ast, args, "table"));
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("select"), "select"));
   std::string table_name = table->str();
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
+  PX_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
                       graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
 
   if (!NoneObject::IsNoneObject(args.GetArg("start_time"))) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
-    PL_ASSIGN_OR_RETURN(auto start_time_ns,
+    PX_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(ast, args, "start_time"));
+    PX_ASSIGN_OR_RETURN(auto start_time_ns,
                         ParseAllTimeFormats(compiler_state->time_now().val, start_time));
     mem_source_op->SetTimeStartNS(start_time_ns);
   }
   if (!NoneObject::IsNoneObject(args.GetArg("end_time"))) {
-    PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
-    PL_ASSIGN_OR_RETURN(auto end_time_ns,
+    PX_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(ast, args, "end_time"));
+    PX_ASSIGN_OR_RETURN(auto end_time_ns,
                         ParseAllTimeFormats(compiler_state->time_now().val, end_time));
     mem_source_op->SetTimeStopNS(end_time_ns);
   }
@@ -130,12 +130,12 @@ StatusOr<QLObjectPtr> DataFrameConstructor(CompilerState* compiler_state, IR* gr
 StatusOr<std::vector<ColumnIR*>> ProcessCols(IR* graph, const pypa::AstPtr& ast, QLObjectPtr obj,
                                              std::string arg_name, int64_t parent_index) {
   DCHECK(obj != nullptr);
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names, ParseAsListOfStrings(obj, arg_name));
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> column_names, ParseAsListOfStrings(obj, arg_name));
   std::vector<ColumnIR*> columns;
   columns.reserve(column_names.size());
 
   for (const auto& col_name : column_names) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(ast, col_name, parent_index));
+    PX_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(ast, col_name, parent_index));
     columns.push_back(col);
   }
   return columns;
@@ -147,14 +147,14 @@ StatusOr<QLObjectPtr> JoinHandler(CompilerState* compiler_state, IR* graph, Oper
                                   ASTVisitor* visitor) {
   // GetArg returns non-nullptr or errors out in Debug mode. No need
   // to check again.
-  PL_ASSIGN_OR_RETURN(OperatorIR * right, GetOperator(args.GetArg("right")));
-  PL_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(ast, args, "how"));
+  PX_ASSIGN_OR_RETURN(OperatorIR * right, GetOperator(args.GetArg("right")));
+  PX_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(ast, args, "how"));
   QLObjectPtr suffixes_node = args.GetArg("suffixes");
   std::string how_type = how->str();
 
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> left_on_cols,
+  PX_ASSIGN_OR_RETURN(std::vector<ColumnIR*> left_on_cols,
                       ProcessCols(graph, ast, args.GetArg("left_on"), "left_on", 0));
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> right_on_cols,
+  PX_ASSIGN_OR_RETURN(std::vector<ColumnIR*> right_on_cols,
                       ProcessCols(graph, ast, args.GetArg("right_on"), "right_on", 1));
 
   // TODO(philkuz) consider using a struct instead of a vector because it's a fixed size.
@@ -164,14 +164,14 @@ StatusOr<QLObjectPtr> JoinHandler(CompilerState* compiler_state, IR* graph, Oper
         suffixes_node->name());
   }
 
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> suffix_strs,
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> suffix_strs,
                       ParseAsListOfStrings(suffixes_node, "suffixes"));
   if (suffix_strs.size() != 2) {
     return suffixes_node->CreateError("'suffixes' must be a list with 2 elements. Received $0",
                                       suffix_strs.size());
   }
 
-  PL_ASSIGN_OR_RETURN(JoinIR * join_op,
+  PX_ASSIGN_OR_RETURN(JoinIR * join_op,
                       graph->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{op, right}, how_type,
                                                 left_on_cols, right_on_cols, suffix_strs));
   return Dataframe::Create(compiler_state, join_op, visitor);
@@ -198,9 +198,9 @@ StatusOr<FuncIR*> ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
     return func->CreateError("Expected second tuple argument to be type Func, received $0",
                              func->name());
   }
-  PL_ASSIGN_OR_RETURN(auto called, std::static_pointer_cast<FuncObject>(func)->Call({}, ast));
+  PX_ASSIGN_OR_RETURN(auto called, std::static_pointer_cast<FuncObject>(func)->Call({}, ast));
 
-  PL_ASSIGN_OR_RETURN(FuncIR * func_ir, GetArgAs<FuncIR>(called, "last tuple argument"));
+  PX_ASSIGN_OR_RETURN(FuncIR * func_ir, GetArgAs<FuncIR>(called, "last tuple argument"));
 
   // The function should be specified as a single function by itself.
   // This could change in the future.
@@ -210,9 +210,9 @@ StatusOr<FuncIR*> ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
 
   // parent_op_idx is 0 because we only have one parent for an aggregate.
   for (auto name : arg_names) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast(), name->str(),
+    PX_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast(), name->str(),
                                                                     /* parent_op_idx */ 0));
-    PL_RETURN_IF_ERROR(func_ir->AddArg(argcol));
+    PX_RETURN_IF_ERROR(func_ir->AddArg(argcol));
   }
   return func_ir;
 }
@@ -226,13 +226,13 @@ StatusOr<QLObjectPtr> AggHandler(CompilerState* compiler_state, IR* graph, Opera
     if (expr_obj->type() != QLObjectType::kTuple) {
       return expr_obj->CreateError("Expected tuple for $0 but received $1", name, expr_obj->name());
     }
-    PL_ASSIGN_OR_RETURN(
+    PX_ASSIGN_OR_RETURN(
         FuncIR * parsed_expr,
         ParseNameTuple(graph, ast, std::static_pointer_cast<TupleObject>(expr_obj)));
     aggregate_expressions.push_back({name, parsed_expr});
   }
 
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       BlockingAggIR * agg_op,
       graph->CreateNode<BlockingAggIR>(ast, op, std::vector<ColumnIR*>{}, aggregate_expressions));
   return Dataframe::Create(compiler_state, agg_op, visitor);
@@ -249,9 +249,9 @@ StatusOr<QLObjectPtr> DropHandler(CompilerState* compiler_state, IR* graph, Oper
                                   const pypa::AstPtr& ast, const ParsedArgs& args,
                                   ASTVisitor* visitor) {
   QLObjectPtr columns_arg = args.GetArg("columns");
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> columns,
                       ParseAsListOfStrings(args.GetArg("columns"), "columns"));
-  PL_ASSIGN_OR_RETURN(DropIR * drop_op, graph->CreateNode<DropIR>(ast, op, columns));
+  PX_ASSIGN_OR_RETURN(DropIR * drop_op, graph->CreateNode<DropIR>(ast, op, columns));
   return Dataframe::Create(compiler_state, drop_op, visitor);
 }
 
@@ -260,12 +260,12 @@ StatusOr<QLObjectPtr> LimitHandler(CompilerState* compiler_state, IR* graph, Ope
                                    const pypa::AstPtr& ast, const ParsedArgs& args,
                                    ASTVisitor* visitor) {
   // TODO(philkuz) (PL-1161) Add support for compile time evaluation of Limit argument.
-  PL_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(ast, args, "n"));
-  PL_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(ast, args, "_pem_only"));
+  PX_ASSIGN_OR_RETURN(IntIR * rows_node, GetArgAs<IntIR>(ast, args, "n"));
+  PX_ASSIGN_OR_RETURN(IntIR * pem_only, GetArgAs<IntIR>(ast, args, "_pem_only"));
   int64_t limit_value = rows_node->val();
   bool pem_only_val = pem_only->val() > 0;
 
-  PL_ASSIGN_OR_RETURN(LimitIR * limit_op,
+  PX_ASSIGN_OR_RETURN(LimitIR * limit_op,
                       graph->CreateNode<LimitIR>(ast, op, limit_value, pem_only_val));
   return Dataframe::Create(compiler_state, limit_op, visitor);
 }
@@ -294,7 +294,7 @@ StatusOr<QLObjectPtr> SubscriptHandler::Eval(CompilerState* compiler_state, IR* 
                                              const ParsedArgs& args, ASTVisitor* visitor) {
   QLObjectPtr key = args.GetArg("key");
   if (CollectionObject::IsCollection(key)) {
-    PL_ASSIGN_OR_RETURN(std::vector<StringIR*> keep_cols, ParseAsListOf<StringIR>(key, "key"));
+    PX_ASSIGN_OR_RETURN(std::vector<StringIR*> keep_cols, ParseAsListOf<StringIR>(key, "key"));
     return EvalKeep(compiler_state, graph, op, ast, keep_cols, visitor);
   }
   if (!ExprObject::IsExprObject(key)) {
@@ -314,13 +314,13 @@ StatusOr<QLObjectPtr> SubscriptHandler::Eval(CompilerState* compiler_state, IR* 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(CompilerState* compiler_state, IR* graph,
                                                    OperatorIR* op, const pypa::AstPtr& ast,
                                                    ExpressionIR* expr, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(FilterIR * filter_op, graph->CreateNode<FilterIR>(ast, op, expr));
+  PX_ASSIGN_OR_RETURN(FilterIR * filter_op, graph->CreateNode<FilterIR>(ast, op, expr));
   return Dataframe::Create(compiler_state, filter_op, visitor);
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalColumn(IR* graph, OperatorIR*, const pypa::AstPtr&,
                                                    StringIR* expr, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(ColumnIR * column, graph->CreateNode<ColumnIR>(expr->ast(), expr->str(),
+  PX_ASSIGN_OR_RETURN(ColumnIR * column, graph->CreateNode<ColumnIR>(expr->ast(), expr->str(),
                                                                      /* parent_op_idx */ 0));
   return ExprObject::Create(column, visitor);
 }
@@ -342,12 +342,12 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(CompilerState* compiler_state, 
     keep_cols_seen.insert(col_name);
 
     // parent_op_idx is 0 because we only have one parent for a map.
-    PL_ASSIGN_OR_RETURN(ColumnIR * column,
+    PX_ASSIGN_OR_RETURN(ColumnIR * column,
                         graph->CreateNode<ColumnIR>(ast, col_name, /* parent_op_idx */ 0));
     keep_exprs.emplace_back(col_name, column);
   }
 
-  PL_ASSIGN_OR_RETURN(MapIR * map_op, graph->CreateNode<MapIR>(ast, op, keep_exprs,
+  PX_ASSIGN_OR_RETURN(MapIR * map_op, graph->CreateNode<MapIR>(ast, op, keep_exprs,
                                                                /* keep_input_columns */ false));
   return Dataframe::Create(compiler_state, map_op, visitor);
 }
@@ -356,17 +356,17 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(CompilerState* compiler_state, 
 StatusOr<QLObjectPtr> GroupByHandler(CompilerState* compiler_state, IR* graph, OperatorIR* op,
                                      const pypa::AstPtr& ast, const ParsedArgs& args,
                                      ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> group_names,
+  PX_ASSIGN_OR_RETURN(std::vector<std::string> group_names,
                       ParseAsListOfStrings(args.GetArg("by"), "by"));
   std::vector<ColumnIR*> groups;
   groups.reserve(group_names.size());
   for (const auto& group : group_names) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col,
+    PX_ASSIGN_OR_RETURN(ColumnIR * col,
                         graph->CreateNode<ColumnIR>(ast, group, /* parent_idx */ 0));
     groups.push_back(col);
   }
 
-  PL_ASSIGN_OR_RETURN(GroupByIR * group_by_op, graph->CreateNode<GroupByIR>(ast, op, groups));
+  PX_ASSIGN_OR_RETURN(GroupByIR * group_by_op, graph->CreateNode<GroupByIR>(ast, op, groups));
   return Dataframe::Create(compiler_state, group_by_op, visitor);
 }
 
@@ -376,10 +376,10 @@ StatusOr<QLObjectPtr> UnionHandler(CompilerState* compiler_state, IR* graph, Ope
                                    ASTVisitor* visitor) {
   std::vector<OperatorIR*> parents{op};
   for (const auto& [idx, item] : Enumerate(ObjectAsCollection(args.GetArg("objs")))) {
-    PL_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
+    PX_ASSIGN_OR_RETURN(auto casted, GetOperator(item));
     parents.push_back(casted);
   }
-  PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
+  PX_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
   return Dataframe::Create(compiler_state, union_op, visitor);
 }
 
@@ -387,23 +387,23 @@ StatusOr<QLObjectPtr> UnionHandler(CompilerState* compiler_state, IR* graph, Ope
 StatusOr<QLObjectPtr> RollingHandler(CompilerState* compiler_state, IR* graph, OperatorIR* op,
                                      const pypa::AstPtr& ast, const ParsedArgs& args,
                                      ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(ast, args, "on"));
+  PX_ASSIGN_OR_RETURN(StringIR * window_col_name, GetArgAs<StringIR>(ast, args, "on"));
   if (window_col_name->str() != "time_") {
     return window_col_name->CreateIRNodeError(
         "Windowing is only supported on time_ at the moment, not $0", window_col_name->str());
   }
 
-  PL_ASSIGN_OR_RETURN(ExpressionIR * window_size_node, GetArgAs<ExpressionIR>(ast, args, "window"));
+  PX_ASSIGN_OR_RETURN(ExpressionIR * window_size_node, GetArgAs<ExpressionIR>(ast, args, "window"));
   // Set time_now to 0 because we don't need an offset time.
-  PL_ASSIGN_OR_RETURN(auto window_size, ParseAllTimeFormats(/* time_now */ 0, window_size_node));
+  PX_ASSIGN_OR_RETURN(auto window_size, ParseAllTimeFormats(/* time_now */ 0, window_size_node));
   if (window_size <= 0) {
     return window_size_node->CreateIRNodeError("Window size must be > 0");
   }
 
-  PL_ASSIGN_OR_RETURN(ColumnIR * window_col,
+  PX_ASSIGN_OR_RETURN(ColumnIR * window_col,
                       graph->CreateNode<ColumnIR>(ast, window_col_name->str(), /* parent_idx */ 0));
 
-  PL_ASSIGN_OR_RETURN(RollingIR * rolling_op,
+  PX_ASSIGN_OR_RETURN(RollingIR * rolling_op,
                       graph->CreateNode<RollingIR>(ast, op, window_col, window_size));
   return Dataframe::Create(compiler_state, rolling_op, visitor);
 }
@@ -415,12 +415,12 @@ StatusOr<QLObjectPtr> RollingHandler(CompilerState* compiler_state, IR* graph, O
 StatusOr<QLObjectPtr> StreamHandler(CompilerState* compiler_state, IR* graph, OperatorIR* op,
                                     const pypa::AstPtr& ast, const ParsedArgs&,
                                     ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(StreamIR * stream_op, graph->CreateNode<StreamIR>(ast, op));
+  PX_ASSIGN_OR_RETURN(StreamIR * stream_op, graph->CreateNode<StreamIR>(ast, op));
   return Dataframe::Create(compiler_state, stream_op, visitor);
 }
 
 Status Dataframe::Init() {
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> constructor_fn,
       FuncObject::Create(
           name(), {"table", "select", "start_time", "end_time"},
@@ -431,7 +431,7 @@ Status Dataframe::Init() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   AddCallMethod(constructor_fn);
-  PL_RETURN_IF_ERROR(constructor_fn->SetDocString(kDataFrameConstuctorDocString));
+  PX_RETURN_IF_ERROR(constructor_fn->SetDocString(kDataFrameConstuctorDocString));
   // If the op is null, then don't init the other funcs.
   if (op() == nullptr) {
     return Status::OK();
@@ -442,7 +442,7 @@ Status Dataframe::Init() {
    * def merge(self, right, how, left_on, right_on, suffixes=['_x', '_y']):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> mergefn,
       FuncObject::Create(
           kMergeOpID, {"right", "how", "left_on", "right_on", "suffixes"},
@@ -453,7 +453,7 @@ Status Dataframe::Init() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
 
-  PL_RETURN_IF_ERROR(mergefn->SetDocString(kMergeOpDocstring));
+  PX_RETURN_IF_ERROR(mergefn->SetDocString(kMergeOpDocstring));
   AddMethod(kMergeOpID, mergefn);
 
   /**
@@ -461,7 +461,7 @@ Status Dataframe::Init() {
    * def agg(self, **kwargs):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> aggfn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> aggfn,
                       FuncObject::Create(kBlockingAggOpID, {}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ true,
@@ -469,25 +469,25 @@ Status Dataframe::Init() {
                                                    std::placeholders::_1, std::placeholders::_2,
                                                    std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(aggfn->SetDocString(kBlockingAggOpDocstring));
+  PX_RETURN_IF_ERROR(aggfn->SetDocString(kBlockingAggOpDocstring));
   AddMethod(kBlockingAggOpID, aggfn);
 
   // TODO(philkuz) temporary measure, need to fix the subscript assignment.
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> mapfn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> mapfn,
                       FuncObject::Create(kMapOpID, {"column_name", "expr"}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
                                          std::bind(&MapAssignHandler, std::placeholders::_1,
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(mapfn->SetDocString(kMapOpDocstring));
+  PX_RETURN_IF_ERROR(mapfn->SetDocString(kMapOpDocstring));
   AddMethod(kMapOpID, mapfn);
   /**
    * # Equivalent to the python method method syntax:
    * def drop(self, fn):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> dropfn,
       FuncObject::Create(
           kDropOpID, {"columns"}, {}, /* has_variable_len_args */ false,
@@ -495,7 +495,7 @@ Status Dataframe::Init() {
           std::bind(&DropHandler, compiler_state_, graph(), op(), std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
-  PL_RETURN_IF_ERROR(dropfn->SetDocString(kDropOpDocstring));
+  PX_RETURN_IF_ERROR(dropfn->SetDocString(kDropOpDocstring));
   AddMethod(kDropOpID, dropfn);
 
   /**
@@ -503,7 +503,7 @@ Status Dataframe::Init() {
    * def head(self, n=5, _pem_only=False):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> limitfn,
       FuncObject::Create(
           kLimitOpID, {"n", "_pem_only"}, {{"n", "5"}, {"_pem_only", "0"}},
@@ -512,7 +512,7 @@ Status Dataframe::Init() {
           std::bind(&LimitHandler, compiler_state_, graph(), op(), std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
-  PL_RETURN_IF_ERROR(limitfn->SetDocString(kLimitOpDocstring));
+  PX_RETURN_IF_ERROR(limitfn->SetDocString(kLimitOpDocstring));
   AddMethod(kLimitOpID, limitfn);
 
   /**
@@ -531,7 +531,7 @@ Status Dataframe::Init() {
                                std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                      ast_visitor()));
   // TODO(philkuz) figure out how to combine these.
-  PL_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
+  PX_RETURN_IF_ERROR(subscript_fn->SetDocString(kKeepOpDocstring));
   AddSubscriptMethod(subscript_fn);
   // TODO(philkuz) temporary measure to make sure this is recorded.
   std::shared_ptr<FuncObject> filter_fn(
@@ -541,7 +541,7 @@ Status Dataframe::Init() {
                      std::bind(&SubscriptHandler::Eval, compiler_state_, graph(), op(),
                                std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                      ast_visitor()));
-  PL_RETURN_IF_ERROR(filter_fn->SetDocString(kFilterOpDocstring));
+  PX_RETURN_IF_ERROR(filter_fn->SetDocString(kFilterOpDocstring));
   AddMethod(kFilterOpID, filter_fn);
 
   std::shared_ptr<FuncObject> group_by_fn(
@@ -551,7 +551,7 @@ Status Dataframe::Init() {
                      std::bind(&GroupByHandler, compiler_state_, graph(), op(),
                                std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
                      ast_visitor()));
-  PL_RETURN_IF_ERROR(group_by_fn->SetDocString(kGroupByOpDocstring));
+  PX_RETURN_IF_ERROR(group_by_fn->SetDocString(kGroupByOpDocstring));
   AddMethod(kGroupByOpID, group_by_fn);
 
   /**
@@ -559,7 +559,7 @@ Status Dataframe::Init() {
    * def append(self, fn):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(
+  PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> union_fn,
       FuncObject::Create(
           kUnionOpID, {"objs"}, {}, /* has_variable_len_args */ false,
@@ -567,7 +567,7 @@ Status Dataframe::Init() {
           std::bind(&UnionHandler, compiler_state_, graph(), op(), std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
-  PL_RETURN_IF_ERROR(union_fn->SetDocString(kUnionOpDocstring));
+  PX_RETURN_IF_ERROR(union_fn->SetDocString(kUnionOpDocstring));
   AddMethod(kUnionOpID, union_fn);
 
   /**
@@ -575,7 +575,7 @@ Status Dataframe::Init() {
    * def rolling(self, window, on="time_"):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> rolling_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> rolling_fn,
                       FuncObject::Create(kRollingOpID, {"window", "on"}, {{"on", "'time_'"}},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -583,7 +583,7 @@ Status Dataframe::Init() {
                                                    std::placeholders::_1, std::placeholders::_2,
                                                    std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
+  PX_RETURN_IF_ERROR(rolling_fn->SetDocString(kRollingOpDocstring));
   AddMethod(kRollingOpID, rolling_fn);
 
   /**
@@ -591,7 +591,7 @@ Status Dataframe::Init() {
    * def stream(self):
    *     ...
    */
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> stream_fn,
+  PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> stream_fn,
                       FuncObject::Create(kStreamOpId, {}, {},
                                          /* has_variable_len_args */ false,
                                          /* has_variable_len_kwargs */ false,
@@ -599,10 +599,10 @@ Status Dataframe::Init() {
                                                    std::placeholders::_1, std::placeholders::_2,
                                                    std::placeholders::_3),
                                          ast_visitor()));
-  PL_RETURN_IF_ERROR(stream_fn->SetDocString(kStreamOpDocstring));
+  PX_RETURN_IF_ERROR(stream_fn->SetDocString(kStreamOpDocstring));
   AddMethod(kStreamOpId, stream_fn);
 
-  PL_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
+  PX_ASSIGN_OR_RETURN(auto md, MetadataObject::Create(op(), ast_visitor()));
   return AssignAttribute(kMetadataAttrName, md);
 }
 
@@ -615,7 +615,7 @@ StatusOr<QLObjectPtr> Dataframe::GetAttributeImpl(const pypa::AstPtr& ast,
     return QLObject::GetAttributeImpl(ast, name);
   }
   // We evaluate schemas in the analyzer, so at this point assume 'name' is a valid column.
-  PL_ASSIGN_OR_RETURN(ColumnIR * column,
+  PX_ASSIGN_OR_RETURN(ColumnIR * column,
                       graph()->CreateNode<ColumnIR>(ast, std::string(name), /* parent_op_idx */ 0));
   return ExprObject::Create(column, ast_visitor());
 }
@@ -626,7 +626,7 @@ StatusOr<std::shared_ptr<Dataframe>> Dataframe::FromColumnAssignment(CompilerSta
                                                                      ExpressionIR* expr) {
   auto col_name = column->col_name();
   ColExpressionVector map_exprs{{col_name, expr}};
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, graph_->CreateNode<MapIR>(expr_node, op(), map_exprs,
+  PX_ASSIGN_OR_RETURN(MapIR * ir_node, graph_->CreateNode<MapIR>(expr_node, op(), map_exprs,
                                                                  /*keep_input_cols*/ true));
   return Dataframe::Create(compiler_state, ir_node, ast_visitor());
 }

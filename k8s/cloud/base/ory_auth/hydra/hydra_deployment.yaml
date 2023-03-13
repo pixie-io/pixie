@@ -17,6 +17,11 @@ spec:
       labels:
         name: hydra
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10100
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
       - name: migrate
         args:
@@ -60,6 +65,15 @@ spec:
         volumeMounts:
         - mountPath: /etc/config/hydra
           name: config
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
       containers:
       - name: server
         imagePullPolicy: IfNotPresent
@@ -128,6 +142,15 @@ spec:
         - name: certs
           mountPath: /certs
         resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
       - name: client-create-or-update
         imagePullPolicy: IfNotPresent
         image: oryd/hydra:v1.9.2-alpine
@@ -170,6 +193,15 @@ spec:
             secretKeyRef:
               name: pl-hydra-secrets
               key: CLIENT_SECRET
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 10100
+          seccompProfile:
+            type: RuntimeDefault
       restartPolicy: Always
       volumes:
       - name: config

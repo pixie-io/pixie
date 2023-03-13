@@ -134,7 +134,7 @@ void IntToBEndianBytes(int64_t num, TCharType (&result)[N]) {
  * @param buf The sequence of bytes.
  * @return The decoded int value.
  */
-template <typename T, int N = sizeof(T)>
+template <typename T, size_t N = sizeof(T)>
 T BEndianBytesToInt(std::string_view buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.

@@ -41,7 +41,7 @@ spec:
       serviceAccountName: metadata-service-account
       initContainers:
       - name: nats-wait
-        image: gcr.io/pixie-oss/pixie-dev-public/curl:1.0
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -xe;
           URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
@@ -129,3 +129,20 @@ spec:
       - name: metadata-volume
         persistentVolumeClaim:
           claimName: metadata-pv-claim
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"

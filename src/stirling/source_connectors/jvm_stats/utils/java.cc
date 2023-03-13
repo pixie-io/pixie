@@ -49,7 +49,7 @@ Stats::Stats(std::string hsperf_data_str) : hsperf_data_(std::move(hsperf_data_s
 
 Status Stats::Parse() {
   hsperf::HsperfData hsperf_data = {};
-  PL_RETURN_IF_ERROR(ParseHsperfData(hsperf_data_, &hsperf_data));
+  PX_RETURN_IF_ERROR(ParseHsperfData(hsperf_data_, &hsperf_data));
   for (const auto& entry : hsperf_data.data_entries) {
     if (entry.header->data_type != static_cast<uint8_t>(hsperf::DataType::kLong)) {
       continue;
@@ -110,7 +110,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   ProcParser parser;
 
   ProcParser::ProcUIDs uids;
-  PL_RETURN_IF_ERROR(parser.ReadUIDs(pid, &uids));
+  PX_RETURN_IF_ERROR(parser.ReadUIDs(pid, &uids));
 
   uid_t effective_uid = 0;
   if (!absl::SimpleAtoi(uids.effective, &effective_uid)) {
@@ -119,7 +119,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
 
   const std::filesystem::path passwd_path = ProcPidRootPath(pid, "etc", "passwd");
 
-  PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
+  PX_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
   std::map<uid_t, std::string> uid_user_map = ParsePasswd(passwd_content);
   auto iter = uid_user_map.find(effective_uid);
   if (iter == uid_user_map.end()) {
@@ -129,7 +129,7 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   const std::string& effective_user = iter->second;
 
   std::vector<std::string> ns_pids;
-  PL_RETURN_IF_ERROR(parser.ReadNSPid(pid, &ns_pids));
+  PX_RETURN_IF_ERROR(parser.ReadNSPid(pid, &ns_pids));
   // The right-most pid is the PID of the same process inside the most-nested namespace.
   // That will be the filename chosen by the running process.
   const std::string& ns_pid = ns_pids.back();

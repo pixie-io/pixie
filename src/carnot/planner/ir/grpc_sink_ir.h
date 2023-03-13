@@ -56,7 +56,7 @@ class GRPCSinkIR : public OperatorIR {
   // Init function to call to create an internal GRPCSink, which sends an intermediate
   // result to a corresponding GRPC Source.
   Status Init(OperatorIR* parent, int64_t destination_id) {
-    PL_RETURN_IF_ERROR(AddParent(parent));
+    PX_RETURN_IF_ERROR(AddParent(parent));
     destination_id_ = destination_id;
     sink_type_ = GRPCSinkType::kInternal;
     return Status::OK();
@@ -66,7 +66,7 @@ class GRPCSinkIR : public OperatorIR {
   // streams the output table to a non-Carnot destination (such as the query broker).
   Status Init(OperatorIR* parent, const std::string& name,
               const std::vector<std::string> out_columns) {
-    PL_RETURN_IF_ERROR(AddParent(parent));
+    PX_RETURN_IF_ERROR(AddParent(parent));
     sink_type_ = GRPCSinkType::kExternal;
     name_ = name;
     out_columns_ = out_columns;

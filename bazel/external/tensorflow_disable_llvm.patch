@@ -1,0 +1,35 @@
+diff --git a/tensorflow/workspace2.bzl b/tensorflow/workspace2.bzl
+index 18b63ab47fb..92993d7c341 100644
+--- a/tensorflow/workspace2.bzl
++++ b/tensorflow/workspace2.bzl
+@@ -14,7 +14,7 @@ load("//tensorflow/tools/toolchains/embedded/arm-linux:arm_linux_toolchain_confi
+ load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
+ load("//third_party/clang_toolchain:cc_configure_clang.bzl", "cc_download_clang_toolchain")
+ load("//tensorflow/tools/def_file_filter:def_file_filter_configure.bzl", "def_file_filter_configure")
+-load("//third_party/llvm:setup.bzl", "llvm_setup")
++#load("//third_party/llvm:setup.bzl", "llvm_setup")
+ 
+ # Import third party repository rules. See go/tfbr-thirdparty.
+ load("//third_party/FP16:workspace.bzl", FP16 = "repo")
+@@ -530,7 +530,7 @@ def _tf_repositories():
+         urls = tf_mirror_urls("https://github.com/antirez/linenoise/archive/4ce393a66b10903a0ef52edf9775ed526a17395f.tar.gz"),
+     )
+ 
+-    llvm_setup(name = "llvm-project")
++    # llvm_setup(name = "llvm-project")
+ 
+     # Intel openMP that is part of LLVM sources.
+     tf_http_archive(
+diff --git a/tensorflow/workspace3.bzl b/tensorflow/workspace3.bzl
+index a6c2c5c5835..3866493fcc9 100644
+--- a/tensorflow/workspace3.bzl
++++ b/tensorflow/workspace3.bzl
+@@ -38,7 +38,7 @@ def workspace():
+ 
+     # Load the raw llvm-project.  llvm does not have build rules set up by default,
+     # but provides a script for setting up build rules via overlays.
+-    llvm("llvm-raw")
++    # llvm("llvm-raw")
+ 
+ # Alias so it can be loaded without assigning to a different symbol to prevent
+ # shadowing previous loads and trigger a buildifier warning.

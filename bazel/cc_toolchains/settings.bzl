@@ -15,28 +15,28 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "sysroot_libc_versions")
+
+HOST_GLIBC_VERSION = "glibc_host"
 
 def _settings():
+    libc_versions = sysroot_libc_versions + [
+        HOST_GLIBC_VERSION,
+        "static_musl",
+    ]
     string_flag(
         name = "libc_version",
-        build_setting_default = "gnu",
-        values = [
-            "gnu",
-            "static_musl",
-        ],
+        build_setting_default = HOST_GLIBC_VERSION,
+        values = libc_versions,
     )
-    native.config_setting(
-        name = "libc_version_gnu",
-        flag_values = {
-            "//bazel/cc_toolchains:libc_version": "gnu",
-        },
-    )
-    native.config_setting(
-        name = "libc_version_static_musl",
-        flag_values = {
-            "//bazel/cc_toolchains:libc_version": "static_musl",
-        },
-    )
+
+    for version in libc_versions:
+        native.config_setting(
+            name = "libc_version_" + version,
+            flag_values = {
+                "//bazel/cc_toolchains:libc_version": version,
+            },
+        )
 
     string_flag(
         name = "compiler",
@@ -44,6 +44,9 @@ def _settings():
         values = [
             "clang",
             "gcc",
+        ],
+        visibility = [
+            "//visibility:public",
         ],
     )
     native.config_setting(

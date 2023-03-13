@@ -1,0 +1,40 @@
+diff --git a/sole.hpp b/sole.hpp
+index 374bfd6..d24828b 100644
+--- a/sole.hpp
++++ b/sole.hpp
+@@ -485,7 +485,7 @@ namespace sole {
+         uuid_time = uuid_time + (tp.tv_nsec / 100);
+ 
+         // If the clock looks like it went backwards, or is the same, increment it.
+-        static uint64_t last_uuid_time = 0;
++        static $thread uint64_t last_uuid_time = 0;
+         if( last_uuid_time >= uuid_time )
+             uuid_time = ++last_uuid_time;
+         else
+@@ -670,17 +670,23 @@ namespace sole {
+         return 0;
+     }
+ 
++    inline std::mt19937 getMT() {
++        uint64_t ns100_intervals = get_time( 0 );
++        std::mt19937 mt{ns100_intervals};
++        return mt;
++    }
++
+     //////////////////////////////////////////////////////////////////////////////////////
+     // UUID implementations
+ 
+     inline uuid uuid4() {
+-        static $thread std::random_device rd;
++        static $thread std::mt19937 mt = getMT();
+         static $thread std::uniform_int_distribution<uint64_t> dist(0, (uint64_t)(~0));
+ 
+         uuid my;
+ 
+-        my.ab = dist(rd);
+-        my.cd = dist(rd);
++        my.ab = dist(mt);
++        my.cd = dist(mt);
+ 
+         my.ab = (my.ab & 0xFFFFFFFFFFFF0FFFULL) | 0x0000000000004000ULL;
+         my.cd = (my.cd & 0x3FFFFFFFFFFFFFFFULL) | 0x8000000000000000ULL;

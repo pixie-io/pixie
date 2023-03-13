@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef PL_IR_NODE
+#ifdef PX_CARNOT_IR_NODE
 
 #include "src/carnot/planner/ir/expressions.inl"
 #include "src/carnot/planner/ir/operators.inl"

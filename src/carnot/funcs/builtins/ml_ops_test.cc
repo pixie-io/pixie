@@ -80,7 +80,7 @@ TEST(SentencePiece, basic) {
 }
 
 TEST(Transformer, basic) {
-  auto pool = exec::ml::ModelPool::Create();
+  auto pool = udf::ModelPool::Create();
   auto ctx = std::make_unique<FunctionContext>(nullptr, pool.get());
   auto udf_tester = udf::UDFTester<TransformerUDF>(std::move(ctx), FLAGS_embedding_dir);
   udf_tester.ForInput("[4,197,803,195,16,5001]");

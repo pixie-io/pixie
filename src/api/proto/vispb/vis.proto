@@ -212,6 +212,19 @@ message BarChart {
   Axis y_axis = 4;
 }
 
+// PieChart The visual spec for a pie chart. Each slice is labeled by one column, with
+// values from another. Rows with the same label are combined.
+message PieChart {
+  // Which column to group values by. Also used to label that slice of the pie.
+  // This columns is expected to contain a string.
+  string label = 1;
+  // Which column represents the size of the slice. Rows with the same label are combined.
+  // This column is expected to contain a number, or something that readily converts to one.
+  string value = 2;
+  // Title of the chart.
+  string title = 3;
+}
+
 // HistogramChart The visual spec for a histogram chart. Support histograms
 // generated from prebinned data and data that needs to be binned.
 //
@@ -274,6 +287,15 @@ message HistogramChart {
   Axis y_axis = 4;
 }
 
+// GaugeChart shows the most recent value of a column in ratio to the lowest
+// and highest values in the same column.
+message GaugeChart {
+  // Which column to look at. Should contain numeric data.
+  string value = 1;
+  // title string for the chart.
+  string title = 2;
+}
+
 // TimeseriesChart the visual spec for a timeseries chart. There is variety in the possible visual
 // style for these charts, but they always occur over time. They automatically use the time_ column
 // of the input table(s) as the x-axis.
@@ -306,6 +328,27 @@ message TimeseriesChart {
   Axis x_axis = 3;
   // y_axis defines configuration for the y axis of the chart.
   Axis y_axis = 4;
+}
+
+// StatChart The visual spec for a basic stat chart. Shows the latest value in the table as a big
+// number with units.
+message StatChart {
+  // Stat defines what information to show
+  message Stat {
+    // value is the ID of the column to use. The column should hold numeric data of some kind.
+    string value = 1;
+  }
+  // stat is the definition of the stat chart
+  Stat stat = 1;
+  // title of the chart, shown as a label for the data
+  string title = 2;
+}
+
+// TextChart The visual spec for a basic block of text. Does not use anything other than the Vis
+// spec.
+message TextChart {
+  // What text to display.
+  string body = 1;
 }
 
 // VegaChart the spec for providing a vega or vega lite spec directly to the UI.

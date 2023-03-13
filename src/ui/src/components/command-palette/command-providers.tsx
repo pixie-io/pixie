@@ -21,7 +21,7 @@ import * as React from 'react';
 import { makeCancellable } from 'app/utils/cancellable-promise';
 
 import { CommandProvider, CommandProviderResult } from './providers/command-provider';
-import { useScriptCommandProvider } from './providers/script';
+import { useScriptCommandProvider, useScriptCommandIsValidProvider } from './providers/script';
 
 function isFulfilled<T>(res: PromiseSettledResult<T>): res is PromiseFulfilledResult<T> {
   return res.status === 'fulfilled';
@@ -34,6 +34,7 @@ export const useCommandProviders: (
   input, selection,
 ) => {
   const providers: ReturnType<CommandProvider>[] = [
+    useScriptCommandIsValidProvider(),
     useScriptCommandProvider(),
   ];
 

@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
     name = "md",
@@ -34,13 +35,13 @@ go_library(
     ],
 )
 
-go_test(
+pl_go_test(
     name = "md_test",
     srcs = ["md_test.go"],
     deps = [
         ":md",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/utils/testingutils",
+        "//src/utils/testingutils/docker",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sirupsen_logrus//:logrus",

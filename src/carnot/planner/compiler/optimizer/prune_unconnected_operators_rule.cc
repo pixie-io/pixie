@@ -65,7 +65,7 @@ StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
   }
 
   for (auto node_id : nodes_to_remove) {
-    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
+    PX_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
   }
 
   return true;

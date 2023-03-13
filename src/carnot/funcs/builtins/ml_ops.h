@@ -30,9 +30,9 @@
 
 #include "src/carnot/exec/ml/coreset.h"
 #include "src/carnot/exec/ml/kmeans.h"
-#include "src/carnot/exec/ml/model_executor.h"
 #include "src/carnot/exec/ml/sampling.h"
 #include "src/carnot/exec/ml/transformer_executor.h"
+#include "src/carnot/udf/model_executor.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/utils.h"
 #include "src/shared/types/types.h"
@@ -171,9 +171,7 @@ class ReservoirSampleUDA : public udf::UDA {
     }
     count_ += other.count_;
   }
-  TArg Finalize(FunctionContext*) {
-    return reservoir_[0];
-  }
+  TArg Finalize(FunctionContext*) { return reservoir_[0]; }
 
  private:
   size_t k_;

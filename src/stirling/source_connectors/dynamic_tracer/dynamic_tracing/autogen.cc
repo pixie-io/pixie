@@ -115,7 +115,7 @@ Status ResolveProbeSymbol(obj_tools::ElfReader* elf_reader,
   // Expand symbol
   for (auto& t : *input_program->mutable_tracepoints()) {
     for (auto& probe : *t.mutable_program()->mutable_probes()) {
-      PL_ASSIGN_OR_RETURN(
+      PX_ASSIGN_OR_RETURN(
           std::vector<obj_tools::ElfReader::SymbolInfo> symbol_matches,
           elf_reader->SearchSymbols(probe.tracepoint().symbol(),
                                     obj_tools::SymbolMatchType::kSuffix, ELFIO::STT_FUNC));
@@ -175,7 +175,7 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
 
       // For probes without anything to trace, we automatically trace everything:
       // args, return values and latency.
-      PL_ASSIGN_OR_RETURN(auto args_map,
+      PX_ASSIGN_OR_RETURN(auto args_map,
                           dwarf_reader->GetFunctionArgInfo(probe.tracepoint().symbol()));
 
       std::string table_name = probe.tracepoint().symbol() + "_table";

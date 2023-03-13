@@ -51,16 +51,11 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
   }
 
   typename TClientServerContainers::GoTLSServerContainer server_;
   typename TClientServerContainers::GoTLSClientContainer client_;
-};
-
-struct Go1_16TLSClientServerContainers {
-  using GoTLSServerContainer = ::px::stirling::testing::Go1_16_TLSServerContainer;
-  using GoTLSClientContainer = ::px::stirling::testing::Go1_16_TLSClientContainer;
 };
 
 struct Go1_17TLSClientServerContainers {
@@ -78,8 +73,13 @@ struct Go1_19TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
 };
 
-typedef ::testing::Types<Go1_16TLSClientServerContainers, Go1_17TLSClientServerContainers,
-                         Go1_18TLSClientServerContainers, Go1_19TLSClientServerContainers>
+struct Go1_20TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_20_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
+};
+
+typedef ::testing::Types<Go1_17TLSClientServerContainers, Go1_18TLSClientServerContainers,
+                         Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
@@ -91,10 +91,10 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(this->client_.Run(
+  PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=false"}));
+      {"--http2=false", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();
@@ -128,10 +128,10 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
   this->StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(this->client_.Run(
+  PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=true"}));
+      {"--http2=true", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();

@@ -11,6 +11,14 @@ helm repo add buildbuddy https://helm.buildbuddy.io
 helm repo update
 ```
 
+### Install CRDs
+
+If installing cert-manager's deps with buildbuddy, make sure to apply the cert manager CRDs.
+
+```shell
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.crds.yaml
+```
+
 ### Install secrets
 
 ```shell

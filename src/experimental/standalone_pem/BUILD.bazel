@@ -1,0 +1,101 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
+
+package(default_visibility = ["//src/vizier:__subpackages__"])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "*_main.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    tags = ["manual"],
+    deps = [
+        "//src/api/proto/vizierpb:vizier_pl_cc_proto",
+        "//src/carnot",
+        "//src/carnot:cc_library",
+        "//src/carnot/carnotpb:carnot_pl_cc_proto",
+        "//src/carnot/planner/compiler:cc_library",
+        "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/carnot/planner/probes:tracepoint_generator_lib",
+        "//src/common/event:cc_library",
+        "//src/common/uuid:cc_library",
+        "//src/integrations/grpc_clocksync:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/shared/tracepoint_translation:cc_library",
+        "//src/stirling:cc_library",
+        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/table_store:cc_library",
+        "//src/vizier/funcs:cc_library",
+        "//src/vizier/funcs/context:cc_library",
+        "//src/vizier/services/agent/shared/base:cc_library",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+pl_cc_binary(
+    name = "standalone_pem",
+    srcs = ["standalone_pem_main.cc"],
+    stamp = -1,
+    tags = ["manual"],
+    deps = [
+        ":cc_library",
+        "//src/common/signal:cc_library",
+        "//src/shared/version:cc_library",
+        "//src/shared/version:version_linkstamp",
+    ],
+)
+
+container_image(
+    name = "standalone_pem_base_image",
+    base = "//:pl_cc_base_image",
+    layers = ["//src/stirling:bpf_layer"],
+)
+
+cc_image(
+    name = "standalone_pem_image",
+    base = ":standalone_pem_base_image",
+    binary = ":standalone_pem",
+    visibility = [
+        "//src/vizier:__subpackages__",
+    ],
+)
+
+container_push(
+    name = "push_standalone_pem_image",
+    format = "Docker",
+    image = ":standalone_pem_image",
+    registry = "gcr.io",
+    repository = "pixie-oss/pixie-dev/vizier/standalone_pem_image",
+    tag = "{STABLE_BUILD_TAG}",
+)
+
+container_push(
+    name = "push_test_standalone_pem_image",
+    format = "Docker",
+    image = ":standalone_pem_image",
+    registry = "gcr.io",
+    repository = "pixie-oss/pixie-dev/vizier/standalone_pem_image",
+    tag = "{BUILD_USER}",
+)

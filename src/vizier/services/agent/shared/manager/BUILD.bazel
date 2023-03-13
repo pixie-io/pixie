@@ -1,0 +1,127 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
+package(default_visibility = [
+    "//src/experimental:__subpackages__",
+    "//src/vizier:__subpackages__",
+])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*test_utils.h",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot",
+        "//src/common/event:cc_library",
+        "//src/common/metrics:cc_library",
+        "//src/common/uuid:cc_library",
+        "//src/shared/metadata:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/vizier/funcs:cc_library",
+        "//src/vizier/messages/messagespb:messages_pl_cc_proto",
+        "//src/vizier/services/agent/shared/base:cc_library",
+        "//third_party:natsc",
+        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
+        "@com_github_cameron314_concurrentqueue//:concurrentqueue",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
+pl_cc_library(
+    name = "cc_headers",
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot",
+        "//src/common/event:cc_library",
+        "//src/common/uuid:cc_library",
+        "//src/shared/metadata:cc_library",
+        "//src/shared/schema:cc_library",
+        "//src/vizier/messages/messagespb:messages_pl_cc_proto",
+        "//src/vizier/services/agent/shared/base:cc_library",
+        "//third_party:natsc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = glob(["*test_utils.h"]),
+    deps = [
+        "//src/common/event:cc_library",
+        "//src/shared/metadata:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "relation_info_manager_test",
+    srcs = ["relation_info_manager_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "heartbeat_test",
+    srcs = ["heartbeat_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "k8s_update_test",
+    srcs = ["k8s_update_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "chan_cache_test",
+    srcs = ["chan_cache_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+        "//src/common/testing/grpc_utils:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "registration_test",
+    srcs = ["registration_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+    ],
+)

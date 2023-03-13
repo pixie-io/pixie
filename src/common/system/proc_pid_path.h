@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gflags/gflags.h>
 #include <sys/types.h>
 #include <filesystem>
 #include <string>

@@ -15,27 +15,36 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:toolchain_transitions.bzl", "cc_clang_binary")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-# We build test_exe with clang++ regardless of the bazel config.
+# We build test_exe with clang regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
-genrule(
-    name = "test_cc_binary",
+cc_clang_binary(
+    name = "test_exe",
     srcs = ["test_exe.cc"],
-    outs = ["test_exe"],
-    # -O0: Disables optimization which in turn disables inlining.
-    # -g: Produces dwarf information.
-    # -Wl,--build-id: This tells the linker to include a build-id,
-    #                 which is useful for locating external debug symbols.
-    cmd = "clang++ -O0 -g -Wl,--build-id -o $@ $<",
-    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+    copts = [
+        "-O0",
+        "-g",
+    ],
+    features = [
+        # disable the default optimization flags so we can set our own for this target.
+        "-default_opt_level_flags",
+        # disable sanitiziers so that the binary is deterministic regardless of bazel config.
+        "-asan",
+        "-msan",
+        "-tsan",
+    ],
+    linkopts = [
+        "-Wl,--build-id",
+    ],
 )
 
 cc_library(
     name = "test_exe_fixture",
     hdrs = ["test_exe_fixture.h"],
-    data = [":test_cc_binary"],
+    data = [":test_exe"],
     deps = ["//src/common/exec:cc_library"],
 )
 

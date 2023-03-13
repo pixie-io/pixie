@@ -37,7 +37,7 @@ UnixSocket::UnixSocket() : UnixSocket(0) {
 UnixSocket::UnixSocket(int internal) {
   memset(&addr_un_, 0, sizeof(struct sockaddr_un));
   // Required to differentiate the private vs public UnixSocket constructor.
-  PL_UNUSED(internal);
+  PX_UNUSED(internal);
 }
 
 UnixSocket::~UnixSocket() { Close(); }

@@ -42,15 +42,15 @@ StatusOr<bool> MergeGroupByIntoGroupAcceptorRule::AddGroupByDataIntoGroupAccepto
   GroupByIR* groupby = static_cast<GroupByIR*>(parent);
   std::vector<ColumnIR*> new_groups(acceptor_node->groups());
   for (ColumnIR* g : groupby->groups()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col, CopyColumn(g));
+    PX_ASSIGN_OR_RETURN(ColumnIR * col, CopyColumn(g));
     new_groups.push_back(col);
   }
-  PL_RETURN_IF_ERROR(acceptor_node->SetGroups(new_groups));
+  PX_RETURN_IF_ERROR(acceptor_node->SetGroups(new_groups));
 
   DCHECK_EQ(groupby->parents().size(), 1UL);
   OperatorIR* groupby_parent = groupby->parents()[0];
 
-  PL_RETURN_IF_ERROR(acceptor_node->ReplaceParent(groupby, groupby_parent));
+  PX_RETURN_IF_ERROR(acceptor_node->ReplaceParent(groupby, groupby_parent));
 
   return true;
 }

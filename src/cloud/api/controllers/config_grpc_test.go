@@ -74,8 +74,9 @@ func TestConfigForVizier(t *testing.T) {
 			}
 
 			mockReq := &configmanagerpb.ConfigForVizierRequest{
-				Namespace: "test-namespace",
-				VzSpec:    vzSpec,
+				Namespace:  "test-namespace",
+				VzSpec:     vzSpec,
+				K8sVersion: "1.24.1",
 			}
 
 			nameToYamlContent := make(map[string]string)
@@ -88,8 +89,9 @@ func TestConfigForVizier(t *testing.T) {
 			cfgServer := &controllers.ConfigServiceServer{mockClients.MockConfigMgr}
 
 			resp, err := cfgServer.GetConfigForVizier(ctx, &cloudpb.ConfigForVizierRequest{
-				Namespace: "test-namespace",
-				VzSpec:    vzSpec,
+				Namespace:  "test-namespace",
+				VzSpec:     vzSpec,
+				K8sVersion: "1.24.1",
 			})
 			require.NoError(t, err)
 			assert.Equal(t, resp.NameToYamlContent["fileAName"], "fileAContent")

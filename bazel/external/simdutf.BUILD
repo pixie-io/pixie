@@ -23,6 +23,11 @@ filegroup(
 
 cmake(
     name = "libsimdutf",
+    cache_entries = {
+        "BUILD_TESTING": "OFF",
+        "SIMDUTF_BENCHMARKS": "OFF",
+        "SIMDUTF_TOOLS": "OFF",
+    },
     lib_source = ":all",
     visibility = ["//visibility:public"],
 )

@@ -49,36 +49,32 @@ LICENSES_SRCS = [
 ]
 
 pl_webpack_deps(
-    name = "ui-deps",
+    name = "ui_deps",
     srcs = UI_DEP_PACKAGES,
-    uilib_base = "src/ui",
 )
 
 pl_webpack_library(
-    name = "ui-bundle",
+    name = "ui_bundle",
     srcs = UI_SRCS,
     licenses = "//tools/licenses:all_licenses",
     stamp = select({
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
-    uilib_base = "src/ui",
-    deps = ":ui-deps",
+    deps = ":ui_deps",
 )
 
 pl_ui_test(
-    name = "ui-tests",
+    name = "ui_tests",
     srcs = UI_SRCS,
-    uilib_base = "src/ui",
-    deps = ":ui-deps",
+    deps = ":ui_deps",
 )
 
 pl_deps_licenses(
     name = "npm_licenses",
     srcs = UI_DEP_PACKAGES + LICENSES_SRCS,
-    uilib_base = "src/ui",
     # TODO(PP-2567): This is used by tools/licenses.
     # Move that into source and remove this.
     visibility = ["//visibility:public"],
-    deps = ":ui-deps",
+    deps = ":ui_deps",
 )

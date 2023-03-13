@@ -72,8 +72,8 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
                     std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch) {
-    PL_UNUSED(table_id);
-    PL_UNUSED(tablet_id);
+    PX_UNUSED(table_id);
+    PX_UNUSED(tablet_id);
     record_batches_.push_back(std::move(record_batch));
     return Status::OK();
   }
@@ -148,7 +148,8 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
 
 class DynamicTraceAPITest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe");
+  const std::string kBinaryPath =
+      BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe_/test_exe");
 
   static constexpr std::string_view kTracepointDeploymentTxtPB = R"(
   deployment_spec {
@@ -635,7 +636,8 @@ INSTANTIATE_TEST_SUITE_P(GolangByteArrayTests, DynamicTraceGolangTestWithParam,
 
 class DynamicTraceCppTest : public StirlingDynamicTraceBPFTest {
  protected:
-  const std::string kBinaryPath = BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe");
+  const std::string kBinaryPath =
+      BazelRunfilePath("src/stirling/obj_tools/testdata/cc/test_exe_/test_exe");
 };
 
 TEST_F(DynamicTraceCppTest, BasicTypes) {

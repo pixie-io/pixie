@@ -33,7 +33,7 @@ using ::threadstacks::StackTraceCollector;
 // ErrLog without buffering.
 static void ErrLog(const char* msg) {
   int n = write(STDERR_FILENO, msg, strlen(msg));
-  PL_UNUSED(n);
+  PX_UNUSED(n);
 }
 
 ABSL_CONST_INIT static absl::Mutex failure_mutex(absl::kConstInit);

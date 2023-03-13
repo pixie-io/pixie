@@ -94,7 +94,7 @@ spec:
             cpu: 300m
             memory: 500Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -110,13 +110,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 300
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 180
           periodSeconds: 3
       volumes:
@@ -137,7 +137,7 @@ spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: carts
 ---
@@ -425,7 +425,7 @@ spec:
             cpu: 200m
             memory: 500Mi
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         securityContext:
           runAsNonRoot: true
           runAsUser: 10001
@@ -441,13 +441,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 300
           periodSeconds: 3
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
+            port: 8080
           initialDelaySeconds: 180
           periodSeconds: 3
       volumes:
@@ -468,7 +468,7 @@ spec:
   ports:
     # the port that this service should serve on
   - port: 80
-    targetPort: 80
+    targetPort: 8080
   selector:
     name: orders
 ---

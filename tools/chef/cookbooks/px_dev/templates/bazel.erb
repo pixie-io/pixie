@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# This script is use to add customizations to our Bazel command. It currently does the following:
+#    * Adds a --config=clang by default if it's missing from the command line.
+workspace_name=`basename $(/opt/px_dev/bin/bazel_core info execution_root)`
+if [[ "$workspace_name" != "px" ]]; then
+  /opt/px_dev/bin/bazel_core "$@"
+  exit $?
+fi;
+
+# Don't send a config value by default.
+config=
+# Check if comamnd is either build, test, run.
+if [[ "$1" == "build" || "$1" == "test" || "$1" == "run" ]]; then
+   # Check and see if a config parameter is specified, otherwise set the config to be the default "clang".
+   if [[ ! "$@" =~ "--config" ]]; then
+     config="--config=clang"
+   fi;
+fi;
+
+cmd=$1
+shift
+
+/opt/px_dev/bin/bazel_core ${cmd:+"$cmd"} ${config:+"$config"} "$@"

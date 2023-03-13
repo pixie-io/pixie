@@ -2,13 +2,9 @@
   "builders": [
     {
       "changes": [
-        "ENV PATH /opt/golang/bin:/opt/pixielabs/bin:/opt/clang-15.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/gsutil:/opt/node/bin:/opt/phab/arcanist/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "ENV LD_LIBRARY_PATH /opt/clang-15.0/lib",
-        "ENV GOPATH /pl",
-        "ENV CC clang",
-        "ENV CXX clang++",
-        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-15.0/bin/llvm-symbolizer",
-        "WORKDIR /pl/src/px.dev/pixie",
+        "ENV PATH /px/bin:/opt/google-cloud-sdk/bin:/opt/px_dev/bin:/opt/px_dev/tools/golang/bin:/opt/px_dev/tools/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV GOPATH /px",
+        "WORKDIR /px/src/px.dev/pixie",
         "ENTRYPOINT [\"\"]",
         "CMD [\"\"]"
       ],
@@ -43,17 +39,16 @@
       "prevent_sudo": true,
       "roles_path": "roles",
       "run_list": [
-        "role[pl_base_dev]",
-        "recipe[pixielabs::docker_extras]"
+        "role[px_base_dev]",
+        "recipe[px_dev::docker_extras]",
+        "recipe[px_dev::cleanup]"
       ],
       "type": "chef-solo",
       "version": "17.8.25"
     },
     {
       "inline": [
-        "rm -rf /tmp/*",
-        "rm -rf /root/.npm",
-        "rm -rf /var/lib/apt/lists/*"
+        "rm -rf /opt/chef"
       ],
       "type": "shell"
     }

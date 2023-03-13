@@ -142,7 +142,7 @@ TEST_F(FDResolverTest, MissShortLivedSocketNoSetup) {
   int fd = socket.sockfd();
   // Some activity at time t, between socket creation and close.
   auto t = std::chrono::steady_clock::now();
-  PL_UNUSED(t);
+  PX_UNUSED(t);
   socket.Close();
 
   auto resolver = FDResolver(proc_parser_.get(), pid, fd);

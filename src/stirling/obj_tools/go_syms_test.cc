@@ -30,13 +30,13 @@ using ::testing::Field;
 using ::testing::StrEq;
 
 constexpr std::string_view kTestGoBinaryPath =
-    "src/stirling/obj_tools/testdata/go/test_go_1_16_binary";
+    "src/stirling/obj_tools/testdata/go/test_go_1_19_binary";
 
 TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
-  EXPECT_THAT(version, StrEq("go1.16.15"));
+  EXPECT_THAT(version, StrEq("go1.19.5"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
@@ -69,6 +69,7 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
                    Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
                    Field(&IntfImplTypeInfo::type_name, "*io/fs.PathError"),
                    Field(&IntfImplTypeInfo::type_name, "*internal/poll.DeadlineExceededError"),
+                   Field(&IntfImplTypeInfo::type_name, "internal/poll.errNetClosing"),
                    Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
                    Field(&IntfImplTypeInfo::type_name, "syscall.Errno"))),
           Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,

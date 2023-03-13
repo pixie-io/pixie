@@ -108,7 +108,7 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
                                   /* eos */ cursor_->Done());
   }
 
-  PL_ASSIGN_OR_RETURN(auto row_batch, cursor_->GetNextRowBatch(plan_node_->Columns()));
+  PX_ASSIGN_OR_RETURN(auto row_batch, cursor_->GetNextRowBatch(plan_node_->Columns()));
 
   rows_processed_ += row_batch->num_rows();
   bytes_processed_ += row_batch->NumBytes();
@@ -124,8 +124,8 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
 }
 
 Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
-  PL_ASSIGN_OR_RETURN(auto row_batch, GetNextRowBatch(exec_state));
-  PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
+  PX_ASSIGN_OR_RETURN(auto row_batch, GetNextRowBatch(exec_state));
+  PX_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();
 }
 

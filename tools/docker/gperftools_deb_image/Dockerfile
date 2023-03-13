@@ -14,24 +14,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Not very sensitive to version, just need something that can build C++ libraries with correct deps installed.
-FROM gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:202104202215 as build
+ARG BASE_IMAGE
+FROM $BASE_IMAGE as build
 
 WORKDIR /tmp
-RUN curl -L -O  https://github.com/gperftools/gperftools/releases/download/gperftools-2.7/gperftools-2.7.tar.gz
-RUN tar -zxvf gperftools-2.7.tar.gz
-WORKDIR /tmp/gperftools-2.7
-RUN ./configure --prefix=/opt/gperftools
-RUN make -j10
+RUN curl -L -O https://github.com/gperftools/gperftools/releases/download/gperftools-2.10/gperftools-2.10.tar.gz
+RUN tar zxf gperftools-2.10.tar.gz
+WORKDIR /tmp/gperftools-2.10
+RUN ./configure --prefix=/opt/px_dev/tools/gperftools
+RUN make -j $(nproc)
 RUN make install
 
-
 FROM cdrx/fpm-ubuntu:18.04
-COPY --from=build /opt/gperftools /opt/gperftools
+COPY --from=build /opt/px_dev/tools/gperftools /opt/px_dev/tools/gperftools
 
-WORKDIR /opt/gperftools
+WORKDIR /opt/px_dev/tools/gperftools
 VOLUME /image
-ENV deb_name gperftools-pixie-2.7-pl2.deb
-ENV deb_version 2.7-pl2
-CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-         -s dir -t deb -n gperftools-pixie -v ${deb_version} --prefix /opt/gperftools ."]
+ENV DEB_NAME gperftools-pixie-2.10-dev.deb
+ENV DEB_VERSION 2.10-dev
+CMD ["sh", "-c",  "fpm -p /image/${DEB_NAME} \
+  -s dir -t deb -n gperftools-pixie -v ${DEB_VERSION} --prefix /opt/px_dev/tools/gperftools ."]

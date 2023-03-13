@@ -40,9 +40,9 @@
 #include "src/shared/metadatapb/metadata.pb.h"
 #include "src/shared/upid/upid.h"
 
-PL_SUPPRESS_WARNINGS_START()
+PX_SUPPRESS_WARNINGS_START()
 #include "blockingconcurrentqueue.h"
-PL_SUPPRESS_WARNINGS_END()
+PX_SUPPRESS_WARNINGS_END()
 
 namespace px {
 namespace md {
@@ -123,9 +123,7 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
                                 const px::system::Config& config,
                                 AgentMetadataFilter* metadata_filter, sole::uuid vizier_id,
                                 std::string vizier_name)
-      : pod_name_(pod_name),
-        collects_data_(collects_data),
-        metadata_filter_(metadata_filter) {
+      : pod_name_(pod_name), collects_data_(collects_data), metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id,
                                                                  pod_name, vizier_id, vizier_name);

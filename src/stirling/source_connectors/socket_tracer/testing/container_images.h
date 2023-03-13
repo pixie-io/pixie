@@ -153,32 +153,6 @@ class NodeClientContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-class Go1_16_TLSServerContainer : public ContainerRunner {
- public:
-  Go1_16_TLSServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_https/server/golang_1_16_https_server.tar";
-  static constexpr std::string_view kContainerNamePrefix = "https_server";
-  static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
-};
-
-class Go1_16_TLSClientContainer : public ContainerRunner {
- public:
-  Go1_16_TLSClientContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_https/client/golang_1_16_https_client.tar";
-  static constexpr std::string_view kContainerNamePrefix = "https_client";
-  static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
-};
-
 class Go1_17_TLSServerContainer : public ContainerRunner {
  public:
   Go1_17_TLSServerContainer()
@@ -257,35 +231,35 @@ class Go1_19_TLSClientContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
 };
 
+class Go1_20_TLSServerContainer : public ContainerRunner {
+ public:
+  Go1_20_TLSServerContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_https/server/golang_1_20_https_server.tar";
+  static constexpr std::string_view kContainerNamePrefix = "https_server";
+  static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
+};
+
+class Go1_20_TLSClientContainer : public ContainerRunner {
+ public:
+  Go1_20_TLSClientContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_https/client/golang_1_20_https_client.tar";
+  static constexpr std::string_view kContainerNamePrefix = "https_client";
+  static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
+};
+
 //-----------------------------------------------------------------------------
 // GRPC
 //-----------------------------------------------------------------------------
-
-class Go1_16_GRPCServerContainer : public ContainerRunner {
- public:
-  Go1_16_GRPCServerContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_16_grpc_tls_server.tar";
-  static constexpr std::string_view kContainerNamePrefix = "grpc_server";
-  static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
-};
-
-class Go1_16_GRPCClientContainer : public ContainerRunner {
- public:
-  Go1_16_GRPCClientContainer()
-      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
-                        kReadyMessage) {}
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_16_grpc_tls_client.tar";
-  static constexpr std::string_view kContainerNamePrefix = "grpc_client";
-  static constexpr std::string_view kReadyMessage = "";
-};
 
 class Go1_17_GRPCServerContainer : public ContainerRunner {
  public:
@@ -361,6 +335,32 @@ class Go1_19_GRPCClientContainer : public ContainerRunner {
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_19_grpc_tls_client.tar";
+  static constexpr std::string_view kContainerNamePrefix = "grpc_client";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
+class Go1_20_GRPCServerContainer : public ContainerRunner {
+ public:
+  Go1_20_GRPCServerContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_20_grpc_tls_server.tar";
+  static constexpr std::string_view kContainerNamePrefix = "grpc_server";
+  static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
+};
+
+class Go1_20_GRPCClientContainer : public ContainerRunner {
+ public:
+  Go1_20_GRPCClientContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/client/golang_1_20_grpc_tls_client.tar";
   static constexpr std::string_view kContainerNamePrefix = "grpc_client";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -512,6 +512,19 @@ class RedisContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "# Server initialized";
 };
 
+class RedisClientContainer : public ContainerRunner {
+ public:
+  RedisClientContainer()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "redis_client";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 //-----------------------------------------------------------------------------
 // RabbitMQ
 //-----------------------------------------------------------------------------
@@ -610,11 +623,14 @@ class NATSClientContainer : public ContainerRunner {
 
 class ProductCatalogService : public ContainerRunner {
  public:
-  ProductCatalogService() : ContainerRunner(kImage, kContainerNamePrefix, kReadyMessage) {}
+  ProductCatalogService()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
 
  private:
-  static constexpr std::string_view kImage =
-      "gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "productcatalogservice_v0_2_0.tar";
   static constexpr std::string_view kContainerNamePrefix = "pcs";
   static constexpr std::string_view kReadyMessage = "starting grpc server";
 };

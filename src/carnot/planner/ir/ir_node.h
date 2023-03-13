@@ -40,20 +40,20 @@ using IRNodePtr = std::unique_ptr<IRNode>;
 
 enum class IRNodeType {
   kAny = -1,
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME) k##NAME,
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME) k##NAME,
 #include "src/carnot/planner/ir/ir_nodes.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
   number_of_types  // This is not a real type, but is used to verify strings are inline
   // with enums.
 };
 
 static constexpr const char* kIRNodeStrings[] = {
-#undef PL_IR_NODE
-#define PL_IR_NODE(NAME) #NAME,
+#undef PX_CARNOT_IR_NODE
+#define PX_CARNOT_IR_NODE(NAME) #NAME,
 // NOLINTNEXTLINE : build/include
 #include "src/carnot/planner/ir/ir_nodes.inl"
-#undef PL_IR_NODE
+#undef PX_CARNOT_IR_NODE
 };
 
 StatusOr<px::types::DataType> IRNodeTypeToDataType(IRNodeType type);

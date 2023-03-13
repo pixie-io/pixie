@@ -60,3 +60,12 @@ pl_cc_binary(
         "//src/shared/version:version_linkstamp",
     ],
 )
+
+genrule(
+    name = "generate",
+    outs = [
+        "internal_pxl_docs.pb",
+    ],
+    cmd = "$(location :doc_extractor) --output_file $(location internal_pxl_docs.pb)",
+    tools = [":doc_extractor"],
+)

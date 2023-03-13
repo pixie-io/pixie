@@ -74,9 +74,9 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
       } else {
         return error::InvalidArgument("We only support int and str types.");
       }
-      PL_CHECK_OK(rb.AddColumn(batch));
+      PX_CHECK_OK(rb.AddColumn(batch));
     }
-    PL_CHECK_OK(table->WriteRowBatch(rb));
+    PX_CHECK_OK(table->WriteRowBatch(rb));
   }
 
   return table;

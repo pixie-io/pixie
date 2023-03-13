@@ -42,7 +42,7 @@ inline StatusOr<bool> IsFuncWithExecutor(CompilerState* compiler_state, IRNode* 
   }
   auto func = static_cast<FuncIR*>(node);
 
-  PL_ASSIGN_OR_RETURN(auto udf_type,
+  PX_ASSIGN_OR_RETURN(auto udf_type,
                       compiler_state->registry_info()->GetUDFExecType(func->func_name()));
   if (udf_type != UDFExecType::kUDF) {
     return false;
@@ -51,7 +51,7 @@ inline StatusOr<bool> IsFuncWithExecutor(CompilerState* compiler_state, IRNode* 
   if (!func->HasRegistryArgTypes()) {
     return error::Internal("func '$0' doesn't have RegistryArgTypes set.", func->func_name());
   }
-  PL_ASSIGN_OR_RETURN(auto udf_executor, compiler_state->registry_info()->GetUDFSourceExecutor(
+  PX_ASSIGN_OR_RETURN(auto udf_executor, compiler_state->registry_info()->GetUDFSourceExecutor(
                                              func->func_name(), func->registry_arg_types()));
   return executor == udf_executor;
 }
@@ -69,7 +69,7 @@ inline StatusOr<bool> HasFuncWithExecutor(CompilerState* compiler_state, IRNode*
     for (const auto& op_child_id : op_children) {
       auto child_node = node->graph()->Get(op_child_id);
       if (Match(child_node, Func())) {
-        PL_ASSIGN_OR_RETURN(auto res, HasFuncWithExecutor(compiler_state, child_node, executor));
+        PX_ASSIGN_OR_RETURN(auto res, HasFuncWithExecutor(compiler_state, child_node, executor));
         if (res) {
           return res;
         }
@@ -77,7 +77,7 @@ inline StatusOr<bool> HasFuncWithExecutor(CompilerState* compiler_state, IRNode*
     }
   }
 
-  PL_ASSIGN_OR_RETURN(auto is_scalar_func_executor,
+  PX_ASSIGN_OR_RETURN(auto is_scalar_func_executor,
                       IsFuncWithExecutor(compiler_state, node, executor));
   if (is_scalar_func_executor) {
     return true;
@@ -92,7 +92,7 @@ inline StatusOr<bool> HasFuncWithExecutor(CompilerState* compiler_state, IRNode*
   // Get the children match the condition.
   std::vector<types::DataType> children_data_types;
   for (const auto& arg : func->args()) {
-    PL_ASSIGN_OR_RETURN(auto res, HasFuncWithExecutor(compiler_state, arg, executor));
+    PX_ASSIGN_OR_RETURN(auto res, HasFuncWithExecutor(compiler_state, arg, executor));
     if (res) {
       return res;
     }

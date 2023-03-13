@@ -14,13 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-filegroup(
+cc_library(
     name = "headers",
-    srcs = glob([
+    hdrs = glob([
         "*.h",
         "*.hpp",
     ]),
@@ -29,10 +30,8 @@ filegroup(
 pl_cc_library(
     name = "cc_library",
     srcs = [],
-    hdrs = [
-        ":headers",
-    ],
     deps = [
+        ":headers",
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "//src/stirling/upid:cc_library",
     ],

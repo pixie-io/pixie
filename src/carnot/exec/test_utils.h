@@ -87,7 +87,7 @@ table_store::schema::RowBatch ConcatRowBatches(
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> column_builders(batches[0].num_columns());
   for (size_t i = 0; i < batches[0].desc().size(); ++i) {
     column_builders[i] = MakeArrowBuilder(batches[0].desc().type(i), arrow::default_memory_pool());
-    PL_CHECK_OK(column_builders[i]->Reserve(num_rows));
+    PX_CHECK_OK(column_builders[i]->Reserve(num_rows));
   }
 
   for (auto rb : batches) {
@@ -97,9 +97,9 @@ table_store::schema::RowBatch ConcatRowBatches(
       auto builder = column_builders[col_idx].get();
       for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
 #define TYPE_CASE(_dt_)                             \
-  PL_CHECK_OK(table_store::schema::CopyValue<_dt_>( \
+  PX_CHECK_OK(table_store::schema::CopyValue<_dt_>( \
       builder, types::GetValueFromArrowArray<_dt_>(input_col, row_idx)))
-        PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+        PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
       }
     }
@@ -121,16 +121,16 @@ class CarnotTestUtils {
     auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
     std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
-    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(table->WriteRowBatch(rb1));
+    PX_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+    PX_CHECK_OK(table->WriteRowBatch(rb1));
 
     auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
     std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
     std::vector<types::Int64Value> col2_in2 = {5, 6};
-    PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-    PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-    PL_CHECK_OK(table->WriteRowBatch(rb2));
+    PX_CHECK_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    PX_CHECK_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    PX_CHECK_OK(table->WriteRowBatch(rb2));
 
     return table;
   }
@@ -141,8 +141,8 @@ class CarnotTestUtils {
 
     auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(table->WriteRowBatch(rb1));
+    PX_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    PX_CHECK_OK(table->WriteRowBatch(rb1));
 
     return table;
   }
@@ -526,7 +526,7 @@ class ExecNodeTester {
   SetRowTupleValues<_dt_>(expected_rt[row].get(), actual_rt[row].get(),                        \
                           expected_rb.ColumnAt(col).get(), actual_rb.ColumnAt(col).get(), col, \
                           row);
-        PL_SWITCH_FOREACH_DATATYPE(expected_rb.desc().types()[col], TYPE_CASE);
+        PX_SWITCH_FOREACH_DATATYPE(expected_rb.desc().types()[col], TYPE_CASE);
 #undef TYPE_CASE
       }
     }

@@ -55,7 +55,7 @@ class TabletSourceGroupIR : public OperatorIR {
     tablets_ = tablets;
     memory_source_ir_ = memory_source_ir;
     DCHECK(memory_source_ir->is_type_resolved());
-    PL_RETURN_IF_ERROR(SetResolvedType(memory_source_ir->resolved_type()));
+    PX_RETURN_IF_ERROR(SetResolvedType(memory_source_ir->resolved_type()));
     DCHECK(resolved_table_type()->HasColumn(tablet_key));
     tablet_key_ = tablet_key;
     return Status::OK();

@@ -3,6 +3,7 @@
 We write our code, documentation, review comments, and other assets with inclusivity and diversity in mind. This page is not an exhaustive reference but describes some general guidelines and examples that illustrate some best practices to follow. These are only suggestions. The author, reviewers, and project maintainers will make the final call.
 
 ## Avoid ableist language
+
 When trying to achieve a friendly and conversational tone, problematic ableist language may slip in. This can come in the form of figures of speech and other turns of phrase. Be sensitive to your word choice, especially when aiming for an informal tone. Choose alternative words depending on the context.
 
 Things to avoid:
@@ -15,6 +16,7 @@ How to fix ableist language:
 - Try replacing the word with a phrase that has no underlying negative connotations. Example: “crazy outliers” → “baffling outliers”, “dummy variable” → “placeholder variable”.
 
 ## Use gender-neutral language
+
 Some points in our code, documentation and comments contain needless assumptions about the gender of a future reader, user, etc. Example: “When the user logs into his profile.”
 
 Things to avoid:
@@ -46,6 +48,7 @@ How to fix gendered language:
 - When referring to a non-person, “it” or “one” may be good alternatives (wikipedia link).
 
 ## Use racially-neutral language
+
 Some phrases have underlying racial connotations, or reinforce the notion that some races are better than others.
 
 Things to avoid:
@@ -57,7 +60,7 @@ How to fix racist language:
 
 - Replace the term with an alternative that does not change its meaning. Example: “whitelist” →  “allowlist”, “master” → “main”.
 
-# References:
+## References
 
-- https://developers.google.com/style/inclusive-documentation
-- https://chromium.googlesource.com/chromium/src/+/master/styleguide/inclusive_code.md
+- <https://developers.google.com/style/inclusive-documentation>
+- <https://chromium.googlesource.com/chromium/src/+/master/styleguide/inclusive_code.md>

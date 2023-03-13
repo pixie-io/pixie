@@ -601,6 +601,9 @@ export namespace Configs {
     getInsecure(): boolean;
     setInsecure(value: boolean): OTelEndpointConfig;
 
+    getTimeout(): number;
+    setTimeout(value: number): OTelEndpointConfig;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OTelEndpointConfig.AsObject;
     static toObject(includeInstance: boolean, msg: OTelEndpointConfig): OTelEndpointConfig.AsObject;
@@ -614,6 +617,7 @@ export namespace Configs {
       url: string,
       headersMap: Array<[string, string]>,
       insecure: boolean,
+      timeout: number,
     }
   }
 

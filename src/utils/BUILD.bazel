@@ -14,14 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_go_test")
 
 go_library(
     name = "utils",
     srcs = [
-        "clutils.go",
         "erroraccumulator.go",
-        "genutils.go",
         "org_name_validator.go",
         "uuid.go",
     ],
@@ -30,11 +29,10 @@ go_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",
-        "@com_github_sirupsen_logrus//:logrus",
     ],
 )
 
-go_test(
+pl_go_test(
     name = "utils_test",
     srcs = ["uuid_test.go"],
     deps = [

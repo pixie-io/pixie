@@ -42,7 +42,7 @@ StatusOr<OperatorToAgentSet> MapRemovableOperatorsRule::GetRemovableOperators(
     DistributedPlan* plan, const SchemaToAgentsMap& agent_schema_map,
     const absl::flat_hash_set<int64_t>& pem_instances, IR* query) {
   MapRemovableOperatorsRule rule(plan, pem_instances, agent_schema_map);
-  PL_ASSIGN_OR_RETURN(auto did_remove, rule.Execute(query));
+  PX_ASSIGN_OR_RETURN(auto did_remove, rule.Execute(query));
   DCHECK_EQ(did_remove, !rule.op_to_agent_set.empty());
   return rule.op_to_agent_set;
 }
@@ -185,8 +185,8 @@ StatusOr<AgentSet> MapRemovableOperatorsRule::FilterExpressionMayProduceData(Exp
   auto logical_or = Match(expr, LogicalOr(Value(), Value()));
   if (logical_and || logical_or) {
     FuncIR* func = static_cast<FuncIR*>(expr);
-    PL_ASSIGN_OR_RETURN(auto lhs, FilterExpressionMayProduceData(func->args()[0]));
-    PL_ASSIGN_OR_RETURN(auto rhs, FilterExpressionMayProduceData(func->args()[1]));
+    PX_ASSIGN_OR_RETURN(auto lhs, FilterExpressionMayProduceData(func->args()[0]));
+    PX_ASSIGN_OR_RETURN(auto rhs, FilterExpressionMayProduceData(func->args()[1]));
     // If the expression is AND, we union the agents we want to remove.
     // otherwise, we take the intersection of those agents.
     return logical_and ? lhs.Union(rhs) : lhs.Intersection(rhs);
@@ -197,7 +197,7 @@ StatusOr<AgentSet> MapRemovableOperatorsRule::FilterExpressionMayProduceData(Exp
 }
 
 StatusOr<bool> MapRemovableOperatorsRule::CheckFilter(FilterIR* filter_ir) {
-  PL_ASSIGN_OR_RETURN(AgentSet agents_that_remove_op,
+  PX_ASSIGN_OR_RETURN(AgentSet agents_that_remove_op,
                       FilterExpressionMayProduceData(filter_ir->filter_expr()));
   // If the filter appears on all agents, we don't wanna add it.
   if (agents_that_remove_op.agents.empty()) {

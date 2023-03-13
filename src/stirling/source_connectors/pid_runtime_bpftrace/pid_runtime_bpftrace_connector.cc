@@ -38,8 +38,8 @@ Status PIDCPUUseBPFTraceConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PL_RETURN_IF_ERROR(CompileForMapOutput(kPIDRuntimeBTScript, std::vector<std::string>({})));
-  PL_RETURN_IF_ERROR(Deploy());
+  PX_RETURN_IF_ERROR(CompileForMapOutput(kPIDRuntimeBTScript, std::vector<std::string>({})));
+  PX_RETURN_IF_ERROR(Deploy());
 
   return Status::OK();
 }
@@ -69,7 +69,7 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 }
 
 void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
-  DCHECK_EQ(data_tables_.size(), 1) << "PIDCPUUseBPFTraceConnector only has one data table.";
+  DCHECK_EQ(data_tables_.size(), 1U) << "PIDCPUUseBPFTraceConnector only has one data table.";
 
   auto* data_table = data_tables_[0];
 

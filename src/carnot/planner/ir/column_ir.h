@@ -103,7 +103,7 @@ class ColumnIR : public ExpressionIR {
   // NOLINTNEXTLINE(readability/inheritance)
   virtual std::string DebugString() const override;
   StatusOr<int64_t> ReferenceID() const {
-    PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, ReferencedOperator());
+    PX_ASSIGN_OR_RETURN(OperatorIR * referenced_op, ReferencedOperator());
     return referenced_op->id();
   }
   types::DataType EvaluatedDataType() const override {

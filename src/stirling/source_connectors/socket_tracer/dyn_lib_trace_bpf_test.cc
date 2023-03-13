@@ -77,8 +77,8 @@ Commercial support is available at
 <a href... [TRUNCATED])";
 
 TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
-  PL_SET_FOR_SCOPE(FLAGS_stirling_rescan_for_dlopen, true);
-  PL_SET_FOR_SCOPE(FLAGS_stirling_rescan_exp_backoff_factor, 1.0);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_rescan_for_dlopen, true);
+  PX_SET_FOR_SCOPE(FLAGS_stirling_rescan_exp_backoff_factor, 1.0);
 
   // Note that stirling is deployed before starting this test.
 
@@ -136,7 +136,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 
     // Make an SSL request with the client.
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(client.Run(std::chrono::seconds{10},
+    PX_CHECK_OK(client.Run(std::chrono::seconds{10},
                            {absl::Substitute("--network=container:$0", server.container_name())},
                            {"ruby", "-e", rb_script}));
 
@@ -178,7 +178,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          px::Exec(absl::Substitute("pgrep --parent $0", server.process_pid())).ValueOrDie();
+          px::Exec(absl::Substitute("pgrep -P $0", server.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 

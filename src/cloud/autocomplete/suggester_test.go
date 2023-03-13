@@ -32,7 +32,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/autocomplete"
 	"px.dev/pixie/src/cloud/indexer/md"
-	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/utils/testingutils/docker"
 )
 
 const indexName = "test_suggester_index"
@@ -158,7 +158,7 @@ var mdEntities = []md.EsMDEntity{
 var elasticClient *elastic.Client
 
 func TestMain(m *testing.M) {
-	es, cleanup, err := testingutils.SetupElastic()
+	es, cleanup, err := docker.SetupElastic()
 	if err != nil {
 		cleanup()
 		log.Fatal(err)

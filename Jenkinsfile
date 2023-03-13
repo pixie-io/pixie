@@ -5,54 +5,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import jenkins.model.Jenkins
 
-PHAB_URL = 'https://phab.corp.pixielabs.ai'
-PHAB_REPO = 'PLM'
-
-def harborMasterUrl(String method) {
-  return "${PHAB_URL}/api/${method}?api.token=${params.API_TOKEN}&buildTargetPHID=${params.PHID}"
-}
-
-def sendBuildStatus(String buildStatus) {
-  httpRequest(
-    consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: "type=${buildStatus}",
-    responseHandle: 'NONE',
-    url: harborMasterUrl('harbormaster.sendmessage'),
-    validResponseCodes: '200'
-  )
-}
-
-def addArtifactLink(String linkURL, String artifactKey, String artifactName) {
-  def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-  def body = ''
-  body += "&buildTargetPHID=${params.PHID}"
-  body += "&artifactKey=${artifactKey}"
-  body += '&artifactType=uri'
-  body += "&artifactData[uri]=${encodedDisplayUrl}"
-  body += "&artifactData[name]=${artifactName}"
-  body += '&artifactData[ui.external]=true'
-
-  httpRequest(
-    consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: body,
-    responseHandle: 'NONE',
-    url: harborMasterUrl('harbormaster.createartifact'),
-    validResponseCodes: '200'
-  )
-}
-
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras'
-COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:412.0.0-alpine'
 GIT_DOCKER_IMAGE = 'bitnami/git:2.33.0'
-GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
 // Our staging instance used to be run on our prod cluster. These creds are
@@ -96,25 +54,29 @@ devDockerImageExtrasWithTag = ''
 stashList = []
 
 // Flag controlling if coverage job is enabled.
-isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test' || env.JOB_NAME == 'pixie-oss/build-and-test-pr')
+isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-pr')
+isReleaseRun = env.JOB_NAME.startsWith('pixie-release/')
 
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 isNightlyBPFTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression-bpf')
 
-isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
-isCopybaraTags = env.JOB_NAME.startsWith('pixie-main/copybara-tags')
-isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
-
 isOSSMainRun = (env.JOB_NAME == 'pixie-oss/build-and-test-all')
-isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-oss/cloud/')
+isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
+isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
+isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun || isReleaseRun
 
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
-isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
+isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-prod/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isStirlingPerfEval = (env.JOB_NAME == 'pixie-main/stirling-perf-eval')
+
+GCS_STASH_BUCKET = isOSSRun ? 'px-jenkins-build-oss' : 'px-jenkins-build-temp'
+GCP_PROJECT = isOSSRun ? 'pixie-oss' : 'pl-dev-infra'
+BES_GCE_FILE = isOSSRun ? 'ci/bes-oss-gce.bazelrc' : 'ci/bes-gce.bazelrc'
+BES_K8S_FILE = isOSSRun ? 'ci/bes-oss-k8s.bazelrc' : 'ci/bes-k8s.bazelrc'
 
 // Build tags are used to modify the behavior of the build.
 // Note: Tags only work for code-review builds.
@@ -130,18 +92,7 @@ def gsutilCopy(String src, String dest) {
 }
 
 def bbLinks() {
-  def linkURL = "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})"
-  if (isPhabricatorTriggeredBuild()) {
-    def phabricatorLink = ''
-    if (params.REVISION) {
-      phabricatorLink = "${PHAB_URL}/D${REVISION}"
-    } else {
-      phabricatorLink = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
-    }
-    linkURL += ",[Phabricator](${phabricatorLink})"
-  }
-  linkURL += "'"
-  return linkURL
+  return "--build_metadata=BUILDBUDDY_LINKS='[Jenkins](${BUILD_URL})'"
 }
 
 def stashOnGCS(String name, String pattern) {
@@ -181,54 +132,6 @@ def shFileEmpty(String f) {
     script: "test -s ${f}",
     returnStatus: true) != 0
 }
-/**
-  * @brief Add build info to harbormaster and badge to Jenkins.
-  */
-def addBuildInfo = {
-  addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
-
-  def text = ''
-  def link = ''
-  // Either a revision of a commit to main.
-  if (params.REVISION) {
-    def revisionId = "D${REVISION}"
-    text = revisionId
-    link = "${PHAB_URL}/${revisionId}"
-  } else {
-    text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${PHAB_URL}/r${PHAB_REPO}${env.PHAB_COMMIT}"
-  }
-  addShortText(
-    text: text,
-    background: 'transparent',
-    border: 0,
-    borderColor: 'transparent',
-    color: '#1FBAD6',
-    link: link
-  )
-}
-
-/**
- * @brief Returns true if it's a phabricator triggered build.
- *  This could either be code review build or main commit.
- */
-def isPhabricatorTriggeredBuild() {
-  return params.PHID != null && params.PHID != ''
-}
-
-def codeReviewPreBuild = {
-  sendBuildStatus('work')
-  addBuildInfo()
-}
-
-def codeReviewPostBuild = {
-  if (currentBuild.result == 'SUCCESS' || currentBuild.result == null) {
-    sendBuildStatus('pass')
-  } else {
-    sendBuildStatus('fail')
-  }
-  addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
-}
 
 def createBazelStash(String stashName) {
   sh '''
@@ -251,7 +154,7 @@ def retryOnK8sDownscale(Closure body, int times=5) {
       def interval = (retryCount + 1) * 5
       sleep interval
       continue
-    } catch (Exception e) {
+    } catch (e) {
       println("Unhandled ${e}, assuming fatal error.")
       throw e
     }
@@ -262,7 +165,11 @@ def fetchSourceK8s(Closure body) {
   container('gcloud') {
     unstashFromGCS(SRC_STASH_NAME)
     sh 'git config --global --add safe.directory `pwd`'
-    sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+    if (isOSSCodeReviewRun || isOSSMainRun) {
+      sh 'cp ci/bes-oss-k8s.bazelrc bes.bazelrc'
+    } else {
+      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
+    }
   }
   body()
 }
@@ -292,7 +199,7 @@ def runBazelCmd(String f, String targetConfig, int retries = 5) {
     return runBazelCmd(f, targetConfig, retries - 1)
   }
   // 4 means that tests not present.
-  // 38 means that bes update failed/
+  // 38 means that bes update failed.
   // Both are not fatal.
   if (retval == 0 || retval == 4 || retval == 38) {
     if (retval != 0) {
@@ -303,7 +210,7 @@ def runBazelCmd(String f, String targetConfig, int retries = 5) {
   return retval
 }
 /**
-  * Runs bazel CI mode for main/phab builds.
+  * Runs bazel CI.
   *
   * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
@@ -314,13 +221,19 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
 
   def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
 
-  if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}", targetConfig) != 0) {
-    throw new Exception('Bazel run failed')
+  def buildRet = runBazelCmd("build ${args} --target_pattern_file ${buildableFile}", targetConfig)
+  if (buildRet != 0) {
+    unstable('Bazel build failed')
   }
-  if (runBazelCmd("test ${args} --target_pattern_file ${testFile}", targetConfig) != 0) {
-    throw new Exception('Bazel test failed')
+  def testRet = runBazelCmd("test ${args} --target_pattern_file ${testFile}", targetConfig)
+  if (testRet == 0 || testRet == 3) {
+    // Create stash even when we get 3 as a retval which indicates some tests failed.
+    // This allows the test reporter to report on failing test names/counts.
+    createBazelStash("${name}-testlogs")
   }
-  createBazelStash("${name}-testlogs")
+  if (testRet != 0) {
+    unstable('Bazel test failed')
+  }
 }
 
 def processBazelLogs(String logBase) {
@@ -350,17 +263,6 @@ def processAllExtractedBazelLogs() {
   }
 }
 
-def publishDoxygenDocs() {
-  publishHTML([
-    allowMissing: true,
-    alwaysLinkToLastBuild: true,
-    keepAll: true,
-    reportDir: 'doxygen-docs/docs/html',
-    reportFiles: 'index.html',
-    reportName: 'doxygen'
-  ])
-}
-
 def sendSlackNotification() {
   if (currentBuild.result != 'SUCCESS' && currentBuild.result != null) {
     slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
@@ -380,14 +282,11 @@ def sendCloudReleaseSlackNotification(String profile) {
 }
 
 def postBuildActions = {
-  if (isPhabricatorTriggeredBuild()) {
-    codeReviewPostBuild()
-  }
-
-  // Main runs are triggered by Phabricator, but we still want
-  // notifications on failure.
-  if (!isPhabricatorTriggeredBuild() || isMainRun) {
+  if (!isOSSRun) {
     sendSlackNotification()
+  }
+  if (isOSSMainRun) {
+    step([$class: "GitHubCommitStatusSetter",]);
   }
 }
 
@@ -426,10 +325,6 @@ def gitContainer() {
   containerTemplate(name: 'git', image: GIT_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
 }
 
-def copybaraContainer() {
-  containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true)
-}
-
 def pxdevContainer(boolean needExtras=false) {
   def image = needExtras ? devDockerImageExtrasWithTag : devDockerImageWithTag
   containerTemplate(name: 'pxdev', image: image, command: 'cat', ttyEnabled: true)
@@ -439,7 +334,7 @@ def pxbuildContainer(boolean needExtras=false) {
   def image = needExtras ? devDockerImageExtrasWithTag : devDockerImageWithTag
   containerTemplate(
     name: 'pxbuild', image: image, command: 'cat', ttyEnabled: true,
-    resourceRequestMemory: '3072Mi', resourceRequestCpu: '1000m',
+    resourceRequestMemory: '58368Mi', resourceRequestCpu: '30000m',
   )
 }
 
@@ -481,7 +376,7 @@ def pxbuildRetryPodTemplate(String suffix, boolean needExtras=false, Closure bod
         volumes: [
           hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock'),
           hostPathVolume(mountPath: '/var/lib/docker', hostPath: '/var/lib/docker'),
-          hostPathVolume(mountPath: '/mnt/jenkins/sharedDir', hostPath: '/mnt/jenkins/sharedDir')
+          hostPathVolume(mountPath: '/mnt/disks/jenkins/sharedDir', hostPath: '/mnt/disks/jenkins/sharedDir')
         ]) {
         node(label) {
           container('pxbuild') {
@@ -523,7 +418,7 @@ def checkoutAndInitialize() {
       deleteDir()
       checkout scm
       initializeRepoState()
-      if (isPhabricatorTriggeredBuild()) {
+      if (isOSSCodeReviewRun) {
         def logMessage = sh(
           script: 'git log origin/main..',
           returnStdout: true,
@@ -553,13 +448,7 @@ def builders = [:]
 def buildAndTestOptWithUI = {
   pxbuildWithSourceAndTargetsK8s('build-opt') {
     container('pxbuild') {
-      withCredentials([
-        file(
-          credentialsId: 'pl-dev-infra-jenkins-sa-json',
-          variable: 'GOOGLE_APPLICATION_CREDENTIALS')
-      ]) {
-        bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
-      }
+      bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
     }
   }
 }
@@ -632,18 +521,28 @@ def bazelCICmdBPFonGCE(String name, String targetConfig='clang', String targetCo
   fetchFromGCS(SRC_STASH_NAME)
   fetchFromGCS(TARGETS_STASH_NAME)
 
-  sh """
-  export BUILDABLE_FILE="${buildableFile}"
-  export TEST_FILE="${testFile}"
-  export BAZEL_ARGS="${bazelArgs}"
-  export STASH_NAME="${stashName}"
-  export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
-  export BUILD_TAG="${BUILD_TAG}"
-  export KERNEL_VERSION="${kernel}"
-  ./ci/bpf/00_create_instance.sh
-  """
+  def retval = sh(
+    script: """
+    export BUILDABLE_FILE="${buildableFile}"
+    export TEST_FILE="${testFile}"
+    export BAZEL_ARGS="${bazelArgs}"
+    export STASH_NAME="${stashName}"
+    export GCS_STASH_BUCKET="${GCS_STASH_BUCKET}"
+    export BUILD_TAG="${BUILD_TAG}"
+    export KERNEL_VERSION="${kernel}"
+    export GCP_PROJECT="${GCP_PROJECT}"
+    export BES_FILE="${BES_GCE_FILE}"
+    ./ci/bpf/00_create_instance.sh
+    """,
+    returnStatus: true
+  )
 
-  stashList.add(stashName)
+  if (retval == 0 || retval == 3) {
+    stashList.add(stashName)
+  }
+  if (retval != 0) {
+    unstable('Bazel BPF build/test failed')
+  }
 }
 
 def buildAndTestBPFOpt = { kernel ->
@@ -775,7 +674,7 @@ if (isMainRun || isOSSMainRun) {
               variable: 'CODECOV_TOKEN'
             )
           ]) {
-            sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT` -r " + slug
+            sh "ci/collect_coverage.sh -u -b main -c `cat GIT_COMMIT` -r " + slug
           }
         }
         createBazelStash('build-gcc-coverage-testlogs')
@@ -834,18 +733,7 @@ builders['Lint & Docs'] = {
     container('pxbuild') {
       // Prototool relies on having a main branch in this checkout, so create one tracking origin/main
       sh 'git branch main --track origin/main'
-      sh 'arc lint --trace'
-    }
-
-    if (shFileExists('bazel_run_doxygen')) {
-      def stashName = 'doxygen-docs'
-      container('pxbuild') {
-        sh 'LD_LIBRARY_PATH="" doxygen'
-      }
-      container('gcloud') {
-        stashOnGCS(stashName, 'docs/html')
-        stashList.add(stashName)
-      }
+      sh 'arc lint --trace --never-apply-patches'
     }
   }
 }
@@ -868,8 +756,6 @@ def archiveBuildArtifacts = {
       // causes the test publisher to mark as failed.
       sh 'find . -name test_attempts -type d -exec rm -rf {} +'
 
-      publishDoxygenDocs()
-
       // Archive clang-tidy logs.
       archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true, allowEmptyArchive: true
 
@@ -883,7 +769,7 @@ def archiveBuildArtifacts = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  retryPodTemplate('archive', [gcloudContainer()]) {
+  retryPodTemplate('root', [gcloudContainer()]) {
     if (isMainRun || isOSSMainRun) {
       def namePrefix = 'pixie-main'
       if (isOSSMainRun) {
@@ -906,10 +792,6 @@ def buildScriptForCommits = {
         echo 'Stopping current build because a later build is already enqueued'
         return
       }
-    }
-
-    if (isPhabricatorTriggeredBuild()) {
-      codeReviewPreBuild()
     }
 
     try {
@@ -1310,33 +1192,15 @@ def checkoutTargetRepo(String gitHashForPerfEval) {
   // Log out initial repo state.
   sh 'echo "Starting repo state:" && git rev-parse HEAD'
 
-  if (params.DIFF_ID != '') {
-    sshagent(['build-bot-ro']) {
-      // DIFF_ID branch.
-      // Specifying DIFF_ID (from Phab) enables a perf eval on an unmerged branch that resides in phab.
-      // To eval this repo state, we fetch the specific tag from the staging repo & merge.
-      def diffId = Integer.parseInt(params.DIFF_ID)
-      sh 'mkdir -p ~/.ssh'
-      sh 'ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts'
-      sh 'git config remote.staging.url ssh://git@github.com/pixie-labs/pixielabs-staging.git'
-      sh "git fetch --tags --force -q -- ssh://git@github.com/pixie-labs/pixielabs-staging.git refs/tags/phabricator/diff/${diffId}"
-      gitHashForPerfEval = sh(script: 'git rev-parse HEAD', returnStdout: true, returnStatus: false).trim()
-      def targetHash = sh(script: "git rev-parse refs/tags/phabricator/diff/${diffId}^{commit}", returnStdout: true, returnStatus: false).trim()
-      echo "Merging based on DIFF_ID: ${diffId}, found targetHash: ${targetHash}."
-      sh "git merge --ff ${targetHash}"
-      imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval + "-B${diffId}"
-    }
-  } else {
-    // GIT_HASH_FOR_PERF_EVAL branch.
-    // Here, we evaluate some commit that is merged into main.
-    // Alternately (to a SHA), the user can specify a string like "HEAD~3" or "some-branch".
-    // Build arg. GIT_HASH_FOR_PERF_EVAL is converted into sha,
-    // and used to construct the resulting image tag.
-    sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
-    gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
-    sh "git checkout ${gitHashForPerfEval}"
-    imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
-  }
+  // GIT_HASH_FOR_PERF_EVAL branch.
+  // Here, we evaluate some commit that is merged into main.
+  // Alternately (to a SHA), the user can specify a string like "HEAD~3" or "some-branch".
+  // Build arg. GIT_HASH_FOR_PERF_EVAL is converted into sha,
+  // and used to construct the resulting image tag.
+  sh "echo 'Target repo state:' && git rev-parse ${gitHashForPerfEval}"
+  gitHashForPerfEval = sh(script: "git rev-parse ${gitHashForPerfEval}", returnStdout: true, returnStatus: false).trim()
+  sh "git checkout ${gitHashForPerfEval}"
+  imageTagForPerfEval = 'perf-eval-' + gitHashForPerfEval
 
   echo "Image tag for perf eval: ${imageTagForPerfEval}"
   sh 'echo "Repo state:" && git rev-parse HEAD'
@@ -1454,7 +1318,7 @@ def buildScriptForNightlyTestRegression = { testjobs ->
 }
 
 def updateAllVersionsDB() {
-  pxbuildWithSourceK8s('update-versions-db') {
+  pxbuildWithSourceK8s('update-versions-db', true) {
     container('pxbuild') {
       unstashFromGCS('versions')
       sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
@@ -1589,7 +1453,7 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
 }
 
 vizierReleaseBuilders['Build & Export Docs'] = {
-  pxbuildWithSourceK8s('build-and-export-docs') {
+  pxbuildWithSourceK8s('build-and-export-docs', true) {
     container('pxbuild') {
       def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
       sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
@@ -1628,19 +1492,11 @@ def buildScriptForOperatorRelease = {
     stage('Build & Push Artifacts') {
       pxbuildWithSourceK8s('build-and-push-operator', true) {
         container('pxbuild') {
-          withKubeConfig([
-            credentialsId: K8S_PROD_CREDS,
-            serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
-          ]) {
-            sh './ci/operator_build_release.sh'
-            stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-            stashList.add('versions')
-          }
+          sh './ci/operator_build_release.sh'
+          stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+          stashList.add('versions')
         }
       }
-    }
-    stage('Update versions databases') {
-      updateAllVersionsDB()
     }
   }
   catch (err) {
@@ -1715,91 +1571,6 @@ def buildScriptForCloudProdRelease = {
   postBuildActions()
 }
 
-def copybaraTemplate(String name, String copybaraFile) {
-  retryPodTemplate(name, [copybaraContainer()]) {
-    deleteDir()
-    checkout scm
-    container('copybara') {
-      sshagent(credentials: ['pixie-copybara-git']) {
-        withCredentials([
-          file(
-            credentialsId: 'copybara-private-key-asc',
-            variable: 'COPYBARA_GPG_KEY_FILE'
-          ),
-          string(
-            credentialsId: 'copybara-gpg-key-id',
-            variable: 'COPYBARA_GPG_KEY_ID'
-          ),
-        ]) {
-          sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-          ./ci/run_copybara.sh ${copybaraFile}"
-        }
-      }
-    }
-  }
-}
-
-def checkoutForCopybara(String url, String relativeTargetDir, String credentialsId) {
-  checkout([
-    changelog: false,
-    poll: false,
-    scm: [
-      $class: 'GitSCM',
-      branches: [[name: 'main']],
-      extensions: [
-        [$class: 'RelativeTargetDirectory', relativeTargetDir: relativeTargetDir],
-        [$class: 'CloneOption', noTags: false, reference: '', shallow: false]
-      ],
-      userRemoteConfigs: [
-        [credentialsId: credentialsId, url: url]
-      ]
-    ]
-  ])
-}
-
-def buildScriptForCopybaraPublic() {
-  try {
-    stage('Copybara it') {
-      copybaraTemplate('public-copy', 'tools/copybara/public/copy.bara.sky')
-    }
-    stage('Copy tags') {
-      retryPodTemplate('public-copy-tags', [gitContainer()]) {
-        container('git') {
-          deleteDir()
-          checkoutForCopybara('git@github.com:pixie-labs/pixielabs.git', 'pixie-private', 'build-bot-ro')
-          checkoutForCopybara('git@github.com:pixie-io/pixie.git', 'pixie-oss', 'pixie-copybara-git')
-          dir('pixie-private') {
-            sshagent(credentials: ['pixie-copybara-git']) {
-              sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-              ./ci/copy_release_tags.sh ../pixie-oss"
-            }
-          }
-        }
-      }
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-}
-
-def buildScriptForCopybaraPxAPI() {
-  try {
-    stage('Copybara it') {
-      copybaraTemplate('pxapi-copy', 'tools/copybara/pxapi_go/copy.bara.sky')
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-}
-
 def buildScriptForStirlingPerfEval = {
   stage('Checkout code.') {
     checkoutAndInitialize()
@@ -1833,10 +1604,6 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudProdRelease()
 } else if (isOSSCloudBuildRun) {
   buildScriptForOSSCloudRelease()
-} else if (isCopybaraPublic || isCopybaraTags) {
-  buildScriptForCopybaraPublic()
-} else if (isCopybaraPxAPI) {
-  buildScriptForCopybaraPxAPI()
 } else if (isStirlingPerfEval) {
   buildScriptForStirlingPerfEval()
 } else {

@@ -138,8 +138,7 @@ TEST(ElfReaderTest, AddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(path, ElfReader::TestOnlyUseZeroOffset{}));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
     ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
@@ -160,8 +159,7 @@ TEST(ElfReaderTest, InstrAddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
-                       ElfReader::Create(path, ElfReader::TestOnlyUseZeroOffset{}));
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
     ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
@@ -241,13 +239,14 @@ TEST(ElfReaderTest, FuncByteCode) {
 
 TEST(ElfReaderTest, GolangAppRuntimeBuildVersion) {
   const std::string kPath =
-      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_16_binary");
+      px::testing::BazelRunfilePath("src/stirling/obj_tools/testdata/go/test_go_1_19_binary");
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(ElfReader::SymbolInfo symbol,
                        elf_reader->SearchTheOnlySymbol("runtime.buildVersion"));
 // Coverage build might alter the resultant binary.
 #ifndef PL_COVERAGE
-  EXPECT_EQ(symbol.address, 0x549F20);
+  ASSERT_OK_AND_ASSIGN(auto expected_addr, NmSymbolNameToAddr(kPath, "runtime.buildVersion"));
+  EXPECT_EQ(symbol.address, expected_addr);
 #endif
   EXPECT_EQ(symbol.size, 16) << "Symbol table entry size should be 16";
   EXPECT_EQ(symbol.type, ELFIO::STT_OBJECT);

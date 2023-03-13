@@ -141,7 +141,7 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
     if (TEnableClientSideTracing) {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.
-      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
+      PX_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
     }
   }
 };
