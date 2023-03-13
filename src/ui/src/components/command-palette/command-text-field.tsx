@@ -132,6 +132,11 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     '&:not(:first-child)': {
       borderTop: theme.palette.border.unFocused,
     },
+    '& > $optionGroupHeading + ul > li': {
+      // Tells scrollIntoView to scroll a bit further up, so it can avoid being obscured by the sticky headers.
+      // Only applies when the header actually exists within that option's group.
+      scrollMarginTop: theme.spacing(3.125),
+    },
   },
   optionGroupList: {
     listStyle: 'none',
@@ -151,9 +156,6 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
   },
   optionGroupHeading: {
     ...theme.typography.h4,
-    // TODO(nick): When using arrow keys to go up in the list, the option hidden under a sticky header isn't revealed.
-    //   This is because MUI doesn't consider anything but the element being selected and its container, so it doesn't
-    //   realize that it needs to scroll up further to make the option actually visible.
     position: 'sticky',
     top: 0,
     left: 0,
@@ -217,8 +219,18 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     onChange: (_, option: CommandCompletion) => { // Takes event, option, reason, details (in case we need them)
       activateCompletion(option);
     },
-    onHighlightChange: (_, option: CommandCompletion) => {
+    onHighlightChange: (event: React.SyntheticEvent, option: CommandCompletion, reason: string) => {
       setHighlightedCompletion(option);
+      if (option && (reason === 'keyboard' || reason === 'auto')) {
+        // The event target is the text field if the reaon is keyboard, and missing if the reason is auto.
+        // So instead, we manually find the element that got focused and scroll it into view.
+        // Accounts for scroll-margin-top and therefore the sticky headers.
+        setTimeout(() => {
+          document.querySelector(
+            'li.Mui-focused[id^=command-palette-autocomplete-option]',
+          )?.scrollIntoView({ block: 'nearest' });
+        });
+      }
     },
     inputValue: inputValue,
     onInputChange: (e) => {
@@ -341,7 +353,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
               options,
             }) => (
               <li key={`group-${group}-${indexOffset}`} className={classes.optionGroupWrapper}>
-                <div className={classes.optionGroupHeading}>{group}</div>
+                {group.length > 0 && <div className={classes.optionGroupHeading}>{group}</div>}
                 <ul className={classes.optionGroupList}>
                   {options.map((option, optIndex) => (
                     <li
