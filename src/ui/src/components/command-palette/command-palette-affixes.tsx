@@ -20,6 +20,8 @@ import * as React from 'react';
 
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Button, IconButton, Tooltip } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { SxProps } from '@mui/system';
 
 import { CommandPaletteContext } from './command-palette-context';
 
@@ -29,6 +31,15 @@ export const CommandPaletteSuffix = React.memo(() => {
   const onClear = React.useCallback(() => {
     setInputValue('');
   }, [setInputValue]);
+
+  const sx: SxProps<Theme> = React.useMemo(() => ({
+    // Push the edges of the button to the edges of the input, and square its left side
+    p: 1,
+    mb: 0.25,
+    borderRadius: 0,
+    minWidth: (t) => t.spacing(10),
+    boxShadow: 'none',
+  }), []);
 
   return (
     <>
@@ -42,15 +53,7 @@ export const CommandPaletteSuffix = React.memo(() => {
             size='small'
             variant='contained'
             disabled={(cta?.disabled ?? true) === true }
-            // eslint-disable-next-line react-memo/require-usememo
-            sx={{
-              // Push the edges of the button to the edges of the input, and square its left side
-              p: 1,
-              mb: 0.25,
-              borderRadius: 0,
-              minWidth: (t) => t.spacing(10),
-              boxShadow: 'none',
-            }}
+            sx={sx}
             onClick={cta?.action ?? (() => {})}
           >
               {cta?.label ?? '...'}
