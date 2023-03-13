@@ -66,6 +66,7 @@ message Configs {
     map<string, string> headers = 2;
     bool insecure = 3;
     int64 timeout = 4;
+    int64 batch_size = 5;
   }
   OTelEndpointConfig otel_endpoint_config = 1 [ (gogoproto.customname) = "OTelEndpointConfig" ];
   message PluginConfig {

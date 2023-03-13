@@ -604,6 +604,9 @@ export namespace Configs {
     getTimeout(): number;
     setTimeout(value: number): OTelEndpointConfig;
 
+    getBatchSize(): number;
+    setBatchSize(value: number): OTelEndpointConfig;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OTelEndpointConfig.AsObject;
     static toObject(includeInstance: boolean, msg: OTelEndpointConfig): OTelEndpointConfig.AsObject;
@@ -618,6 +621,7 @@ export namespace Configs {
       headersMap: Array<[string, string]>,
       insecure: boolean,
       timeout: number,
+      batchSize: number,
     }
   }
 

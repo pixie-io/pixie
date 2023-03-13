@@ -85,6 +85,9 @@ class OTelModule : public QLObject {
     insecure (bool, optional): Whether to allow insecure connections to the OpenTelemetry
       collector. False by default.
     timeout (int, optional): The number of seconds before the request should timeout when exporting to the OTel collector.
+    batch_size (int, optional): The number of metrics/spans to batch before sending a request to the OTel collector.
+      The batch size is approximate. The last batch can be smaller than the batch size, and all other batches can be larger than the batch size.
+      (Default: 16384).
   )doc";
 
  protected:
@@ -224,25 +227,28 @@ class EndpointConfig : public QLObject {
   };
   static StatusOr<std::shared_ptr<EndpointConfig>> Create(
       ASTVisitor* ast_visitor, std::string url,
-      std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure, int64_t timeout);
+      std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure, int64_t timeout,
+      int64_t batch_size);
 
   Status ToProto(planpb::OTelEndpointConfig* endpoint_config);
 
  protected:
   EndpointConfig(ASTVisitor* ast_visitor, std::string url,
                  std::vector<EndpointConfig::ConnAttribute> attributes, bool insecure,
-                 int64_t timeout)
+                 int64_t timeout, int64_t batch_size)
       : QLObject(EndpointType, ast_visitor),
         url_(std::move(url)),
         attributes_(std::move(attributes)),
         insecure_(insecure),
-        timeout_(timeout) {}
+        timeout_(timeout),
+        batch_size_(batch_size) {}
 
  private:
   std::string url_;
   std::vector<EndpointConfig::ConnAttribute> attributes_;
   bool insecure_;
   int64_t timeout_;
+  int64_t batch_size_;
 };
 
 class OTelDataContainer : public QLObject {

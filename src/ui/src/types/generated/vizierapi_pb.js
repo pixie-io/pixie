@@ -5328,7 +5328,8 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.toObject = function(includeInst
     url: jspb.Message.getFieldWithDefault(msg, 1, ""),
     headersMap: (f = msg.getHeadersMap()) ? f.toObject(includeInstance, undefined) : [],
     insecure: jspb.Message.getBooleanFieldWithDefault(msg, 3, false),
-    timeout: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    timeout: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    batchSize: jspb.Message.getFieldWithDefault(msg, 5, 0)
   };
 
   if (includeInstance) {
@@ -5383,6 +5384,10 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.deserializeBinaryFromReader = f
       var value = /** @type {number} */ (reader.readInt64());
       msg.setTimeout(value);
       break;
+    case 5:
+      var value = /** @type {number} */ (reader.readInt64());
+      msg.setBatchSize(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5434,6 +5439,13 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.serializeBinaryToWriter = funct
   if (f !== 0) {
     writer.writeInt64(
       4,
+      f
+    );
+  }
+  f = message.getBatchSize();
+  if (f !== 0) {
+    writer.writeInt64(
+      5,
       f
     );
   }
@@ -5514,6 +5526,24 @@ proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getTimeout = function
  */
 proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.setTimeout = function(value) {
   return jspb.Message.setProto3IntField(this, 4, value);
+};
+
+
+/**
+ * optional int64 batch_size = 5;
+ * @return {number}
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.getBatchSize = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 5, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.px.api.vizierpb.Configs.OTelEndpointConfig} returns this
+ */
+proto.px.api.vizierpb.Configs.OTelEndpointConfig.prototype.setBatchSize = function(value) {
+  return jspb.Message.setProto3IntField(this, 5, value);
 };
 
 

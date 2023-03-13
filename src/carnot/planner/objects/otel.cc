@@ -60,9 +60,9 @@ StatusOr<std::shared_ptr<OTelTrace>> OTelTrace::Create(ASTVisitor* ast_visitor, 
 
 StatusOr<std::shared_ptr<EndpointConfig>> EndpointConfig::Create(
     ASTVisitor* ast_visitor, std::string url, std::vector<EndpointConfig::ConnAttribute> attributes,
-    bool insecure, int64_t timeout) {
-  return std::shared_ptr<EndpointConfig>(
-      new EndpointConfig(ast_visitor, std::move(url), std::move(attributes), insecure, timeout));
+    bool insecure, int64_t timeout, int64_t batch_size) {
+  return std::shared_ptr<EndpointConfig>(new EndpointConfig(
+      ast_visitor, std::move(url), std::move(attributes), insecure, timeout, batch_size));
 }
 
 Status ExportToOTel(const OTelData& data, const pypa::AstPtr& ast, Dataframe* df) {
@@ -303,7 +303,10 @@ StatusOr<QLObjectPtr> EndpointConfigDefinition(const pypa::AstPtr& ast, const Pa
 
   PX_ASSIGN_OR_RETURN(IntIR * timeout_ir, GetArgAs<IntIR>(ast, args, "timeout"));
 
-  return EndpointConfig::Create(visitor, url, attributes, insecure_ir->val(), timeout_ir->val());
+  PX_ASSIGN_OR_RETURN(IntIR * batch_size_ir, GetArgAs<IntIR>(ast, args, "batch_size"));
+
+  return EndpointConfig::Create(visitor, url, attributes, insecure_ir->val(), timeout_ir->val(),
+                                batch_size_ir->val());
 }
 
 Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
@@ -327,13 +330,14 @@ Status OTelModule::Init(CompilerState* compiler_state, IR* ir) {
 
   PX_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> endpoint_fn,
-      FuncObject::Create(kEndpointOpID, {"url", "headers", "insecure", "timeout"},
-                         {{"headers", "{}"}, {"insecure", "False"}, {"timeout", "5"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&EndpointConfigDefinition, std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
+      FuncObject::Create(
+          kEndpointOpID, {"url", "headers", "insecure", "timeout", "batch_size"},
+          {{"headers", "{}"}, {"insecure", "False"}, {"timeout", "5"}, {"batch_size", "16384"}},
+          /* has_variable_len_args */ false,
+          /* has_variable_len_kwargs */ false,
+          std::bind(&EndpointConfigDefinition, std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3),
+          ast_visitor()));
 
   AddMethod(kEndpointOpID, endpoint_fn);
   PX_RETURN_IF_ERROR(endpoint_fn->SetDocString(kEndpointOpDocstring));
@@ -473,6 +477,7 @@ Status EndpointConfig::ToProto(planpb::OTelEndpointConfig* pb) {
   }
   pb->set_insecure(insecure_);
   pb->set_timeout(timeout_);
+  pb->set_batch_size(batch_size_);
   return Status::OK();
 }
 

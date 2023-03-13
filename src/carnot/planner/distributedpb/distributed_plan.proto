@@ -140,6 +140,9 @@ message OTelEndpointConfig {
   // The amount of time in seconds before the request to the OTel collector should timeout. Default:
   // 5s.
   int64 timeout = 4;
+  // The number of metrics/spans to batch before sending a request to the OTel collector. Default:
+  // 16384.
+  int64 batch_size = 5;
 }
 
 message PluginConfig {

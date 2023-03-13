@@ -141,10 +141,11 @@ func convertConfigs(config *vizierpb.Configs) *plannerpb.Configs {
 
 	if config.OTelEndpointConfig != nil {
 		c.OTelEndpointConfig = &plannerpb.Configs_OTelEndpointConfig{
-			URL:      config.OTelEndpointConfig.URL,
-			Headers:  config.OTelEndpointConfig.Headers,
-			Insecure: config.OTelEndpointConfig.Insecure,
-			Timeout:  config.OTelEndpointConfig.Timeout,
+			URL:       config.OTelEndpointConfig.URL,
+			Headers:   config.OTelEndpointConfig.Headers,
+			Insecure:  config.OTelEndpointConfig.Insecure,
+			Timeout:   config.OTelEndpointConfig.Timeout,
+			BatchSize: config.OTelEndpointConfig.BatchSize,
 		}
 	}
 

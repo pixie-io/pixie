@@ -86,6 +86,7 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
     }
     otel_endpoint_config->set_insecure(logical_state.otel_endpoint_config().insecure());
     otel_endpoint_config->set_timeout(logical_state.otel_endpoint_config().timeout());
+    otel_endpoint_config->set_batch_size(logical_state.otel_endpoint_config().batch_size());
   }
   std::unique_ptr<planner::PluginConfig> plugin_config = nullptr;
   if (logical_state.has_plugin_config()) {

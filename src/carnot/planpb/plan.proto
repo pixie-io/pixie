@@ -494,6 +494,8 @@ message OTelEndpointConfig {
   bool insecure = 3;
   // The number of seconds before a request to the OpenTelemetry collector times out.
   int64 timeout = 4;
+  // The number of metrics/spans to batch before sending a request to the OpenTelemetry collector.
+  int64 batch_size = 5;
 }
 
 // Defines a resource. Discussed in depth in the OpenTelemetry spec.

@@ -65,6 +65,7 @@ var (
 	CronScriptUpdatesResponseChannel = messagebus.V2CTopic(cvmsgs.CronScriptUpdatesResponseChannel)
 	natsWaitTimeout                  = 2 * time.Minute
 	defaultOTelTimeoutS              = int64(5)
+	defaultOTelBatchSize             = int64(16384)
 )
 
 // ScriptRunner tracks registered cron scripts and runs them according to schedule.
@@ -440,9 +441,26 @@ func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClien
 	if err != nil {
 		log.WithError(err).Error("Failed to parse config YAML")
 	}
+	defaultConfigs(&config)
 
 	return &runner{
 		cronScript: script, done: make(chan struct{}), csClient: csClient, vzClient: vzClient, signingKey: signingKey, config: &config, scriptID: id,
+	}
+}
+
+func makeInt64Ptr(val int64) *int64 {
+	return &val
+}
+
+func defaultConfigs(c *scripts.Config) {
+	if c.OtelEndpointConfig == nil {
+		return
+	}
+	if c.OtelEndpointConfig.BatchSize == nil {
+		c.OtelEndpointConfig.BatchSize = makeInt64Ptr(defaultOTelBatchSize)
+	}
+	if c.OtelEndpointConfig.Timeout == nil {
+		c.OtelEndpointConfig.Timeout = makeInt64Ptr(defaultOTelTimeoutS)
 	}
 }
 
@@ -493,7 +511,12 @@ func (r *runner) runScript(scriptPeriod time.Duration) {
 			URL:      r.config.OtelEndpointConfig.URL,
 			Headers:  r.config.OtelEndpointConfig.Headers,
 			Insecure: r.config.OtelEndpointConfig.Insecure,
-			Timeout:  defaultOTelTimeoutS,
+		}
+		if r.config.OtelEndpointConfig.Timeout != nil {
+			otelEndpoint.Timeout = *r.config.OtelEndpointConfig.Timeout
+		}
+		if r.config.OtelEndpointConfig.BatchSize != nil {
+			otelEndpoint.BatchSize = *r.config.OtelEndpointConfig.BatchSize
 		}
 	}
 
