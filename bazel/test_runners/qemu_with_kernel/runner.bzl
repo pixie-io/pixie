@@ -34,22 +34,22 @@ def _test_runner_impl(ctx):
     args = ctx.actions.args()
     args.add("-o", disk_image)
     args.add("-s", sysroot_info.tar.to_list()[0])
-    args.add("-k", ctx.files._kernel_image[0])
+    args.add("-k", ctx.files.kernel_image[0])
     args.add("-b", ctx.files._busybox[0])
     args.add("-e", ",".join(extra_files))
 
     ctx.actions.run(
         outputs = [disk_image],
-        inputs = ctx.files._extra_files + ctx.files._kernel_image + ctx.files._busybox + sysroot_info.tar.to_list(),
+        inputs = ctx.files._extra_files + ctx.files.kernel_image + ctx.files._busybox + sysroot_info.tar.to_list(),
         arguments = [args],
         executable = ctx.files._create_sysroot_disk_script[0],
     )
 
     kernel_bzimage = ctx.actions.declare_file("bzImage")
     ctx.actions.run_shell(
-        inputs = ctx.files._kernel_image,
+        inputs = ctx.files.kernel_image,
         outputs = [kernel_bzimage],
-        command = "tar -C $(dirname %s) -xf %s pkg/bzImage --strip-components=1" % (kernel_bzimage.path, ctx.files._kernel_image[0].path),
+        command = "tar -C $(dirname %s) -xf %s pkg/bzImage --strip-components=1" % (kernel_bzimage.path, ctx.files.kernel_image[0].path),
     )
 
     # Executable script.
@@ -83,6 +83,10 @@ def _test_runner_impl(ctx):
 qemu_with_kernel_test_runner = rule(
     implementation = _test_runner_impl,
     attrs = {
+        "kernel_image": attr.label(
+            default = Label("@linux_build_6_1_8_x86_64//file:linux-build.tar.gz"),
+            allow_single_file = True,
+        ),
         "_busybox": attr.label(
             default = Label("@busybox//file:busybox"),
             allow_single_file = True,
@@ -99,10 +103,6 @@ qemu_with_kernel_test_runner = rule(
                 Label("//bazel/test_runners/qemu_with_kernel/exit_qemu_with_status:exit_qemu_with_status"): "/bin/exit_qemu_with_status",
             },
             allow_files = True,
-        ),
-        "_kernel_image": attr.label(
-            default = Label("@linux_build_5_18_19_x86_64//file:linux-build.tar.gz"),
-            allow_single_file = True,
         ),
         "_run_qemu_script": attr.label(
             default = Label("//bazel/test_runners/qemu_with_kernel:run_qemu.sh"),
