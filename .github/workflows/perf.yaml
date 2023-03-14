@@ -49,7 +49,7 @@ jobs:
       tags: ${{ steps.default-tags.outputs.tags }}
     steps:
     - name: Check for /perf command
-      uses: xt0rted/slash-command-action@8a7e10c4cf69ee4126bf815c3d2a07455de5233a
+      uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88
       id: command
       with:
         command: perf
