@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dockerd-config
+data:
+  # yamllint disable rule:indentation
+  daemon.json: |
+    {
+      "ipv6": true,
+      "fixed-cidr-v6": "2001:db8:1::/64"
+    }
+  # yamllint enable rule:indentation
