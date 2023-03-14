@@ -95,6 +95,23 @@ spec:
               memory: 160Mi
       nodeSelector:
         kubernetes.io/os: linux
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -149,6 +166,23 @@ spec:
               memory: 80Mi
       nodeSelector:
         kubernetes.io/os: linux
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
