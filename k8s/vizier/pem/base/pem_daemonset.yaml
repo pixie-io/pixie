@@ -62,6 +62,13 @@ spec:
           value: "vizier-query-broker-svc"
         - name: SERVICE_PORT
           value: "50300"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
       containers:
       - name: pem
         image: gcr.io/pixie-oss/pixie-dev/vizier/pem_image:latest
@@ -113,12 +120,17 @@ spec:
             - SYS_PTRACE
             - SYS_ADMIN
           privileged: true
+          seccompProfile:
+            type: RuntimeDefault
         volumeMounts:
         - name: sys
           mountPath: /sys
           readOnly: true
         - name: certs
           mountPath: /certs
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
