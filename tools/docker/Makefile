@@ -113,8 +113,11 @@ elasticsearch_image_tag := "gcr.io/pixie-oss/pixie-dev-public/elasticsearch:$(EL
 
 ## Linux kernel for qemu/BPF tests.
 KERNEL_BUILD_DIR := $(BUILD_DIR)/kernel_build
+# 4.19.276 is the correct version here, but there is a bug with patch > 255.
 KERNEL_BUILD_VERSIONS := 4.14.215 \
+	4.19.254 \
 	5.4.235 \
+	5.10.173 \
 	5.15.101 \
 	6.1.18
 
