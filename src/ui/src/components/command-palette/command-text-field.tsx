@@ -222,7 +222,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     onHighlightChange: (event: React.SyntheticEvent, option: CommandCompletion, reason: string) => {
       setHighlightedCompletion(option);
       if (option && (reason === 'keyboard' || reason === 'auto')) {
-        // The event target is the text field if the reaon is keyboard, and missing if the reason is auto.
+        // The event target is the text field if the reason is keyboard, and missing if the reason is auto.
         // So instead, we manually find the element that got focused and scroll it into view.
         // Accounts for scroll-margin-top and therefore the sticky headers.
         setTimeout(() => {
