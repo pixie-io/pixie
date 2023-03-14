@@ -123,6 +123,7 @@ build:qemu-bpf --//bazel/test_runners:test_runner=qemu_with_kernel
 build:qemu-bpf --run_under="bazel/test_runners/qemu_with_kernel/test_runner.sh"
 build:qemu-bpf --build_tag_filters=requires_bpf,-no_qemu
 test:qemu-bpf --test_tag_filters=requires_bpf,-disabled,-no_qemu
+test:qemu-bpf --test_timeout=180,600,1800,3600
 
 # Build for GCC.
 # These are copts because they apply to both c++ and c files.
@@ -174,6 +175,7 @@ build:tsan --define tcmalloc=disabled
 # https://github.com/google/sanitizers/issues/953
 build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 build:tsan --features=tsan
+test:tsan --test_timeout=180,600,1800,3600
 
 # Note that we are lumping tests that require root into the BPF tests below
 # to minimize number of configs.

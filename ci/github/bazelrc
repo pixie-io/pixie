@@ -8,7 +8,6 @@ common --keep_going
 build --build_metadata=HOST=github-actions
 build --build_metadata=USER=github-actions
 build --build_metadata=REPO_URL=https://github.com/pixie-io/pixie
-build --build_metadata=ROLE=DEV
 build --build_metadata=VISIBILITY=PUBLIC
 build --verbose_failures
 
@@ -39,3 +38,10 @@ test --local_cpu_resources=14
 
 build --jobs 16
 test --jobs 16
+
+# For qemu, we allocate 46 cpus instead of 16.
+build:qemu-bpf --local_cpu_resources=46
+test:qemu-bpf --local_cpu_resources=46
+
+build:qemu-bpf --jobs=48
+test:qemu-bpf --jobs=48
