@@ -28,7 +28,6 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/data_tables.h"
-#include "src/stirling/core/unit_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
