@@ -47,6 +47,7 @@ jobs:
     outputs:
       suites: ${{ steps.parse.outputs.suites }}
       tags: ${{ steps.default-tags.outputs.tags }}
+    continue-on-error: true
     steps:
     - name: Check for /perf command
       uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88
@@ -80,6 +81,7 @@ jobs:
   pr-perf-eval:
     name: PR Performance Evaluation
     needs: pr-perf-setup
+    if: ${{ needs.pr-perf-setup.result == 'success' }}
     uses: ./.github/workflows/perf_common.yaml
     with:
       suites: ${{ needs.pr-perf-setup.outputs.suites }}
@@ -89,6 +91,7 @@ jobs:
   pr-perf-comment:
     name: Comment results on PR
     needs: pr-perf-eval
+    if: ${{ needs.pr-perf-eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/github-script@v6
