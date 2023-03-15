@@ -103,7 +103,7 @@ class UnitConnector {
       LOG(FATAL) << "Stop() not ok: " << status.msg();
     }
 
-    // More cleanup (invokes dtor of source connector). Prevent Stop() from being invoked twice.
+    // Invokes dtor of the underlying source connector.
     source_ = nullptr;
   }
 
