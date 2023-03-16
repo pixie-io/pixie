@@ -56,7 +56,7 @@ build --strip=never
 # For more context, see: https://github.com/bazelbuild/bazel/issues/3236
 # We can't use this for qemu because it breaks the 9p fs. Since we can't
 # remove these flags we just set them for all our configs.
-test:tmp_sandbox --sandbox_tmpfs_path=/tmp
+test:tmp-sandbox --sandbox_tmpfs_path=/tmp
 
 # This flag prevents rules_docker from transitioning the platform for our images.
 # Since our target platform is the same as the containers we use,
