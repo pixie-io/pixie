@@ -123,7 +123,8 @@ KERNEL_BUILD_VERSIONS := 4.14.254 \
 
 KERNEL_BUILD_TEMPLATE := linux-build-%.tar.gz
 KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_BUILD_TEMPLATE), $(KERNEL_BUILD_VERSIONS)))
-KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$$(date +%Y%m%d%H%M%S)
+KERNEL_BUILD_TS := $$(date +%Y%m%d%H%M%S)
+KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$(KERNEL_BUILD_TS)
 
 ##############################################
 # Clang Build
@@ -210,7 +211,6 @@ upload_linux_headers:  $(LINUX_HEADERS_X86_64_MERGED_FILE) $(LINUX_HEADERS_ARM64
 	gsutil cp $^ $(LINUX_HEADERS_GS_PATH)
 	sha256sum $^
 
-
 ##############################################
 # Sysroots Build
 ##############################################
@@ -256,9 +256,14 @@ $(KERNEL_BUILD_DIR)/linux-build-%.tar.gz: kernel_builder/Dockerfile kernel_build
 
 .PHONY: upload_kernel_build
 upload_kernel_build:  $(KERNEL_BUILD_TARGETS)
-	echo "hello"
 	gsutil cp $^ $(KERNEL_BUILD_GS_PATH)
-	sha256sum $^
+	@echo "Add this to the qemu bzl file:"
+	@echo "============================="
+	@echo "kernel_build_date = ${KERNEL_BUILD_TS}"
+	@echo "kernel_catalog = {"
+	@sha256sum $^ | awk 'match($$0, /.*linux\-build\-(.*).tar.gz/, arr) { printf("    \"%s\": \"%s\",\n", arr[1], $$1)}'
+	@echo "}"
+	@echo "============================="
 
 clean:
 	@rm -rf $(BUILD_DIR)
