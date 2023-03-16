@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+set -o pipefail
 
 # This script finds all the Bazel targets based on which files are changed and flags passed in.
 
