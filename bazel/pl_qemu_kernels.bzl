@@ -31,7 +31,7 @@ def qemu_kernel_deps():
     for version, sha in kernel_catalog.items():
         http_file(
             name = kernel_version_to_name(version),
-            url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-{}.tar.gz".format(version),
+            url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/{}/{}.tar.gz".format(kernel_build_date, kernel_version_to_name(version)),
             sha256 = sha,
             downloaded_file_path = "linux-build.tar.gz",
         )
@@ -45,12 +45,12 @@ def _kernel_sort_key(version):
     maj, minor, patch = version.split(".")
     return (int(maj) * (1024 * 1024)) + (int(minor) * (1024)) + int(patch)
 
+def get_dep_name(version):
+    return "@{}//file:linux-build.tar.gz".format(kernel_version_to_name(version))
+
 def qemu_image_to_deps():
     # Returns a dict which has the kernel names, deps.
     deps = {}
-
-    def get_dep_name(version):
-        return "@{}//file:linux-build.tar.gz".format(kernel_version_to_name(version))
 
     for version in kernel_catalog.keys():
         deps[version] = get_dep_name(version)
