@@ -25,6 +25,7 @@ load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 load("//bazel:container_images.bzl", "base_images", "stirling_test_images")
 load("//bazel:linux_headers.bzl", "linux_headers")
+load("//bazel:pl_qemu_kernels.bzl", "qemu_kernel_deps")
 load("//bazel/external/ubuntu_packages:packages.bzl", "download_ubuntu_packages")
 
 # Sets up package manager which we use build deploy images.
@@ -86,30 +87,8 @@ def pl_model_files():
     )
 
 def qemu_with_kernel_deps():
-    http_file(
-        name = "linux_build_4_14_304_x86_64",
-        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-4.14.304.tar.gz",
-        sha256 = "58c474a6f3cf0c93af39d0549ddcb3e36b852026c42229fc6d4a40260e34329d",
-        downloaded_file_path = "linux-build.tar.gz",
-    )
-    http_file(
-        name = "linux_build_5_15_90_x86_64",
-        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-5.15.90.tar.gz",
-        sha256 = "2960730ead8f9b20e97e68b1148ea5e208ecebcadc04a2bef99a5936a3d525fa",
-        downloaded_file_path = "linux-build.tar.gz",
-    )
-    http_file(
-        name = "linux_build_5_18_19_x86_64",
-        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-5.18.19.tar.gz",
-        sha256 = "3da6271916d253810e4ef2e587dd426ad1f9d1bbb98b5624994c378604e3de23",
-        downloaded_file_path = "linux-build.tar.gz",
-    )
-    http_file(
-        name = "linux_build_6_1_8_x86_64",
-        url = "https://storage.googleapis.com/pixie-dev-public/kernel-build/20230228151027/linux-build-6.1.8.tar.gz",
-        sha256 = "767aa4c6936330512de3c38e4b2036181a56d7d01158947c7ee8747402bd479c",
-        downloaded_file_path = "linux-build.tar.gz",
-    )
+    qemu_kernel_deps()
+
     http_file(
         name = "busybox",
         url = "https://busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox",
