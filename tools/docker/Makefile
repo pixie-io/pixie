@@ -123,7 +123,7 @@ KERNEL_BUILD_VERSIONS := 4.14.254 \
 
 KERNEL_BUILD_TEMPLATE := linux-build-%.tar.gz
 KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_BUILD_TEMPLATE), $(KERNEL_BUILD_VERSIONS)))
-KERNEL_BUILD_TS := $$(date +%Y%m%d%H%M%S)
+KERNEL_BUILD_TS := $(shell date +%Y%m%d%H%M%S)
 KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$(KERNEL_BUILD_TS)
 
 ##############################################
