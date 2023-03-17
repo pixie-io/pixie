@@ -51,6 +51,12 @@ apt_pkg_list = [
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',
+
+  'qemu',
+  'qemu-system-arm',
+  'qemu-system-x86',
+  'qemu-user-static',
+  'qemu-utils',
 ]
 
 apt_package apt_pkg_list do
