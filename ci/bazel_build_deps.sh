@@ -141,7 +141,7 @@ function check_bpf_trigger() {
 starlark_cquery_file="ci/cquery_ignore_non_target_and_incompatible.bzl"
 function query_compatible_targets() {
   bazel_config="$1"
-  "${bazel_cquery[@]}" --config="${bazel_config}" --notool_deps --output=starlark --starlark:file "${starlark_cquery_file}"	"${@:2}" | grep -v "^None$" | sort | uniq
+  "${bazel_cquery[@]}" --config="${bazel_config}" --notool_deps --output=starlark --starlark:file "${starlark_cquery_file}" "${@:2}" | grep -v "^None$" | sort | uniq
 }
 
 compute_targets
