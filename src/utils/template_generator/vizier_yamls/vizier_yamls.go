@@ -252,12 +252,6 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string) (st
 			TemplateValue:   `"{{ .Values.pemMemoryRequest }}"`,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
-			Patch:           `{"data": { "PL_DISABLE_AUTO_UPDATE": "__PL_DISABLE_AUTO_UPDATE__"} }`,
-			Placeholder:     "__PL_DISABLE_AUTO_UPDATE__",
-			TemplateValue:   `{{ if .Values.disableAutoUpdate }}"{{ .Values.disableAutoUpdate }}"{{ else }}"false"{{ end }}`,
-		},
-		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),
 			Patch:           `{"data": { "PL_CLOUD_ADDR": "__PL_CLOUD_ADDR__"} }`,
 			Placeholder:     "__PL_CLOUD_ADDR__",
@@ -445,6 +439,12 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_RENEW_PERIOD","value": "__PX_RENEW_PERIOD__"}]}] } } } }`,
 			Placeholder:     "__PX_RENEW_PERIOD__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.electionPeriodMs }}"{{ .Values.electionPeriodMs }}"{{else}}"%d"{{end}}`, defaultElectionPeriodMs),
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("vizier-cloud-connector"),
+			Patch:           `{"spec": {"template": {"spec": {"containers": [{"name": "app", "env": [{"name": "PL_DISABLE_AUTO_UPDATE","value": "__PX_DISABLE_AUTO_UPDATE__"}]}] } } } }`,
+			Placeholder:     "__PX_DISABLE_AUTO_UPDATE__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.disableAutoUpdate }}"{{ .Values.disableAutoUpdate }}"{{else}}"%s"{{end}}`, "false"),
 		},
 		{
 			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
