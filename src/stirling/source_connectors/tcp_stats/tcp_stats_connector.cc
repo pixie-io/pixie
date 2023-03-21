@@ -85,7 +85,7 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
   PollPerfBuffers();
 
   DataTable* data_table = data_tables_[0];
-  auto& agg_stats = conn_stats_.UpdateStats(events_);
+  auto& agg_stats = tcp_stats_.UpdateStats(events_);
   uint64_t time = AdjustedSteadyClockNowNS();
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 

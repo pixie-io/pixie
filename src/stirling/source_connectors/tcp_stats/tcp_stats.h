@@ -71,10 +71,6 @@ class TcpStats {
     uint64_t bytes_recv = 0;
     uint64_t retransmissions = 0;
 
-    // Last time this stats object was updated.
-    // Used to indicate whether or not to skip exporting the current record.
-    // int last_update = 0;
-
     std::string ToString() const {
       return absl::Substitute("[bytes_sent=$0 bytes_recv=$1 retransmissions=$2]", bytes_sent,
                               bytes_recv, retransmissions);

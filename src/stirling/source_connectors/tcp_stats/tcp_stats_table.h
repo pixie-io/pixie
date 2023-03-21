@@ -43,11 +43,11 @@ static constexpr DataElement kTCPStatsElements[] = {
       canonical_data_elements_net::kRemoteAddr,
       canonical_data_elements_net::kRemotePort,
       {"tx", "The number of bytes sent to the remote endpoint(s).",
-         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_GAUGE},
+         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
       {"rx", "The number of retransmissions to the remote endpoint(s).",
-         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_GAUGE},
+         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
       {"retransmits", "The number of retransmissions to the remote endpoint(s).",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
+         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
 };
 
 // clang-format on
