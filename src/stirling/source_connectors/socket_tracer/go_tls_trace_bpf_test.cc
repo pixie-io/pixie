@@ -73,8 +73,13 @@ struct Go1_19TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_19_TLSClientContainer;
 };
 
+struct Go1_20TLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::Go1_20_TLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
+};
+
 typedef ::testing::Types<Go1_17TLSClientServerContainers, Go1_18TLSClientServerContainers,
-                         Go1_19TLSClientServerContainers>
+                         Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
@@ -89,7 +94,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
   PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=false"}));
+      {"--http2=false", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();
@@ -126,7 +131,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
   PX_CHECK_OK(this->client_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", this->server_.container_name())},
-      {"--http2=true"}));
+      {"--http2=true", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
   this->StopTransferDataThread();

@@ -49,6 +49,7 @@ toolchain(
     ],
     target_settings = [
         "@px//bazel/cc_toolchains:libc_version_{libc_version}",
+        "@px//bazel/cc_toolchains/sysroots:use_test_sysroot_for_testing",
     ],
     toolchain = ":sysroot_toolchain",
     toolchain_type = "@px//bazel/cc_toolchains/sysroots/test:toolchain_type",

@@ -111,6 +111,9 @@ inline StatusOr<Type> GetMatchingRespType(Type req_type) {
  * ----------------------------------------------
  *
  * Rdispatch / Tdispatch (Tdispatch does not have reply status)
+ *
+ * reply status is one of ok (0), error (1) or nack (2)
+ * https://github.com/twitter/finagle/blob/2e4d56d93a2bdfb63e293d84727d5266d2969f01/finagle-mux/src/main/scala/com/twitter/finagle/mux/transport/Message.scala#L549-L552
  * ----------------------------------------------
  * | uint32 header size | int8 type | int24 tag |
  * ----------------------------------------------

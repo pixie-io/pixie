@@ -42,6 +42,10 @@ pl_cc_test(
     tags = [
         "exclusive",
         "no_coverage",
+        # Currently we detect java processes by checking the name of the command run.
+        # This fails when run under userspace qemu, because the name of the command run is qemu-aarch64-static.
+        # We should probably fix this, but for now we require full qemu emulation.
+        "requires_full_qemu_emulation",
     ],
     deps = [
         ":cc_library",

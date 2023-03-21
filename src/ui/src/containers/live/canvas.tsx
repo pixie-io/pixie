@@ -134,6 +134,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '&.focus': {
       border: `1px solid ${theme.palette.foreground.grey2}`,
     },
+    minHeight: 0,
   },
 }), { name: 'Canvas' });
 

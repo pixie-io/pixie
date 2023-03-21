@@ -34,18 +34,22 @@ import {
   BAR_CHART_TYPE,
   FLAMEGRAPH_CHART_TYPE,
   HISTOGRAM_CHART_TYPE,
+  GAUGE_CHART_TYPE,
   TIMESERIES_CHART_TYPE,
   VEGA_CHART_TYPE,
   VEGA_LITE_V4,
   VEGA_SCHEMA,
   VEGA_V5,
   VegaSpecWithProps,
+  PIE_CHART_TYPE,
 } from './common';
 import {
   StacktraceFlameGraphDisplay,
   convertToStacktraceFlameGraph,
 } from './flamegraph';
+import { convertToGaugeChart, GaugeDisplay } from './gauge';
 import { convertToHistogramChart, HistogramDisplay } from './histogram';
+import { convertToPieChart, PieDisplay } from './pie';
 import {
   convertToTimeseriesChart,
   TimeseriesDisplay,
@@ -93,8 +97,14 @@ function registerVegaFormatFunctions() {
 
 registerVegaFormatFunctions();
 
-export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay |
-StacktraceFlameGraphDisplay;
+export type ChartDisplay =
+| TimeseriesDisplay
+| BarDisplay
+| PieDisplay
+| VegaDisplay
+| HistogramDisplay
+| GaugeDisplay
+| StacktraceFlameGraphDisplay;
 
 function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
   spec.padding = 16;
@@ -175,7 +185,7 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       grid: false,
     },
     group: {
-      fill: theme.palette.foreground.grey5,
+      fill: spec.config?.style?.group?.fill ?? theme.palette.foreground.grey5,
     },
     path: {
       stroke: theme.palette.graph.primary,
@@ -220,11 +230,15 @@ function convertWidgetDisplayToSpecWithErrors(
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source, relation);
+    case PIE_CHART_TYPE:
+      return convertToPieChart(display as PieDisplay, source, theme, relation);
     case HISTOGRAM_CHART_TYPE:
       return convertToHistogramChart(display as HistogramDisplay, source, relation);
     case TIMESERIES_CHART_TYPE:
-      return convertToTimeseriesChart(
-        display as TimeseriesDisplay,
+      return convertToTimeseriesChart(display as TimeseriesDisplay, source, theme, relation);
+    case GAUGE_CHART_TYPE:
+      return convertToGaugeChart(
+        display as GaugeDisplay,
         source,
         theme,
         relation,

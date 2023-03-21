@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-server
+  namespace: px-grpc-test
+spec:
+  type: ClusterIP
+  ports:
+  - protocol: "TCP"
+    port: 50400
+    targetPort: 50400
+  selector:
+    name: grpc-server

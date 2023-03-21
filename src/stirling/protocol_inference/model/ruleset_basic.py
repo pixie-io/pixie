@@ -403,6 +403,9 @@ def infer_amqp_message(buf, count):
 
 
 def infer_mux_message(buf, count):
+    replyStatusOk = 0
+    replyStatusError = 1
+    replyStatusNack = 2
     kTdispatch = 2
     kRdispatch = -2
     kTinit = 68
@@ -429,15 +432,25 @@ def infer_mux_message(buf, count):
         return MessageType.kUnknown
 
     if mux_type == kRerr or mux_type == kRerrOld:
-        if buf[length - 5: length] != 'check':
+        if buf[length - 5: length] != b'check':
             return MessageType.kUnknown
 
     if mux_type == kRinit or mux_type == kTinit:
-        if buf[mux_framer_pos:mux_framer_pos + 10] != 'mux-framer':
+        if buf[mux_framer_pos:mux_framer_pos + 10] != b'mux-framer':
             return MessageType.kUnknown
 
     if tag < 1 or tag > ((1 << 23) - 1):
         return MessageType.kUnknown
+
+    if mux_type == kTdispatch:
+        first_ctx_pos = 12
+        if buf[first_ctx_pos:first_ctx_pos + 11] != b'com.twitter':
+            return MessageType.kUnknown
+
+    if mux_type == kRdispatch:
+        reply_status = int.from_bytes(buf[8], "big")
+        if reply_status not in [replyStatusOk, replyStatusError, replyStatusNack]:
+            return MessageType.kUnknown
 
     return msg_type
 

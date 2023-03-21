@@ -22,6 +22,7 @@ string_flag(
     values = [
         "none",
         "sysroot_chroot",
+        "qemu_with_kernel",
     ],
     visibility = ["//visibility:public"],
 )
@@ -33,6 +34,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "test_runner_qemu_with_kernel",
+    flag_values = {
+        ":test_runner": "qemu_with_kernel",
+    },
+)
+
 filegroup(
     name = "empty",
 )
@@ -40,6 +48,7 @@ filegroup(
 alias(
     name = "test_runner_dep",
     actual = select({
+        "test_runner_qemu_with_kernel": "//bazel/test_runners/qemu_with_kernel:runner",
         "test_runner_sysroot_chroot": "//bazel/test_runners/sysroot_chroot:runner",
         "//conditions:default": ":empty",
     }),

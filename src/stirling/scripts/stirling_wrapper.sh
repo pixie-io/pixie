@@ -29,5 +29,5 @@ flags=""
 
 bazel build $flags //src/stirling/binaries:stirling_wrapper
 
-cmd=$(bazel info $flags bazel-bin)/src/stirling/binaries/stirling_wrapper
+cmd=$(bazel cquery $flags //src/stirling/binaries:stirling_wrapper --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
 run_prompt_sudo "$cmd" "$@"

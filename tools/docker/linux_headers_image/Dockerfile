@@ -71,7 +71,7 @@ RUN find usr/src/linux-headers-${KERN_VERSION}-pl -xtype l -exec rm {} +
 RUN rm -rf usr/share
 RUN find usr/src/linux-headers-${KERN_VERSION}-pl -maxdepth 1 -mindepth 1 ! -name include ! -name arch -type d \
     -exec rm -rf {} +
-RUN find usr/src/linux-headers-${KERN_VERSION}-pl/arch -maxdepth 1 -mindepth 1 ! -name ${ARCH} -type d -exec rm -rf {} +
+RUN find usr/src/linux-headers-${KERN_VERSION}-pl/arch -maxdepth 1 -mindepth 1 ! -name $(echo ${ARCH} | sed 's/x86_64/x86/g') -type d -exec rm -rf {} +
 RUN tar zcf linux-headers-${ARCH}-${KERN_VERSION}.tar.gz usr
 
 VOLUME /output

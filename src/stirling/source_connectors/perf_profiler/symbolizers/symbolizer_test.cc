@@ -163,7 +163,7 @@ TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
                        JavaSymbolizer::Create(std::move(symbolizer_)));
 
   const std::filesystem::path java_app_path =
-      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/fib");
+      BazelRunfilePath("src/stirling/source_connectors/perf_profiler/testing/java/profiler_test");
   ASSERT_TRUE(fs::Exists(java_app_path)) << java_app_path.string();
   ASSERT_TRUE(fs::Exists(FLAGS_stirling_profiler_px_jattach_path))
       << FLAGS_stirling_profiler_px_jattach_path;
@@ -232,31 +232,18 @@ TEST_F(BCCSymbolizerTest, JavaNotEnoughSpaceAvailable) {
       << FLAGS_stirling_profiler_px_jattach_path;
   ASSERT_TRUE(fs::Exists(FLAGS_java_image_name)) << FLAGS_java_image_name;
 
-  // Setup commands to create and remove a docker volume.
-  // It will be named and sized according to "volume_name" and "tmpfs_size_arg".
-  const pid_t pid = getpid();
-  const std::string volume_name = absl::Substitute("px-tmp-jsyms-not-enough-space-test-$0", pid);
-  const std::string tmpfs_size_arg = "size=500K";
-  const std::string create_volume = absl::Substitute(
-      "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
-      tmpfs_size_arg, volume_name);
-  const std::string remove_volume = absl::Substitute("docker volume rm $0", volume_name);
-
-  // Create the docker volume. Defer removal of the same.
-  ASSERT_EQ(0, ::system(create_volume.c_str()));
-  DEFER(ASSERT_EQ(0, ::system(remove_volume.c_str())););
-
   // Instantiate a ContainerRunner for our containerized test app.
   static constexpr std::string_view kReadyMsg = "";
   const std::filesystem::path image_tar_path(FLAGS_java_image_name);
   static constexpr std::string_view container_name_pfx = "java";
   ContainerRunner sub_process(image_tar_path, container_name_pfx, kReadyMsg);
 
-  // Start the container/sub-proc. Use "-v" arg. to mount our tmpfs into /tmp in that container.
-  const std::string tmpfs_mount_opt = absl::Substitute("$0:/tmp", volume_name);
+  // Start the container/sub-proc. Use "--mount" arg to mount a tmpfs on /tmp with a certain size.
   static constexpr auto timeout = std::chrono::seconds{600};
   static constexpr bool kUseHostPidNamespace = false;
-  const std::vector<std::string> options = {"-v", tmpfs_mount_opt};
+  const std::string tmpfs_size = "500K";
+  const std::vector<std::string> options = {
+      "--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
   const std::vector<std::string> args;
   sub_process.Run(timeout, options, args, kUseHostPidNamespace);
 
@@ -309,31 +296,18 @@ TEST_F(BCCSymbolizerTest, JavaEnoughSpaceAvailable) {
       << FLAGS_stirling_profiler_px_jattach_path;
   ASSERT_TRUE(fs::Exists(FLAGS_java_image_name)) << FLAGS_java_image_name;
 
-  // Setup commands to create and remove a docker volume.
-  // It will be named and sized according to "volume_name" and "tmpfs_size_arg".
-  const pid_t pid = getpid();
-  const std::string volume_name = absl::Substitute("px-tmp-jsyms-enough-space-test-$0", pid);
-  const std::string tmpfs_size_arg = "size=20M";
-  const std::string create_volume = absl::Substitute(
-      "docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=$0 $1",
-      tmpfs_size_arg, volume_name);
-  const std::string remove_volume = absl::Substitute("docker volume rm $0", volume_name);
-
-  // Create the docker volume. Defer removal of the same.
-  ASSERT_EQ(0, ::system(create_volume.c_str()));
-  DEFER(ASSERT_EQ(0, ::system(remove_volume.c_str())););
-
   // Instantiate a ContainerRunner for our containerized test app.
   static constexpr std::string_view kReadyMsg = "";
   const std::filesystem::path image_tar_path(FLAGS_java_image_name);
   static constexpr std::string_view container_name_pfx = "java";
   ContainerRunner sub_process(image_tar_path, container_name_pfx, kReadyMsg);
 
-  // Start the container/sub-proc. Use "-v" arg. to mount our tmpfs into /tmp in that container.
-  const std::string tmpfs_mount_opt = absl::Substitute("$0:/tmp", volume_name);
+  // Start the container/sub-proc.
   static constexpr auto timeout = std::chrono::seconds{600};
   static constexpr bool kUseHostPidNamespace = false;
-  const std::vector<std::string> options = {"-v", tmpfs_mount_opt};
+  const std::string tmpfs_size = "20M";
+  const std::vector<std::string> options = {
+      "--mount", absl::Substitute("type=tmpfs,tmpfs-size=$0,destination=/tmp", tmpfs_size)};
   const std::vector<std::string> args;
   sub_process.Run(timeout, options, args, kUseHostPidNamespace);
 

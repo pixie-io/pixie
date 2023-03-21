@@ -25,6 +25,7 @@ load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 load("//bazel:container_images.bzl", "base_images", "stirling_test_images")
 load("//bazel:linux_headers.bzl", "linux_headers")
+load("//bazel:pl_qemu_kernels.bzl", "qemu_kernel_deps")
 load("//bazel/external/ubuntu_packages:packages.bzl", "download_ubuntu_packages")
 
 # Sets up package manager which we use build deploy images.
@@ -62,6 +63,8 @@ def pl_workspace_setup():
     k8s_repositories()
     k8s_go_deps(go_version = None)
 
+    qemu_with_kernel_deps()
+
 def pl_container_images():
     _package_manager_setup()
     _container_images_setup()
@@ -81,4 +84,15 @@ def pl_model_files():
         url = "https://storage.googleapis.com/pixie-dev-public/ml-data/models/current-sentencepiece-model.proto",
         downloaded_file_path = "sentencepiece.proto",
         sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
+    )
+
+def qemu_with_kernel_deps():
+    qemu_kernel_deps()
+
+    http_file(
+        name = "busybox",
+        url = "https://storage.googleapis.com/pixie-dev-public/mirrors/busybox.net/downloads/binaries/1.35.0-x86_64-linux-musl/busybox",
+        sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
+        downloaded_file_path = "busybox",
+        executable = True,
     )

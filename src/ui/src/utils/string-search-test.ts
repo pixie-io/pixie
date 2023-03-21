@@ -27,11 +27,15 @@ describe('String search utils', () => {
   it('Highlights simple substring matches of normalized strings', () => {
     // Substring matches are treated as cheaper than typo matches (since it's all contiguos inserts), thus lower scores.
     expect(highlightScoredMatch('pod', 'px/pod'))
-      .toEqual({ isMatch: true, distance: 1, highlights: [3, 4, 5] });
+      .toEqual({ isMatch: true, distance: 0.75, highlights: [3, 4, 5] });
     expect(highlightScoredMatch('oba', 'foobar'))
-      .toEqual({ isMatch: true, distance: 1, highlights: [2, 3, 4] });
+      .toEqual({ isMatch: true, distance: 0.75, highlights: [2, 3, 4] });
     expect(highlightScoredMatch('o!Ba', '  F.o*O!bar__ '))
-      .toEqual({ isMatch: true, distance: 1, highlights: [6, 8, 9] });
+      .toEqual({ isMatch: true, distance: 0.75, highlights: [6, 8, 9] });
+    expect(highlightScoredMatch('ace', 'namespace'))
+      .toEqual({ isMatch: true, distance: 1.5, highlights: [6, 7, 8] });
+    expect(highlightScoredMatch('ace', 'namespaces'))
+      .toEqual({ isMatch: true, distance: 1.75, highlights: [6, 7, 8] });
   });
 
   it('Does not highlight strings that are too different to be reasonable matches', () => {
@@ -88,6 +92,32 @@ describe('String search utils', () => {
 
   it('Splits namespaced searches', () => {
     expect(highlightNamespacedScoredMatch('pod', 'px/pod', '/'))
-      .toEqual({ isMatch: true, distance: 0, highlights: [3, 4, 5] });
+      .toEqual({ isMatch: true, distance: 0.5, highlights: [3, 4, 5] });
+    expect(highlightNamespacedScoredMatch('px/ace', 'px/namespace', '/'))
+      .toEqual({ isMatch: true, distance: 1.5, highlights: [0, 1, 9, 10, 11] });
+    expect(highlightNamespacedScoredMatch('px/ace', 'px/namespaces', '/'))
+      .toEqual({ isMatch: true, distance: 1.75, highlights: [0, 1, 9, 10, 11] });
+  });
+
+  it('Scoring of multiple types of matches results in a reasonable ordering', () => {
+    // Each of these searches should end up with the following order of lowest distance to highest.
+    // The balancing on how to score different scenarios is delicate, but should result in something that makes the
+    // most sense to a user. We're aiming for relevance, not similarity: find what the user _meant_.
+    const searches = {
+      // Perfect matches are much stronger than anything else
+      'pod': ['px/POD', 'px/PODs', 'Px/nODe', 'nonsense'],
+      // Changing a character (d to s) is a slightly stronger match than deleting the extra d
+      'px/podd': ['PX/PODs', 'PX/POD'],
+      // An unbroken substring is a stronger match than one with edits, even if the latter is a much shorter string.
+      'px/ace': ['PX/namespACE', 'PX/namespACEs', 'PX/nodE'],
+      'px/stat': ['PX/cql_STATs', 'PX/agent_STATus', 'PX/service_edge_STATs', 'PX/dnS_dATa', 'PXbeTA/service_endpoint'],
+    };
+
+    for (const search in searches) {
+      const sources = searches[search];
+      const results = sources.map(source => highlightNamespacedScoredMatch(search, source, '/'));
+      const sorted = [...results].sort((a, b) => a.distance - b.distance);
+      expect(results).toEqual(sorted);
+    }
   });
 });

@@ -28,10 +28,10 @@ spec:
 
       initContainers:
       - name: wait-sock-shop
-        image: alpine:3.6
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
         # yamllint disable rule:indentation
-        command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
-          until timeout -t 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do
+        command: ['sh', '-c', 'set -x;
+          until timeout 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do
             echo "waiting for ${SOCK_SHOP_HEALTH_ADDR}";
             sleep 2;
           done;']

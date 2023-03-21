@@ -745,6 +745,7 @@ func (s *Server) GetRetentionScripts(ctx context.Context, req *pluginpb.GetReten
 	}
 	cronScriptsResp, err := s.cronScriptClient.GetScripts(ctx, &cronscriptpb.GetScriptsRequest{IDs: scriptIDs, OrgID: utils.ProtoFromUUID(orgID)})
 	if err != nil {
+		log.WithField("orgID", orgID.String()).WithError(err).Error("Failed to fetch cron scripts for retention scripts for org")
 		return nil, status.Errorf(codes.Internal, "Failed to fetch cron scripts")
 	}
 

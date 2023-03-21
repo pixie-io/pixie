@@ -29,4 +29,5 @@ kTargetProtocols = [
     "kafka",
     "nats",
     "mux",
+    "tls",
 ]

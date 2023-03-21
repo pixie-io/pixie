@@ -1,3 +1,5 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,3 +18,22 @@
 load("//bazel/cc_toolchains/sysroots:sysroots.bzl", "pl_sysroot_settings")
 
 pl_sysroot_settings()
+
+bool_flag(
+    name = "debug_sysroot",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "use_test_sysroot_for_testing",
+    flag_values = {
+        ":debug_sysroot": "False",
+    },
+)
+
+config_setting(
+    name = "use_debug_sysroot_for_testing",
+    flag_values = {
+        ":debug_sysroot": "True",
+    },
+)

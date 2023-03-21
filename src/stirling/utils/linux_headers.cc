@@ -563,8 +563,15 @@ KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b) {
 
 StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
     const std::filesystem::path& packaged_headers_root, KernelVersion kernel_version) {
+#if X86_64
   const std::string kHeaderDirPrefix =
-      std::filesystem::path(packaged_headers_root / "linux-headers-").string();
+      std::filesystem::path(packaged_headers_root / "linux-headers-x86_64-").string();
+#elif AARCH64
+  const std::string kHeaderDirPrefix =
+      std::filesystem::path(packaged_headers_root / "linux-headers-arm64-").string();
+#else
+#error Architecture not supported
+#endif
   const std::string_view kHeaderDirSuffix = ".tar.gz";
 
   PackagedLinuxHeadersSpec selected;

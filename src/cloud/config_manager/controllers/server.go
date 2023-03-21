@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -164,6 +165,20 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if pemMemoryLimit == "" {
 		pemMemoryLimit = pemMemoryRequest
 	}
+
+	// We make slight modifications to the YAMLs depending on K8s version, to maintain support for older versions.
+	useBetaPDB := false
+	if in.K8sVersion != "" {
+		// podDisruptionBudget graduated from beta to stable as of v1.21.
+		minPDBVers, pdbErr := semver.ParseTolerant("1.21.0")
+		currentK8sVers, err := semver.ParseTolerant(in.K8sVersion)
+		if err == nil && pdbErr == nil {
+			if currentK8sVers.LT(minPDBVers) {
+				useBetaPDB = true
+			}
+		}
+	}
+
 	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
 	// be simple CRDs.
 	tmplValues := &vizieryamls.VizierTmplValues{
@@ -181,6 +196,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		ClockConverter:        in.VzSpec.ClockConverter,
 		DataAccess:            in.VzSpec.DataAccess,
 		Registry:              in.VzSpec.Registry,
+		UseBetaPdbVersion:     useBetaPDB,
 	}
 
 	if in.VzSpec.DataCollectorParams != nil && in.VzSpec.DataCollectorParams.DatastreamBufferSize != 0 {

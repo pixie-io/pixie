@@ -28,13 +28,13 @@ namespace px {
 namespace stirling {
 
 struct SocketTracerMetrics {
-  SocketTracerMetrics(prometheus::Registry* registry, traffic_protocol_t protocol);
+  SocketTracerMetrics(prometheus::Registry* registry, traffic_protocol_t protocol, bool tls);
   prometheus::Counter& data_loss_bytes;
   prometheus::Counter& conn_stats_bytes;
 
-  static SocketTracerMetrics& GetProtocolMetrics(traffic_protocol_t protocol);
+  static SocketTracerMetrics& GetProtocolMetrics(traffic_protocol_t protocol, bool tls);
 
-  static void TestOnlyResetProtocolMetrics(traffic_protocol_t protocol);
+  static void TestOnlyResetProtocolMetrics(traffic_protocol_t protocol, bool tls);
 };
 
 }  // namespace stirling

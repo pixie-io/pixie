@@ -323,6 +323,7 @@ func (q *QueryExecutorImpl) compilePlan(ctx context.Context, resultCh chan<- *vi
 			URL:      req.Configs.OTelEndpointConfig.URL,
 			Headers:  req.Configs.OTelEndpointConfig.Headers,
 			Insecure: req.Configs.OTelEndpointConfig.Insecure,
+			Timeout:  req.Configs.OTelEndpointConfig.Timeout,
 		}
 	}
 	var pluginConfig *distributedpb.PluginConfig

@@ -273,6 +273,14 @@ def stirling_test_images():
         "pixie-oss/demo-apps/rabbitmq/rabbitmq:3-management",
     )
 
+    # Tag: productcatalogservice:v0.2.0
+    # Arch: linux/amd64
+    _gcr_io_image(
+        "productcatalogservice_v0_2_0",
+        "sha256:1726e4dd813190ad1eae7f3c42483a3a83dd1676832bb7b04256455c8968d82a",
+        "google-samples/microservices-demo/productcatalogservice:v0.2.0",
+    )
+
     # Built and pushed by src/stirling/testing/demo_apps/py_grpc/update_gcr.sh
     _gcr_io_image(
         "py_grpc_helloworld_image",

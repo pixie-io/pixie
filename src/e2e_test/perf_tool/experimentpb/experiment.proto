@@ -22,53 +22,205 @@ package px.perf_tool;
 
 option go_package = "experimentpb";
 
+import "google/protobuf/duration.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // ExperimentSpec fully specifies how to run a single perf experiment.
 // An Experiment is fully specified by specifying all of the following:
-//  - version of the Pixie repo (commit) to use to build the components of the experiment (see
-//  VizierSpec).
 //  - parameters to use when building/running Vizier.
 //  - specifications for other workloads to run on the same cluster during the experiment (see
 //  WorkloadSpec).
 //  - specifications for metrics to record during the experiment (see MetricSpec).
 //  - specifications for the cluster that the experiment runs on (see ClusterSpec).
+//  - the commit the experiment was run from.
 message ExperimentSpec {
-  // VersionSpec specifies what version of the pixie repo to use to build the various components of
-  // the experiment.
-  VersionSpec version_spec = 1;
   // vizier_spec specifies parameters around building and deploying the vizier workload for the
   // experiment.
-  WorkloadSpec vizier_spec = 2;
+  WorkloadSpec vizier_spec = 1;
   // Each workload spec specifies parameters for building and deploying a workload for the
   // experiment.
-  repeated WorkloadSpec workload_specs = 3;
+  repeated WorkloadSpec workload_specs = 2;
   // Each metric spec specifies parameters for building and recording a metric during the
   // experiment.
-  repeated MetricSpec metric_specs = 4;
+  repeated MetricSpec metric_specs = 3;
   // ClusterSpec specifies what type of cluster to run the experiment on.
-  ClusterSpec cluster_spec = 5;
+  ClusterSpec cluster_spec = 4;
+  // RunSpec specifies parameters for running the experiment. For example, how long to run the
+  // experiment for.
+  RunSpec run_spec = 5;
+  // commit_sha of the commit the experiment was run from.
+  string commit_sha = 6 [ (gogoproto.customname) = "CommitSHA" ];
+  // Tags can be used to identify experiments within the bigquery datastore. For example,
+  // experiments run from github actions could be tagged with "github-actions", or experiments using
+  // the http loadtest workload could be tagged "workload/http-loadtest".
+  repeated string tags = 7;
 }
 
-// VersionSpec specifies the version of the Pixie repo to use for running the Experiment.
-// It specifies the base commit via a commit SHA, and allows specifying patches on top of that
-// commit.
-message VersionSpec {}
-
-// WorkloadSpec specifies how to build, deploy and teardown a particular workload.
+// WorkloadSpec specifies how to run a particular workload.
 // Example workloads include: Vizier, Sock shop, or an HTTP protocol loadtest (see
-// src/e2e_test/protocol_loadtest). Workloads can be made up of multiple components (such as a
-// client and a server), or can be specified without splitting things into components (eg. sock
-// shop).
-message WorkloadSpec {}
+// src/e2e_test/protocol_loadtest).
+message WorkloadSpec {
+  string name = 1;
+  repeated DeployStep deploy_steps = 2;
+  repeated HealthCheck healthchecks = 3;
+}
+
+// DeployStep specifies a single step in the process of deploying a workload.
+message DeployStep {
+  oneof deploy_type {
+    PrerenderedDeploy prerendered = 1;
+    SkaffoldDeploy skaffold = 2;
+    PxCLIDeploy px = 3;
+  }
+}
+
+// HealthCheck specifies how to run a single check on a workload.
+message HealthCheck {
+  oneof check_type {
+    K8SPodsReadyCheck k8s = 1 [ (gogoproto.customname) = "K8S" ];
+    PxLHealthCheck pxl = 2 [ (gogoproto.customname) = "PxL" ];
+  }
+}
+
+// K8sPodsReadyCheck checks that all of the pods in the given namespace have a status of RUNNING.
+message K8SPodsReadyCheck {
+  string namespace = 1;
+}
+
+// PxLHealthCheck checks that a component is live by running a PxL script. The PxL script should
+// return a single boolean column where true means healthy.
+message PxLHealthCheck {
+  // Healthcheck scripts are templatized and passed the ClusterSpec as a template argument.
+  // The script should write a single true or false row in the column named by success_column.
+  string script = 1;
+  string success_column = 2;
+}
+
+// PatchSpec specifies how to patch the generated yamls for any deploy steps that produce yamls to
+// apply.
+message PatchSpec {
+  string yaml = 1 [ (gogoproto.customname) = "YAML" ];
+  PatchTarget target = 2;
+}
+
+// PatchTarget specifies how to select resources to patch. This fields are the same as in kustomize,
+// see: https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/
+// All fields are optional, but at least one must be specified.
+message PatchTarget {
+  string api_group = 1 [ (gogoproto.customname) = "APIGroup" ];
+  string api_version = 2 [ (gogoproto.customname) = "APIVersion" ];
+  string kind = 3;
+  string name = 4;
+  string namespace = 5;
+  string label_selector = 6;
+  string annotation_selector = 7;
+}
+
+// PrerenderedDeploy specifies a set of paths to YAMLs that are prerendered. In other words,
+// YAMLs that can be directly applied to deploy a workload and don't require image building and
+// tagging ala skaffold. PrerenderedDeploy is currently limited to deploying to a single namespace.
+// To deploy to multiple namespaces use separate DeploySteps for each namespace.
+message PrerenderedDeploy {
+  repeated string yaml_paths = 1 [ (gogoproto.customname) = "YAMLPaths" ];
+  repeated PatchSpec patches = 2;
+}
+
+// SkaffoldDeploy specifies how to use skaffold to deploy a component. SkaffoldDeploy is currently
+// limited to deploying to a single namespace. To deploy to multiple namespaces use separate
+// DeploySteps for each namespace.
+message SkaffoldDeploy {
+  string skaffold_path = 1;
+  repeated string skaffold_args = 2;
+  repeated PatchSpec patches = 3;
+}
+
+// PxCLIDeploy specifies how to deploy a component using the pixie CLI.
+// eg. `px deploy` to deploy vizier or `px demo deploy px-sock-shop` to deploy sock shop.
+message PxCLIDeploy {
+  repeated string args = 1;
+  // Namespaces to delete on teardown.
+  repeated string namespaces = 2;
+  // Whether to set the PixieContext's cluster ID after running this deploy step. This should be set
+  // to true for the step that deploys vizier.
+  bool set_cluster_id = 3 [ (gogoproto.customname) = "SetClusterID" ];
+}
 
 // MetricSpec specifies how to record a set of metrics for an experiment.
 // Currently, PxL scripts are the only supported way of recording metrics.
-message MetricSpec {}
+message MetricSpec {
+  oneof metric_type {
+    PxLScriptSpec pxl = 1 [ (gogoproto.customname) = "PxL" ];
+  }
+}
+
+// PxLScriptSpec specifies a PxL script and how to use it to collect a set of metrics.
+message PxLScriptSpec {
+  // Script is a template for the PxL script, the template engine is passed this PxLScriptSpec, to
+  // fill out the template. Arbitrary strings can be added to template_values to use them in the
+  // template.
+  string script = 1;
+  // Stream script execution.
+  bool streaming = 2;
+  // If this is not a streaming script, this specifies how often to run the script.
+  google.protobuf.Duration collection_period = 3;
+  // template_values are used to pass arbitrary strings into the PxL script template.
+  map<string, string> template_values = 4;
+
+  // For each table in the PxL script, define a set of output specs for the rows in that table.
+  // The string "*" will assign the given output specs to all tables.
+  map<string, PxLScriptOutputList> table_outputs = 5;
+}
+
+// PxLScriptOutputList is a list of specs for metrics to collect from the output of a PxL script.
+message PxLScriptOutputList {
+  repeated PxLScriptOutputSpec outputs = 1;
+}
+
+// PxLScriptOutputSpec specifies how to extract a metric from the PxL script.
+message PxLScriptOutputSpec {
+  oneof output_spec {
+    SingleMetricPxLOutput single_metric = 1;
+    DataLossCounterOutput data_loss_counter = 2;
+  }
+}
+
+// SingleMetricPxLOutput specifies getting a single metric from a PxL script, as the value of a
+// column.
+message SingleMetricPxLOutput {
+  string timestamp_col = 1;
+  string metric_name = 2;
+  string value_col = 3;
+  repeated string tag_cols = 4;
+}
+
+// DataLossCounterOutput specifies using a particular column of a PxL script to generate a data loss
+// metric. The seq_id_col of the PxL script should output a sequence of increasing ids, such that
+// any missing ids from the sequence indicate an instance of data loss. These sequence IDs are then
+// tracked, and any missing ones contribute to a data loss metric.
+message DataLossCounterOutput {
+  string timestamp_col = 1;
+  string metric_name = 2;
+  string seq_id_col = 3 [ (gogoproto.customname) = "SeqIDCol" ];
+  google.protobuf.Duration output_period = 4;
+}
 
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
 // Cluster parameters currently include things like machine type, and number of nodes in the
 // cluster.
-message ClusterSpec {}
+message ClusterSpec {
+  int32 num_nodes = 1;
+  NodeSpec node = 2;
+}
 
-message Empty {}
+// NodeSpec specifies parameters for each node in the cluster. For example, the machine type of the
+// node.
+message NodeSpec {
+  string machine_type = 1;
+}
+
+// RunSpec specifies parameters for the execution of the experiment. Currently, it specifies how
+// long to run different phases of the experiment.
+message RunSpec {
+  google.protobuf.Duration duration = 1;
+  google.protobuf.Duration pre_workload_duration = 2;
+}

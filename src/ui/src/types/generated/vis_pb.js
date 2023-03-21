@@ -2720,6 +2720,238 @@ export const px = $root.px = (() => {
             return BarChart;
         })();
 
+        vispb.PieChart = (function() {
+
+            /**
+             * Properties of a PieChart.
+             * @memberof px.vispb
+             * @interface IPieChart
+             * @property {string|null} [label] PieChart label
+             * @property {string|null} [value] PieChart value
+             * @property {string|null} [title] PieChart title
+             */
+
+            /**
+             * Constructs a new PieChart.
+             * @memberof px.vispb
+             * @classdesc Represents a PieChart.
+             * @implements IPieChart
+             * @constructor
+             * @param {px.vispb.IPieChart=} [properties] Properties to set
+             */
+            function PieChart(properties) {
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * PieChart label.
+             * @member {string} label
+             * @memberof px.vispb.PieChart
+             * @instance
+             */
+            PieChart.prototype.label = "";
+
+            /**
+             * PieChart value.
+             * @member {string} value
+             * @memberof px.vispb.PieChart
+             * @instance
+             */
+            PieChart.prototype.value = "";
+
+            /**
+             * PieChart title.
+             * @member {string} title
+             * @memberof px.vispb.PieChart
+             * @instance
+             */
+            PieChart.prototype.title = "";
+
+            /**
+             * Creates a new PieChart instance using the specified properties.
+             * @function create
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {px.vispb.IPieChart=} [properties] Properties to set
+             * @returns {px.vispb.PieChart} PieChart instance
+             */
+            PieChart.create = function create(properties) {
+                return new PieChart(properties);
+            };
+
+            /**
+             * Encodes the specified PieChart message. Does not implicitly {@link px.vispb.PieChart.verify|verify} messages.
+             * @function encode
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {px.vispb.IPieChart} message PieChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            PieChart.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.label != null && Object.hasOwnProperty.call(message, "label"))
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.label);
+                if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.value);
+                if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                    writer.uint32(/* id 3, wireType 2 =*/26).string(message.title);
+                return writer;
+            };
+
+            /**
+             * Encodes the specified PieChart message, length delimited. Does not implicitly {@link px.vispb.PieChart.verify|verify} messages.
+             * @function encodeDelimited
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {px.vispb.IPieChart} message PieChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            PieChart.encodeDelimited = function encodeDelimited(message, writer) {
+                return this.encode(message, writer).ldelim();
+            };
+
+            /**
+             * Decodes a PieChart message from the specified reader or buffer.
+             * @function decode
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {px.vispb.PieChart} PieChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            PieChart.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.px.vispb.PieChart();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 1:
+                        message.label = reader.string();
+                        break;
+                    case 2:
+                        message.value = reader.string();
+                        break;
+                    case 3:
+                        message.title = reader.string();
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            /**
+             * Decodes a PieChart message from the specified reader or buffer, length delimited.
+             * @function decodeDelimited
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @returns {px.vispb.PieChart} PieChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            PieChart.decodeDelimited = function decodeDelimited(reader) {
+                if (!(reader instanceof $Reader))
+                    reader = new $Reader(reader);
+                return this.decode(reader, reader.uint32());
+            };
+
+            /**
+             * Verifies a PieChart message.
+             * @function verify
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {Object.<string,*>} message Plain object to verify
+             * @returns {string|null} `null` if valid, otherwise the reason why it is not
+             */
+            PieChart.verify = function verify(message) {
+                if (typeof message !== "object" || message === null)
+                    return "object expected";
+                if (message.label != null && message.hasOwnProperty("label"))
+                    if (!$util.isString(message.label))
+                        return "label: string expected";
+                if (message.value != null && message.hasOwnProperty("value"))
+                    if (!$util.isString(message.value))
+                        return "value: string expected";
+                if (message.title != null && message.hasOwnProperty("title"))
+                    if (!$util.isString(message.title))
+                        return "title: string expected";
+                return null;
+            };
+
+            /**
+             * Creates a PieChart message from a plain object. Also converts values to their respective internal types.
+             * @function fromObject
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {Object.<string,*>} object Plain object
+             * @returns {px.vispb.PieChart} PieChart
+             */
+            PieChart.fromObject = function fromObject(object) {
+                if (object instanceof $root.px.vispb.PieChart)
+                    return object;
+                let message = new $root.px.vispb.PieChart();
+                if (object.label != null)
+                    message.label = String(object.label);
+                if (object.value != null)
+                    message.value = String(object.value);
+                if (object.title != null)
+                    message.title = String(object.title);
+                return message;
+            };
+
+            /**
+             * Creates a plain object from a PieChart message. Also converts values to other types if specified.
+             * @function toObject
+             * @memberof px.vispb.PieChart
+             * @static
+             * @param {px.vispb.PieChart} message PieChart
+             * @param {$protobuf.IConversionOptions} [options] Conversion options
+             * @returns {Object.<string,*>} Plain object
+             */
+            PieChart.toObject = function toObject(message, options) {
+                if (!options)
+                    options = {};
+                let object = {};
+                if (options.defaults) {
+                    object.label = "";
+                    object.value = "";
+                    object.title = "";
+                }
+                if (message.label != null && message.hasOwnProperty("label"))
+                    object.label = message.label;
+                if (message.value != null && message.hasOwnProperty("value"))
+                    object.value = message.value;
+                if (message.title != null && message.hasOwnProperty("title"))
+                    object.title = message.title;
+                return object;
+            };
+
+            /**
+             * Converts this PieChart to JSON.
+             * @function toJSON
+             * @memberof px.vispb.PieChart
+             * @instance
+             * @returns {Object.<string,*>} JSON object
+             */
+            PieChart.prototype.toJSON = function toJSON() {
+                return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+            };
+
+            return PieChart;
+        })();
+
         vispb.HistogramChart = (function() {
 
             /**
@@ -3277,6 +3509,216 @@ export const px = $root.px = (() => {
             })();
 
             return HistogramChart;
+        })();
+
+        vispb.GaugeChart = (function() {
+
+            /**
+             * Properties of a GaugeChart.
+             * @memberof px.vispb
+             * @interface IGaugeChart
+             * @property {string|null} [value] GaugeChart value
+             * @property {string|null} [title] GaugeChart title
+             */
+
+            /**
+             * Constructs a new GaugeChart.
+             * @memberof px.vispb
+             * @classdesc Represents a GaugeChart.
+             * @implements IGaugeChart
+             * @constructor
+             * @param {px.vispb.IGaugeChart=} [properties] Properties to set
+             */
+            function GaugeChart(properties) {
+                if (properties)
+                    for (let keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                        if (properties[keys[i]] != null)
+                            this[keys[i]] = properties[keys[i]];
+            }
+
+            /**
+             * GaugeChart value.
+             * @member {string} value
+             * @memberof px.vispb.GaugeChart
+             * @instance
+             */
+            GaugeChart.prototype.value = "";
+
+            /**
+             * GaugeChart title.
+             * @member {string} title
+             * @memberof px.vispb.GaugeChart
+             * @instance
+             */
+            GaugeChart.prototype.title = "";
+
+            /**
+             * Creates a new GaugeChart instance using the specified properties.
+             * @function create
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {px.vispb.IGaugeChart=} [properties] Properties to set
+             * @returns {px.vispb.GaugeChart} GaugeChart instance
+             */
+            GaugeChart.create = function create(properties) {
+                return new GaugeChart(properties);
+            };
+
+            /**
+             * Encodes the specified GaugeChart message. Does not implicitly {@link px.vispb.GaugeChart.verify|verify} messages.
+             * @function encode
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {px.vispb.IGaugeChart} message GaugeChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            GaugeChart.encode = function encode(message, writer) {
+                if (!writer)
+                    writer = $Writer.create();
+                if (message.value != null && Object.hasOwnProperty.call(message, "value"))
+                    writer.uint32(/* id 1, wireType 2 =*/10).string(message.value);
+                if (message.title != null && Object.hasOwnProperty.call(message, "title"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.title);
+                return writer;
+            };
+
+            /**
+             * Encodes the specified GaugeChart message, length delimited. Does not implicitly {@link px.vispb.GaugeChart.verify|verify} messages.
+             * @function encodeDelimited
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {px.vispb.IGaugeChart} message GaugeChart message or plain object to encode
+             * @param {$protobuf.Writer} [writer] Writer to encode to
+             * @returns {$protobuf.Writer} Writer
+             */
+            GaugeChart.encodeDelimited = function encodeDelimited(message, writer) {
+                return this.encode(message, writer).ldelim();
+            };
+
+            /**
+             * Decodes a GaugeChart message from the specified reader or buffer.
+             * @function decode
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @param {number} [length] Message length if known beforehand
+             * @returns {px.vispb.GaugeChart} GaugeChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            GaugeChart.decode = function decode(reader, length) {
+                if (!(reader instanceof $Reader))
+                    reader = $Reader.create(reader);
+                let end = length === undefined ? reader.len : reader.pos + length, message = new $root.px.vispb.GaugeChart();
+                while (reader.pos < end) {
+                    let tag = reader.uint32();
+                    switch (tag >>> 3) {
+                    case 1:
+                        message.value = reader.string();
+                        break;
+                    case 2:
+                        message.title = reader.string();
+                        break;
+                    default:
+                        reader.skipType(tag & 7);
+                        break;
+                    }
+                }
+                return message;
+            };
+
+            /**
+             * Decodes a GaugeChart message from the specified reader or buffer, length delimited.
+             * @function decodeDelimited
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+             * @returns {px.vispb.GaugeChart} GaugeChart
+             * @throws {Error} If the payload is not a reader or valid buffer
+             * @throws {$protobuf.util.ProtocolError} If required fields are missing
+             */
+            GaugeChart.decodeDelimited = function decodeDelimited(reader) {
+                if (!(reader instanceof $Reader))
+                    reader = new $Reader(reader);
+                return this.decode(reader, reader.uint32());
+            };
+
+            /**
+             * Verifies a GaugeChart message.
+             * @function verify
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {Object.<string,*>} message Plain object to verify
+             * @returns {string|null} `null` if valid, otherwise the reason why it is not
+             */
+            GaugeChart.verify = function verify(message) {
+                if (typeof message !== "object" || message === null)
+                    return "object expected";
+                if (message.value != null && message.hasOwnProperty("value"))
+                    if (!$util.isString(message.value))
+                        return "value: string expected";
+                if (message.title != null && message.hasOwnProperty("title"))
+                    if (!$util.isString(message.title))
+                        return "title: string expected";
+                return null;
+            };
+
+            /**
+             * Creates a GaugeChart message from a plain object. Also converts values to their respective internal types.
+             * @function fromObject
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {Object.<string,*>} object Plain object
+             * @returns {px.vispb.GaugeChart} GaugeChart
+             */
+            GaugeChart.fromObject = function fromObject(object) {
+                if (object instanceof $root.px.vispb.GaugeChart)
+                    return object;
+                let message = new $root.px.vispb.GaugeChart();
+                if (object.value != null)
+                    message.value = String(object.value);
+                if (object.title != null)
+                    message.title = String(object.title);
+                return message;
+            };
+
+            /**
+             * Creates a plain object from a GaugeChart message. Also converts values to other types if specified.
+             * @function toObject
+             * @memberof px.vispb.GaugeChart
+             * @static
+             * @param {px.vispb.GaugeChart} message GaugeChart
+             * @param {$protobuf.IConversionOptions} [options] Conversion options
+             * @returns {Object.<string,*>} Plain object
+             */
+            GaugeChart.toObject = function toObject(message, options) {
+                if (!options)
+                    options = {};
+                let object = {};
+                if (options.defaults) {
+                    object.value = "";
+                    object.title = "";
+                }
+                if (message.value != null && message.hasOwnProperty("value"))
+                    object.value = message.value;
+                if (message.title != null && message.hasOwnProperty("title"))
+                    object.title = message.title;
+                return object;
+            };
+
+            /**
+             * Converts this GaugeChart to JSON.
+             * @function toJSON
+             * @memberof px.vispb.GaugeChart
+             * @instance
+             * @returns {Object.<string,*>} JSON object
+             */
+            GaugeChart.prototype.toJSON = function toJSON() {
+                return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+            };
+
+            return GaugeChart;
         })();
 
         vispb.TimeseriesChart = (function() {

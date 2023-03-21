@@ -85,6 +85,7 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
       (*otel_endpoint_config->mutable_headers())[key] = value;
     }
     otel_endpoint_config->set_insecure(logical_state.otel_endpoint_config().insecure());
+    otel_endpoint_config->set_timeout(logical_state.otel_endpoint_config().timeout());
   }
   std::unique_ptr<planner::PluginConfig> plugin_config = nullptr;
   if (logical_state.has_plugin_config()) {

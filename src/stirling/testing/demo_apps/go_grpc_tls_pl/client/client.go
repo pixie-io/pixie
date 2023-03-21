@@ -35,12 +35,11 @@ import (
 	"px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb"
 )
 
-const serverAddr = "localhost:50400"
-
 func main() {
 	pflag.String("client_tls_cert", "", "Path to client.crt")
 	pflag.String("client_tls_key", "", "Path to client.key")
 	pflag.String("tls_ca_cert", "", "Path to ca.crt")
+	pflag.String("address", "localhost:50400", "Server address")
 	pflag.Int("count", 1000, "Number of requests sent.")
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
@@ -67,7 +66,7 @@ func main() {
 		InsecureSkipVerify: true,
 	}
 
-	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(credentials.NewTLS(config)), grpc.WithBlock())
+	conn, err := grpc.Dial(viper.GetString("address"), grpc.WithTransportCredentials(credentials.NewTLS(config)), grpc.WithBlock())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Server.")
 	}

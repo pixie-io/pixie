@@ -1,0 +1,57 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import px
+
+df = px.DataFrame("process_stats", start_time="-{{.CollectionPeriod.String}}")
+df = df[df.ctx["namespace"] == "pl"]
+df.pod = df.ctx["pod"]
+df.container = df.ctx["container_name"]
+df.node_name = df.ctx["node"]
+
+df = df.groupby(["node_name", "pod", "container", "upid"]).agg(
+    rss=("rss_bytes", px.mean),
+    vsize=("vsize_bytes", px.mean),
+    cpu_utime_ns_max=("cpu_utime_ns", px.max),
+    cpu_utime_ns_min=("cpu_utime_ns", px.min),
+    cpu_ktime_ns_max=("cpu_ktime_ns", px.max),
+    cpu_ktime_ns_min=("cpu_ktime_ns", px.min),
+    time_min=("time_", px.min),
+    time_max=("time_", px.max),
+)
+
+df.cpu_utime_ns = df.cpu_utime_ns_max - df.cpu_utime_ns_min
+df.cpu_ktime_ns = df.cpu_ktime_ns_max - df.cpu_ktime_ns_min
+
+df = df.groupby(["node_name", "pod"]).agg(
+    cpu_utime_ns=("cpu_utime_ns", px.sum),
+    cpu_ktime_ns=("cpu_ktime_ns", px.sum),
+    rss=("rss", px.sum),
+    vsize=("vsize", px.sum),
+    time_min=("time_min", px.min),
+    time_max=("time_max", px.max),
+)
+
+df.window = df.time_max - df.time_min
+# Avoid NaNs in the case of an empty window.
+# The numerator will be 0 in this case so we can set the denominator to an arbitrary non-zero value.
+df.window = px.select(df.window > 0, df.window, 1)
+
+df.cpu_usage = (df.cpu_utime_ns + df.cpu_ktime_ns) / df.window
+
+df.timestamp = px.now()
+df = df[["timestamp", "node_name", "pod", "cpu_usage", "rss", "vsize"]]
+px.display(df)

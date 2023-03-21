@@ -35,6 +35,7 @@ import { ScriptContext } from 'app/context/script-context';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult } from 'app/types/schema';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
 import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
+import { BreadcrumbExtras } from 'configurable/breadcrumb-extras';
 import { TimeArgDetail } from 'configurable/time-arg-detail';
 
 import { Variable } from './vis';
@@ -94,6 +95,14 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     margin: `${spacing(-0.5)} ${spacing(2.5)}`,
     padding: spacing(0.5),
     overflow: 'auto hidden',
+    position: 'relative',
+  },
+  extras: {
+    textAlign: 'right',
+    marginRight: spacing(2.5),
+    marginTop: spacing(0.5),
+    marginBottom: spacing(-2),
+    zIndex: 1, // So it's clickable above the padding of the widgets
   },
 }), { name: 'LiveViewBreadcrumbs' });
 
@@ -135,11 +144,11 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
 
         const ids = scriptIds.filter(s => !input || s === SCRATCH_SCRIPT.id || matches.get(s)?.isMatch);
 
-        // First, sort by quality of the match
-        ids.sort((a, b) => (matches.get(a)?.distance ?? Infinity) - (matches.get(b)?.distance ?? Infinity));
-
         // The `px` namespace should appear before all others
         ids.sort((a, b) => Number(b.startsWith('px/')) - Number(a.startsWith('px/')));
+
+        // Higher quality matches appear before lower ones (with the `px/` namespace winning on a tie)
+        ids.sort((a, b) => (matches.get(a)?.distance ?? Infinity) - (matches.get(b)?.distance ?? Infinity));
 
         // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
         // unless it's the only thing in the list.
@@ -251,6 +260,8 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
     return <></>;
   }
 
+  const extras = <BreadcrumbExtras />;
+
   return (
     <>
       <div className={classes.breadcrumbs}>
@@ -262,6 +273,7 @@ export const LiveViewBreadcrumbs: React.FC = React.memo(() => {
           breadcrumbs={argBreadcrumbs}
         />
       </div>
+      { extras && <div className={classes.extras}><BreadcrumbExtras /></div> }
     </>
   );
 });

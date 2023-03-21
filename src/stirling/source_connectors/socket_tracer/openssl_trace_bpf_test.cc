@@ -187,7 +187,7 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
   ::px::stirling::testing::CurlContainer client;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+                       {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -208,7 +208,7 @@ OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
 
         $i = 0
         while $i < 3 do
-          uri = URI.parse('https://localhost:443/index.html')
+          uri = URI.parse('https://127.0.0.1:443/index.html')
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE

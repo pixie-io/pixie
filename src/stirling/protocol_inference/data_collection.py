@@ -16,32 +16,52 @@
 
 import os
 import subprocess
-import json
 import argparse
 
 
-def create_pod2pid():
+def create_pod2pid(node, runtime_cli):
     """
-    Build a mapping of running pod names to host pids.
+    Builds a mapping of running pod names to host pids.
     """
-    # This cmd gets the host pid of each running container and its corresponding labels.
-    list_ps_cmd = '''kubectl node-shell ''' + node + ''' -- bash -c "docker ps -q | \
-    xargs docker inspect --format '{{.State.Pid}}{{json .Config.Labels}}'"'''
+
+    binaries = {
+        'docker': 'docker',
+        'crictl': 'crictl',
+    }
+    ps_templates = {
+        'docker': '''--format   '{{.State.Pid}} {{index .Config.Labels \\"io.kubernetes.pod.name\\"}}' ''',
+        'crictl': '''--template '{{.info.pid}}  {{index .info.config.labels \\"io.kubernetes.pod.name\\"}}' ''',
+    }
+    binary = binaries[runtime_cli]
+    ps_template = ps_templates[runtime_cli]
+
+    # This command prints one line of output per container where each line is the pid of the container, a
+    # single space and the name of the k8s pod determined by the io.kubernetes.pod.name container label.
+    # See the output below for example output:
+
+    # $ sudo crictl ps -q | sudo xargs crictl inspect --template \
+    #     '{{.info.pid}} {{index .info.config.labels "io.kubernetes.pod.name"}}' -o go-template
+    # 3635260 vizier-pem-sx7pr
+    # 3634678 kelvin-cdf78c57c-qlzlb
+    cmd = (
+        f"kubectl node-shell {node} -- "
+        f"sudo bash -c \"{binary} ps -q | xargs {binary} inspect -o go-template {ps_template}\""
+    )
 
     pod2pid = {}
-    ps_out = subprocess.run(list_ps_cmd, shell=True, capture_output=True)
-    rows = str(ps_out.stdout).split('\\n')[1:-3]
+    ps_out = subprocess.run(cmd, shell=True, capture_output=True)
+
+    rows = ps_out.stdout.decode('utf-8').splitlines()
     for row in rows:
-        # Example: '3217413{..., "io.kubernetes.pod.name": "vizier-query-broker", ...}'
-        pid_cutoff_idx = row.index("{")
-        pid = row[:pid_cutoff_idx]
-        try:
-            kube_info = json.loads(format(row[pid_cutoff_idx:]).replace("\\\\", "\\"))
-        except RuntimeError:
-            print(f"Failed to parse config for pid: {pid}. Skipping to the next pid.")
+        split_row = row.split()
+
+        if len(split_row) != 2:
+            print(f"Failed to parse config for row: {row}. Skipping to new pid")
             continue
-        pod_name = kube_info['io.kubernetes.pod.name']
+
+        pid, pod_name = split_row
         pod2pid[pod_name] = pid
+
     return pod2pid
 
 
@@ -74,6 +94,9 @@ def trace_pods(pod2pid, node, pods, duration):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Protocol Dataset Collection")
     parser.add_argument('--node', type=str, required=True)
+    parser.add_argument('--container-runtime-cli',
+                        type=str, default='crictl',
+                        help='The cli to use to find running containers, defaults to crictl')
     parser.add_argument('--pods', '-p', type=str, default="pod_names.txt")
     parser.add_argument('--duration', type=int, default=30)
     args = parser.parse_args()
@@ -87,5 +110,5 @@ if __name__ == "__main__":
     node = args.node
     duration = args.duration
 
-    pod2pid = create_pod2pid()
+    pod2pid = create_pod2pid(node, args.container_runtime_cli)
     trace_pods(pod2pid, node, pods, duration)

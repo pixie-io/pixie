@@ -25,12 +25,14 @@ apt_pkg_list = [
   'bash-completion',
   'bc',
   'build-essential',
+  'crun',
   'curl',
   # Not the newest docker CE from official docker repository, but should suffice.
   'docker.io',
   'git',
   'libncurses5',
   'lcov',
+  'podman',
   'sudo',
   'systemd',
   'unzip',
@@ -49,6 +51,12 @@ apt_pkg_list = [
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',
+
+  'qemu',
+  'qemu-system-arm',
+  'qemu-system-x86',
+  'qemu-user-static',
+  'qemu-utils',
 ]
 
 apt_package apt_pkg_list do

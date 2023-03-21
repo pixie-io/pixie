@@ -23,6 +23,20 @@ spec:
         - configMapRef:
             name: pl-cluster-config
             optional: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsUser: 10100
+        runAsGroup: 10100
+        fsGroup: 10100
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       restartPolicy: "Never"
   backoffLimit: 1
   parallelism: 1

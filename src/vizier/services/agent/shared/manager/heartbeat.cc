@@ -31,6 +31,9 @@ namespace agent {
 using ::px::event::Dispatcher;
 using ::px::shared::k8s::metadatapb::ResourceUpdate;
 
+const int64_t kCmdlineTruncationLimit = 4096;
+static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
+
 HeartbeatMessageHandler::HeartbeatMessageHandler(Dispatcher* d,
                                                  px::md::AgentMetadataStateManager* mds_manager,
                                                  RelationInfoManager* relation_info_manager,
@@ -192,7 +195,12 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const px::md::PIDStartedEve
   mu_upid->set_low(absl::Uint128Low64(upid.value()));
 
   process_info->set_start_timestamp_ns(ev.pid_info.start_time_ns());
-  process_info->set_cmdline(ev.pid_info.cmdline());
+  // Truncate cmdline to fit in the NATS message.
+  auto cmdline = ev.pid_info.cmdline();
+  if (cmdline.length() > kCmdlineTruncationLimit) {
+    cmdline.replace(cmdline.begin() + kCmdlineTruncationLimit, cmdline.end(), kTruncatedMsg);
+  }
+  process_info->set_cmdline(cmdline);
   process_info->set_cid(ev.pid_info.cid());
 }
 

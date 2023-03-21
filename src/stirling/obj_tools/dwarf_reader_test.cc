@@ -30,6 +30,8 @@ constexpr std::string_view kTestGo1_18Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_18_binary";
 constexpr std::string_view kTestGo1_19Binary =
     "src/stirling/obj_tools/testdata/go/test_go_1_19_binary";
+constexpr std::string_view kTestGo1_20Binary =
+    "src/stirling/obj_tools/testdata/go/test_go_1_20_binary";
 constexpr std::string_view kGoGRPCServer =
     "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_1_19_grpc_tls_server_binary";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/cc/test_exe_/test_exe";
@@ -40,6 +42,7 @@ const auto kCPPBinaryPath = px::testing::BazelRunfilePath(kCppBinary);
 const auto kGo1_17BinaryPath = px::testing::BazelRunfilePath(kTestGo1_17Binary);
 const auto kGo1_18BinaryPath = px::testing::BazelRunfilePath(kTestGo1_18Binary);
 const auto kGo1_19BinaryPath = px::testing::BazelRunfilePath(kTestGo1_19Binary);
+const auto kGo1_20BinaryPath = px::testing::BazelRunfilePath(kTestGo1_20Binary);
 const auto kGoServerBinaryPath = px::testing::BazelRunfilePath(kGoGRPCServer);
 const auto kGoBinaryUnconventionalPath = px::testing::BazelRunfilePath(kGoBinaryUnconventional);
 
@@ -562,7 +565,9 @@ INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedTest, GolangDwarfReaderTe
                                            DwarfReaderTestParam{kGo1_18BinaryPath, true},
                                            DwarfReaderTestParam{kGo1_18BinaryPath, false},
                                            DwarfReaderTestParam{kGo1_19BinaryPath, true},
-                                           DwarfReaderTestParam{kGo1_19BinaryPath, false}));
+                                           DwarfReaderTestParam{kGo1_19BinaryPath, false},
+                                           DwarfReaderTestParam{kGo1_20BinaryPath, true},
+                                           DwarfReaderTestParam{kGo1_20BinaryPath, false}));
 
 INSTANTIATE_TEST_SUITE_P(GolangDwarfReaderParameterizedIndexTest, GolangDwarfReaderIndexTest,
                          ::testing::Values(true, false));

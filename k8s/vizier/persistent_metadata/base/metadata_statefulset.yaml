@@ -59,6 +59,13 @@ spec:
           value: ""
         - name: PROTOCOL
           value: "http"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
       containers:
       - name: app
         image: gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest
@@ -101,6 +108,20 @@ spec:
           initialDelaySeconds: 30
           failureThreshold: 5
           periodSeconds: 10
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+      securityContext:
+        runAsUser: 10100
+        runAsGroup: 10100
+        fsGroup: 10100
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
       - name: certs
         secret:
@@ -108,3 +129,20 @@ spec:
       - name: metadata-volume
         persistentVolumeClaim:
           claimName: metadata-pv-claim
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"

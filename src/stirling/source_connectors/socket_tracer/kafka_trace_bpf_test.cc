@@ -84,7 +84,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
 
   StatusOr<int32_t> CreateTopic() {
     std::string cmd = absl::StrFormat(
-        "docker exec %s bash -c 'kafka-topics --create --topic foo --partitions 1 "
+        "podman exec %s bash -c 'kafka-topics --create --topic foo --partitions 1 "
         "--replication-factor 1 --if-not-exists --zookeeper localhost:32181 & echo $! && wait'",
         kafka_server_.container_name());
 
@@ -94,7 +94,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
 
   StatusOr<int32_t> ProduceMessage() {
     std::string cmd = absl::StrFormat(
-        "docker exec %s bash -c 'echo \"hello\" | "
+        "podman exec %s bash -c 'echo \"hello\" | "
         "kafka-console-producer --request-required-acks 1 --broker-list localhost:29092 --topic "
         "foo& echo $! && wait'",
         kafka_server_.container_name());
@@ -105,7 +105,7 @@ class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */
 
   StatusOr<int32_t> FetchMessage() {
     std::string cmd = absl::StrFormat(
-        "docker exec %s bash -c 'kafka-console-consumer --bootstrap-server localhost:29092 --topic "
+        "podman exec %s bash -c 'kafka-console-consumer --bootstrap-server localhost:29092 --topic "
         "foo --from-beginning --timeout-ms 10000& echo $! && wait'",
         kafka_server_.container_name());
 

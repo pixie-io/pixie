@@ -22,7 +22,7 @@ output_dir="$(realpath "$1")"
 docker_image_tag="$2"
 
 architectures=("amd64" "arm64")
-variants=("runtime" "build" "test")
+variants=("runtime" "build" "test" "debug")
 
 # shellcheck disable=SC2034
 files_runtime=("/package_groups/runtime.yaml")
@@ -30,6 +30,8 @@ files_runtime=("/package_groups/runtime.yaml")
 files_build=("/package_groups/runtime.yaml" "/package_groups/build.yaml")
 # shellcheck disable=SC2034
 files_test=("/package_groups/runtime.yaml" "/package_groups/build.yaml" "/package_groups/test.yaml")
+# shellcheck disable=SC2034
+files_debug=("/package_groups/runtime.yaml" "/package_groups/build.yaml" "/package_groups/test.yaml" "/package_groups/debug.yaml")
 
 pkgdb_dir="$(mktemp -d)"
 

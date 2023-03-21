@@ -34,8 +34,9 @@ func init() {
 	pflag.Int("http_port", 0, "Port of the http server")
 
 	pflag.Int("num_connections", 0, "Number of simulataneous connections for the seq load generator")
-	pflag.Int("req_size", 16, "Size of the request in bytes")
-	pflag.Int("resp_size", 16, "Size of the response in bytes")
+	pflag.Int("target_rps", 0, "Target requests per second across all connections")
+	pflag.Int("req_size", 1024, "Size of the request in bytes")
+	pflag.Int("resp_size", 1024, "Size of the response in bytes")
 	pflag.Int("num_messages", 1000, "Num messages per conn per loop")
 }
 
@@ -49,6 +50,7 @@ func main() {
 	addr := fmt.Sprintf("http://%s:%d%s", host, port, path)
 
 	numConns := viper.GetInt("num_connections")
+	targetRPS := viper.GetInt("target_rps")
 	numMessagesPerConn := viper.GetInt("num_messages")
 	reqSize := viper.GetInt("req_size")
 	respSize := viper.GetInt("resp_size")
@@ -57,8 +59,8 @@ func main() {
 
 	seqNum := 0
 	for {
-		log.Infof("Started loadtest with %d conns, %d messages, %d req_size, %d resp_size", numConns, numMessages, reqSize, respSize)
-		c := httpclient.New(addr, seqNum, numMessages, numConns, reqSize, respSize)
+		log.Infof("Started loadtest with %d conns, %d messages, %d req_size, %d resp_size, %d target_rps", numConns, numMessages, reqSize, respSize, targetRPS)
+		c := httpclient.New(addr, seqNum, numMessages, numConns, reqSize, respSize, targetRPS)
 		err := c.Run()
 		if err != nil {
 			log.WithError(err).Error("failed to run seq client")

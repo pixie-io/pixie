@@ -50,10 +50,12 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/metrics",
     deps = [
         "//src/cloud/metrics/controllers",
+        "//src/cloud/shared/messages",
         "//src/cloud/shared/vzshard",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",
+        "//src/shared/services/metrics",
         "//src/shared/services/msgbus",
         "//src/shared/services/server",
         "@com_github_sirupsen_logrus//:logrus",

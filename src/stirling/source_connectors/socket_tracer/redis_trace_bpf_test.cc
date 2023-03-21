@@ -38,8 +38,8 @@ using ::testing::StrEq;
 
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 
-static constexpr std::string_view kRedisImagePath =
-    "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
+using ::px::stirling::testing::RedisClientContainer;
+using ::px::stirling::testing::RedisContainer;
 
 struct RedisTraceTestCase {
   std::string cmd;
@@ -53,7 +53,7 @@ class RedisTraceBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSi
  protected:
   RedisTraceBPFTest() { PX_CHECK_OK(container_.Run(std::chrono::seconds{150})); }
 
-  ::px::stirling::testing::RedisContainer container_;
+  RedisContainer container_;
 };
 
 struct RedisTraceRecord {
@@ -87,8 +87,6 @@ std::vector<RedisTraceRecord> GetRedisTraceRecords(
 TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   StartTransferDataThread();
 
-  constexpr std::string_view kRedisDockerCmdTmpl =
-      R"(docker run --rm --network=container:$0 redis bash -c "echo '$1' | redis-cli")";
   // NOTE: select 0 must be the last one in order to avoid mess up with the key lookup in the
   // storage index.
   constexpr std::string_view kRedisCmds = R"(
@@ -112,10 +110,15 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
     unwatch
     select 0
   )";
-  const std::string redis_cli_cmd =
-      absl::Substitute(kRedisDockerCmdTmpl, container_.container_name(), kRedisCmds);
-  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
-  ASSERT_FALSE(output.empty());
+
+  RedisClientContainer redis_cli_client;
+  ASSERT_OK_AND_ASSIGN(
+      std::string output,
+      redis_cli_client.Run(
+          std::chrono::seconds{60},
+          {absl::Substitute("--network=container:$0", container_.container_name())},
+          {"bash", "-c", absl::Substitute("echo '$0' | redis-cli", kRedisCmds)}));
+  redis_cli_client.Wait();
 
   StopTransferDataThread();
 
@@ -154,20 +157,21 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
 // Verifies that pub/sub commands can be traced correctly.
 TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
-  using ::px::testing::BazelRunfilePath;
-
   StartTransferDataThread();
+  std::string output;
+  RedisClientContainer redis_sub_client;
+  ASSERT_OK(redis_sub_client.Run(
+      std::chrono::seconds{60},
+      {absl::Substitute("--network=container:$0", container_.container_name())},
+      {"redis-cli", "subscribe", "foo"}));
 
-  ContainerRunner redis_sub_client(BazelRunfilePath(kRedisImagePath), "redis_sub_client", "");
-  redis_sub_client.Run(std::chrono::seconds{60},
-                       {absl::Substitute("--network=container:$0", container_.container_name())},
-                       {"redis-cli", "subscribe", "foo"});
+  RedisClientContainer redis_pub_client;
+  ASSERT_OK(redis_pub_client.Run(
+      std::chrono::seconds{60},
+      {absl::Substitute("--network=container:$0", container_.container_name())},
+      {"redis-cli", "publish", "foo", "test"}));
 
-  std::string redis_cli_cmd =
-      absl::Substitute("docker run --rm --network=container:$0 redis redis-cli publish foo test",
-                       container_.container_name());
-  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
-  ASSERT_FALSE(output.empty());
+  redis_pub_client.Wait();
 
   StopTransferDataThread();
 
@@ -189,19 +193,27 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
 // to assemble the evalsha command.
 TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   StartTransferDataThread();
-
-  std::string script_load_cmd = absl::Substitute(
-      R"(docker run --rm --network=container:$0 redis redis-cli script load "return 1")",
-      container_.container_name());
-  ASSERT_OK_AND_ASSIGN(std::string sha, px::Exec(script_load_cmd));
+  RedisClientContainer script_load_container;
+  std::string sha;
+  ASSERT_OK_AND_ASSIGN(
+      sha, script_load_container.Run(
+               std::chrono::seconds{60},
+               {absl::Substitute("--network=container:$0", container_.container_name())},
+               {"redis-cli", "script", "load", "return 1"}));
+  script_load_container.Wait(false);
+  ASSERT_OK(script_load_container.Stdout(&sha));
+  absl::StripAsciiWhitespace(&sha);
   ASSERT_FALSE(sha.empty());
-  // The output ends with \n.
-  sha.pop_back();
 
-  std::string evalsha_cmd = absl::Substitute(
-      "docker run --rm --network=container:$0 redis redis-cli evalsha $1 2 1 1 2 2",
-      container_.container_name(), sha);
-  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(evalsha_cmd));
+  RedisClientContainer eval_sha_container;
+  ASSERT_OK_AND_ASSIGN(
+      std::string output,
+      eval_sha_container.Run(
+          std::chrono::seconds{60},
+          {absl::Substitute("--network=container:$0", container_.container_name())},
+          {"redis-cli", "evalsha", sha, "2", "1", "1", "2", "2"}));
+  eval_sha_container.Wait(false);
+  ASSERT_OK(eval_sha_container.Stdout(&output));
   ASSERT_FALSE(output.empty());
 
   StopTransferDataThread();
@@ -225,13 +237,13 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
   StartTransferDataThread();
 
   std::string_view redis_cmd = GetParam().cmd;
-
-  std::string redis_cli_cmd =
-      absl::Substitute("docker run --rm --network=container:$0 redis redis-cli $1",
-                       container_.container_name(), redis_cmd);
-  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
-  ASSERT_FALSE(output.empty());
-
+  RedisClientContainer redis_cli_client;
+  ASSERT_OK_AND_ASSIGN(std::string output,
+                       redis_cli_client.Run(std::chrono::seconds{60},
+                                            {absl::Substitute("--network=container:$0",
+                                                              container_.container_name())},
+                                            {"bash", "-c", "redis-cli " + std::string(redis_cmd)}));
+  redis_cli_client.Wait();
   StopTransferDataThread();
 
   std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);

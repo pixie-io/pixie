@@ -17,6 +17,7 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
+#include "src/common/metrics/metrics.h"
 
 DEFINE_double(
     stirling_conn_tracker_cleanup_threshold, 0.2,
@@ -109,7 +110,14 @@ uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>
 
 }  // namespace
 
-ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
+ConnTrackersManager::ConnTrackersManager()
+    : trackers_pool_(kMaxConnTrackerPoolSize),
+      conn_tracker_created_(BuildCounter("conn_tracker_created",
+                                         "Counter that tracks when a conn tracker is created")),
+      conn_tracker_destroyed_(BuildCounter("conn_tracker_destroyed",
+                                           "Counter that tracks when a conn tracker is destroyed")),
+      destroyed_gens_(BuildCounter(
+          "destroyed_gens", "Counter that tracks how many destroyed generations have occurred")) {}
 
 ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
@@ -124,6 +132,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
 
     stats_.Increment(StatKey::kTotal);
     stats_.Increment(StatKey::kCreated);
+    conn_tracker_created_.Increment();
   }
 
   DebugChecks();
@@ -157,6 +166,7 @@ void ConnTrackersManager::CleanupTrackers() {
       const auto& tracker = *iter;
       if (tracker->ReadyForDestruction()) {
         active_trackers_.erase(iter++);
+
         stats_.Increment(StatKey::kReadyForDestruction);
       } else {
         ++iter;
@@ -182,9 +192,13 @@ void ConnTrackersManager::CleanupTrackers() {
       stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
       stats_.Increment(StatKey::kDestroyed, num_erased);
 
+      conn_tracker_destroyed_.Increment(num_erased);
+
       if (tracker_generations.empty()) {
         conn_id_tracker_generations_.erase(iter++);
+
         stats_.Increment(StatKey::kDestroyedGens);
+        destroyed_gens_.Increment();
       } else {
         ++iter;
       }

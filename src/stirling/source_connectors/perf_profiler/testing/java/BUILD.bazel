@@ -24,7 +24,7 @@ load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "jdk_
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-# When invoking "fib_with_agent", to inject the JVMTI agent,
+# When invoking "profiler_test_with_agent", to inject the JVMTI agent,
 # we need a command line arg. that looks like this:
 # -agentpath:/path/to/libagent.so=<symbolization-file-path-prefix>
 # We build this up using so_path, symbol_file_path, and jvm_flags, below.
@@ -40,19 +40,19 @@ symbol_file_path = "./java-agent-test"
 jvm_flags = [so_path + "=" + symbol_file_path]
 
 java_binary(
-    name = "fib_with_agent",
-    srcs = ["Fib.java"],
+    name = "profiler_test_with_agent",
+    srcs = ["ProfilerTest.java"],
     args = ["-XX:+PreserveFramePointer"],
     data = ["//src/stirling/source_connectors/perf_profiler/java/agent"],
     jvm_flags = jvm_flags,
-    main_class = "JavaFib",
+    main_class = "ProfilerTest",
 )
 
 java_binary(
-    name = "fib",
-    srcs = ["Fib.java"],
+    name = "profiler_test",
+    srcs = ["ProfilerTest.java"],
     args = ["-XX:+PreserveFramePointer"],
-    main_class = "JavaFib",
+    main_class = "ProfilerTest",
 )
 
 pl_cc_binary(
@@ -94,43 +94,43 @@ jdk_symlinks = [symlinks_by_jdk[jdk_name] if jdk_name in symlinks_by_jdk else {}
 [
     java_image(
         name = jdk_name + "-java-profiler-test-image",
-        srcs = ["Fib.java"],
+        srcs = ["ProfilerTest.java"],
         args = ["-XX:+PreserveFramePointer"],
         base = jdk_name,
-        main_class = "JavaFib",
+        main_class = "ProfilerTest",
     )
     for jdk_name in jdk_names
 ]
 
 java_graal_binary(
-    name = "graal_java_fib",
-    srcs = ["Fib.java"],
+    name = "graal_java_profiler_test",
+    srcs = ["ProfilerTest.java"],
     args = ["-XX:+PreserveFramePointer"],
-    main_class = "JavaFib",
+    main_class = "ProfilerTest",
 )
 
 graal_native_binary(
-    name = "graal_java_fib_aot",
+    name = "graal_java_test_aot",
     extra_args = [
         "--no-fallback",
-        "-H:Class=JavaFib",
+        "-H:Class=ProfilerTest",
         "-H:-DeleteLocalSymbols",
         "-H:+PreserveFramePointer",
         "-H:+ReportUnsupportedElementsAtRuntime",
     ],
     graal_runtime = "@remotejdk_openjdk_graal_17//:jdk",
-    java_binary = ":graal_java_fib",
-    output_name = "JavaFib",
+    java_binary = ":graal_java_profiler_test",
+    output_name = "ProfilerTest",
 )
 
 filegroup(
-    name = "graal-vm-aot-fib",
-    srcs = [":graal_java_fib_aot"],
+    name = "graal-vm-aot-test",
+    srcs = [":graal_java_test_aot"],
 )
 
 java_image(
     name = "java_image_base-java-profiler-test-image-omit-frame-pointer",
-    srcs = ["Fib.java"],
+    srcs = ["ProfilerTest.java"],
     base = "java_image_base",
-    main_class = "JavaFib",
+    main_class = "ProfilerTest",
 )

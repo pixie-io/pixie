@@ -27,6 +27,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/shared/messages",
         "//src/cloud/shared/pgmigrate",
         "//src/cloud/shared/vzshard",
         "//src/cloud/vzmgr/controllers",
@@ -43,7 +44,6 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_nats_io_nats_go//:nats_go",
-        "@com_github_prometheus_client_golang//prometheus",
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",

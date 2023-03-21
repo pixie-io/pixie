@@ -128,12 +128,16 @@ controller:
   targetPort: 8080
   # For minikube, set this to NodePort, elsewhere use LoadBalancer
   # Use ClusterIP if your setup includes ingress controller
-  serviceType: ClusterIP
+  serviceType: NodePort
   # Use Local to preserve the client source IP and avoids a second hop for LoadBalancer and Nodeport type services,
   # but risks potentially imbalanced traffic spreading.
   serviceExternalTrafficPolicy:
   # Jenkins controller service annotations
-  serviceAnnotations: {}
+  serviceAnnotations:
+    cloud.google.com/backend-config: '{"ports": {"8080": "jenkins-backendconfig"}}'
+    cloud.google.com/app-protocols: '{"http":"HTTP"}'
+    cloud.google.com/load-balancer-type: external
+    cloud.google.com/neg: '{"ingress": true}'
   # Jenkins controller custom labels
   statefulSetLabels: {}
   #   foo: bar
@@ -714,15 +718,15 @@ controller:
     apiVersion: "networking.k8s.io/v1"
     labels: {}
     annotations:
-      networking.gke.io/managed-certificates: jenkins-oss-ingress-managed-cert
       kubernetes.io/ingress.global-static-ip-name: jenkins-oss-external-ipaddr
+      kubernetes.io/ingress.class: gce
+      networking.gke.io/managed-certificates: jenkins-oss-ingress-managed-cert
       networking.gke.io/v1beta1.FrontendConfig: "frontend-config"
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
     # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
     # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
     # #specifying-the-class-of-an-ingress
-    # ingressClassName: nginx
+    # ingressClassName doesn't work with GKE, we need to continue using the annotation.
+    # ingressClassName: gce
     # Set this path to jenkinsUriPrefix above or use annotations to rewrite path
     path: "/*"
     # configures the hostname e.g. jenkins.example.com
@@ -763,12 +767,18 @@ controller:
   # to finish ingress setup, use the following values.
   # Docs: https://cloud.google.com/kubernetes-engine/docs/concepts/backendconfig
   backendconfig:
-    enabled: false
-    apiVersion: "extensions/v1beta1"
-    name:
+    enabled: true
+    apiVersion: "cloud.google.com/v1"
+    name: jenkins-backendconfig
     labels: {}
     annotations: {}
-    spec: {}
+    spec:
+      cdn:
+        enabled: true
+        cachePolicy:
+          includeHost: true
+          includeProtocol: true
+          includeQueryString: true
 
   # Openshift route
   route:

@@ -71,7 +71,7 @@
     "svg-url-loader": "^6.0.0",
     "typescript": "^4.5.4",
     "url-loader": "^4.1.1",
-    "webpack": "^5.51.2",
+    "webpack": "^5.76.0",
     "webpack-bundle-analyzer": "^4.6.1",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.7.4",
@@ -136,12 +136,12 @@
     "typeface-roboto-mono": "^0.0.75",
     "typeface-walter-turncoat": "^1.1.13",
     "universal-cookie": "^4.0.4",
-    "vega": "5.22.1",
+    "vega": "5.23.0",
     "vega-embed": "^6.15.0",
     "vega-lite": "4.17.0",
     "vega-scale": "^7.0.0",
     "vega-scenegraph": "4.9.2",
-    "vega-typings": "~0.19.2",
+    "vega-typings": "~0.23.0",
     "vis-network": "^7.7.1"
   },
   "engines": {
@@ -170,7 +170,6 @@
     "multicast-dns": "7.2.3",
     "resize-img": "^2.0.0",
     "sharp": "0.30.5",
-    "vega-functions": "5.13.0",
     "d3-interpolate": "3.0.1"
   }
 }

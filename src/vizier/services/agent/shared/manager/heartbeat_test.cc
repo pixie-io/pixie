@@ -211,6 +211,21 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   EXPECT_FALSE(hb.update_info().data().has_metadata_info());
 }
 
+TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatLongPIDCmdLine) {
+  auto start_time_nanos = time_to_nanos(start_monotonic_time_);
+  md::UPID upid(1, 2, start_time_nanos);
+  std::string s(4097, 'a');
+  md::PIDInfo pid_info(upid, "", s, "example_container");
+  mds_manager_->AddPIDStatusEvent(std::make_unique<md::PIDStartedEvent>(pid_info));
+
+  // Publish pid updates.
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(1, nats_conn_->published_msgs().size());
+  auto hb = nats_conn_->published_msgs()[0].heartbeat();
+  EXPECT_EQ(0, hb.sequence_number());
+  EXPECT_THAT(hb.update_info().process_created(0).cmdline(), ::testing::EndsWith("[TRUNCATED]"));
+}
+
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataChange) {
   // Tthe metadata info should be resent when it changes.
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);

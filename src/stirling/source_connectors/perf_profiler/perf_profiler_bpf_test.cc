@@ -98,7 +98,7 @@ absl::flat_hash_map<std::string, uint64_t> KeepNLeafSyms(
     const auto end_iter = symbols.end();
 
     const auto leaf_syms = absl::StrJoin(begin_iter, end_iter, ";");
-    leaf_histo[leaf_syms] = count;
+    leaf_histo[leaf_syms] += count;
   }
   return leaf_histo;
 }
@@ -130,21 +130,27 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   void StartAll() override {
     ASSERT_TRUE(fs::Exists(binary_path_));
     ASSERT_TRUE(fs::Exists(kTasksetBinPath));
+    const auto processor_count = std::thread::hardware_concurrency();
+    if (processor_count > 0) {
+      ASSERT_GE(processor_count, kNumSubProcs);
+    }
+
     const system::ProcParser proc_parser;
 
     for (size_t i = 0; i < kNumSubProcs; ++i) {
-      sub_processes_.push_back(std::make_unique<SubProcess>());
+      auto sub_process = std::make_unique<SubProcess>();
 
       // Run the sub-process & pin it to a CPU.
-      const std::string kTasksetBinPath = "/usr/bin/taskset";
-      ASSERT_OK(sub_processes_[i]->Start({kTasksetBinPath, "-c", std::to_string(i), binary_path_}));
+      std::string mask = absl::StrFormat("%#x", 1 << i);
+      ASSERT_OK(sub_process->Start({std::string(kTasksetBinPath), mask, binary_path_}));
 
       // Grab the PID and generate a UPID.
-      const int pid = sub_processes_[i]->child_pid();
+      const int pid = sub_process->child_pid();
       ASSERT_OK_AND_ASSIGN(const uint64_t ts, proc_parser.GetPIDStartTimeTicks(pid));
       pids_.push_back(pid);
       struct_upids_.push_back({{static_cast<uint32_t>(pid)}, ts});
       upids_.emplace(0, pid, ts);
+      sub_processes_.emplace_back(std::move(sub_process));
     }
   }
 
@@ -158,7 +164,7 @@ class CPUPinnedSubProcesses final : public PerfProfilerTestSubProcesses {
   }
 
  private:
-  static constexpr std::string_view kTasksetBinPath = "/usr/bin/taskset";
+  static constexpr std::string_view kTasksetBinPath = "/bin/taskset";
   std::vector<std::unique_ptr<SubProcess>> sub_processes_;
   const std::string binary_path_;
 };
@@ -228,8 +234,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
-    // Just check that the test author populated the necessary,
-    // and did not corrupt the cumulative sum already.
+    // Sanity check; column pointers should be populated already.
     ASSERT_TRUE(column_ptrs_populated_);
 
     for (const auto row_idx : target_row_idxs) {
@@ -262,10 +267,8 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     }
   }
 
-  void CheckExpectedCounts(const absl::flat_hash_map<std::string, uint64_t>& counts,
-                           const ssize_t num_subprocesses,
-                           const std::chrono::duration<double> t_elapsed,
-                           const std::string_view key1x, const std::string_view key2x) {
+  void CheckExpectedSampleRate(const ssize_t num_subprocesses,
+                               const std::chrono::duration<double> t_elapsed) {
     const uint64_t table_period_ms = source_->SamplingPeriod().count();
     const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
     const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
@@ -292,7 +295,10 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
         num_subprocesses, t_elapsed.count(), expected_rate, observed_rate);
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
+  }
 
+  void CheckExpectedProfile(const absl::flat_hash_map<std::string, uint64_t>& counts,
+                            const std::string_view key1x, const std::string_view key2x) {
     char const* const missing_key_msg = "Could not find required symbol or stack trace: $0.";
     ASSERT_TRUE(counts.find(key1x) != counts.end()) << absl::Substitute(missing_key_msg, key1x);
     ASSERT_TRUE(counts.find(key2x) != counts.end()) << absl::Substitute(missing_key_msg, key2x);
@@ -309,8 +315,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     LOG(INFO) << absl::StrFormat("ratio: %.2fx.", ratio);
 
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
-    // TODO(jps): This is extremely flaky on Jenkins. Please fix and re-enable.
-    // EXPECT_LT(ratio, 2.0 + kRatioMargin);
+    EXPECT_LT(ratio, 2.0 + kRatioMargin);
 
     EXPECT_EQ(source_->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
   }
@@ -426,7 +431,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedCounts(histo_, kNumSubProcs, t_elapsed, key1x, key2x));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(histo_, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
@@ -448,20 +454,20 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(KeepNLeafSyms(3, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
+  const auto leaf_histo = KeepNLeafSyms(3, histo_);
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(leaf_histo, key1x, key2x));
 }
 
-// TODO(jps/oazizi): This test is flaky.
-TEST_F(PerfProfileBPFTest, DISABLED_GraalVM_AOT_Test) {
-  const std::string app_path = "JavaFib";
+TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
+  const std::string app_path = "ProfilerTest";
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
-  constexpr std::string_view key2x = "JavaFib_fibs2x_f162aa2400fb352efe4ef0783a97b3b7ea0a389c";
-  constexpr std::string_view key1x = "JavaFib_fibs1x_fe3e196dc35a74f6bb512ebf4d440d375075fc93";
+  constexpr std::string_view key2x = "ProfilerTest_leaf2x_2971a14bad627821bd5c46dbdf969a8ab42430f5";
+  constexpr std::string_view key1x = "ProfilerTest_leaf1x_41af06c0834431228b8c265075a583c347b33636";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
@@ -474,8 +480,9 @@ TEST_F(PerfProfileBPFTest, DISABLED_GraalVM_AOT_Test) {
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(KeepNLeafSyms(1, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
+  const auto leaf_histo = KeepNLeafSyms(1, histo_);
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(leaf_histo, key1x, key2x));
 }
 
 TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
@@ -485,8 +492,8 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
 
   // The target app is written such that key2x uses twice the CPU time as key1x.
   // For Java, we will match only the leaf symbol because we cannot predict the full stack trace.
-  constexpr std::string_view key2x = "[j] long JavaFib::fibs2x()";
-  constexpr std::string_view key1x = "[j] long JavaFib::fibs1x()";
+  constexpr std::string_view key2x = "[j] long ProfilerTest::leaf2x()";
+  constexpr std::string_view key1x = "[j] long ProfilerTest::leaf1x()";
 
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
@@ -494,13 +501,13 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   RefreshContext(sub_processes_->upids());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> t_elapsed = RunTest();
+  RunTest();
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(
-      CheckExpectedCounts(KeepNLeafSyms(1, histo_), kNumSubProcs, t_elapsed, key1x, key2x));
+  const auto leaf_histo = KeepNLeafSyms(1, histo_);
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(leaf_histo, key1x, key2x));
 
   // Now we will test agent cleanup, specifically whether the aritfacts directory is removed.
   // We will construct a list of artifacts paths that we expect,

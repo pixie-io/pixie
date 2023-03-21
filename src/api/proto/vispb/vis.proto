@@ -212,6 +212,19 @@ message BarChart {
   Axis y_axis = 4;
 }
 
+// PieChart The visual spec for a pie chart. Each slice is labeled by one column, with
+// values from another. Rows with the same label are combined.
+message PieChart {
+  // Which column to group values by. Also used to label that slice of the pie.
+  // This columns is expected to contain a string.
+  string label = 1;
+  // Which column represents the size of the slice. Rows with the same label are combined.
+  // This column is expected to contain a number, or something that readily converts to one.
+  string value = 2;
+  // Title of the chart.
+  string title = 3;
+}
+
 // HistogramChart The visual spec for a histogram chart. Support histograms
 // generated from prebinned data and data that needs to be binned.
 //
@@ -272,6 +285,15 @@ message HistogramChart {
   Axis x_axis = 3;
   // y_axis defines configuration for the y axis of the chart.
   Axis y_axis = 4;
+}
+
+// GaugeChart shows the most recent value of a column in ratio to the lowest
+// and highest values in the same column.
+message GaugeChart {
+  // Which column to look at. Should contain numeric data.
+  string value = 1;
+  // title string for the chart.
+  string title = 2;
 }
 
 // TimeseriesChart the visual spec for a timeseries chart. There is variety in the possible visual
