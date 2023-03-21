@@ -66,8 +66,7 @@ spec:
           - $(OPERATOR_NAMESPACE)
           - --writeStatusName
           - ""
-          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-olm{{ else }}quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519{{ end }}
-          imagePullPolicy: IfNotPresent
+          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
           ports:
             - containerPort: 8080
             - containerPort: 8081
@@ -83,7 +82,6 @@ spec:
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
           env:
-
           - name: OPERATOR_NAMESPACE
             valueFrom:
               fieldRef:
@@ -94,10 +92,25 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
-
-
       nodeSelector:
         kubernetes.io/os: linux
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -128,8 +141,8 @@ spec:
           - {{ .Values.olmNamespace }}
           - -configmapServerImage={{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}configmap-operator-registry:latest
           - -util-image
-          -  {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-olm{{ else }}quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519{{ end }}
-          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-olm{{ else }}quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519{{ end }}
+          -  {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -146,15 +159,29 @@ spec:
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
           env:
-
           resources:
             requests:
               cpu: 10m
               memory: 80Mi
-
-
       nodeSelector:
         kubernetes.io/os: linux
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
