@@ -17,8 +17,8 @@
 
 # This script is use to add customizations to our Bazel command. It currently does the following:
 #    * Adds a --config=clang by default if it's missing from the command line.
-workspace_name=`basename $(/opt/px_dev/bin/bazel_core info execution_root)`
-if [[ "$workspace_name" != "px" ]]; then
+# Check if this is this pixie repo, otherwise just passthrough to bazel_core.
+if ! grep 'workspace(name\s=\s"px")' "$(git rev-parse --show-toplevel 2> /dev/null)/WORKSPACE" &> /dev/null; then
   /opt/px_dev/bin/bazel_core "$@"
   exit $?
 fi;
