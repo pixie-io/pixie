@@ -16,7 +16,7 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
-package(default_visibility = ["//src/stirling:__pkg__"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",
@@ -43,6 +43,21 @@ pl_cc_test(
     ],
     deps = [
         ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "tcp_stats_bpf_test",
+    timeout = "long",
+    srcs = ["tcp_stats_bpf_test.cc"],
+    tags = [
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/source_connectors/tcp_stats/testing:cc_library",
+        "//src/common/testing/test_utils:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )
