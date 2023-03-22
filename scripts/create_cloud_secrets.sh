@@ -71,13 +71,13 @@ openssl genrsa -out ca.key 4096
 openssl req -new -x509 -sha256 -days 365 -key ca.key -out ca.crt -subj "/O=Pixie/CN=pixie.local"
 
 openssl genrsa -out server.key 4096
-openssl req -new -sha256 -key server.key -out server.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
+openssl req -new -sha256 -key server.key -out server.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.server"
 
 openssl x509 -req -sha256 -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
     -out server.crt -extensions req_ext -extfile ssl.conf
 
 openssl genrsa -out client.key 4096
-openssl req -new -sha256 -key client.key -out client.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.local"
+openssl req -new -sha256 -key client.key -out client.csr -config ssl.conf -subj "/O=Pixie/CN=pixie.client"
 
 openssl x509 -req -sha256 -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
     -out client.crt -extensions req_ext -extfile ssl.conf
