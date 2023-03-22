@@ -49,12 +49,12 @@ push_all_multiarch_images() {
   build_type="$4"
   bazel_args="$5"
 
-  push_images_for_arch "x86_64" "${image_rule}" "${release_tag}" "${build_type}" "${extra_bazel_args[@]}"
-  push_images_for_arch "aarch64" "${image_rule}" "${release_tag}" "${build_type}" "${extra_bazel_args[@]}"
+  push_images_for_arch "x86_64" "${image_rule}" "${release_tag}" "${build_type}" "${bazel_args}"
+  push_images_for_arch "aarch64" "${image_rule}" "${release_tag}" "${build_type}" "${bazel_args}"
 
   while read -r image;
   do
     push_multiarch_image "${image}"
   done < <(bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
-          --stamp "${build_type}" "${image_list_rule} "${extra_bazel_args[@]}")
+          --stamp "${build_type}" "${image_list_rule}" "${bazel_args}")
 }
