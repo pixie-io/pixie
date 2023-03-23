@@ -76,6 +76,11 @@ flags+=(-append "console=ttyS0 root=/dev/sda")
 # Disable graphics mode.
 flags+=(-nographic)
 
+if ! virt-host-validate qemu -q; then
+  echo "'virt-host-validate qemu' failed to validate qemu is functional. Check the output of the 'virt-host-validate' command and resolve any issues before retrying";
+  exit 1;
+fi
+
 retval=0
 qemu-system-x86_64 "${flags[@]}" || retval=$?
 
