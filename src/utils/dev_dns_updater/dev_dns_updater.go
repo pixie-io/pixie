@@ -21,11 +21,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -35,6 +35,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/txn2/txeh"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/term"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -159,7 +160,7 @@ func watchForExternalIP(ch <-chan watch.Event, outCh chan<- svcInfo) error {
 	return nil
 }
 
-func k8sWatchAndUpdateHosts() error {
+func k8sWatchAndUpdateHosts(tmp *os.File) error {
 	kubeConfig := getConfig()
 	clientset := getClientset(kubeConfig)
 	namespace := viper.GetString("n")
@@ -180,18 +181,20 @@ func k8sWatchAndUpdateHosts() error {
 	})
 
 	g.Go(func() error {
-		return updateHostsFile(svcInfoCh)
+		return updateHostsFile(svcInfoCh, tmp)
 	})
 
 	return g.Wait()
 }
 
-func updateHostsFile(svcInfoCh <-chan svcInfo) error {
+func updateHostsFile(svcInfoCh <-chan svcInfo, tmp *os.File) error {
 	for s := range svcInfoCh {
 		log.WithField("service", s.SvcName).
 			WithField("addr", s.Addr).
 			Info("Update")
-		hosts, err := txeh.NewHostsDefault()
+		hosts, err := txeh.NewHosts(&txeh.HostsConfig{
+			WriteFilePath: tmp.Name(),
+		})
 		if err != nil {
 			return err
 		}
@@ -204,13 +207,19 @@ func updateHostsFile(svcInfoCh <-chan svcInfo) error {
 		if err != nil {
 			return err
 		}
+		err = copyFileWithSudo(tmp.Name(), hosts.ReadFilePath)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func cleanup() {
+func cleanup(tmp *os.File) {
 	log.Info("Cleaning up hosts file")
-	hosts, err := txeh.NewHostsDefault()
+	hosts, err := txeh.NewHosts(&txeh.HostsConfig{
+		WriteFilePath: tmp.Name(),
+	})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get hosts file")
 	}
@@ -222,78 +231,70 @@ func cleanup() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to save hosts file")
 	}
+
+	err = copyFileWithSudo(tmp.Name(), hosts.ReadFilePath)
+	if err != nil {
+		log.WithError(err).Fatal("failed to copy temp hosts file to system hosts file")
+	}
 }
 
-func copyFile(src, dst string) error {
-	in, err := os.Open(src)
+var sudoPass string
+var sudoPassRead bool = false
+
+func promptForSudoPass() error {
+	u, err := user.Current()
 	if err != nil {
 		return err
 	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
+	fmt.Printf("[sudo] password for %s:\n", u.Username)
+	pswd, err := term.ReadPassword(syscall.Stdin)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-	return out.Close()
+	sudoPass = string(pswd)
+	sudoPassRead = true
+	return nil
 }
 
-func sudoSelfIfNotRoot() {
-	uid := os.Getuid()
-	if uid != 0 {
-		f, _ := filepath.Abs(os.Args[0])
-		args := []string{
-			"--preserve-env",
-			f,
-			fmt.Sprintf("--n=%s", viper.GetString("n")),
-			fmt.Sprintf("--domain-name=%s", viper.GetString("domain-name")),
-			fmt.Sprintf("--kubeconfig=%s", viper.GetString("kubeconfig")),
+func copyFileWithSudo(src, dst string) error {
+	if !sudoPassRead {
+		if err := promptForSudoPass(); err != nil {
+			return err
 		}
-
-		c1 := exec.Command("sudo", args...)
-		c1.Stdin = os.Stdin
-		c1.Stdout = os.Stdout
-		c1.Stderr = os.Stderr
-
-		if err := c1.Run(); err != nil {
-			panic(err)
-		}
-
-		err := c1.Wait()
-		if err != nil {
-			panic(err)
-		}
-		os.Exit(0)
 	}
+	cmd := exec.Command("sudo", "-S", "cp", src, dst)
+	// Passing the password as stdin ensures that we only prompt for the sudo password once.
+	cmd.Stdin = strings.NewReader(sudoPass)
+	return cmd.Run()
 }
+
 func main() {
 	parseFlags()
-	sudoSelfIfNotRoot()
+
+	tmpHostsFile, err := os.CreateTemp("", "hosts*")
+	if err != nil {
+		log.WithError(err).Fatal("failed to create tmp file")
+	}
+	defer os.Remove(tmpHostsFile.Name())
 
 	generateDomainEntries()
-	err := copyFile("/etc/hosts", "/etc/hosts.bak")
+	err = copyFileWithSudo("/etc/hosts", "/etc/hosts.bak")
 	if err != nil {
 		log.WithError(err).Fatal("Failed to backup /etc/hosts")
 	}
-	defer cleanup()
+	defer cleanup(tmpHostsFile)
 
 	// Also run cleanup on ctrl+c.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		cleanup()
+		cleanup(tmpHostsFile)
 		os.Exit(1)
 	}()
 
 	var g errgroup.Group
-	g.Go(k8sWatchAndUpdateHosts)
+	g.Go(func() error { return k8sWatchAndUpdateHosts(tmpHostsFile) })
 
 	// TODO(zasgar): Add Minikube tunnel
 
