@@ -27,11 +27,12 @@ namespace stirling {
 
 namespace {
 
-TcpStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& remote_endpoint) {
-  DCHECK_NE(upid.pid, 0U);
-  DCHECK_NE(upid.start_time_ticks, 0U);
+TcpStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
+                             const SockAddr& remote_endpoint) {
   return {
       .upid = upid,
+      .local_addr = local_endpoint.AddrStr(),
+      .local_port = local_endpoint.port(),
       .remote_addr = remote_endpoint.AddrStr(),
       .remote_port = remote_endpoint.port(),
   };
@@ -42,13 +43,10 @@ TcpStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& remote_endpoint
 absl::flat_hash_map<TcpStats::AggKey, TcpStats::Stats>& TcpStats::UpdateStats(
     std::vector<tcp_event_t> events) {
   for (auto& event : events) {
-    if (!(event.remote_addr.sa.sa_family == AF_INET ||
-          event.remote_addr.sa.sa_family == AF_INET6)) {
-      continue;
-    }
-    SockAddr addr;
-    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.remote_addr), &addr);
-    TcpStats::AggKey key = BuildAggKey(event.upid, addr);
+    SockAddr laddr, raddr;
+    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.local_addr), &laddr);
+    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.remote_addr), &raddr);
+    TcpStats::AggKey key = BuildAggKey(event.upid, laddr, raddr);
     auto& stats = tcp_agg_stats_[key];
 
     if (event.type == kUnknownEvent) {

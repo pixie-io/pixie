@@ -28,8 +28,8 @@
 
 #include "src/common/base/inet_utils.h"
 #include "src/shared/upid/upid.h"
-#include "src/stirling/upid/upid.h"
 #include "src/stirling/source_connectors/tcp_stats/bcc_bpf_intf/tcp_stats.h"
+#include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {
@@ -45,22 +45,26 @@ class TcpStats {
   // set to 0 by BuildAggKey() to collapse multiple connections from the same client to a server.
   struct AggKey {
     struct upid_t upid;
+    std::string local_addr;
+    int local_port;
     std::string remote_addr;
     int remote_port;
 
     bool operator==(const AggKey& rhs) const {
       return upid.tgid == rhs.upid.tgid && upid.start_time_ticks == rhs.upid.start_time_ticks &&
+             local_addr == rhs.local_addr && local_port == rhs.local_port &&
              remote_addr == rhs.remote_addr && remote_port == rhs.remote_port;
     }
 
     template <typename H>
     friend H AbslHashValue(H h, const AggKey& key) {
-      return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks, key.remote_addr,
-                        key.remote_port);
+      return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks, key.local_addr,
+                        key.local_port, key.remote_addr, key.remote_port);
     }
 
     std::string ToString() const {
-      return absl::Substitute("[tgid=$0 addr=$1 port=$2]", upid.tgid, remote_addr, remote_port);
+      return absl::Substitute("[tgid=$0 local_addr=$1 local_port=$2 remote_addr=$3 remote_port=$4]",
+                              upid.tgid, local_addr, local_port, remote_addr, remote_port);
     }
   };
 

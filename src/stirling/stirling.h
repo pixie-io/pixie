@@ -61,7 +61,7 @@ enum class SourceConnectorGroup {
   kProfiler,
 
   // The TCP conenction TX/RX/Retransmission metrics.
-  kProdTCPStats
+  kTCPStats
 };
 
 /**

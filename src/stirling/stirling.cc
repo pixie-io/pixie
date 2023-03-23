@@ -63,7 +63,7 @@
 
 DEFINE_string(
     stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
-    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kProdTCPStats] or comma separated list of "
+    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kTCPStats] or comma separated list of "
     "sources (find them the header files of source connector classes).");
 
 namespace px {
@@ -126,7 +126,7 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
       return {
         PerfProfileConnector::kName
       };
-    case SourceConnectorGroup::kProdTCPStats:
+    case SourceConnectorGroup::kTCPStats:
       return {
        TCPStatsConnector::kName
       };

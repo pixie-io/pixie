@@ -28,12 +28,11 @@
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats.h"
 
 OBJ_STRVIEW(tcpstats_bcc_script, tcpstats);
-DEFINE_bool(JsonOutput, true, "Standard output in Json format");
 
 namespace px {
 namespace stirling {
 
-// Allocating 50 MB perf buffer. It can accomodate ~125000 events
+// Allocating 50 MB perf buffer. It can accommodate ~125000 events
 // Considering each event size ~400 bytes (struct tcp_event_t).
 constexpr uint32_t kPerfBufferPerCPUSizeBytes = 50 * 1024 * 1024;
 
@@ -99,6 +98,8 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
     DataTable::RecordBuilder<&tcp_stats::kTCPStatsTable> r(data_table, time);
     r.Append<tcp_stats::kTcpTimeIdx>(time);
     r.Append<tcp_stats::kTcpUPIDIdx>(upid.value());
+    r.Append<tcp_stats::kTcpLocalAddrIdx>(key.local_addr);
+    r.Append<tcp_stats::kTcpLocalPortIdx>(key.local_port);
     r.Append<tcp_stats::kTcpRemoteAddrIdx>(key.remote_addr);
     r.Append<tcp_stats::kTcpRemotePortIdx>(key.remote_port);
     r.Append<tcp_stats::kTcpBytesReceivedIdx>(stats.bytes_recv);

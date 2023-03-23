@@ -40,6 +40,8 @@ namespace tcp_stats {
 static constexpr DataElement kTCPStatsElements[] = {
       canonical_data_elements::kTime,
       canonical_data_elements::kUPID,
+      canonical_data_elements_net::kLocalAddr,
+      canonical_data_elements_net::kLocalPort,
       canonical_data_elements_net::kRemoteAddr,
       canonical_data_elements_net::kRemotePort,
       {"tx", "The number of bytes sent to the remote endpoint(s).",
@@ -52,16 +54,16 @@ static constexpr DataElement kTCPStatsElements[] = {
 
 // clang-format on
 
-constexpr auto kTCPStatsTable = DataTableSchema(
-        "tcp_stats_events",
-        "TCP stats. This table contains TCP connection statistics",
-        kTCPStatsElements
-);
+constexpr auto kTCPStatsTable =
+    DataTableSchema("tcp_stats_events", "TCP stats. This table contains TCP connection statistics",
+                    kTCPStatsElements);
 
 DEFINE_PRINT_TABLE(TCPStats);
 
 constexpr int kTcpTimeIdx = kTCPStatsTable.ColIndex("time_");
 constexpr int kTcpUPIDIdx = kTCPStatsTable.ColIndex("upid");
+constexpr int kTcpLocalAddrIdx = kTCPStatsTable.ColIndex("local_addr");
+constexpr int kTcpLocalPortIdx = kTCPStatsTable.ColIndex("local_port");
 constexpr int kTcpRemoteAddrIdx = kTCPStatsTable.ColIndex("remote_addr");
 constexpr int kTcpRemotePortIdx = kTCPStatsTable.ColIndex("remote_port");
 constexpr int kTcpBytesSentIdx = kTCPStatsTable.ColIndex("tx");

@@ -40,9 +40,6 @@ enum tcp_event_type_t {
 
   // TCP retransmissions.
   kTcpRetransmissions,
-
-  // TCP latency.
-  kTcpLatency
 };
 
 struct tcp_event_t {
@@ -52,8 +49,8 @@ struct tcp_event_t {
   // The unique identifier of the process.
   struct upid_t upid;
 
-  // The process name of this process.
-  char name[MAX_CMD_SIZE];
+  // IP address of the local endpoint.
+  union sockaddress_t local_addr;
 
   // IP address of the remote endpoint.
   union sockaddress_t remote_addr;

@@ -33,14 +33,22 @@
 
 // Map to store TCP socket information.
 // Key is {tid}.
+// Value is TCP socket.
+// Size defaults 10240.
 BPF_HASH(sock_store, uint32_t, struct sock*);
 
 // This is the perf buffer for BPF program to export TCP data from kernel to user space.
 BPF_PERF_OUTPUT(tcp_events);
 
-static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, int size) {
+static bool valid_ip_family(int family) {
+  if (family == AF_INET || family == AF_INET6) {
+    return true;
+  }
+  return false;
+}
+
+static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, uint32_t id, int size) {
   struct sock** sockpp;
-  uint32_t id = bpf_get_current_pid_tgid();
   sockpp = sock_store.lookup(&id);
   if (sockpp == 0) {
     return 0;  // entry missed
@@ -49,26 +57,36 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, int size) {
   struct sock* sk = *sockpp;
   struct sock_common* sk_common = &sk->__sk_common;
   uint16_t family = -1;
-  uint16_t port = -1;
 
-  BPF_PROBE_READ_KERNEL_VAR(port, &sk_common->skc_dport);
   BPF_PROBE_READ_KERNEL_VAR(family, &sk_common->skc_family);
+  if (!valid_ip_family(family)) {
+    return 0;
+  }
+
+  int lport = -1;
+  int rport = -1;
+  BPF_PROBE_READ_KERNEL_VAR(rport, &sk_common->skc_dport);
+  BPF_PROBE_READ_KERNEL_VAR(lport, &sk_common->skc_num);
 
   struct tcp_event_t event = {};
   event.remote_addr.sa.sa_family = family;
+  event.local_addr.sa.sa_family = family;
   event.timestamp_ns = bpf_ktime_get_ns();
   event.upid.tgid = tgid;
   event.upid.start_time_ticks = get_tgid_start_time();
 
   if (family == AF_INET) {
-    event.remote_addr.in4.sin_port = port;
+    event.local_addr.in4.sin_port = ntohs(lport);
+    event.remote_addr.in4.sin_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr, &sk_common->skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
-    event.remote_addr.in6.sin6_port = port;
+    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.remote_addr.in6.sin6_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &sk_common->skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
   }
 
-  bpf_get_current_comm(&event.name, sizeof(event.name));
   event.size = size;
   event.type = kTcpTx;
   tcp_events.perf_submit(ctx, &event, sizeof(event));
@@ -80,8 +98,9 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, int size) {
 int probe_ret_tcp_sendmsg(struct pt_regs* ctx) {
   int size = PT_REGS_RC(ctx);
   if (size > 0) {
-    uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-    return tcp_sendstat(ctx, tgid, size);
+    uint64_t id = bpf_get_current_pid_tgid();
+    uint32_t tgid = id >> 32;
+    return tcp_sendstat(ctx, tgid, id, size);
   } else {
     return 0;
   }
@@ -90,8 +109,9 @@ int probe_ret_tcp_sendmsg(struct pt_regs* ctx) {
 int probe_ret_tcp_sendpage(struct pt_regs* ctx) {
   int size = PT_REGS_RC(ctx);
   if (size > 0) {
-    uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-    return tcp_sendstat(ctx, tgid, size);
+    uint64_t id = bpf_get_current_pid_tgid();
+    uint32_t tgid = id >> 32;
+    return tcp_sendstat(ctx, tgid, id, size);
   } else {
     return 0;
   }
@@ -119,21 +139,30 @@ int probe_entry_tcp_cleanup_rbuf(struct pt_regs* ctx, struct sock* sk, int copie
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
 
   uint16_t family = -1;
-  uint16_t port = -1;
 
-  BPF_PROBE_READ_KERNEL_VAR(port, &sk->__sk_common.skc_dport);
   BPF_PROBE_READ_KERNEL_VAR(family, &sk->__sk_common.skc_family);
+  if (!valid_ip_family(family)) {
+    return 0;
+  }
+
+  int lport = -1;
+  int rport = -1;
+  BPF_PROBE_READ_KERNEL_VAR(lport, &sk->__sk_common.skc_num);
+  BPF_PROBE_READ_KERNEL_VAR(rport, &sk->__sk_common.skc_dport);
 
   struct tcp_event_t event = {};
   event.remote_addr.sa.sa_family = family;
-
-  bpf_get_current_comm(&event.name, sizeof(event.name));
+  event.local_addr.sa.sa_family = family;
 
   if (family == AF_INET) {
-    event.remote_addr.in4.sin_port = port;
+    event.local_addr.in4.sin_port = ntohs(lport);
+    event.remote_addr.in4.sin_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &sk->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.remote_addr.in6.sin6_port = port;
+    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.remote_addr.in6.sin6_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &sk->__sk_common.skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &sk->__sk_common.skc_v6_daddr);
   }
 
@@ -152,23 +181,35 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
     return 0;
   }
 
+  // Process id can be zero if syn packets are getting retransmitted.
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
 
   uint16_t family = -1;
-  uint16_t port = -1;
 
-  BPF_PROBE_READ_KERNEL_VAR(port, &skp->__sk_common.skc_dport);
   BPF_PROBE_READ_KERNEL_VAR(family, &skp->__sk_common.skc_family);
+  if (!valid_ip_family(family)) {
+    return 0;
+  }
+
+  int lport = -1;
+  int rport = -1;
+  BPF_PROBE_READ_KERNEL_VAR(lport, &skp->__sk_common.skc_num);
+  BPF_PROBE_READ_KERNEL_VAR(rport, &skp->__sk_common.skc_dport);
 
   struct tcp_event_t event = {};
   event.remote_addr.sa.sa_family = family;
+  event.local_addr.sa.sa_family = family;
 
-  bpf_get_current_comm(&event.name, sizeof(event.name));
   if (family == AF_INET) {
-    event.remote_addr.in4.sin_port = port;
+    event.local_addr.in4.sin_port = ntohs(lport);
+    event.remote_addr.in4.sin_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in4.sin_addr.s_addr,
+                              &skp->__sk_common.skc_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in4.sin_addr.s_addr, &skp->__sk_common.skc_daddr);
   } else if (family == AF_INET6) {
-    event.remote_addr.in6.sin6_port = port;
+    event.local_addr.in6.sin6_port = ntohs(lport);
+    event.remote_addr.in6.sin6_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(event.local_addr.in6.sin6_addr, &skp->__sk_common.skc_v6_rcv_saddr);
     BPF_PROBE_READ_KERNEL_VAR(event.remote_addr.in6.sin6_addr, &skp->__sk_common.skc_v6_daddr);
   }
 

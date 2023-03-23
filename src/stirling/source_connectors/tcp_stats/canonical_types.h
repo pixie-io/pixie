@@ -28,6 +28,22 @@ namespace stirling {
 namespace canonical_data_elements_net {
 
 // clang-format off
+constexpr DataElement kLocalAddr = {
+    "local_addr",
+    "IP address of the local endpoint.",
+    types::DataType::STRING,
+    types::SemanticType::ST_IP_ADDRESS,
+    types::PatternType::GENERAL,
+};
+
+constexpr DataElement kLocalPort = {
+    "local_port",
+    "Port of the local endpoint.",
+    types::DataType::INT64,
+    types::SemanticType::ST_PORT,
+    types::PatternType::GENERAL,
+};
+
 constexpr DataElement kRemoteAddr = {
     "remote_addr",
     "IP address of the remote endpoint.",
