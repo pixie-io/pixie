@@ -37,7 +37,7 @@
 #include "src/stirling/source_connectors/perf_profiler/testing/testing.h"
 #include "src/stirling/testing/common.h"
 
-DEFINE_uint32(test_run_time, 30, "Number of seconds to run the test.");
+DEFINE_uint32(test_run_time, 10, "Number of seconds to run the test.");
 DEFINE_string(test_java_image_names, JDK_IMAGE_NAMES,
               "Java docker images to use as Java test cases.");
 DECLARE_bool(stirling_profiler_java_symbols);
@@ -219,7 +219,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   void SetUp() override {
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcs;
-    FLAGS_stirling_profiler_table_update_period_seconds = 5;
+    FLAGS_stirling_profiler_table_update_period_seconds = 1;
     FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
 
     source_ = PerfProfileConnector::Create("perf_profile_connector");
