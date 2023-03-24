@@ -55,7 +55,7 @@ pl_go_binary(
 
 container_image(
     name = "db_base_image",
-    # We need a debug image because the artifact_db_updater_job calls busybox to set a TRAP.
+    # We need a debug image because the plugin_updater calls busybox to set a TRAP.
     base = "//:pl_cc_base_debug_image",
 )
 
