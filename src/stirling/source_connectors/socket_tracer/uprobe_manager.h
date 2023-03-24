@@ -45,6 +45,7 @@
 DECLARE_bool(stirling_rescan_for_dlopen);
 DECLARE_bool(stirling_enable_grpc_c_tracing);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
+DECLARE_bool(access_tls_socket_fd_via_syscall);
 
 namespace px {
 namespace stirling {
@@ -428,6 +429,12 @@ class UProbeManager {
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
       bpf_tools::UProbeSpec{
           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_set_fd",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_SSL_set_fd",
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_write",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_SSL_write",
@@ -619,6 +626,7 @@ class UProbeManager {
   absl::flat_hash_set<std::string> grpc_c_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
+  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, bool>> openssl_native_bio_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>>
       openssl_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>>

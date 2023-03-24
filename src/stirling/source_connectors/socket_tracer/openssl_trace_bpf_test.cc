@@ -59,6 +59,12 @@ class NginxOpenSSL_1_1_1_ContainerWrapper
   int32_t PID() const { return NginxWorkerPID(); }
 };
 
+class NginxOpenSSL_3_0_7_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_3_0_7_Container {
+ public:
+  int32_t PID() const { return NginxWorkerPID(); }
+};
+
 class Node12_3_1ContainerWrapper : public ::px::stirling::testing::Node12_3_1Container {
  public:
   int32_t PID() const { return process_pid(); }
@@ -77,7 +83,7 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename TServerContainer, bool TForceFptrs>
+template <typename TServerContainer, bool TUseNewImpl>
 class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   BaseOpenSSLTraceTest() {
@@ -92,7 +98,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   void SetUp() override {
-    FLAGS_openssl_force_raw_fptrs = force_fptr_;
+    FLAGS_access_tls_socket_fd_via_syscall = use_new_tls_impl_;
 
     SocketTraceBPFTestFixture::SetUp();
   }
@@ -115,7 +121,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   TServerContainer server_;
-  bool force_fptr_ = TForceFptrs;
+  bool use_new_tls_impl_ = TUseNewImpl;
 };
 
 //-----------------------------------------------------------------------------
@@ -161,19 +167,28 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
                          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
     OpenSSLServerImplementations;
 
-template <typename T>
-using OpenSSLTraceDlsymTest = BaseOpenSSLTraceTest<T, false>;
+// TODO(ddelnano): Remove once new tls tracing implementation is
+// the default and we are ready to enable tracing of openssl v3.
+#ifdef ENABLE_OPENSSL_V3_TRACING
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
+    OpenSSLServerNewImplImplementations;
+#else
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
+    OpenSSLServerNewImplImplementations;
+#endif
 
 template <typename T>
-using OpenSSLTraceRawFptrsTest = BaseOpenSSLTraceTest<T, true>;
+using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
 
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)            \
-  TYPED_TEST(OpenSSLTraceDlsymTest, TestCase)              \
-  CodeBlock TYPED_TEST(OpenSSLTraceRawFptrsTest, TestCase) \
-  CodeBlock
+template <typename T>
+using OpenSSLTraceNewImpl = BaseOpenSSLTraceTest<T, true>;
 
-TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
-TYPED_TEST_SUITE(OpenSSLTraceRawFptrsTest, OpenSSLServerImplementations);
+#define OPENSSL_TYPED_TEST(TestCase, CodeBlock) \
+  TYPED_TEST(OpenSSLTraceTest, TestCase)        \
+  CodeBlock TYPED_TEST(OpenSSLTraceNewImpl, TestCase) CodeBlock
+
+TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
+TYPED_TEST_SUITE(OpenSSLTraceNewImpl, OpenSSLServerNewImplImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
   this->StartTransferDataThread();

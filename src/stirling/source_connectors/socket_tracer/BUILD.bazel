@@ -18,6 +18,18 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
+# TODO(ddelnano): Remove once new tls tracing implementation is
+# the default and we are ready to enable tracing of openssl v3.
+config_setting(
+    name = "enable_openssl_v3_testing",
+    values = {"define": "enable_openssl_v3_testing=1"},
+)
+
+enable_openssl_v3_tracing_defines = select({
+    ":enable_openssl_v3_testing": ["ENABLE_OPENSSL_V3_TRACING"],
+    "//conditions:default": [],
+})
+
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
@@ -28,6 +40,7 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
+    defines = enable_openssl_v3_tracing_defines,
     deps = [
         "//src/common/exec:cc_library",
         "//src/common/grpcutils:cc_library",
@@ -434,6 +447,7 @@ pl_cc_test(
     name = "openssl_trace_bpf_test",
     timeout = "long",
     srcs = ["openssl_trace_bpf_test.cc"],
+    defines = enable_openssl_v3_tracing_defines,
     flaky = True,
     shard_count = 2,
     tags = [
