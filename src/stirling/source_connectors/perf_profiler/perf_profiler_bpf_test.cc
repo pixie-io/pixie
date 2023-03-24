@@ -184,12 +184,12 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
   void StartAll() override {
     const system::ProcParser proc_parser;
     const auto timeout = std::chrono::seconds{2 * FLAGS_test_run_time};
-    const std::vector<std::string> options;
+    const std::vector<std::string> opts = {"--mount", "type=tmpfs,tmpfs-size=64M,destination=/tmp"};
     const std::vector<std::string> args;
     static constexpr bool kUseHostPidNamespace = false;
 
     for (size_t i = 0; i < kNumSubProcs; ++i) {
-      sub_processes_[i]->Run(timeout, options, args, kUseHostPidNamespace);
+      sub_processes_[i]->Run(timeout, opts, args, kUseHostPidNamespace);
 
       // Grab the PID and generate a UPID.
       const int pid = sub_processes_[i]->process_pid();
