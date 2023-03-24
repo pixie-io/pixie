@@ -67,7 +67,7 @@ flags+=(-hda "${overlay_disk_image}")
 flags+=(-virtfs "local,path=${QEMU_TEST_FS_PATH},mount_tag=test_fs,security_model=mapped")
 
 # Exit device:
-flags+=(-device "isa-debug-exit,iobase=${QEMU_EXIT_BASE},iosize=0x4")
+flags+=(-device "isa-debug-exit,iobase=${QEMU_EXIT_BASE},iosize=0x8")
 
 # Kernel config:
 flags+=(-kernel "${QEMU_KERNEL_IMAGE}")
@@ -79,6 +79,13 @@ flags+=(-nographic)
 retval=0
 qemu-system-x86_64 "${flags[@]}" || retval=$?
 
-# The actual return value is need to be converted back.
-retval="$(echo "($retval-1)/2" | bc)"
+if [[ "${retval}" -gt 0 ]]; then
+    if [[ "${retval}" -lt 128 ]]; then
+	echo "QEMU failed to launch with status code: ${retval}"
+    else
+	retval="$(echo "($retval-128-1)/2" | bc)"
+	echo "Test failed with status: ${retval}"
+    fi
+fi
+
 exit "${retval}"
