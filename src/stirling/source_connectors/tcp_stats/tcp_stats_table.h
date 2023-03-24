@@ -29,24 +29,33 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/tcp_stats/bcc_bpf_intf/tcp_stats.h"
-#include "src/stirling/source_connectors/tcp_stats/canonical_types.h"
 #include "src/stirling/utils/monitor.h"
 
 namespace px {
 namespace stirling {
 namespace tcp_stats {
 
+constexpr DataElement addr_data_element(const std::string_view name) {
+  return DataElement(name, "IP address of the local/remote endpoint.", types::DataType::STRING,
+                     types::SemanticType::ST_IP_ADDRESS, types::PatternType::GENERAL);
+};
+
+constexpr DataElement port_data_element(const std::string_view name) {
+  return DataElement(name, "Port of the local/remote endpoint.", types::DataType::INT64,
+                     types::SemanticType::ST_PORT, types::PatternType::GENERAL);
+};
+
 // clang-format off
 static constexpr DataElement kTCPStatsElements[] = {
       canonical_data_elements::kTime,
       canonical_data_elements::kUPID,
-      canonical_data_elements_net::kLocalAddr,
-      canonical_data_elements_net::kLocalPort,
-      canonical_data_elements_net::kRemoteAddr,
-      canonical_data_elements_net::kRemotePort,
+      addr_data_element("local_addr"),
+      port_data_element("local_port"),
+      addr_data_element("remote_addr"),
+      port_data_element("remote_port"),
       {"tx", "The number of bytes sent to the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
-      {"rx", "The number of retransmissions to the remote endpoint(s).",
+      {"rx", "The number of bytes received from the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
       {"retransmits", "The number of retransmissions to the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},

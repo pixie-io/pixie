@@ -34,8 +34,11 @@
 // Map to store TCP socket information.
 // Key is {tid}.
 // Value is TCP socket.
-// Size defaults 10240.
-BPF_HASH(sock_store, uint32_t, struct sock*);
+// size is the default map size 10240.
+// At given point of time, expecting that ~5000 TCP connections will be active.
+// Also, The code ensures that map is cleaned up as soon as the data collected,
+// so default hash map size 10240 serves without conflicts.
+BPF_HASH(sock_store, uint32_t, struct sock*, 10240);
 
 // This is the perf buffer for BPF program to export TCP data from kernel to user space.
 BPF_PERF_OUTPUT(tcp_events);

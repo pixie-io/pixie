@@ -28,7 +28,6 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
-#include "src/stirling/source_connectors/tcp_stats/canonical_types.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats_table.h"
 
