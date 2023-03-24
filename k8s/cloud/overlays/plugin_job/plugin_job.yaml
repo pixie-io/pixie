@@ -20,7 +20,7 @@ spec:
         args:
         - |
             trap "touch /tmp/pod/terminated" EXIT
-            /plugin_db_updater/load_db
+            src/cloud/plugin/load_db/load_db_/load_db
         envFrom:
         - configMapRef:
             name: pl-db-config
