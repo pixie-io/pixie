@@ -155,6 +155,13 @@ def stirling_test_images():
         "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
+    _gcr_io_image(
+        "nginx_alpine_openssl_3_0_7_base_image",
+        "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    )
+
+
     # DNS server image for DNS tests.
     _gcr_io_image(
         "alpine_dns_base_image",
@@ -279,14 +286,6 @@ def stirling_test_images():
         "productcatalogservice_v0_2_0",
         "sha256:1726e4dd813190ad1eae7f3c42483a3a83dd1676832bb7b04256455c8968d82a",
         "google-samples/microservices-demo/productcatalogservice:v0.2.0",
-    )
-
-    # TODO(ddelnano): Replace with the gcr.io equivalent
-    container_pull(
-        name = "nginx_alpine_openssl_3_0_7_base_image",
-        registry = "index.docker.io",
-        digest = "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
-        repository = "nginx:1.23.3-alpine",
     )
 
     # Built and pushed by src/stirling/testing/demo_apps/py_grpc/update_gcr.sh
