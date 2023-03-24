@@ -64,6 +64,14 @@ container_layer(
     files = ["nginx.conf"],
 )
 
+# Nginx 1.23 changes the format of the index.html. This layer is used
+# so that all of our nginx permutations can rely on the same assertion
+container_layer(
+    name = "nginx_html",
+    directory = "/usr/share/nginx/html",
+    files = ["index.html"],
+)
+
 pkg_tar(
     name = "node_client_server",
     srcs = [

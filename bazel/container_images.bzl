@@ -155,6 +155,12 @@ def stirling_test_images():
         "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
+    _gcr_io_image(
+        "nginx_alpine_openssl_3_0_7_base_image",
+        "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    )
+
     # DNS server image for DNS tests.
     _gcr_io_image(
         "alpine_dns_base_image",
