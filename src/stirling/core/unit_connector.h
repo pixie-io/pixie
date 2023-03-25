@@ -175,6 +175,10 @@ class UnitConnector {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
 
+    if (started_ || transfer_enable_) {
+      return error::Internal("Trasnfer data thread is running.");
+    }
+
     source_->TransferData(ctx_.get());
     return Status::OK();
   }
