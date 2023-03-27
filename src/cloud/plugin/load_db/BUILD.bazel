@@ -16,9 +16,8 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
-load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_test")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image", "pl_go_test")
 
 go_library(
     name = "load_db_lib",
@@ -54,19 +53,16 @@ pl_go_binary(
     visibility = ["//visibility:public"],
 )
 
-container_layer(
-    name = "plugin_db_updater_go_layer",
-    directory = "/plugin_db_updater",
-    files = [":load_db"],
-    visibility = ["//src:__subpackages__"],
+container_image(
+    name = "db_base_image",
+    # We need a debug image because the plugin_updater calls busybox to set a TRAP.
+    base = "//:pl_cc_base_debug_image",
 )
 
-container_image(
+pl_go_image(
     name = "plugin_db_updater_image",
-    base = "@base_image_debug//image",
-    layers = [
-        ":plugin_db_updater_go_layer",
-    ],
+    base = ":db_base_image",
+    binary = ":load_db",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",
