@@ -22,6 +22,11 @@ end
 default['owner'] = 'root'
 default['group'] = 'root'
 
+default['docker-buildx']['download_path'] =
+  'https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.linux-amd64'
+default['docker-buildx']['sha256'] =
+  'dbe68cdc537d0150fc83e3f30974cd0ca11c179dafbf27f32d6f063be26e869b'
+
 default['faq']['download_path'] =
   'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-linux-amd64'
 default['faq']['sha256'] =

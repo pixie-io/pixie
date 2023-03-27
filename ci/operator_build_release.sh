@@ -103,12 +103,14 @@ mv "$(pwd)/k8s/operator/helm/templates/deleter_tmp.yaml" "$(pwd)/k8s/operator/he
 cd "${tmp_dir}"
 bundle_image="gcr.io/pixie-oss/pixie-prod/operator/bundle:${release_tag}"
 index_image="gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1"
-opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
-docker build -t "${bundle_image}" -f bundle.Dockerfile .
-docker push "${bundle_image}"
-opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}" -u docker
 
-docker push "${index_image}"
+docker buildx create --name builder --driver docker-container --bootstrap
+docker buildx use builder
+
+opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
+docker buildx build --platform linux/amd64,linux/arm64 -t "${bundle_image}" --push -f bundle.Dockerfile .
+opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}"  --generate --out-dockerfile=${tmp_dir}/index.Dockerfile -u docker
+docker buildx build --platform linux/amd64,linux/arm64 -t ${index_image} --push -f ${tmp_dir}/index.Dockerfile .
 
 cd "${repo_path}"
 
