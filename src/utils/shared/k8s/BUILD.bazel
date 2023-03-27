@@ -23,6 +23,7 @@ go_library(
         "apply.go",
         "auth.go",
         "delete.go",
+        "kubectl.go",
         "logs.go",
         "secrets.go",
         "selector.go",
