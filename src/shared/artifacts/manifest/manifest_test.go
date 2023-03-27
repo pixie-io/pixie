@@ -369,3 +369,179 @@ func TestManifest_JSONEncode(t *testing.T) {
 		})
 	}
 }
+
+func TestManifest_Merge(t *testing.T) {
+	time1 := time.Date(2023, time.March, 23, 0, 24, 33, 10, time.UTC)
+	time1Proto, err := types.TimestampProto(time1)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name                 string
+		base                 []*versionspb.ArtifactSet
+		updates              []*versionspb.ArtifactSet
+		expectedArtifactSets []*versionspb.ArtifactSet
+	}{
+		{
+			name: "simple append only merge",
+			base: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "abcd",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog2",
+						},
+					},
+				},
+			},
+			updates: []*versionspb.ArtifactSet{
+				{
+					Name: "vizier",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "1234",
+							VersionStr: "0.12.17",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_LINUX_AMD64,
+								versionspb.AT_CONTAINER_SET_YAMLS,
+								versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+							},
+							Changelog: "changelog1",
+						},
+					},
+				},
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "efgh",
+							VersionStr: "0.1.2",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog3",
+						},
+					},
+				},
+			},
+			expectedArtifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "vizier",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "1234",
+							VersionStr: "0.12.17",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_LINUX_AMD64,
+								versionspb.AT_CONTAINER_SET_YAMLS,
+								versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+							},
+							Changelog: "changelog1",
+						},
+					},
+				},
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "efgh",
+							VersionStr: "0.1.2",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog3",
+						},
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "abcd",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "update artifacts with the same version",
+			base: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "abcd",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog2",
+						},
+					},
+				},
+			},
+			updates: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "efgh",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_YAMLS,
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog3",
+						},
+					},
+				},
+			},
+			expectedArtifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "efgh",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_YAMLS,
+								versionspb.AT_LINUX_AMD64,
+								versionspb.AT_DARWIN_AMD64,
+							},
+							Changelog: "changelog3",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			base := manifest.NewArtifactManifestFromProto(tc.base)
+			updates := manifest.NewArtifactManifestFromProto(tc.updates)
+			merged := base.Merge(updates)
+
+			require.ElementsMatch(t, tc.expectedArtifactSets, merged.ArtifactSets())
+		})
+	}
+}

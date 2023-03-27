@@ -62,6 +62,10 @@ func newSortedArtifactSetFromProto(pb *versionspb.ArtifactSet) *sortedArtifactSe
 }
 
 func artifactCompare(a, b *versionspb.Artifact) bool {
+	return versionCompare(a.VersionStr, b.VersionStr)
+}
+
+func versionCompare(a, b string) bool {
 	// Sort the semantic versions in descending order.
-	return semver.Compare("v"+a.VersionStr, "v"+b.VersionStr) > 0
+	return semver.Compare("v"+a, "v"+b) >= 0
 }

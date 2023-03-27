@@ -23,6 +23,7 @@ go_library(
     srcs = [
         "json.go",
         "manifest.go",
+        "merge.go",
         "sorted.go",
     ],
     importpath = "px.dev/pixie/src/shared/artifacts/manifest",
@@ -30,6 +31,7 @@ go_library(
     deps = [
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "@com_github_gogo_protobuf//jsonpb",
+        "@com_github_gogo_protobuf//proto",
         "@org_golang_x_mod//semver",
     ],
 )
