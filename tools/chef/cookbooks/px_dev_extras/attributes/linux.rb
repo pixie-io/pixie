@@ -58,9 +58,9 @@ default['minikube']['sha256'] =
   '3bc218476cf205acf11b078d45210a4882e136d24a3cbb7d8d645408e423b8fe'
 
 default['opm']['download_path'] =
-  'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/linux-amd64-opm'
+  'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/linux-amd64-opm'
 default['opm']['sha256'] =
-  '771b72d802ac58b740ac493caf79256b28686907d3578f3b1e1e77b570bda156'
+  'cf94e9dbd58c338e1eed03ca50af847d24724b99b40980812abbe540e8c7ff8e'
 
 default['packer']['download_path'] =
   'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_linux_amd64.zip'

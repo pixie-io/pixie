@@ -59,9 +59,9 @@ default['minikube']['sha256'] =
   '55f14e4f411370da18d7b9432ae4edd128f4f047bbc87a278e08ba256ff6f669'
 
 default['opm']['download_path'] =
-  'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/darwin-amd64-opm'
+  'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/darwin-amd64-opm'
 default['opm']['sha256'] =
-  'bb812b97fb3c65f634ecc26910b2dfc0f2e668b86272702200937937df83ad5a'
+  '9c5d21fd4200373e8ee8c0df47ac4c06c1762e807f836d5382d67e2f47d6fa1b'
 
 default['packer']['download_path'] =
   'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_darwin_amd64.zip'
