@@ -23,6 +23,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"time"
 
 	"cloud.google.com/go/storage"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -40,6 +41,7 @@ import (
 	"px.dev/pixie/src/cloud/artifact_tracker/controllers"
 	"px.dev/pixie/src/cloud/artifact_tracker/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/artifacts/manifest"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/pg"
@@ -53,6 +55,9 @@ func init() {
 	pflag.String("vizier_version", "", "If specified, the db will not be queried. The only vizier version is assumed to be the one specified.")
 	pflag.String("cli_version", "", "If specified, the db will not be queried. The only CLI version is assumed to be the one specified.")
 	pflag.String("operator_version", "", "If specified, the db will not be queried. The only operator version is assumed to be the one specified.")
+	pflag.String("artifact_manifest_bucket", "pixie-dev-public", "The name of the bucket containing the artifact manifest")
+	pflag.String("artifact_manifest_path", "manifest.json", "Path within the artifact bucket to the manifest.json")
+	pflag.Duration("manifest_poll_period", 1*time.Minute, "Specify how often to poll for manifest changes")
 }
 
 func loadServiceAccountConfig() *jwt.Config {
@@ -113,6 +118,20 @@ func main() {
 	bucket := viper.GetString("artifact_bucket")
 	releaseBucket := viper.GetString("release_artifact_bucket")
 	svr := controllers.NewServer(db, stiface.AdaptClient(client), bucket, releaseBucket, saCfg)
+
+	// If any versions are not hardcoded, then we need to poll for the artifact manifest.
+	if (viper.GetString("vizier_version") == "") || (viper.GetString("cli_version") == "") || (viper.GetString("operator_version") == "") {
+		manifestBucket := viper.GetString("artifact_manifest_bucket")
+		manifestPath := viper.GetString("artifact_manifest_path")
+		pollPeriod := viper.GetDuration("manifest_poll_period")
+		poller := manifest.NewPoller(client, manifestBucket, manifestPath, pollPeriod, svr.UpdateManifest)
+		start := time.Now()
+		if err := poller.Start(); err != nil {
+			log.WithError(err).Fatal("failed to start manifest poller")
+		}
+		log.WithField("time elapsed", time.Since(start)).Trace("first manifest poll completed")
+		defer poller.Stop()
+	}
 
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{

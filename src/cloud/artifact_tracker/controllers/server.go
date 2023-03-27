@@ -31,12 +31,14 @@ import (
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	apb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/shared/artifacts/manifest"
 	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/artifacts/versionspb/utils"
 )
@@ -57,6 +59,7 @@ type Server struct {
 	artifactBucket string
 	releaseBucket  string
 	gcsSA          *jwt.Config
+	m              *manifest.ArtifactManifest
 }
 
 // NewServer creates a new artifact tracker server.
@@ -324,4 +327,11 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		SHA256:     strings.TrimSpace(string(sha256bytes)),
 		ValidUntil: tpb,
 	}, nil
+}
+
+// UpdateManifest switches the server's manifest to use the one given.
+func (s *Server) UpdateManifest(m *manifest.ArtifactManifest) error {
+	s.m = m
+	log.Info("Updated Artifact Manifest")
+	return nil
 }
