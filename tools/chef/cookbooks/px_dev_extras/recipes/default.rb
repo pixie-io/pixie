@@ -122,6 +122,9 @@ end
 directory '/usr/local/lib/docker/cli-plugins' do
   action :create
   recursive true
+  owner node['owner']
+  group node['group']
+  mode '0755'
 end
 
 remote_file '/usr/local/lib/docker/cli-plugins/docker-buildx' do

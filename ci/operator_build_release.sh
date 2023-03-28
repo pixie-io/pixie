@@ -109,8 +109,8 @@ docker buildx use builder
 
 opm alpha bundle generate --package pixie-operator --channels "${channels}" --default "${channel}" --directory manifests
 docker buildx build --platform linux/amd64,linux/arm64 -t "${bundle_image}" --push -f bundle.Dockerfile .
-opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}"  --generate --out-dockerfile=${tmp_dir}/index.Dockerfile -u docker
-docker buildx build --platform linux/amd64,linux/arm64 -t ${index_image} --push -f ${tmp_dir}/index.Dockerfile .
+opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "${index_image}"  --generate --out-dockerfile="${tmp_dir}/index.Dockerfile" -u docker
+docker buildx build --platform linux/amd64,linux/arm64 -t "${index_image}" --push -f "${tmp_dir}/index.Dockerfile" .
 
 cd "${repo_path}"
 
