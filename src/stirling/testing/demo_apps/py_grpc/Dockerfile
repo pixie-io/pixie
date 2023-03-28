@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.7-slim
+FROM python:3.7-slim@sha256:fbb1606214af72cab47a4caf66ac0b94a343613b2a833c022a6de1acfbe84499
 ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 RUN apt-get update \
