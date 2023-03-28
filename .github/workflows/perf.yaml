@@ -20,7 +20,8 @@ on:
         description: 'Tags (comma separated)'
         type: string
         required: false
-
+permissions:
+  contents: read
 jobs:
   nightly-perf-eval:
     name: Nightly Performance Evaluation
