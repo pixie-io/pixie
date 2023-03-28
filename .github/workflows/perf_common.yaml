@@ -24,8 +24,6 @@ on:
         required: true
       PERF_PX_API_KEY:
         required: true
-      BB_API_KEY:
-        required: true
 permissions:
   contents: read
 jobs:
@@ -36,9 +34,12 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: ubuntu-latest
+    runs-on: [self-host, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
+      options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -47,10 +48,8 @@ jobs:
         ref: ${{ inputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
-    - name: get buildbuddy bazel config
-      uses: ./.github/actions/buildbuddy
-      with:
-        bb_api_key: ${{ secrets.BB_API_KEY }}
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
     - name: Set matrix
       id: set-matrix
       run: |
@@ -59,10 +58,12 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: [self-host, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
       options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
     strategy:
       matrix: ${{ fromJson(needs.generate-perf-matrix.outputs.matrix) }}
     steps:
@@ -80,10 +81,8 @@ jobs:
       run: |
         git log
         echo "commit-sha=$(git log -n 1 --format="%H")" >> $GITHUB_OUTPUT
-    - name: get buildbuddy bazel config
-      uses: ./.github/actions/buildbuddy
-      with:
-        bb_api_key: ${{ secrets.BB_API_KEY }}
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
     - name: activate gcloud service account
       env:
         GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud.json"
