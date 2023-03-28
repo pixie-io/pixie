@@ -1,0 +1,17 @@
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: runner
+spec:
+  template:
+    spec:
+      labels:
+      - kvm
+      nodeSelector:
+        nested-virt: enabled
+      tolerations:
+      - key: "nested-virt"
+        operator: "Equal"
+        value: "enabled"
+        effect: "NoSchedule"
