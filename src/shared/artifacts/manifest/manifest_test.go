@@ -545,3 +545,353 @@ func TestManifest_Merge(t *testing.T) {
 		})
 	}
 }
+
+func TestManifest_GetArtifact(t *testing.T) {
+	testCases := []struct {
+		name             string
+		artifactSets     []*versionspb.ArtifactSet
+		artifactName     string
+		artifactVersion  string
+		expectedErr      error
+		expectedArtifact *versionspb.Artifact
+	}{
+		{
+			name: "basic",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.2",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1",
+						},
+					},
+				},
+			},
+			artifactName:    "cli",
+			artifactVersion: "0.1.2",
+			expectedErr:     nil,
+			expectedArtifact: &versionspb.Artifact{
+				CommitHash: "efgh",
+				VersionStr: "0.1.2",
+			},
+		},
+		{
+			name: "prerelease versions",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1-prerelease-1234",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.1-prerelease-efgh",
+						},
+					},
+				},
+			},
+			artifactName:    "cli",
+			artifactVersion: "0.1.1-prerelease-efgh",
+			expectedErr:     nil,
+			expectedArtifact: &versionspb.Artifact{
+				CommitHash: "efgh",
+				VersionStr: "0.1.1-prerelease-efgh",
+			},
+		},
+		{
+			name: "error cant find artifact set",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name:     "cli",
+					Artifact: []*versionspb.Artifact{},
+				},
+			},
+			artifactName:    "vizier",
+			artifactVersion: "0.1.1",
+			expectedErr:     manifest.ErrArtifactSetNotFound,
+		},
+		{
+			name: "error cant find artifact version",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1-prerelease.2",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.1-prerelease.1",
+						},
+					},
+				},
+			},
+			artifactName:    "cli",
+			artifactVersion: "0.1.1-prerelease.3",
+			expectedErr:     manifest.ErrArtifactNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := manifest.NewArtifactManifestFromProto(tc.artifactSets)
+
+			a, err := m.GetArtifact(tc.artifactName, tc.artifactVersion)
+			if tc.expectedErr != nil {
+				require.Equal(t, tc.expectedErr, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedArtifact, a)
+			}
+		})
+	}
+}
+
+func TestManifest_ListArtifacts(t *testing.T) {
+	testCases := []struct {
+		name              string
+		artifactSets      []*versionspb.ArtifactSet
+		artifactName      string
+		limit             int64
+		filters           []manifest.ArtifactFilter
+		expectedErr       error
+		expectedArtifacts []*versionspb.Artifact
+	}{
+		{
+			name: "basic",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.2",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1",
+						},
+					},
+				},
+			},
+			artifactName: "cli",
+			expectedErr:  nil,
+			expectedArtifacts: []*versionspb.Artifact{
+				{
+					CommitHash: "abcd",
+					VersionStr: "1.0.0",
+				},
+				{
+					CommitHash: "efgh",
+					VersionStr: "0.1.2",
+				},
+				{
+					CommitHash: "1234",
+					VersionStr: "0.1.1",
+				},
+			},
+		},
+		{
+			name: "filter out prerelease versions",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "1111",
+							VersionStr: "0.1.1",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1-prerelease.1234",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.1-pre-main-efgh",
+						},
+					},
+				},
+			},
+			artifactName: "cli",
+			filters: []manifest.ArtifactFilter{
+				manifest.RemovePrereleasesFilter(),
+			},
+			expectedErr: nil,
+			expectedArtifacts: []*versionspb.Artifact{
+				{
+					CommitHash: "abcd",
+					VersionStr: "1.0.0",
+				},
+				{
+					CommitHash: "1111",
+					VersionStr: "0.1.1",
+				},
+			},
+		},
+		{
+			name: "filter out prerelease versions with limit",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "cli",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+						},
+						{
+							CommitHash: "1111",
+							VersionStr: "0.1.1",
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1-prerelease.1234",
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.1-pre-main-efgh",
+						},
+						{
+							CommitHash: "0000",
+							VersionStr: "0.1.0",
+						},
+					},
+				},
+			},
+			artifactName: "cli",
+			filters: []manifest.ArtifactFilter{
+				manifest.RemovePrereleasesFilter(),
+			},
+			limit:       2,
+			expectedErr: nil,
+			expectedArtifacts: []*versionspb.Artifact{
+				{
+					CommitHash: "abcd",
+					VersionStr: "1.0.0",
+				},
+				{
+					CommitHash: "1111",
+					VersionStr: "0.1.1",
+				},
+			},
+		},
+		{
+			name: "error cant find artifact set",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name:     "cli",
+					Artifact: []*versionspb.Artifact{},
+				},
+			},
+			artifactName: "vizier",
+			expectedErr:  manifest.ErrArtifactSetNotFound,
+		},
+		{
+			name: "filter for available artifacts",
+			artifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "vizier",
+					Artifact: []*versionspb.Artifact{
+						{
+							CommitHash: "abcd",
+							VersionStr: "1.0.0",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_LINUX_AMD64,
+							},
+						},
+						{
+							CommitHash: "1111",
+							VersionStr: "0.1.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_YAMLS,
+							},
+						},
+						{
+							CommitHash: "1234",
+							VersionStr: "0.1.1-prerelease.2",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_YAMLS,
+							},
+						},
+						{
+							CommitHash: "efgh",
+							VersionStr: "0.1.1-prerelease.1",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_YAMLS,
+							},
+						},
+					},
+				},
+			},
+			artifactName: "vizier",
+			filters: []manifest.ArtifactFilter{
+				manifest.ArtifactTypeFilter(versionspb.AT_CONTAINER_SET_YAMLS),
+			},
+			expectedErr: nil,
+			expectedArtifacts: []*versionspb.Artifact{
+				{
+					CommitHash: "1111",
+					VersionStr: "0.1.1",
+					AvailableArtifacts: []versionspb.ArtifactType{
+						versionspb.AT_CONTAINER_SET_YAMLS,
+					},
+				},
+				{
+					CommitHash: "1234",
+					VersionStr: "0.1.1-prerelease.2",
+					AvailableArtifacts: []versionspb.ArtifactType{
+						versionspb.AT_CONTAINER_SET_YAMLS,
+					},
+				},
+				{
+					CommitHash: "efgh",
+					VersionStr: "0.1.1-prerelease.1",
+					AvailableArtifacts: []versionspb.ArtifactType{
+						versionspb.AT_CONTAINER_SET_YAMLS,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := manifest.NewArtifactManifestFromProto(tc.artifactSets)
+
+			l, err := m.ListArtifacts(tc.artifactName, tc.limit, tc.filters...)
+			if tc.expectedErr != nil {
+				require.Equal(t, tc.expectedErr, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedArtifacts, l)
+			}
+		})
+	}
+}

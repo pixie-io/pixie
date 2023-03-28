@@ -25,6 +25,7 @@ go_library(
         "manifest.go",
         "merge.go",
         "poller.go",
+        "query.go",
         "sorted.go",
     ],
     importpath = "px.dev/pixie/src/shared/artifacts/manifest",
