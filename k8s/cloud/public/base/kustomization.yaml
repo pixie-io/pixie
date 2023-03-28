@@ -1,0 +1,31 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app: pl-cloud
+namespace: plc
+replicas:
+- name: api-server
+  count: 1
+- name: auth-server
+  count: 1
+- name: profile-server
+  count: 1
+- name: cloud-proxy
+  count: 1
+- name: project-manager-server
+  count: 1
+- name: vzmgr-server
+  count: 1
+- name: scriptmgr-server
+  count: 1
+resources:
+- ../../base
+- ../../base/ory_auth
+- ../../overlays/exposed_services_ilb
+- plugin_db_updater_job.yaml
+patchesStrategicMerge:
+- artifact_tracker_versions.yaml
+- domain_config.yaml
+- script_bundles_config.yaml
+- proxy_envoy.yaml

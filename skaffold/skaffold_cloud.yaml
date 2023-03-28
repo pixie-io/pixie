@@ -152,4 +152,4 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths
     value:
-    - k8s/cloud/public
+    - k8s/cloud/public/base
