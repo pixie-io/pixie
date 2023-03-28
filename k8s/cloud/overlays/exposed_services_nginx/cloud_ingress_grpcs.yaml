@@ -19,13 +19,6 @@ spec:
   - host: pixie.example.com
     http:
       paths:
-      - path: /pl.cloudapi.(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
       - path: /px.services.(.*)
         pathType: Prefix
         backend:
@@ -50,13 +43,6 @@ spec:
   - host: work.pixie.example.com
     http:
       paths:
-      - path: /pl.cloudapi.(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
       - path: /px.services.(.*)
         pathType: Prefix
         backend:
