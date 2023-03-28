@@ -25,7 +25,7 @@ RUN ./configure --prefix=/opt/px_dev/tools/gperftools
 RUN make -j $(nproc)
 RUN make install
 
-FROM cdrx/fpm-ubuntu:18.04
+FROM cdrx/fpm-ubuntu:18.04@sha256:7962a6899bee416ddcda7890a6dd212f80789bc9240b064ab2241a28b1d9ecf8
 COPY --from=build /opt/px_dev/tools/gperftools /opt/px_dev/tools/gperftools
 
 WORKDIR /opt/px_dev/tools/gperftools

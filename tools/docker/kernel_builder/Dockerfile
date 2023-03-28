@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM debian:bullseye
+FROM debian:bullseye@sha256:7b991788987ad860810df60927e1adbaf8e156520177bd4db82409f81dd3b721
 
 ARG KERNEL_VERSION
 ENV KERNEL_VERSION=${KERNEL_VERSION}

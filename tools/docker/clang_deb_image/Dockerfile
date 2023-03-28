@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:18.04
+FROM ubuntu:18.04@sha256:8aa9c2798215f99544d1ce7439ea9c3a6dfd82de607da1cec3a8a2fae005931b
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing
