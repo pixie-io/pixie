@@ -1,0 +1,18 @@
+---
+name: 'pr-third-party-deps'
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/dependency-review-action@v2
+      with:
+        # Refer to the following for the allowlist.
+        # https://github.com/cncf/foundation/blob/main/allowed-third-party-license-policy.md#approved-licenses-for-allowlist
+        allow-licenses: >-
+          Apache-2.0, BSD-2-Clause, BSD-2-Clause-FreeBSD, BSD-3-Clause,
+          MIT, ISC, Python-2.0, PostgreSQL, X11, Zlib
