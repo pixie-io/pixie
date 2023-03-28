@@ -16,11 +16,11 @@ jobs:
       image: ${{ needs.get-linter-image.outputs.image-with-tag }}
       options: --cpus 7
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 100
     - name: yarn cache
-      uses: actions/cache@v3
+      uses: actions/cache@88522ab9f39a2ea568f7027eddc7d8d8bc9d59c8  # v3.3.1
       with:
         path: ./src/ui/.yarn/cache
         key: yarn-cache-${{ hashFiles('src/ui/yarn.lock', 'src/ui/.yarnrc.yml') }}
