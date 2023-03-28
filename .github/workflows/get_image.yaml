@@ -13,6 +13,8 @@ on:
       image-with-tag:
         description: "A image with tag (from docker.properties) for the requested image"
         value: ${{ jobs.get-image.outputs.image-with-tag }}
+permissions:
+  contents: read
 jobs:
   get-image:
     runs-on: ubuntu-latest
