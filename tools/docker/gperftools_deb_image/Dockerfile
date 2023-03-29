@@ -15,7 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG BASE_IMAGE
-FROM $BASE_IMAGE as build
+ARG BASE_IMAGE_DIGEST
+FROM ${BASE_IMAGE}@sha256:${BASE_IMAGE_DIGEST} as build
 
 WORKDIR /tmp
 RUN curl -L -O https://github.com/gperftools/gperftools/releases/download/gperftools-2.10/gperftools-2.10.tar.gz

@@ -30,6 +30,16 @@ DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 ## The repository where the images are stored.
 REPOSITORY := gcr.io/pixie-oss/pixie-dev-public
 
+LINTER_IMAGE_DIGEST := $$($(DOCKER) inspect --format='{{index .RepoDigests 0}}' \
+											 $(REPOSITORY)/linter_image:$(DEV_IMAGE_VERSION) | \
+											 cut -d':' -f2)
+DEV_IMAGE_DIGEST := $$($(DOCKER) inspect --format='{{index .RepoDigests 0}}' \
+											 $(REPOSITORY)/dev_image:$(DEV_IMAGE_VERSION) | \
+											 cut -d':' -f2)
+DEV_IMAGE_WITH_EXTRAS_DIGEST := $$($(DOCKER) inspect --format='{{index .RepoDigests 0}}' \
+											 $(REPOSITORY)/dev_image_with_extras:$(DEV_IMAGE_VERSION) | \
+											 cut -d':' -f2)
+
 .PHONY: build_and_push_base_image
 build_and_push_base_image:
 	$(PACKER) build \
@@ -60,3 +70,7 @@ build_and_push_dev_images:
 		packer_docker_dev_extras.json
 
 	echo "DOCKER_IMAGE_TAG=$(DEV_IMAGE_VERSION)" > $(DOCKER_PROPERTIES_FILE)
+
+	echo "LINTER_IMAGE_DIGEST=$(LINTER_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
+	echo "DEV_IMAGE_DIGEST=$(DEV_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
+	echo "DEV_IMAGE_WITH_EXTRAS_DIGEST=$(DEV_IMAGE_WITH_EXTRAS_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
