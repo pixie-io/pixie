@@ -1,0 +1,14 @@
+---
+name: Use github bazel config
+description: Uses ci/github/bazelrc, and adds BES config from ci/bes-oss-k8s.bazelrc. Must be run on self-hosted runner.
+runs:
+  using: "composite"
+  steps:
+  - name: Copy github.bazelrc
+    run: |
+      cp ci/github/bazelrc github.bazelrc
+    shell: bash
+  - name: Copy BES bazel config
+    run: |
+      cp ci/bes-oss-k8s.bazelrc bes.bazelrc
+    shell: bash
