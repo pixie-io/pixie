@@ -173,8 +173,7 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
 typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
     OpenSSLServerNewImplImplementations;
 #else
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
-    OpenSSLServerNewImplImplementations;
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerNewImplImplementations;
 #endif
 
 template <typename T>
@@ -183,9 +182,10 @@ using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
 template <typename T>
 using OpenSSLTraceNewImpl = BaseOpenSSLTraceTest<T, true>;
 
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock) \
-  TYPED_TEST(OpenSSLTraceTest, TestCase)        \
-  CodeBlock TYPED_TEST(OpenSSLTraceNewImpl, TestCase) CodeBlock
+#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)       \
+  TYPED_TEST(OpenSSLTraceTest, TestCase)              \
+  CodeBlock TYPED_TEST(OpenSSLTraceNewImpl, TestCase) \
+  CodeBlock
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceNewImpl, OpenSSLServerNewImplImplementations);
