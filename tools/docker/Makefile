@@ -22,7 +22,8 @@ BUILD_DIR ?= .build
 TOT		       := $$(git rev-parse --show-toplevel)
 DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
 
-DEV_EXTRAS_TAG = $$(cat $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
+DEV_EXTRAS_TAG = $$(grep DOCKER_IMAGE_TAG $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
+DEV_EXTRAS_DIGEST = $$(grep DEV_IMAGE_WITH_EXTRAS_DIGEST $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
 DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DEV_EXTRAS_TAG)"
 
 ## Clang deb parameters
@@ -149,7 +150,7 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 ##############################################
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
-	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) gperftools_deb_image -t $(gperftools_deb_image_tag)
+	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) --build-arg BASE_IMAGE_DIGEST=$(DEV_EXTRAS_DIGEST) gperftools_deb_image -t $(gperftools_deb_image_tag)
 
 .PHONY: upload_gperftools_deb
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
