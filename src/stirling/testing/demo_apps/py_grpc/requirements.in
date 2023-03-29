@@ -1,0 +1,5 @@
+# NOTE: Do not change the versions below, these are particular version that works with Pixie's gRPC
+# C tracing feature. Changing these versions might cause Pixie not able to trace the produced docker
+# containers.
+protobuf==3.20.3
+grpcio==1.19.0
