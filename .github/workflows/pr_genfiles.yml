@@ -45,6 +45,9 @@ jobs:
           - '**/*.proto'
           sql:
           - '**/*.sql'
+          gobuild:
+          - '**/*.BUILD'
+          - 'go.mod'
     - name: Run go generate
       if: ${{ steps.changes.outputs.go == 'true' || steps.changes.outputs.sql == 'true' }}
       run: go generate ./...
@@ -57,6 +60,9 @@ jobs:
     - name: Run update graphql schema
       if: ${{ steps.changes.outputs.graphql == 'true' }}
       run: src/cloud/api/controllers/schema/update.sh
+    - name: Run make go-setup
+      if: ${{ steps.changes.outputs.go == 'true' || steps.changes.outputs.gobuild == 'true' }}
+      run: make go-setup
     - name: Fail if any files changed
       shell: bash
       # yamllint disable rule:indentation
