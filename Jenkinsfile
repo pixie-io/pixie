@@ -310,8 +310,8 @@ def initializeRepoState() {
 
   // Get docker image tag.
   def properties = readProperties file: 'docker.properties'
-  devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
-  devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
+  devDockerImageWithTag = "${DEV_DOCKER_IMAGE}:${properties.DOCKER_IMAGE_TAG}@sha256:${properties.DEV_IMAGE_DIGEST}"
+  devDockerImageExtrasWithTag = "${DEV_DOCKER_IMAGE_EXTRAS}:${properties.DOCKER_IMAGE_TAG}@sha256:${properties.DEV_IMAGE_WITH_EXTRAS_DIGEST}"
 
   stashOnGCS(SRC_STASH_NAME, '.')
 }

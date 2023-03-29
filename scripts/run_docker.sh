@@ -32,6 +32,7 @@ resetcolor="\e[0m"
 docker_image_base=gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
 os="$(uname)"
 version=$(grep DOCKER_IMAGE_TAG "${workspace_root}/docker.properties" | cut -d= -f2)
+digest=$(grep DEV_IMAGE_WITH_EXTRAS_DIGEST "${workspace_root}/docker.properties" | cut -d= -f2)
 docker_image_with_tag="${docker_image_base}:${version}"
 
 # Skip checking docker group for Mac because group is not required for docker-machine in Mac.
@@ -56,6 +57,7 @@ if [[ "${PX_DOCKER_RUN_AS_ROOT}" != "True" ]]; then
     dev_image_name="px_dev_image:${version}"
     docker build -q -t "${dev_image_name}" \
         --build-arg BASE_IMAGE="${docker_image_with_tag}" \
+        --build-arg BASE_IMAGE_DIGEST="${digest}" \
         --build-arg USER_NAME="${USER}" \
         --build-arg USER_ID="$(id -u)" \
         --build-arg GROUP_ID="$(id -g)" \
@@ -64,7 +66,7 @@ if [[ "${PX_DOCKER_RUN_AS_ROOT}" != "True" ]]; then
         .
     popd > /dev/null
 else
-    dev_image_name="${docker_image_with_tag}"
+    dev_image_name="${docker_image_with_tag}@sha256:${digest}"
 fi
 
 # Check if build buddy cache exists. If so, add the appropriate arguments.
