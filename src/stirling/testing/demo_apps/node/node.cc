@@ -18,13 +18,6 @@
 
 // These code mimics class TLSWrap in
 // https://github.com/nodejs/node/blob/master/src/crypto/crypto_tls.h.
-//
-// Build this with:
-// $ clang++ -g -o node.debug src/stirling/testing/demo_apps/node/node.cc
-// $ mv node.debug src/stirling/testing/demo_apps/node/
-//
-// -g flag ensure the dwarf info is included in the resultant binary.
-// node.debug is then used to test the API that read nodejs symbol offsets.
 
 class StreamResource {};
 
