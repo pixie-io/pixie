@@ -70,8 +70,6 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   cfg_enable_http2_tracing_ = enable_http2_tracing;
   cfg_disable_self_probing_ = disable_self_probing;
 
-  openssl_native_bio_map_ =
-      UserSpaceManagedBPFMap<uint32_t, bool>::Create(bcc_, "openssl_native_bio_map");
   openssl_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>::Create(
       bcc_, "openssl_symaddrs_map");
   go_common_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>::Create(
@@ -521,7 +519,6 @@ std::thread UProbeManager::RunDeployUProbesThread(const absl::flat_hash_set<md::
 
 void UProbeManager::CleanupPIDMaps(const absl::flat_hash_set<md::UPID>& deleted_upids) {
   for (const auto& pid : deleted_upids) {
-    openssl_native_bio_map_->RemoveValue(pid.pid());
     openssl_symaddrs_map_->RemoveValue(pid.pid());
     go_common_symaddrs_map_->RemoveValue(pid.pid());
     go_tls_symaddrs_map_->RemoveValue(pid.pid());

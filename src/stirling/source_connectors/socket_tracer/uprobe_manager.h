@@ -626,7 +626,6 @@ class UProbeManager {
   absl::flat_hash_set<std::string> grpc_c_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, bool>> openssl_native_bio_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>>
       openssl_symaddrs_map_;
   std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>>
