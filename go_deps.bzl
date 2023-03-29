@@ -2786,8 +2786,8 @@ def pl_go_dependencies():
         name = "com_github_opencontainers_runc",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/opencontainers/runc",
-        sum = "h1:2VSZwLx5k/BfsBxMMipG/LYUnmqOD/BPkIVgQUcTlLw=",
-        version = "v1.1.2",
+        sum = "h1:L44KXEpKmfWDcS02aeGm8QNTFXTo2D+8MYGDIJ/GDEs=",
+        version = "v1.1.5",
     )
     go_repository(
         name = "com_github_opencontainers_runtime_spec",
@@ -3082,8 +3082,8 @@ def pl_go_dependencies():
         name = "com_github_seccomp_libseccomp_golang",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/seccomp/libseccomp-golang",
-        sum = "h1:58EBmR2dMNL2n/FnbQewK3D14nXr0V9CObDSvMJLq+Y=",
-        version = "v0.9.2-0.20210429002308-3879420cc921",
+        sum = "h1:RpforrEYXWkmGwJHIGnLZ3tTWStkjVVstwzNGqxX2Ds=",
+        version = "v0.9.2-0.20220502022130-f33da4d89646",
     )
     go_repository(
         name = "com_github_segmentio_analytics_go_v3",
