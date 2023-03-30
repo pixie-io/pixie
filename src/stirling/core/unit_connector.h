@@ -27,7 +27,7 @@
 #include "src/stirling/core/data_tables.h"
 #include "src/stirling/core/frequency_manager.h"
 
-DEFINE_string(pids, "", "PIDs to profile, e.g. -pids 132,133. All processes profiled by default.")
+DEFINE_string(pids, "", "PIDs to profile, e.g. -pids 132,133. All processes profiled by default.");
 
 namespace px {
 namespace stirling {
@@ -126,16 +126,15 @@ class UnitConnector {
 
     // Eventually, this will be the return value from this fn.
     absl::flat_hash_set<md::UPID> upids;
-    
+
     // Convert each string view pid to an int, then form a UPID.
     for (const auto& str_pid : str_pids) {
       const bool parsed_ok = absl::SimpleAtoi(str_pid, &pid);
 
       if (!parsed_ok) {
-        return error::Internal(abls::Substitute("Could not parse pid $0 to integer.", str_pid));
+        return error::Internal(absl::Substitute("Could not parse pid $0 to integer.", str_pid));
       }
       PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(pid));
-
 
       // The stand alone context requires a set of UPIDs. We have just one in that set.
       upids.insert(md::UPID(kASID, pid, ts));
@@ -143,7 +142,7 @@ class UnitConnector {
     return upids;
   }
 
-  Status Init(const absl::flat_hash_set<md::UPID>& upids = {}) {
+  Status Init(absl::flat_hash_set<md::UPID> upids = {}) {
     if (upids.size() == 0) {
       // Init() was called with its default arg., an empty set of UPIDs. Thus, check the value
       // in FLAGS_pids to populate the UPIDs set. The default for FLAGS_pids is an empty
