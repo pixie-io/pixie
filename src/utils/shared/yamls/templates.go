@@ -30,20 +30,17 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	jsonpatch "github.com/evanphx/json-patch"
 	goyaml "gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/restmapper"
 	"k8s.io/kubectl/pkg/scheme"
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-var nonNamespacedTypes = []string{"namespaces", "clusterrolebindings", "clusterroles"}
-var templateTypes = []string{"daemonsets", "deployments", "statefulsets"}
+var nonNamespacedKinds = []string{"Namespace", "ClusterRoleBinding", "ClusterRole"}
+var templateKinds = []string{"DaemonSet", "Deployment", "StatefulSet"}
 
 // YAMLTmplArguments is a wrapper around YAMLTmplValues.
 type YAMLTmplArguments struct {
@@ -77,16 +74,16 @@ func ExecuteTemplatedYAMLs(yamls []*YAMLFile, tmplValues *YAMLTmplArguments) ([]
 }
 
 // AddPatchesToYAML takes a K8s YAML and adds the given patches using a strategic merge.
-func AddPatchesToYAML(clientset *kubernetes.Clientset, inputYAML string, patches map[string]string, rm meta.RESTMapper) (string, error) {
+func AddPatchesToYAML(inputYAML string, patches map[string]string) (string, error) {
 	// Create ResourceNameMatcher functions for each patch.
 	matchFns := make(map[string]TemplateMatchFn)
 	for k := range patches {
 		matchFns[k] = GenerateResourceNameMatcherFn(k)
 	}
 
-	combinedYAML, err := processYAML(clientset, inputYAML, rm, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+	combinedYAML, err := processYAML(inputYAML, func(gvk schema.GroupVersionKind, resourceKind string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
 		for k, v := range patches {
-			if matchFns[k](unstructuredObj.Object, resourceType) {
+			if matchFns[k](unstructuredObj.Object, resourceKind) {
 				creatorObj, err := scheme.Scheme.New(gvk)
 				if err != nil {
 					// Strategic merge patches are not supported for non-native K8s resources (custom CRDs).
@@ -152,11 +149,11 @@ func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, err
 }
 
 // TemplateMatchFn is a function used to determine whether or not the given resource should have the template applied.
-type TemplateMatchFn func(obj map[string]interface{}, resourceType string) bool
+type TemplateMatchFn func(obj map[string]interface{}, resourceKind string) bool
 
 // GenerateResourceNameMatcherFn creates a matcher function for matching the resource if the resource's name matches matchValue.
 func GenerateResourceNameMatcherFn(expectedName string) TemplateMatchFn {
-	fn := func(obj map[string]interface{}, resourceType string) bool {
+	fn := func(obj map[string]interface{}, resourceKind string) bool {
 		if md, ok := obj["metadata"]; ok {
 			if name, nameOk := md.(map[string]interface{})["name"]; nameOk {
 				if name == expectedName {
@@ -170,9 +167,9 @@ func GenerateResourceNameMatcherFn(expectedName string) TemplateMatchFn {
 }
 
 // NamespaceScopeMatcher matches the resource if the resource is contained within a namespace.
-func NamespaceScopeMatcher(obj map[string]interface{}, resourceType string) bool {
-	for _, r := range nonNamespacedTypes {
-		if resourceType == r {
+func NamespaceScopeMatcher(obj map[string]interface{}, resourceKind string) bool {
+	for _, r := range nonNamespacedKinds {
+		if resourceKind == r {
 			return false
 		}
 	}
@@ -180,9 +177,9 @@ func NamespaceScopeMatcher(obj map[string]interface{}, resourceType string) bool
 }
 
 // TemplateScopeMatcher matches the resource definition contains a template for deploying other resources.
-func TemplateScopeMatcher(obj map[string]interface{}, resourceType string) bool {
-	for _, r := range templateTypes {
-		if resourceType == r {
+func TemplateScopeMatcher(obj map[string]interface{}, resourceKind string) bool {
+	for _, r := range templateKinds {
+		if resourceKind == r {
 			return true
 		}
 	}
@@ -191,7 +188,7 @@ func TemplateScopeMatcher(obj map[string]interface{}, resourceType string) bool 
 
 // GenerateServiceAccountSubjectMatcher matches the resource definition containing a service account subject with the given name.
 func GenerateServiceAccountSubjectMatcher(subjectName string) TemplateMatchFn {
-	fn := func(obj map[string]interface{}, resourceType string) bool {
+	fn := func(obj map[string]interface{}, resourceKind string) bool {
 		if subjects, ok := obj["subjects"]; ok {
 			subjList, ok := subjects.([]interface{})
 			if !ok {
@@ -216,7 +213,7 @@ func GenerateServiceAccountSubjectMatcher(subjectName string) TemplateMatchFn {
 // GenerateContainerNameMatcherFn creates a matcher function for matching the resource if the resource has a pod
 // template with a container of the given name.
 func GenerateContainerNameMatcherFn(expectedName string) TemplateMatchFn {
-	fn := func(obj map[string]interface{}, resourceType string) bool {
+	fn := func(obj map[string]interface{}, resourceKind string) bool {
 		// Check that spec.template.spec.containers[].name in the YAML matches the given name.
 		spec := obj["spec"]
 		if spec == nil {
@@ -284,15 +281,8 @@ func addPlaceholder(opt *K8sTemplateOptions, gvk schema.GroupVersionKind, origin
 }
 
 // TemplatizeK8sYAML takes a K8s YAML and templatizes the provided fields.
-func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
-	discoveryClient := clientset.Discovery()
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return "", err
-	}
-	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
-
-	combinedYAML, err := processYAML(clientset, inputYAML, rm, func(gvk schema.GroupVersionKind, resourceType string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
+func TemplatizeK8sYAML(inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
+	combinedYAML, err := processYAML(inputYAML, func(gvk schema.GroupVersionKind, resourceKind string, unstructuredObj unstructured.Unstructured, currJSON []byte) ([]byte, error) {
 		var err error
 
 		// Update image tags to account for custom registries.
@@ -303,7 +293,7 @@ func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOp
 			return nil, err
 		}
 		for _, opt := range tmplOpts {
-			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceType) {
+			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceKind) {
 				continue
 			}
 
@@ -390,7 +380,7 @@ func templatizeImagePath(path string) string {
 
 type resourceProcessFn func(schema.GroupVersionKind, string, unstructured.Unstructured, []byte) ([]byte, error)
 
-func processYAML(clientset *kubernetes.Clientset, inputYAML string, rm meta.RESTMapper, processFn resourceProcessFn) (string, error) {
+func processYAML(inputYAML string, processFn resourceProcessFn) (string, error) {
 	// Read the YAML into K8s resources.
 	yamlReader := strings.NewReader(inputYAML)
 
@@ -399,7 +389,7 @@ func processYAML(clientset *kubernetes.Clientset, inputYAML string, rm meta.REST
 	templatedYAMLs := make([]string, 0)
 
 	for { // Loop through all objects in the YAML and process them.
-		newYAML, err := processResourceInYAML(rm, decodedYAML, processFn)
+		newYAML, err := processResourceInYAML(decodedYAML, processFn)
 		if err != nil && err == io.EOF {
 			break
 		} else if err != nil {
@@ -417,7 +407,7 @@ func processYAML(clientset *kubernetes.Clientset, inputYAML string, rm meta.REST
 	return combinedYAML, nil
 }
 
-func processResourceInYAML(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, processFn resourceProcessFn) (string, error) {
+func processResourceInYAML(decodedYAML *yaml.YAMLOrJSONDecoder, processFn resourceProcessFn) (string, error) {
 	// Read resource into JSON.
 	ext := runtime.RawExtension{}
 	err := decodedYAML.Decode(&ext)
@@ -433,13 +423,6 @@ func processResourceInYAML(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecod
 		return "", err
 	}
 
-	resourceType := ""
-	mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err == nil {
-		k8sRes := mapping.Resource
-		resourceType = k8sRes.Resource
-	}
-
 	// Decode object into readable struct.
 	var unstructuredOrig unstructured.Unstructured
 	unstructuredOrig.Object = make(map[string]interface{})
@@ -452,7 +435,7 @@ func processResourceInYAML(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecod
 	unstructuredOrig.Object = unstructBlob.(map[string]interface{})
 
 	currJSON := ext.Raw
-	currJSON, err = processFn(*gvk, resourceType, unstructuredOrig, currJSON)
+	currJSON, err = processFn(*gvk, gvk.Kind, unstructuredOrig, currJSON)
 	if err != nil {
 		return "", err
 	}
