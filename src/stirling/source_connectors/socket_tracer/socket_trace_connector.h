@@ -118,6 +118,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void InitContextImpl(ConnectorContext* ctx) override;
   void TransferDataImpl(ConnectorContext* ctx) override;
 
+  void CheckTracerState();
+
   // Perform actions that are not specifically targeting a table.
   // For example, drain perf buffers, deploy new uprobes, and update socket info manager.
   // If these were performed on every TransferData(), they would occur too frequently,
@@ -227,6 +229,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ConnTrackersManager conn_trackers_mgr_;
 
   ConnStats conn_stats_;
+
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, uint32_t>> openssl_active_nested_syscalls_hist_;
+  std::unique_ptr<ebpf::BPFArrayTable<int>> openssl_trace_state_;
 
   absl::flat_hash_set<int> pids_to_trace_disable_;
 

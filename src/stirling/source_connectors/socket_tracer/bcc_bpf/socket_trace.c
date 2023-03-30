@@ -91,6 +91,12 @@ BPF_HASH(active_write_args_map, uint64_t, struct data_args_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_read_args_map, uint64_t, struct data_args_t);
 
+// Maps used to verify if SSL_write or SSL_read are on the stack during a syscall in
+// order to propagate the socket fd back to the SSL_write and SSL_read return probes.
+// Key is pid tgid
+// Value is count of syscalls nested within SSL_write entry and ret (updated by syscall probes)
+BPF_HASH(ssl_userspace_call_map, uint64_t, int);
+
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -149,6 +155,18 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
     return;
   }
   conn_info->ssl = true;
+}
+
+static __inline void propagate_fd_to_userspace_call(uint64_t pid_tgid, int fd) {
+  int* count_ptr = ssl_userspace_call_map.lookup(&pid_tgid);
+  if (count_ptr != NULL) {
+    uint32_t tgid = pid_tgid >> 32;
+    set_conn_as_ssl(tgid, fd);
+
+     int count = *count_ptr;
+     count += 1;
+     ssl_userspace_call_map.update(&pid_tgid, &count);
+  }
 }
 
 static __inline struct socket_data_event_t* fill_socket_data_event(
@@ -992,6 +1010,10 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, fd);
+  }
+
   // Stash arguments.
   struct data_args_t write_args = {};
   write_args.source_fn = kSyscallWrite;
@@ -1019,6 +1041,10 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 // ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1048,6 +1074,10 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, fd);
+  }
+
   // Stash arguments.
   struct data_args_t read_args = {};
   read_args.source_fn = kSyscallRead;
@@ -1075,6 +1105,10 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 // ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   // Stash arguments.
   struct data_args_t read_args = {};
@@ -1105,6 +1139,10 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
                                 const struct sockaddr* dest_addr, socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   // Stash arguments.
   if (dest_addr != NULL) {
@@ -1165,6 +1203,10 @@ int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, si
                                   struct sockaddr* src_addr, socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
+
   // Stash arguments.
   if (src_addr != NULL) {
     struct connect_args_t connect_args = {};
@@ -1208,6 +1250,10 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
                                  const struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   if (msghdr != NULL) {
     // Stash arguments.
@@ -1254,6 +1300,10 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_sendmmsg(struct pt_regs* ctx, int sockfd, struct mmsghdr* msgvec,
                                   unsigned int vlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   // TODO(oazizi): Right now, we only trace the first message in a sendmmsg() call.
   if (msgvec != NULL && vlen >= 1) {
@@ -1307,6 +1357,10 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
+
   if (msghdr != NULL) {
     // Stash arguments.
     if (msghdr->msg_name != NULL) {
@@ -1354,6 +1408,10 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_recvmmsg(struct pt_regs* ctx, int sockfd, struct mmsghdr* msgvec,
                                   unsigned int vlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, sockfd);
+  }
 
   // TODO(oazizi): Right now, we only trace the first message in a recvmmsg() call.
   if (msgvec != NULL && vlen >= 1) {
@@ -1407,6 +1465,10 @@ int syscall__probe_ret_recvmmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, fd);
+  }
+
   // Stash arguments.
   struct data_args_t write_args = {};
   write_args.source_fn = kSyscallWriteV;
@@ -1435,6 +1497,10 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
 // ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_userspace_call(id, fd);
+  }
 
   // Stash arguments.
   struct data_args_t read_args = {};

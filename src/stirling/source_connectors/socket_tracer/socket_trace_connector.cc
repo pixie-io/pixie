@@ -402,6 +402,7 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
+      absl::StrCat("-DACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL=", "true"),
   };
   PX_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
 
@@ -477,6 +478,11 @@ Status SocketTraceConnector::InitImpl() {
 
   uprobe_mgr_.Init(protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
+
+  openssl_active_nested_syscalls_hist_ =
+      std::make_unique<ebpf::BPFHashTable<uint32_t, uint32_t>>(GetHashTable<uint32_t, uint32_t>("openssl_active_nested_syscalls"));
+  openssl_trace_state_ =
+      std::make_unique<ebpf::BPFArrayTable<int>>(GetArrayTable<int>("openssl_trace_state"));
 
   return Status::OK();
 }
@@ -617,6 +623,29 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   }
 }
 
+// Verifies that the openssl_trace code's nested syscall histogram bucket (key) does not overflow
+// in addition to printing out the nested syscall count bucket values. The former validates that
+// the histogram key is well formed (cpu id fits within 10 bits and syscall count fits within 6 bits).
+void SocketTraceConnector::CheckTracerState() {
+
+  int error_code;
+  openssl_trace_state_->get_value(0, error_code);
+
+  LOG(WARNING) << absl::Substitute("openssl_trace_state_ error code was $0", error_code);
+  DCHECK(error_code == 0);
+
+  auto table = openssl_active_nested_syscalls_hist_->get_table_offline();
+  for (auto& entry : table) {
+      uint32_t key = std::get<0>(entry);
+      uint32_t value = std::get<1>(entry);
+
+      // Syscall count is the first 6 bits and cpu id is next 10 bits
+      uint32_t syscall_count = key & 0x3f;
+      uint32_t cpu_id = (key >> 6) & 0x7ff;
+      LOG(WARNING) << absl::Substitute("Found syscall count of $0 for cpu $1 with frequency: $2", syscall_count, cpu_id, value);
+  }
+}
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   set_iteration_time(now_fn_());
 
@@ -689,6 +718,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
 
     conn_tracker->IterationPostTick();
   }
+
+  CheckTracerState();
 
   // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
   pids_to_trace_disable_.clear();
