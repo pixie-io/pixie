@@ -53,7 +53,7 @@ class ConnStatsBPFTest : public testing::SocketTraceBPFTestFixture</* TClientSid
 };
 
 TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   SendRecvScript script = {{{"req1"}, {"resp1"}}, {{"req2"}, {"resp2"}}};
 
@@ -64,11 +64,8 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   ClientServerSystem cs(server_response_latency);
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
-  // PX_LOG_VAR(PrintConnStatsTable(rb));
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kConnStatsTableNum));
 
   // Check server-side stats.
   {
@@ -129,22 +126,20 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
 // Expectation is that summary stats are collected. The bytes transferred will be zero,
 // but we should see the connect/accept for both client and server.
 TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // No data transfer, since we want to see if we can infer role from connect/accept syscalls.
   testing::SendRecvScript script({});
 
   // The server needs to be slow, so that the client is alive long enough for it to be discovered
   // by the TransferDataThread.
-  std::chrono::milliseconds server_response_latency{200};
+  std::chrono::milliseconds server_response_latency{400};
 
   ClientServerSystem system(server_response_latency);
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kConnStatsTableNum));
 
   // Check client-side.
   {
@@ -238,7 +233,7 @@ class ConnStatsMidConnBPFTest
 };
 
 TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   std::string_view test_msg = "Hello World!";
   EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
@@ -246,19 +241,20 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   while (!server_->Recv(&text)) {
   }
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  if (!tablets.empty()) {
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  auto status_or_record_batch = source_.ConsumeRecords(kConnStatsTableNum);
 
-    auto indices = FindRecordIdxMatchesPID(record_batch, conn_stats_idx::kUPID, getpid());
+  if (status_or_record_batch.ok()) {
+    // We did find some records, just need to make sure they were not for the test pid.
+    const auto record_batch = status_or_record_batch.ConsumeValueOrDie();
+    const auto indices = FindRecordIdxMatchesPID(record_batch, conn_stats_idx::kUPID, getpid());
     ASSERT_THAT(indices, IsEmpty());
   }
 }
 
 TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = getpid();
@@ -277,31 +273,28 @@ TEST_F(ConnStatsMidConnBPFTest, InferRemoteEndpointAndReport) {
     while (!server_->Recv(&text)) {
     }
   }
-
-  std::this_thread::sleep_for(2 * kTransferDataPeriod);
-
-  for (int i = 0; i < 10000; ++i) {
-    EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
-    while (!server_->Recv(&text)) {
-    }
-  }
-
-  std::this_thread::sleep_for(2 * kTransferDataPeriod);
+  sleep(2);
 
   for (int i = 0; i < 10000; ++i) {
     EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
     while (!server_->Recv(&text)) {
     }
   }
+  sleep(2);
+
+  for (int i = 0; i < 10000; ++i) {
+    EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
+    while (!server_->Recv(&text)) {
+    }
+  }
+  sleep(2);
 
   server_->Close();
   client_.Close();
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kConnStatsTableNum));
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   // PX_LOG_VAR(PrintConnStatsTable(rb));
 
   // Check client-side.
@@ -356,7 +349,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
   // Sleep an additional second, just to be safe.
   sleep(1);
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Make an SSL request with curl.
   // Because the server uses a self-signed certificate, curl will normally refuse to connect.
@@ -369,18 +362,15 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
                          {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
   client.Wait();
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
 
   int server_pid = server.NginxWorkerPID();
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
-  types::ColumnWrapperRecordBatch records = FindRecordsMatchingPID(rb, kUPIDIdx, server_pid);
-  // PX_LOG_VAR(PrintConnStatsTable(records));
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kConnStatsTableNum));
 
   // Check server-side stats.
   {
-    auto indices = FindRecordIdxMatchesPID(tablets[0].records, kUPIDIdx, server_pid);
+    auto indices = FindRecordIdxMatchesPID(rb, kUPIDIdx, server_pid);
     ASSERT_FALSE(indices.empty());
 
     // ConnStats may have produced various updates during the lifetime of the ClientServerSystem.

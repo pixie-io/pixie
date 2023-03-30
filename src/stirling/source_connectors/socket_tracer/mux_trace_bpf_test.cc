@@ -140,18 +140,13 @@ mux::Record RecordWithType(mux::Type req_type) {
 //-----------------------------------------------------------------------------
 
 TEST_F(MuxTraceTest, Capture) {
-  StartTransferDataThread();
-
+  ASSERT_OK(source_.Start());
   ASSERT_OK(RunThriftMuxClient());
-
-  StopTransferDataThread();
-
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMuxTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(SocketTraceConnector::kMuxTableNum));
 
   std::vector<mux::Record> server_records =
-      GetTargetRecords<mux::Record>(record_batch, server_.process_pid());
+      GetTargetRecords<mux::Record>(rb, server_.process_pid());
 
   mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
   mux::Record tinit = RecordWithType(mux::Type::kTinit);

@@ -86,7 +86,7 @@ auto EqualsNATSTraceRecord(std::string cmd, std::string options, std::string res
 
 // Tests that a series of commands issued by the test client were traced.
 TEST_P(NATSTraceBPFTest, VerifyBatchedCommands) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   std::vector<std::string> args;
   if (!GetParam()) {
@@ -101,11 +101,8 @@ TEST_P(NATSTraceBPFTest, VerifyBatchedCommands) {
 
   client_container_.Wait();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kNATSTableNum);
-
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto records, source_.ConsumeRecords(SocketTraceConnector::kNATSTableNum));
 
   EXPECT_THAT(
       GetNATSTraceRecords(records, server_pid),

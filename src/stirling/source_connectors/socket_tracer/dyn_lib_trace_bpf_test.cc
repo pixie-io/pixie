@@ -85,7 +85,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   // Makes the test run much faster.
   FLAGS_stirling_disable_self_tracing = true;
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   ::px::stirling::testing::NginxOpenSSL_1_1_0_Container server;
   ::px::stirling::testing::RubyContainer client;
@@ -93,9 +93,6 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   // Run the nginx HTTPS server.
   // The container runner will make sure it is in the ready state before unblocking.
   ASSERT_OK_AND_ASSIGN(std::string run_result, server.Run(std::chrono::seconds{60}));
-
-  // RefreshData will cause next TransferData to detect nginx, and deploy uprobes on its libssl.
-  RefreshContext();
 
   {
     // The key to this test is that Ruby only loads OpenSSL when it's required,
@@ -140,19 +137,10 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
                            {absl::Substitute("--network=container:$0", server.container_name())},
                            {"ruby", "-e", rb_script}));
 
-    // Periodically run RefreshContext.
-    // Do this at a frequency faster than the sleep in the Ruby script.
-    // This is to detect libssl, and deploy uprobes.
-    for (int i = 0; i < 20; ++i) {
-      RefreshContext();
-      sleep(1);
-    }
     client.Wait();
 
-    StopTransferDataThread();
-
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Stop());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
     // Inspect records for Debug.
     for (size_t i = 0; i < record_batch[0]->Size(); ++i) {

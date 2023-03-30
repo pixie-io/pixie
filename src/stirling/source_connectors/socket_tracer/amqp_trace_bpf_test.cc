@@ -233,13 +233,12 @@ std::vector<AMQPTraceRecord> GetAMQPTraceRecords(
 //-----------------------------------------------------------------------------
 
 TEST_F(AMQPTraceTest, AMQPCapture) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
   RunAll();
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
 
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kAMQPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  constexpr auto kTableNum = SocketTraceConnector::kAMQPTableNum;
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kTableNum));
 
   {
     std::vector<AMQPTraceRecord> records = GetAMQPTraceRecords(record_batch);

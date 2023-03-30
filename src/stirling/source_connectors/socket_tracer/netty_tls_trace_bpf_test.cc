@@ -147,16 +147,13 @@ TYPED_TEST_SUITE(NettyTLSTraceTest, NettyTLSServerImplementations);
 TYPED_TEST(NettyTLSTraceTest, mtls_thriftmux_client) {
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
-  this->StartTransferDataThread();
-
+  ASSERT_OK(this->source_.Start());
   ASSERT_OK(this->RunThriftMuxClient());
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, this->source_.ConsumeRecords(SocketTraceConnector::kMuxTableNum));
 
-  this->StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = this->ConsumeRecords(SocketTraceConnector::kMuxTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   std::vector<mux::Record> server_records =
-      GetTargetRecords<mux::Record>(record_batch, this->server_.process_pid());
+      GetTargetRecords<mux::Record>(rb, this->server_.process_pid());
 
   mux::Record tinitCheck = RecordWithType(mux::Type::kRerrOld);
   mux::Record tinit = RecordWithType(mux::Type::kTinit);
