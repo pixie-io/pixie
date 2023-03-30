@@ -35,7 +35,6 @@ import {
 import { Script } from 'app/utils/script-bundle';
 
 import {
-  useEmptyInputScriptProvider,
   useMissingScriptProvider,
 } from '.';
 import { CommandPaletteContext } from '../../command-palette-context';
@@ -211,7 +210,6 @@ export const useScriptCommandProvider: CommandProvider = () => {
 
   const { setOpen } = React.useContext(CommandPaletteContext);
 
-  const emptyInputProvider = useEmptyInputScriptProvider();
   const missingScriptProvider = useMissingScriptProvider();
   const bareValueProvider = useSuggestFromValue();
   const keyedValueProvider = useSuggestFromKeyedValue();
@@ -228,8 +226,8 @@ export const useScriptCommandProvider: CommandProvider = () => {
 
     const cta = getScriptCommandCta(input, selection, scripts, setScriptAndArgs, () => setOpen(false));
     if (!input.trim().length) {
-      // With a blank input, offer common fully-filled commands to try.
-      return emptyInputProvider(input, selection);
+      // Defer to emptyInputScriptProvider (defined elsewhere)
+      return { providerName: 'Scripts', completions: [], hasAdditionalMatches: false, cta };
     } else if (inputIsOneLongString) {
       // If the entire input is just text, try treating it as one giant value token.
       const newInput = quoteIfNeeded(parsed.tokens.map(({ text }) => text).join(''));
@@ -254,7 +252,7 @@ export const useScriptCommandProvider: CommandProvider = () => {
       return { ...res, cta };
     }
   }, [
-    bareValueProvider, emptyInputProvider, missingScriptProvider, keyedValueProvider,
+    bareValueProvider, missingScriptProvider, keyedValueProvider,
     scripts, setScriptAndArgs, setOpen,
   ]);
 };
