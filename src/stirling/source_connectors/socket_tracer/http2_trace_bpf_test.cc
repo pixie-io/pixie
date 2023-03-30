@@ -86,7 +86,7 @@ typedef ::testing::Types<Go1_17GRPCClientServerContainers, Go1_18GRPCClientServe
 TYPED_TEST_SUITE(HTTP2TraceTest, GoVersions);
 
 TYPED_TEST(HTTP2TraceTest, Basic) {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Run the client in the network of the server, so they can connect to each other.
   PX_CHECK_OK(this->client_.Run(
@@ -94,27 +94,24 @@ TYPED_TEST(HTTP2TraceTest, Basic) {
       {absl::Substitute("--network=container:$0", this->server_.container_name())}));
   this->client_.Wait();
 
-  this->StopTransferDataThread();
+  ASSERT_OK(this->source_.Stop());
 
   {
-    // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets =
-        this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+    ASSERT_OK_AND_ASSIGN(const auto& rb, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, this->server_.process_pid());
 
     // For Debug:
     for (const auto& idx : target_record_indices) {
-      uint32_t pid = rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
-      std::string req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-      std::string req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
-      std::string req_body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+      uint32_t pid = rb[kHTTPUPIDIdx]->template Get<types::UInt128Value>(idx).High64();
+      std::string req_path = rb[kHTTPReqPathIdx]->template Get<types::StringValue>(idx);
+      std::string req_method = rb[kHTTPReqMethodIdx]->template Get<types::StringValue>(idx);
+      std::string req_body = rb[kHTTPReqBodyIdx]->template Get<types::StringValue>(idx);
 
-      int resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-      std::string resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-      std::string resp_body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+      int resp_status = rb[kHTTPRespStatusIdx]->template Get<types::Int64Value>(idx).val;
+      std::string resp_message = rb[kHTTPRespMessageIdx]->template Get<types::StringValue>(idx);
+      std::string resp_body = rb[kHTTPRespBodyIdx]->template Get<types::StringValue>(idx);
       VLOG(1) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
                                   resp_status, resp_message, resp_body);
     }
@@ -156,18 +153,15 @@ class ProductCatalogServiceTraceTest
 };
 
 TEST_F(ProductCatalogServiceTraceTest, Basic) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Run the client in the network of the server, so they can connect to each other.
   PX_CHECK_OK(client_.Run(std::chrono::seconds{10},
                           {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 
-  StopTransferDataThread();
-
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kHTTPTableNum));
 
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());

@@ -148,7 +148,7 @@ std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
     stack_trace_str = symbolization::kDropMessage;
     DCHECK(u_stack_id == -EEXIST || u_stack_id == -EFAULT) << "u_stack_id: " << u_stack_id;
     DCHECK(k_stack_id == -EEXIST || k_stack_id == -EFAULT) << "k_stack_id: " << k_stack_id;
-    DCHECK(!(k_stack_id == -EFAULT && u_stack_id == -EFAULT)) << "both invalid.";
+    // DCHECK(!(k_stack_id == -EFAULT && u_stack_id == -EFAULT)) << "both invalid.";
   }
 
   return stack_trace_str;

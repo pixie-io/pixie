@@ -57,17 +57,15 @@ class GoHTTPTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing *
 };
 
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
 
   go_http_fixture_.LaunchGetClient();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   // By default, we do not trace the client.
   EXPECT_THAT(
@@ -103,17 +101,15 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
 }
 
 TEST_F(GoHTTPTraceTest, LargePostMessage) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
 
   go_http_fixture_.LaunchPostClient();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   // By default, we do not trace the client.
   EXPECT_THAT(
@@ -147,9 +143,9 @@ TEST_F(GoHTTPTraceTest, LargePostMessage) {
 }
 
 struct TraceRoleTestParam {
-  endpoint_role_t role;
-  size_t client_records_count;
-  size_t server_records_count;
+  const endpoint_role_t role;
+  const size_t client_records_count;
+  const size_t server_records_count;
 };
 
 class TraceRoleTest : public GoHTTPTraceTest,
@@ -157,34 +153,31 @@ class TraceRoleTest : public GoHTTPTraceTest,
 
 TEST_P(TraceRoleTest, VerifyRecordsCount) {
   const TraceRoleTestParam& param = GetParam();
+  const bool records_expected = param.client_records_count > 0 || param.server_records_count > 0;
 
-  auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
+  auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.RawPtr());
   ASSERT_NE(nullptr, socket_trace_connector);
   EXPECT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(kProtocolHTTP, param.role));
 
-  StartTransferDataThread();
-
+  ASSERT_OK(source_.Start());
   go_http_fixture_.LaunchGetClient();
+  ASSERT_OK(source_.Stop());
 
-  StopTransferDataThread();
+  if (records_expected) {
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-
-  std::vector<size_t> client_record_ids;
-  std::vector<size_t> server_record_ids;
-  if (!tablets.empty()) {
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
-    client_record_ids =
+    const std::vector<size_t> client_record_ids =
         testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, go_http_fixture_.client_pid());
 
-    server_record_ids =
+    const std::vector<size_t> server_record_ids =
         testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, go_http_fixture_.server_pid());
     PX_LOG_VAR(PrintHTTPTable(record_batch));
+    EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
+    EXPECT_THAT(server_record_ids, SizeIs(param.server_records_count));
+  } else {
+    // We do not expect any records traced for this trace role.
+    EXPECT_NOT_OK(source_.ConsumeRecords(kHTTPTableNum));
   }
-
-  EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
-  EXPECT_THAT(server_record_ids, SizeIs(param.server_records_count));
 }
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
