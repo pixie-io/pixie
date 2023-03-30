@@ -3453,16 +3453,31 @@ def pl_go_dependencies():
         name = "com_github_xdg_go_scram",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/xdg-go/scram",
-        sum = "h1:akYIkZ28e6A96dkWNJQu3nmCzH3YfwMPQExUYDaRv7w=",
-        version = "v1.0.2",
+        sum = "h1:VOMT+81stJgXW3CpHyqHN3AXDYIMsx56mEFrB37Mb/E=",
+        version = "v1.1.1",
     )
     go_repository(
         name = "com_github_xdg_go_stringprep",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/xdg-go/stringprep",
-        sum = "h1:6iq84/ryjjeRmMJwxutI51F2GIPlP5BfTvXHeYjyhBc=",
-        version = "v1.0.2",
+        sum = "h1:kdwGpVNwPFtjs98xCGkHjQtGKh86rDcRZN17QEMCOIs=",
+        version = "v1.0.3",
     )
+    go_repository(
+        name = "com_github_xdg_scram",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/xdg/scram",
+        sum = "h1:u40Z8hqBAAQyv+vATcGgV0YCnDjqSL7/q/JyPhhJSPk=",
+        version = "v0.0.0-20180814205039-7eeb5667e42c",
+    )
+    go_repository(
+        name = "com_github_xdg_stringprep",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/xdg/stringprep",
+        sum = "h1:n+nNi93yXLkJvKwXNP9d55HC7lGK4H/SRcwB5IaUZLo=",
+        version = "v0.0.0-20180714160509-73f8eece6fdc",
+    )
+
     go_repository(
         name = "com_github_xeipuuv_gojsonpointer",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
@@ -4323,9 +4338,8 @@ def pl_go_dependencies():
         name = "org_mongodb_go_mongo_driver",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "go.mongodb.org/mongo-driver",
-        replace = "go.mongodb.org/mongo-driver",
-        sum = "h1:9nOVLGDfOaZ9R0tBumx/BcuqkbFpyTCU2r/Po7A2azI=",
-        version = "v1.5.1",
+        sum = "h1:Ql6K6qYHEzB6xvu4+AU0BoRoqf9vFPcc4o7MUIdPW8Y=",
+        version = "v1.11.3",
     )
     go_repository(
         name = "org_uber_go_atomic",
