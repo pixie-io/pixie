@@ -121,7 +121,7 @@ class UnitConnector {
     // For the UPIDs, we use ASID=0 because UnitConnector is not meant for a multi-host env.
     constexpr uint32_t kASID = 0;
 
-    // A memory location that will be targetted by absl::SimpleAtoi; see below.
+    // A memory location that will be targeted by absl::SimpleAtoi; see below.
     uint32_t pid;
 
     // Eventually, this will be the return value from this fn.
