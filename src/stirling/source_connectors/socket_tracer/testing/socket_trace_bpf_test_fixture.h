@@ -34,7 +34,7 @@ namespace px {
 namespace stirling {
 namespace testing {
 
-template <bool TEnableClientSideTracing = false>
+template <bool EnableClientSideTracing = false>
 class SocketTraceBPFTestFixture : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -45,7 +45,7 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
     // WARNING: Do not use an if statement, because flags don't reset between successive tests.
     // TODO(oazizi): Setting flags in the test is a bad idea because of the pitfall above.
     //               Change this paradigm.
-    FLAGS_treat_loopback_as_in_cluster = !TEnableClientSideTracing;
+    FLAGS_treat_loopback_as_in_cluster = !EnableClientSideTracing;
 
     auto source_connector = SocketTraceConnector::Create("socket_trace_connector");
 
@@ -138,7 +138,7 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
   void RefreshContextCore() {
     ctx_ = std::make_unique<SystemWideStandaloneContext>();
 
-    if (TEnableClientSideTracing) {
+    if (EnableClientSideTracing) {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.
       PX_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
