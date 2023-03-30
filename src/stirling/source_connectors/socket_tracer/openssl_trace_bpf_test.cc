@@ -99,12 +99,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
 
   // Returns the trace records of the process specified by the input pid.
   TraceRecords GetTraceRecords(int pid, const types::ColumnWrapperRecordBatch& record_batch) {
-    // std::vector<TaggedRecordBatch> tablets =
-    //     this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    // if (tablets.empty()) {
-    //   return {};
-    // }
-    // types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
     std::vector<size_t> server_record_indices =
         FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
     std::vector<http::Record> http_records =
