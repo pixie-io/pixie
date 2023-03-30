@@ -160,7 +160,7 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     top: 0,
     left: 0,
     padding: theme.spacing(0.5),
-    backgroundColor: lighten(theme.palette.background.three, 0.01), // To cover what's behind it
+    backgroundColor: lighten(theme.palette.background.three, 0.015), // To cover what's behind it
   },
   paperDetails: {
     flex: '4 0 40%',
