@@ -117,8 +117,7 @@ class UnitConnector {
       // Disable automatic context refresh.
       ctx_refresh_enabled_ = false;
       ctx_ = std::make_unique<StandaloneContext>(upids);
-    }
-    else if (FLAGS_pid == 0) {
+    } else if (FLAGS_pid == 0) {
       // All pids & automatic context refresh.
       ctx_refresh_enabled_ = true;
       ctx_ = std::make_unique<SystemWideStandaloneContext>();
