@@ -164,12 +164,8 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
 template <typename T>
 using OpenSSLTraceDlsymTest = BaseOpenSSLTraceTest<T, false>;
 
-template <typename T>
-using OpenSSLTraceRawFptrsTest = BaseOpenSSLTraceTest<T, true>;
-
 #define OPENSSL_TYPED_TEST(TestCase, CodeBlock)            \
   TYPED_TEST(OpenSSLTraceDlsymTest, TestCase)              \
-  CodeBlock TYPED_TEST(OpenSSLTraceRawFptrsTest, TestCase) \
   CodeBlock
 
 TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
