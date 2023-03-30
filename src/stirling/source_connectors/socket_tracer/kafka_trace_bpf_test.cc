@@ -48,7 +48,7 @@ using ::testing::HasSubstr;
 using ::testing::StrEq;
 using ::px::operator<<;
 
-class KafkaTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
+class KafkaTraceTest : public px::stirling::testing::SocketTraceBPFTestFixture<true> {
  protected:
   KafkaTraceTest() {
     // Run Zookeeper.
@@ -255,20 +255,17 @@ std::vector<KafkaTraceRecord> GetKafkaTraceRecords(
 //-----------------------------------------------------------------------------
 // Test Scenarios
 //-----------------------------------------------------------------------------
-
 TEST_F(KafkaTraceTest, kafka_capture) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   ASSERT_OK_AND_ASSIGN(int32_t create_topic_pid, CreateTopic());
   PX_UNUSED(create_topic_pid);
   ASSERT_OK_AND_ASSIGN(int32_t produce_message_pid, ProduceMessage());
   ASSERT_OK_AND_ASSIGN(int32_t fetch_message_pid, FetchMessage());
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kKafkaTableNum));
 
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kKafkaTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   // TODO(chengruizhe): Some of the records are missing. Fix and add tests for all records.
   // TODO(vsrivatsa): enable kafka Metadata test once Metadata response parsing implemeneted
   {

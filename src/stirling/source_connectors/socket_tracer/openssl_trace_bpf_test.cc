@@ -98,13 +98,13 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   // Returns the trace records of the process specified by the input pid.
-  TraceRecords GetTraceRecords(int pid) {
-    std::vector<TaggedRecordBatch> tablets =
-        this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-    if (tablets.empty()) {
-      return {};
-    }
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  TraceRecords GetTraceRecords(int pid, const types::ColumnWrapperRecordBatch& record_batch) {
+    // std::vector<TaggedRecordBatch> tablets =
+    //     this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+    // if (tablets.empty()) {
+    //   return {};
+    // }
+    // types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
     std::vector<size_t> server_record_indices =
         FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
     std::vector<http::Record> http_records =
@@ -176,7 +176,7 @@ TYPED_TEST_SUITE(OpenSSLTraceDlsymTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceRawFptrsTest, OpenSSLServerImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Make an SSL request with curl.
   // Because the server uses a self-signed certificate, curl will normally refuse to connect.
@@ -189,9 +189,10 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
                        {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
   client.Wait();
-  this->StopTransferDataThread();
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
-  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  TraceRecords records = this->GetTraceRecords(this->server_.PID(), record_batch);
   http::Record expected_record = GetExpectedHTTPRecord();
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
@@ -199,7 +200,7 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
 })
 
 OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Make multiple requests and make sure we capture all of them.
   std::string rb_script = R"(
@@ -229,9 +230,10 @@ OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
                        {"ruby", "-e", rb_script}));
   client.Wait();
-  this->StopTransferDataThread();
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
-  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  TraceRecords records = this->GetTraceRecords(this->server_.PID(), record_batch);
   http::Record expected_record = GetExpectedHTTPRecord();
 
   EXPECT_THAT(records.http_records,
@@ -242,7 +244,7 @@ OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
 })
 
 OPENSSL_TYPED_TEST(ssl_capture_node_client, {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
@@ -251,9 +253,10 @@ OPENSSL_TYPED_TEST(ssl_capture_node_client, {
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
                        {"node", "/etc/node/https_client.js"}));
   client.Wait();
-  this->StopTransferDataThread();
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
-  TraceRecords records = this->GetTraceRecords(this->server_.PID());
+  TraceRecords records = this->GetTraceRecords(this->server_.PID(), record_batch);
   http::Record expected_record = GetExpectedHTTPRecord();
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));

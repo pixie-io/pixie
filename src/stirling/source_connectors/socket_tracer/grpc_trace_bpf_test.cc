@@ -140,16 +140,13 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   server_.LaunchServer(params.go_version, params.use_https);
 
   // Deploy uprobes on the newly launched server.
-  RefreshContext(/* blocking_deploy_uprobes */ true);
+  ASSERT_OK(source_.RefreshContextAndDeployUProbes());
 
-  StartTransferDataThread();
-
+  ASSERT_OK(source_.Start());
   client_.LaunchClient(params.go_version, params.use_compression, params.use_https, server_.port());
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kHTTPTableNum));
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.pid());
   ASSERT_GE(target_record_indices.size(), 1);
@@ -217,7 +214,7 @@ TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
     return;
   }
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   testing::PyGRPCHelloWorld client;
   testing::PyGRPCHelloWorld server;
@@ -232,10 +229,8 @@ TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
   // The client sends only 1 request and then exits. So we can wait for it to finish.
   client.Wait();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& rb, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto rb, source_.ConsumeRecords(kHTTPTableNum));
 
   const std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server.process_pid());

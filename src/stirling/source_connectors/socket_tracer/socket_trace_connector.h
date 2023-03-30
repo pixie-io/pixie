@@ -93,6 +93,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables =
       MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
                 kRedisTable, kNATSTable, kKafkaTable, kMuxTable, kAMQPTable);
+  // -- TODO -- remove -- static constexpr auto kDataTableSchema = kTables;
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -110,8 +111,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
-  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
-    return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
+  static std::unique_ptr<SocketTraceConnector> Create(std::string_view name) {
+    return std::unique_ptr<SocketTraceConnector>(new SocketTraceConnector(name));
   }
 
   Status InitImpl() override;

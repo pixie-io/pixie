@@ -88,7 +88,7 @@ TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 //-----------------------------------------------------------------------------
 
 TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Run the client in the network of the server, so they can connect to each other.
   PX_CHECK_OK(this->client_.Run(
@@ -97,12 +97,8 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
       {"--http2=false", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
-  this->StopTransferDataThread();
-
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets =
-      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
   {
     const std::vector<size_t> target_record_indices =
@@ -125,7 +121,7 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP) {
 }
 
 TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
-  this->StartTransferDataThread();
+  ASSERT_OK(this->source_.Start());
 
   // Run the client in the network of the server, so they can connect to each other.
   PX_CHECK_OK(this->client_.Run(
@@ -134,12 +130,8 @@ TYPED_TEST(GoTLSTraceTest, BasicHTTP2) {
       {"--http2=true", "--iters=2", "--sub_iters=5"}));
   this->client_.Wait();
 
-  this->StopTransferDataThread();
-
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets =
-      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(this->source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, this->source_.ConsumeRecords(this->kHTTPTableNum));
 
   {
     const std::vector<size_t> target_record_indices =

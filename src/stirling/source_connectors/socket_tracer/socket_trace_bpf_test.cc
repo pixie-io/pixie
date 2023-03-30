@@ -97,7 +97,7 @@ class SocketTraceBPFTest
     : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
   StatusOr<const ConnTracker*> GetConnTracker(int pid, int fd) {
-    PX_ASSIGN_OR_RETURN(const ConnTracker* tracker, source_->GetConnTracker(pid, fd));
+    PX_ASSIGN_OR_RETURN(const ConnTracker* tracker, source_.RawPtr()->GetConnTracker(pid, fd));
     if (tracker == nullptr) {
       return error::Internal("No ConnTracker found for pid=$0 fd=$1", pid, fd);
     }
@@ -107,7 +107,7 @@ class SocketTraceBPFTest
   StatusOr<ConnTracker*> GetMutableConnTracker(int pid, int fd) {
     conn_id_t conn_id;
     conn_id.tsid = 0;
-    for (const auto* conn_tracker : source_->conn_trackers_mgr_.active_trackers()) {
+    for (const auto* conn_tracker : source_.RawPtr()->conn_trackers_mgr_.active_trackers()) {
       if (conn_tracker->conn_id().upid.pid == static_cast<uint32_t>(pid) &&
           conn_tracker->conn_id().fd == fd) {
         conn_id = conn_tracker->conn_id();
@@ -118,7 +118,7 @@ class SocketTraceBPFTest
     if (conn_id.tsid == 0) {
       return error::Internal("No ConnTracker found for pid=$0 fd=$1", pid, fd);
     }
-    auto& conn_tracker = source_->GetOrCreateConnTracker(conn_id);
+    auto& conn_tracker = source_.RawPtr()->GetOrCreateConnTracker(conn_id);
     return &conn_tracker;
   }
 };
@@ -132,7 +132,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                 magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -155,10 +155,8 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   if (p.trace_role & kRoleClient) {
     ColumnWrapperRecordBatch records =
@@ -214,7 +212,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1},
@@ -236,10 +234,9 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   if (p.trace_role & kRoleServer) {
     ColumnWrapperRecordBatch records =
@@ -305,7 +302,7 @@ TEST_F(SocketTraceBPFTest, FileIONotTraced) {
   close(fd1);
 
   // Finally drain all BPF events.
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   // Those to file I/O FDs should not have been reported.
   ASSERT_NOT_OK(GetConnTracker(getpid(), fd1));
@@ -358,7 +355,7 @@ TEST_F(SocketTraceBPFTest, NonInetTrafficNotTraced) {
   server_thread.join();
 
   // Finally drain all BPF events.
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   // Those to file I/O FDs should not have been reported.
   ASSERT_NOT_OK(GetConnTracker(getpid(), client_fd));
@@ -378,7 +375,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   // We expect to see a ConnTracker allocated for ConnStats, but the data buffers should be empty
   // for unknown or unsupported protocols.
@@ -395,7 +392,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
   ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient);
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // Two separate connections.
 
@@ -411,10 +408,8 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   testing::ClientServerSystem system2;
   system2.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script2);
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   {
     ColumnWrapperRecordBatch records =
@@ -437,7 +432,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 TEST_F(SocketTraceBPFTest, StartTime) {
   ConfigureBPFCapture(traffic_protocol_t::kProtocolHTTP, kRoleClient);
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -463,10 +458,9 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   auto time_window_start = time_window_start_tp.time_since_epoch().count() / kDivFactor;
   auto time_window_end = time_window_end_tp.time_since_epoch().count() / kDivFactor;
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, system.ClientPID());
 
@@ -500,7 +494,7 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* client_tracker,
                        GetMutableConnTracker(system.ClientPID(), system.ClientFD()));
@@ -535,7 +529,7 @@ constexpr std::string_view kHTTPRespMsgContent = "Pixie labs is awesome!";
 TEST_F(SocketTraceBPFTest, SendFile) {
   // FLAGS_stirling_conn_trace_pid = getpid();
 
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   TCPSocket client;
   TCPSocket server;
@@ -579,10 +573,8 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 
   client.Close();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
 
@@ -601,7 +593,7 @@ using NullRemoteAddrTest = testing::SocketTraceBPFTestFixture</* TClientSideTrac
 
 // Tests that accept4() with a NULL sock_addr result argument.
 TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   TCPSocket client;
   TCPSocket server;
@@ -649,10 +641,8 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   client.Close();
   server.Close();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
 
@@ -672,7 +662,7 @@ TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
 
 // Tests that accept4() with a NULL sock_addr result argument (IPv6 version).
 TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   TCPSocket client(AF_INET6);
   TCPSocket server(AF_INET6);
@@ -715,10 +705,8 @@ TEST_F(NullRemoteAddrTest, IPv6Accept4WithNullRemoteAddr) {
   client.Close();
   server.Close();
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kHTTPTableNum));
 
   ColumnWrapperRecordBatch records = FindRecordsMatchingPID(record_batch, kHTTPUPIDIdx, getpid());
   ASSERT_THAT(records, RecordBatchSizeIs(1));
@@ -748,7 +736,7 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
 
     // Drain the perf buffers before beginning the test to make sure perf buffers are empty.
     // Otherwise, the test may flake due to events not being received in user-space.
-    source_->PollPerfBuffers();
+    source_.RawPtr()->PollPerfBuffers();
 
     // Uncomment to enable tracing:
     // FLAGS_stirling_conn_trace_pid = pid_;
@@ -775,7 +763,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -802,7 +790,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -829,7 +817,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -864,7 +852,7 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_.RawPtr()->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -888,7 +876,7 @@ class SocketTraceServerSideBPFTest
 TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   using Stat = ConnTracker::StatKey;
 
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
+  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.RawPtr());
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
 
@@ -911,7 +899,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
 
   sleep(1);
-  source_->TransferData(ctx_.get());
+  ASSERT_OK(source_.TransferData());
 
   ASSERT_OK_AND_ASSIGN(const ConnTracker* client_side_tracker,
                        socket_trace_connector->GetConnTracker(getpid(), client.sockfd()));
@@ -942,8 +930,7 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   ASSERT_TRUE(client.Recv(&msg));
   sleep(1);
 
-  source_->TransferData(ctx_.get());
-
+  ASSERT_OK(source_.TransferData());
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent), kHTTPReqMsg1.size());
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size())
       << "Data transfer was disabled, so the counter should be the same.";

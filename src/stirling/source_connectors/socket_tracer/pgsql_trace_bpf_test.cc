@@ -92,7 +92,7 @@ std::vector<ReqRespCmd> RecordBatchToReqRespCmds(
 // capability because it's running a query from start to finish, which always establish new
 // connections.
 TEST_F(PostgreSQLTraceTest, SelectQuery) {
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
@@ -107,10 +107,9 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(create_table_output, &client_pid));
 
-  StopTransferDataThread();
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kPGSQLTableNum));
 
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
   ASSERT_THAT(indices, SizeIs(1));
 
@@ -127,18 +126,15 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
 TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
   // Uncomment to enable tracing:
   FLAGS_stirling_conn_trace_pid = container_.process_pid();
-
-  StartTransferDataThread();
+  ASSERT_OK(source_.Start());
 
   ::px::stirling::testing::GolangSQLxContainer sqlx_container;
   PX_CHECK_OK(sqlx_container.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", container_.container_name())}));
 
-  StopTransferDataThread();
-
-  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-  ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+  ASSERT_OK(source_.Stop());
+  ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kPGSQLTableNum));
 
   // Select only the records from the client side. Stirling captures both client and server side
   // traffic because of the remote address is outside of the cluster.
@@ -190,7 +186,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
       "podman exec $0 bash -c "
       R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   {
-    StartTransferDataThread();
+    ASSERT_OK(source_.Start());
 
     const std::string cmd = absl::Substitute(
         kCmdTmpl, container_.container_name(),
@@ -203,10 +199,8 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
-    StopTransferDataThread();
-
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Flush());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kPGSQLTableNum));
 
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));
@@ -225,18 +219,14 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
                 StrEq(ToString(Tag::kQuery, /* is_req */ true)));
   }
   {
-    StartTransferDataThread();
-
     const std::string cmd =
         absl::Substitute(kCmdTmpl, container_.container_name(), "select increment(1);");
     ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(cmd));
     int32_t client_pid;
+
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
-
-    StopTransferDataThread();
-
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Stop());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kPGSQLTableNum));
 
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));

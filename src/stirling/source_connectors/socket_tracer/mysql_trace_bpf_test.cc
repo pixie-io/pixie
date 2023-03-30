@@ -400,19 +400,15 @@ std::vector<mysql::Record> GetTargetRecords(const types::ColumnWrapperRecordBatc
 }
 
 TEST_F(MySQLTraceTest, mysql_capture) {
+  ASSERT_OK(source_.Start());
   {
-    StartTransferDataThread();
-
     ASSERT_OK_AND_ASSIGN(
         int32_t client_pid,
         RunSQLScript(
             "src/stirling/source_connectors/socket_tracer/protocols/mysql/testing/script.sql"));
 
-    StopTransferDataThread();
-
-    // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Flush());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kMySQLTableNum));
 
     if (!FLAGS_tracing_mode) {
       // Check client-side tracing results.
@@ -441,17 +437,12 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    StartTransferDataThread();
-
     ASSERT_OK_AND_ASSIGN(int32_t client_pid,
                          RunSQLScript("src/stirling/source_connectors/socket_tracer/protocols/"
                                       "mysql/testing/prepare_execute.sql"));
 
-    StopTransferDataThread();
-
-    // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Flush());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kMySQLTableNum));
 
     if (!FLAGS_tracing_mode) {
       // Check client-side tracing results.
@@ -479,8 +470,6 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    StartTransferDataThread();
-
     ASSERT_OK_AND_ASSIGN(
         int32_t client_pid,
         RunPythonScript(
@@ -489,11 +478,8 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // Sleep a little more, just to be safe.
     sleep(1);
 
-    StopTransferDataThread();
-
-    // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
+    ASSERT_OK(source_.Flush());
+    ASSERT_OK_AND_ASSIGN(auto record_batch, source_.ConsumeRecords(kMySQLTableNum));
 
     // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {
@@ -513,6 +499,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
                   UnorderedElementsAreArray(expected_matchers.begin(), expected_matchers.end()));
     }
   }
+  ASSERT_OK(source_.Stop());
 }
 
 }  // namespace stirling
