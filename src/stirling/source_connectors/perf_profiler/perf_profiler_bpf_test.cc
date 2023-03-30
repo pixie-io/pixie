@@ -30,6 +30,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/stirling/core/connector_context.h"
+#include "src/stirling/core/unit_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/java/attach.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
@@ -54,11 +55,8 @@ using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelRunfilePath;
 using ::px::testing::PathExists;
 using ::testing::Each;
-using ::testing::Gt;
 using ::testing::Not;
-using ::testing::Pair;
 using ::testing::SizeIs;
-using ::testing::UnorderedElementsAre;
 
 namespace {
 // BazelXXTestAppPath() are helpers to build & return the bazelified path to
@@ -211,36 +209,34 @@ class ContainerSubProcesses final : public PerfProfilerTestSubProcesses {
 };
 
 class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path> {
- public:
-  PerfProfileBPFTest()
-      : test_run_time_(FLAGS_test_run_time), data_table_(/*id*/ 0, kStackTraceTable) {}
-
  protected:
   void SetUp() override {
+    // Accepts the default profiler parameters.
+    // As compared to parameters from "SetFastTestParameters"
+    // This will have:
+    // ... a longer data transfer period,
+    // ... and a slower stack trace sample rate.
+    test_run_time_ = std::chrono::seconds{FLAGS_stirling_profiler_table_update_period_seconds};
+  }
+
+  void SetFastTestParameters() {
+    // Used by most test cases, this will cause the perf profiler to sample stack traces more
+    // frequently and transfer data from BPF maps & perf buffers, to user space, more frequently.
     FLAGS_stirling_profiler_java_symbols = true;
     FLAGS_number_attach_attempts_per_iteration = kNumSubProcs;
     FLAGS_stirling_profiler_table_update_period_seconds = 1;
     FLAGS_stirling_profiler_stack_trace_sample_period_ms = 7;
-
-    source_ = PerfProfileConnector::Create("perf_profile_connector");
-    ASSERT_OK(source_->Init());
-    source_->set_data_tables({&data_table_});
-
-    // Immediately start the transfer data thread to continue draining perf buffers,
-    // i.e. to prevent dropping perf buffer entries.
-    StartTransferDataThread();
+    test_run_time_ = std::chrono::seconds{FLAGS_test_run_time};
   }
 
-  void TearDown() override { ASSERT_OK(source_->Stop()); }
-
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
-    // Sanity check; column pointers should be populated already.
-    ASSERT_TRUE(column_ptrs_populated_);
+    auto stack_traces_column = columns_[kStackTraceStackTraceStrIdx];
+    auto counts_column = columns_[kStackTraceCountIdx];
 
     for (const auto row_idx : target_row_idxs) {
       // Build the histogram of observed stack traces here.
-      const std::string stack_trace_str = stack_traces_column_->Get<types::StringValue>(row_idx);
-      const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
+      const std::string stack_trace_str = stack_traces_column->Get<types::StringValue>(row_idx);
+      const int64_t count = counts_column->Get<types::Int64Value>(row_idx).val;
       histo_[stack_trace_str] += count;
     }
 
@@ -257,33 +253,32 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   }
 
   void PopulateCumulativeSum(const std::vector<size_t>& target_row_idxs) {
-    ASSERT_TRUE(column_ptrs_populated_);
-    ASSERT_EQ(cumulative_sum_, 0);
+    cumulative_sum_ = 0;
+    auto counts_column = columns_[kStackTraceCountIdx];
 
     for (const auto row_idx : target_row_idxs) {
-      const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
+      const int64_t count = counts_column->Get<types::Int64Value>(row_idx).val;
       cumulative_sum_ += count;
       ASSERT_GT(count, 0);
     }
   }
 
-  void CheckExpectedSampleRate(const ssize_t num_subprocesses,
-                               const std::chrono::duration<double> t_elapsed) {
-    const uint64_t table_period_ms = source_->SamplingPeriod().count();
-    const uint64_t bpf_period_ms = source_->StackTraceSamplingPeriod().count();
+  void CheckExpectedSampleRate(const ssize_t num_subprocesses) {
+    const uint64_t table_period_ms = source_.RawPtr()->SamplingPeriod().count();
+    const uint64_t bpf_period_ms = source_.RawPtr()->StackTraceSamplingPeriod().count();
     const double expected_rate = 1000.0 / static_cast<double>(bpf_period_ms);
-    const double expected_num_samples = num_subprocesses * t_elapsed.count() * expected_rate;
+    const double expected_num_samples = num_subprocesses * t_elapsed_.count() * expected_rate;
     const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
     const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
     const double observedNumSamples = static_cast<double>(cumulative_sum_);
-    const double observed_rate = observedNumSamples / t_elapsed.count() / num_subprocesses;
+    const double observed_rate = observedNumSamples / t_elapsed_.count() / num_subprocesses;
 
     LOG(INFO) << absl::StrFormat("Table sampling period: %d [ms].", table_period_ms);
     LOG(INFO) << absl::StrFormat("BPF sampling period: %d [ms].", bpf_period_ms);
     LOG(INFO) << absl::StrFormat("Number of processes: %d.", num_subprocesses);
     LOG(INFO) << absl::StrFormat("expected num samples: %d.", uint64_t(expected_num_samples));
     LOG(INFO) << absl::StrFormat("total samples: %d.", cumulative_sum_);
-    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", t_elapsed.count());
+    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec].", t_elapsed_.count());
     LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz].", expected_rate);
     LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz].", observed_rate);
 
@@ -292,7 +287,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     // For this test, use an upper & lower bound with 10% allowed error band.
     const std::string err_msg = absl::StrFormat(
         "num sub-processes: %d, time: %.2f [sec.], rate: %.2f [Hz], observed_rate: %.2f [Hz]",
-        num_subprocesses, t_elapsed.count(), expected_rate, observed_rate);
+        num_subprocesses, t_elapsed_.count(), expected_rate, observed_rate);
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
   }
@@ -317,13 +312,12 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     EXPECT_GT(ratio, 2.0 - kRatioMargin);
     EXPECT_LT(ratio, 2.0 + kRatioMargin);
 
-    EXPECT_EQ(source_->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
+    EXPECT_EQ(source_.RawPtr()->stats().Get(PerfProfileConnector::StatKey::kLossHistoEvent), 0);
   }
 
   void ConsumeRecords() {
-    const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
-    ASSERT_NOT_EMPTY_AND_GET_RECORDS(columns_, tablets);
-    PopulateColumnPtrs(columns_);
+    constexpr uint32_t table_num = 0;
+    ASSERT_OK_AND_ASSIGN(columns_, source_.ConsumeRecords(table_num));
     auto target_row_idxs =
         FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, sub_processes_->pids());
 
@@ -331,74 +325,22 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     PopulateObservedStackTraces(target_row_idxs);
   }
 
-  void PopulateColumnPtrs(const types::ColumnWrapperRecordBatch& columns) {
-    trace_ids_column_ = columns[kStackTraceStackTraceIDIdx];
-    stack_traces_column_ = columns[kStackTraceStackTraceStrIdx];
-    counts_column_ = columns[kStackTraceCountIdx];
-    column_ptrs_populated_ = true;
-  }
-
-  void RefreshContext(const absl::flat_hash_set<md::UPID>& upids) {
-    absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
-    ctx_ = std::make_unique<StandaloneContext>(upids);
-  }
-
-  void StartTransferDataThread() {
-    ASSERT_TRUE(source_ != nullptr);
-
-    sampling_period_ = source_->SamplingPeriod();
-    ASSERT_LT(sampling_period_, test_run_time_);
-
-    // Create an initial empty context for use by the transfer data thread.
-    const absl::flat_hash_set<md::UPID> empty_upid_set;
-    ctx_ = std::make_unique<StandaloneContext>(empty_upid_set);
-
-    transfer_data_thread_ = std::thread([this]() {
-      transfer_enable_ = true;
-      while (transfer_enable_) {
-        {
-          absl::base_internal::SpinLockHolder lock(&perf_profiler_state_lock_);
-          source_->TransferData(ctx_.get());
-        }
-        std::this_thread::sleep_for(sampling_period_);
-      }
-    });
-  }
-
-  void StopTransferDataThread() {
-    CHECK(transfer_data_thread_.joinable());
-    transfer_enable_ = false;
-    transfer_data_thread_.join();
-    source_->TransferData(ctx_.get());
-  }
-
-  std::chrono::duration<double> RunTest() {
+  Status RunTest() {
     const auto start_time = std::chrono::steady_clock::now();
 
     // While we sleep (here), the transfer data thread is running.
     // In that thread, TransferData() is invoked periodically.
     std::this_thread::sleep_for(test_run_time_);
-    StopTransferDataThread();
 
     // We return the amount of time that we ran the test; it will be used to compute
     // the observed sample rate and the expected number of samples.
-    return std::chrono::steady_clock::now() - start_time;
+    const auto dt = std::chrono::steady_clock::now() - start_time;
+    t_elapsed_ = std::chrono::duration_cast<std::chrono::duration<double>>(dt);
+
+    return Status::OK();
   }
 
-  const std::chrono::seconds test_run_time_;
-  std::chrono::milliseconds sampling_period_;
-  std::atomic<bool> transfer_enable_ = false;
-  std::thread transfer_data_thread_;
-  absl::base_internal::SpinLock perf_profiler_state_lock_;
-  std::unique_ptr<PerfProfileConnector> source_;
   std::unique_ptr<PerfProfilerTestSubProcesses> sub_processes_;
-  std::unique_ptr<StandaloneContext> ctx_;
-  DataTable data_table_;
-
-  bool column_ptrs_populated_ = false;
-  std::shared_ptr<types::ColumnWrapper> trace_ids_column_;
-  std::shared_ptr<types::ColumnWrapper> stack_traces_column_;
-  std::shared_ptr<types::ColumnWrapper> counts_column_;
 
   uint64_t cumulative_sum_ = 0;
   absl::flat_hash_map<std::string, uint64_t> histo_;
@@ -408,6 +350,14 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
   // To reduce variance in results, we add more run-time or add sub-processes:
   static constexpr uint64_t kNumSubProcs = 4;
   static constexpr double kRatioMargin = 0.5;
+
+  // Target test run time. Used by RunTest().
+  std::chrono::seconds test_run_time_;
+
+  // Elapsed test run time. Set by RunTest().
+  std::chrono::duration<double> t_elapsed_;
+
+  UnitConnector<PerfProfileConnector> source_;
 };
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
@@ -423,19 +373,26 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  RefreshContext(sub_processes_->upids());
+
+  // Bring up the perf profiler, and pass in the set of PIDs to filter by.
+  ASSERT_OK(source_.Init(sub_processes_->upids()));
+  ASSERT_OK(source_.Start());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> t_elapsed = RunTest();
+  ASSERT_OK(RunTest());
+
+  // Stop the perf profiler before consuming the stack traces.
+  ASSERT_OK(source_.Stop());
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(histo_, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
+  SetFastTestParameters();
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
@@ -446,20 +403,27 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  RefreshContext(sub_processes_->upids());
+
+  // Bring up the perf profiler, and pass in the set of PIDs to filter by.
+  ASSERT_OK(source_.Init(sub_processes_->upids()));
+  ASSERT_OK(source_.Start());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> t_elapsed = RunTest();
+  ASSERT_OK(RunTest());
+
+  // Stop the perf profiler before consuming the stack traces.
+  ASSERT_OK(source_.Stop());
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
   const auto leaf_histo = KeepNLeafSyms(3, histo_);
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(leaf_histo, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
+  SetFastTestParameters();
   const std::string app_path = "ProfilerTest";
   const std::filesystem::path bazel_app_path = BazelJavaTestAppPath(app_path);
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
@@ -472,20 +436,27 @@ TEST_F(PerfProfileBPFTest, GraalVM_AOT_Test) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<CPUPinnedSubProcesses>(bazel_app_path);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  RefreshContext(sub_processes_->upids());
+
+  // Bring up the perf profiler, and pass in the set of PIDs to filter by.
+  ASSERT_OK(source_.Init(sub_processes_->upids()));
+  ASSERT_OK(source_.Start());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  const std::chrono::duration<double> t_elapsed = RunTest();
+  ASSERT_OK(RunTest());
+
+  // Stop the perf profiler before consuming the stack traces.
+  ASSERT_OK(source_.Stop());
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
 
   const auto leaf_histo = KeepNLeafSyms(1, histo_);
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs, t_elapsed));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedSampleRate(kNumSubProcs));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedProfile(leaf_histo, key1x, key2x));
 }
 
 TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
+  SetFastTestParameters();
   constexpr std::string_view kContainerNamePfx = "java";
   const std::filesystem::path image_tar_path = GetParam();
   ASSERT_TRUE(fs::Exists(image_tar_path)) << absl::StrFormat("Missing: %s.", image_tar_path);
@@ -498,10 +469,12 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // Start target apps & create the connector context using the sub-process upids.
   sub_processes_ = std::make_unique<ContainerSubProcesses>(image_tar_path, kContainerNamePfx);
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
-  RefreshContext(sub_processes_->upids());
+
+  ASSERT_OK(source_.Init(sub_processes_->upids()));
+  ASSERT_OK(source_.Start());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  RunTest();
+  ASSERT_OK(RunTest());
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
@@ -528,24 +501,19 @@ TEST_P(PerfProfileBPFTest, PerfProfilerJavaTest) {
   // Kill the subprocs.
   sub_processes_->KillAll();
 
-  // Inside of PerfProfileConnector, we need the list of deleted upids to match our original
-  // list of upids based on our subprocs.
-  // For that to happen, here, we reset the context so that it has no UPIDs.
-  // The ProcTracker (inside of PerfProfileConnector) will take the difference
-  // between the previous list of upids (our subprocs) and the current list of upids (empty)
-  // to find a list of deleted upids.
-  const absl::flat_hash_set<md::UPID> empty_upid_set;
-  RefreshContext(empty_upid_set);
+  // Wait for the context to refresh. After the context is refreshed, the perf profiler will
+  // detect processes that have stopped, and remove their symbol files.
+  sleep(1);
 
   // Run transfer data so that cleanup is kicked off in the perf profile source connector.
-  // The deleted upids list that is inferred will match our original upid list.
-  source_->TransferData(ctx_.get());
+  ASSERT_OK(source_.Flush());
 
   // Expect that that the artifacts paths have been removed.
   EXPECT_THAT(artifacts_paths, Each(Not(PathExists())));
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
+  SetFastTestParameters();
   const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
   ASSERT_TRUE(fs::Exists(bazel_app_path)) << absl::StrFormat("Missing: %s.", bazel_app_path);
 
@@ -554,10 +522,13 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   ASSERT_NO_FATAL_FAILURE(sub_processes_->StartAll());
 
   // Use an empty connector context.
-  ctx_ = std::make_unique<StandaloneContext>(absl::flat_hash_set<md::UPID>());
+  ASSERT_OK(source_.Init(absl::flat_hash_set<md::UPID>()));
+  ASSERT_OK(source_.Start());
 
   // Allow target apps to run, and periodically call transfer data on perf profile connector.
-  RunTest();
+  ASSERT_OK(RunTest());
+
+  ASSERT_OK(source_.Stop());
 
   // Pull the data from the perf profile connector into this test case.
   ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
