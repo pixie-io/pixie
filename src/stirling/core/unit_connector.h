@@ -27,7 +27,7 @@
 #include "src/stirling/core/data_tables.h"
 #include "src/stirling/core/frequency_manager.h"
 
-DEFINE_uint32(pid, 0, "PID to profile. Use default value, -pid 0, to profile all processes.");
+DEFINE_string(pids, "", "PIDs to profile, e.g. -pids 132,133. All processes profiled by default.")
 
 namespace px {
 namespace stirling {
@@ -111,34 +111,55 @@ class UnitConnector {
     return Status::OK();
   }
 
+  StatusOr<absl::flat_hash_set<md::UPID> > ParsePidsFlag() {
+    const std::vector<std::string_view> str_pids = absl::StrSplit(FLAGS_pids, ",");
+
+    if (str_pids.size() == 0) {
+      return {};
+    }
+
+    // For the UPIDs, we use ASID=0 because UnitConnector is not meant for a multi-host env.
+    constexpr uint32_t kASID = 0;
+
+    // A memory location that will be targetted by absl::SimpleAtoi; see below.
+    uint32_t pid;
+
+    // Eventually, this will be the return value from this fn.
+    absl::flat_hash_set<md::UPID> upids;
+    
+    // Convert each string view pid to an int, then form a UPID.
+    for (const auto& str_pid : str_pids) {
+      const bool parsed_ok = absl::SimpleAtoi(str_pid, &pid);
+
+      if (!parsed_ok) {
+        return error::Internal(abls::Substitute("Could not parse pid $0 to integer.", str_pid));
+      }
+      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(pid));
+
+
+      // The stand alone context requires a set of UPIDs. We have just one in that set.
+      upids.insert(md::UPID(kASID, pid, ts));
+    }
+    return upids;
+  }
+
   Status Init(const absl::flat_hash_set<md::UPID>& upids = {}) {
-    if (upids.size() != 0) {
-      // User is asking to filter by specific pids.
-      // Disable automatic context refresh.
-      ctx_refresh_enabled_ = false;
-      ctx_ = std::make_unique<StandaloneContext>(upids);
-    } else if (FLAGS_pid == 0) {
+    if (upids.size() == 0) {
+      // Init() was called with its default arg., an empty set of UPIDs. Thus, check the value
+      // in FLAGS_pids to populate the UPIDs set. The default for FLAGS_pids is an empty
+      // string which parses to an empty set, which results in the default behavior of tracing
+      // every process.
+      PX_ASSIGN_OR_RETURN(upids, ParsePidsFlag());
+    }
+
+    if (upids.size() == 0) {
       // All pids & automatic context refresh.
       ctx_refresh_enabled_ = true;
       ctx_ = std::make_unique<SystemWideStandaloneContext>();
     } else {
-      // If FLAGS_pid is set, the user wants to collect data from a specific process.
+      // User is asking to filter by specific pids.
       // Disable automatic context refresh.
       ctx_refresh_enabled_ = false;
-
-      // Get the process start time, used to construct the "UPID" or unique pid.
-      // UPID is conceptually useful when Pixie is running on multiple hosts:
-      // it includes a start timestamp (for recycled pids on a given host) and an address
-      // space id to distinguish between pids on different hosts.
-      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(FLAGS_pid));
-
-      // Here, we use zero because the UnitSourceConnector is not meant for a multi-host env.
-      constexpr uint32_t kASID = 0;
-
-      // The stand alone context requires a set of UPIDs. We have just one in that set.
-      const absl::flat_hash_set<md::UPID> upids = {md::UPID(kASID, FLAGS_pid, ts)};
-
-      // Create the context to filter by pid.
       ctx_ = std::make_unique<StandaloneContext>(upids);
     }
 
