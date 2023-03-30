@@ -39,53 +39,16 @@ class UnitConnector {
  public:
   UnitConnector() : data_tables_(T::kTables) {}
 
-  Status Init() {
-    source_ = T::Create("source_connector");
-
-    // Init() compiles the eBPF program and creates the eBPF perf buffer and maps needed
-    // to communicate data to/from eBPF.
-    PX_RETURN_IF_ERROR(source_->Init());
-
-    // Give the source connector data tables to write into.
-    source_->set_data_tables(data_tables_.tables());
-
-    if (FLAGS_pid == 0) {
-      // No PID specified. Go with "system wide" context.
-      ctx_ = std::make_unique<SystemWideStandaloneContext>();
-    } else {
-      // If FLAGS_pid is set, the user wants to collect data from a specific process.
-
-      // Get the process start time, used to construct the "UPID" or unique pid.
-      // UPID is conceptually useful when Pixie is running on multiple hosts:
-      // it includes a start timestamp (for recycled pids on a given host) and an address
-      // space id to distinguish between pids on different hosts.
-      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(FLAGS_pid));
-
-      // Here, we use zero because the UnitSourceConnector is not meant for a multi-host env.
-      constexpr uint32_t kASID = 0;
-
-      // The stand alone context requires a set of UPIDs. We have just one in that set.
-      const absl::flat_hash_set<md::UPID> upids = {md::UPID(kASID, FLAGS_pid, ts)};
-
-      // Create the context to filter by pid.
-      ctx_ = std::make_unique<StandaloneContext>(upids);
+  ~UnitConnector() {
+    if (started_ && !stopped_) {
+      const auto status = Stop();
+      if (!status.ok()) {
+        LOG(FATAL) << "Stop() not ok: " << status.msg();
+      }
     }
 
-    // For the socket tracer, this triggers a blocking deploy of uprobes (and is otherwise a no-op).
-    // We do this here to support our socket tracer test cases.
-    source_->InitContext(ctx_.get());
-
-    return Status::OK();
-  }
-
-  Status VerifyInitted() {
-    if (source_ == nullptr) {
-      return error::Internal("Source connector has not been initted, or was already deallocated.");
-    }
-    if (ctx_ == nullptr) {
-      return error::Internal("Context has not been initted, or was already deallocated.");
-    }
-    return Status::OK();
+    // Invokes dtor of the underlying source connector.
+    source_ = nullptr;
   }
 
   Status Stop() {
@@ -148,6 +111,54 @@ class UnitConnector {
     return Status::OK();
   }
 
+  Status Init(const absl::flat_hash_set<md::UPID>& upids = {}) {
+    if (upids.size() != 0) {
+      // User is asking to filter by specific pids.
+      // Disable automatic context refresh.
+      ctx_refresh_enabled_ = false;
+      ctx_ = std::make_unique<StandaloneContext>(upids);
+    }
+    else if (FLAGS_pid == 0) {
+      // All pids & automatic context refresh.
+      ctx_refresh_enabled_ = true;
+      ctx_ = std::make_unique<SystemWideStandaloneContext>();
+    } else {
+      // If FLAGS_pid is set, the user wants to collect data from a specific process.
+      // Disable automatic context refresh.
+      ctx_refresh_enabled_ = false;
+
+      // Get the process start time, used to construct the "UPID" or unique pid.
+      // UPID is conceptually useful when Pixie is running on multiple hosts:
+      // it includes a start timestamp (for recycled pids on a given host) and an address
+      // space id to distinguish between pids on different hosts.
+      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(FLAGS_pid));
+
+      // Here, we use zero because the UnitSourceConnector is not meant for a multi-host env.
+      constexpr uint32_t kASID = 0;
+
+      // The stand alone context requires a set of UPIDs. We have just one in that set.
+      const absl::flat_hash_set<md::UPID> upids = {md::UPID(kASID, FLAGS_pid, ts)};
+
+      // Create the context to filter by pid.
+      ctx_ = std::make_unique<StandaloneContext>(upids);
+    }
+
+    source_ = T::Create("source_connector");
+
+    // Init() compiles the eBPF program and creates the eBPF perf buffer and maps needed
+    // to communicate data to/from eBPF.
+    PX_RETURN_IF_ERROR(source_->Init());
+
+    // Give the source connector data tables to write into.
+    source_->set_data_tables(data_tables_.tables());
+
+    // For the socket tracer, this triggers a blocking deploy of uprobes (and is otherwise a no-op).
+    // We do this here to support our socket tracer test cases.
+    source_->InitContext(ctx_.get());
+
+    return Status::OK();
+  }
+
   Status RefreshContextAndDeployUProbes() {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
@@ -160,7 +171,7 @@ class UnitConnector {
       return error::Internal("Context is being managed by the transfer data thread.");
     }
 
-    if (FLAGS_pid == 0) {
+    if (ctx_refresh_enabled_) {
       // Pick up new processes.
       ctx_ = std::make_unique<SystemWideStandaloneContext>();
     }
@@ -176,26 +187,17 @@ class UnitConnector {
     PX_RETURN_IF_ERROR(VerifyInitted());
 
     if (started_ || transfer_enable_) {
-      return error::Internal("Trasnfer data thread is running.");
+      return error::Internal("Transfer data thread is running.");
     }
 
     source_->TransferData(ctx_.get());
     return Status::OK();
   }
 
-  ~UnitConnector() {
-    if (started_ && !stopped_) {
-      const auto status = Stop();
-      if (!status.ok()) {
-        LOG(FATAL) << "Stop() not ok: " << status.msg();
-      }
-    }
-
-    // Invokes dtor of the underlying source connector.
-    source_ = nullptr;
-  }
-
   StatusOr<types::ColumnWrapperRecordBatch> ConsumeRecords(const uint32_t table_num) {
+    // Pedantic, but better than bravely carrying on if something is wrong here.
+    PX_RETURN_IF_ERROR(VerifyInitted());
+
     tablets_ = source_->data_tables()[table_num]->ConsumeRecords();
     if (tablets_.size() != 1) {
       char const* const msg = "Expected exactly one tablet, found tablets_.size(): $0.";
@@ -207,20 +209,47 @@ class UnitConnector {
   T* RawPtr() { return source_.get(); }
 
  private:
-  std::chrono::milliseconds TimeUntilNextTick(const time_point now) {
-    // Worst case, wake-up every so often.
-    constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
-    auto wakeup_time = now + kMaxSleepDuration;
-    wakeup_time = std::min(wakeup_time, source_->sampling_freq_mgr().next());
-
-    return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
+  Status VerifyInitted() {
+    if (source_ == nullptr) {
+      return error::Internal("Source connector has not been initted, or was already deallocated.");
+    }
+    if (ctx_ == nullptr) {
+      return error::Internal("Context has not been initted, or was already deallocated.");
+    }
+    return Status::OK();
   }
 
   Status TransferDataThread() {
+    // Invoke source_->TransferData() ASAP to drain maps & perf buffers, i.e. because some time may
+    // have elapsed between starting a BPF program and starting the transfer data thread.
+    source_->TransferData(ctx_.get());
+
+    // The run window prevents this thread from going to sleep for very short time frames.
+    // If the thread fails to go to sleep, it will do all the work necessary on the next loop
+    // iteration such that it can go to sleep for a reasonably longer amount of time.
     constexpr auto kRunWindow = std::chrono::milliseconds{1};
-    auto time_until_next_tick = std::chrono::milliseconds::zero();
+
+    // In stirling.cc, the max sleep duration is 1 second. That makes sense in a context where
+    // every source connector is running in parallel, and we know that there may be a good reason
+    // to periodically wake up. The various source connectors do have significantly different
+    // sampling periods, e.g. perf profiler (long) vs. socket tracer (short).
+    // This is a pedantic check to ensure that the transfer data thread will run within a human
+    // time frame. If it is triggered, someone is working on an interesting case anyway, they
+    // can figure out a new upper bound or a special case somehow.
+    if (source_->sampling_freq_mgr().period() > std::chrono::seconds{90}) {
+      return error::Internal("Source connector has sampling period > 90 seconds.");
+    }
+
+    // If the source connector sampling period is less than the "run window," then
+    // the transfer data thread will never sleep.
+    if (source_->sampling_freq_mgr().period() <= kRunWindow) {
+      return error::Internal("Source connector sampling period is less than run window.");
+    }
+
+    // Time "now". Updated after sleeping or after doing some amount of work.
     auto now = std::chrono::steady_clock::now();
 
+    // Create a frequency manager that will cause the context to get refreshed periodically.
     FrequencyManager ctx_freq_mgr;
     ctx_freq_mgr.set_period(std::chrono::milliseconds{200});
 
@@ -229,14 +258,6 @@ class UnitConnector {
       // transfer or push data if its desired run time is anywhere between
       // time "now" and time "now + window".
       const auto now_plus_run_window = now + kRunWindow;
-
-      if (FLAGS_pid == 0) {
-        if (ctx_freq_mgr.Expired(now_plus_run_window)) {
-          ctx_ = std::make_unique<SystemWideStandaloneContext>();
-          now = std::chrono::steady_clock::now();
-          ctx_freq_mgr.Reset(now);
-        }
-      }
 
       // Transfer data from eBPF to user space.
       if (source_->sampling_freq_mgr().Expired(now_plus_run_window)) {
@@ -249,15 +270,26 @@ class UnitConnector {
         source_->sampling_freq_mgr().Reset(now);
       }
 
-      // Figure the time remaining until the next required data sample or push data.
-      time_until_next_tick = TimeUntilNextTick(now);
+      // Check if we need to refresh the system wide context. This is not necessary if the user
+      // specified a certain PID to trace.
+      if (ctx_refresh_enabled_) {
+        if (ctx_freq_mgr.Expired(now_plus_run_window)) {
+          ctx_ = std::make_unique<SystemWideStandaloneContext>();
+          now = std::chrono::steady_clock::now();
+          ctx_freq_mgr.Reset(now);
+        }
+      }
 
-      // Sleep, only if time_until_next_tick exceeds the "run window," i.e. if that time
-      // is long enough that Stirling should go to sleep. Otherwise, don't sleep and loop back
-      // through the sources, with the expectation that one of the sources triggers a call to
-      // either TransferData() or to PushData().
-      if (time_until_next_tick >= kRunWindow) {
-        std::this_thread::sleep_for(time_until_next_tick);
+      // Figure the time of next required data sample.
+      const auto next = source_->sampling_freq_mgr().next();
+
+      // Compute the amount of time to sleep.
+      const auto sleep_time = std::chrono::duration_cast<std::chrono::milliseconds>(next - now);
+
+      // Sleep, only if sleep_time exceeds the "run window." In other words, do not sleep if within
+      // the next millisecond we will wakeup to sample data or refresh the context.
+      if (sleep_time >= kRunWindow) {
+        std::this_thread::sleep_for(sleep_time);
 
         // We just went to sleep: update time now.
         now = std::chrono::steady_clock::now();
@@ -313,6 +345,9 @@ class UnitConnector {
 
   // A thread that periodically wakes up to read eBPF perf buffers and maps.
   std::thread transfer_data_thread_;
+
+  // To enable/disable automatic system wide context refresh.
+  std::atomic<bool> ctx_refresh_enabled_ = false;
 
   // State of the transfer data thread: enabled, or exited.
   std::atomic<bool> transfer_enable_ = false;
