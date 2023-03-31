@@ -320,6 +320,8 @@ class UnitConnector {
   }
 
   Status StartTransferDataThread() {
+    PX_RETURN_IF_ERROR(RefreshContextAndDeployUProbes());
+
     // About to start the transfer data thread. Level set our state now.
     transfer_exited_ = false;
     transfer_enable_ = true;
