@@ -149,11 +149,10 @@ class UnitConnector {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
 
-    // This method manipulates state normally managed by the transfer data thread.
-    // If the transfer data thread has been started, it is an error to try this.
-    // But, if we want to enable an explicit context refresh and blocking uprobe deploy,
-    // along with the transfer data thread, we can bring back the shared state lock.
-    if (started_ || transfer_enable_) {
+    // This method manipulates state normally managed by the transfer data thread. If the transfer
+    // data thread is running, it is an error to try this. If we want to enable this method in
+    // parallel with the transfer data thread, then an we can bring back the shared state lock.
+    if (transfer_enable_) {
       return error::Internal("Context is being managed by the transfer data thread.");
     }
 
