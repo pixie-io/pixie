@@ -111,37 +111,6 @@ class UnitConnector {
     return Status::OK();
   }
 
-  StatusOr<absl::flat_hash_set<md::UPID> > ParsePidsFlag() {
-    const std::vector<std::string_view> str_pids = absl::StrSplit(FLAGS_pids, ",");
-
-    if (str_pids.size() == 0) {
-      return {};
-    }
-
-    // For the UPIDs, we use ASID=0 because UnitConnector is not meant for a multi-host env.
-    constexpr uint32_t kASID = 0;
-
-    // A memory location that will be targeted by absl::SimpleAtoi; see below.
-    uint32_t pid;
-
-    // Eventually, this will be the return value from this fn.
-    absl::flat_hash_set<md::UPID> upids;
-
-    // Convert each string view pid to an int, then form a UPID.
-    for (const auto& str_pid : str_pids) {
-      const bool parsed_ok = absl::SimpleAtoi(str_pid, &pid);
-
-      if (!parsed_ok) {
-        return error::Internal(absl::Substitute("Could not parse pid $0 to integer.", str_pid));
-      }
-      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(pid));
-
-      // The stand alone context requires a set of UPIDs. We have just one in that set.
-      upids.insert(md::UPID(kASID, pid, ts));
-    }
-    return upids;
-  }
-
   Status Init(absl::flat_hash_set<md::UPID> upids = {}) {
     if (upids.size() == 0) {
       // Init() was called with its default arg., an empty set of UPIDs. Thus, check the value
@@ -228,6 +197,37 @@ class UnitConnector {
   T* RawPtr() { return source_.get(); }
 
  private:
+  StatusOr<absl::flat_hash_set<md::UPID> > ParsePidsFlag() {
+    const std::vector<std::string_view> pids = absl::StrSplit(FLAGS_pids, ",", absl::SkipEmpty());
+
+    if (pids.size() == 0) {
+      return absl::flat_hash_set<md::UPID>({});
+    }
+
+    // For the UPIDs, we use ASID=0 because UnitConnector is not meant for a multi-host env.
+    constexpr uint32_t kASID = 0;
+
+    // A memory location that will be targeted by absl::SimpleAtoi; see below.
+    uint32_t pid;
+
+    // Eventually, this will be the return value from this fn.
+    absl::flat_hash_set<md::UPID> upids;
+
+    // Convert each string view pid to an int, then form a UPID.
+    for (const auto& str_pid : pids) {
+      const bool parsed_ok = absl::SimpleAtoi(str_pid, &pid);
+
+      if (!parsed_ok) {
+        return error::Internal(absl::Substitute("Could not parse pid $0 to integer.", str_pid));
+      }
+      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(pid));
+
+      // The stand alone context requires a set of UPIDs. We have just one in that set.
+      upids.insert(md::UPID(kASID, pid, ts));
+    }
+    return upids;
+  }
+
   Status VerifyInitted() {
     if (source_ == nullptr) {
       return error::Internal("Source connector has not been initted, or was already deallocated.");
