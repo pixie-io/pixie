@@ -115,7 +115,7 @@ class UnitConnector {
     if (upids.size() == 0) {
       // Enter this branch if Init() is called with no arguments (i.e. with a default empty set).
       // ParsePidsFlag() inspects the value in FLAGS_pids to find any pids the user specified
-      // on the comand line.
+      // on the command line.
       PX_ASSIGN_OR_RETURN(upids, ParsePidsFlag());
     }
 
