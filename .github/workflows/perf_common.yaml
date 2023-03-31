@@ -34,7 +34,7 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: [self-host, nokvm]
+    runs-on: [self-hosted, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
       options: --cpus 15
@@ -58,7 +58,7 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: [self-host, nokvm]
+    runs-on: [self-hosted, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
       options: --cpus 15
