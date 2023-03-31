@@ -4252,9 +4252,8 @@ def pl_go_dependencies():
         name = "org_golang_x_net",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/net",
-        replace = "github.com/golang/net",
-        sum = "h1:93RQskMyCj+qMgABhIr88aAInt1TZk5IV6R4VCNlaEg=",
-        version = "v0.0.0-20211216030914-fe4d6282115f",
+        sum = "h1:Zrh2ngAOFYneWTAIAPethzeaQLuHwhuBkuV6ZiRnUaQ=",
+        version = "v0.8.0",
     )
     go_repository(
         name = "org_golang_x_oauth2",

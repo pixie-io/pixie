@@ -75,11 +75,11 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/mod v0.4.2
-	golang.org/x/net v0.0.0-20221002022538-bcab6841153b
+	golang.org/x/net v0.8.0
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
+	golang.org/x/sys v0.6.0
+	golang.org/x/term v0.6.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/api v0.46.0
@@ -275,7 +275,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
@@ -324,7 +324,6 @@ replace (
 	golang.org/x/lint => github.com/golang/lint v0.0.0-20201208152925-83fdc39ff7b5
 	golang.org/x/mobile => github.com/golang/mobile v0.0.0-20210220033013-bdb1ca9a1e08
 	golang.org/x/mod => github.com/golang/mod v0.4.2
-	golang.org/x/net => github.com/golang/net v0.0.0-20211216030914-fe4d6282115f
 	golang.org/x/oauth2 => github.com/golang/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync => github.com/golang/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys => github.com/golang/sys v0.0.0-20220224120231-95c6836cb0e7
