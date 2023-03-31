@@ -113,19 +113,18 @@ class UnitConnector {
 
   Status Init(absl::flat_hash_set<md::UPID> upids = {}) {
     if (upids.size() == 0) {
-      // Init() was called with its default arg., an empty set of UPIDs. Thus, check the value
-      // in FLAGS_pids to populate the UPIDs set. The default for FLAGS_pids is an empty
-      // string which parses to an empty set, which results in the default behavior of tracing
-      // every process.
+      // Enter this branch if Init() is called with no arguments (i.e. with a default empty set).
+      // ParsePidsFlag() inspects the value in FLAGS_pids to find any pids the user specified
+      // on the comand line.
       PX_ASSIGN_OR_RETURN(upids, ParsePidsFlag());
     }
 
     if (upids.size() == 0) {
-      // All pids & automatic context refresh.
+      // The upids set is empty: trace all processes and use automatic context refresh.
       ctx_refresh_enabled_ = true;
       ctx_ = std::make_unique<SystemWideStandaloneContext>();
     } else {
-      // User is asking to filter by specific pids.
+      // The upids set is non-empty: we will trace only processes identified by that set.
       // Disable automatic context refresh.
       ctx_refresh_enabled_ = false;
       ctx_ = std::make_unique<StandaloneContext>(upids);
@@ -133,14 +132,13 @@ class UnitConnector {
 
     source_ = T::Create("source_connector");
 
-    // Init() compiles the eBPF program and creates the eBPF perf buffer and maps needed
-    // to communicate data to/from eBPF.
+    // Compile the eBPF program and create eBPF perf buffers and maps as needed.
     PX_RETURN_IF_ERROR(source_->Init());
 
     // Give the source connector data tables to write into.
     source_->set_data_tables(data_tables_.tables());
 
-    // For the socket tracer, this triggers a blocking deploy of uprobes (and is otherwise a no-op).
+    // For the socket tracer (only), this triggers a blocking deploy of uprobes.
     // We do this here to support our socket tracer test cases.
     source_->InitContext(ctx_.get());
 
@@ -208,22 +206,22 @@ class UnitConnector {
     constexpr uint32_t kASID = 0;
 
     // A memory location that will be targeted by absl::SimpleAtoi; see below.
-    uint32_t pid;
+    uint32_t int_pid;
 
     // Eventually, this will be the return value from this fn.
     absl::flat_hash_set<md::UPID> upids;
 
     // Convert each string view pid to an int, then form a UPID.
     for (const auto& str_pid : pids) {
-      const bool parsed_ok = absl::SimpleAtoi(str_pid, &pid);
+      const bool parsed_ok = absl::SimpleAtoi(str_pid, &int_pid);
 
       if (!parsed_ok) {
         return error::Internal(absl::Substitute("Could not parse pid $0 to integer.", str_pid));
       }
-      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(pid));
+      PX_ASSIGN_OR_RETURN(const uint64_t ts, system::ProcParser().GetPIDStartTimeTicks(int_pid));
 
-      // The stand alone context requires a set of UPIDs. We have just one in that set.
-      upids.insert(md::UPID(kASID, pid, ts));
+      // Create a upid and add it to the upids set.
+      upids.insert(md::UPID(kASID, int_pid, ts));
     }
     return upids;
   }
