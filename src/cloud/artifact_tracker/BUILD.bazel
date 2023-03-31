@@ -31,6 +31,7 @@ go_library(
         "//src/cloud/artifact_tracker/controllers",
         "//src/cloud/artifact_tracker/schema",
         "//src/cloud/shared/pgmigrate",
+        "//src/shared/artifacts/manifest",
         "//src/shared/services",
         "//src/shared/services/healthz",
         "//src/shared/services/pg",
