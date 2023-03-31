@@ -36,7 +36,7 @@ TEST(ReadBuildVersionTest, WorkingOnBasicGoBinary) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
   ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
-  EXPECT_THAT(version, StrEq("go1.19.5"));
+  EXPECT_THAT(version, StrEq("go1.19.7"));
 }
 
 TEST(IsGoExecutableTest, WorkingOnBasicGoBinary) {
