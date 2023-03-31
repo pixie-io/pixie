@@ -1,4 +1,5 @@
 ---
+name: get-image
 on:
   workflow_call:
     inputs:
