@@ -14,6 +14,7 @@
 [![Go Report Card](https://goreportcard.com/badge/px.dev/pixie)](https://goreportcard.com/report/px.dev/pixie)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5027/badge)](https://bestpractices.coreinfrastructure.org/projects/5027)
 [![CLOMonitor](https://img.shields.io/endpoint?url=https://clomonitor.io/api/projects/cncf/pixie/badge)](https://clomonitor.io/projects/cncf/pixie)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/pixie-io/pixie/badge)](https://api.securityscorecards.dev/projects/github.com/pixie-io/pixie)
 
 <br>
 
