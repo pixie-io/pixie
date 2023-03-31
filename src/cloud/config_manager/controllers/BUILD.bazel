@@ -41,9 +41,7 @@ go_library(
         "@com_github_spf13_viper//:viper",
         "@in_gopkg_launchdarkly_go_sdk_common_v2//lduser",
         "@in_gopkg_launchdarkly_go_server_sdk_v5//:go-server-sdk_v5",
-        "@io_k8s_apimachinery//pkg/api/meta",
         "@io_k8s_apimachinery//pkg/api/resource",
-        "@io_k8s_client_go//kubernetes",
         "@org_golang_google_grpc//metadata",
     ],
 )
