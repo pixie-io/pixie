@@ -62,7 +62,7 @@ gcloud beta compute instances create \
   --instance-termination-action=DELETE --max-run-duration=10800s \
   --service-account="jenkins-worker@${GCP_PROJECT}.iam.gserviceaccount.com" \
   --scopes=https://www.googleapis.com/auth/cloud-platform \
-  --create-disk="auto-delete=yes,boot=yes,device-name=instance-1,image=${IMAGE_TO_USE},mode=rw,size=100,type=projects/${GCP_PROJECT}/zones/us-central1-a/diskTypes/pd-ssd"
+  --create-disk="auto-delete=yes,boot=yes,device-name=instance-1,image=${IMAGE_TO_USE},mode=rw,size=256,type=projects/${GCP_PROJECT}/zones/us-central1-a/diskTypes/pd-ssd"
 
 cleanup() {
   gcloud compute instances delete \
