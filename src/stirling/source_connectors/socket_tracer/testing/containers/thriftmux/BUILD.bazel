@@ -127,6 +127,7 @@ container_image(
     name = "thriftmux_base",
     base = DEFAULT_JAVA_BASE,
     debs = [
+        packages["libc6"],
         packages["libcrypt1"],
     ],
     tars = [
