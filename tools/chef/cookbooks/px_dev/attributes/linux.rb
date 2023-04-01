@@ -38,9 +38,9 @@ default['fossa']['sha256'] =
   'a263aabf09308614a39d8486df722f3b03ab5b0f5060b655be1fd9def8e5619f'
 
 default['golang']['download_path'] =
-  'https://dl.google.com/go/go1.20.linux-amd64.tar.gz'
+  'https://go.dev/dl/go1.20.2.linux-amd64.tar.gz'
 default['golang']['sha256'] =
-  '5a9ebcc65c1cce56e0d2dc616aff4c4cedcfbda8cc6f0288cc08cda3b18dcbf1'
+  '4eaea32f59cde4dc635fbc42161031d13e1c780b87097f4b4234cfce671f1768'
 
 default['golangci-lint']['download_path'] =
   'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-linux-amd64.tar.gz'
