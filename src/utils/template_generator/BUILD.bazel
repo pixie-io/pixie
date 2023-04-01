@@ -23,7 +23,6 @@ go_library(
     importpath = "px.dev/pixie/src/utils/template_generator",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/utils/shared/k8s",
         "//src/utils/shared/yamls",
         "//src/utils/template_generator/vizier_yamls",
         "@com_github_sirupsen_logrus//:logrus",

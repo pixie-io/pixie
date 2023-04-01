@@ -39,9 +39,9 @@ default['fossa']['sha256'] =
   '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
 
 default['golang']['download_path'] =
-  'https://dl.google.com/go/go1.20.darwin-amd64.tar.gz'
+  'https://go.dev/dl/go1.20.2.darwin-amd64.tar.gz'
 default['golang']['sha256'] =
-  '777025500f62d14bb5a4923072cd97431887961d24de08433a60c2fe1120531d'
+  'c93b8ced9517d07e1cd4c362c6e2d5242cb139e29b417a328fbf19aded08764c'
 
 default['golangci-lint']['download_path'] =
   'https://github.com/golangci/golangci-lint/releases/download/v1.51.1/golangci-lint-1.51.1-darwin-amd64.tar.gz'

@@ -15,7 +15,6 @@ rules:
   resources:
   - pods
   - services
-  - endpoints
   - namespaces
   - replicasets
   - deployments

@@ -87,6 +87,17 @@ runfiles_path="$(path_qemu_sandbox "${RUNFILES_DIR}")"
 mkdir -p "${runfiles_path}"
 cp -afL "${RUNFILES_DIR}"/* "${runfiles_path}"
 
+function rewrite_manifest() {
+  awk '{print $1" '"$(path_inside_qemu "${RUNFILES_DIR}")/"'"$1}' "$1"
+}
+
+if [ -f "${RUNFILES_DIR}/MANIFEST" ]; then
+  rewrite_manifest "${RUNFILES_DIR}/MANIFEST" > "${runfiles_path}/MANIFEST"
+fi
+if [ -f "${RUNFILES_DIR}_manifest" ]; then
+  rewrite_manifest "${RUNFILES_DIR}_manifest" > "${runfiles_path}_manifest"
+fi
+
 # Copy over testlog file.
 testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
 qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
