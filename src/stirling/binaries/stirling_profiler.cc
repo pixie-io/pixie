@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   // Something happened, log that.
   LOG_IF(WARNING, !status.ok()) << status.msg();
 
-  // Cleanup!
+  // Cleanup.
   g_profiler = nullptr;
 
   return status.ok() ? 0 : -1;
