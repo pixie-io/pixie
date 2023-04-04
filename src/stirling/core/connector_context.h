@@ -124,9 +124,7 @@ class StandaloneContext : public ConnectorContext {
 
   uint32_t GetASID() const override { return 0; }
 
-  bool UPIDIsInContext(const md::UPID& upid) const override {
-    return upids_.contains(upid);
-  }
+  bool UPIDIsInContext(const md::UPID& upid) const override { return upids_.contains(upid); }
 
   const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
 
@@ -166,9 +164,7 @@ class SystemWideStandaloneContext : public StandaloneContext {
  */
 class EverythingLocalContext : public SystemWideStandaloneContext {
  public:
-  bool UPIDIsInContext(const md::UPID& upid) const override {
-    return true;
-  }
+  bool UPIDIsInContext(const md::UPID& upid) const override { return true; }
 };
 
 }  // namespace stirling
