@@ -6,7 +6,7 @@ metadata:
   {{- if .Values.olmCatalogSource.annotations }}
   annotations: {{ .Values.olmCatalogSource.annotations | toYaml | nindent 4 }}
   {{- end }}
-  {{- if .Values.olmCatalogSource.annotations }}
+  {{- if .Values.olmCatalogSource.labels }}
   labels: {{ .Values.olmCatalogSource.labels | toYaml | nindent 4 }}
   {{- end }}
 spec:
