@@ -164,7 +164,7 @@ class SystemWideStandaloneContext : public StandaloneContext {
  */
 class EverythingLocalContext : public SystemWideStandaloneContext {
  public:
-  bool UPIDIsInContext(const md::UPID& upid) const override { return true; }
+  bool UPIDIsInContext(const md::UPID& /*upid*/) const override { return true; }
 };
 
 }  // namespace stirling
