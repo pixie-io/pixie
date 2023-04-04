@@ -16,10 +16,10 @@ olmOperatorNamespace: "px-operator"
 # Should be "stable" for production-versions of the operator, and "test" for release candidates.
 olmBundleChannel: "stable"
 # Optional annotations and labels for CatalogSource.
-catalogsource:
-  # Optional custom annotations to add to deployed pods.
+olmCatalogSource:
+  # Optional custom annotations to add to deployed pods managed by CatalogSource object.
   annotations: {}
-  # Optional custom labels to add to deployed pods.
+  # Optional custom labels to add to deployed pods managed by CatalogSource object.
   labels: {}
 ## Vizier configuration
 # The name of the Vizier instance deployed to the cluster.

@@ -3,11 +3,11 @@ kind: CatalogSource
 metadata:
   name: pixie-operator-index
   namespace: {{ .Values.olmOperatorNamespace }}
-  {{- if .Values.pod.annotations }}
-  annotations: {{ .Values.catalogsource.annotations | toYaml | nindent 4 }}
+  {{- if .Values.olmCatalogSource.annotations }}
+  annotations: {{ .Values.olmCatalogSource.annotations | toYaml | nindent 4 }}
   {{- end }}
-  {{- if .Values.pod.annotations }}
-  labels: {{ .Values.catalogsource.labels | toYaml | nindent 4 }}
+  {{- if .Values.olmCatalogSource.annotations }}
+  labels: {{ .Values.olmCatalogSource.labels | toYaml | nindent 4 }}
   {{- end }}
 spec:
   sourceType: grpc
