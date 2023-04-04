@@ -112,7 +112,7 @@ static __inline void eval_and_cleanup_nested_syscall_detection(uint64_t pid_tgid
   struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
 
   if (nested_syscall_fd_ptr == NULL) {
-    // This state should not occur since ssl_user_space_call_map for a given pid_tgid is set to 0
+    // This state should not occur since ssl_user_space_call_map for a given pid_tgid is set
     // upon SSL_write and SSL_read entry.
     return;
   }

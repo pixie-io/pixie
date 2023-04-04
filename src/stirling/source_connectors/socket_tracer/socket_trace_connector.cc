@@ -166,10 +166,10 @@ constexpr size_t kMaxPBStringLen = 64;
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
-      openssl_trace_mismatched_fds_counter_(
-          BuildCounter("openssl_trace_mismatched_fds",
-                       "Count of the times a syscall's fd was mismatched when detected fds from an "
-                       "active user space call")),
+      openssl_trace_mismatched_fds_counter_(BuildCounter(
+          "openssl_trace_mismatched_fds",
+          "Count of the times a syscall's fd was mismatched when detecting fds from an "
+          "active user space call")),
       uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
