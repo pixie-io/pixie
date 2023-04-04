@@ -184,6 +184,7 @@ static __inline void eval_and_cleanup_user_space_call_detection(uint64_t pid_tgi
   }
 
   uint32_t hist_key = (cpu_id << 6) | count;
+  bpf_trace_printk("Syscalls detected between SSL_write/SSL_read: %d and validated: %d", count, validated);
   openssl_active_nested_syscalls.increment(hist_key);
 
 cleanup:
