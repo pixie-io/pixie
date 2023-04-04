@@ -763,8 +763,8 @@ def pl_go_dependencies():
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/docker/docker",
         replace = "github.com/moby/moby",
-        sum = "h1:LfdCNzNpDYtOTtlO5wxLcUEk0nyM3KqPyeIyXVdvl/U=",
-        version = "v20.10.21+incompatible",
+        sum = "h1:hjfxUufgeyrgolyaOWASyR9SvehpNcq/QHp/tx4VgsM=",
+        version = "v20.10.24+incompatible",
     )
     go_repository(
         name = "com_github_docker_go_connections",
