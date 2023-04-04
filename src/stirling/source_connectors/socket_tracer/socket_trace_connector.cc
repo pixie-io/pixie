@@ -630,8 +630,6 @@ void SocketTraceConnector::CheckTracerState() {
 
   int error_code;
   openssl_trace_state_->get_value(0, error_code);
-
-  LOG(WARNING) << absl::Substitute("openssl_trace_state_ error code was $0", error_code);
   DCHECK(error_code == 0);
 
   auto table = openssl_active_nested_syscalls_hist_->get_table_offline();
@@ -641,7 +639,7 @@ void SocketTraceConnector::CheckTracerState() {
 
       // Syscall count is the first 6 bits and cpu id is next 10 bits
       uint32_t syscall_count = key & 0x3f;
-      uint32_t cpu_id = (key >> 6) & 0x7ff;
+      uint32_t cpu_id = (key >> 6) & 0x3ff;
       LOG(WARNING) << absl::Substitute("Found syscall count of $0 for cpu $1 with frequency: $2", syscall_count, cpu_id, value);
   }
 }

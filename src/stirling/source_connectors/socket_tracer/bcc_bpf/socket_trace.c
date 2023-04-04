@@ -91,11 +91,17 @@ BPF_HASH(active_write_args_map, uint64_t, struct data_args_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_read_args_map, uint64_t, struct data_args_t);
 
+struct user_space_fd_t {
+  int count;
+  int fd;
+  bool validated_socket;
+  bool mismatched_fds;
+};
 // Maps used to verify if SSL_write or SSL_read are on the stack during a syscall in
 // order to propagate the socket fd back to the SSL_write and SSL_read return probes.
 // Key is pid tgid
 // Value is count of syscalls nested within SSL_write entry and ret (updated by syscall probes)
-BPF_HASH(ssl_userspace_call_map, uint64_t, int);
+BPF_HASH(ssl_user_space_call_map, uint64_t, struct user_space_fd_t);
 
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
@@ -157,15 +163,43 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
   conn_info->ssl = true;
 }
 
-static __inline void propagate_fd_to_userspace_call(uint64_t pid_tgid, int fd) {
-  int* count_ptr = ssl_userspace_call_map.lookup(&pid_tgid);
-  if (count_ptr != NULL) {
+static __inline void set_user_space_socket_fd_validated(uint64_t pid_tgid, int fd) {
+  struct user_space_fd_t* user_space_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
+
+  if (user_space_fd_ptr != NULL) {
+    user_space_fd_ptr->validated_socket = true;
+    if (user_space_fd_ptr->fd == kInvalidFD) {
+      user_space_fd_ptr->fd = fd;
+    }
+    ssl_user_space_call_map.update(&pid_tgid, user_space_fd_ptr);
+
     uint32_t tgid = pid_tgid >> 32;
     set_conn_as_ssl(tgid, fd);
+  }
+}
 
-     int count = *count_ptr;
-     count += 1;
-     ssl_userspace_call_map.update(&pid_tgid, &count);
+static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd, bool set_conn_ssl) {
+  struct user_space_fd_t* user_space_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
+  if (user_space_fd_ptr != NULL) {
+
+    if (set_conn_ssl) {
+      set_user_space_socket_fd_validated(pid_tgid, fd);
+    }
+
+    int count = user_space_fd_ptr->count;
+    /* if (count == 1 &&  user_space_fd_ptr->fd == fd) return; */
+
+    if (count == 0 && set_conn_ssl) {
+      user_space_fd_ptr->fd = fd;
+    }
+
+    int expected_fd = user_space_fd_ptr->fd;
+    if (expected_fd != kInvalidFD && expected_fd != fd) {
+      user_space_fd_ptr->mismatched_fds = true;
+    }
+    count += 1;
+    user_space_fd_ptr->count = count;
+    ssl_user_space_call_map.update(&pid_tgid, user_space_fd_ptr);
   }
 }
 
@@ -1011,7 +1045,7 @@ int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t co
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, fd);
+    propagate_fd_to_user_space_call(id, fd, false);
   }
 
   // Stash arguments.
@@ -1031,6 +1065,9 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL && write_args->sock_event) {
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      set_user_space_socket_fd_validated(id, write_args->fd);
+    }
     process_syscall_data(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1043,7 +1080,7 @@ int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // Stash arguments.
@@ -1075,7 +1112,7 @@ int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t cou
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, fd);
+    propagate_fd_to_user_space_call(id, fd, false);
   }
 
   // Stash arguments.
@@ -1095,6 +1132,9 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL && read_args->sock_event) {
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      set_user_space_socket_fd_validated(id, read_args->fd);
+    }
     process_syscall_data(ctx, id, kIngress, read_args, bytes_count);
   }
 
@@ -1107,7 +1147,7 @@ int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // Stash arguments.
@@ -1141,7 +1181,7 @@ int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // Stash arguments.
@@ -1204,7 +1244,7 @@ int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, si
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // Stash arguments.
@@ -1252,7 +1292,7 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   if (msghdr != NULL) {
@@ -1302,7 +1342,7 @@ int syscall__probe_entry_sendmmsg(struct pt_regs* ctx, int sockfd, struct mmsghd
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // TODO(oazizi): Right now, we only trace the first message in a sendmmsg() call.
@@ -1358,7 +1398,7 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_ms
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   if (msghdr != NULL) {
@@ -1410,7 +1450,7 @@ int syscall__probe_entry_recvmmsg(struct pt_regs* ctx, int sockfd, struct mmsghd
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, sockfd);
+    propagate_fd_to_user_space_call(id, sockfd, true);
   }
 
   // TODO(oazizi): Right now, we only trace the first message in a recvmmsg() call.
@@ -1466,7 +1506,7 @@ int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec*
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, fd);
+    propagate_fd_to_user_space_call(id, fd, false);
   }
 
   // Stash arguments.
@@ -1487,6 +1527,9 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL && write_args->sock_event) {
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      set_user_space_socket_fd_validated(id, write_args->fd);
+    }
     process_syscall_data_vecs(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1499,7 +1542,7 @@ int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, i
   uint64_t id = bpf_get_current_pid_tgid();
 
   if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
-    propagate_fd_to_userspace_call(id, fd);
+    propagate_fd_to_user_space_call(id, fd, false);
   }
 
   // Stash arguments.
@@ -1520,6 +1563,9 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL && read_args->sock_event) {
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      set_user_space_socket_fd_validated(id, read_args->fd);
+    }
     process_syscall_data_vecs(ctx, id, kIngress, read_args, bytes_count);
   }
 

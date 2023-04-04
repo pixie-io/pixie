@@ -46,13 +46,22 @@ BPF_HASH(openssl_symaddrs_map, uint32_t, struct openssl_symaddrs_t);
 //
 // This assumes that a given instance will not have 1024 or more cores and that the syscall count
 // will not be 64 or more.
-BPF_HISTOGRAM(openssl_active_nested_syscalls, uint32_t, 65536);
+static const uint32_t nested_syscalls_max = 0xffff;
+BPF_HISTOGRAM(openssl_active_nested_syscalls, uint32_t, nested_syscalls_max);
 
 BPF_ARRAY(openssl_trace_state, int, 1);
 static const uint32_t kErrorStatusIdx = 0;
 
 static const uint32_t kCPUIdOverflow = 1;
 static const uint32_t kSyscallCountOverflow = 2;
+static const uint32_t kNonNativeBIOUsageDetected = 3;
+static const uint32_t kMismatchedFDsDetected = 4;
+
+static const uint32_t syscall_count_bits = 6;
+static const uint32_t cpu_id_bits = 16 - syscall_count_bits;
+static const uint32_t cpu_id_bitmask = nested_syscalls_max >> syscall_count_bits;
+static const uint32_t syscall_count_bitmask = nested_syscalls_max >> cpu_id_bits;
+
 
 /***********************************************************
  * General helpers
@@ -127,40 +136,59 @@ static int get_fd(uint32_t tgid, void* ssl) {
 BPF_HASH(active_ssl_read_args_map, uint64_t, struct data_args_t);
 BPF_HASH(active_ssl_write_args_map, uint64_t, struct data_args_t);
 
-static __inline void eval_and_cleanup_userspace_call_detection(uint64_t pid_tgid) {
-  uint32_t* count_ptr = ssl_userspace_call_map.lookup(&pid_tgid);
+static __inline void eval_and_cleanup_user_space_call_detection(uint64_t pid_tgid) {
+  struct user_space_fd_t* user_space_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
 
-  if (count_ptr == NULL) {
-    // This state should not occur since ssl_userspace_call_map for a given pid_tgid is set to 0
+  if (user_space_fd_ptr == NULL) {
+    // This state should not occur since ssl_user_space_call_map for a given pid_tgid is set to 0
     // upon SSL_write and SSL_read entry.
     return;
   }
 
-  uint32_t count = *count_ptr;
+  uint32_t count = user_space_fd_ptr->count;
+  bool validated = user_space_fd_ptr->validated_socket;
+  bool mismatched_fds = user_space_fd_ptr->mismatched_fds;
+  int fd = user_space_fd_ptr->fd;
   uint32_t cpu_id = bpf_get_smp_processor_id();
-  if (count >= 64) {
-      int error_status_idx = kErrorStatusIdx;
-      int overflow_status_code = kSyscallCountOverflow;
-      openssl_trace_state.update(&error_status_idx, &overflow_status_code);
 
-      goto cleanup;
+  if (count > syscall_count_bitmask) {
+    int error_status_idx = kErrorStatusIdx;
+    int overflow_status_code = kSyscallCountOverflow;
+    openssl_trace_state.update(&error_status_idx, &overflow_status_code);
+
+    goto cleanup;
   }
 
-  if (cpu_id >= 1024) {
-      int error_status_idx = kErrorStatusIdx;
-      int overflow_status_code = kCPUIdOverflow;
-      openssl_trace_state.update(&error_status_idx, &overflow_status_code);
+  if (cpu_id > cpu_id_bitmask) {
+    int error_status_idx = kErrorStatusIdx;
+    int overflow_status_code = kCPUIdOverflow;
+    openssl_trace_state.update(&error_status_idx, &overflow_status_code);
 
-      goto cleanup;
+    goto cleanup;
+  }
+
+  if (fd != kInvalidFD && !validated) {
+    int error_status_idx = kErrorStatusIdx;
+    int status_code = kNonNativeBIOUsageDetected;
+    openssl_trace_state.update(&error_status_idx, &status_code);
+
+    goto cleanup;
+  }
+
+  if (mismatched_fds) {
+    int error_status_idx = kErrorStatusIdx;
+    int status_code = kMismatchedFDsDetected;
+    openssl_trace_state.update(&error_status_idx, &status_code);
+
+    goto cleanup;
   }
 
   uint32_t hist_key = (cpu_id << 6) | count;
-  bpf_trace_printk("Histogram key %d made of cpu id: %d and count: %d", hist_key, cpu_id, count);
   openssl_active_nested_syscalls.increment(hist_key);
 
 cleanup:
 
-  ssl_userspace_call_map.delete(&pid_tgid);
+  ssl_user_space_call_map.delete(&pid_tgid);
 }
 
 // Function signature being probed:
@@ -172,8 +200,12 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   update_node_ssl_tls_wrap_map(ssl);
 
-  int count = 0;
-  ssl_userspace_call_map.update(&id, &count);
+  struct user_space_fd_t user_space_fd = {
+      .count = 0,
+      .fd = kInvalidFD,
+      .validated_socket = false,
+  };
+  ssl_user_space_call_map.update(&id, &user_space_fd);
 
   char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
@@ -202,7 +234,7 @@ int probe_ret_SSL_write(struct pt_regs* ctx) {
     process_openssl_data(ctx, id, kEgress, write_args);
   }
 
-  eval_and_cleanup_userspace_call_detection(id);
+  eval_and_cleanup_user_space_call_detection(id);
   active_ssl_write_args_map.delete(&id);
   return 0;
 }
@@ -216,8 +248,12 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   update_node_ssl_tls_wrap_map(ssl);
 
-  int count = 0;
-  ssl_userspace_call_map.update(&id, &count);
+  struct user_space_fd_t user_space_fd = {
+      .count = 0,
+      .fd = kInvalidFD,
+      .validated_socket = false,
+  };
+  ssl_user_space_call_map.update(&id, &user_space_fd);
 
   char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
@@ -246,7 +282,7 @@ int probe_ret_SSL_read(struct pt_regs* ctx) {
     process_openssl_data(ctx, id, kIngress, read_args);
   }
 
-  eval_and_cleanup_userspace_call_detection(id);
+  eval_and_cleanup_user_space_call_detection(id);
 
   active_ssl_read_args_map.delete(&id);
   return 0;
