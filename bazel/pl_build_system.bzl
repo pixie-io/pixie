@@ -213,6 +213,20 @@ def pl_cc_binary(
         features = pl_default_features(),
     )
 
+def pl_cc_musl_binary(name, **kwargs):
+    if not "copts" in kwargs:
+        kwargs["copts"] = []
+    kwargs["copts"] = kwargs["copts"] + ["-nostdlib", "-nostdinc"]
+
+    if not "linkopts" in kwargs:
+        kwargs["linkopts"] = []
+    kwargs["linkopts"]  = kwargs["linkopts"] + ["-nostdlib"]
+
+    if not "deps" in kwargs:
+        kwargs["deps"] = []
+    kwargs["deps"] = kwargs["deps"] + ["@org_libc_musl//:musl"]
+    cc_binary(name = name, **kwargs)
+
 # PL C++ test targets should be specified with this function.
 def pl_cc_test(
         name,
