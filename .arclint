@@ -74,7 +74,7 @@
     "cpplint": {
       "type": "cpplint",
       "include": [
-        "(\\.(c|cc|h)$)"
+        "(\\.(cc|h)$)"
       ],
       "exclude": [
         "(_objc\\.h$)"
