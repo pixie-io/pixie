@@ -170,16 +170,18 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
 static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) {
   struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
   if (nested_syscall_fd_ptr != NULL) {
-    int expected_fd = nested_syscall_fd_ptr->fd;
-    if (expected_fd != kInvalidFD && expected_fd != fd) {
+    int current_fd = nested_syscall_fd_ptr->fd;
+    if (current_fd == kInvalidFD) {
+      nested_syscall_fd_ptr->fd = fd;
+    } else if (current_fd != fd) {
+      // Found two different fds during a single SSL_write/SSL_read call. This invalidates
+      // our tls tracing assumptions and must be recorded.
       nested_syscall_fd_ptr->mismatched_fds = true;
     }
 
-    nested_syscall_fd_ptr->fd = fd;
-
-    // TODO(ddelnano): Until the new tls tracing implementation is being rolled out
-    // the active user space tls function detection should not change the functionality
-    // of the existing tracing. This must be uncommented as part of pixie#1123.
+    // TODO(ddelnano): Our existing functionality is not changed until we uncomment
+    // set_conn_as_ssl. We plan to switch over to the new functionality as part of
+    // pixie#1123.
     // uint32_t tgid = pid_tgid >> 32;
     // set_conn_as_ssl(tgid, fd);
   }
