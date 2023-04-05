@@ -65,6 +65,7 @@ export const CompletionLabel = React.memo<{
 }>(({ icon, input, highlights }) => {
   const classes = useStyles();
 
+  // Render the highlighted characters, in streaks (one element per change in highlighted/not, versus one per character)
   const parts = React.useMemo(() => {
     const outs: React.ReactNode[] = [];
     let isHighlighting: boolean | null = null;
