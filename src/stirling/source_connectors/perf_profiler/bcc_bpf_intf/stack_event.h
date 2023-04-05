@@ -55,5 +55,6 @@ static const uint32_t kOverflowBitPos = 0;
 static const uint32_t kMapReadFailureBitPos = 1;
 
 // The error codes, themselves:
+static const uint64_t kPerfProfilerStatusOk = 0ULL;
 static const uint64_t kOverflowError = 1ULL << kOverflowBitPos;
 static const uint64_t kMapReadFailureError = 1ULL << kMapReadFailureBitPos;

@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/common/metrics/metrics.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/source_connector.h"
@@ -101,14 +102,17 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   void PrintStats() const;
+  void CheckProfilerState();
 
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
 
   std::unique_ptr<ebpf::BPFArrayTable<uint64_t>> profiler_state_;
+  prometheus::Counter& profiler_state_overflow_counter_;
+  prometheus::Counter& profiler_state_map_read_error_counter_;
 
-  // Number of iterations, where each iteration is drains the information collectid in BPF.
+  // Number of iterations, where each iteration is drains the information collected in BPF.
   uint64_t transfer_count_ = 0;
 
   // Tracks unique stack trace ids, for the lifetime of Stirling:
