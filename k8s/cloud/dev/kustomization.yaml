@@ -23,6 +23,11 @@ resources:
 - ../base
 - ../overlays/exposed_services_ilb
 - plugin_db_updater_job.yaml
+patches:
+- path: auth_deployment_patch.yaml
+  target:
+    kind: Deployment
+    labelSelector: name=auth-server
 patchesStrategicMerge:
 # bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
 # - bq_config.yaml
