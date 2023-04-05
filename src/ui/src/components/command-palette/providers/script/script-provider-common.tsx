@@ -19,7 +19,8 @@
 import * as React from 'react';
 
 import { gql } from '@apollo/client';
-import { Box, Typography } from '@mui/material';
+import { Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
 
 import { PixieAPIClient } from 'app/api';
 import { parse, ParseResult, Token } from 'app/components/command-palette/parser';
@@ -36,22 +37,63 @@ export function quoteIfNeeded(input: string): string {
   return needQuoteRe.test(input) ? `"${input.replace(/"/g, '\\"')}"` : input;
 }
 
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  labelBox: {
+    display: 'flex',
+    gap: theme.spacing(1),
+    flexFlow: 'row nowrap',
+  },
+  descTitle: { ...theme.typography.h2 },
+  descHint: {
+    ...theme.typography.subtitle2,
+    fontStyle: 'italic',
+  },
+  descBody: {
+    ...theme.typography.body1,
+    marginTop: 0,
+  },
+  descBodyFull: {
+    ...theme.typography.body1,
+    marginTop: theme.spacing(1),
+  },
+}), { name: 'CommandPaletteBits' });
+
 export const CompletionLabel = React.memo<{
   icon: React.ReactNode,
   input: string,
   highlights: number[],
 }>(({ icon, input, highlights }) => {
-  const outs: React.ReactNode[] = [];
-  for (let i = 0; i < input.length; i++) {
-    if (highlights.includes(i)) outs.push(<strong key={i}>{input.substring(i, i + 1)}</strong>);
-    else outs.push(<span key={i}>{input.substring(i, i + 1)}</span>);
-  }
+  const classes = useStyles();
+
+  // Render the highlighted characters, in streaks (one element per change in highlighted/not, versus one per character)
+  const parts = React.useMemo(() => {
+    const outs: React.ReactNode[] = [];
+    let isHighlighting: boolean | null = null;
+    let streak = '';
+    for (let i = 0; i < input.length; i++) {
+      const isH = highlights.includes(i);
+      if (isH !== isHighlighting) {
+        if (streak.length) {
+          const j = outs.length;
+          outs.push(isHighlighting ? <strong key={j}>{streak}</strong> : <span key={j}>{streak}</span>);
+        }
+        streak = '';
+        isHighlighting = isH;
+      }
+      streak += input.substring(i, i + 1);
+    }
+    if (streak.length) {
+      const j = outs.length;
+      outs.push(isHighlighting ? <strong key={j}>{streak}</strong> : <span key={j}>{streak}</span>);
+    }
+    return outs;
+  }, [input, highlights]);
+
   return (
-    // eslint-disable-next-line react-memo/require-usememo
-    <Box sx={{ display: 'flex', gap: 1, flexFlow: 'row nowrap' }}>
+    <div className={classes.labelBox}>
       {icon}
-      <span>{outs}</span>
-    </Box>
+      <span>{parts}</span>
+    </div>
   );
 });
 CompletionLabel.displayName = 'CompletionLabel';
@@ -61,13 +103,12 @@ export const CompletionDescription = React.memo<{
   title?: React.ReactNode,
   hint?: React.ReactNode,
 }>(({ body, title, hint }) => {
+  const classes = useStyles();
   return (
     <>
-      {title && <Typography variant='h2'>{title}</Typography>}
-      {/* eslint-disable-next-line react-memo/require-usememo */}
-      {hint && <Typography variant='subtitle2' sx={{ fontStyle: 'italic' }}>({hint})</Typography>}
-      {/* eslint-disable-next-line react-memo/require-usememo */}
-      <Typography variant='body1' sx={{ mt: (title || hint) ? 1 : 0 }}>{body}</Typography>
+      {title && <div className={classes.descTitle}>{title}</div>}
+      {hint && <div className={classes.descHint}>({hint})</div>}
+      <div className={title || hint ? classes.descBodyFull : classes.descBody}>{body}</div>
     </>
   );
 });
