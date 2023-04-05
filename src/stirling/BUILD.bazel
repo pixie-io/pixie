@@ -83,10 +83,8 @@ gen_timeconst(name = "stirling_linux_timeconst_files")
 # Used by stirling runtime to provide symbolization for Java application profiling.
 stirling_java_profiling_tools = [
     "//src/stirling/source_connectors/perf_profiler/java/px_jattach:px_jattach",
-] + select({
-    "@platforms//cpu:x86_64": ["//src/stirling/source_connectors/perf_profiler/java/agent:agent"],
-    "//conditions:default": [],
-})
+    "//src/stirling/source_connectors/perf_profiler/java/agent:agent",
+]
 
 # Use this binary to dynamically turn on/off Stirling runtime's debug logging.
 # See src/stirling/e2e_tests/stirling_signal_test.sh for its usage.

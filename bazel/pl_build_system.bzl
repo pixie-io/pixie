@@ -213,6 +213,40 @@ def pl_cc_binary(
         features = pl_default_features(),
     )
 
+def _default_empty_list(name, kwargs):
+    if not name in kwargs:
+        kwargs[name] = []
+
+def pl_cc_musl_binary(name, **kwargs):
+    _default_empty_list("copts", kwargs)
+    kwargs["copts"] = kwargs["copts"] + ["-nostdlib", "-nostdinc"]
+
+    _default_empty_list("additional_linker_inputs", kwargs)
+    kwargs["additional_linker_inputs"] = kwargs["additional_linker_inputs"] + [
+        "@org_libc_musl//:crt1.o",
+        "@org_libc_musl//:crti.o",
+        "@org_libc_musl//:crtn.o",
+    ]
+
+    linkshared = "linkshared" in kwargs and kwargs["linkshared"]
+    start_libs = []
+    if not linkshared:
+        start_libs = start_libs + ["$(location @org_libc_musl//:crt1.o)"]
+    start_libs = start_libs + ["$(location @org_libc_musl//:crti.o)"]
+    end_libs = ["$(location @org_libc_musl//:crtn.o)"]
+    linkopts = [
+        "-nostdlib",
+        "-nodefaultlibs",
+        "-nostartfiles",
+        "-lgcc",
+    ]
+    _default_empty_list("linkopts", kwargs)
+    kwargs["linkopts"] = start_libs + kwargs["linkopts"] + linkopts + end_libs
+
+    _default_empty_list("deps", kwargs)
+    kwargs["deps"] = kwargs["deps"] + ["@org_libc_musl//:musl"]
+    cc_binary(name = name, **kwargs)
+
 # PL C++ test targets should be specified with this function.
 def pl_cc_test(
         name,
