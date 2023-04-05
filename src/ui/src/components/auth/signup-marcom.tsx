@@ -35,7 +35,7 @@ import { Logo } from 'configurable/logo';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   heading: {
-    color: palette.foreground.white,
+    color: palette.foreground.two,
     textAlign: 'center',
   },
   message: {
@@ -49,10 +49,10 @@ const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
     marginTop: spacing(5),
     alignItems: 'center',
     background: `linear-gradient(180deg, ${alpha(
-      palette.background.two,
+      palette.background.four,
       0.87,
     )},
-    ${alpha(palette.background.three, 0.22)})`,
+    ${alpha(palette.background.five, 0.22)})`,
     boxShadow: `2px 2px 2px 0px ${palette.background.default}`,
     paddingLeft: spacing(2),
     paddingRight: spacing(2),

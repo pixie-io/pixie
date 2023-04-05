@@ -107,7 +107,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
   bodyRow: {
     '&:not(:last-child)': {
-      borderBottom: `1px solid ${theme.palette.background.three}`,
+      borderBottom: `1px solid ${theme.palette.background.five}`,
     },
   },
   bodyRowSelectable: {
@@ -128,7 +128,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     padding: `0 ${theme.spacing(1)}`,
     height: `${ROW_HEIGHT_PX}px`, // Ensures the border stretches. See cellContents for the rest.
-    borderRight: `1px solid ${theme.palette.background.three}`,
+    borderRight: `1px solid ${theme.palette.background.five}`,
     '&:last-of-type': {
       borderRightWidth: 0,
     },

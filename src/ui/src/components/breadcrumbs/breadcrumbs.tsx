@@ -137,7 +137,7 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.foreground.grey3,
     padding: theme.spacing(2),
     borderTop: 'solid 1px',
-    borderColor: theme.palette.background.three,
+    borderColor: theme.palette.background.five,
   },
 }), { name: 'DialogDropdown' });
 
