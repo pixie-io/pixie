@@ -791,26 +791,12 @@ func podUnschedulableMessage(podStatus *v1.PodStatus) string {
 	return ""
 }
 
-func pemCanScheduleWithTaint(t *v1.Taint) bool {
-	// For now an effect of NoSchedule should be sufficient, we don't have tolerations in the Daemonset spec.
-	return t.Effect != "NoSchedule"
-}
-
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return 0, err
 	}
-	unscheduleableNodes := 0
-	for _, n := range nodes.Items {
-		for _, t := range n.Spec.Taints {
-			if !pemCanScheduleWithTaint(&t) {
-				unscheduleableNodes++
-				break
-			}
-		}
-	}
-	return len(nodes.Items) - unscheduleableNodes, nil
+	return len(nodes.Items), nil
 }
 
 var empty struct{}
