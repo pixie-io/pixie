@@ -1,0 +1,18 @@
+---
+- op: add
+  path: /spec/template/spec/containers/0/env
+  # yamllint disable rule:indentation
+  value: |
+    - name: PL_AUTH0_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: cloud-auth0-secrets
+          key: auth0-client-id
+          optional: true
+    - name: PL_AUTH0_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: cloud-auth0-secrets
+          key: auth0-client-secret
+          optional: true
+  # yamllint enable rule:indentation
