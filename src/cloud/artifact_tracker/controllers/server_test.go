@@ -45,6 +45,9 @@ func mustSetupFakeBucket(t *testing.T) stiface.Client {
 		"test-bucket": testingutils.NewMockGCSBucket(
 			map[string]*testingutils.MockGCSObject{
 				"cli/1.2.1-pre.3/cli_linux_amd64.sha256": testingutils.NewMockGCSObject([]byte("the-sha256"), nil),
+				"cli/1.2.1-pre.3/cli_linux_amd64": testingutils.NewMockGCSObject([]byte("mybin"), &storage.ObjectAttrs{
+					MediaLink: "the-url",
+				}),
 			},
 			nil,
 		),
@@ -124,7 +127,7 @@ func loadTestManifest(s *controllers.Server) error {
 }
 
 func TestServer_GetArtifactList(t *testing.T) {
-	server := controllers.NewServer(nil, "bucket", "release-bucket", nil)
+	server := controllers.NewServer(nil, "bucket", nil)
 
 	err := loadTestManifest(server)
 	require.NoError(t, err)
@@ -252,7 +255,7 @@ func TestServer_GetArtifactList(t *testing.T) {
 func TestServer_GetDownloadLink(t *testing.T) {
 	storageClient := mustSetupFakeBucket(t)
 
-	server := controllers.NewServer(storageClient, "test-bucket", "test-release", &jwt.Config{
+	server := controllers.NewServer(storageClient, "test-bucket", &jwt.Config{
 		Email:      "test@test.com",
 		PrivateKey: []byte("the-key"),
 	})
@@ -313,10 +316,6 @@ func TestServer_GetDownloadLink(t *testing.T) {
 			errCode: codes.OK,
 		},
 	}
-
-	controllers.URLSigner = func(bucket, name string, opts *storage.SignedURLOptions) (string, error) {
-		return "the-url", nil
-	}
 	// Only testing error cases for now because the storage API is hard to mock.
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -326,8 +325,6 @@ func TestServer_GetDownloadLink(t *testing.T) {
 				assert.Nil(t, resp)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, resp.Url, "the-url")
-
 				ts, err := types.TimestampFromProto(resp.ValidUntil)
 				require.NoError(t, err)
 				assert.True(t, time.Until(ts) > 0)

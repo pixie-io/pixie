@@ -40,7 +40,7 @@ jobs:
         ./ci/vizier_build_release.sh
     - name: Build & Export Docs
       env:
-        PXL_DOCS_GCS_PATH: "gs://pl-docs/pxl-docs.json"
+        PXL_DOCS_GCS_PATH: "gs://pixie-dev-public/pxl-docs.json"
       run: |
         docs="$(mktemp)"
         bazel run //src/carnot/docstring:docstring -- --output_json "${docs}"

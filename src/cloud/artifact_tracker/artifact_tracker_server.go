@@ -45,7 +45,6 @@ import (
 
 func init() {
 	pflag.String("artifact_bucket", "pl-artifacts", "The name of the artifact bucket.")
-	pflag.String("release_artifact_bucket", "pl-artifacts", "The name of the artifact bucket containing official releases.")
 	pflag.String("sa_key_path", "/creds/service_account.json", "The path to the service account JSON file.")
 	pflag.String("vizier_version", "", "If specified, the db will not be queried. The only vizier version is assumed to be the one specified.")
 	pflag.String("cli_version", "", "If specified, the db will not be queried. The only CLI version is assumed to be the one specified.")
@@ -99,8 +98,7 @@ func main() {
 	env := artifacttrackerenv.New()
 
 	bucket := viper.GetString("artifact_bucket")
-	releaseBucket := viper.GetString("release_artifact_bucket")
-	svr := controllers.NewServer(stiface.AdaptClient(client), bucket, releaseBucket, saCfg)
+	svr := controllers.NewServer(stiface.AdaptClient(client), bucket, saCfg)
 
 	// If any versions are not hardcoded, then we need to poll for the artifact manifest.
 	if (viper.GetString("vizier_version") == "") || (viper.GetString("cli_version") == "") || (viper.GetString("operator_version") == "") {

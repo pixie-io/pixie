@@ -53,14 +53,13 @@ const (
 type Server struct {
 	sc             stiface.Client
 	artifactBucket string
-	releaseBucket  string
 	gcsSA          *jwt.Config
 	m              *manifest.ArtifactManifest
 }
 
 // NewServer creates a new artifact tracker server.
-func NewServer(client stiface.Client, bucket string, releaseBucket string, gcsSA *jwt.Config) *Server {
-	return &Server{sc: client, artifactBucket: bucket, releaseBucket: releaseBucket, gcsSA: gcsSA}
+func NewServer(client stiface.Client, bucket string, gcsSA *jwt.Config) *Server {
+	return &Server{sc: client, artifactBucket: bucket, gcsSA: gcsSA}
 }
 
 func (s *Server) getArtifactListSpecifiedVizier() (*vpb.ArtifactSet, error) {
@@ -213,40 +212,14 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	// Artifact found, generate the download link.
 	// location: gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64
-
-	// If the version is not an official release, it is contained in a private bucket which requires creds to
-	// generate a signed URL.
-	release := !strings.Contains(versionStr, "-")
 	bucket := s.artifactBucket
-	if release {
-		bucket = s.releaseBucket
-	}
-	if !release && s.gcsSA == nil {
-		return nil, status.Error(codes.Internal, "Could not get download URL for non-release build without creds")
-	}
 
-	var url string
-	var err error
 	objectPath := path.Join(name, versionStr, fmt.Sprintf("%s_%s", name, downloadSuffix(at)))
-	if !release {
-		url, err = URLSigner(bucket, objectPath, &storage.SignedURLOptions{
-			GoogleAccessID: s.gcsSA.Email,
-			PrivateKey:     s.gcsSA.PrivateKey,
-			Method:         "GET",
-			Expires:        expires,
-			Scheme:         0,
-		})
-
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to sign download URL")
-		}
-	} else {
-		attr, err := s.sc.Bucket(bucket).Object(objectPath).Attrs(ctx)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to get URL")
-		}
-		url = attr.MediaLink
+	attr, err := s.sc.Bucket(bucket).Object(objectPath).Attrs(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get URL")
 	}
+	url := attr.MediaLink
 
 	tpb, _ := types.TimestampProto(expires)
 
