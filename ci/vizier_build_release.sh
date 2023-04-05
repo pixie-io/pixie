@@ -37,8 +37,7 @@ bucket="pixie-dev-public"
 extra_bazel_args=()
 if [[ $release_tag == *"-"* ]]; then
   build_type="--//k8s:build_type=dev"
-  # TODO(vihang/michelle): Revisit this bucket.
-  bucket="pixie-prod-artifacts"
+  # Use the same bucket as above for RCs
 fi
 
 output_path="gs://${bucket}/vizier/${release_tag}"
