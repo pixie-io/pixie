@@ -630,6 +630,12 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
 // Verifies that our openssl tracing does not encounter conditions that invalidate our
 // assumptions and records error conditions in prometheus metrics.
 void SocketTraceConnector::CheckTracerState() {
+  // The check that state is not uninitialized is required for socket_trace_connector_test.
+  // Since it doesn't initialize the BPF program, accessing the map will fail.
+  if (state() == State::kUninitialized) {
+    return;
+  }
+
   int error_code;
   openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
 
