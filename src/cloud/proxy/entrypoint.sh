@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 # Copyright 2018- The Pixie Authors.
 #

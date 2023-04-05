@@ -42,9 +42,12 @@ def base_images():
     )
 
     _gcr_io_image(
-        # https://hub.docker.com/layers/openresty/openresty/1.21.4.1-4-bullseye/images/sha256-edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d?context=explore
+        # This should be 1.21.4.1-7 but that version hasn't been tagged yet. So picking the versionless build.
+        # 1.21.4.1-6 uses alpine:3.15.7 with some open CVEs.
+        # As of writing this, alpine-apk-amd64 maps to a future 1.21.4.1-7 release based on alpine:3.15.8 with no known CVEs.
+        # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-eac84c6c543d2424e07e980b7aff897a4cb2463d79977e579f6285f27d8e8d99?context=explore
         "openresty",
-        "sha256:edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d",
+        "sha256:eac84c6c543d2424e07e980b7aff897a4cb2463d79977e579f6285f27d8e8d99",
         "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
     )
 

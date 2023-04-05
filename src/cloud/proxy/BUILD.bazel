@@ -66,8 +66,7 @@ container_layer(
 container_image(
     name = "proxy_server_image",
     base = "@openresty//image",
-    cmd = ["/scripts/entrypoint.sh"],
-    entrypoint = ["/bin/bash"],
+    entrypoint = ["/scripts/entrypoint.sh"],
     layers = [
         ":conf",
         ":conf_private",
