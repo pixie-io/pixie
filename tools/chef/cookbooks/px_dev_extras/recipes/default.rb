@@ -64,6 +64,7 @@ common_remote_tar_bin 'helm' do
 end
 
 common_remote_tar_bin 'lego'
+common_remote_tar_bin 'trivy'
 
 execute 'install gcloud' do
   command 'curl https://sdk.cloud.google.com | bash'

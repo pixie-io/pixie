@@ -33,9 +33,9 @@ default['faq']['sha256'] =
   '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
 
 default['gh']['download_path'] =
-  'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_linux_amd64.tar.gz'
+  'https://github.com/cli/cli/releases/download/v2.26.1/gh_2.26.1_linux_amd64.tar.gz'
 default['gh']['sha256'] =
-  '359ff9d759b67e174214098144a530a8afc4b0c9d738cd07c83ac84390cdc988'
+  '4e1f98c10eb0af2c3bfe6849c10328a2a2446a9ff4294db0dfdb20b7d16eaecc'
 
 default['helm']['download_path'] =
   'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
@@ -81,6 +81,11 @@ default['sops']['download_path'] =
   'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
 default['sops']['sha256'] =
   '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
+
+default['trivy']['download_path'] =
+  'https://github.com/aquasecurity/trivy/releases/download/v0.39.0/trivy_0.39.0_Linux-64bit.tar.gz'
+default['trivy']['sha256'] =
+  '77cfe88b6b803909982e2dd41149c042fd9e6a58e1f55103f27e7bab2d2fb6d2'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64'
