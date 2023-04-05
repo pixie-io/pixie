@@ -33,7 +33,7 @@ CLOUD_IMAGE_TO_LABEL = {
     "$(IMAGE_PREFIX)cloud/plugin_server_image:$(BUNDLE_VERSION)": "//src/cloud/plugin:plugin_server_image",
     "$(IMAGE_PREFIX)cloud/profile_server_image:$(BUNDLE_VERSION)": "//src/cloud/profile:profile_server_image",
     "$(IMAGE_PREFIX)cloud/project_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/project_manager:project_manager_server_image",
-    "$(IMAGE_PREFIX)cloud/proxy_server_image:$(BUNDLE_VERSION)": "//src/cloud/proxy:proxy_prod_server_image",
+    "$(IMAGE_PREFIX)cloud/proxy_server_image:$(BUNDLE_VERSION)": "//src/cloud/proxy:proxy_server_image",
     "$(IMAGE_PREFIX)cloud/scriptmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/scriptmgr:scriptmgr_server_image",
     "$(IMAGE_PREFIX)cloud/vzconn_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzconn:vzconn_server_image",
     "$(IMAGE_PREFIX)cloud/vzmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzmgr:vzmgr_server_image",
