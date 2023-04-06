@@ -359,8 +359,6 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
       // TODO(ddelnano): Remove this conditional logic once the new tls tracing
       // implementation is the default.
-      if (!FLAGS_access_tls_socket_fd_via_syscall && spec.symbol == "SSL_set_fd") continue;
-
       if (FLAGS_access_tls_socket_fd_via_syscall) {
         spec.probe_fn = absl::Substitute("$0_syscall_fd_access", spec.probe_fn);
       }
@@ -421,11 +419,6 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).
   for (auto spec : kOpenSSLUProbes) {
-    // TODO(ddelnano): Restructure this once the tls tracing method is made the
-    // default. The SSL_new probe is node specific and should be refactored as
-    // part of this clean up.
-    if (spec.symbol == "SSL_set_fd") continue;
-
     spec.binary_path = host_proc_exe.string();
     PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
   }

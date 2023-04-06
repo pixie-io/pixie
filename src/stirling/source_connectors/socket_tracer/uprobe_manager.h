@@ -429,12 +429,6 @@ class UProbeManager {
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>({
       bpf_tools::UProbeSpec{
           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
-          .symbol = "SSL_set_fd",
-          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
-          .probe_fn = "probe_SSL_set_fd",
-      },
-      bpf_tools::UProbeSpec{
-          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
           .symbol = "SSL_write",
           .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
           .probe_fn = "probe_entry_SSL_write",

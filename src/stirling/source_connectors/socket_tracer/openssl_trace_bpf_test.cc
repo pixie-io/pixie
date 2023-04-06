@@ -83,7 +83,7 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename TServerContainer, bool TUseNewImpl>
+template <typename TServerContainer, bool UseNestedSyscallFD>
 class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
   BaseOpenSSLTraceTest() {
@@ -121,7 +121,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   TServerContainer server_;
-  bool use_new_tls_impl_ = TUseNewImpl;
+  bool use_new_tls_impl_ = UseNestedSyscallFD;
 };
 
 //-----------------------------------------------------------------------------
@@ -171,24 +171,24 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
 // the default and we are ready to enable tracing of openssl v3.
 #ifdef ENABLE_OPENSSL_V3_TRACING
 typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
-    OpenSSLServerNewImplImplementations;
+    OpenSSLServerNestedSyscallFDImplementations;
 #else
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerNewImplImplementations;
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerNestedSyscallFDImplementations;
 #endif
 
 template <typename T>
 using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
 
 template <typename T>
-using OpenSSLTraceNewImpl = BaseOpenSSLTraceTest<T, true>;
+using OpenSSLTraceNestedSyscallFD = BaseOpenSSLTraceTest<T, true>;
 
 #define OPENSSL_TYPED_TEST(TestCase, CodeBlock)       \
   TYPED_TEST(OpenSSLTraceTest, TestCase)              \
-  CodeBlock TYPED_TEST(OpenSSLTraceNewImpl, TestCase) \
+  CodeBlock TYPED_TEST(OpenSSLTraceNestedSyscallFD, TestCase) \
   CodeBlock
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
-TYPED_TEST_SUITE(OpenSSLTraceNewImpl, OpenSSLServerNewImplImplementations);
+TYPED_TEST_SUITE(OpenSSLTraceNestedSyscallFD, OpenSSLServerNestedSyscallFDImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
   this->StartTransferDataThread();
