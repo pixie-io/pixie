@@ -141,7 +141,7 @@ type VizierMonitor struct {
 func (m *VizierMonitor) InitAndStartMonitor(cloudClient *grpc.ClientConn) {
 	// Initialize current state.
 	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	tr.TLSClientConfig = m.getTLSConfig()
 	m.httpClient = &http.Client{Transport: tr}
 	m.cloudClient = cloudClient
 	m.ctx, m.cancel = context.WithCancel(context.Background())
@@ -267,6 +267,25 @@ func (m *VizierMonitor) checkCerts() error {
 	}
 	m.certState = okState()
 	return nil
+}
+
+func (m *VizierMonitor) getTLSConfig() *tls.Config {
+	// This is used as a fallback incase we somehow fail to get the CA for the vizier.
+	fallbackInsecureConfig := &tls.Config{InsecureSkipVerify: true} // lgtm [go/disabled-certificate-check]
+
+	tlsSecret, err := m.clientset.CoreV1().Secrets(m.namespace).Get(context.Background(), "service-tls-certs", metav1.GetOptions{})
+	if err != nil {
+		log.WithError(err).Warn("failed to get certs secret, monitor will use insecure tls to check /statusz")
+		return fallbackInsecureConfig
+	}
+
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"]); !ok {
+		log.WithError(err).Warn("failed add CA to pool, monitor will use insecure tls to check /statusz")
+		return fallbackInsecureConfig
+	}
+
+	return &tls.Config{RootCAs: certPool}
 }
 
 // vizierState details the state of Vizier at a snapshot.
