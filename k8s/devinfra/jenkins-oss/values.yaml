@@ -511,38 +511,6 @@ controller:
                 }
               }
           - script: >
-              multibranchPipelineJob("pixie-release/operator") {
-                branchSources {
-                  branchSource {
-                    source {
-                      git {
-                        id('pixie-operator')
-                        remote('https://github.com/pixie-io/pixie.git')
-                        credentialsId('buildbot-ssh')
-                        traits {
-                          gitTagDiscovery()
-                          headWildcardFilter {
-                            includes("release/operator/*")
-                            excludes('')
-                          }
-                        }
-                      }
-                    }
-                    buildStrategies {
-                      buildTags {
-                        atMostDays('1')
-                        atLeastDays('0')
-                      }
-                    }
-                  }
-                }
-                triggers {
-                  periodicFolderTrigger {
-                    interval('1m')
-                  }
-                }
-              }
-          - script: >
               multibranchPipelineJob("pixie-release/cloud") {
                 branchSources {
                   branchSource {
