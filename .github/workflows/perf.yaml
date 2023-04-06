@@ -50,6 +50,10 @@ jobs:
       tags: ${{ steps.default-tags.outputs.tags }}
       outcome: ${{ steps.default-tags.outcome }}
     continue-on-error: true
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
     steps:
     - name: Check for /perf command
       uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88
