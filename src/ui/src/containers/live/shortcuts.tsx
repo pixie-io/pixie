@@ -108,9 +108,9 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
     padding: theme.spacing(2),
   },
   key: {
-    border: `solid 2px ${theme.palette.background.three}`,
+    border: `solid 2px ${theme.palette.background.five}`,
     borderRadius: '5px',
-    backgroundColor: theme.palette.background.two,
+    backgroundColor: theme.palette.background.four,
     textTransform: 'capitalize',
     height: theme.spacing(4),
     minWidth: theme.spacing(4),
@@ -123,7 +123,7 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
   row: {
     display: 'flex',
     flexDirection: 'row',
-    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    borderBottom: `solid 1px ${theme.palette.background.five}`,
     alignItems: 'center',
   },
   sequence: {

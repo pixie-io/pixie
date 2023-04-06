@@ -28,7 +28,6 @@ import {
   EDITOR_THEME_MAP,
   LazyPanel,
   ResizableDrawer,
-  Spinner,
 } from 'app/components';
 import { usePluginList } from 'app/containers/admin/plugins/plugin-gql';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
@@ -55,7 +54,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   tabs: {
     display: 'flex',
     flexDirection: 'row',
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.background.five,
     alignItems: 'center',
   },
   panel: {

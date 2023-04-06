@@ -3,7 +3,7 @@
 exports[`<Breadcrumbs/> renders correctly 1`] = `
 <div>
   <div
-    class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation2 css-djkxwx-MuiPaper-root"
+    class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation2 css-2psz7m-MuiPaper-root"
   >
     <div
       class="Breadcrumbs-breadcrumbs-1"

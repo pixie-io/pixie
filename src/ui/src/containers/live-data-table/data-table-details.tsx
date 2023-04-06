@@ -34,12 +34,12 @@ const useDetailPaneClasses = makeStyles((theme: Theme) => createStyles({
     overflow: 'auto',
   },
   horizontal: {
-    borderTop: `1px solid ${theme.palette.background.three}`,
+    borderTop: `1px solid ${theme.palette.background.five}`,
     minWidth: 0,
     minHeight: theme.spacing(30),
   },
   vertical: {
-    borderLeft: `1px solid ${theme.palette.background.three}`,
+    borderLeft: `1px solid ${theme.palette.background.five}`,
     minWidth: theme.spacing(30),
     minHeight: 0,
   },

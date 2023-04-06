@@ -147,7 +147,7 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
       padding: theme.spacing(1),
 
       '&.Mui-focused': {
-        backgroundColor: theme.palette.background.two,
+        backgroundColor: theme.palette.background.four,
       },
     },
     '&:not(:last-of-type)': {
@@ -160,7 +160,10 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     top: 0,
     left: 0,
     padding: theme.spacing(0.5),
-    backgroundColor: lighten(theme.palette.background.three, 0.015), // To cover what's behind it
+    // The options background is made by mixing translucent colors; this needs to be opaque to cover scroll siblings.
+    backgroundColor: theme.palette.mode === 'dark'
+      ? lighten(theme.palette.background.five, 0.025)
+      : theme.palette.background.five,
   },
   paperDetails: {
     flex: '4 0 40%',

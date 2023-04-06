@@ -233,7 +233,7 @@ export function convertToStacktraceFlameGraph(
         x2: { signal: 'main_width' },
         y: { signal: 'minimap_height' },
         y2: { signal: `minimap_height + ${SEPARATOR_HEIGHT}` },
-        fill: { value: theme.palette.background.six },
+        fill: { value: theme.palette.background.four },
       },
     },
   });
@@ -275,7 +275,7 @@ export function convertToStacktraceFlameGraph(
         y: { scale: 'y', field: 'y0' },
         y2: { scale: 'y', field: 'y1' },
         strokeWidth: { value: 1 },
-        stroke: { value: theme.palette.background.six },
+        stroke: { value: theme.palette.background.four },
         zindex: { value: 0 },
       },
       hover: {
@@ -299,7 +299,7 @@ export function convertToStacktraceFlameGraph(
         dx: { value: 8 },
         font: { value: COMMON_THEME.typography.monospace.fontFamily },
         fontWeight: { value: 400 },
-        fill: { value: theme.palette.background.four },
+        fill: { value: theme.palette.background.three },
       },
       update: {
         x: { scale: 'x', field: 'x0' },
