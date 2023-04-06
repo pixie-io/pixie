@@ -401,6 +401,12 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "tensorflow-2.11.0",
         urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.11.0.tar.gz"],
     ),
+    org_libc_musl = dict(
+        sha256 = "7d5b0b6062521e4627e099e4c9dc8248d32a30285e959b7eecaa780cf8cfd4a4",
+        strip_prefix = "musl-1.2.3",
+        urls = ["http://musl.libc.org/releases/musl-1.2.3.tar.gz"],
+        manual_license_name = "libc/musl",
+    ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",
         strip_prefix = "rules_foreign_cc-0.8.0",
