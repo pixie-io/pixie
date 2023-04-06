@@ -173,7 +173,8 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
 typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
     OpenSSLServerNestedSyscallFDImplementations;
 #else
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper> OpenSSLServerNestedSyscallFDImplementations;
+typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
+    OpenSSLServerNestedSyscallFDImplementations;
 #endif
 
 template <typename T>
@@ -182,8 +183,8 @@ using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
 template <typename T>
 using OpenSSLTraceNestedSyscallFD = BaseOpenSSLTraceTest<T, true>;
 
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)       \
-  TYPED_TEST(OpenSSLTraceTest, TestCase)              \
+#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)               \
+  TYPED_TEST(OpenSSLTraceTest, TestCase)                      \
   CodeBlock TYPED_TEST(OpenSSLTraceNestedSyscallFD, TestCase) \
   CodeBlock
 
