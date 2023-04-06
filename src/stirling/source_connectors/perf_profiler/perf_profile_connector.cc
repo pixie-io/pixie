@@ -61,6 +61,12 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
       sampling_period_(
           std::chrono::milliseconds{1000 * FLAGS_stirling_profiler_table_update_period_seconds}),
       push_period_(sampling_period_ / 2),
+      profiler_state_overflow_counter_(
+          BuildCounter("perf_profiler_overflow",
+                       "Count of times the perf profiler overran CFG_OVERRUN_THRESHOLD")),
+      profiler_state_map_read_error_counter_(
+          BuildCounter("perf_profiler_map_read_error",
+                       "Count of times the perf profiler encountered a map lookup error")),
       stats_log_interval_(std::chrono::minutes(FLAGS_stirling_profiler_log_period_minutes) /
                           sampling_period_) {
   constexpr auto kMaxSamplingPeriod = std::chrono::milliseconds{30000};
@@ -354,6 +360,27 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   profiler_state_->update_value(sample_count_idx, 0);
 }
 
+void PerfProfileConnector::CheckProfilerState() {
+  uint64_t error_code;
+  profiler_state_->get_value(kErrorStatusIdx, error_code);
+
+  DCHECK_EQ(error_code, kPerfProfilerStatusOk);
+
+  switch (error_code) {
+    case kOverflowError:
+      profiler_state_overflow_counter_.Increment();
+      break;
+    case kMapReadFailureError:
+      profiler_state_map_read_error_counter_.Increment();
+      break;
+  }
+  // Reset the BPF map to its default value so that each occurrence
+  // can be detected.
+  if (error_code != kPerfProfilerStatusOk) {
+    profiler_state_->update_value(kErrorStatusIdx, 0);
+  }
+}
+
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
   DCHECK_EQ(data_tables_.size(), 1U);
 
@@ -374,6 +401,8 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % stats_log_interval_ == 0) {
     PrintStats();
   }
+
+  CheckProfilerState();
 }
 
 void PerfProfileConnector::PrintStats() const {
