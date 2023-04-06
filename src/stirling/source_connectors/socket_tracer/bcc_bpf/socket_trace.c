@@ -162,11 +162,12 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
   conn_info->ssl = true;
 }
 
-// Writes the syscall fd to a BPF map to be later consumed by the tls tracing probes in
-// addition to ensuring that set_conn_as_ssl is called. The majority of probes should call
-// this on function entry, however, there are certain probes which are not exlusively used
-// for networking and therefore must defer this fd propagation to its ret probe (where it
-// can be validated it is socket related first via sock_event).
+// Writes the syscall fd to a BPF map key created by an active tls call (the SSL_write/SSL_read
+// probes and ensures that set_conn_as_ssl is called for the tgid and pid. The majority of syscall
+// probes should call this on function entry, however, there are certain probes which are
+// not exlusively used for networking (read/write/readev/writev) and therefore must defer
+// this fd propagation to its ret probe (where it can be validated it is socket related
+// first via sock_event).
 static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) {
   struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
   if (nested_syscall_fd_ptr != NULL) {
