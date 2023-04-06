@@ -31,6 +31,7 @@
 #include <absl/synchronization/mutex.h>
 
 #include "src/common/grpcutils/service_descriptor_database.h"
+#include "src/common/metrics/metrics.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
@@ -117,6 +118,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status StopImpl() override;
   void InitContextImpl(ConnectorContext* ctx) override;
   void TransferDataImpl(ConnectorContext* ctx) override;
+
+  void CheckTracerState();
 
   // Perform actions that are not specifically targeting a table.
   // For example, drain perf buffers, deploy new uprobes, and update socket info manager.
@@ -227,6 +230,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ConnTrackersManager conn_trackers_mgr_;
 
   ConnStats conn_stats_;
+
+  std::unique_ptr<ebpf::BPFArrayTable<int>> openssl_trace_state_;
+  prometheus::Counter& openssl_trace_mismatched_fds_counter_;
 
   absl::flat_hash_set<int> pids_to_trace_disable_;
 
