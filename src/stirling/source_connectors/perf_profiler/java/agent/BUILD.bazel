@@ -21,7 +21,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 
 agent_files = [
     "Makefile.inner",
-    "agent.cc",
+    "agent.c",
     "raw_symbol_update.h",
 ]
 
@@ -67,7 +67,7 @@ pl_cc_library(
 cc_static_musl_binary(
     name = "px-java-agent",
     srcs = [
-        "agent.cc",
+        "agent.c",
         "agent_hash.h",
         "raw_symbol_update.h",
     ],
