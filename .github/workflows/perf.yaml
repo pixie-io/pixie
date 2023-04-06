@@ -96,6 +96,7 @@ jobs:
     secrets: inherit
   pr-perf-comment:
     name: Comment results on PR
+    if: success() || failure()
     needs: pr-perf-eval
     runs-on: ubuntu-latest
     steps:
