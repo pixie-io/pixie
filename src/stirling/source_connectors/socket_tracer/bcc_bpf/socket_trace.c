@@ -91,6 +91,17 @@ BPF_HASH(active_write_args_map, uint64_t, struct data_args_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_read_args_map, uint64_t, struct data_args_t);
 
+struct nested_syscall_fd_t {
+  int fd;
+  bool mismatched_fds;
+};
+
+// Map used to verify if SSL_write or SSL_read are on the stack during a syscall in
+// order to propagate the socket fd back to the SSL_write and SSL_read return probes.
+// Key is pid tgid.
+// Value is nested_syscall_fd struct.
+BPF_HASH(ssl_user_space_call_map, uint64_t, struct nested_syscall_fd_t);
+
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -149,6 +160,27 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
     return;
   }
   conn_info->ssl = true;
+}
+
+// Writes the syscall fd to a BPF map key created by an active tls call (the SSL_write/SSL_read
+// probes and ensures that set_conn_as_ssl is called for the tgid and pid. The majority of syscall
+// probes should call this on function entry, however, there are certain probes which are
+// not exlusively used for networking (read/write/readev/writev) and therefore must defer
+// this fd propagation to its ret probe (where it can be validated it is socket related
+// first via sock_event).
+static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) {
+  struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
+  if (nested_syscall_fd_ptr != NULL) {
+    int expected_fd = nested_syscall_fd_ptr->fd;
+    if (expected_fd != kInvalidFD && expected_fd != fd) {
+      nested_syscall_fd_ptr->mismatched_fds = true;
+    }
+
+    nested_syscall_fd_ptr->fd = fd;
+
+    uint32_t tgid = pid_tgid >> 32;
+    set_conn_as_ssl(tgid, fd);
+  }
 }
 
 static __inline struct socket_data_event_t* fill_socket_data_event(
@@ -1009,6 +1041,12 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL && write_args->sock_event) {
+    // Syscalls that aren't exclusively used for networking must be
+    // validated to be a sock_event before propagating a socket fd to the
+    // tls tracing probes
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      propagate_fd_to_user_space_call(id, write_args->fd);
+    }
     process_syscall_data(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1019,6 +1057,10 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 // ssize_t send(int sockfd, const void *buf, size_t len, int flags);
 int syscall__probe_entry_send(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1065,6 +1107,12 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL && read_args->sock_event) {
+    // Syscalls that aren't exclusively used for networking must be
+    // validated to be a sock_event before propagating a socket fd to the
+    // tls tracing probes
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      propagate_fd_to_user_space_call(id, read_args->fd);
+    }
     process_syscall_data(ctx, id, kIngress, read_args, bytes_count);
   }
 
@@ -1075,6 +1123,10 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 // ssize_t recv(int sockfd, void *buf, size_t len, int flags);
 int syscall__probe_entry_recv(struct pt_regs* ctx, int sockfd, char* buf, size_t len) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   // Stash arguments.
   struct data_args_t read_args = {};
@@ -1105,6 +1157,10 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int sockfd, char* buf, size_t len, int flags,
                                 const struct sockaddr* dest_addr, socklen_t addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   // Stash arguments.
   if (dest_addr != NULL) {
@@ -1165,6 +1221,10 @@ int syscall__probe_entry_recvfrom(struct pt_regs* ctx, int sockfd, char* buf, si
                                   struct sockaddr* src_addr, socklen_t* addrlen) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
+
   // Stash arguments.
   if (src_addr != NULL) {
     struct connect_args_t connect_args = {};
@@ -1208,6 +1268,10 @@ int syscall__probe_ret_recvfrom(struct pt_regs* ctx) {
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int sockfd,
                                  const struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   if (msghdr != NULL) {
     // Stash arguments.
@@ -1254,6 +1318,10 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_sendmmsg(struct pt_regs* ctx, int sockfd, struct mmsghdr* msgvec,
                                   unsigned int vlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   // TODO(oazizi): Right now, we only trace the first message in a sendmmsg() call.
   if (msgvec != NULL && vlen >= 1) {
@@ -1307,6 +1375,10 @@ int syscall__probe_ret_sendmmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_msghdr* msghdr) {
   uint64_t id = bpf_get_current_pid_tgid();
 
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
+
   if (msghdr != NULL) {
     // Stash arguments.
     if (msghdr->msg_name != NULL) {
@@ -1354,6 +1426,10 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 int syscall__probe_entry_recvmmsg(struct pt_regs* ctx, int sockfd, struct mmsghdr* msgvec,
                                   unsigned int vlen) {
   uint64_t id = bpf_get_current_pid_tgid();
+
+  if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+    propagate_fd_to_user_space_call(id, sockfd);
+  }
 
   // TODO(oazizi): Right now, we only trace the first message in a recvmmsg() call.
   if (msgvec != NULL && vlen >= 1) {
@@ -1425,6 +1501,12 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL && write_args->sock_event) {
+    // Syscalls that aren't exclusively used for networking must be
+    // validated to be a sock_event before propagating a socket fd to the
+    // tls tracing probes
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      propagate_fd_to_user_space_call(id, write_args->fd);
+    }
     process_syscall_data_vecs(ctx, id, kEgress, write_args, bytes_count);
   }
 
@@ -1454,6 +1536,12 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL && read_args->sock_event) {
+    // Syscalls that aren't exclusively used for networking must be
+    // validated to be a sock_event before propagating a socket fd to the
+    // tls tracing probes
+    if (ACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL) {
+      propagate_fd_to_user_space_call(id, read_args->fd);
+    }
     process_syscall_data_vecs(ctx, id, kIngress, read_args, bytes_count);
   }
 

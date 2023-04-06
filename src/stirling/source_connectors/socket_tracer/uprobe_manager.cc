@@ -285,12 +285,21 @@ struct SSLLibMatcher {
   HostPathForPIDPathSearchType search_type;
 };
 
+// TODO(ddelnano): Remove the ENABLE_OPENSSL_V3_TRACING ifdef once this
+// code this could should be enabled outside of test use cases
 static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
     SSLLibMatcher{
         .libssl = "libssl.so.1.1",
         .libcrypto = "libcrypto.so.1.1",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
     },
+#ifdef ENABLE_OPENSSL_V3_TRACING
+    SSLLibMatcher{
+        .libssl = "libssl.so.3",
+        .libcrypto = "libcrypto.so.3",
+        .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
+    },
+#endif
     SSLLibMatcher{
         .libssl = kLibNettyTcnativePrefix,
         .libcrypto = kLibNettyTcnativePrefix,
@@ -333,9 +342,11 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
       return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
     }
 
-    auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
+    if (!FLAGS_access_tls_socket_fd_via_syscall) {
+      auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
 
-    PX_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
+      PX_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
+    }
 
     // Only try probing .so files that we haven't already set probes on.
     auto result = openssl_probed_binaries_.insert(container_libssl);
@@ -345,6 +356,12 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
     for (auto spec : kOpenSSLUProbes) {
       spec.binary_path = container_libssl.string();
+
+      // TODO(ddelnano): Remove this conditional logic once the new tls tracing
+      // implementation is the default.
+      if (FLAGS_access_tls_socket_fd_via_syscall) {
+        spec.probe_fn = absl::Substitute("$0_syscall_fd_access", spec.probe_fn);
+      }
       PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
     }
   }

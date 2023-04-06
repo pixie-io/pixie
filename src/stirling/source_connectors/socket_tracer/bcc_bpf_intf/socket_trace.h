@@ -292,3 +292,10 @@ struct sendfile_args_t {
   int32_t in_fd;
   size_t count;
 };
+
+static const uint32_t kOpenSSLTraceStatusIdx = 0;
+
+enum openssl_trace_errors_t {
+  kOpenSSLTraceOk = 0,
+  kOpenSSLMismatchedFDsDetected,
+};
