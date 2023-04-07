@@ -40,6 +40,8 @@ using ProbeType = bpf_tools::BPFProbeAttachType;
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
      {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
+     {"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
+     {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
      {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb",
       /*is_syscall*/ false}});
