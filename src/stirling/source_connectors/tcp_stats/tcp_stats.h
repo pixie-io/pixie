@@ -37,7 +37,7 @@ namespace stirling {
 /**
  * Records the aggregated stats on all TCP connections.
  */
-class TcpStats {
+class TCPStats {
  public:
   // AggKey is the TCPStats connection identifier; it is unique to a client-server pair.
   // The upid represents the local process and the remote addr+port represents the remote endpoint.

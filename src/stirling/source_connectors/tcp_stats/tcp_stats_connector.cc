@@ -96,15 +96,15 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
     md::UPID upid(ctx->GetASID(), key.upid.pid, key.upid.start_time_ticks);
 
     DataTable::RecordBuilder<&tcp_stats::kTCPStatsTable> r(data_table, time);
-    r.Append<tcp_stats::kTcpTimeIdx>(time);
-    r.Append<tcp_stats::kTcpUPIDIdx>(upid.value());
-    r.Append<tcp_stats::kTcpLocalAddrIdx>(key.local_addr);
-    r.Append<tcp_stats::kTcpLocalPortIdx>(key.local_port);
-    r.Append<tcp_stats::kTcpRemoteAddrIdx>(key.remote_addr);
-    r.Append<tcp_stats::kTcpRemotePortIdx>(key.remote_port);
-    r.Append<tcp_stats::kTcpBytesReceivedIdx>(stats.bytes_recv);
-    r.Append<tcp_stats::kTcpBytesSentIdx>(stats.bytes_sent);
-    r.Append<tcp_stats::kTcpRetransmitsIdx>(stats.retransmissions);
+    r.Append<tcp_stats::kTCPTimeIdx>(time);
+    r.Append<tcp_stats::kTCPUPIDIdx>(upid.value());
+    r.Append<tcp_stats::kTCPLocalAddrIdx>(key.local_addr);
+    r.Append<tcp_stats::kTCPLocalPortIdx>(key.local_port);
+    r.Append<tcp_stats::kTCPRemoteAddrIdx>(key.remote_addr);
+    r.Append<tcp_stats::kTCPRemotePortIdx>(key.remote_port);
+    r.Append<tcp_stats::kTCPBytesReceivedIdx>(stats.bytes_recv);
+    r.Append<tcp_stats::kTCPBytesSentIdx>(stats.bytes_sent);
+    r.Append<tcp_stats::kTCPRetransmitsIdx>(stats.retransmissions);
 
     agg_stats.erase(iter++);
   }

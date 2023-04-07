@@ -44,8 +44,8 @@ pl_cc_test(
     ],
     deps = [
         ":cc_library",
-        "//src/stirling/source_connectors/tcp_stats/testing:cc_library",
         "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/tcp_stats/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

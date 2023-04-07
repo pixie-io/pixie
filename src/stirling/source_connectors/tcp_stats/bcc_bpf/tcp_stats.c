@@ -91,7 +91,7 @@ static int tcp_sendstat(struct pt_regs* ctx, uint32_t tgid, uint32_t id, int siz
   }
 
   event.size = size;
-  event.type = kTcpTx;
+  event.type = kTCPTx;
   tcp_events.perf_submit(ctx, &event, sizeof(event));
 
   sock_store.delete(&id);
@@ -172,7 +172,7 @@ int probe_entry_tcp_cleanup_rbuf(struct pt_regs* ctx, struct sock* sk, int copie
   event.timestamp_ns = bpf_ktime_get_ns();
   event.upid.tgid = tgid;
   event.upid.start_time_ticks = get_tgid_start_time();
-  event.type = kTcpRx;
+  event.type = kTCPRx;
   event.size = copied;
   tcp_events.perf_submit(ctx, &event, sizeof(event));
   return 0;
@@ -219,7 +219,7 @@ int probe_entry_tcp_retransmit_skb(struct pt_regs* ctx, struct sock* skp, struct
   event.timestamp_ns = bpf_ktime_get_ns();
   event.upid.tgid = tgid;
   event.upid.start_time_ticks = get_tgid_start_time();
-  event.type = kTcpRetransmissions;
+  event.type = kTCPRetransmissions;
   event.size = 1;
   tcp_events.perf_submit(ctx, &event, sizeof(event));
   return 0;

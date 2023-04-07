@@ -69,15 +69,15 @@ constexpr auto kTCPStatsTable =
 
 DEFINE_PRINT_TABLE(TCPStats);
 
-constexpr int kTcpTimeIdx = kTCPStatsTable.ColIndex("time_");
-constexpr int kTcpUPIDIdx = kTCPStatsTable.ColIndex("upid");
-constexpr int kTcpLocalAddrIdx = kTCPStatsTable.ColIndex("local_addr");
-constexpr int kTcpLocalPortIdx = kTCPStatsTable.ColIndex("local_port");
-constexpr int kTcpRemoteAddrIdx = kTCPStatsTable.ColIndex("remote_addr");
-constexpr int kTcpRemotePortIdx = kTCPStatsTable.ColIndex("remote_port");
-constexpr int kTcpBytesSentIdx = kTCPStatsTable.ColIndex("tx");
-constexpr int kTcpBytesReceivedIdx = kTCPStatsTable.ColIndex("rx");
-constexpr int kTcpRetransmitsIdx = kTCPStatsTable.ColIndex("retransmits");
+constexpr int kTCPTimeIdx = kTCPStatsTable.ColIndex("time_");
+constexpr int kTCPUPIDIdx = kTCPStatsTable.ColIndex("upid");
+constexpr int kTCPLocalAddrIdx = kTCPStatsTable.ColIndex("local_addr");
+constexpr int kTCPLocalPortIdx = kTCPStatsTable.ColIndex("local_port");
+constexpr int kTCPRemoteAddrIdx = kTCPStatsTable.ColIndex("remote_addr");
+constexpr int kTCPRemotePortIdx = kTCPStatsTable.ColIndex("remote_port");
+constexpr int kTCPBytesSentIdx = kTCPStatsTable.ColIndex("tx");
+constexpr int kTCPBytesReceivedIdx = kTCPStatsTable.ColIndex("rx");
+constexpr int kTCPRetransmitsIdx = kTCPStatsTable.ColIndex("retransmits");
 
 }  // namespace tcp_stats
 }  // namespace stirling

@@ -61,7 +61,7 @@ class TCPStatsConnector : public SourceConnector, public bpf_tools::BCCWrapper {
 
  private:
   std::vector<struct tcp_event_t> events_;
-  TcpStats tcp_stats_;
+  TCPStats tcp_stats_;
 };
 }  // namespace stirling
 }  // namespace px

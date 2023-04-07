@@ -37,4 +37,3 @@ pl_cc_test_library(
         "//src/stirling/testing:cc_library",
     ],
 )
-

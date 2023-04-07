@@ -27,7 +27,7 @@ namespace stirling {
 
 namespace {
 
-TcpStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
+TCPStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
                              const SockAddr& remote_endpoint) {
   return {
       .upid = upid,
@@ -40,22 +40,22 @@ TcpStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
 
 }  // namespace
 
-absl::flat_hash_map<TcpStats::AggKey, TcpStats::Stats>& TcpStats::UpdateStats(
+absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>& TCPStats::UpdateStats(
     std::vector<tcp_event_t> events) {
   for (auto& event : events) {
     SockAddr laddr, raddr;
     PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.local_addr), &laddr);
     PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.remote_addr), &raddr);
-    TcpStats::AggKey key = BuildAggKey(event.upid, laddr, raddr);
+    TCPStats::AggKey key = BuildAggKey(event.upid, laddr, raddr);
     auto& stats = tcp_agg_stats_[key];
 
     if (event.type == kUnknownEvent) {
       continue;
-    } else if (event.type == kTcpTx) {
+    } else if (event.type == kTCPTx) {
       stats.bytes_sent += event.size;
-    } else if (event.type == kTcpRx) {
+    } else if (event.type == kTCPRx) {
       stats.bytes_recv += event.size;
-    } else if (event.type == kTcpRetransmissions) {
+    } else if (event.type == kTCPRetransmissions) {
       stats.retransmissions += event.size;
     }
   }

@@ -33,13 +33,13 @@ enum tcp_event_type_t {
   kUnknownEvent,
 
   // TCP egress data event.
-  kTcpTx,
+  kTCPTx,
 
   // TCP ingress data event.
-  kTcpRx,
+  kTCPRx,
 
   // TCP retransmissions.
-  kTcpRetransmissions,
+  kTCPRetransmissions,
 };
 
 struct tcp_event_t {
