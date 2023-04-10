@@ -1314,28 +1314,6 @@ def buildScriptForNightlyTestRegression = { testjobs ->
   postBuildActions()
 }
 
-def updateAllVersionsDB() {
-  pxbuildWithSourceK8s('update-versions-db', true) {
-    container('pxbuild') {
-      unstashFromGCS('versions')
-      sh 'bazel run //src/utils/artifacts/artifact_db_updater:artifact_db_updater_job > artifact_db_updater_job.yaml'
-      updateVersionsDB(K8S_TESTING_CREDS, K8S_TESTING_CLUSTER, 'plc-testing')
-      updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, 'plc-staging')
-      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
-    }
-  }
-}
-
-def updateVersionsDB(String credsName, String clusterURL, String namespace) {
-  withKubeConfig([
-    credentialsId: credsName,
-    serverUrl: clusterURL,
-    namespace: namespace
-  ]) {
-    sh './ci/update_artifact_db.sh'
-  }
-}
-
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
   pxbuildWithSourceK8s('build-and-push-cloud', true) {
     container('pxbuild') {

@@ -24,10 +24,10 @@ repo_path=$(bazel info workspace)
 
 printenv
 
+versions_file="$(realpath "${VERSIONS_FILE:?}")"
 release_tag=${TAG_NAME##*/v}
 linux_arch=x86_64
 pkg_prefix="pixie-px-${release_tag}.${linux_arch}"
-versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
 linux_binary=$(bazel cquery //src/pixie_cli:px -c opt --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)
