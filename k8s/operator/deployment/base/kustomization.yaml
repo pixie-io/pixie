@@ -5,6 +5,10 @@ commonLabels:
   component: pixie-operator
 namespace: px-operator
 kind: Kustomization
+patches:
+- path: arch_tolerations/deployment.yaml
+  target:
+    kind: Deployment
 resources:
 - deployment.yaml
 - service_account.yaml
