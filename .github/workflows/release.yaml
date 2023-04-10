@@ -6,6 +6,8 @@ on:
     - release/**
 permissions:
   contents: read
+env:
+  VERSIONS_FILE: "VERSIONS.json"
 jobs:
   get-dev-image:
     uses: ./.github/workflows/get_image.yaml

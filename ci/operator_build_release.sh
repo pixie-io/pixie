@@ -18,9 +18,9 @@
 
 set -ex
 
+versions_file="$(realpath "${VERSIONS_FILE:?}")"
 repo_path=$(pwd)
 release_tag=${TAG_NAME##*/v}
-versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 # shellcheck source=ci/image_utils.sh
 . "${repo_path}/ci/image_utils.sh"

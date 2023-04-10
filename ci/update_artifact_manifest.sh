@@ -16,14 +16,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+versions_file="$(realpath "${VERSIONS_FILE:?}")"
 repo_path="$(git rev-parse --show-toplevel)"
 manifest_bucket="${ARTIFACT_MANIFEST_BUCKET:-pixie-dev}"
 manifest_path="manifest.json"
-versions_file="${VERSIONS_FILE:-${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json}"
 
 manifest_updates="$(mktemp)"
 # For now we manually change the versions_file into an array of ArtifactSets instead of an individual artifact set.
-# This avoids changing versions_gen and artifact_db_updater.
+# This avoids changing versions_gen.
 jq '[.]' < "${versions_file}" > "${manifest_updates}"
 
 bazel run //src/utils/artifacts/manifest_updater -- --manifest_bucket="${manifest_bucket}" --manifest_path="${manifest_path}" --manifest_updates="${manifest_updates}"
