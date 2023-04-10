@@ -26,6 +26,7 @@
 #include "src/common/perf/memory_tracker.h"
 #include "src/common/perf/tcmalloc.h"
 #include "src/stirling/core/connector_context.h"
+#include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/benchmark_data_gen/data_gen.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/benchmark_data_gen/generators.h"
@@ -44,7 +45,6 @@ using ::px::stirling::SocketTraceConnectorFriend;
 using ::px::stirling::SystemWideStandaloneContext;
 using ::px::stirling::testing::BenchmarkDataGenerationSpec;
 using ::px::stirling::testing::CQLQueryReqRespGen;
-using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::GapPosGenerator;
 using ::px::stirling::testing::GenerateBenchmarkData;
 using ::px::stirling::testing::HTTP1SingleReqRespGen;
@@ -68,7 +68,7 @@ enum class DisplayStatCategory {
   Throughput,
 };
 
-void CountOutput(px::stirling::testing::DataTables* tables, uint64_t* output_records,
+void CountOutput(px::stirling::DataTables* tables, uint64_t* output_records,
                  uint64_t* output_bytes) {
   for (auto tbl : tables->tables()) {
     auto tagged_records = tbl->ConsumeRecords();
@@ -129,7 +129,7 @@ static void BM_SocketTraceConnector(benchmark::State& state, BenchmarkDataGenera
       auto socket_trace_connector =
           static_cast<SocketTraceConnectorFriend*>(source_connector.get());
 
-      DataTables tables(SocketTraceConnector::kTables);
+      px::stirling::DataTables tables(SocketTraceConnector::kTables);
       source_connector->set_data_tables({tables.tables()});
       // Send control events to start all the connections. Control events are out of the scope of
       // this benchmark so we handle them before starting the timer.

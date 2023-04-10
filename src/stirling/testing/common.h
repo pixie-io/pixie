@@ -66,29 +66,6 @@ MATCHER_P(RecordBatchSizeIs, size, absl::Substitute("is a RecordBatch having $0 
 
 MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
 
-// Create DataTable objects used by SocketConnector::TransferData() to write records to.
-class DataTables {
- public:
-  template <size_t NumTableSchemas>
-  explicit DataTables(
-      const std::array<px::stirling::DataTableSchema, NumTableSchemas>& table_schemas) {
-    uint64_t id = 0;
-    for (const DataTableSchema& table_schema : table_schemas) {
-      auto data_table = std::make_unique<DataTable>(id++, table_schema);
-      data_table_ptrs_.push_back(data_table.get());
-      data_table_uptrs_.push_back(std::move(data_table));
-    }
-  }
-
-  std::vector<DataTable*> tables() { return data_table_ptrs_; }
-
-  DataTable* operator[](int idx) { return data_table_ptrs_[idx]; }
-
- private:
-  std::vector<std::unique_ptr<DataTable>> data_table_uptrs_;
-  std::vector<DataTable*> data_table_ptrs_;
-};
-
 inline std::vector<size_t> FindRecordIdxMatchesPIDs(const types::ColumnWrapperRecordBatch& record,
                                                     int upid_column_idx,
                                                     const std::vector<int>& pids) {
