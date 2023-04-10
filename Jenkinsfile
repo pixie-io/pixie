@@ -66,9 +66,6 @@ isOSSCloudBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isOSSCodeReviewRun = env.JOB_NAME == 'pixie-oss/build-and-test-pr'
 isOSSRun = isOSSMainRun || isOSSCloudBuildRun || isOSSCodeReviewRun || isReleaseRun
 
-isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
-isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
-isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-prod/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isStirlingPerfEval = (env.JOB_NAME == 'pixie-main/stirling-perf-eval')
@@ -1339,176 +1336,6 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
   }
 }
 
-def buildScriptForCLIRelease = {
-  retryPodTemplate('root', [gcloudContainer()]) {
-    withCredentials([
-      string(
-        credentialsId: 'docker_access_token',
-        variable: 'DOCKER_TOKEN'
-      ),
-      string(
-        credentialsId: 'buildbot-gpg-key-id',
-        variable: 'BUILDBOT_GPG_KEY_ID'
-      ),
-      string(
-        credentialsId: 'buildbot-github-token',
-        variable: 'GITHUB_TOKEN'
-      )
-    ]) {
-      try {
-        stage('Checkout code') {
-          checkoutAndInitialize()
-        }
-        stage('Build & Push Artifacts') {
-          pxbuildWithSourceK8s('build-and-push-cli', true) {
-            container('pxbuild') {
-              withCredentials([
-                file(
-                  credentialsId: 'buildbot-private-key-asc',
-                  variable: 'BUILDBOT_GPG_KEY_FILE'
-                )
-              ]) {
-                sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
-                sh './ci/cli_build_release.sh'
-                stash name: 'ci_scripts_signing', includes: 'ci/**'
-                stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-                stashList.add('versions')
-              }
-            }
-          }
-        }
-        stage('Sign Mac Binaries') {
-          node('macos') {
-            deleteDir()
-            unstash 'ci_scripts_signing'
-            withCredentials([
-              file(
-                credentialsId: 'buildbot-private-key-asc',
-                variable: 'BUILDBOT_GPG_KEY_FILE'
-              ),
-              string(
-                credentialsId: 'pl_ac_passwd',
-                variable: 'AC_PASSWD'
-              ),
-              string(
-                credentialsId: 'jenkins_keychain_pw',
-                variable: 'JENKINSKEY'
-              )
-            ]) {
-              sh './ci/cli_merge_sign.sh'
-            }
-            stash name: 'cli_darwin_signed', includes: 'cli_darwin*'
-          }
-        }
-        stage('Upload Signed Binary') {
-          node('macos') {
-            retryPodTemplate(suffix, [gcloudContainer(), pxdevContainer()]) {
-              fetchSourceK8s {
-                container('pxdev') {
-                  withCredentials([
-                    file(
-                      credentialsId: 'buildbot-private-key-asc',
-                      variable: 'BUILDBOT_GPG_KEY_FILE'
-                    )
-                  ]) {
-                    unstash 'cli_darwin_signed'
-                    sh './ci/cli_upload_signed.sh'
-                  }
-                }
-              }
-            }
-          }
-        }
-        stage('Update versions databases') {
-          updateAllVersionsDB()
-        }
-      }
-      catch (err) {
-        currentBuild.result = 'FAILURE'
-        echo "Exception thrown:\n ${err}"
-        echo 'Stacktrace:'
-        err.printStackTrace()
-      }
-    }
-
-    postBuildActions()
-  }
-}
-
-def vizierReleaseBuilders = [:]
-
-vizierReleaseBuilders['Build & Push Artifacts'] = {
-  pxbuildWithSourceK8s('build-and-push-vizier', true) {
-    container('pxbuild') {
-      withKubeConfig([
-        credentialsId: K8S_PROD_CREDS,
-        serverUrl: K8S_PROD_CLUSTER, namespace: 'default'
-      ]) {
-        sh './ci/vizier_build_release.sh'
-        stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-        stashList.add('versions')
-      }
-    }
-  }
-}
-
-vizierReleaseBuilders['Build & Export Docs'] = {
-  pxbuildWithSourceK8s('build-and-export-docs', true) {
-    container('pxbuild') {
-      def pxlDocsOut = "/tmp/${PXL_DOCS_FILE}"
-      sh "bazel run ${PXL_DOCS_BINARY} -- --output_json ${pxlDocsOut}"
-      sh "gsutil cp ${pxlDocsOut} ${PXL_DOCS_GCS_PATH}"
-    }
-  }
-}
-
-def buildScriptForVizierRelease = {
-  try {
-    stage('Checkout code') {
-      checkoutAndInitialize()
-    }
-    stage('Build & Push Artifacts') {
-      parallel(vizierReleaseBuilders)
-    }
-    stage('Update versions databases') {
-      updateAllVersionsDB()
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-
-  postBuildActions()
-}
-
-def buildScriptForOperatorRelease = {
-  try {
-    stage('Checkout code') {
-      checkoutAndInitialize()
-    }
-    stage('Build & Push Artifacts') {
-      pxbuildWithSourceK8s('build-and-push-operator', true) {
-        container('pxbuild') {
-          sh './ci/operator_build_release.sh'
-          stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
-          stashList.add('versions')
-        }
-      }
-    }
-  }
-  catch (err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo 'Stacktrace:'
-    err.printStackTrace()
-  }
-
-  postBuildActions()
-}
-
 def pushAndDeployCloud(String profile, String namespace, String clusterCreds, String clusterURL) {
   pxbuildWithSourceK8s('build-and-push-cloud', true) {
     container('pxbuild') {
@@ -1592,12 +1419,6 @@ if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression(regressionBuilders)
 } else if (isNightlyBPFTestRegressionRun) {
   buildScriptForNightlyTestRegression(bpfRegressionBuilders)
-} else if (isCLIBuildRun) {
-  buildScriptForCLIRelease()
-} else if (isVizierBuildRun) {
-  buildScriptForVizierRelease()
-} else if (isOperatorBuildRun) {
-  buildScriptForOperatorRelease()
 } else if (isCloudStagingBuildRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
