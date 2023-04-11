@@ -195,14 +195,11 @@ const VegaWidget: React.FC<VegaWidgetProps> = React.memo(({
 });
 VegaWidget.displayName = 'VegaWidget';
 
-// TODO(NickLanam): This likely needs the affix to be a passed ref for the graphs and table to put their controls in it.
-// TODO(NickLanam): Need to make sure StatChart uses this too, data drawer also needs something for controls?
 const WidgetTitlebar = React.memo<{
   title: string,
   affix?: React.ReactNode,
 }>(({ title, affix }) => {
   const classes = useStyles();
-  React.useEffect(() => { console.info('Affix changed', affix); }, [affix]);
   return (
     <div className={classes.widgetTitlebar}>
       <div className={classes.widgetTitle}>{title}</div>
