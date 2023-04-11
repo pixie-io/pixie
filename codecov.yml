@@ -7,6 +7,9 @@ coverage:
     project:
       default:
         informational: true
+    patch:
+      default:
+        informational: true
 
 ignore:
 - "src/ui/.yarn"
