@@ -59,9 +59,9 @@ default['lego']['sha256'] =
   'eaf2792d9731c911da671a6145eebd5ba136c20446adb542e7b1463ffe868388'
 
 default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-darwin-amd64'
+  'https://github.com/kubernetes/minikube/releases/download/v1.30.1/minikube-darwin-amd64'
 default['minikube']['sha256'] =
-  '55f14e4f411370da18d7b9432ae4edd128f4f047bbc87a278e08ba256ff6f669'
+  'b5938a8772c5565b5d0b795938c367c5190bf65bb51fc55fb2417cb4e1d04ef1'
 
 default['opm']['download_path'] =
   'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/darwin-amd64-opm'
