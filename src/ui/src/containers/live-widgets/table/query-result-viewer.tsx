@@ -54,6 +54,13 @@ const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => create
     '& $overload': { color: palette.foreground.three },
     '& $muted': { color: palette.foreground.three },
   },
+  externalControls: {
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    gap: spacing(1),
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
   overload: {
     fontStyle: 'italic',
     color: alpha(palette.foreground.one, 0.8),
@@ -127,20 +134,29 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(({
     setVisibleStop(visibleStopIndex);
   }, []);
 
+  const [globalControls, setGlobalControls] = React.useState<React.ReactNode>(null);
+  const globalControlsRef = React.useCallback((el: React.ReactNode) => { setGlobalControls(el); }, []);
+
   React.useEffect(() => {
     if (setExternalControls) {
       setExternalControls(
-        <div className={classes.tableSummaryExtern}>
-          <TableSummary
-            visibleStart={visibleStart}
-            visibleStop={visibleStop}
-            numRows={numRows}
-            isOverload={isOverload}
-          />
+        <div className={classes.externalControls}>
+          <div className={classes.tableSummaryExtern}>
+            <TableSummary
+              visibleStart={visibleStart}
+              visibleStop={visibleStop}
+              numRows={numRows}
+              isOverload={isOverload}
+            />
+          </div>
+          {globalControls}
         </div>,
       );
     }
-  }, [setExternalControls, isOverload, numRows, visibleStart, visibleStop, classes.tableSummaryExtern]);
+  }, [
+    setExternalControls, isOverload, numRows, visibleStart, visibleStop, globalControls,
+    classes.tableSummaryExtern, classes.externalControls,
+  ]);
 
   return (
     <div className={classes.root}>
@@ -150,6 +166,7 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(({
           gutterColumns={[display.gutterColumn, ...customGutters].filter(g => g)}
           propagatedArgs={propagatedArgs}
           onRowsRendered={onRowsRendered}
+          setExternalControls={setExternalControls ? globalControlsRef : null}
         />
       </div>
       {!setExternalControls && (

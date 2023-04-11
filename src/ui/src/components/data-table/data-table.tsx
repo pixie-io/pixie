@@ -21,10 +21,10 @@ import * as React from 'react';
 import {
   KeyboardArrowDown as DownIcon,
   KeyboardArrowUp as UpIcon,
-  Menu as MenuIcon,
+  Settings as GearIcon,
 } from '@mui/icons-material';
 import {
-  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
+  alpha, Checkbox, FormControlLabel, IconButton, Menu, MenuItem, Tooltip,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
@@ -39,7 +39,6 @@ import {
 } from 'react-table';
 import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
 
-import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { buildClass } from 'app/utils/build-class';
 import { useScrollbarSize } from 'app/utils/use-scrollbar-size';
@@ -172,18 +171,16 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.three,
     fontWeight: 'bold',
   },
-  rowExpandButton: {
-    display: 'flex',
-    alignItems: 'center',
-    height: '100%',
+  columnMenu: {
+    display: 'grid',
+    gridAutoFlow: 'row',
+    gridTemplateRows: 'repeat(1, 1fr)',
+    gridTemplateColumns: 'repeat(2, auto)',
+    maxHeight: `calc(min(${theme.spacing(60)}, 100vh))`,
+    overflowY: 'auto',
   },
-  columnSelector: {
-    position: 'relative',
-    top: '-2px', // The labels and icons don't quite line up otherwise due to how text renders
-    left: '50%',
-    transform: 'translate(-50%)',
-    width: theme.spacing(3),
-    height: theme.spacing(3),
+  columnMenuFew: { // Logic to expand columns first, then overflow into rows, is not possible in pure CSS :(
+    gridTemplateColumns: '1fr',
   },
 }), { name: 'DataTable' });
 
@@ -194,6 +191,7 @@ export interface DataTableProps {
   onRowSelected?: (row: Record<string, any> | null) => void;
   updateSelection?: React.MutableRefObject<(id: string | null) => void>;
   onRowsRendered?: (rendered: ListOnItemsRenderedProps) => void;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
@@ -206,9 +204,8 @@ DataTableContext.displayName = 'DataTableContext';
 
 const noPointerEvents = { pointerEvents: 'none' as const };
 
-const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) => {
+const ColumnSelector = React.memo(() => {
   const classes = useDataTableStyles();
-
   const [open, setOpen] = React.useState(false);
   const close = React.useCallback(() => setOpen(false), []);
   const toggleOpen = React.useCallback(() => setOpen((prev) => !prev), []);
@@ -216,30 +213,37 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) =
 
   // Workaround: since react-table directly mutates its objects, column.isVisible on individual columns doesn't cause
   // React to update this component. Monitoring the instance state with useEffect is sufficient to trigger an update.
-  const { hiddenColumns } = React.useContext(DataTableContext).instance.state;
+  const { instance: { state: { hiddenColumns }, columns } } = React.useContext(DataTableContext);
   React.useEffect(() => {}, [hiddenColumns.length]);
 
   const editableColumns = React.useMemo(() => columns.filter((col) => !col.isGutter), [columns]);
+  /* eslint-disable react-memo/require-usememo */
   return (
     <>
-      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={close}>
+      <Menu
+        open={open}
+        anchorEl={anchorEl.current}
+        onBackdropClick={close}
+        classes={{ list: buildClass(classes.columnMenu, (editableColumns.length < 8) && classes.columnMenuFew) }}
+        MenuListProps={{ dense: true }}
+      >
         {editableColumns.map((column) => (
-          // eslint-disable-next-line react-memo/require-usememo
           <MenuItem key={column.id} onClick={() => column.toggleHidden()}>
             <FormControlLabel
               style={noPointerEvents}
               label={column.id || JSON.stringify(column)}
-              // eslint-disable-next-line react-memo/require-usememo
               control={<Checkbox color='info' disableRipple checked={column.isVisible} />}
             />
           </MenuItem>
         ))}
       </Menu>
-      <Button className={classes.columnSelector} onClick={toggleOpen} ref={anchorEl}>
-        <MenuIcon />
-      </Button>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <IconButton onClick={toggleOpen} ref={anchorEl} size='small' sx={{ mr: -1 }}>
+        <GearIcon />
+      </IconButton>
     </>
   );
+  /* eslint-enable react-memo/require-usememo */
 });
 ColumnSelector.displayName = 'ColumnSelector';
 
@@ -408,42 +412,10 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
 );
 BodyRow.displayName = 'BodyRow';
 
-function decorateTable({ table: { columns, data }, enableColumnSelect, enableRowSelect }: DataTableProps): ReactTable {
-  // Enabling row select will add icon indicators, but only if something else gives a reason to show a controls column.
-  if (enableColumnSelect && !columns.some((col) => col.id === 'controls')) {
-    columns.unshift({
-      // eslint-disable-next-line react/display-name
-      Header: function ControlHeader({ columns: columnInstances }) {
-        return enableRowSelect ? <ColumnSelector columns={columnInstances} /> : <></>;
-      },
-      // eslint-disable-next-line react/display-name
-      Cell: function ControlCell() {
-        const classes = useDataTableStyles();
-        return enableRowSelect ? (
-          <div className={classes.rowExpandButton}>
-            <UnexpandedIcon className='rowSelectionIcon' />
-          </div>
-        ) : null;
-      },
-      id: 'controls',
-      isGutter: true,
-      minWidth: 24,
-      maxWidth: 24,
-      width: 24,
-      disableSortBy: true,
-      disableFilters: true,
-      disableResizing: true,
-    });
-  }
-
-  return { columns, data };
-}
-
-const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
+const DataTableImpl = React.memo<DataTableProps>(({ table, setExternalControls, ...options }) => {
   const classes = useDataTableStyles();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { columns, data } = React.useMemo(() => decorateTable({ table, ...options }), [table]);
+  const { columns, data } = table;
 
   // Begin: width math
   const [scrollbarContainer, setScrollbarContainer] = React.useState<HTMLElement>(null);
@@ -538,6 +510,21 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
     colNames, expanded, toggleRowExpanded,
     /* eslint-enable react-hooks/exhaustive-deps */
   ]);
+
+  // Used to tell the column selector what its checkboxes should contain
+  const hiddenHash = instance.state.hiddenColumns?.join(';') ?? '';
+
+  React.useEffect(() => {
+    if (setExternalControls) {
+      setExternalControls(
+        <DataTableContext.Provider value={ctx}>
+          <ColumnSelector />
+        </DataTableContext.Provider>,
+      );
+    }
+    // The context itself changes often, but we only care about the column definitions changing for this
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.instance, hiddenHash, setExternalControls]);
 
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
   if (!ready) return null;

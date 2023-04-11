@@ -455,6 +455,9 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
     return '';
   }, [script?.code]);
 
+  const [affix, setAffix] = React.useState<React.ReactNode>(null);
+  const affixRef = React.useCallback((el: React.ReactNode) => { setAffix(el); }, []);
+
   const charts = React.useMemo(() => {
     const widgets = [];
     script.vis?.widgets.filter((currentWidget) => {
@@ -523,8 +526,13 @@ const Canvas: React.FC<CanvasProps> = React.memo(({ editable, parentRef }) => {
         {
           Array.from(tables.entries()).map(([tableName, table]) => (
             <Paper elevation={1} key={tableName} className={className}>
-              <div className={classes.widgetTitle}>{tableName}</div>
-              <QueryResultTable display={{} as QueryResultTableDisplay} table={table} propagatedArgs={propagatedArgs} />
+              <WidgetTitlebar title={tableName} affix={affix} />
+              <QueryResultTable
+                display={{} as QueryResultTableDisplay}
+                table={table}
+                propagatedArgs={propagatedArgs}
+                setExternalControls={affixRef}
+              />
             </Paper>
           ))
         }
