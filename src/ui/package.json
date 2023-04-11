@@ -164,12 +164,6 @@
   },
   "resolutions": {
     "@types/react": "^18.0.9",
-    "axios": "^0.21.4",
-    "jimp": "^0.16.1",
-    "jpeg-js": "^0.4.4",
-    "multicast-dns": "7.2.3",
-    "resize-img": "^2.0.0",
-    "sharp": "0.30.5",
-    "d3-interpolate": "3.0.1"
+    "multicast-dns": "7.2.3"
   }
 }
