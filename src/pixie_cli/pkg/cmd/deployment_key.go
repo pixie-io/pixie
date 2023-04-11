@@ -84,7 +84,7 @@ var CreateDeployKeyCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to generate deployment key")
 		}
 		if short {
-			utils.Infof(key)
+			fmt.Fprintf(os.Stdout, "%s\n", key)
 		} else {
 			utils.Infof("Generated deployment key: \nID: %s \nKey: %s", keyID, key)
 		}
