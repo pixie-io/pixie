@@ -76,6 +76,13 @@ flags+=(-append "console=ttyS0 root=/dev/sda")
 # Disable graphics mode.
 flags+=(-nographic)
 
+# Change to the OVMF bios if it exists.
+# This fixes issues with terminal/screen cocrruption after running qemu.
+ovmf_bios=/usr/share/ovmf/OVMF.fd
+if [[ -e "${ovmf_bios}" ]]; then
+  flags+=(-bios "${ovmf_bios}")
+fi
+
 retval=0
 qemu-system-x86_64 "${flags[@]}" || retval=$?
 
