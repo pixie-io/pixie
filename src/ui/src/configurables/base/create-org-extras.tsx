@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function useCreateOrgExtrasBase(isCreating: boolean): {
+export function useCreateOrgExtras(isCreating: boolean): {
   /** Tasks to run when the Create button is pressed, before actually creating the org */
   beforeCreate: () => Promise<void>,
   /** Tasks to run after the org is created and the auth token is re-fetched, but before redirecting */
