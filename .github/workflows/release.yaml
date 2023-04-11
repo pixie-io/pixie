@@ -39,6 +39,7 @@ jobs:
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
         ./ci/vizier_build_release.sh
     - name: Build & Export Docs
       env:
@@ -77,6 +78,7 @@ jobs:
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
         ./ci/operator_build_release.sh
     - name: Update Manifest
       env:
@@ -109,4 +111,5 @@ jobs:
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
         ./ci/cloud_build_release.sh -p
