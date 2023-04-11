@@ -58,9 +58,9 @@ default['lego']['sha256'] =
   'd6a6dbf82ae9a1a7f9fbc8d85c224617a17337afa4284aaca6b0556a7347609d'
 
 default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-linux-amd64'
+  'https://github.com/kubernetes/minikube/releases/download/v1.30.1/minikube-linux-amd64'
 default['minikube']['sha256'] =
-  '3bc218476cf205acf11b078d45210a4882e136d24a3cbb7d8d645408e423b8fe'
+  'e53d9e8c31f4c5f683182f5323d3527aa0725f713945c6d081cf71aa548ab388'
 
 default['opm']['download_path'] =
   'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/linux-amd64-opm'
