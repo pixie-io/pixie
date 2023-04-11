@@ -87,8 +87,9 @@ const TableSummary = React.memo<{
     return (
       <span>
         Showing {visibleStart + 1} - {visibleStop + 1}
-        <span className={classes.muted}>&nbsp;out of&nbsp;</span>
+        <span className={classes.muted}>{' out of '}</span>
         {numRows} records
+        {overloadWarning}
       </span>
     );
   }
