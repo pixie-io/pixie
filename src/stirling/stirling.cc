@@ -61,7 +61,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats_connector.h"
 
-DEFINE_string(stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kTCPStats"),
+DEFINE_string(stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
               "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kTCPStats] or "
               "comma separated list of "
               "sources (find them the header files of source connector classes).");
