@@ -51,14 +51,20 @@ absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>* TCPStats::UpdateStats(
     TCPStats::AggKey key = BuildAggKey(event.upid, laddr, raddr);
     auto& stats = tcp_agg_stats_[key];
 
-    if (event.type == kUnknownEvent) {
-      continue;
-    } else if (event.type == kTCPTx) {
-      stats.bytes_sent += event.size;
-    } else if (event.type == kTCPRx) {
-      stats.bytes_recv += event.size;
-    } else if (event.type == kTCPRetransmissions) {
-      stats.retransmissions += event.size;
+    switch (event.type) {
+      case kUnknownEvent:
+        continue;
+      case kTCPTx:
+        stats.bytes_sent += event.size;
+        continue;
+      case kTCPRx:
+        stats.bytes_recv += event.size;
+        continue;
+      case kTCPRetransmissions:
+        stats.retransmissions += event.size;
+        continue;
+      default:
+        continue;
     }
   }
   return &tcp_agg_stats_;
