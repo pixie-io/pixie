@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <prometheus/counter.h>
-
 #include <memory>
 #include <string>
 #include <vector>
