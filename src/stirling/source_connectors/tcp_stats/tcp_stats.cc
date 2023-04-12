@@ -40,12 +40,14 @@ TCPStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
 
 }  // namespace
 
-absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>& TCPStats::UpdateStats(
-    std::vector<tcp_event_t> events) {
+absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>* TCPStats::UpdateStats(
+    const std::vector<tcp_event_t> events) {
   for (auto& event : events) {
     SockAddr laddr, raddr;
-    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.local_addr), &laddr);
-    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&event.remote_addr), &raddr);
+    auto la = event.local_addr;
+    auto ra = event.remote_addr;
+    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&la), &laddr);
+    PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&ra), &raddr);
     TCPStats::AggKey key = BuildAggKey(event.upid, laddr, raddr);
     auto& stats = tcp_agg_stats_[key];
 
@@ -59,7 +61,7 @@ absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>& TCPStats::UpdateStats(
       stats.retransmissions += event.size;
     }
   }
-  return tcp_agg_stats_;
+  return &tcp_agg_stats_;
 }
 
 }  // namespace stirling

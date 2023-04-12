@@ -86,12 +86,12 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
   PollPerfBuffers();
 
   DataTable* data_table = data_tables_[0];
-  auto& agg_stats = tcp_stats_.UpdateStats(events_);
+  auto* agg_stats = tcp_stats_.UpdateStats(events_);
   uint64_t time = AdjustedSteadyClockNowNS();
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
-  auto iter = agg_stats.begin();
-  while (iter != agg_stats.end()) {
+  auto iter = agg_stats->begin();
+  while (iter != agg_stats->end()) {
     const auto& key = iter->first;
     auto& stats = iter->second;
 
@@ -108,7 +108,7 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
     r.Append<tcp_stats::kTCPBytesSentIdx>(stats.bytes_sent);
     r.Append<tcp_stats::kTCPRetransmitsIdx>(stats.retransmissions);
 
-    agg_stats.erase(iter++);
+    agg_stats->erase(iter++);
   }
 
   events_.clear();
