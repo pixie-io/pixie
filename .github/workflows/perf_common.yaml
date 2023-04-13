@@ -84,17 +84,14 @@ jobs:
         echo "commit-sha=$(git log -n 1 --format="%H")" >> $GITHUB_OUTPUT
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
+      with:
+        download_toplevel: 'true'
     - name: activate gcloud service account
       env:
         GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud.json"
       run: |
         service_account="$(jq -r '.client_email' "$GOOGLE_APPLICATION_CREDENTIALS")"
         gcloud auth activate-service-account "${service_account}" --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-    - name: bazel config
-      run: |
-        # Skaffold expects the <image>.tar file to exist in the local bazel cache,
-        # but that only happens with remote_download_outputs=toplevel
-        echo "build --remote_download_outputs=toplevel" >> .bazelrc
     - name: Install Pixie CLI
       run: |
         bazel build -c opt //src/pixie_cli:px
