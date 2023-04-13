@@ -38,6 +38,8 @@ jobs:
       run: git config --global --add safe.directory `pwd`
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
+      with:
+        download_toplevel: 'true'
     - name: Build images
       run: |
         bazel build \

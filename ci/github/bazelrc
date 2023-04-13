@@ -39,6 +39,3 @@ test --local_cpu_resources=14
 
 build --jobs 16
 test --jobs 16
-
-# We need toplevel downloads in order to run tests that use container tars.
-build --remote_download_outputs=toplevel
