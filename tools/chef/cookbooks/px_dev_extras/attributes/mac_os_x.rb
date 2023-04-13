@@ -39,9 +39,9 @@ default['gh']['sha256'] =
   'ef398ece1f31d033df6374458f7a87500ccdbdc9964170db04b6a5f707632417'
 
 default['helm']['download_path'] =
-  'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
+  'https://get.helm.sh/helm-v3.11.3-darwin-amd64.tar.gz'
 default['helm']['sha256'] =
-  '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'
+  '9d029df37664b50e427442a600e4e065fa75fd74dac996c831ac68359654b2c4'
 
 default['kubectl']['download_path'] =
   'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/darwin/amd64/kubectl'
