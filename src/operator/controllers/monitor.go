@@ -132,8 +132,8 @@ type VizierMonitor struct {
 	pvcState  *vizierState
 	certState *vizierState
 
-	vzUpdate     func(context.Context, client.Object, ...client.UpdateOption) error
-	vzGet        func(context.Context, types.NamespacedName, client.Object) error
+	vzUpdate     func(context.Context, client.Object, ...client.SubResourceUpdateOption) error
+	vzGet        func(context.Context, types.NamespacedName, client.Object, ...client.GetOption) error
 	vzSpecUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 }
 

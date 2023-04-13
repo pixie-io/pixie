@@ -480,12 +480,12 @@ func TestMonitor_repairVizier_PVC(t *testing.T) {
 			cs := testclient.NewSimpleClientset()
 
 			checkUpdateCall := false
-			update := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+			update := func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 				checkUpdateCall = true
 				return nil
 			}
 
-			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object) error {
+			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 				return nil
 			}
 
@@ -1357,7 +1357,7 @@ func TestMonitor_repairVizier_consolidateVizierDeployments(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cs := testclient.NewSimpleClientset(test.pods...)
-			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object) error {
+			get := func(ctx context.Context, namespacedName k8stypes.NamespacedName, obj client.Object, opts ...client.GetOption) error {
 				vz := obj.(*v1alpha1.Vizier)
 				vz.Spec.UseEtcdOperator = test.hasEtcdOperator
 				vz.Status.Checksum = []byte("1234")
@@ -1365,11 +1365,11 @@ func TestMonitor_repairVizier_consolidateVizierDeployments(t *testing.T) {
 			}
 			callsSpecUpdate := false
 			callsStatusUpdate := false
-			specUpdate := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+			specUpdate := func(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 				callsSpecUpdate = true
 				return nil
 			}
-			statusUpdate := func(ctx context.Context, obj client.Object, ops ...client.UpdateOption) error {
+			statusUpdate := func(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
 				callsStatusUpdate = true
 				return nil
 			}
