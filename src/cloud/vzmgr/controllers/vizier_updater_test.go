@@ -132,7 +132,11 @@ func TestUpdater_VersionUpToDate(t *testing.T) {
 
 	assert.True(t, updater.VersionUpToDate("0.4.1"))
 	assert.True(t, updater.VersionUpToDate("0.4.2-pre-rc1"))
+	assert.True(t, updater.VersionUpToDate("0.4.1+meta.is.good"))
+	assert.True(t, updater.VersionUpToDate("0.4.1+meta.is...bad"))
 	assert.False(t, updater.VersionUpToDate("0.3.1"))
+	assert.False(t, updater.VersionUpToDate("0.3.1+meta.is.good"))
+	assert.False(t, updater.VersionUpToDate("0.3.1+meta.is...bad"))
 	assert.True(t, updater.VersionUpToDate("0.0.0-dev+Modified.0000000.19700101000000.0"))
 }
 
