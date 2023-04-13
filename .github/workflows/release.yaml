@@ -36,6 +36,8 @@ jobs:
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -75,6 +77,8 @@ jobs:
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -107,6 +111,8 @@ jobs:
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
         GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
