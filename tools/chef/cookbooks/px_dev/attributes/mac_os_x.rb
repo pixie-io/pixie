@@ -33,11 +33,6 @@ default['codecov']['download_path'] =
 default['codecov']['sha256'] =
   '8d3709d957c7115610e764621569728be102d213fee15bc1d1aa9d465eb2c258'
 
-default['fossa']['download_path'] =
-  'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_darwin_amd64.tar.gz'
-default['fossa']['sha256'] =
-  '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
-
 default['golang']['download_path'] =
   'https://go.dev/dl/go1.20.2.darwin-amd64.tar.gz'
 default['golang']['sha256'] =
