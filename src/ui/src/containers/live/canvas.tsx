@@ -97,12 +97,32 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       },
     },
   },
+  widgetTitlebar: {
+    backgroundColor: theme.palette.background.four,
+    color: theme.palette.text.primary,
+    height: theme.spacing(6),
+    padding: theme.spacing(1.5),
+    margin: theme.spacing(-0.75),
+    marginBottom: 0,
+    borderTopLeftRadius: 'inherit',
+    borderTopRightRadius: 'inherit',
+    borderBottom: `1px ${theme.palette.background.two} solid`,
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   widgetTitle: {
-    ...theme.typography.h3,
-    padding: theme.spacing(0.5),
-    color: theme.palette.foreground.two,
+    flex: '0 0 auto',
+    fontSize: theme.spacing(2),
+    fontWeight: 500,
     textTransform: 'capitalize',
-    marginBottom: theme.spacing(1.8),
+  },
+  widgetInfix: {
+    flex: '1 1 auto',
+  },
+  widgetAffix: {
+    flex: '0 0 auto',
   },
   chart: {
     flex: 1,
@@ -175,6 +195,21 @@ const VegaWidget: React.FC<VegaWidgetProps> = React.memo(({
 });
 VegaWidget.displayName = 'VegaWidget';
 
+const WidgetTitlebar = React.memo<{
+  title: string,
+  affix?: React.ReactNode,
+}>(({ title, affix }) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.widgetTitlebar}>
+      <div className={classes.widgetTitle}>{title}</div>
+      <div className={classes.widgetInfix}>{' '}</div>
+      <div className={classes.widgetAffix}>{affix}</div>
+    </div>
+  );
+});
+WidgetTitlebar.displayName = 'WidgetTitlebar';
+
 const WidgetDisplay: React.FC<{
   display: VisWidgetDisplay,
   table: VizierTable,
@@ -186,12 +221,14 @@ const WidgetDisplay: React.FC<{
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
 }) => {
   const classes = useStyles();
+  const [affix, setAffix] = React.useState<React.ReactNode>(null);
+  const affixRef = React.useCallback((el: React.ReactNode) => { setAffix(el); }, []);
 
   // Before we do any other processing, check if we have the chart that exist entirely in the vis spec with no data
   if (display[DISPLAY_TYPE_KEY] === TEXT_CHART_DISPLAY_TYPE) {
     return (
       <>
-        <div className={classes.widgetTitle}>{widgetName}</div>
+        <WidgetTitlebar title={widgetName} />
         <TextChart display={display as TextChartDisplay} />
       </>
     );
@@ -209,11 +246,12 @@ const WidgetDisplay: React.FC<{
   if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
     return (
       <>
-        <div className={classes.widgetTitle}>{widgetName}</div>
+        <WidgetTitlebar title={widgetName} affix={affix} />
         <QueryResultTable
           display={display as QueryResultTableDisplay}
           table={table}
           propagatedArgs={propagatedArgs}
+          setExternalControls={affixRef}
         />
       </>
     );
@@ -224,7 +262,7 @@ const WidgetDisplay: React.FC<{
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
     return (
       <div className={classes.graphContainer}>
-        <div className={classes.widgetTitle}>{widgetName}</div>
+        <WidgetTitlebar title={widgetName} />
         <GraphWidget
           display={display as GraphDisplay}
           data={parsedTable}
@@ -238,7 +276,7 @@ const WidgetDisplay: React.FC<{
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
     return (
       <>
-        <div className={classes.widgetTitle}>{widgetName}</div>
+        <WidgetTitlebar title={widgetName} />
         <RequestGraphWidget
           display={display as RequestGraphDisplay}
           data={parsedTable}
@@ -250,6 +288,7 @@ const WidgetDisplay: React.FC<{
   }
 
   if (display[DISPLAY_TYPE_KEY] === STAT_CHART_DISPLAY_TYPE) {
+    // This one does not get a titlebar, as it puts its title with the text (stylistic choice)
     return (
       <StatChart
         title={widgetName}
@@ -263,7 +302,7 @@ const WidgetDisplay: React.FC<{
   try {
     return (
       <>
-        <div className={classes.widgetTitle}>{widgetName}</div>
+        <WidgetTitlebar title={widgetName} />
         <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
           <VegaWidget
             tableName={tableName}
