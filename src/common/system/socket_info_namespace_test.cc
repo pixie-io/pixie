@@ -35,7 +35,7 @@ class NetNamespaceTest : public ::testing::Test {
  protected:
   void SetUp() override { ASSERT_OK(container_.Run()); }
 
-  DummyTestContainer container_;
+  EmailServiceContainer container_;
 };
 
 TEST_F(NetNamespaceTest, NetNamespace) {

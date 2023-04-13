@@ -296,3 +296,9 @@ def stirling_test_images():
         "sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
         "pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:1.2",
     )
+
+    _gcr_io_image(
+        "emailservice_image",
+        "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
+        "google-samples/microservices-demo/emailservice:v0.1.3",
+    )
