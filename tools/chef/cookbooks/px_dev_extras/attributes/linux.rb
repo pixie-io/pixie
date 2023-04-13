@@ -38,9 +38,9 @@ default['gh']['sha256'] =
   '4e1f98c10eb0af2c3bfe6849c10328a2a2446a9ff4294db0dfdb20b7d16eaecc'
 
 default['helm']['download_path'] =
-  'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
+  'https://get.helm.sh/helm-v3.11.3-linux-amd64.tar.gz'
 default['helm']['sha256'] =
-  '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
+  'ca2d5d40d4cdfb9a3a6205dd803b5bc8def00bd2f13e5526c127e9b667974a89'
 
 default['kubectl']['download_path'] =
   'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/linux/amd64/kubectl'
