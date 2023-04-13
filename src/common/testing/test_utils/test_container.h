@@ -27,14 +27,15 @@
 namespace px {
 
 // TODO(oazizi): Remove all uses to this container in favor of SleepContainer below.
-class DummyTestContainer : public ContainerRunner {
+class EmailServiceContainer : public ContainerRunner {
  public:
-  DummyTestContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
+  EmailServiceContainer()
+      : ContainerRunner(px::testing::BazelRunfilePath(kImage), kInstanceNamePrefix, kReadyMessage) {
+  }
 
  private:
-  static constexpr std::string_view kImage =
-      "gcr.io/google-samples/microservices-demo/emailservice:v0.1.3";
-  static constexpr std::string_view kInstanceNamePrefix = "dummy_container";
+  static constexpr std::string_view kImage = "src/common/testing/test_utils/emailservice_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "emailservice_container";
   static constexpr std::string_view kReadyMessage = "listening on port: 8080";
 };
 
