@@ -57,7 +57,7 @@ func init() {
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
-	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
+	isInternal := strings.Contains(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {
