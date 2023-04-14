@@ -7,7 +7,3 @@ kind: Kustomization
 namespace: pl
 resources:
 - pem_daemonset.yaml
-patches:
-- path: arch_tolerations/daemonset.yaml
-  target:
-    kind: DaemonSet
