@@ -6,11 +6,10 @@ metadata:
 spec:
   template:
     spec:
+      image: summerwind/actions-runner-dind
+      dockerdWithinRunnerContainer: true
       repository: pixie-io/pixie
-      resources:
-        requests:
-          cpu: 16000m
-      dockerVolumeMounts:
+      volumeMounts:
       - mountPath: /etc/docker/daemon.json
         subPath: daemon.json
         name: dockerd-config
