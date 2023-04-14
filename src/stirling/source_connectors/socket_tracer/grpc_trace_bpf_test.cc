@@ -119,12 +119,14 @@ struct TestParams {
   bool use_https;
 };
 
-class GRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>,
-                      public ::testing::WithParamInterface<TestParams> {
+using TestFixture = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>;
+
+class GRPCTraceTest : public TestFixture, public ::testing::WithParamInterface<TestParams> {
  protected:
   GRPCTraceTest() {}
 
   void TearDown() override {
+    TestFixture::TearDown();
     server_.s_.Kill();
     CHECK_EQ(9, server_.s_.Wait()) << "Server should have been killed.";
   }
