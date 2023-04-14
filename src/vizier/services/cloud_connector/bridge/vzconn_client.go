@@ -64,7 +64,7 @@ func NewVZConnClient(vzOperator VizierOperatorInfo) (vzconnpb.VZConnServiceClien
 		cloudAddr = viper.GetString("cloud_addr")
 	}
 
-	isInternal := strings.ContainsAny(cloudAddr, ".svc.cluster.local")
+	isInternal := strings.Contains(cloudAddr, ".svc.cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {
