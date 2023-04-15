@@ -6,6 +6,9 @@ metadata:
 spec:
   template:
     spec:
+      resources:
+        requests:
+          cpu: 46000m
       labels:
       - kvm
       nodeSelector:

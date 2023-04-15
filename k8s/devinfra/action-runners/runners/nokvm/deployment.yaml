@@ -6,5 +6,8 @@ metadata:
 spec:
   template:
     spec:
+      resources:
+        requests:
+          cpu: 16000m
       labels:
       - nokvm
