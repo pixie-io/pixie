@@ -141,9 +141,6 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   PX_SET_FOR_SCOPE(FLAGS_socket_tracer_enable_http2_gzip, params.use_compression);
   server_.LaunchServer(params.go_version, params.use_https);
 
-  // Deploy uprobes on the newly launched server.
-  ASSERT_OK(source_.RefreshContextAndDeployUProbes());
-
   ASSERT_OK(source_.Start());
   client_.LaunchClient(params.go_version, params.use_compression, params.use_https, server_.port());
   ASSERT_OK(source_.Stop());
