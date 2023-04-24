@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:14-alpine
+        image: postgres:14-alpine@sha256:446abaf8831c54f57212c0ae52f5df84e69eeb2767e2376d07bed9c9742b1243
         ports:
         - containerPort: 5432
         env:

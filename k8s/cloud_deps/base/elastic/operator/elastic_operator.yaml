@@ -4834,7 +4834,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - image: "docker.elastic.co/eck/eck-operator:1.8.0"
+        - image: "docker.elastic.co/eck/eck-operator:1.8.0@sha256:61d809705b3d65710d12e78a7e76cc2ff195fbd3bb3986d4df2fb80ebd29956a"
           imagePullPolicy: IfNotPresent
           name: manager
           args:

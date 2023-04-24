@@ -49,7 +49,7 @@ spec:
           # yamllint disable-line rule:line-length
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.10.1
+        image: oryd/kratos:v0.10.1@sha256:fdcfac3da3b64e619af553451607e1ab00160e59860bb19ec145cdc6f6f9c41d
         resources: {}
         securityContext:
           allowPrivilegeEscalation: false
@@ -135,7 +135,7 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         imagePullPolicy: IfNotPresent
-        image: oryd/kratos:v0.10.1
+        image: oryd/kratos:v0.10.1@sha256:fdcfac3da3b64e619af553451607e1ab00160e59860bb19ec145cdc6f6f9c41d
         ports:
         - containerPort: 4433
         - containerPort: 4434
@@ -156,7 +156,8 @@ spec:
             type: RuntimeDefault
       - name: admin-create-if-not-exists
         imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
+        # yamllint disable-line rule:line-length
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           URL="${ADMIN_URL}/admin/health/ready";

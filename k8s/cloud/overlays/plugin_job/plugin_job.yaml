@@ -56,7 +56,8 @@ spec:
               key: PL_PLUGIN_SERVICE
         - name: PL_PLUGIN_REPO
           value: "pixie-io/pixie-plugin"
-      - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14
+      # yamllint disable-line rule:line-length
+      - image: b.gcr.io/cloudsql-docker/gce-proxy:1.14@sha256:96689ad665bffc521fc9ac3cbcaa90f7d543a3fc6f1c84f81e4148a22ffa66e0
         name: cloudsql-proxy
         command: ["/bin/sh", "-c"]
         envFrom:

@@ -157,7 +157,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: pl-nats
-        image: nats:2.9.0-alpine3.16
+        image: nats:2.9.0-alpine3.16@sha256:369d96bfb77439b67c975045e9d15ba37999e691094361ff6c447a9e78b7b67c
         ports:
         - containerPort: 4222
           name: client
