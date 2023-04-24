@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/emailservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/emailservice:v0.3.6@sha256:700fc07f140b8be73212fff2b04938c49c4451dcd1044488438b9865aed7eece
         ports:
         - containerPort: 8080
         env:
@@ -71,7 +71,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: server
-          image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.3.6
+          image: gcr.io/google-samples/microservices-demo/checkoutservice:v0.3.6@sha256:cd6cb39b8397e193bddbb36be3599be949fa2ea617838910d2eacdddd4ef5437
           ports:
           - containerPort: 5050
           readinessProbe:
@@ -141,7 +141,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.3.6@sha256:305488566cd703aa2d158b3097ca399f2340446ec0a0ec398d76bf4a4d7df22e
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -202,7 +202,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: server
-          image: gcr.io/google-samples/microservices-demo/frontend:v0.3.6
+          image: gcr.io/google-samples/microservices-demo/frontend:v0.3.6@sha256:54bc781a1791327799d793792c6f454342c8731d7f9737df336a8c97055883de
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -301,7 +301,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/paymentservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/paymentservice:v0.3.6@sha256:476fcb22bf9aa231d771ea6b178014f070d97d233a5204aff29f8b45a01fc442
         ports:
         - containerPort: 50051
         env:
@@ -357,7 +357,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.3.6@sha256:a4b68f0a8d85c5a1e2476ac6804f9fdeb9610649aed2d0351416f711a82f3017
         ports:
         - containerPort: 3550
         env:
@@ -415,7 +415,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/cartservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/cartservice:v0.3.6@sha256:eb0ac54c81a8f60ddba39921a4052dd6dfe88273805983c43d5283b446a584ee
         ports:
         - containerPort: 7070
         env:
@@ -488,7 +488,7 @@ spec:
           value: "frontend:80"
       containers:
       - name: main
-        image: gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.6@sha256:25548c590b038917536e381dd43d75af168e57b5ff4f5cf3374bb58b3ad4967e
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
@@ -519,7 +519,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/currencyservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/currencyservice:v0.3.6@sha256:1f6640ba9495a5097c3405cb9037bf0cb799c3cb3e301d9bf17b776bbf9e5cad
         ports:
         - name: grpc
           containerPort: 7000
@@ -575,7 +575,7 @@ spec:
       serviceAccountName: default
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/shippingservice:v0.3.6
+        image: gcr.io/google-samples/microservices-demo/shippingservice:v0.3.6@sha256:7e0b09aad2d8eb95979d1467311e74938768d55b875b0c5405317c3ee54e4d6c
         ports:
         - containerPort: 50051
         env:
@@ -632,7 +632,7 @@ spec:
     spec:
       containers:
       - name: redis
-        image: redis:alpine
+        image: redis:alpine@sha256:da0cc759968a286f9fa8e3a0d8faca70e4dcf8ffc25fd290a041c59a9eb725c7
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -687,7 +687,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pixie-prod/demos/microservices-demo-app/adservice:1.0
+        image: gcr.io/pixie-prod/demos/microservices-demo-app/adservice:1.0@sha256:1f9fcf114f33c35cba4fd49c9bfc4c3b6dc17fd316b4f03aa0f9b3e1cbb4104d
         ports:
         - containerPort: 9555
         env:

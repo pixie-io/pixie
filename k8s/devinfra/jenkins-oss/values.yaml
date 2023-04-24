@@ -577,7 +577,7 @@ controller:
   # Optionally specify additional init-containers
   customInitContainers: []
   # - name: custom-init
-  #   image: "alpine:3.7"
+  #   image: "alpine:3.7@sha256:8421d9a84432575381bfabd248f1eb56f3aa21d9d7cd2511583c68c9b7511d10"
   #   imagePullPolicy: IfNotPresent
   #   command: ["/bin/sh", "-c", "ls"]
   #   volumeMounts:
@@ -592,7 +592,7 @@ controller:
       # http://<jenkins_url>/reload-configuration-as-code endpoint to reapply config when changes to the
       # configScripts are detected.
       enabled: true
-      image: kiwigrid/k8s-sidecar:1.15.0
+      image: kiwigrid/k8s-sidecar:1.15.0@sha256:abc3060bfe232788886f279530f8afe02614ef590ae59d9d58f637df770bcffc
       imagePullPolicy: IfNotPresent
       resources:
         {}
@@ -632,7 +632,8 @@ controller:
     ##
     ## Note: To use it you should go to https://smee.io/new and update the url to the generete one.
     # - name: smee
-    #   image: docker.io/twalter/smee-client:1.0.2
+    # yamllint disable-line rule:line-length
+    #   image: docker.io/twalter/smee-client:1.0.2@sha256:cd7abc0156a96a92c75edb6b7f06eb2f8abaaeb8d160040d5636492328e2fc66
     #   args: ["--port", "{{ .Values.controller.servicePort }}", \
     #          "--path", "/github-webhook/", "--url", "https://smee.io/new"]
     #   resources:
@@ -973,7 +974,7 @@ agent:
   #      serviceAccount: jenkins
   #      containers:
   #        - name: python
-  #          image: python:3
+  #          image: python:3@sha256:f7382f4f9dbc51183c72d621b9c196c1565f713a1fe40c119d215c961fa22815
   #          command: "/bin/sh -c"
   #          args: "cat"
   #          ttyEnabled: true

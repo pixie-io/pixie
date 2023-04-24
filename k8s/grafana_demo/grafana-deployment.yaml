@@ -20,7 +20,7 @@ spec:
       initContainers:
       # downloads plugin from pixie Github.
       - name: init-grafana
-        image: busybox:1.28
+        image: busybox:1.28@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47
         volumeMounts:
         - mountPath: /var/lib/grafana
           name: grafana-storage
@@ -85,7 +85,7 @@ spec:
         # yamllint enable rule:indentation
       containers:
       - name: grafana
-        image: grafana/grafana:7.5.16
+        image: grafana/grafana:7.5.16@sha256:9b7b1d9a1deadbe6fed74416d58db47f8af31b5cee214cfb659f89e6dda3f716
         imagePullPolicy: IfNotPresent
         env:
         # uncomment when plugin is posted on grafana plugins page

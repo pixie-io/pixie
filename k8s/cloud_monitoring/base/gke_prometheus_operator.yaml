@@ -165,7 +165,8 @@ spec:
       serviceAccountName: operator
       containers:
       - name: operator
-        image: gke.gcr.io/prometheus-engine/operator:v0.3.1-gke.0
+        # yamllint disable-line rule:line-length
+        image: gke.gcr.io/prometheus-engine/operator:v0.3.1-gke.0@sha256:0985e01d7955b6ca3b0d1d6790187c66b146d53caa552a879f34e587d1bc01d4
         args:
         - "--public-namespace=gmp-public"
         - "--priority-class=gmp-critical"
