@@ -63,149 +63,13 @@ spec:
     spec:
       containers:
       - name: etcd
-        image: quay.io/coreos/etcd:v3.4.3
+        # yamllint disable-line rule:line-length
+        image: gcr.io/pixie-oss/pixie-dev-public/etcd:3.5.8@sha256:0d082909691395a301c40a2f86ab5b1e86b162804ac7de6dbcd6ebd305b68385
         ports:
         - containerPort: 2379
           name: client
         - containerPort: 2380
           name: server
-        # yamllint disable rule:indentation rule:line-length
-        command:
-        - /bin/sh
-        - -ec
-        - |
-          HOSTNAME=$(hostname)
-
-          eps() {
-            EPS=""
-            for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
-              EPS="${EPS}${EPS:+,}https://${CLUSTER_NAME}-${i}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2379"
-            done
-            echo ${EPS}
-          }
-
-          member_hash() {
-            etcdctl \
-                --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                --endpoints=$(eps) \
-                member list | grep https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380 | cut -d',' -f1
-          }
-
-          num_existing() {
-            etcdctl \
-                --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                --endpoints=$(eps) \
-                member list | wc -l
-          }
-
-          initial_peers() {
-            PEERS=""
-            for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
-              PEERS="${PEERS}${PEERS:+,}${CLUSTER_NAME}-${i}=https://${CLUSTER_NAME}-${i}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380"
-            done
-            echo ${PEERS}
-          }
-
-          MEMBER_HASH=$(member_hash)
-          EXISTING=$(num_existing)
-
-          # Re-joining after failure?
-          if [ -n "${MEMBER_HASH}" ]; then
-            echo "Re-joining member ${HOSTNAME}"
-
-            etcdctl \
-                --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                --endpoints=$(eps) \
-                member remove ${MEMBER_HASH}
-
-            rm -rf /var/run/etcd/*
-            mkdir -p /var/run/etcd/
-          fi
-
-          if [ ${EXISTING} -gt 0 ]; then
-            while true; do
-              echo "Waiting for ${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE} to come up"
-              ping -W 1 -c 1 ${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE} > /dev/null && break
-              sleep 1s
-            done
-
-            etcdctl \
-                --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                --endpoints=$(eps) \
-                member add ${HOSTNAME} --peer-urls=https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380 | grep "^ETCD_" > /var/run/etcd/new_member_envs
-
-            if [ $? -ne 0 ]; then
-              echo "Member add ${HOSTNAME} error"
-              rm -f /var/run/etcd/new_member_envs
-              exit 1
-            fi
-
-            cat /var/run/etcd/new_member_envs
-            . /var/run/etcd/new_member_envs
-
-            exec etcd --name ${HOSTNAME} \
-                --initial-advertise-peer-urls https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380 \
-                --listen-peer-urls https://0.0.0.0:2380 \
-                --listen-client-urls https://0.0.0.0:2379 \
-                --advertise-client-urls https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2379 \
-                --data-dir /var/run/etcd/default.etcd \
-                --initial-cluster ${ETCD_INITIAL_CLUSTER} \
-                --initial-cluster-state ${ETCD_INITIAL_CLUSTER_STATE} \
-                --peer-client-cert-auth=true \
-                --peer-trusted-ca-file=/etc/etcdtls/member/peer-tls/peer-ca.crt \
-                --peer-cert-file=/etc/etcdtls/member/peer-tls/peer.crt \
-                --peer-key-file=/etc/etcdtls/member/peer-tls/peer.key \
-                --client-cert-auth=true \
-                --trusted-ca-file=/etc/etcdtls/member/server-tls/server-ca.crt \
-                --cert-file=/etc/etcdtls/member/server-tls/server.crt \
-                --key-file=/etc/etcdtls/member/server-tls/server.key \
-                --max-request-bytes 2000000 \
-                --max-wals 1 \
-                --max-snapshots 1 \
-                --quota-backend-bytes 8589934592 \
-                --snapshot-count 5000
-          fi
-
-          for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
-            while true; do
-              echo "Waiting for ${CLUSTER_NAME}-${i}.${CLUSTER_NAME}.${POD_NAMESPACE} to come up"
-              ping -W 1 -c 1 ${CLUSTER_NAME}-${i}.${CLUSTER_NAME}.${POD_NAMESPACE} > /dev/null && break
-              sleep 1s
-            done
-          done
-
-          echo "Joining member ${HOSTNAME}"
-          exec etcd --name ${HOSTNAME} \
-              --initial-advertise-peer-urls https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380 \
-              --listen-peer-urls https://0.0.0.0:2380 \
-              --listen-client-urls https://0.0.0.0:2379 \
-              --advertise-client-urls https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2379 \
-              --initial-cluster-token pl-etcd-cluster-1 \
-              --data-dir /var/run/etcd/default.etcd \
-              --initial-cluster $(initial_peers) \
-              --initial-cluster-state new \
-              --peer-client-cert-auth=true \
-              --peer-trusted-ca-file=/etc/etcdtls/member/peer-tls/peer-ca.crt \
-              --peer-cert-file=/etc/etcdtls/member/peer-tls/peer.crt \
-              --peer-key-file=/etc/etcdtls/member/peer-tls/peer.key \
-              --client-cert-auth=true \
-              --trusted-ca-file=/etc/etcdtls/member/server-tls/server-ca.crt \
-              --cert-file=/etc/etcdtls/member/server-tls/server.crt \
-              --key-file=/etc/etcdtls/member/server-tls/server.key \
-              --max-request-bytes 2000000 \
-              --max-wals 1 \
-              --max-snapshots 1 \
-              --quota-backend-bytes 8589934592 \
-              --snapshot-count 5000
-        # yamllint enable rule:indentation rule:line-length
         env:
         - name: INITIAL_CLUSTER_SIZE
           value: '3'
@@ -218,6 +82,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: DATA_DIR
+          value: /var/run/etcd
         - name: ETCD_AUTO_COMPACTION_RETENTION
           value: '5'
         - name: ETCD_AUTO_COMPACTION_MODE
@@ -225,16 +91,19 @@ spec:
         readinessProbe:
           exec:
             command:
-            - /bin/sh
-            - -ec
-            - etcdctl --endpoints=https://localhost:2379
-              --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt
-              --key=/etc/etcdtls/client/etcd-tls/etcd-client.key
-              --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt
-              endpoint status
+            - /etc/etcd/scripts/healthcheck.sh
           failureThreshold: 3
           initialDelaySeconds: 1
           periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - /etc/etcd/scripts/healthcheck.sh
+          failureThreshold: 5
+          initialDelaySeconds: 60
+          periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
         volumeMounts:
@@ -249,47 +118,8 @@ spec:
         lifecycle:
           preStop:
             exec:
-              # yamllint disable rule:indentation
               command:
-              - /bin/sh
-              - -ec
-              - |
-                HOSTNAME=$(hostname)
-
-                member_hash() {
-                  etcdctl \
-                      --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                      --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                      --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                      --endpoints=$(eps) \
-                      member list | grep https://${HOSTNAME}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2380 | cut -d',' -f1
-                }
-
-                eps() {
-                  EPS=""
-                  for i in $(seq 0 $((${INITIAL_CLUSTER_SIZE} - 1))); do
-                    EPS="${EPS}${EPS:+,}https://${CLUSTER_NAME}-${i}.${CLUSTER_NAME}.${POD_NAMESPACE}.svc:2379"
-                  done
-                  echo ${EPS}
-                }
-
-                MEMBER_HASH=$(member_hash)
-
-                # Removing member from cluster
-                if [ -n "${MEMBER_HASH}" ]; then
-                  echo "Removing ${HOSTNAME} from etcd cluster"
-                  etcdctl \
-                      --cert=/etc/etcdtls/client/etcd-tls/etcd-client.crt \
-                      --key=/etc/etcdtls/client/etcd-tls/etcd-client.key \
-                      --cacert=/etc/etcdtls/client/etcd-tls/etcd-client-ca.crt \
-                      --endpoints=$(eps) \
-                      member remove $(member_hash)
-                  if [ $? -eq 0 ]; then
-                    # Remove everything otherwise the cluster will no longer scale-up
-                    rm -rf /var/run/etcd/*
-                  fi
-                fi
-              # yamllint enable rule:indentation
+              - /etc/etcd/scripts/prestop.sh
       volumes:
       - name: member-peer-tls
         secret:
@@ -302,3 +132,20 @@ spec:
           secretName: etcd-client-tls-certs
       - emptyDir: {}
         name: etcd-data
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "amd64"
+        effect: "NoExecute"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoExecute"
