@@ -234,7 +234,6 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   uint64_t cum_sum_count = 0;
 
   const uint32_t asid = ctx->GetASID();
-  const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
   // Cause symbolizers to perform any necessary updates before we put them to work.
   u_symbolizer_->IterationPreTick();
@@ -249,9 +248,8 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     std::string stack_trace_str;
 
     const md::UPID upid(asid, stack_trace_key.upid.pid, stack_trace_key.upid.start_time_ticks);
-    const bool symbolize = upids_for_symbolization.contains(upid);
 
-    if (symbolize) {
+    if (ctx->UPIDIsInContext(upid)) {
       // The stringifier clears stack-ids out of the stack traces table when it
       // first encounters them. If a stack-id is reused by a different stack-trace-key,
       // the stringifier returns its memoized stack trace string. Because the stack-ids
