@@ -19,7 +19,7 @@ FROM --platform=$TARGETPLATFORM quay.io/coreos/etcd:3.5.8@sha256:522b262f24209d7
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
-FROM --platform=$TARGETPLATFORM alpine:3.17
+FROM --platform=$TARGETPLATFORM alpine:3.17@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126
 COPY --from=0 /usr/local/bin/etcd /usr/local/bin/etcd
 COPY --from=0 /usr/local/bin/etcdctl /usr/local/bin/etcdctl
 COPY --from=0 /usr/local/bin/etcdutl /usr/local/bin/etcdutl
