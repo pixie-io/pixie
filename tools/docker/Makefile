@@ -127,6 +127,9 @@ KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_B
 KERNEL_BUILD_TS := $(shell date +%Y%m%d%H%M%S)
 KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$(KERNEL_BUILD_TS)
 
+ETCD_IMAGE_VERSION := 3.5.8
+ETCD_IMAGE_TAG := "gcr.io/pixie-oss/pixie-dev-public/etcd:$(ETCD_IMAGE_VERSION)"
+
 ##############################################
 # Clang Build
 ##############################################
@@ -265,6 +268,13 @@ upload_kernel_build:  $(KERNEL_BUILD_TARGETS)
 	@sha256sum $^ | awk 'match($$0, /.*linux\-build\-(.*).tar.gz/, arr) { printf("    \"%s\": \"%s\",\n", arr[1], $$1)}'
 	@echo "}"
 	@echo "============================="
+
+##############################################
+# ETCD Image Builder
+##############################################
+
+upload_etcd_image:
+	$(DOCKER) buildx build --platform linux/amd64,linux/arm64 -t $(ETCD_IMAGE_TAG) --push etcd_image
 
 clean:
 	@rm -rf $(BUILD_DIR)
