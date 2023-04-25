@@ -221,6 +221,9 @@ TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
   // First start the server so the process can be detected by socket tracer.
   PX_CHECK_OK(server.Run(std::chrono::seconds{60}, /*options*/ {},
                          /*args*/ {"python", "helloworld/greeter_server.py"}));
+
+  ASSERT_OK(source_.RefreshContextAndDeployUProbes());
+
   PX_CHECK_OK(
       client.Run(std::chrono::seconds{60},
                  /*options*/ {absl::Substitute("--network=container:$0", server.container_name())},

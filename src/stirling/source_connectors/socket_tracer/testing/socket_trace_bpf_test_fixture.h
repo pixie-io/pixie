@@ -49,6 +49,12 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
     //               Change this paradigm.
     FLAGS_treat_loopback_as_in_cluster = !EnableClientSideTracing;
     ASSERT_OK(source_.Init());
+
+    if constexpr (EnableClientSideTracing) {
+      // This makes the Stirling interpret all traffic as leaving the cluster,
+      // which means client-side tracing will also apply.
+      ASSERT_OK(source_.SetClusterCIDR("1.2.3.4/32"));
+    }
   }
 
   void TearDown() override { ASSERT_OK(source_.Stop()); }

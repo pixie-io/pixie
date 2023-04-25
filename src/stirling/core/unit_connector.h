@@ -121,12 +121,9 @@ class UnitConnector {
 
     if (upids.size() == 0) {
       // The upids set is empty: trace all processes and use automatic context refresh.
-      ctx_refresh_enabled_ = true;
-      ctx_ = std::make_unique<SystemWideStandaloneContext>();
+      ctx_ = std::make_unique<EverythingLocalContext>();
     } else {
       // The upids set is non-empty: we will trace only processes identified by that set.
-      // Disable automatic context refresh.
-      ctx_refresh_enabled_ = false;
       ctx_ = std::make_unique<StandaloneContext>(upids);
     }
 
@@ -145,21 +142,18 @@ class UnitConnector {
     return Status::OK();
   }
 
-  Status RefreshContextAndDeployUProbes() {
+  Status SetClusterCIDR(const std::string& cidr) {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
 
-    // This method manipulates state normally managed by the transfer data thread. If the transfer
-    // data thread is running, it is an error to try this. If we want to enable this method in
-    // parallel with the transfer data thread, then an we can bring back the shared state lock.
-    if (transfer_enable_) {
-      return error::Internal("Context is being managed by the transfer data thread.");
-    }
+    PX_RETURN_IF_ERROR(ctx_->SetClusterCIDR(cidr));
 
-    if (ctx_refresh_enabled_) {
-      // Pick up new processes.
-      ctx_ = std::make_unique<SystemWideStandaloneContext>();
-    }
+    return Status::OK();
+  }
+
+  Status RefreshContextAndDeployUProbes() {
+    // Pedantic, but better than bravely carrying on if something is wrong here.
+    PX_RETURN_IF_ERROR(VerifyInitted());
 
     // This will block and deploy uprobes.
     source_->InitContext(ctx_.get());
@@ -236,65 +230,26 @@ class UnitConnector {
   }
 
   Status TransferDataThread() {
+    // source_->sampling_freq_mgr().set_period(std::chrono::milliseconds{100});
+    LOG(WARNING) << "source_->sampling_freq_mgr().period().count(): " << source_->sampling_freq_mgr().period().count() << " [ms].";
+
     // Invoke source_->TransferData() ASAP to drain maps & perf buffers, i.e. because some time may
     // have elapsed between starting a BPF program and starting the transfer data thread.
     source_->TransferData(ctx_.get());
 
-    // The run window prevents this thread from going to sleep for very short time frames.
-    // If the thread fails to go to sleep, it will do all the work necessary on the next loop
-    // iteration such that it can go to sleep for a reasonably longer amount of time.
-    constexpr auto kRunWindow = std::chrono::milliseconds{1};
-
-    // In stirling.cc, the max sleep duration is 1 second. That makes sense in a context where
-    // every source connector is running in parallel, and we know that there may be a good reason
-    // to periodically wake up. The various source connectors do have significantly different
-    // sampling periods, e.g. perf profiler (long) vs. socket tracer (short).
-    // This is a pedantic check to ensure that the transfer data thread will run within a human
-    // time frame. If it is triggered, someone is working on an interesting case anyway, they
-    // can figure out a new upper bound or a special case somehow.
+    // Check to ensure that the transfer data thread will run within a human time frame.
+    // If this is triggered, please find a new upper bound or implement a special case.
     if (source_->sampling_freq_mgr().period() > std::chrono::seconds{90}) {
       return error::Internal("Source connector has sampling period > 90 seconds.");
     }
 
-    // If the source connector sampling period is less than the "run window," then
-    // the transfer data thread will never sleep.
-    if (source_->sampling_freq_mgr().period() <= kRunWindow) {
-      return error::Internal("Source connector sampling period is less than run window.");
-    }
-
-    // Time "now". Updated after sleeping or after doing some amount of work.
-    auto now = std::chrono::steady_clock::now();
-
-    // Create a frequency manager that will cause the context to get refreshed periodically.
-    FrequencyManager ctx_freq_mgr;
-    ctx_freq_mgr.set_period(std::chrono::milliseconds{200});
-
     while (transfer_enable_) {
-      // To batch up work, i.e. to do more work per wakeup, we want to run our data
-      // transfer or push data if its desired run time is anywhere between
-      // time "now" and time "now + window".
-      const auto now_plus_run_window = now + kRunWindow;
-
       // Transfer data from eBPF to user space.
-      if (source_->sampling_freq_mgr().Expired(now_plus_run_window)) {
-        // Read the eBPF perf buffer and map that stores the profiling information.
-        // Data from eBPF is transferred into member data_table_.
-        source_->TransferData(ctx_.get());
+      source_->TransferData(ctx_.get());
 
-        // TransferData() is normally a significant amount of work: update "time now".
-        now = std::chrono::steady_clock::now();
-        source_->sampling_freq_mgr().Reset(now);
-      }
-
-      // Check if we need to refresh the system wide context. This is not necessary if the user
-      // specified a certain PID to trace.
-      if (ctx_refresh_enabled_) {
-        if (ctx_freq_mgr.Expired(now_plus_run_window)) {
-          ctx_ = std::make_unique<SystemWideStandaloneContext>();
-          now = std::chrono::steady_clock::now();
-          ctx_freq_mgr.Reset(now);
-        }
-      }
+      // Just slept and ran TransferData(): update "time now" then reset the freq. mamager.
+      const auto now = std::chrono::steady_clock::now();
+      source_->sampling_freq_mgr().Reset(now);
 
       // Figure the time of next required data sample.
       const auto next = source_->sampling_freq_mgr().next();
@@ -302,14 +257,7 @@ class UnitConnector {
       // Compute the amount of time to sleep.
       const auto sleep_time = std::chrono::duration_cast<std::chrono::milliseconds>(next - now);
 
-      // Sleep, only if sleep_time exceeds the "run window." In other words, do not sleep if within
-      // the next millisecond we will wakeup to sample data or refresh the context.
-      if (sleep_time >= kRunWindow) {
-        std::this_thread::sleep_for(sleep_time);
-
-        // We just went to sleep: update time now.
-        now = std::chrono::steady_clock::now();
-      }
+      std::this_thread::sleep_for(sleep_time);
     }
     transfer_exited_ = true;
 
@@ -363,9 +311,6 @@ class UnitConnector {
 
   // A thread that periodically wakes up to read eBPF perf buffers and maps.
   std::thread transfer_data_thread_;
-
-  // To enable/disable automatic system wide context refresh.
-  std::atomic<bool> ctx_refresh_enabled_ = false;
 
   // State of the transfer data thread: enabled, or exited.
   std::atomic<bool> transfer_enable_ = false;
