@@ -2386,7 +2386,7 @@ __metadata:
     webpack-cli: ^4.9.2
     webpack-dev-server: ^4.7.4
     webpack-plugin-replace: ^1.2.0
-    yaml: ^1.6.0
+    yaml: ^2.2.2
   languageName: unknown
   linkType: soft
 
@@ -15636,10 +15636,17 @@ resolve@^2.0.0-next.3:
   languageName: node
   linkType: hard
 
-"yaml@npm:^1.6.0, yaml@npm:^1.7.2":
+"yaml@npm:^1.7.2":
   version: 1.10.2
   resolution: "yaml@npm:1.10.2"
   checksum: ce4ada136e8a78a0b08dc10b4b900936912d15de59905b2bf415b4d33c63df1d555d23acb2a41b23cf9fb5da41c256441afca3d6509de7247daa062fd2c5ea5f
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "yaml@npm:2.2.2"
+  checksum: d90c235e099e30094dcff61ba3350437aef53325db4a6bcd04ca96e1bfe7e348b191f6a7a52b5211e2dbc4eeedb22a00b291527da030de7c189728ef3f2b4eb3
   languageName: node
   linkType: hard
 

@@ -76,7 +76,7 @@
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.7.4",
     "webpack-plugin-replace": "^1.2.0",
-    "yaml": "^1.6.0"
+    "yaml": "^2.2.2"
   },
   "license": "SEE LICENSE IN LICENSE.txt",
   "jest-junit": {
