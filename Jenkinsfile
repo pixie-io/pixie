@@ -702,29 +702,6 @@ def buildScriptForOSSCloudRelease = {
   postBuildActions()
 }
 
-if (isMainRun) {
-  // Only run FOSSA on main runs.
-  builders['FOSSA'] = {
-    retryPodTemplate('fossa', [gcloudContainer(), pxdevContainer()]) {
-      fetchSourceK8s {
-        container('pxdev') {
-          warnError('FOSSA command failed') {
-            withCredentials([
-              string(
-                credentialsId: 'fossa-api-key',
-                variable: 'FOSSA_API_KEY'
-              )
-            ]) {
-              sh 'git config --global --add safe.directory `pwd`'
-              sh 'fossa analyze --branch main'
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
 builders['Lint & Docs'] = {
   pxbuildWithSourceAndTargetsK8s('lint') {
     container('pxbuild') {

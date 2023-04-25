@@ -32,11 +32,6 @@ default['codecov']['download_path'] =
 default['codecov']['sha256'] =
   '648b599397548e4bb92429eec6391374c2cbb0edb835e3b3f03d4281c011f401'
 
-default['fossa']['download_path'] =
-  'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_linux_amd64.tar.gz'
-default['fossa']['sha256'] =
-  'a263aabf09308614a39d8486df722f3b03ab5b0f5060b655be1fd9def8e5619f'
-
 default['golang']['download_path'] =
   'https://go.dev/dl/go1.20.2.linux-amd64.tar.gz'
 default['golang']['sha256'] =
