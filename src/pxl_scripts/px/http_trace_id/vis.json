@@ -4,7 +4,7 @@
             "name": "start_time",
             "type": "PX_STRING",
             "description": "The start time of the window in time units before now.",
-            "defaultValue": "-1h"
+            "defaultValue": "-30m"
         },
         {
             "name": "trace_id_filter",
