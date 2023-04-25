@@ -43,8 +43,6 @@ def http_trace_data(start_time: str, trace_id_filter: str):
 
     df = add_trace_id_link(df, start_time)
 
-    # This filter seems to sometimes work depending on how many results are returned
-    # I believe there is some default applied.
     df = df[px.contains(df.trace_id, trace_id_filter)]
 
     # Order columns.
