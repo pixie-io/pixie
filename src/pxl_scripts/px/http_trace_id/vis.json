@@ -7,9 +7,15 @@
             "defaultValue": "-30m"
         },
         {
+            "name": "trace_header_name",
+            "type": "PX_STRING",
+            "description": "The HTTP header that contains the distributed trace id. Defaults to Otel's traceparent header",
+            "defaultValue": "traceparent"
+        },
+        {
             "name": "trace_id_filter",
             "type": "PX_STRING",
-            "description": "Otel trace id.",
+            "description": "Trace id.",
             "defaultValue": ""
         }
     ],
@@ -22,6 +28,10 @@
                     {
                         "name": "start_time",
                         "variable": "start_time"
+                    },
+                    {
+                        "name": "trace_header_name",
+                        "variable": "trace_header_name"
                     },
                     {
                         "name": "trace_id_filter",

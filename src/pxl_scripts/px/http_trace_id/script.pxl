@@ -23,7 +23,7 @@ be viewed.
 import px
 
 
-def http_trace_data(start_time: str, trace_id_filter: str):
+def http_trace_data(start_time: str, trace_header_name: str, trace_id_filter: str):
 
     df = px.DataFrame(table='http_events', start_time=start_time)
 
@@ -33,12 +33,16 @@ def http_trace_data(start_time: str, trace_id_filter: str):
     df = add_source_dest_columns(df)
     df = add_source_dest_links(df, start_time)
 
-    # Determine the trace_id from the traceparent http header and filter out
-    # requests that don't include a trace id.
-    df.traceparent_id = px.pluck(df.req_headers, 'traceparent')
-    df.trace_id = px.replace(
-        r"[A-Za-z0-9]+\-([A-Za-z0-9]+)\-[A-Za-z0-9]+\-[A-Za-z0-9]+",
-        df.traceparent_id, "\\1")
+    # Determine the trace_id from the {trace_header_name} http header. Otel's trace
+    # header (traceparent) includes more than the trace id and requires further
+    # parsing, while others (X-B3-Trace-Id) the value can be used wholesale.
+    df.trace_id = px.pluck(df.req_headers, trace_header_name)
+    df.trace_id = px.select(
+        trace_header_name != 'traceparent', df.trace_id, px.replace(
+            r"[A-Za-z0-9]+\-([A-Za-z0-9]+)\-[A-Za-z0-9]+\-[A-Za-z0-9]+",
+            df.trace_id, "\\1"))
+
+    # Filter out requests that don't include a trace id.
     df = df[df.trace_id != ""]
 
     df = add_trace_id_link(df, start_time)
@@ -103,7 +107,7 @@ def add_trace_id_link(df, start_time: str):
     # the sort order of the table visualization (descending time), this
     # wouldn't be a concern.
     extended_start = 2 * px.parse_duration(start_time)
-    nanos_per_min = 60000000000
+    nanos_per_min = 60 * 1000 * 1000 * 1000
     extended_start_time = px.itoa(px.floor(extended_start / nanos_per_min)) + 'm'
 
     df.trace_id_link = px.script_reference(df.trace_id, 'px/http_trace_id', {
