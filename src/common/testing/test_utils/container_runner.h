@@ -61,8 +61,10 @@ class ContainerRunner {
   /**
    * Run the container created by the constructor.
    *
-   * @param timeout Amount of time after which the container will be killed.
-   * @param options Environment variables to pass to the container (e.g. "--env=FOO=bar")
+   * @param timeout Amount of time to wait for container to come up.
+   * @param options Option args to pass to podman (e.g. "--env=FOO=bar").
+   * @param args Args to pass to the underlying container.
+   * @param container_lifetime Amount of time after which the container will be killed.
    * @return error stdout of the container, or error if container fails to reach the ready state.
    */
   StatusOr<std::string> Run(const std::chrono::seconds& timeout = std::chrono::seconds{60},
