@@ -93,7 +93,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables =
       MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable, kDNSTable,
                 kRedisTable, kNATSTable, kKafkaTable, kMuxTable, kAMQPTable);
-  // -- TODO -- remove -- static constexpr auto kDataTableSchema = kTables;
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
