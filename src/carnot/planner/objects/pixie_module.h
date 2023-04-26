@@ -200,6 +200,29 @@ class PixieModule : public QLObject {
   Returns:
     px.Time: The time value represented in the data.
   )doc";
+
+  inline static constexpr char kFormatDurationOpID[] = "format_duration";
+  inline static constexpr char kFormatDurationDocstring[] = R"doc(
+  Convert an integer in nanoseconds (-3,000,000,000) to a duration string ("-5m") while
+  preserving the sign. This function converts to whole milliseconds, seconds, minutes,
+  hours or days. This means it will round down to the nearest whole number time unit.
+
+  Examples:
+    # duration = "-5m"
+    duration = px.format_duration(-5 * 60 * 1000 * 1000 * 1000)
+    # duration = "5m" duration is rounded down to nearest whole minute.
+    duration = px.parse_duration(-5 * 60 * 1000 * 1000 * 1000 + 5)
+
+    # duration = "-5h"
+    duration = px.format_duration(-5 * 60 * 60 * 1000 * 1000 * 1000)
+
+  :topic: compile_time_fn
+
+  Args:
+    duration (int64): The duration in nanoseconds.
+  Returns:
+    string: The string representing the human readable duration (i.e. -5m, -10h).
+  )doc";
   inline static constexpr char kParseDurationOpID[] = "parse_duration";
   inline static constexpr char kParseDurationDocstring[] = R"doc(
   Parse a duration string to a duration in nanoseconds.
