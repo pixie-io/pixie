@@ -37,7 +37,7 @@ def http_trace_data(start_time: str, trace_id_filter: str):
     # requests that don't include a trace id.
     df.traceparent_id = px.pluck(df.req_headers, 'traceparent')
     df.trace_id = px.replace(
-        "[A-Za-z0-9]+\-([A-Za-z0-9]+)\-[A-Za-z0-9]+\-[A-Za-z0-9]+",  # noqa: W605
+        r"[A-Za-z0-9]+\-([A-Za-z0-9]+)\-[A-Za-z0-9]+\-[A-Za-z0-9]+",
         df.traceparent_id, "\\1")
     df = df[df.trace_id != ""]
 
