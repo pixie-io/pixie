@@ -212,6 +212,7 @@ export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered
   table: VizierTable;
   propagatedArgs?: Arguments;
   gutterColumns?: Array<string | CompleteColumnDef>;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 const LiveDataTableImpl = React.memo<LiveDataTableProps>(({ table, ...options }) => {
