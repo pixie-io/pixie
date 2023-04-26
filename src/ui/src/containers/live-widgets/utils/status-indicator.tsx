@@ -110,7 +110,7 @@ export function toStatusIndicator(status: any, semanticType: SemanticType) {
 
   return (
     <Tooltip title={tooltipMsg}>
-      <div>
+      <div style={{ textAlign: 'center' }}>
         <StatusCell statusGroup={statusGroup} />
       </div>
     </Tooltip>

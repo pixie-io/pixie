@@ -61,6 +61,8 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     display: 'block',
     fontSize: theme.typography.pxToRem(15),
     overflow: 'hidden',
+    // Set here so that selection colors can be translucent and mix with it
+    backgroundColor: theme.palette.background.four,
   },
   tableHead: {
     overflow: 'hidden',
@@ -70,13 +72,17 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     maxHeight: '100%',
     width: '100%',
+    backgroundColor: theme.palette.background.four,
+    borderBottom: `1px ${theme.palette.background.two} solid`,
+    color: theme.palette.foreground.three,
+    textTransform: 'uppercase',
   },
   headerCell: {
     position: 'relative', // In case anything inside positions absolutely
     fontSize: theme.typography.pxToRem(14),
     padding: theme.spacing(1),
     alignSelf: 'baseline',
-    borderRight: '1px solid transparent',
+    borderRight: `1px ${theme.palette.background.two} dashed`,
     '&:last-child': {
       borderRightWidth: 0,
     },
@@ -105,21 +111,25 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     position: 'absolute',
   },
   bodyRow: {
-    '&:not(:last-child)': {
-      borderBottom: `1px solid ${theme.palette.background.five}`,
-    },
+    borderTop: `1px solid ${theme.palette.background.six}`,
+    '&:first-of-type': { borderTop: 0 },
   },
   bodyRowSelectable: {
     cursor: 'pointer',
-    '& .rowSelectionIcon': { opacity: 0 },
     '&:hover': {
-      backgroundColor: `${alpha(theme.palette.foreground.grey2, 0.42)}`,
-      '& .rowSelectionIcon': { opacity: 0.8 },
+      backgroundColor: theme.palette.background.six,
     },
   },
   bodyRowSelected: {
-    backgroundColor: theme.palette.foreground.grey3,
-    '& .rowSelectionIcon': { opacity: 1 },
+    backgroundColor: alpha(theme.palette.primary[theme.palette.mode], 0.25),
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.primary[theme.palette.mode], 0.375),
+    },
+
+    borderTopColor: theme.palette.primary.main,
+    '& + $bodyRowSelectable:not(:first-of-type)': {
+      borderTopColor: theme.palette.primary.main,
+    },
   },
   bodyCell: {
     position: 'relative', // In case anything inside positions absolutely
@@ -127,7 +137,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     padding: `0 ${theme.spacing(1)}`,
     height: `${ROW_HEIGHT_PX}px`, // Ensures the border stretches. See cellContents for the rest.
-    borderRight: `1px solid ${theme.palette.background.five}`,
+    borderRight: `1px solid ${theme.palette.background.two}`,
     '&:last-of-type': {
       borderRightWidth: 0,
     },
@@ -161,15 +171,28 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     opacity: 1,
   },
   resizeHandle: {
+    // It's a <button> so that it can use :active, so we need to remove the default styles from it.
+    border: 0,
+    padding: 0,
+    backgroundColor: 'transparent',
+
     userSelect: 'none',
     position: 'absolute',
-    right: '0',
-    top: 'calc(50% - 2px)',
-    transform: 'translate(50%, -50%)',
-  },
-  resizeHandleActive: {
-    color: theme.palette.foreground.three,
-    fontWeight: 'bold',
+    top: 0,
+    // Border math makes this a little weird
+    right: theme.spacing(-6 / 8),
+    width: theme.spacing(11 / 8),
+    borderRadius: theme.spacing(3 / 8),
+    height: '100%',
+    zIndex: 1, // So that it's clickable from the cell to the right
+
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.foreground.one, 0.25),
+    },
+
+    '&:active': {
+      backgroundColor: alpha(theme.palette.foreground.one, 0.375),
+    },
   },
   columnMenu: {
     display: 'grid',
@@ -262,13 +285,13 @@ const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(({ column }) =
   const { instance: { resetResizing } } = React.useContext(DataTableContext);
 
   return (
-    <span
+    <button
       {...column.getResizerProps()}
       onDoubleClick={resetResizing}
-      className={buildClass(classes.resizeHandle, column.isResizing && classes.resizeHandleActive)}
+      className={classes.resizeHandle}
     >
-      &#8942;
-    </span>
+      &nbsp;
+    </button>
   );
 });
 ColumnResizeHandle.displayName = 'ColumnResizeHandle';
@@ -442,7 +465,9 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, setExternalControls, 
   const defaultWidth = React.useMemo(() => {
     const staticWidths = columns.map((c) => Number(c.width)).filter((c) => c > 0);
     const staticSum = staticWidths.reduce((a, c) => a + c, 0);
-    return Math.floor((containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length));
+    // Not rounded, because a high number of columns would stack error and the table would end up too wide or thin.
+    // This way, the browser decides which way to round any given column and gets the total right.
+    return (containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length);
   }, [columns, containerWidth, scrollbarWidth]);
 
   const defaultColumn = React.useMemo(() => ({

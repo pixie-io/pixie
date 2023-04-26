@@ -75,7 +75,7 @@ function useConvertedTable(
 
   const [displayMap, setDisplayMap] = React.useState<Map<string, ColumnDisplayInfo>>(new Map());
 
-  const gutterWidth = parseInt(theme.spacing(3), 10); // 24px
+  const gutterWidth = parseInt(theme.spacing(4), 10); // 32px
 
   const convertColumn = React.useCallback<(col: Relation.ColumnInfo) => CompleteColumnDef>((col) => {
     const display = displayMap.get(col.getColumnName()) ?? displayInfoFromColumn(col);

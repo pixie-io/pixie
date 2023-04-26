@@ -78,21 +78,43 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   paper: {
     flex: '1 0 auto',
-    padding: theme.spacing(1),
+    padding: theme.spacing(0.75),
     display: 'flex',
     flexFlow: 'column nowrap',
     justifyContent: 'stretch',
+
+    '& > *': {
+      flex: '1 1 auto',
+    },
   },
-  tableTitle: {
-    ...theme.typography.h3,
-    padding: theme.spacing(0.5),
-    color: theme.palette.foreground.two,
+  // Matching the one in canvas.tsx
+  titlebar: {
+    flex: '0 0 auto',
+    backgroundColor: theme.palette.background.four,
+    color: theme.palette.text.primary,
+    height: theme.spacing(6),
+    padding: theme.spacing(1.5),
+    margin: theme.spacing(-0.75),
+    marginBottom: 0,
+    borderTopLeftRadius: 'inherit',
+    borderTopRightRadius: 'inherit',
+    borderBottom: `1px ${theme.palette.background.two} solid`,
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    flex: '0 0 auto',
+    fontSize: theme.spacing(2),
+    fontWeight: 500,
     textTransform: 'capitalize',
-    marginBottom: theme.spacing(1.8),
   },
-  tableWrap: {
-    flex: '1 1 100%',
-    position: 'relative',
+  titleInfix: {
+    flex: '1 1 auto',
+  },
+  titleAffix: {
+    flex: '0 0 auto',
   },
 }), { name: 'DataExportHistory' });
 
@@ -224,6 +246,9 @@ export const DataExportHistory = React.memo<{
     setClusterByName: () => {},
   }), [cluster]);
 
+  const [titleAffix, setTitleAffix] = React.useState<React.ReactNode>(null);
+  const titleAffixRef = React.useCallback((el: React.ReactNode) => { setTitleAffix(el); }, []);
+
   return (
     /* eslint-disable react-memo/require-usememo */
     <div className={classes.root}>
@@ -276,19 +301,20 @@ export const DataExportHistory = React.memo<{
         <ResultsContext.Provider value={resultsCtx}>
           <ClusterContext.Provider value={clusterCtx}>
             <Paper className={classes.paper}>
-              <h3 className={classes.tableTitle}>Recent runs of script: {script.name}</h3>
-              <div className={classes.tableWrap}>
-                <div style={{ display: 'block', position: 'absolute', height: '100%', width: '100%' }}>
-                  <QueryResultTable
-                    display={{
-                      [DISPLAY_TYPE_KEY]: TABLE_DISPLAY_TYPE,
-                    }}
-                    propagatedArgs={{}}
-                    table={table}
-                    customGutters={[exportHistoryGutterCol]}
-                  />
-                </div>
+              <div className={classes.titlebar}>
+                <div className={classes.title}>Recent runs of script: {script.name}</div>
+                <div className={classes.titleInfix}>{' '}</div>
+                <div className={classes.titleAffix}>{titleAffix}</div>
               </div>
+              <QueryResultTable
+                display={{
+                  [DISPLAY_TYPE_KEY]: TABLE_DISPLAY_TYPE,
+                }}
+                propagatedArgs={{}}
+                table={table}
+                customGutters={[exportHistoryGutterCol]}
+                setExternalControls={titleAffixRef}
+              />
             </Paper>
           </ClusterContext.Provider>
         </ResultsContext.Provider>

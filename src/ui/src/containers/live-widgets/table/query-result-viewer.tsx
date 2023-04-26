@@ -34,6 +34,11 @@ const useStyles = makeStyles(({ spacing, typography, palette }: Theme) => create
     display: 'flex',
     flexDirection: 'column',
     overflowX: 'hidden',
+    // Bypass the padding of the parent <Paper>, but keep the rounding of the border
+    margin: spacing(-0.75),
+    marginTop: 0,
+    borderBottomLeftRadius: 'inherit',
+    borderBottomRightRadius: 'inherit',
   },
   table: {
     display: 'flex',
