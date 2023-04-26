@@ -53,7 +53,7 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideT
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{4*60}));
   }
 
   typename TClientServerContainers::ServerContainer server_;
@@ -148,7 +148,7 @@ class ProductCatalogServiceTraceTest
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the HTTP image.
-    PX_CHECK_OK(server_.Run(std::chrono::seconds{60}));
+    PX_CHECK_OK(server_.Run(std::chrono::seconds{4*60}));
   }
 
   ::px::stirling::testing::ProductCatalogService server_;
