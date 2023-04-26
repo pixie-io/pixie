@@ -50,6 +50,8 @@ class SocketTraceBPFTestFixture : public ::testing::Test {
     FLAGS_treat_loopback_as_in_cluster = !EnableClientSideTracing;
     ASSERT_OK(source_.Init());
 
+    source_.RawPtr()->sampling_freq_mgr().set_period(std::chrono::milliseconds{100});
+
     if constexpr (EnableClientSideTracing) {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.

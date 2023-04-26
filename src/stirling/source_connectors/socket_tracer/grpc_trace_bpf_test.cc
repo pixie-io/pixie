@@ -222,7 +222,7 @@ TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
   PX_CHECK_OK(server.Run(std::chrono::seconds{60}, /*options*/ {},
                          /*args*/ {"python", "helloworld/greeter_server.py"}));
 
-  ASSERT_OK(source_.RefreshContextAndDeployUProbes());
+  ASSERT_OK(source_.BlockAndDeployUProbes());
 
   PX_CHECK_OK(
       client.Run(std::chrono::seconds{60},

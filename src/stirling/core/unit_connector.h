@@ -142,16 +142,16 @@ class UnitConnector {
     return Status::OK();
   }
 
-  Status SetClusterCIDR(const std::string& cidr) {
+  Status SetClusterCIDR(std::string_view cidr_str) {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
 
-    PX_RETURN_IF_ERROR(ctx_->SetClusterCIDR(cidr));
+    PX_RETURN_IF_ERROR(ctx_->SetClusterCIDR(cidr_str));
 
     return Status::OK();
   }
 
-  Status RefreshContextAndDeployUProbes() {
+  Status BlockAndDeployUProbes() {
     // Pedantic, but better than bravely carrying on if something is wrong here.
     PX_RETURN_IF_ERROR(VerifyInitted());
 
@@ -230,9 +230,6 @@ class UnitConnector {
   }
 
   Status TransferDataThread() {
-    // source_->sampling_freq_mgr().set_period(std::chrono::milliseconds{100});
-    LOG(WARNING) << "source_->sampling_freq_mgr().period().count(): " << source_->sampling_freq_mgr().period().count() << " [ms].";
-
     // Invoke source_->TransferData() ASAP to drain maps & perf buffers, i.e. because some time may
     // have elapsed between starting a BPF program and starting the transfer data thread.
     source_->TransferData(ctx_.get());
@@ -265,7 +262,7 @@ class UnitConnector {
   }
 
   Status StartTransferDataThread() {
-    PX_RETURN_IF_ERROR(RefreshContextAndDeployUProbes());
+    PX_RETURN_IF_ERROR(BlockAndDeployUProbes());
 
     // About to start the transfer data thread. Level set our state now.
     transfer_exited_ = false;
