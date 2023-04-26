@@ -16,12 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gtest/gtest.h>
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+
+#include <gtest/gtest.h>
 
 #include "src/carnot/funcs/builtins/math_sketches.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/types.h"
 
 namespace px {
 namespace carnot {
@@ -67,6 +71,41 @@ TEST(MathSketches, quantiles_int64) {
   EXPECT_DOUBLE_EQ(d["p50"].GetDouble(), 2);
   EXPECT_DOUBLE_EQ(d["p90"].GetDouble(), 5.7999999999999998);
   EXPECT_DOUBLE_EQ(d["p99"].GetDouble(), 6);
+}
+
+TEST(MathSketches, quantiles_serialize) {
+  auto uda_tester = udf::UDATester<QuantilesUDA<types::Float64Value>>();
+  auto serialized = uda_tester.ForInput(1).Serialize();
+  rapidjson::Document d;
+  d.Parse(serialized.data());
+  const auto& processed = d[QuantilesUDA<types::Float64Value>::kProcessedKey];
+  EXPECT_TRUE(processed.IsArray());
+  EXPECT_EQ(0, processed.GetArray().Size());
+  const auto& unprocessed = d[QuantilesUDA<types::Float64Value>::kUnprocessedKey];
+  EXPECT_EQ(1, unprocessed.GetArray().Size());
+  const auto& first_centroid = unprocessed.GetArray()[0].GetArray();
+  EXPECT_EQ(2, first_centroid.Size());
+  EXPECT_EQ(1.0, first_centroid[0].GetDouble());
+  EXPECT_EQ(1.0, first_centroid[1].GetDouble());
+  // The other members of the serialized json are opaque internals to tdigest, so we don't test
+  // those here.
+}
+
+TEST(MathSketches, quantiles_serde) {
+  auto uda_tester = udf::UDATester<QuantilesUDA<types::Float64Value>>();
+  auto res_before_serde = uda_tester.ForInput(1)
+                              .ForInput(2)
+                              .ForInput(2)
+                              .ForInput(1)
+                              .ForInput(1)
+                              .ForInput(5)
+                              .ForInput(6)
+                              .Result();
+  auto serialized = uda_tester.Serialize();
+  auto new_uda_tester = udf::UDATester<QuantilesUDA<types::Float64Value>>();
+  EXPECT_OK(new_uda_tester.Deserialize(serialized));
+  auto res_after_serde = new_uda_tester.Result();
+  EXPECT_EQ(res_before_serde, res_after_serde);
 }
 
 }  // namespace builtins
