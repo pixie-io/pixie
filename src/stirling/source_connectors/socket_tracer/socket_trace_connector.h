@@ -114,6 +114,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
 
+  ~SocketTraceConnector();
+
   Status InitImpl() override;
   Status StopImpl() override;
   void InitContextImpl(ConnectorContext* ctx) override;
@@ -179,8 +181,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void HandleGrpcCCloseDataLoss(void* cb_cookie, uint64_t lost);
 
   explicit SocketTraceConnector(std::string_view source_name);
-
-  ~SocketTraceConnector();
 
   Status InitBPF();
   auto InitPerfBufferSpecs();
