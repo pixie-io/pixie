@@ -175,6 +175,12 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   InitProtocolTransferSpecs();
 }
 
+SocketTraceConnector()::~SocketTraceConnector() {
+  if (uprobe_deployment_thread_.joinable()) {
+    uprobe_deployment_thread_.join();
+  }
+}
+
 void SocketTraceConnector::InitProtocolTransferSpecs() {
 #define TRANSFER_STREAM_PROTOCOL(protocol_name) \
   &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
@@ -598,10 +604,8 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   }
 
   // Deploy uprobes on newly discovered PIDs.
-  std::thread thread = RunDeployUProbesThread(ctx->GetUPIDs());
-  // Let it run in the background.
-  if (thread.joinable()) {
-    thread.detach();
+  if (!uprobe_deployment_thread_.joinable()) {
+    uprobe_deployment_thread_ = RunDeployUProbesThread(ctx->GetUPIDs());
   }
 
   conn_trackers_mgr_.CleanupTrackers();

@@ -180,6 +180,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
+  ~SocketTraceConnector();
+
   Status InitBPF();
   auto InitPerfBufferSpecs();
   void InitProtocolTransferSpecs();
@@ -237,6 +239,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   absl::flat_hash_set<int> pids_to_trace_disable_;
 
   std::function<std::chrono::steady_clock::time_point()> now_fn_ = std::chrono::steady_clock::now;
+
+  std::thread uprobe_deployment_thread_;
 
   struct TransferSpec {
     // TODO(yzhao): Enabling protocol is essentially equivalent to subscribing to DataTable. They
