@@ -24,6 +24,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 
+	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	pb "px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 )
 
@@ -47,8 +48,29 @@ func HTTPLoadTestExperiment(
 			HTTPDataLossMetric(metricPeriod),
 		},
 		RunSpec: &pb.RunSpec{
-			PreWorkloadDuration: types.DurationProto(predeployDur),
-			Duration:            types.DurationProto(dur),
+			Actions: []*experimentpb.ActionSpec{
+				{
+					Type: experimentpb.START_VIZIER,
+				},
+				{
+					Type: experimentpb.START_METRIC_RECORDERS,
+				},
+				{
+					Type:     experimentpb.BURNIN,
+					Duration: types.DurationProto(predeployDur),
+				},
+				{
+					Type: experimentpb.START_WORKLOADS,
+				},
+				{
+					Type:     experimentpb.RUN,
+					Duration: types.DurationProto(dur),
+				},
+				{
+					// Make sure metric recorders are stopped before vizier/workloads.
+					Type: experimentpb.STOP_METRIC_RECORDERS,
+				},
+			},
 		},
 		ClusterSpec: DefaultCluster,
 	}
@@ -77,8 +99,29 @@ func SockShopExperiment(
 			HeapMetrics(metricPeriod + (2 * time.Second)),
 		},
 		RunSpec: &pb.RunSpec{
-			PreWorkloadDuration: types.DurationProto(predeployDur),
-			Duration:            types.DurationProto(dur),
+			Actions: []*experimentpb.ActionSpec{
+				{
+					Type: experimentpb.START_VIZIER,
+				},
+				{
+					Type: experimentpb.START_METRIC_RECORDERS,
+				},
+				{
+					Type:     experimentpb.BURNIN,
+					Duration: types.DurationProto(predeployDur),
+				},
+				{
+					Type: experimentpb.START_WORKLOADS,
+				},
+				{
+					Type:     experimentpb.RUN,
+					Duration: types.DurationProto(dur),
+				},
+				{
+					// Make sure metric recorders are stopped before vizier/workloads.
+					Type: experimentpb.STOP_METRIC_RECORDERS,
+				},
+			},
 		},
 		ClusterSpec: DefaultCluster,
 	}

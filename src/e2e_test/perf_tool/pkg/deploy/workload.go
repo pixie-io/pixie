@@ -35,6 +35,7 @@ import (
 
 // Workload is the interface for workloads that get deployed to the experiment cluster.
 type Workload interface {
+	Name() string
 	Prepare() error
 	Start(*cluster.Context) error
 	WaitForHealthCheck(context.Context, *cluster.Context, *experimentpb.ClusterSpec) error
@@ -84,6 +85,11 @@ func NewWorkload(pxCtx *pixie.Context, containerRegistryRepo string, spec *exper
 		healthChecks:       healthchecks,
 		namespacesToDelete: make(map[string]bool),
 	}, nil
+}
+
+// Name returns the name of the workload.
+func (w *workloadImpl) Name() string {
+	return w.spec.Name
 }
 
 // Prepare the workload by building necessary images and rendering yamls.

@@ -63,6 +63,7 @@ message WorkloadSpec {
   string name = 1;
   repeated DeployStep deploy_steps = 2;
   repeated HealthCheck healthchecks = 3;
+  string action_selector = 4;
 }
 
 // DeployStep specifies a single step in the process of deploying a workload.
@@ -151,6 +152,7 @@ message MetricSpec {
   oneof metric_type {
     PxLScriptSpec pxl = 1 [ (gogoproto.customname) = "PxL" ];
   }
+  string action_selector = 100;
 }
 
 // PxLScriptSpec specifies a PxL script and how to use it to collect a set of metrics.
@@ -218,9 +220,33 @@ message NodeSpec {
   string machine_type = 1;
 }
 
-// RunSpec specifies parameters for the execution of the experiment. Currently, it specifies how
-// long to run different phases of the experiment.
+// RunSpec specifies parameters for the execution of the experiment. Currently, it specifies what
+// order to do different actions in.
 message RunSpec {
-  google.protobuf.Duration duration = 1;
-  google.protobuf.Duration pre_workload_duration = 2;
+  reserved 1, 2;
+  repeated ActionSpec actions = 3;
+}
+
+// ActionSpec specifies what to do at a particular point in the experiment.
+message ActionSpec {
+  ActionType type = 1;
+  // duration is used by PHASE_RUN and PHASE_BURNIN, all other phases complete their respective
+  // action ignoring duration.
+  google.protobuf.Duration duration = 2;
+  // metrics/workloads can have a action_selector, and will only be started/stopped during
+  // the action with a name matching the selector.
+  string name = 3;
+}
+
+enum ActionType {
+  START_VIZIER = 0;
+  START_WORKLOADS = 1;
+  START_METRIC_RECORDERS = 2;
+  STOP_VIZIER = 3;
+  STOP_WORKLOADS = 4;
+  STOP_METRIC_RECORDERS = 5;
+  // RUN and BURNIN are the same except BURNIN signals that metrics should be
+  // ignored during that period.
+  RUN = 6;
+  BURNIN = 7;
 }
