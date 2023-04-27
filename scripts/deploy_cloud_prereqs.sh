@@ -30,7 +30,6 @@ workspace=$(git rev-parse --show-toplevel)
 source "${workspace}"/scripts/script_utils.sh
 
 ensure_namespace "${namespace}"
-ensure_namespace "${namespace}-monitoring"
 
 "${workspace}"/scripts/load_cloud_secrets.sh "${namespace}" "${secret_type}"
 "${workspace}"/scripts/deploy_cloud_deps.sh "${secret_type}"
