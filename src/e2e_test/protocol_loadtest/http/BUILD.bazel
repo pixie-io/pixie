@@ -24,5 +24,10 @@ go_library(
     visibility = [
         "//src/e2e_test:__subpackages__",
     ],
-    deps = ["//src/e2e_test/util"],
+    deps = [
+        "//src/e2e_test/util",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/collectors",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
+    ],
 )

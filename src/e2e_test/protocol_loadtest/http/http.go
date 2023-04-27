@@ -27,6 +27,10 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"px.dev/pixie/src/e2e_test/util"
 )
 
@@ -208,6 +212,10 @@ func setupHTTPServer(port string) {
 
 // RunHTTPServers sets up and runs the SSL and non-SSL HTTP server with the provided parameters.
 func RunHTTPServers(tlsConfig *tls.Config, port, sslPort string) {
+	r := prometheus.NewRegistry()
+	r.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	http.Handle("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}))
+
 	http.HandleFunc("/", chunkMiddleware(gzipMiddleware(basicHandler)))
 	// SSL port is optional
 	if sslPort != "" && tlsConfig != nil {
