@@ -85,6 +85,7 @@ spec:
     port: 7422
   - name: gateways
     port: 7522
+  publishNotReadyAddresses: true
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
