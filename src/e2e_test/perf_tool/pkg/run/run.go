@@ -233,7 +233,7 @@ func (r *Runner) startMetricRecorders(ctx context.Context, spec *experimentpb.Ex
 			continue
 		}
 
-		recorder := metrics.NewMetricsRecorder(r.pxCtx, ms, r.eg, r.metricsResultCh)
+		recorder := metrics.NewMetricsRecorder(r.pxCtx, r.clusterCtx, ms, r.eg, r.metricsResultCh)
 		r.metricsBySelector[selector] = append(r.metricsBySelector[selector], recorder)
 		if err := recorder.Start(ctx); err != nil {
 			_ = r.stopMetricRecorders(selector)

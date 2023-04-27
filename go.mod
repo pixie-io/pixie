@@ -52,6 +52,7 @@ require (
 	github.com/ory/kratos-client-go v0.10.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/prometheus/client_golang v1.14.0
+	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.43.0
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
@@ -230,7 +231,6 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
