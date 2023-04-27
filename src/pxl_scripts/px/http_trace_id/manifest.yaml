@@ -1,0 +1,4 @@
+---
+short: Sample HTTP Trace Data
+long: Shows HTTP requests with trace IDs in the cluster. Allows configuring
+      which header contains the trace ID and filtering requests by trace ID.
