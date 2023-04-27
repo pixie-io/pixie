@@ -1,0 +1,158 @@
+---
+name: cli-release
+on:
+  push:
+    tags:
+    - release/cli/**
+permissions:
+  contents: read
+env:
+  VERSIONS_FILE: "VERSIONS.json"
+jobs:
+  get-dev-image:
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image_with_extras"
+  build-cli-release:
+    name: Build CLI Release
+    runs-on: [self-hosted, nokvm]
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 15 --privileged --cgroupns host
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Setup gcloud docker creds
+      run: gcloud init && gcloud auth configure-docker
+    - name: Setup podman
+      run: |
+        # With some kernel configs (eg. COS), podman only works with legacy iptables.
+        update-alternatives --set iptables /usr/sbin/iptables-legacy
+        update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+    - name: Get GPG Key from secrets
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+      run: |
+        echo "$BUILDBOT_GPG_KEY_B64" | base64 --decode > /tmp/gpg.key
+    - name: Build & Push Artifacts
+      env:
+        REF: ${{ github.event.ref }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+        BUILDBOT_GPG_KEY_FILE: "/tmp/gpg.key"
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
+      shell: bash
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        mkdir -p "artifacts/"
+        export ARTIFACTS_DIR="$(realpath artifacts/)"
+        ./ci/save_version_info.sh
+        ./ci/cli_build_release.sh
+    - name: Upload Github Artifacts
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: linux-artifacts
+        path: artifacts/
+    - name: Update Manifest
+      env:
+        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
+      run: ./ci/update_artifact_manifest.sh
+  sign-cli-release:
+    name: Sign CLI Release for MacOS
+    runs-on: macos-latest
+    needs: build-cli-release
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Install gon
+      run: brew install mitchellh/gon/gon
+    - name: Sign CLI release
+      env:
+        REF: ${{ github.event.ref }}
+        AC_PASSWD: ${{ secrets.APPLE_ID_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+        CERT_BASE64: ${{ secrets.APPLE_SIGN_CERT_B64 }}
+        CERT_PASSWORD: ${{ secrets.APPLE_SIGN_CERT_PASSWORD }}
+      shell: bash
+      run: |
+        export CERT_PATH="pixie.cert"
+        echo -n "$CERT_BASE64" | base64 --decode -o "$CERT_PATH"
+        export TAG_NAME="${REF#*/tags/}"
+        mkdir -p "artifacts/"
+        export ARTIFACTS_DIR="$(pwd)/artifacts"
+        ./ci/cli_merge_sign.sh
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: macos-artifacts
+        path: artifacts/
+  push-signed-cli-artifacts:
+    name: Push Signed CLI Artifacts for MacOS
+    runs-on: [self-hosted, nokvm]
+    needs: [get-dev-image, sign-cli-release]
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+      with:
+        name: macos-artifacts
+    - name: Get GPG Key from secrets
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+      run: |
+        echo "$BUILDBOT_GPG_KEY_B64" | base64 --decode > /tmp/gpg.key
+    - name: Upload signed CLI
+      env:
+        REF: ${{ github.event.ref }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+        BUILDBOT_GPG_KEY_FILE: "/tmp/gpg.key"
+      shell: bash
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        mkdir -p "artifacts/"
+        export ARTIFACTS_DIR="$(pwd)/artifacts"
+        ./ci/cli_upload_signed.sh
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: macos-artifacts
+        path: artifacts/
+  create-github-cli-release:
+    name: Create CLI Release on Github
+    runs-on: ubuntu-latest
+    needs: push-signed-cli-artifacts
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - name: Create Release
+      env:
+        REF: ${{ github.event.ref }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OWNER: pixie-io
+        REPO: pixie
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        # actions/checkout doesn't get the tag annotation properly.
+        git fetch origin tag "${TAG_NAME}" -f
+        export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
+        gh release create "${TAG_NAME}" --title "CLI ${TAG_NAME#release/cli/}" \
+          --notes $'Pixie CLI Release:\n'"${changelog}"
+        gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
+      # yamllint enable rule:indentation

@@ -25,11 +25,9 @@ set -ex
 
 printenv
 
+artifacts_dir="${ARTIFACTS_DIR:-?}"
 release_tag=${TAG_NAME##*/v}
-bucket="pixie-prod-artifacts"
-if [[ ! "$release_tag" == *"-"* ]]; then
-  bucket="pixie-dev-public"
-fi
+bucket="pixie-dev-public"
 
 gpg --no-tty --batch --yes --import "${BUILDBOT_GPG_KEY_FILE}"
 
@@ -40,10 +38,11 @@ do
 
   # Check to see if it's production build. If so we should also write it to the latest directory.
   if [[ ! "$release_tag" == *"-"* ]]; then
-    output_path="gs://pixie-dev-public/cli/latest"
+    output_path="gs://${bucket}/cli/latest"
     copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
 
     gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_darwin_${arch}"
-    gh release upload "${TAG_NAME}" --repo=pixie-io/pixie "cli_darwin_${arch}" "cli_darwin_${arch}.asc"
+    cp "cli_darwin_${arch}" "${artifacts_dir}"
+    cp "cli_darwin_${arch}.asc" "${artifacts_dir}"
   fi
 done

@@ -18,17 +18,23 @@
 
 set -ex
 
+artifacts_dir="${ARTIFACTS_DIR:-?}"
+
 printenv
 
-#TODO(zasgar): Try to make it use another keychain, but it's not a big deal either way
-# since this machine is not used for anythign else.
-security unlock-keychain -p "$JENKINSKEY" login.keychain
+export KEYCHAIN_PATH=pixie.keychain
+
+security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+# Remove timeout
+security set-keychain-settings "${KEYCHAIN_PATH}"
+security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+security import "${CERT_PATH}" -P "${CERT_PASSWORD}" -A -t cert -f pkcs12 -k "${KEYCHAIN_PATH}"
+security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+security default-keychain -s "${KEYCHAIN_PATH}"
+security find-identity -v
 
 release_tag=${TAG_NAME##*/v}
 bucket="pixie-dev-public"
-if [[ $release_tag == *"-"* ]]; then
-  bucket="pixie-prod-artifacts"
-fi
 ARTIFACT_BASE_PATH="https://storage.googleapis.com/${bucket}/cli"
 
 for arch in amd64 arm64
@@ -43,3 +49,7 @@ done
 lipo -create -output cli_darwin_universal cli_darwin_arm64 cli_darwin_amd64
 
 gon ci/gon.hcl
+
+cp cli_darwin_universal "${artifacts_dir}"
+cp cli_darwin_amd64 "${artifacts_dir}"
+cp cli_darwin_arm64 "${artifacts_dir}"
