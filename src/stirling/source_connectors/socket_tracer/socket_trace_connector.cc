@@ -175,7 +175,7 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   InitProtocolTransferSpecs();
 }
 
-SocketTraceConnector()::~SocketTraceConnector() {
+SocketTraceConnector::~SocketTraceConnector() {
   if (uprobe_deployment_thread_.joinable()) {
     uprobe_deployment_thread_.join();
   }
