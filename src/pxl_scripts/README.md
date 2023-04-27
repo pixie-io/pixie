@@ -28,7 +28,7 @@ To update this README, run `make update_readme` in this directory.
 - px/[http_data_filtered](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_data_filtered): Show a sample of HTTP requests in the Cluster filtered by service, pod, request path & response status code.
 - px/[http_post_requests](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_post_requests): Show a sample of HTTP requests in the Cluster that have method POST.
 - px/[http_request_stats](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_request_stats): HTTP request statistics aggregated by Service
-- px/[http_trace_id](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_trace_id): Shows HTTP requests with trace ids in the cluster. Allows configuring which header contains the trace id and filtering requests by trace id.
+- px/[http_trace_id](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/http_trace_id): Shows HTTP requests with trace IDs in the cluster. Allows configuring which header contains the trace ID and filtering requests by trace ID.
 - px/[inbound_conns](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/inbound_conns): Shows a list of connections originating from endpoints outside the k8s cluster.
 - px/[ip](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/ip): This view displays a summary of the traffic from the cluster to the input IP address.
 - px/[jvm_data](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/jvm_data): JVM stats for Java processes running on the cluster
