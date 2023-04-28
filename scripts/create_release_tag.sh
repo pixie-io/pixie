@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -19,7 +19,7 @@
 # This creates a new tag in git for the current commit.
 
 usage() {
-    echo "Usage: echo <changelog message> | $0 <artifact_type> [-p] [-r] [-m] [-n]"
+    echo "Usage: $0 <artifact_type> [-p] [-r] [-m] [-n]"
     echo " -p : Push the tag to Github."
     echo " -r : Create a release."
     echo " -m : Increment the major version."
@@ -112,15 +112,93 @@ function update_pre {
     echo "$major.$minor.$patch-pre-$branch.$commits"
 }
 
+function generate_changelog {
+    prev_tag=$1
+    bazel_target=$2
+    prev_tag="release/vizier/v0.12.10"
+
+    bug_changelog=''
+    feature_changelog=''
+    cleanup_changelog=''
+
+    # Find all the commits between now and the last release.
+    commits=$(git log HEAD..."$prev_tag" --pretty=format:"%H")
+
+    # Find all file dependencies of the bazel target.
+    bazel query 'kind("source file", deps('"$bazel_target"'))' | sed  -e 's/:/\//' -e 's/^\/\+//' > target_files.txt
+    trap "rm -f target_files.txt" EXIT
+
+    # For each commit, pull out changelog descriptions if it touches any bazel target deps.
+    for commit in $commits
+    do
+        files=$(git show --name-only --format=oneline "$commit" | tail -n +2)
+        for file in $files
+        do
+            if grep -iq "$file" target_files.txt; then
+                changeType=''
+                releaseNote=''
+
+                log=$(git log --format=%B -n 1 "$commit")
+
+                # Get the type of change (cleanup|bug|feature).
+                typeRe='Type of change: /kind ([A-Za-z]+)'
+                if [[ $log =~ $typeRe ]]
+                then
+                changeType=${BASH_REMATCH[1]}
+                fi
+
+                # Get release notes.
+                # shellcheck disable=SC2016
+                # The backticks make shellcheck think that the string should be evaluatable.
+                notesRe='```release-note\s((\S|\s)*)```'
+                if [[ $log =~ $notesRe ]]
+                then
+                releaseNote=${BASH_REMATCH[1]}
+                fi
+
+                if [[ -n $releaseNote ]]
+                then
+                case $changeType in
+                "cleanup")
+                # shellcheck disable=SC2086
+                # Double-quoting adds an extra newline.
+                cleanup_changelog="${cleanup_changelog}- $(echo -e $releaseNote)\n"
+                ;;
+                "bug")
+                # shellcheck disable=SC2086
+                bug_changelog="${bug_changelog}- $(echo -e $releaseNote)\n"
+                ;;
+                "feature")
+                # shellcheck disable=SC2086
+                feature_changelog="${feature_changelog}- $(echo -e $releaseNote)\n"
+                ;;
+                *)
+                ;;
+                esac
+                fi
+                break
+            fi
+        done
+    done
+
+    # Format changelog.
+    changelog="##Changes by Kind\n"
+    if [[ -n $feature_changelog ]]; then
+    changelog="${changelog}###New Features\n${feature_changelog}"
+    fi
+    if [[ -n $bug_changelog ]]; then
+    changelog="${changelog}###Bug Fixes\n${bug_changelog}"
+    fi
+    if [[ -n $cleanup_changelog ]]; then
+    changelog="${changelog}###Cleanup\n${cleanup_changelog}"
+    fi
+
+    echo -e "$changelog"
+}
+
 parse_args "$@"
 check_args
 get_bazel_target
-
-# Get input from stdin.
-CHANGELOG=''
-while IFS= read -r line; do
-    CHANGELOG="${CHANGELOG}${line}\n"
-done
 
 # Fetch the latest tags.
 git fetch --tags
@@ -172,9 +250,11 @@ if [ "$RELEASE" != "true" ]; then
     new_version_str=$(update_pre "$new_version_str" "$commit_count" "$sanitized_branch")
 fi
 
-new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
-git tag -a "$new_tag" -m "$(echo -e "$CHANGELOG")"
+changelog=$(generate_changelog "$prev_tag" "$BAZEL_TARGET")
+echo -e "$changelog" > test.log
+# new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
+# git tag -a "$new_tag" -m "$(echo -e "$changelog")"
 
-if [ "$PUSH" = "true" ]; then
-  git push origin "$new_tag"
-fi
+# if [ "$PUSH" = "true" ]; then
+#  git push origin "$new_tag"
+# fi
