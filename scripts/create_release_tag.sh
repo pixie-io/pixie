@@ -115,7 +115,6 @@ function update_pre {
 function generate_changelog {
     prev_tag=$1
     bazel_target=$2
-    prev_tag="release/vizier/v0.12.10"
 
     bug_changelog=''
     feature_changelog=''
@@ -182,15 +181,15 @@ function generate_changelog {
     done
 
     # Format changelog.
-    changelog="##Changes by Kind\n"
+    changelog="## Changes by Kind\n"
     if [[ -n $feature_changelog ]]; then
-    changelog="${changelog}###New Features\n${feature_changelog}"
+    changelog="${changelog}\n### New Features\n${feature_changelog}"
     fi
     if [[ -n $bug_changelog ]]; then
-    changelog="${changelog}###Bug Fixes\n${bug_changelog}"
+    changelog="${changelog}\n### Bug Fixes\n${bug_changelog}"
     fi
     if [[ -n $cleanup_changelog ]]; then
-    changelog="${changelog}###Cleanup\n${cleanup_changelog}"
+    changelog="${changelog}\n### Cleanup\n${cleanup_changelog}"
     fi
 
     echo -e "$changelog"
@@ -251,10 +250,11 @@ if [ "$RELEASE" != "true" ]; then
 fi
 
 changelog=$(generate_changelog "$prev_tag" "$BAZEL_TARGET")
-echo -e "$changelog" > test.log
-# new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
-# git tag -a "$new_tag" -m "$(echo -e "$changelog")"
 
-# if [ "$PUSH" = "true" ]; then
-#  git push origin "$new_tag"
-# fi
+new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
+echo -e "$changelog"
+git tag -a "$new_tag" -m "$changelog" --cleanup=whitespace
+
+if [ "$PUSH" = "true" ]; then
+ git push origin "$new_tag"
+fi
