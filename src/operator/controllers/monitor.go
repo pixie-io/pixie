@@ -219,7 +219,7 @@ func (m *VizierMonitor) watchK8sPods() {
 	informer := m.factory.Core().V1().Pods().Informer()
 	stopper := make(chan struct{})
 	defer close(stopper)
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, _ = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.onAddPod,
 		UpdateFunc: m.onUpdatePod,
 		DeleteFunc: m.onDeletePod,
