@@ -98,7 +98,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   void SetUp() override {
-    FLAGS_access_tls_socket_fd_via_syscall = use_new_tls_impl_;
+    FLAGS_access_tls_socket_fd_via_syscall = UseNestedSyscallFD;
 
     SocketTraceBPFTestFixture::SetUp();
   }
@@ -121,7 +121,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
   }
 
   TServerContainer server_;
-  bool use_new_tls_impl_ = UseNestedSyscallFD;
 };
 
 //-----------------------------------------------------------------------------
