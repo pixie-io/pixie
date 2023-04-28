@@ -797,17 +797,16 @@ def pl_go_dependencies():
         name = "com_github_docker_distribution",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/docker/distribution",
-        replace = "github.com/docker/distribution",
-        sum = "h1:l9EaZDICImO1ngI+uTifW+ZYvvz7fKISBAKpg+MbWbY=",
-        version = "v2.8.0+incompatible",
+        sum = "h1:Q50tZOPR6T/hjNsyc9g8/syEs6bk8XXApsHjKukMl68=",
+        version = "v2.8.1+incompatible",
     )
     go_repository(
         name = "com_github_docker_docker",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/docker/docker",
         replace = "github.com/moby/moby",
-        sum = "h1:hjfxUufgeyrgolyaOWASyR9SvehpNcq/QHp/tx4VgsM=",
-        version = "v20.10.24+incompatible",
+        sum = "h1:3fqThUtRka1S4Ad1FMsE5KXwfwA06tmrW6FrPYxTLX4=",
+        version = "v23.0.5+incompatible",
     )
     go_repository(
         name = "com_github_docker_go_connections",
