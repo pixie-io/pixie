@@ -62,8 +62,8 @@ func SetupEtcd() (*clientv3.Client, func(), error) {
 		return nil, nil, err
 	}
 
-	cfg.LPUrls = []url.URL{}
-	cfg.LCUrls = []url.URL{*clientURL}
+	cfg.ListenPeerUrls = []url.URL{}
+	cfg.ListenClientUrls = []url.URL{*clientURL}
 
 	e, err := embed.StartEtcd(cfg)
 	if err != nil {

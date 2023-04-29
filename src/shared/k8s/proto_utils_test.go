@@ -1570,7 +1570,6 @@ func TestNodeToProto(t *testing.T) {
 		Namespace:         "",
 		UID:               "12",
 		ResourceVersion:   "1",
-		ClusterName:       "",
 		CreationTimestamp: creationTime,
 		OwnerReferences:   oRefs,
 	}

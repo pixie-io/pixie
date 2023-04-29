@@ -71,7 +71,7 @@ func (pw *pvcWatcher) start(ctx context.Context) {
 	informer := pw.factory.Core().V1().PersistentVolumeClaims().Informer()
 	stopper := make(chan struct{})
 	defer close(stopper)
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, _ = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    pw.onAdd,
 		UpdateFunc: pw.onUpdate,
 		DeleteFunc: pw.onDelete,
