@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -141,39 +141,34 @@ function generate_changelog {
 
                 # Get the type of change (cleanup|bug|feature).
                 typeRe='Type of change: /kind ([A-Za-z]+)'
-                if [[ $log =~ $typeRe ]]
-                then
-                changeType=${BASH_REMATCH[1]}
+                if [[ $log =~ $typeRe ]]; then
+                    changeType=${BASH_REMATCH[1]}
                 fi
 
                 # Get release notes.
-                # shellcheck disable=SC2016
-                # The backticks make shellcheck think that the string should be evaluatable.
-                notesRe='```release-note\s((\S|\s)*)```'
-                if [[ $log =~ $notesRe ]]
-                then
-                releaseNote=${BASH_REMATCH[1]}
+                notesRe="\`\`\`release-note\s((\S|\s)*)\`\`\`"
+                if [[ $log =~ $notesRe ]]; then
+                    releaseNote=${BASH_REMATCH[1]}
                 fi
 
-                if [[ -n $releaseNote ]]
-                then
-                case $changeType in
-                "cleanup")
-                # shellcheck disable=SC2086
-                # Double-quoting adds an extra newline.
-                cleanup_changelog="${cleanup_changelog}- $(echo -e $releaseNote)\n"
-                ;;
-                "bug")
-                # shellcheck disable=SC2086
-                bug_changelog="${bug_changelog}- $(echo -e $releaseNote)\n"
-                ;;
-                "feature")
-                # shellcheck disable=SC2086
-                feature_changelog="${feature_changelog}- $(echo -e $releaseNote)\n"
-                ;;
-                *)
-                ;;
-                esac
+                if [[ -n $releaseNote ]]; then
+                    case $changeType in
+                    "cleanup")
+                        # shellcheck disable=SC2086
+                        # Double-quoting adds an extra newline.
+                        cleanup_changelog="${cleanup_changelog}- $(echo -e $releaseNote)\n"
+                        ;;
+                    "bug")
+                        # shellcheck disable=SC2086
+                        bug_changelog="${bug_changelog}- $(echo -e $releaseNote)\n"
+                        ;;
+                    "feature")
+                        # shellcheck disable=SC2086
+                        feature_changelog="${feature_changelog}- $(echo -e $releaseNote)\n"
+                        ;;
+                    *)
+                        ;;
+                    esac
                 fi
                 break
             fi
@@ -181,15 +176,15 @@ function generate_changelog {
     done
 
     # Format changelog.
-    changelog="## Changes by Kind\n"
+    changelog=""
     if [[ -n $feature_changelog ]]; then
-    changelog="${changelog}\n### New Features\n${feature_changelog}"
+        changelog="${changelog}### New Features\n${feature_changelog}\n"
     fi
     if [[ -n $bug_changelog ]]; then
-    changelog="${changelog}\n### Bug Fixes\n${bug_changelog}"
+        changelog="${changelog}### Bug Fixes\n${bug_changelog}\n"
     fi
     if [[ -n $cleanup_changelog ]]; then
-    changelog="${changelog}\n### Cleanup\n${cleanup_changelog}"
+        changelog="${changelog}### Cleanup\n${cleanup_changelog}\n"
     fi
 
     echo -e "$changelog"
@@ -252,9 +247,9 @@ fi
 changelog=$(generate_changelog "$prev_tag" "$BAZEL_TARGET")
 
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
-echo -e "$changelog"
+
 git tag -a "$new_tag" -m "$changelog" --cleanup=whitespace
 
 if [ "$PUSH" = "true" ]; then
-   git push origin "$new_tag"
+    git push origin "$new_tag"
 fi
