@@ -41,7 +41,7 @@ namespace planner {
 
 /**
  * @brief Symbol Table is an abstraction used to access any table structure.
- * The two main virtualn functions to implement are HasSymbol and GetSymbol.
+ * The two main virtual functions to implement are HasSymbol and GetSymbol.
  *
  * AddSymbol is deliberately left out from the interface because there is a case
  * where we would like to store QLObjectPtrs but can't create a circular dependency in the system to
