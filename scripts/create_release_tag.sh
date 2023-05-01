@@ -256,5 +256,5 @@ echo -e "$changelog"
 git tag -a "$new_tag" -m "$changelog" --cleanup=whitespace
 
 if [ "$PUSH" = "true" ]; then
- git push origin "$new_tag"
+   git push origin "$new_tag"
 fi
