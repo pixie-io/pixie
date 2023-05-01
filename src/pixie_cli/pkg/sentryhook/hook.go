@@ -20,6 +20,7 @@ package sentryhook
 
 import (
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -97,13 +98,24 @@ func (hook Hook) Fire(entry *log.Entry) error {
 	return nil
 }
 
+func useExtraAsTag(key string) bool {
+	return strings.Contains(key, "vz") || strings.Contains(key, "vizier")
+}
+
 // DefaultConverter is the default log converter.
 func DefaultConverter(entry *log.Entry, event *sentry.Event, hub *sentry.Hub) {
 	event.Level = levelMap[entry.Level]
 	event.Message = entry.Message
 
-	for k, v := range entry.Data {
-		event.Extra[k] = v
+	for k, i := range entry.Data {
+		event.Extra[k] = i
+
+		if useExtraAsTag(k) {
+			switch v := i.(type) {
+			case string:
+				event.Tags[k] = v
+			}
+		}
 	}
 
 	if err, ok := entry.Data[log.ErrorKey].(error); ok {
