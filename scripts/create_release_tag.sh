@@ -124,13 +124,13 @@ function generate_changelog {
     commits=$(git log HEAD..."$prev_tag" --pretty=format:"%H")
 
     # Find all file dependencies of the bazel target.
-    bazel query 'kind("source file", deps('"$bazel_target"'))' | sed  -e 's/:/\//' -e 's/^\/\+//' > target_files.txt
+    bazel query --noshow_progress 'kind("source file", deps('"$bazel_target"')) union buildfiles(deps('"$bazel_target"'))' | sed  -e 's/:/\//' -e 's/^\/\+//' > target_files.txt
     trap "rm -f target_files.txt" EXIT
 
     # For each commit, pull out changelog descriptions if it touches any bazel target deps.
     for commit in $commits
     do
-        files=$(git show --name-only --format=oneline "$commit" | tail -n +2)
+        files=$(git show --name-only --pretty="format:" "$commit")
         for file in $files
         do
             if grep -iq "$file" target_files.txt; then
@@ -146,25 +146,25 @@ function generate_changelog {
                 fi
 
                 # Get release notes.
-                notesRe="\`\`\`release-note\s((\S|\s)*)\`\`\`"
+                notesRe="\`\`\`release-note\s*(.*)\`\`\`"
                 if [[ $log =~ $notesRe ]]; then
                     releaseNote=${BASH_REMATCH[1]}
                 fi
 
+                declare -a cleanup_changelog
+                declare -a bug_changelog
+                declare -a feature_changelog
+
                 if [[ -n $releaseNote ]]; then
                     case $changeType in
                     "cleanup")
-                        # shellcheck disable=SC2086
-                        # Double-quoting adds an extra newline.
-                        cleanup_changelog="${cleanup_changelog}- $(echo -e $releaseNote)\n"
+                        cleanup_changelog+=("$releaseNote")
                         ;;
                     "bug")
-                        # shellcheck disable=SC2086
-                        bug_changelog="${bug_changelog}- $(echo -e $releaseNote)\n"
+                        bug_changelog+=("$releaseNote")
                         ;;
                     "feature")
-                        # shellcheck disable=SC2086
-                        feature_changelog="${feature_changelog}- $(echo -e $releaseNote)\n"
+                        feature_changelog+=("$releaseNote")
                         ;;
                     *)
                         ;;
@@ -175,19 +175,22 @@ function generate_changelog {
         done
     done
 
-    # Format changelog.
-    changelog=""
-    if [[ -n $feature_changelog ]]; then
-        changelog="${changelog}### New Features\n${feature_changelog}\n"
+    # Output changelog.
+    if [[ ${#feature_changelog[@]} != 0 ]]; then
+        echo "### New Features"
+        printf -- '- %s' "${feature_changelog[@]%%+[[:space]]}"
+        echo ""
     fi
-    if [[ -n $bug_changelog ]]; then
-        changelog="${changelog}### Bug Fixes\n${bug_changelog}\n"
+    if [[ ${#bug_changelog[@]} != 0 ]]; then
+        echo "### Bug Fixes"
+        printf -- '- %s' "${bug_changelog[@]%%+[[:space]]}"
+        echo ""
     fi
-    if [[ -n $cleanup_changelog ]]; then
-        changelog="${changelog}### Cleanup\n${cleanup_changelog}\n"
+    if [[ ${#cleanup_changelog[@]} != 0 ]]; then
+        echo "### Cleanup"
+        printf -- '- %s' "${cleanup_changelog[@]%%+[[:space]]}"
+        echo ""
     fi
-
-    echo -e "$changelog"
 }
 
 parse_args "$@"
