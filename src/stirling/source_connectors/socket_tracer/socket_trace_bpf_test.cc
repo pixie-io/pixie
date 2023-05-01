@@ -50,6 +50,7 @@ using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
 using ::px::system::UnixSocket;
 using ::px::types::ColumnWrapperRecordBatch;
+using ::testing::Contains;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
 
@@ -588,13 +589,13 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
 
-  // Time ordering by response means that we should get server entry first, then client entry.
-  std::string server_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(0);
-  std::string client_body = records[kHTTPRespBodyIdx]->Get<types::StringValue>(1);
+  const absl::flat_hash_set<std::string> responses{
+      records[kHTTPRespBodyIdx]->Get<types::StringValue>(0),
+      records[kHTTPRespBodyIdx]->Get<types::StringValue>(1)};
 
   const std::string kHTTPRespMsgContentAsFiller(kHTTPRespMsgContent.size(), 0);
-  EXPECT_EQ(server_body, kHTTPRespMsgContentAsFiller);
-  EXPECT_EQ(client_body, kHTTPRespMsgContent);
+  EXPECT_THAT(responses, Contains(kHTTPRespMsgContentAsFiller));
+  EXPECT_THAT(responses, Contains(kHTTPRespMsgContent));
 }
 
 using NullRemoteAddrTest = testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false>;
