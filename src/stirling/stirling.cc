@@ -59,11 +59,12 @@
 #include "src/stirling/source_connectors/stirling_error/stirling_error_connector.h"
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/source_connectors/tcp_stats/tcp_stats_connector.h"
 
-DEFINE_string(
-    stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
-    "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler] or comma separated list of "
-    "sources (find them the header files of source connector classes).");
+DEFINE_string(stirling_sources, gflags::StringFromEnv("PL_STIRLING_SOURCES", "kProd"),
+              "Choose sources to enable. [kAll|kProd|kMetrics|kTracers|kProfiler|kTCPStats] or "
+              "comma separated list of "
+              "sources (find them the header files of source connector classes).");
 
 namespace px {
 namespace stirling {
@@ -78,7 +79,7 @@ const std::vector<SourceRegistry::RegistryElement> kAllSources = {
     REGISTRY_PAIR(SocketTraceConnector),       REGISTRY_PAIR(ProcessStatsConnector),
     REGISTRY_PAIR(NetworkStatsConnector),      REGISTRY_PAIR(PerfProfileConnector),
     REGISTRY_PAIR(PIDCPUUseBPFTraceConnector), REGISTRY_PAIR(proc_exit_tracer::ProcExitConnector),
-    REGISTRY_PAIR(StirlingErrorConnector),
+    REGISTRY_PAIR(StirlingErrorConnector),     REGISTRY_PAIR(TCPStatsConnector),
 };
 #undef REGISTRY_PAIR
 
@@ -124,6 +125,10 @@ std::vector<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group)
     case SourceConnectorGroup::kProfiler:
       return {
         PerfProfileConnector::kName
+      };
+    case SourceConnectorGroup::kTCPStats:
+      return {
+       TCPStatsConnector::kName
       };
     default:
       // To keep GCC happy.
