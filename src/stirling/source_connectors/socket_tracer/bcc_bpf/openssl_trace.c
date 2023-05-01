@@ -108,13 +108,13 @@ static int get_fd(uint32_t tgid, void* ssl) {
 BPF_HASH(active_ssl_read_args_map, uint64_t, struct data_args_t);
 BPF_HASH(active_ssl_write_args_map, uint64_t, struct data_args_t);
 
-static __inline void eval_and_cleanup_nested_syscall_detection(uint64_t pid_tgid) {
+static __inline int get_fd_and_eval_nested_syscall_detection(uint64_t pid_tgid) {
   struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
 
   if (nested_syscall_fd_ptr == NULL) {
     // This state should not occur since ssl_user_space_call_map for a given pid_tgid is set
     // upon SSL_write and SSL_read entry.
-    return;
+    return kInvalidFD;
   }
 
   bool mismatched_fds = nested_syscall_fd_ptr->mismatched_fds;
@@ -125,7 +125,10 @@ static __inline void eval_and_cleanup_nested_syscall_detection(uint64_t pid_tgid
     openssl_trace_state.update(&error_status_idx, &status_code);
   }
 
+  int fd = nested_syscall_fd_ptr->fd;
   ssl_user_space_call_map.delete(&pid_tgid);
+
+  return fd;
 }
 
 // Function signature being probed:
@@ -169,7 +172,6 @@ int probe_ret_SSL_write(struct pt_regs* ctx) {
     process_openssl_data(ctx, id, kEgress, write_args);
   }
 
-  eval_and_cleanup_nested_syscall_detection(id);
   active_ssl_write_args_map.delete(&id);
   return 0;
 }
@@ -215,7 +217,89 @@ int probe_ret_SSL_read(struct pt_regs* ctx) {
     process_openssl_data(ctx, id, kIngress, read_args);
   }
 
-  eval_and_cleanup_nested_syscall_detection(id);
+  active_ssl_read_args_map.delete(&id);
+  return 0;
+}
+
+// Function signature being probed:
+// int SSL_write(SSL *ssl, const void *buf, int num);
+int probe_entry_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+  uint32_t tgid = id >> 32;
+
+  void* ssl = (void*)PT_REGS_PARM1(ctx);
+
+  struct nested_syscall_fd_t nested_syscall_fd = {
+      .fd = kInvalidFD,
+  };
+  ssl_user_space_call_map.update(&id, &nested_syscall_fd);
+
+  char* buf = (char*)PT_REGS_PARM2(ctx);
+
+  struct data_args_t write_args = {};
+  write_args.source_fn = kSSLWrite;
+  write_args.buf = buf;
+  active_ssl_write_args_map.update(&id, &write_args);
+
+  return 0;
+}
+
+int probe_ret_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  int fd = get_fd_and_eval_nested_syscall_detection(id);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
+  struct data_args_t* write_args = active_ssl_write_args_map.lookup(&id);
+  // Set socket fd
+  if (write_args != NULL) {
+    write_args->fd = fd;
+    process_openssl_data(ctx, id, kEgress, write_args);
+  }
+
+  active_ssl_write_args_map.delete(&id);
+  return 0;
+}
+
+// Function signature being probed:
+// int SSL_read(SSL *s, void *buf, int num)
+int probe_entry_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+  uint32_t tgid = id >> 32;
+
+  void* ssl = (void*)PT_REGS_PARM1(ctx);
+
+  struct nested_syscall_fd_t nested_syscall_fd = {
+      .fd = kInvalidFD,
+  };
+  ssl_user_space_call_map.update(&id, &nested_syscall_fd);
+
+  char* buf = (char*)PT_REGS_PARM2(ctx);
+
+  struct data_args_t read_args = {};
+  read_args.source_fn = kSSLRead;
+  read_args.buf = buf;
+  active_ssl_read_args_map.update(&id, &read_args);
+
+  return 0;
+}
+
+int probe_ret_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  int fd = get_fd_and_eval_nested_syscall_detection(id);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
+  struct data_args_t* read_args = active_ssl_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    read_args->fd = fd;
+    process_openssl_data(ctx, id, kIngress, read_args);
+  }
+
   active_ssl_read_args_map.delete(&id);
   return 0;
 }

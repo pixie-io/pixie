@@ -180,11 +180,8 @@ static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) 
       nested_syscall_fd_ptr->mismatched_fds = true;
     }
 
-    // TODO(ddelnano): Our existing functionality is not changed until we uncomment
-    // set_conn_as_ssl. We plan to switch over to the new functionality as part of
-    // pixie#1123.
-    // uint32_t tgid = pid_tgid >> 32;
-    // set_conn_as_ssl(tgid, fd);
+    uint32_t tgid = pid_tgid >> 32;
+    set_conn_as_ssl(tgid, fd);
   }
 }
 
