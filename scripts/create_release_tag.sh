@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -19,7 +19,7 @@
 # This creates a new tag in git for the current commit.
 
 usage() {
-    echo "Usage: echo <changelog message> | $0 <artifact_type> [-p] [-r] [-m] [-n]"
+    echo "Usage: $0 <artifact_type> [-p] [-r] [-m] [-n]"
     echo " -p : Push the tag to Github."
     echo " -r : Create a release."
     echo " -m : Increment the major version."
@@ -112,15 +112,90 @@ function update_pre {
     echo "$major.$minor.$patch-pre-$branch.$commits"
 }
 
+function generate_changelog {
+    prev_tag=$1
+    bazel_target=$2
+
+    bug_changelog=''
+    feature_changelog=''
+    cleanup_changelog=''
+
+    # Find all the commits between now and the last release.
+    commits=$(git log HEAD..."$prev_tag" --pretty=format:"%H")
+
+    # Find all file dependencies of the bazel target.
+    bazel query --noshow_progress 'kind("source file", deps('"$bazel_target"')) union buildfiles(deps('"$bazel_target"'))' | sed  -e 's/:/\//' -e 's/^\/\+//' > target_files.txt
+    trap "rm -f target_files.txt" EXIT
+
+    # For each commit, pull out changelog descriptions if it touches any bazel target deps.
+    for commit in $commits
+    do
+        files=$(git show --name-only --pretty="format:" "$commit")
+        for file in $files
+        do
+            if grep -iq "$file" target_files.txt; then
+                changeType=''
+                releaseNote=''
+
+                log=$(git log --format=%B -n 1 "$commit")
+
+                # Get the type of change (cleanup|bug|feature).
+                typeRe='Type of change: /kind ([A-Za-z]+)'
+                if [[ $log =~ $typeRe ]]; then
+                    changeType=${BASH_REMATCH[1]}
+                fi
+
+                # Get release notes.
+                notesRe="\`\`\`release-note\s*(.*)\`\`\`"
+                if [[ $log =~ $notesRe ]]; then
+                    releaseNote=${BASH_REMATCH[1]}
+                fi
+
+                declare -a cleanup_changelog
+                declare -a bug_changelog
+                declare -a feature_changelog
+
+                if [[ -n $releaseNote ]]; then
+                    case $changeType in
+                    "cleanup")
+                        cleanup_changelog+=("$releaseNote")
+                        ;;
+                    "bug")
+                        bug_changelog+=("$releaseNote")
+                        ;;
+                    "feature")
+                        feature_changelog+=("$releaseNote")
+                        ;;
+                    *)
+                        ;;
+                    esac
+                fi
+                break
+            fi
+        done
+    done
+
+    # Output changelog.
+    if [[ ${#feature_changelog[@]} != 0 ]]; then
+        echo "### New Features"
+        printf -- '- %s' "${feature_changelog[@]%%+[[:space]]}"
+        echo ""
+    fi
+    if [[ ${#bug_changelog[@]} != 0 ]]; then
+        echo "### Bug Fixes"
+        printf -- '- %s' "${bug_changelog[@]%%+[[:space]]}"
+        echo ""
+    fi
+    if [[ ${#cleanup_changelog[@]} != 0 ]]; then
+        echo "### Cleanup"
+        printf -- '- %s' "${cleanup_changelog[@]%%+[[:space]]}"
+        echo ""
+    fi
+}
+
 parse_args "$@"
 check_args
 get_bazel_target
-
-# Get input from stdin.
-CHANGELOG=''
-while IFS= read -r line; do
-    CHANGELOG="${CHANGELOG}${line}\n"
-done
 
 # Fetch the latest tags.
 git fetch --tags
@@ -172,9 +247,12 @@ if [ "$RELEASE" != "true" ]; then
     new_version_str=$(update_pre "$new_version_str" "$commit_count" "$sanitized_branch")
 fi
 
+changelog=$(generate_changelog "$prev_tag" "$BAZEL_TARGET")
+
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
-git tag -a "$new_tag" -m "$(echo -e "$CHANGELOG")"
+
+git tag -a "$new_tag" -m "$changelog" --cleanup=whitespace
 
 if [ "$PUSH" = "true" ]; then
-  git push origin "$new_tag"
+    git push origin "$new_tag"
 fi
