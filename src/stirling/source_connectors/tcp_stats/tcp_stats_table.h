@@ -36,12 +36,12 @@ namespace tcp_stats {
 constexpr DataElement addr_data_element(const std::string_view name) {
   return DataElement(name, "IP address of the local/remote endpoint.", types::DataType::STRING,
                      types::SemanticType::ST_IP_ADDRESS, types::PatternType::GENERAL);
-};
+}
 
 constexpr DataElement port_data_element(const std::string_view name) {
   return DataElement(name, "Port of the local/remote endpoint.", types::DataType::INT64,
                      types::SemanticType::ST_PORT, types::PatternType::GENERAL);
-};
+}
 
 // clang-format off
 static constexpr DataElement kTCPStatsElements[] = {

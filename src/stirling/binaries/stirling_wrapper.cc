@@ -61,10 +61,9 @@ using DynamicTracepointDeployment =
 DEFINE_string(trace, "",
               "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
-DEFINE_string(
-    print_record_batches,
-    "http_events,mysql_events,pgsql_events,redis_events,cql_events,dns_events",
-    "Comma-separated list of tables to print.");
+DEFINE_string(print_record_batches,
+              "http_events,tcp_stats_events,mysql_events,pgsql_events,redis_events,cql_events,dns_events",
+              "Comma-separated list of tables to print.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
 DEFINE_int32(timeout_secs, -1,
              "If non-negative, only runs for the specified amount of time and exits.");

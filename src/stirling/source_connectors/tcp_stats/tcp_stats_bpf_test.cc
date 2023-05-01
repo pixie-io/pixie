@@ -67,7 +67,7 @@ TEST_F(TcpTraceTest, Capture) {
   auto records2 = testing::ExtractToString(tcp_stats::kTCPStatsTable, tcp_stats_table_);
   EXPECT_THAT(records2, HasSubstr("remote_addr:[127.0.0.1] remote_port:[22] tx:[20]"));
 
-  // TODO: Explore options for testing retransmissions in a unit test case,
+  // TODO(RagalahariP): Explore options for testing retransmissions in a unit test case,
   // as retransmissions are blocking calls without known timeout value.
 }
 
