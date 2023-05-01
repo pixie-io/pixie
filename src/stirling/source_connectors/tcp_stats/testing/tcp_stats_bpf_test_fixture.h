@@ -27,6 +27,7 @@
 #include <absl/base/internal/spinlock.h>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats_connector.h"
 #include "src/stirling/testing/common.h"
 
@@ -91,7 +92,7 @@ class TcpTraceBPFTestFixture : public ::testing::Test {
   }
 
   static constexpr int kTcpstatsTableNum = TCPStatsConnector::kTCPStatsTableNum;
-  testing::DataTables data_tables_{TCPStatsConnector::kTables};
+  DataTables data_tables_{TCPStatsConnector::kTables};
   DataTable* tcp_stats_table_ = data_tables_[kTcpstatsTableNum];
   absl::base_internal::SpinLock tcp_stats_state_lock_;
   std::unique_ptr<TCPStatsConnector> source_;
