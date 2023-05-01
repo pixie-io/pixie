@@ -111,7 +111,8 @@ class AgentContext : public ConnectorContext {
 
   std::vector<CIDRBlock> GetClusterCIDRs() override;
 
-  virtual void RefreshUPIDList() override {};
+  virtual void RefreshUPIDList() override{};
+
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
 };
@@ -144,7 +145,8 @@ class StandaloneContext : public ConnectorContext {
 
   Status SetClusterCIDR(std::string_view cidr_str);
 
-  virtual void RefreshUPIDList() override {};
+  virtual void RefreshUPIDList() override{};
+
  protected:
   absl::flat_hash_set<md::UPID> upids_;
   absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> upid_pidinfo_map_;
