@@ -162,6 +162,21 @@ TEST_F(ASTExpressionTest, NegativeLong) {
   EXPECT_EQ(static_cast<IntIR*>(expr)->val(), -2305843009213693952);
 }
 
+TEST_F(ASTExpressionTest, InvertInteger) {
+  auto parse_result = parser.Parse("~1", /* parse_doc_strings */ false);
+  auto visitor_result =
+      ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
+
+  ASSERT_OK(visitor_result);
+
+  auto obj = visitor_result.ConsumeValueOrDie();
+  ASSERT_TRUE(ExprObject::IsExprObject(obj));
+  auto expr = static_cast<ExprObject*>(obj.get())->expr();
+
+  ASSERT_MATCH(expr, Int());
+  EXPECT_EQ(static_cast<IntIR*>(expr)->val(), -2);
+}
+
 TEST_F(ASTExpressionTest, PLModule) {
   auto parse_result = parser.Parse("px.mean", /* parse_doc_strings */ false);
   auto visitor_result =

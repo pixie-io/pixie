@@ -417,7 +417,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param node
    * @return StatusOr<ExpressionIR*> the IR representation of the number.
    */
-  StatusOr<QLObjectPtr> ProcessNumber(const pypa::AstNumberPtr& node, bool negate = false);
+  StatusOr<QLObjectPtr> ProcessNumber(const pypa::AstNumberPtr& node);
 
   /**
    * @brief Processes a str ast ptr into an IR node.
