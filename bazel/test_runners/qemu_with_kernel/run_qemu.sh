@@ -67,7 +67,7 @@ flags+=(-hda "${overlay_disk_image}")
 flags+=(-virtfs "local,path=${QEMU_TEST_FS_PATH},mount_tag=test_fs,security_model=mapped")
 
 # Exit device:
-flags+=(-device "isa-debug-exit,iobase=${QEMU_EXIT_BASE},iosize=0x4")
+flags+=(-device "isa-debug-exit,iobase=${QEMU_EXIT_BASE},iosize=0x8")
 
 # Kernel config:
 flags+=(-kernel "${QEMU_KERNEL_IMAGE}")
@@ -76,9 +76,23 @@ flags+=(-append "console=ttyS0 root=/dev/sda")
 # Disable graphics mode.
 flags+=(-nographic)
 
+# Change to the OVMF bios if it exists.
+# This fixes issues with terminal/screen cocrruption after running qemu.
+ovmf_bios=/usr/share/ovmf/OVMF.fd
+if [[ -e "${ovmf_bios}" ]]; then
+  flags+=(-bios "${ovmf_bios}")
+fi
+
 retval=0
 qemu-system-x86_64 "${flags[@]}" || retval=$?
 
-# The actual return value is need to be converted back.
-retval="$(echo "($retval-1)/2" | bc)"
+if [[ "${retval}" -gt 0 ]]; then
+    if [[ "${retval}" -lt 128 ]]; then
+	echo "QEMU failed to launch with status code: ${retval}"
+    else
+	retval="$(echo "($retval-128-1)/2" | bc)"
+	echo "Test failed with status: ${retval}"
+    fi
+fi
+
 exit "${retval}"

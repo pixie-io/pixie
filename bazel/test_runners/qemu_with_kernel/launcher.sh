@@ -85,13 +85,24 @@ done
 # so we resolve them into the copy.
 runfiles_path="$(path_qemu_sandbox "${RUNFILES_DIR}")"
 mkdir -p "${runfiles_path}"
-cp -aL "${RUNFILES_DIR}"/* "${runfiles_path}"
+cp -afL "${RUNFILES_DIR}"/* "${runfiles_path}"
+
+function rewrite_manifest() {
+  awk '{print $1" '"$(path_inside_qemu "${RUNFILES_DIR}")/"'"$1}' "$1"
+}
+
+if [ -f "${RUNFILES_DIR}/MANIFEST" ]; then
+  rewrite_manifest "${RUNFILES_DIR}/MANIFEST" > "${runfiles_path}/MANIFEST"
+fi
+if [ -f "${RUNFILES_DIR}_manifest" ]; then
+  rewrite_manifest "${RUNFILES_DIR}_manifest" > "${runfiles_path}_manifest"
+fi
 
 # Copy over testlog file.
 testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
 qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
 qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
-cp -aL "${testlogs_dir}/" "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/"
+cp -afL "${testlogs_dir}/" "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/"
 
 # Copy the test runner and test cmd into the sandbox.
 test_runner_file="${tmpdir_for_sandbox}/test_runner_inside_qemu.sh"
@@ -106,7 +117,7 @@ chmod +x "${test_cmd_path}"
 printf "export test_base=%s\n" "${test_base}" >> "${test_env_file}"
 printf "export test_exec_path=%s\n" "${test_cmd_path_in_qemu}" >> "${test_env_file}"
 
-cp -aL "${BAZEL_QEMU_TEST_RUNNER_PATH}" "${test_runner_file}"
+cp -afL "${BAZEL_QEMU_TEST_RUNNER_PATH}" "${test_runner_file}"
 
 # Launch the qemu test.
 retval=0
@@ -121,6 +132,6 @@ testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
 qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
 qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
 
-cp -aL "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/" "${testlogs_dir}/"
+cp -afL "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/" "${testlogs_dir}/"
 
 exit $retval

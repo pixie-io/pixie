@@ -29,13 +29,17 @@ int main(int argc, char** argv) {
   }
   status = atoi(argv[1]);
 
-  if (ioperm(EXIT_PORT, 4, 1)) {
+  if (ioperm(EXIT_PORT, 8, 1)) {
     perror("ioperm");
     exit(1);
   }
 
   unsigned char statusb = (unsigned char)status;
-  // QEMU transforms this into 2*status + 1.
+  // QEMU transforms this into (status << 1) | 1;
+  // We don't want to interfere with qemu error code,
+  // so we further make sure the codes are > 128 for exit codes from our tests.
+  // If we shift by 6, the additinal shift of 1 by qemu will make the exit code > 128.
+  statusb |= (1 << 6);
   outb(statusb, EXIT_PORT);
 
   // Should never get here.

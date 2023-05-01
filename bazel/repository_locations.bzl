@@ -197,9 +197,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/ELFIO/archive/98d87a350f2384ce22b5dc72c79312a6854d88d4.tar.gz"],
     ),
     com_github_simdutf_simdutf = dict(
-        urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v3.0.0.tar.gz"],
-        strip_prefix = "simdutf-3.0.0",
-        sha256 = "cc23b47fd0caf9018fc0dcf49ebeff2676654fff997f9f6ce50fa93cd36f661f",
+        urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v3.2.8.tar.gz"],
+        strip_prefix = "simdutf-3.2.8",
+        sha256 = "3651e290e97af000cef506ceffbbf05f412fd6100e1859baf0267d42941e1e44",
     ),
     com_github_tencent_rapidjson = dict(
         sha256 = "4a34a0c21794f067afca6c9809971f0bd77a1d1834c4dc53bdd09e4ab4d05ce4",
@@ -400,6 +400,12 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "99c732b92b1b37fc243a559e02f9aef5671771e272758aa4aec7f34dc92dac48",
         strip_prefix = "tensorflow-2.11.0",
         urls = ["https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.11.0.tar.gz"],
+    ),
+    org_libc_musl = dict(
+        sha256 = "7d5b0b6062521e4627e099e4c9dc8248d32a30285e959b7eecaa780cf8cfd4a4",
+        strip_prefix = "musl-1.2.3",
+        urls = ["http://musl.libc.org/releases/musl-1.2.3.tar.gz"],
+        manual_license_name = "libc/musl",
     ),
     rules_foreign_cc = dict(
         sha256 = "6041f1374ff32ba711564374ad8e007aef77f71561a7ce784123b9b4b88614fc",

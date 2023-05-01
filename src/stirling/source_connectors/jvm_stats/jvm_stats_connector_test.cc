@@ -28,6 +28,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/connector_context.h"
+#include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/testing/common.h"
 
@@ -35,7 +36,6 @@ namespace px {
 namespace stirling {
 
 using ::px::stirling::testing::AccessRecordBatch;
-using ::px::stirling::testing::DataTables;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::PIDToUPID;
 using ::px::stirling::testing::RecordBatchSizeIs;

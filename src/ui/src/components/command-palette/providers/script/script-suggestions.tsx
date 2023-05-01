@@ -29,7 +29,7 @@ import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { pxTypeToEntityType } from 'app/containers/live/autocomplete-utils';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult, GQLAutocompleteSuggestion } from 'app/types/schema';
 import { Script } from 'app/utils/script-bundle';
-import { highlightScoredMatch } from 'app/utils/string-search';
+import { highlightScoredMatch, highlightNamespacedScoredMatch } from 'app/utils/string-search';
 
 import {
   CompletionDescription,
@@ -44,7 +44,7 @@ export function getScriptIdSuggestions(partial: string, scripts: Map<string, Scr
   const scriptIds = [...scripts.keys()];
 
   const suggestions = scriptIds.map((id) => {
-    const h = highlightScoredMatch(partial, id);
+    const h = highlightNamespacedScoredMatch(partial, id, '/');
     return {
       name: id,
       description: scripts.get(id).description,
@@ -96,10 +96,10 @@ export function getFullScriptSuggestions(
 ): CommandProviderResult {
   const idSuggestions = getScriptIdSuggestions(partial, scripts);
   return {
-    providerName: 'Scripts',
+    providerName: 'getFullScriptSuggestions',
     completions: idSuggestions.suggestions.map(({ name, description, matchedIndexes }, i) => {
       return {
-        heading: 'PxL Scripts',
+        heading: 'Scripts',
         key: `pxl_${name}_${i}`,
         // eslint-disable-next-line react-memo/require-usememo
         label: <CompletionLabel icon={<ScriptIcon />} input={name} highlights={matchedIndexes} />,
@@ -283,10 +283,10 @@ export function getScriptArgValueSuggestions(
   selectedToken: Token,
   script: Script,
 ): CompletionSet {
-  const partial = selectedToken.text.trim();
+  const partial = selectedToken?.type === 'value' ? selectedToken?.text.trim() ?? '' : '';
   const completions = [];
 
-  const keyToken = [selectedToken, selectedToken.relatedToken].find(t => t?.type === 'key') ?? null;
+  const keyToken = [selectedToken, selectedToken?.relatedToken].find(t => t?.type === 'key') ?? null;
   const checkKey = keyToken?.value ?? '';
 
   const arg = script.vis.variables.find(v => checkKey.length > 0 && v.name === checkKey);
@@ -295,15 +295,15 @@ export function getScriptArgValueSuggestions(
     const values = (arg.validValues?.length ? arg.validValues : [partial])
       .map(v => ({ value: v, highlights: highlightScoredMatch(partial, v) }));
 
-    values.sort((a, b) => b.highlights.distance - a.highlights.distance);
+    values.sort((a, b) => a.highlights.distance - b.highlights.distance);
 
-    completions.push(...values.map(v => ({
-      heading: arg.name,
-      key: arg.name,
+    completions.push(...values.map((v, i) => ({
+      heading: `Valid values for "${arg.name}"`,
+      key: String(i),
       description: arg.description,
       label: (
         <CompletionLabel
-          input={`${arg.name}:${v}`}
+          input={v.value}
           // eslint-disable-next-line react-memo/require-usememo
           icon={<ArgIcon />}
           highlights={v.highlights.highlights}

@@ -96,7 +96,7 @@ spec:
             type: RuntimeDefault
       - name: envoy
         imagePullPolicy: IfNotPresent
-        image: envoyproxy/envoy:v1.12.2
+        image: envoyproxy/envoy:v1.12.2@sha256:b36ee021fc4d285de7861dbaee01e7437ce1d63814ead6ae3e4dfcad4a951b2e
         command: ["envoy"]
         args: ["-c", "/etc/envoy.yaml", "--service-cluster", "$(POD_NAME)"]
         env:

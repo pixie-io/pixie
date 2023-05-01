@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     height: '100%',
     '& .gutter': {
-      backgroundColor: theme.palette.background.three,
+      backgroundColor: theme.palette.background.five,
     },
   },
   pane: {
@@ -50,7 +50,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     fontWeight: theme.typography.fontWeightMedium,
     padding: theme.spacing(0.75, 3),
     cursor: 'pointer',
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.background.five,
   },
   paneContent: {
     flex: '1',

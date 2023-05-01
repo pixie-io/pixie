@@ -136,6 +136,10 @@
       "type": "golangci-lint",
       "include": [
         "(\\.go$)"
+      ],
+      "flags": [
+        "--timeout=5m0s",
+        "--out-format=checkstyle"
       ]
     },
     "golint": {

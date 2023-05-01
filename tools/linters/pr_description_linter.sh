@@ -33,13 +33,12 @@ PR_BODY="$(echo "${PR_BODY}" | sed '/<details>/,/<\/details>/d')"
 # shellcheck disable=SC2016
 PR_BODY="$(echo "${PR_BODY}" | sed '/```/,/```/{/```/!d}')"
 
+failed="false"
 bad_description() {
   msg="$1"
-  echo "Bad PR description:"
-  echo "${PR_BODY}"
   echo ""
   echo -e "$msg"
-  exit 100
+  failed="true"
 }
 
 # Check that there's a summary.
@@ -66,3 +65,8 @@ keys_without_text="$(echo "$PR_BODY" | grep -E "^[a-zA-Z ]+:" | grep -v "Changel
 # Check that there's a newline before each "Key:" clause (except if the clause is at the start of the message).
 keys_without_newlines="$(echo "$PR_BODY" | grep -E -B 1 "^[a-zA-Z ]+:" | grep -Ev "^[a-zA-Z ]+:" | grep -v "\-\-" | sed '/^$/d' )"
 [[ -z "${keys_without_newlines}" ]] || bad_description "Each 'Key:' clause must have a newline before it, add newlines after:\n${keys_without_newlines}"
+
+
+if [[ "${failed}" == "true" ]]; then
+  exit 100
+fi

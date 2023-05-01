@@ -14,9 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.10.0-alpine3.14
-
-RUN pip install --trusted-host pypi.python.org -q mysql-connector-python
+FROM python:3.10.0-alpine3.14@sha256:bed0a5fe5b7d996b0678abf4fb2f0d5f3d5078cda951ccdc068ffbddb555e727
+ADD requirements.txt requirements.txt
+RUN pip install --require-hashes -r requirements.txt
 
 # A location for storing scripts.
 RUN mkdir /scripts

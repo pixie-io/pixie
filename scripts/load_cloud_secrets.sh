@@ -48,9 +48,3 @@ done
 if [ ! -d "${monitoring_path}" ]; then
   exit 0
 fi
-
-# Apply monitoring secrets.
-for yaml in "${monitoring_path}"/*.yaml; do
-  echo "Loading: ${yaml}"
-  sops --decrypt "${yaml}" | kubectl apply -n "${namespace}-monitoring" -f -
-done

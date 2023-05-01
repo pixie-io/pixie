@@ -1,0 +1,41 @@
+common --color=yes
+
+# Keep the build going even with failures.
+# This makes it easier to find multiple issues in
+# a given run.
+common --keep_going
+
+build --build_metadata=HOST=github-actions
+build --build_metadata=USER=github-actions
+build --build_metadata=REPO_URL=https://github.com/pixie-io/pixie
+build --build_metadata=ROLE=DEV
+build --build_metadata=VISIBILITY=PUBLIC
+build --verbose_failures
+
+test --verbose_failures
+
+# BES/Cache Setup
+build --bes_timeout=10m
+build --experimental_inmemory_dotd_files
+build --experimental_inmemory_jdeps_files
+build --keep_backend_build_event_connections_alive=false
+build --remote_max_connections=128
+build --remote_retries=2
+build --remote_timeout=1h
+
+test --bes_timeout=10m
+test --experimental_inmemory_dotd_files
+test --experimental_inmemory_jdeps_files
+test --remote_max_connections=128
+test --remote_retries=2
+
+# Limit resources, this is needed to stay under the K8s resource allocations.
+build --local_ram_resources=40000
+test --local_ram_resources=40000
+
+# We have 14 CPUs allocated.
+build --local_cpu_resources=14
+test --local_cpu_resources=14
+
+build --jobs 16
+test --jobs 16

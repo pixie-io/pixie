@@ -21,6 +21,7 @@ import * as React from 'react';
 import { ScriptContext } from 'app/context/script-context';
 
 import { CommandPaletteTrigger } from './command-palette-trigger';
+import { quoteIfNeeded } from './providers/script/script-provider-common';
 
 export const CommandPalette = React.memo(() => {
   const { script, args } = React.useContext(ScriptContext);
@@ -31,15 +32,15 @@ export const CommandPalette = React.memo(() => {
     if (!script?.id) return '';
 
     // We always want to show the script first, and the start_time last.
-    const parts = [`script:${script.id}`];
+    const parts = [`script:${quoteIfNeeded(script.id)}`];
     const keys = [...Object.keys(args)];
     keys.sort((a, b) => +(a === 'start_time') - +(b === 'start_time'));
 
     // For each key, add ` key:value` to the string (quoting the value if it needs it)
     for (const k of keys) {
       const valRaw = Array.isArray(args[k]) ? (args[k] as string[]).join(',') : (args[k] as string);
-      const v = /[":\s]/.test(valRaw) ? `"${valRaw}"` : valRaw;
-      parts.push(`${k}:${v || '""'}`);
+      const v = quoteIfNeeded(valRaw);
+      parts.push(`${k}:${v ?? ''}`);
     }
     return parts.join(' ');
   }, [script, args]);

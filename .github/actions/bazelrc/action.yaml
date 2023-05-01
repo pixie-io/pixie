@@ -1,0 +1,23 @@
+---
+name: Use github bazel config
+description: Uses ci/github/bazelrc, and adds BES config from ci/bes-oss-k8s.bazelrc. Must be run on self-hosted runner.
+inputs:
+  download_toplevel:
+    description: 'whether to download cached toplevel files during bazel builds'
+    default: 'false'
+runs:
+  using: "composite"
+  steps:
+  - name: Copy github.bazelrc
+    run: |
+      cp ci/github/bazelrc github.bazelrc
+    shell: bash
+  - name: Copy BES bazel config
+    run: |
+      cp ci/bes-oss-k8s.bazelrc bes.bazelrc
+    shell: bash
+  - name: Add remote_download_outputs=toplevel
+    if: inputs.download_toplevel == 'true'
+    run: |
+      echo "build --remote_download_outputs=toplevel" >> github.bazelrc
+    shell: bash

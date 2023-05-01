@@ -151,6 +151,9 @@ func isTransientGRPCError(err error) bool {
 	if s.Code() == codes.Internal && strings.Contains(s.Message(), "RST_STREAM") {
 		return true
 	}
+	if s.Code() == codes.Internal && strings.Contains(s.Message(), "server closed the stream without sending trailers") {
+		return true
+	}
 	return false
 }
 

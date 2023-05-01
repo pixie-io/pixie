@@ -183,6 +183,8 @@ def _cc_deps():
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive", patches = ["//bazel/external:libarchive.patch"], patch_args = ["-p1"])
 
+    _bazel_repo("org_libc_musl", build_file = "//bazel/external:musl.BUILD")
+
 def _java_deps():
     _bazel_repo("com_oracle_openjdk_18", build_file = "//bazel/external:jdk_includes.BUILD")
     remote_java_repository(

@@ -26,6 +26,7 @@ resources:
 patchesStrategicMerge:
 # bq_config is useful for testing, but we don't want dev clusters to typically send data to bq.
 # - bq_config.yaml
+- auth_deployment_patch.yaml
 - db_config.yaml
 - indexer_config.yaml
 - ory_service_config.yaml

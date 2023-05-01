@@ -64,6 +64,7 @@ common_remote_tar_bin 'helm' do
 end
 
 common_remote_tar_bin 'lego'
+common_remote_tar_bin 'trivy'
 
 execute 'install gcloud' do
   command 'curl https://sdk.cloud.google.com | bash'
@@ -117,4 +118,18 @@ end
 
 file '/tmp/packer.zip' do
   action :delete
+end
+
+directory '/usr/local/lib/docker/cli-plugins' do
+  action :create
+  recursive true
+  owner node['owner']
+  group node['group']
+  mode '0755'
+end
+
+remote_file '/usr/local/lib/docker/cli-plugins/docker-buildx' do
+  source node['docker-buildx']['download_path']
+  mode '0755'
+  checksum node['docker-buildx']['sha256']
 end

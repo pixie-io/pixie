@@ -96,7 +96,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to generate cert YAMLs")
 	}
 
-	templatedYAML, err := yamlsutils.TemplatizeK8sYAML(clientset, certYAMLs, vizieryamls.GlobalTemplateOptions)
+	templatedYAML, err := yamlsutils.TemplatizeK8sYAML(certYAMLs, vizieryamls.GlobalTemplateOptions)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to templatize cert YAMLs")
 	}

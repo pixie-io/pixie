@@ -27,10 +27,48 @@ function err {
 trap err EXIT
 trap err ERR
 
+function mount_cgroupv1() {
+  mkdir -p /sys/fs/cgroup
+  mount -t tmpfs tmpfs /sys/fs/cgroup
+  paths=(
+    "blkio"
+    "cpu,cpuacct"
+    "devices"
+    "memory"
+    "pids"
+    "cpuset"
+    "freezer"
+    "perf_event"
+    "rdma"
+  )
+  for p in "${paths[@]}"
+  do
+    mkdir -p "/sys/fs/cgroup/$p"
+    mount -t cgroup cgroup -o "$p" "/sys/fs/cgroup/$p"
+  done
+}
+
+function mount_cgroupv2() {
+  mkdir -p /sys/fs/cgroup
+  mount -t cgroup2 cgroup2 /sys/fs/cgroup
+}
+
+function  mount_cgroup() {
+  kernel_major_version="$(uname -r | cut -d'.' -f1)"
+  kernel_minor_version="$(uname -r | cut -d'.' -f2)"
+  # If the kernel version is below 5.2, then use cgroupv1.
+  if [[ "${kernel_major_version}" -le "4" ]] || ([[ "${kernel_major_version}" -eq "5" ]] && [[ "${kernel_minor_version}" -lt "2" ]]); then
+    echo "Using cgroup v1"
+    mount_cgroupv1
+  else
+    echo "Using cgroup v2"
+    mount_cgroupv2
+  fi
+}
+
 function mount_system_dirs() {
   mount -t sysfs none /sys
   mount -t debugfs none /sys/kernel/debug
-  mount -t cgroup2 none /sys/fs/cgroup
   mount -t bpf none /sys/fs/bpf
   mount -t tracefs none /sys/kernel/tracing
   mount -t tmpfs tmpfs /run
@@ -106,6 +144,7 @@ mount -t proc none /proc
 mount -o rw,remount /
 
 mount_system_dirs
+mount_cgroup
 mount_test_fs
 setup_networking
 setup_containers

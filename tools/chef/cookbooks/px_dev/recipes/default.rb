@@ -27,4 +27,3 @@ template '/opt/px_dev/pxenv.inc' do
 end
 
 common_remote_bin 'codecov'
-common_remote_tar_bin 'fossa'

@@ -118,6 +118,7 @@ cmake(
     ],
     cache_entries = {
         "ENABLE_ACL": "OFF",
+        "ENABLE_BZip2": "OFF",
         "ENABLE_CAT": "OFF",
         "ENABLE_CAT_SHARED": "OFF",
         "ENABLE_CNG": "OFF",

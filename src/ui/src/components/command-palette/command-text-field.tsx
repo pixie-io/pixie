@@ -147,7 +147,7 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
       padding: theme.spacing(1),
 
       '&.Mui-focused': {
-        backgroundColor: theme.palette.background.two,
+        backgroundColor: theme.palette.background.four,
       },
     },
     '&:not(:last-of-type)': {
@@ -160,7 +160,10 @@ const useFieldStyles = makeStyles((theme: Theme) => createStyles({
     top: 0,
     left: 0,
     padding: theme.spacing(0.5),
-    backgroundColor: lighten(theme.palette.background.three, 0.01), // To cover what's behind it
+    // The options background is made by mixing translucent colors; this needs to be opaque to cover scroll siblings.
+    backgroundColor: theme.palette.mode === 'dark'
+      ? lighten(theme.palette.background.five, 0.025)
+      : theme.palette.background.five,
   },
   paperDetails: {
     flex: '4 0 40%',
@@ -213,13 +216,15 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     options: completions,
     freeSolo: true,
     disableCloseOnSelect: true,
-    groupBy: (o: CommandCompletion) => o.heading ?? '',
-    getOptionLabel: (o: CommandCompletion) => o?.key ?? '',
-    filterOptions: (opts) => opts, // They're already filtered, but when renderOption exists, so must this.
-    onChange: (_, option: CommandCompletion) => { // Takes event, option, reason, details (in case we need them)
+    groupBy: React.useCallback((o: CommandCompletion) => o.heading ?? '', []),
+    getOptionLabel: React.useCallback((o: CommandCompletion) => o?.key ?? '', []),
+    // They're already filtered, but this must exist if renderOption does.
+    filterOptions: React.useCallback((opts) => opts, []),
+    // Takes event, option, reason, details (in case we need them)
+    onChange: React.useCallback((_, option: CommandCompletion) => {
       activateCompletion(option);
-    },
-    onHighlightChange: (event: React.SyntheticEvent, option: CommandCompletion, reason: string) => {
+    }, [activateCompletion]),
+    onHighlightChange: React.useCallback((event: React.SyntheticEvent, option: CommandCompletion, reason: string) => {
       setHighlightedCompletion(option);
       if (option && (reason === 'keyboard' || reason === 'auto')) {
         // The event target is the text field if the reason is keyboard, and missing if the reason is auto.
@@ -231,15 +236,15 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
           )?.scrollIntoView({ block: 'nearest' });
         });
       }
-    },
+    }, [setHighlightedCompletion]),
     inputValue: inputValue,
-    onInputChange: (e) => {
+    onInputChange: React.useCallback((e) => {
       const t = e?.target as HTMLInputElement;
       if (typeof t?.value === 'string') {
         setInputValue(t.value);
         setSelection([t.selectionStart, t.selectionEnd]);
       }
-    },
+    }, [setInputValue, setSelection]),
   });
 
   React.useEffect(() => setInputValue(text), [text, setInputValue]);

@@ -209,7 +209,8 @@ var (
 		return nil
 	})
 	hasKubectlCheck = NamedCheck(fmt.Sprintf("Kubectl > %s is present", kubectlMinVersion), func() error {
-		result, err := exec.Command("kubectl", "version", "-o", "yaml").Output()
+		cmd := k8s.KubectlCmd("version", "-o", "yaml")
+		result, err := cmd.Output()
 		if err != nil {
 			return err
 		}
@@ -237,7 +238,8 @@ var (
 		return nil
 	})
 	userCanCreateNamespace = NamedCheck("User can create namespace", func() error {
-		result, err := exec.Command("kubectl", "auth", "can-i", "create", "namespace").Output()
+		cmd := k8s.KubectlCmd("auth", "can-i", "create", "namespace")
+		result, err := cmd.Output()
 		if err != nil {
 			return err
 		}

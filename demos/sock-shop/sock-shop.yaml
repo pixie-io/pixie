@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: carts-db
-        image: mongo:4
+        image: mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
         ports:
         - name: mongo
           containerPort: 27017
@@ -160,7 +160,7 @@ spec:
     spec:
       containers:
       - name: catalogue-db
-        image: weaveworksdemos/catalogue-db:0.3.0
+        image: weaveworksdemos/catalogue-db:0.3.0@sha256:7ba74ec9adf88f6625b8d85d3323d1ee5232b39877e1590021ea485cf9457251
         env:
           - name: MYSQL_ROOT_PASSWORD
             value: fake_password
@@ -206,7 +206,7 @@ spec:
     spec:
       containers:
       - name: catalogue
-        image: weaveworksdemos/catalogue:0.3.5
+        image: weaveworksdemos/catalogue:0.3.5@sha256:0147a65b7116569439eefb1a6dbed455fe022464ef70e0c3cab75bc4a226b39b
         command: ["/app"]
         args:
         - -port=80
@@ -349,7 +349,7 @@ spec:
     spec:
       containers:
       - name: orders-db
-        image: mongo:4
+        image: mongo:4@sha256:8665d6b3b8e022cceae38fda41f6f4b50eaf84380c930bcf9b3a78f220b9f75c
         ports:
         - name: mongo
           containerPort: 27017
@@ -491,7 +491,7 @@ spec:
     spec:
       containers:
       - name: payment
-        image: weaveworksdemos/payment:0.4.3
+        image: weaveworksdemos/payment:0.4.3@sha256:5ab1c9877480a018d4dda10d6dfa382776e6bca9fc1c60bacbb80903fde8cfe0
         resources:
           limits:
             cpu: 100m
@@ -632,7 +632,7 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3.6.8-management
+        image: rabbitmq:3.6.8-management@sha256:0297618bd60270f03665448b02b3b1110dfc51fae60a3c6804005169f0904dad
         ports:
         - containerPort: 15672
           name: management
@@ -697,7 +697,7 @@ spec:
     spec:
       containers:
       - name: session-db
-        image: redis:alpine
+        image: redis:alpine@sha256:da0cc759968a286f9fa8e3a0d8faca70e4dcf8ffc25fd290a041c59a9eb725c7
         ports:
         - name: redis
           containerPort: 6379
@@ -837,7 +837,7 @@ spec:
     spec:
       containers:
       - name: user-db
-        image: weaveworksdemos/user-db:0.3.0
+        image: weaveworksdemos/user-db:0.3.0@sha256:695bc22c11396c7ae747118c56e619f3b3295d9d4cbec999d30230b3f399a389
 
         ports:
         - name: mongo
@@ -895,7 +895,7 @@ spec:
     spec:
       containers:
       - name: user
-        image: weaveworksdemos/user:0.4.7
+        image: weaveworksdemos/user:0.4.7@sha256:2ffccc332963c89e035fea52201012208bf62df43a55fe461ad6598a5c757ab7
         resources:
           limits:
             cpu: 300m

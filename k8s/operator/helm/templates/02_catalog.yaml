@@ -3,6 +3,12 @@ kind: CatalogSource
 metadata:
   name: pixie-operator-index
   namespace: {{ .Values.olmOperatorNamespace }}
+  {{- if .Values.olmCatalogSource.annotations }}
+  annotations: {{ .Values.olmCatalogSource.annotations | toYaml | nindent 4 }}
+  {{- end }}
+  {{- if .Values.olmCatalogSource.labels }}
+  labels: {{ .Values.olmCatalogSource.labels | toYaml | nindent 4 }}
+  {{- end }}
 spec:
   sourceType: grpc
   image: {{ if .Values.registry }}{{ .Values.registry }}/gcr.io-pixie-oss-pixie-prod-operator-bundle_index:0.0.1{{ else }}gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1{{ end }}
@@ -11,3 +17,21 @@ spec:
   updateStrategy:
     registryPoll:
       interval: 10m
+  grpcPodConfig:
+    tolerations:
+    - key: "kubernetes.io/arch"
+      operator: "Equal"
+      value: "amd64"
+      effect: "NoSchedule"
+    - key: "kubernetes.io/arch"
+      operator: "Equal"
+      value: "amd64"
+      effect: "NoExecute"
+    - key: "kubernetes.io/arch"
+      operator: "Equal"
+      value: "arm64"
+      effect: "NoSchedule"
+    - key: "kubernetes.io/arch"
+      operator: "Equal"
+      value: "arm64"
+      effect: "NoExecute"

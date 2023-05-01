@@ -18,7 +18,7 @@ build:
   - image: gcr.io/pixie-oss/pixie-dev/cloud/proxy_server_image
     context: .
     bazel:
-      target: //src/cloud/proxy:proxy_prod_server_image.tar
+      target: //src/cloud/proxy:proxy_server_image.tar
   - image: gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image
     context: .
     bazel:
@@ -152,4 +152,4 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths
     value:
-    - k8s/cloud/public
+    - k8s/cloud/public/base

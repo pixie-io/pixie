@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/utils/shared/k8s"
 	"px.dev/pixie/src/utils/shared/yamls"
 	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
@@ -59,10 +58,7 @@ func main() {
 	log.WithField("out", out).Info("Output path")
 	log.WithField("version", version).Info("Version")
 
-	kubeConfig := k8s.GetConfig()
-	clientset := k8s.GetClientset(kubeConfig)
-
-	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, base, version)
+	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(base, version)
 	if err != nil {
 		log.WithError(err).Fatal("failed to generate templated deployment YAMLs")
 	}

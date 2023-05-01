@@ -14,7 +14,7 @@ spec:
         name: db-reader
     spec:
       containers:
-      - image: postgres:14-alpine
+      - image: postgres:14-alpine@sha256:446abaf8831c54f57212c0ae52f5df84e69eeb2767e2376d07bed9c9742b1243
         imagePullPolicy: IfNotPresent
         name: psql
         command: ["bash"]
@@ -28,7 +28,8 @@ spec:
         - -instances=pixie-prod:us-west1:pixie-cloud-prod-db-pg13=tcp:5432
         - -ip_address_types=PRIVATE
         - -credential_file=/secrets/cloudsql/db_service_account.json
-        image: gcr.io/cloudsql-docker/gce-proxy:1.14
+        # yamllint disable-line rule:line-length
+        image: gcr.io/cloudsql-docker/gce-proxy:1.14@sha256:96689ad665bffc521fc9ac3cbcaa90f7d543a3fc6f1c84f81e4148a22ffa66e0
         imagePullPolicy: IfNotPresent
         name: cloudsql-proxy
         resources: {}

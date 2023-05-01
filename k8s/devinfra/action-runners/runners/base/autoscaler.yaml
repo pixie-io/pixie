@@ -1,0 +1,15 @@
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: HorizontalRunnerAutoscaler
+metadata:
+  name: runner-autoscaler
+spec:
+  scaleTargetRef:
+    kind: RunnerDeployment
+    name: runner
+  minReplicas: 1
+  maxReplicas: 32
+  metrics:
+  - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
+    repositoryNames:
+    - pixie

@@ -29,7 +29,7 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/core/connector_context.h"
-#include "src/stirling/core/data_table.h"
+#include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_connector_friend.h"
@@ -172,7 +172,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     FLAGS_stirling_conn_stats_sampling_ratio = 1;
   }
 
-  testing::DataTables data_tables_{SocketTraceConnector::kTables};
+  DataTables data_tables_{SocketTraceConnector::kTables};
 
   DataTable* http_table_ = data_tables_[kHTTPTableNum];
   DataTable* cql_table_ = data_tables_[kCQLTableNum];

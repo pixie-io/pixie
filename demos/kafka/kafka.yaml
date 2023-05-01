@@ -165,7 +165,7 @@ spec:
         io.kompose.service: apache
     spec:
       containers:
-      - image: gcr.io/pixie-prod/demos/kafka/apache:1.0
+      - image: gcr.io/pixie-prod/demos/kafka/apache:1.0@sha256:d5d1602d4666f5422db47b4ea743e7a2be1b43392b2943fb763ef95757d986dc
         name: apache
         ports:
         - containerPort: 80
@@ -203,7 +203,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/invoicing:2.0
+        image: gcr.io/pixie-prod/demos/kafka/invoicing:2.0@sha256:bc49808a900b2b4fede7198a59eba64da204e75edee5909d7a735efb34debdab
         imagePullPolicy: Always
         name: invoicing
         resources: {}
@@ -212,7 +212,7 @@ spec:
         - sh
         - -c
         - sleep 10
-        image: alpine:3.6
+        image: alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475
         name: wait-invoicing
       restartPolicy: Always
 status: {}
@@ -257,7 +257,7 @@ spec:
           value: "False"
         - name: JAVA_TOOL_OPTIONS
           value: "-XX:+PreserveFramePointer"
-        image: wurstmeister/kafka:2.12-2.5.0
+        image: wurstmeister/kafka:2.12-2.5.0@sha256:ed8058aa4ac11f2b08dd1e30bd5683f34d70ed773a0c77e51aa1de2bbcd9c2a8
         name: kafka
         ports:
         - containerPort: 9092
@@ -296,7 +296,7 @@ spec:
         - http://apache:8080
         command:
         - locust
-        image: gcr.io/pixie-prod/demos/kafka/load-test:1.0
+        image: gcr.io/pixie-prod/demos/kafka/load-test:1.0@sha256:43cb16a5493f84a6786900f011f49bd7d5b5fe55e85c92cee41b8f435da61416
         imagePullPolicy: Always
         name: load-test
 ---
@@ -330,7 +330,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/order:2.0
+        image: gcr.io/pixie-prod/demos/kafka/order:2.0@sha256:7338f1e5521bc02e3f59fc321c8412c24ed48b2944c126ec8e05b922df8aab20
         name: order
         resources: {}
       initContainers:
@@ -338,7 +338,7 @@ spec:
         - sh
         - -c
         - sleep 10
-        image: alpine:3.6
+        image: alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475
         name: wait-order
       restartPolicy: Always
 status: {}
@@ -375,7 +375,7 @@ spec:
           value: dbpass
         - name: POSTGRES_USER
           value: dbuser
-        image: gcr.io/pixie-prod/demos/kafka/postgres:1.0
+        image: gcr.io/pixie-prod/demos/kafka/postgres:1.0@sha256:32ea3742beb88f7a893a89f86d15979baffc96d8fb1d9e93fada6fb474d3728f
         name: postgres
         resources: {}
       restartPolicy: Always
@@ -411,7 +411,7 @@ spec:
       - env:
         - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
           value: kafka-service:9092
-        image: gcr.io/pixie-prod/demos/kafka/shipping:2.0
+        image: gcr.io/pixie-prod/demos/kafka/shipping:2.0@sha256:d5b7a2dc93ed23a3e0e018002a5c184362f226559a92e1d6b0ee7e6a3c5d175a
         name: shipping
         resources: {}
       initContainers:
@@ -419,7 +419,7 @@ spec:
         - sh
         - -c
         - sleep 10
-        image: alpine:3.6
+        image: alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475
         name: wait-shipping
       restartPolicy: Always
 status: {}
@@ -454,7 +454,7 @@ spec:
       - env:
         - name: ZOOKEEPER_CLIENT_PORT
           value: "2181"
-        image: gcr.io/pixie-prod/demos/kafka/zookeeper:2.0
+        image: gcr.io/pixie-prod/demos/kafka/zookeeper:2.0@sha256:7a7fd44a72104bfbd24a77844bad5fabc86485b036f988ea927d1780782a6680
         name: zookeeper
         ports:
         - containerPort: 2181

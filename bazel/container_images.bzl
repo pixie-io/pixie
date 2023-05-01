@@ -42,21 +42,24 @@ def base_images():
     )
 
     _gcr_io_image(
-        # https://hub.docker.com/layers/openresty/openresty/1.21.4.1-4-bullseye/images/sha256-edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d?context=explore
+        # This should be 1.21.4.1-7 but that version hasn't been tagged yet. So picking the versionless build.
+        # 1.21.4.1-6 uses alpine:3.15.7 with some open CVEs.
+        # As of writing this, alpine-apk-amd64 maps to a future 1.21.4.1-7 release based on alpine:3.15.8 with no known CVEs.
+        # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-eac84c6c543d2424e07e980b7aff897a4cb2463d79977e579f6285f27d8e8d99?context=explore
         "openresty",
-        "sha256:edf9b7ad0ef22b68f9de5694ede923c8ce6dedacd5749bf7d2827f24e005d51d",
+        "sha256:eac84c6c543d2424e07e980b7aff897a4cb2463d79977e579f6285f27d8e8d99",
         "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
     )
 
     _gcr_io_image(
         "base_image",
-        "sha256:6424eb0738952803e98b9067a27ec5f410aae54ebc21dabec4e8bb93a30af30b",
+        "sha256:8267a5d9fa15a538227a8850e81cf6c548a78de73458e99a67e8799bbffb1ba0",
         "distroless/base",
     )
 
     _gcr_io_image(
         "base_image_debug",
-        "sha256:5fa21aeb39b7b6852bab06fe32e49071fe246e7bd479b80ebdc5797a587308e7",
+        "sha256:c59a1e5509d1b2586e28b899667774e599b79d7289a6bb893766a0cbbce7384b",
         "distroless/base",
     )
 
@@ -152,6 +155,12 @@ def stirling_test_images():
     _gcr_io_image(
         "nginx_openssl_1_1_1_base_image",
         "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
+        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    )
+
+    _gcr_io_image(
+        "nginx_alpine_openssl_3_0_7_base_image",
+        "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
         "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
@@ -286,4 +295,10 @@ def stirling_test_images():
         "py_grpc_helloworld_image",
         "sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
         "pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:1.2",
+    )
+
+    _gcr_io_image(
+        "emailservice_image",
+        "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
+        "google-samples/microservices-demo/emailservice:v0.1.3",
     )

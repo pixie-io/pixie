@@ -79,7 +79,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: theme.spacing(3),
   },
   managedDomainBanner: {
-    background: theme.palette.background.one,
+    background: theme.palette.background.two,
     fontSize: theme.typography.caption.fontSize,
     fontStyle: 'italic',
     opacity: 0.8,

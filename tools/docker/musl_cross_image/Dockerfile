@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:22.04
+FROM ubuntu:22.04@sha256:67211c14fa74f070d27cc59d69a7fa9aeff8e28ea118ef3babc295a0428a6d21
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing

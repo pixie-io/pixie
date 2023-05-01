@@ -20,14 +20,22 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <utility>
+#include <vector>
 
 #include "src/carnot/udf/registry.h"
+#include "src/common/base/error.h"
 #include "src/shared/types/types.h"
 #include "tdigest/tdigest.h"
 
 namespace px {
 namespace carnot {
 namespace builtins {
+
+void WriteCentroidArray(rapidjson::Writer<rapidjson::StringBuffer>* writer,
+                        const std::vector<tdigest::Centroid>& centroids);
+
+std::vector<tdigest::Centroid> CentroidArrayFromJSON(const rapidjson::Value& val);
 
 // TODO(zasgar): PL-419 Replace this when we add support for structs.
 template <typename TArg>
@@ -51,6 +59,46 @@ class QuantilesUDA : public udf::UDA {
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
     d.Accept(writer);
     return sb.GetString();
+  }
+
+  static constexpr char kProcessedKey[] = "0";
+  static constexpr char kUnprocessedKey[] = "1";
+  static constexpr char kCompressionKey[] = "2";
+  static constexpr char kMaxUnprocessedKey[] = "3";
+  static constexpr char kMaxProcessedKey[] = "4";
+
+  StringValue Serialize(FunctionContext*) {
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+    writer.StartObject();
+    writer.Key(kProcessedKey);
+    WriteCentroidArray(&writer, digest_.processed());
+    writer.Key(kUnprocessedKey);
+    WriteCentroidArray(&writer, digest_.unprocessed());
+    writer.Key(kCompressionKey);
+    writer.Double(digest_.compression());
+    writer.Key(kMaxUnprocessedKey);
+    writer.Uint64(digest_.maxUnprocessed());
+    writer.Key(kMaxProcessedKey);
+    writer.Uint64(digest_.maxProcessed());
+    writer.EndObject();
+    return sb.GetString();
+  }
+
+  Status Deserialize(FunctionContext*, const StringValue& json) {
+    rapidjson::Document d;
+    rapidjson::ParseResult ok = d.Parse(json.data());
+    if (ok == nullptr) {
+      return error::InvalidArgument("invalid serialized tdigest");
+    }
+    auto processed = CentroidArrayFromJSON(d[kProcessedKey]);
+    auto unprocessed = CentroidArrayFromJSON(d[kUnprocessedKey]);
+    auto compression = d[kCompressionKey].GetDouble();
+    auto maxUnprocessed = d[kMaxUnprocessedKey].GetUint64();
+    auto maxProcessed = d[kMaxProcessedKey].GetUint64();
+    digest_ = tdigest::TDigest(std::move(processed), std::move(unprocessed), compression,
+                               maxUnprocessed, maxProcessed);
+    return Status::OK();
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {

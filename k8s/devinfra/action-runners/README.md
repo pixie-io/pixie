@@ -18,7 +18,17 @@ helm upgrade --install --namespace actions-runner-system --create-namespace\
   --set=authSecret.github_token="REPLACE_YOUR_TOKEN_HERE"\
   --wait actions-runner-controller actions-runner-controller/actions-runner-controller
 ```
+### Create the runners namespace
+```
+kubectl create namespace action-runners
+```
 
-### Deploy the Runner
+### Create the buildbuddy secret
+```
+BB_API_KEY=<BUILDBUDDY-API-KEY> envsubst < k8s/devinfra/action-runners/bb_bazelrc_secret.yaml | kubectl apply -f -
+```
 
-`kubectl apply -f runnerdeployment.yaml`
+### Deploy the Runners
+```
+kustomize build k8s/devinfra/action-runners/runners | kubectl apply -f -
+```

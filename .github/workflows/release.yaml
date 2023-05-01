@@ -1,0 +1,121 @@
+---
+name: releases
+on:
+  push:
+    tags:
+    - release/**
+permissions:
+  contents: read
+env:
+  VERSIONS_FILE: "VERSIONS.json"
+jobs:
+  get-dev-image:
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image_with_extras"
+  build-vizier-release:
+    if: contains(github.event.ref, 'release/vizier')
+    name: Vizier Release
+    runs-on: [self-hosted, nokvm]
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Setup gcloud docker creds
+      run: gcloud init && gcloud auth configure-docker
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
+    - name: Build & Push Artifacts
+      env:
+        REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
+      shell: bash
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
+        ./ci/vizier_build_release.sh
+    - name: Build & Export Docs
+      env:
+        PXL_DOCS_GCS_PATH: "gs://pixie-dev-public/pxl-docs.json"
+      run: |
+        docs="$(mktemp)"
+        bazel run //src/carnot/docstring:docstring -- --output_json "${docs}"
+        gsutil cp "${docs}" "${PXL_DOCS_GCS_PATH}"
+    - name: Update Manifest
+      env:
+        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
+      run: ./ci/update_artifact_manifest.sh
+  build-operator-release:
+    if: contains(github.event.ref, 'release/operator')
+    name: Operator Release
+    runs-on: [self-hosted, nokvm]
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Setup gcloud docker creds
+      run: gcloud init && gcloud auth configure-docker
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
+    - name: Build & Push Artifacts
+      env:
+        REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
+      shell: bash
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
+        ./ci/operator_build_release.sh
+    - name: Update Manifest
+      env:
+        ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
+      run: ./ci/update_artifact_manifest.sh
+  build-cloud-release:
+    if: contains(github.event.ref, 'release/cloud')
+    name: Cloud Release
+    runs-on: [self-hosted, nokvm]
+    needs: get-dev-image
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Setup gcloud docker creds
+      run: gcloud init && gcloud auth configure-docker
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
+    - name: Build & Push Artifacts
+      env:
+        REF: ${{ github.event.ref }}
+        BUILD_NUMBER: ${{ github.run_attempt }}
+        JOB_NAME: ${{ github.job }}
+        GH_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        ./ci/save_version_info.sh
+        ./ci/cloud_build_release.sh -p

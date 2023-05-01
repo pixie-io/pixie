@@ -13,7 +13,7 @@ jobs:
     container:
       image: gcr.io/pixie-oss/pixie-dev-public/copybara:20210420
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - id: create-ssh-key
       env:
         COPYBARA_SSH_KEY: ${{ secrets.COPYBARA_SSH_KEY }}

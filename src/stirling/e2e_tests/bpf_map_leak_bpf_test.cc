@@ -25,6 +25,7 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/core/data_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -118,7 +119,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   FLAGS_stirling_conn_map_cleanup_threshold = 1;
   FLAGS_stirling_conn_stats_sampling_ratio = 1;
 
-  testing::DataTables data_tables(SocketTraceConnector::kTables);
+  DataTables data_tables(SocketTraceConnector::kTables);
 
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map =

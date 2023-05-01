@@ -20,29 +20,36 @@
 
 #include <stdint.h>
 
+#define TXT_SYMBOL_FILENAME "java-symbols.txt"
+#define BIN_SYMBOL_FILENAME "java-symbols.bin"
+
+#ifdef __cplusplus
 namespace px {
 namespace stirling {
 namespace java {
+char const* const kBinSymbolFileName = BIN_SYMBOL_FILENAME;
+char const* const kTxtSymbolFileName = TXT_SYMBOL_FILENAME;
+#endif
 
-char const* const kBinSymbolFileName = "java-symbols.bin";
-char const* const kTxtSymbolFileName = "java-symbols.txt";
-
-class RawSymbolUpdate {
+struct RawSymbolUpdate {
+#ifdef __cplusplus
  public:
+  uint64_t TotalNumSymbolBytes() const { return symbol_size + fn_sig_size + class_sig_size; }
+  uint64_t SymbolOffset() const { return 0; }
+  uint64_t FnSigOffset() const { return symbol_size; }
+  uint64_t ClassSigOffset() const { return symbol_size + fn_sig_size; }
+  bool IsMethodUnload() const { return method_unload; }
+#endif
   uint64_t addr;
   uint64_t code_size;
   uint64_t symbol_size;
   uint64_t fn_sig_size;
   uint64_t class_sig_size;
   bool method_unload;
-
-  uint64_t TotalNumSymbolBytes() const { return symbol_size + fn_sig_size + class_sig_size; }
-  uint64_t SymbolOffset() const { return 0; }
-  uint64_t FnSigOffset() const { return symbol_size; }
-  uint64_t ClassSigOffset() const { return symbol_size + fn_sig_size; }
-  bool IsMethodUnload() const { return method_unload; }
 };
 
+#ifdef __cplusplus
 }  // namespace java
 }  // namespace stirling
 }  // namespace px
+#endif
