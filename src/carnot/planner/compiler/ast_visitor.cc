@@ -1117,7 +1117,13 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpP
   if (op.op_code == FuncIR::Opcode::non_op) {
     return ExprObject::Create(operand, this);
   }
+
   std::vector<ExpressionIR*> args{operand};
+  PX_ASSIGN_OR_RETURN(auto udf, GetUDFDefinition(udf_registry_, op.carnot_op_name, args));
+  if (udf != nullptr) {
+    PX_ASSIGN_OR_RETURN(ExpressionIR * expr, ExecUDF(ir_graph_, node, udf, args));
+    return ExprObject::Create(expr, this);
+  }
   PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }

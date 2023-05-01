@@ -1852,6 +1852,18 @@ TEST_F(ASTVisitorTest, exec_funcs_list_arg_syntax_error) {
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("Failed to parse arg"));
 }
 
+TEST_F(ASTVisitorTest, unary_ops_execute_underlying_udf_funcs) {
+  std::string keep_duplicates_expr = R"pxl(import px
+df = px.DataFrame('http_events')
+df.test = -(10 * -2)
+px.display(df)
+)pxl";
+
+  ASSERT_OK_AND_ASSIGN(auto graph, CompileGraph(keep_duplicates_expr, {}));
+  auto int_node = graph->FindNodesThatMatch(Int(20));
+  ASSERT_EQ(int_node.size(), 1);
+}
+
 // The function definition Module.
 constexpr char kFuncsUtilsModule[] = R"pxl(
 import px
