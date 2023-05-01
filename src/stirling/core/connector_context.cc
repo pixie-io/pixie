@@ -98,9 +98,8 @@ absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, 
 SystemWideStandaloneContext::SystemWideStandaloneContext(const std::filesystem::path& proc_path)
     : StandaloneContext(ListUPIDs(proc_path, /*asid*/ 0), proc_path) {}
 
-const absl::flat_hash_set<md::UPID>& EverythingLocalContext::GetUPIDs() const {
+void EverythingLocalContext::RefreshUPIDList() {
   upids_ = ListUPIDs(::px::system::ProcPath(), GetASID());
-  return upids_;
 }
 
 }  // namespace stirling
