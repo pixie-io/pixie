@@ -50,8 +50,8 @@ using ::px::system::TCPSocket;
 using ::px::system::UDPSocket;
 using ::px::system::UnixSocket;
 using ::px::types::ColumnWrapperRecordBatch;
-using ::testing::HasSubstr;
 using ::testing::Contains;
+using ::testing::HasSubstr;
 using ::testing::StrEq;
 
 constexpr std::string_view kHTTPReqMsg1 =
@@ -589,10 +589,9 @@ TEST_F(SocketTraceBPFTest, SendFile) {
 
   ASSERT_THAT(records, RecordBatchSizeIs(2));
 
-  const absl::flat_hash_set<std::string> responses {
-    records[kHTTPRespBodyIdx]->Get<types::StringValue>(0),
-    records[kHTTPRespBodyIdx]->Get<types::StringValue>(1)
-  };
+  const absl::flat_hash_set<std::string> responses{
+      records[kHTTPRespBodyIdx]->Get<types::StringValue>(0),
+      records[kHTTPRespBodyIdx]->Get<types::StringValue>(1)};
 
   const std::string kHTTPRespMsgContentAsFiller(kHTTPRespMsgContent.size(), 0);
   EXPECT_THAT(responses, Contains(kHTTPRespMsgContentAsFiller));
