@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -250,7 +251,11 @@ func (u *Updater) VersionUpToDate(version string) bool {
 		// TODO(vihang): Investigate and consider marking these as needing an update.
 		return true // This happens for some viziers, let's call them uptodate for now.
 	}
-	vzVersion, err := semver.Parse(version)
+	// We have a set of viziers where the meta in the version isn't tolerated by
+	// the semver lib. To successfully parse those versions, just drop the meta before
+	// parsing.
+	versionNoMeta, _, _ := strings.Cut(version, "+")
+	vzVersion, err := semver.Parse(versionNoMeta)
 	if err != nil {
 		log.WithError(err).Error("Invalid version string reported")
 		return true

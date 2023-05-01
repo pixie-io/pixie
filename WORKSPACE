@@ -2,7 +2,7 @@ workspace(name = "px")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("5.1.1")
+check_min_bazel_version("6.0.0")
 
 load("//bazel:repositories.bzl", "pl_cc_toolchain_deps", "pl_deps")
 
@@ -33,7 +33,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.20",
+    version = "1.20.2",
 )
 
 go_rules_dependencies()
@@ -231,12 +231,12 @@ go_download_sdk(
 
 go_download_sdk(
     name = "go_sdk_1_19",
-    version = "1.19.5",
+    version = "1.19.7",
 )
 
 go_download_sdk(
     name = "go_sdk_1_20",
-    version = "1.20",
+    version = "1.20.2",
 )
 
 pip_parse(

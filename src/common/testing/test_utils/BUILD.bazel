@@ -26,6 +26,10 @@ pl_cc_library(
         exclude = ["*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
+    data = [
+        ":emailservice_image.tar",
+        ":sleep_container_image.tar",
+    ],
     tags = ["requires_docker"],
     deps = [
         "//src/common/exec:cc_library",
@@ -40,6 +44,11 @@ container_image(
         "echo started & sleep 100000000",
     ],
     entrypoint = ["/busybox/sh"],
+)
+
+container_image(
+    name = "emailservice_image",
+    base = "@emailservice_image//image",
 )
 
 # This test is useful for debugging flakiness on Jenkins BPF worker nodes,

@@ -102,7 +102,7 @@ func (c *Connector) connect(addr string) error {
 		<-ch
 		cancel()
 	}()
-	isInternal := strings.ContainsAny(addr, "cluster.local")
+	isInternal := strings.Contains(addr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {

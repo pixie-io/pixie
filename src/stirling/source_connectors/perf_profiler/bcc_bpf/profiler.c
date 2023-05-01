@@ -62,7 +62,7 @@ BPF_ARRAY(profiler_state, uint64_t, kProfilerStateVectorSize);
 int sample_call_stack(struct bpf_perf_event_data* ctx) {
   int transfer_count_idx = kTransferCountIdx;
   int sample_count_a_idx = kSampleCountAIdx;
-  int sample_count_b_idx = kSampleCountAIdx;
+  int sample_count_b_idx = kSampleCountBIdx;
   int error_status_idx = kErrorStatusIdx;
 
   uint64_t* transfer_count_ptr = profiler_state.lookup(&transfer_count_idx);

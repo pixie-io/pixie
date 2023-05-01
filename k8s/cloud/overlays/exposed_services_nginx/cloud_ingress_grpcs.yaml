@@ -7,6 +7,7 @@ metadata:
   namespace: plc
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
+    nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   ingressClassName: nginx
   tls:
@@ -18,91 +19,21 @@ spec:
   - host: pixie.example.com
     http:
       paths:
-      - path: /pl.cloudapi.ArtifactTracker/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.services.VZConnService/
+      - path: /px.services.(.*)
         pathType: Prefix
         backend:
           service:
             name: vzconn-service
             port:
               number: 51600
-      - path: /px.cloudapi.ArtifactTracker/
+      - path: /px.cloudapi.(.*)
         pathType: Prefix
         backend:
           service:
-            name: cloud-proxy-service
+            name: api-service
             port:
-              number: 5555
-      - path: /px.cloudapi.APIKeyManager/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.AuthService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.ConfigService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.OrganizationService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.PluginService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.UserService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierClusterInfo/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierDeploymentKeyManager/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierImageAuthorization/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.api.vizierpb.VizierService/
+              number: 51200
+      - path: /px.api.(.*)
         pathType: Prefix
         backend:
           service:
@@ -112,91 +43,21 @@ spec:
   - host: work.pixie.example.com
     http:
       paths:
-      - path: /pl.cloudapi.ArtifactTracker/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.services.VZConnService/
+      - path: /px.services.(.*)
         pathType: Prefix
         backend:
           service:
             name: vzconn-service
             port:
               number: 51600
-      - path: /px.cloudapi.ArtifactTracker/
+      - path: /px.cloudapi.(.*)
         pathType: Prefix
         backend:
           service:
-            name: cloud-proxy-service
+            name: api-service
             port:
-              number: 5555
-      - path: /px.cloudapi.APIKeyManager/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.AuthService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.ConfigService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.OrganizationService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.PluginService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.UserService/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierClusterInfo/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierDeploymentKeyManager/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.cloudapi.VizierImageAuthorization/
-        pathType: Prefix
-        backend:
-          service:
-            name: cloud-proxy-service
-            port:
-              number: 5555
-      - path: /px.api.vizierpb.VizierService/
+              number: 51200
+      - path: /px.api.(.*)
         pathType: Prefix
         backend:
           service:

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: load-test
-        image: weaveworksdemos/load-test:0.1.1
+        image: weaveworksdemos/load-test:0.1.1@sha256:536d46f8c867e4ff4c3ed69848955b487f9bec060539c169f190fe522650e5cd
         command: ["locust"]
         # This runs locust in batch mode.
         # The following form runs locust in web mode.
@@ -28,7 +28,7 @@ spec:
 
       initContainers:
       - name: wait-sock-shop
-        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0
+        image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
         # yamllint disable rule:indentation
         command: ['sh', '-c', 'set -x;
           until timeout 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do

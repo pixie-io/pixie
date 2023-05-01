@@ -98,9 +98,9 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
 
 // Note that DwarfReader cannot be created if there is no dwarf info.
 TEST(UprobeSymaddrsNodeTest, TLSWrapSymAddrsFromDwarfInfo) {
-  ASSERT_OK_AND_ASSIGN(
-      struct node_tlswrap_symaddrs_t symaddrs,
-      NodeTLSWrapSymAddrs("src/stirling/testing/demo_apps/node/node.debug", {0, 0, 0}));
+  std::filesystem::path p =
+      px::testing::BazelRunfilePath("src/stirling/testing/demo_apps/node/node_debug/node_debug");
+  ASSERT_OK_AND_ASSIGN(struct node_tlswrap_symaddrs_t symaddrs, NodeTLSWrapSymAddrs(p, {0, 0, 0}));
   EXPECT_EQ(symaddrs.TLSWrap_StreamListener_offset, 0x08);
   EXPECT_EQ(symaddrs.StreamListener_stream_offset, 0x08);
   EXPECT_EQ(symaddrs.StreamBase_StreamResource_offset, 0x00);

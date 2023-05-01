@@ -43,7 +43,7 @@ import (
 )
 
 func newATClient(cloudAddr string) (cloudpb.ArtifactTrackerClient, error) {
-	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
+	isInternal := strings.Contains(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {

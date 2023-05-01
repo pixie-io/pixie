@@ -53,7 +53,7 @@ spec:
       containers:
       - args:
         - client/run
-        image: gcr.io/pixie-prod/demos/finagle/hello:1.0
+        image: gcr.io/pixie-prod/demos/finagle/hello:1.0@sha256:85006a2eae6e86019d85e1e12915d9d21e4af85b80a24674dc2b7a2ef4e7dbff
         name: finagle-client
         resources: {}
       restartPolicy: Always
@@ -86,7 +86,7 @@ spec:
         io.kompose.service: finagle-server
     spec:
       containers:
-      - image: gcr.io/pixie-prod/demos/finagle/hello:1.0
+      - image: gcr.io/pixie-prod/demos/finagle/hello:1.0@sha256:85006a2eae6e86019d85e1e12915d9d21e4af85b80a24674dc2b7a2ef4e7dbff
         name: finagle-server
         ports:
         - containerPort: 9992

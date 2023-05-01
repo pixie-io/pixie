@@ -38,14 +38,14 @@ import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.background.five,
     cursor: 'text',
     display: 'flex',
     flexDirection: 'column',
     ...scrollbarStyles(theme),
   },
   input: {
-    backgroundColor: theme.palette.background.two,
+    backgroundColor: theme.palette.background.four,
   },
   completions: {
     flex: 1,

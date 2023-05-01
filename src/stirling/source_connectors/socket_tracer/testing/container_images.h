@@ -99,6 +99,24 @@ class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+class NginxOpenSSL_3_0_7_Container : public ContainerRunner {
+ public:
+  NginxOpenSSL_3_0_7_Container()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+  int32_t NginxWorkerPID() const { return internal::GetNginxWorkerPID(process_pid()); }
+
+ private:
+  // Image is a modified nginx image created through bazel rules, and stored as a tar file.
+  // It is not pushed to any repo.
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "nginx_alpine_openssl_3_0_7_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "nginx";
+  static constexpr std::string_view kReadyMessage = "";
+};
+
 class CurlContainer : public ContainerRunner {
  public:
   CurlContainer()

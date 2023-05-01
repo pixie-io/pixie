@@ -52,7 +52,6 @@ filegroup(
     testonly = True,
     srcs = [
         "sockshop_payments_service",
-        ":test_go_1_16_binary",
         ":test_go_1_17_binary",
         ":test_go_1_18_binary",
         ":test_go_1_19_binary",

@@ -1,5 +1,0 @@
-{
-  "INFO": "THIS FILE IS A PLACEHOLDER AND WILL BE REPLACED BY THE CI SYSTEM.",
-  "_": "We need this because we need to generate a container image with this file",
-  "_2": "and need it to be in the repo so that bazel can access it"
-}

@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-server
+spec:
+  template:
+    spec:
+      containers:
+      - name: auth-server
+        env:
+        - name: PL_AUTH0_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth0-secrets
+              key: auth0-client-id
+              optional: true
+        - name: PL_AUTH0_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth0-secrets
+              key: auth0-client-secret
+              optional: true

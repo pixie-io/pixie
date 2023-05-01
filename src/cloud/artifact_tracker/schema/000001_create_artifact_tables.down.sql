@@ -1,3 +1,0 @@
-DROP TABLE IF EXISTS artifact_changelogs CASCADE;
-DROP TABLE IF EXISTS artifacts CASCADE;
-DROP TYPE IF EXISTS artifact_type CASCADE;

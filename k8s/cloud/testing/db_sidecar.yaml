@@ -8,7 +8,8 @@ spec:
     spec:
       containers:
       - name: cloudsql-proxy
-        image: gcr.io/cloudsql-docker/gce-proxy:1.14
+        # yamllint disable-line rule:line-length
+        image: gcr.io/cloudsql-docker/gce-proxy:1.14@sha256:96689ad665bffc521fc9ac3cbcaa90f7d543a3fc6f1c84f81e4148a22ffa66e0
         command: ["/cloud_sql_proxy",
                   "-instances=pl-pixies:us-west1:pixie-cloud-testing-db-pg13=tcp:5432",
                   "-ip_address_types=PRIVATE",

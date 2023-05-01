@@ -34,9 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/kubernetes"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	cpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
@@ -54,18 +52,14 @@ type Server struct {
 	atClient            atpb.ArtifactTrackerClient
 	deployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
 	vzFeatureFlagClient VizierFeatureFlagClient
-	clientset           *kubernetes.Clientset
-	rm                  meta.RESTMapper
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string, clientset *kubernetes.Clientset, rm meta.RESTMapper) *Server {
+func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string) *Server {
 	return &Server{
 		atClient:            atClient,
 		deployKeyClient:     deployKeyClient,
 		vzFeatureFlagClient: NewVizierFeatureFlagClient(ldSDKKey),
-		clientset:           clientset,
-		rm:                  rm,
 	}
 }
 
@@ -236,7 +230,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	// Apply custom patches, if any.
 	if in.VzSpec.Patches != nil || len(in.VzSpec.Patches) > 0 {
 		for _, y := range vzYamls {
-			patchedYAML, err := yamls.AddPatchesToYAML(s.clientset, y.YAML, in.VzSpec.Patches, s.rm)
+			patchedYAML, err := yamls.AddPatchesToYAML(y.YAML, in.VzSpec.Patches)
 			if err != nil {
 				log.WithError(err).Error("Failed to add patches")
 				return nil, err

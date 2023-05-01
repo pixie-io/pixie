@@ -22,7 +22,8 @@ BUILD_DIR ?= .build
 TOT		       := $$(git rev-parse --show-toplevel)
 DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
 
-DEV_EXTRAS_TAG = $$(cat $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
+DEV_EXTRAS_TAG = $$(grep DOCKER_IMAGE_TAG $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
+DEV_EXTRAS_DIGEST = $$(grep DEV_IMAGE_WITH_EXTRAS_DIGEST $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
 DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DEV_EXTRAS_TAG)"
 
 ## Clang deb parameters
@@ -126,6 +127,9 @@ KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_B
 KERNEL_BUILD_TS := $(shell date +%Y%m%d%H%M%S)
 KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$(KERNEL_BUILD_TS)
 
+ETCD_IMAGE_VERSION := 3.5.8
+ETCD_IMAGE_TAG := "gcr.io/pixie-oss/pixie-dev-public/etcd:$(ETCD_IMAGE_VERSION)"
+
 ##############################################
 # Clang Build
 ##############################################
@@ -149,7 +153,7 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 ##############################################
 .PHONY: build_gperftools_deb_image
 build_gperftools_deb_image:
-	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) gperftools_deb_image -t $(gperftools_deb_image_tag)
+	$(DOCKER) build --build-arg BASE_IMAGE=$(DEV_EXTRAS_IMAGE) --build-arg BASE_IMAGE_DIGEST=$(DEV_EXTRAS_DIGEST) gperftools_deb_image -t $(gperftools_deb_image_tag)
 
 .PHONY: upload_gperftools_deb
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
@@ -264,6 +268,13 @@ upload_kernel_build:  $(KERNEL_BUILD_TARGETS)
 	@sha256sum $^ | awk 'match($$0, /.*linux\-build\-(.*).tar.gz/, arr) { printf("    \"%s\": \"%s\",\n", arr[1], $$1)}'
 	@echo "}"
 	@echo "============================="
+
+##############################################
+# ETCD Image Builder
+##############################################
+
+upload_etcd_image:
+	$(DOCKER) buildx build --platform linux/amd64,linux/arm64 -t $(ETCD_IMAGE_TAG) --push etcd_image
 
 clean:
 	@rm -rf $(BUILD_DIR)

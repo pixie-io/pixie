@@ -85,6 +85,7 @@ spec:
     port: 7422
   - name: gateways
     port: 7522
+  publishNotReadyAddresses: true
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -107,6 +108,7 @@ spec:
     matchLabels:
       name: pl-nats
   replicas: 5
+  podManagementPolicy: Parallel
   serviceName: pl-nats
   volumeClaimTemplates:
   - metadata:
@@ -157,7 +159,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: pl-nats
-        image: nats:2.9.0-alpine3.16
+        image: nats:2.9.16-alpine3.17@sha256:887f0193c5b72b66ff4795b807f3e9e324c34ffafbce612e54b2be8140a06de1
         ports:
         - containerPort: 4222
           name: client
@@ -203,17 +205,29 @@ spec:
         #
         livenessProbe:
           httpGet:
-            path: /
+            path: /healthz?js-enabled-only=true
             port: 8222
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /
+            path: /healthz?js-server-only=true
             port: 8222
           initialDelaySeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 30
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8222
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 90
 
         # Gracefully stop NATS Server on pod deletion or image upgrade.
         #

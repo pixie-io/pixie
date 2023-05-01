@@ -164,7 +164,13 @@ constexpr size_t kMaxHTTPHeadersBytes = 8192;
 constexpr size_t kMaxPBStringLen = 64;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), conn_stats_(&conn_trackers_mgr_), uprobe_mgr_(this) {
+    : SourceConnector(source_name, kTables),
+      conn_stats_(&conn_trackers_mgr_),
+      openssl_trace_mismatched_fds_counter_(BuildCounter(
+          "openssl_trace_mismatched_fds",
+          "Count of the times a syscall's fd was mismatched when detecting fds from an "
+          "active user space call")),
+      uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
 }
@@ -402,6 +408,7 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
+      absl::StrCat("-DACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL=", "true"),
   };
   PX_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
 
@@ -477,6 +484,9 @@ Status SocketTraceConnector::InitImpl() {
 
   uprobe_mgr_.Init(protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
+
+  openssl_trace_state_ =
+      std::make_unique<ebpf::BPFArrayTable<int>>(GetArrayTable<int>("openssl_trace_state"));
 
   return Status::OK();
 }
@@ -617,6 +627,30 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   }
 }
 
+// Verifies that our openssl tracing does not encounter conditions that invalidate our
+// assumptions and records error conditions in prometheus metrics.
+void SocketTraceConnector::CheckTracerState() {
+  // The check that state is not uninitialized is required for socket_trace_connector_test.
+  // Since it doesn't initialize the BPF program, accessing the map will fail.
+  if (state() == State::kUninitialized) {
+    return;
+  }
+
+  int error_code;
+  openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
+
+  if (error_code == kOpenSSLMismatchedFDsDetected) {
+    openssl_trace_mismatched_fds_counter_.Increment();
+  }
+  DCHECK_EQ(error_code, kOpenSSLTraceOk);
+
+  // Reset the BPF map to its default value so that each occurrence
+  // can be detected.
+  if (error_code != kOpenSSLTraceOk) {
+    openssl_trace_state_->update_value(kOpenSSLTraceStatusIdx, kOpenSSLTraceOk);
+  }
+}
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   set_iteration_time(now_fn_());
 
@@ -689,6 +723,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
 
     conn_tracker->IterationPostTick();
   }
+
+  CheckTracerState();
 
   // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
   pids_to_trace_disable_.clear();

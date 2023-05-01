@@ -1,0 +1,25 @@
+---
+apiVersion: actions.summerwind.dev/v1alpha1
+kind: RunnerDeployment
+metadata:
+  name: runner
+spec:
+  template:
+    spec:
+      image: summerwind/actions-runner-dind
+      dockerdWithinRunnerContainer: true
+      repository: pixie-io/pixie
+      volumeMounts:
+      - mountPath: /etc/docker/daemon.json
+        subPath: daemon.json
+        name: dockerd-config
+      - mountPath: /etc/bazelrc
+        subPath: bazelrc
+        name: bb-bazelrc
+      volumes:
+      - name: bb-bazelrc
+        secret:
+          secretName: bb-bazelrc
+      - name: dockerd-config
+        configMap:
+          name: dockerd-config

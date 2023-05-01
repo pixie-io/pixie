@@ -1,0 +1,59 @@
+{
+    "variables": [
+        {
+            "name": "start_time",
+            "type": "PX_STRING",
+            "description": "The start time of the window in time units before now.",
+            "defaultValue": "-30m"
+        },
+        {
+            "name": "trace_header_name",
+            "type": "PX_STRING",
+            "description": "The HTTP header that contains the distributed trace id. Defaults to Otel's traceparent header",
+            "defaultValue": "traceparent"
+        },
+        {
+            "name": "trace_id_filter",
+            "type": "PX_STRING",
+            "description": "Trace id.",
+            "defaultValue": ""
+        }
+    ],
+    "globalFuncs": [
+        {
+            "outputName": "http_trace_data",
+            "func": {
+                "name": "http_trace_data",
+                "args": [
+                    {
+                        "name": "start_time",
+                        "variable": "start_time"
+                    },
+                    {
+                        "name": "trace_header_name",
+                        "variable": "trace_header_name"
+                    },
+                    {
+                        "name": "trace_id_filter",
+                        "variable": "trace_id_filter"
+                    }
+                ]
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Table",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 4
+            },
+            "globalFuncOutputName": "http_trace_data",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        }
+    ]
+}

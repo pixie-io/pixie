@@ -107,7 +107,27 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths
     value:
-    - k8s/vizier/etcd_metadata
+    - k8s/vizier/etcd_metadata/x86
+- name: etcd_x86_64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=x86_64_sysroot
+  - op: replace
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/vizier/etcd_metadata/x86
+- name: etcd_aarch64_sysroot
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --config=aarch64_sysroot
+  - op: replace
+    path: /manifests/kustomize/paths
+    value:
+    - k8s/vizier/etcd_metadata/aarch64
 - name: aarch64_sysroot
   patches:
   - op: add

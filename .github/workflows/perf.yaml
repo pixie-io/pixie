@@ -20,7 +20,8 @@ on:
         description: 'Tags (comma separated)'
         type: string
         required: false
-
+permissions:
+  contents: read
 jobs:
   nightly-perf-eval:
     name: Nightly Performance Evaluation
@@ -49,6 +50,10 @@ jobs:
       tags: ${{ steps.default-tags.outputs.tags }}
       outcome: ${{ steps.default-tags.outcome }}
     continue-on-error: true
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
     steps:
     - name: Check for /perf command
       uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88
@@ -91,10 +96,11 @@ jobs:
     secrets: inherit
   pr-perf-comment:
     name: Comment results on PR
+    if: success() || failure()
     needs: pr-perf-eval
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/github-script@v6
+    - uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975  # v6.4.0
       with:
         # yamllint disable rule:indentation
         script: |

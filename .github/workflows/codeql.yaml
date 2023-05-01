@@ -1,0 +1,47 @@
+---
+name: codeql
+on:
+  push:
+    branches:
+    - main
+  schedule:
+  - cron: "7 21 * * 1"
+permissions:
+  contents: read
+jobs:
+  analyze-go:
+    runs-on: ubuntu-latest-16-cores
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9  # v4.0.0
+      with:
+        go-version-file: 'go.mod'
+    - uses: github/codeql-action/init@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+      with:
+        languages: go
+    - uses: github/codeql-action/autobuild@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+    - uses: github/codeql-action/analyze@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+      with:
+        category: "/language:go"
+  analyze:
+    runs-on: ubuntu-latest-8-cores
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript]
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - uses: github/codeql-action/init@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+      with:
+        languages: ${{ matrix.language }}
+    - uses: github/codeql-action/analyze@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+      with:
+        category: "/language:${{matrix.language}}"

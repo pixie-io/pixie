@@ -23,20 +23,25 @@ end
 default['owner'] = node['current_user']
 default['group'] = 'wheel'
 
+default['docker-buildx']['download_path'] =
+  'https://github.com/docker/buildx/releases/download/v0.10.4/buildx-v0.10.4.darwin-amd64'
+default['docker-buildx']['sha256'] =
+  '63aadf0095a583963c9613b3bc6e5782c8c56ed881ca9aa65f41896f4267a9ee'
+
 default['faq']['download_path'] =
   'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-darwin-amd64'
 default['faq']['sha256'] =
   '869f4d8acaa1feb11ce76b2204c5476b8a04d9451216adde6b18e2ef2f978794'
 
 default['gh']['download_path'] =
-  'https://github.com/cli/cli/releases/download/v2.12.1/gh_2.12.1_macOS_amd64.tar.gz'
+  'https://github.com/cli/cli/releases/download/v2.26.1/gh_2.26.1_macOS_amd64.tar.gz'
 default['gh']['sha256'] =
-  '448d617c11b964cff135bab43f73b321386c09fc5cdd998a17cbfc422f54239e'
+  'ef398ece1f31d033df6374458f7a87500ccdbdc9964170db04b6a5f707632417'
 
 default['helm']['download_path'] =
-  'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
+  'https://get.helm.sh/helm-v3.11.3-darwin-amd64.tar.gz'
 default['helm']['sha256'] =
-  '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'
+  '9d029df37664b50e427442a600e4e065fa75fd74dac996c831ac68359654b2c4'
 
 default['kubectl']['download_path'] =
   'https://storage.googleapis.com/kubernetes-release/release/v1.26.0/bin/darwin/amd64/kubectl'
@@ -54,19 +59,19 @@ default['lego']['sha256'] =
   'eaf2792d9731c911da671a6145eebd5ba136c20446adb542e7b1463ffe868388'
 
 default['minikube']['download_path'] =
-  'https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-darwin-amd64'
+  'https://github.com/kubernetes/minikube/releases/download/v1.30.1/minikube-darwin-amd64'
 default['minikube']['sha256'] =
-  '55f14e4f411370da18d7b9432ae4edd128f4f047bbc87a278e08ba256ff6f669'
+  'b5938a8772c5565b5d0b795938c367c5190bf65bb51fc55fb2417cb4e1d04ef1'
 
 default['opm']['download_path'] =
-  'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/darwin-amd64-opm'
+  'https://github.com/operator-framework/operator-registry/releases/download/v1.26.4/darwin-amd64-opm'
 default['opm']['sha256'] =
-  'bb812b97fb3c65f634ecc26910b2dfc0f2e668b86272702200937937df83ad5a'
+  '9c5d21fd4200373e8ee8c0df47ac4c06c1762e807f836d5382d67e2f47d6fa1b'
 
 default['packer']['download_path'] =
   'https://releases.hashicorp.com/packer/1.7.8/packer_1.7.8_darwin_amd64.zip'
 default['packer']['sha256'] =
-  '4435f3ab48eb0759f52cc9773182746f004ab0cc697efa23731c77b109d25b64'
+  '8666031111138e2e79ff7d1e42888b23b793b856bc2d9c9dccbb1e2d2cccb5cf'
 
 default['skaffold']['download_path'] =
   'https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-amd64'
@@ -77,6 +82,11 @@ default['sops']['download_path'] =
   'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'
 default['sops']['sha256'] =
   '09bb5920ae609bdf041b74843e2d8211a7059847b21729fadfbd3c3e33e67d26'
+
+default['trivy']['download_path'] =
+  'https://github.com/aquasecurity/trivy/releases/download/v0.39.0/trivy_0.39.0_macOS-64bit.tar.gz'
+default['trivy']['sha256'] =
+  'e0e6831395310452a65cae8dcb142fb743a05b27b0698177e8fad93b24490e19'
 
 default['yq']['download_path'] =
   'https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_darwin_amd64'

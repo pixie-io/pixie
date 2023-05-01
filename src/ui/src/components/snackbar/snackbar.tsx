@@ -46,7 +46,7 @@ type SnackbarState = {
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   snackbar: {
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.background.five,
     color: theme.palette.text.secondary,
   },
 }), { name: 'Snackbar' });

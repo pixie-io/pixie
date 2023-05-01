@@ -17,6 +17,7 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("//bazel:images.bzl", "list_image_bundle")
 load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
@@ -39,6 +40,15 @@ container_push(
     name = "operator_images_push",
     bundle = ":image_bundle",
     format = "Docker",
+)
+
+list_image_bundle(
+    name = "list_image_bundle",
+    images = OPERATOR_IMAGE_TO_LABEL,
+    toolchains = [
+        "//k8s:image_prefix",
+        "//k8s:bundle_version",
+    ],
 )
 
 kustomize_build(

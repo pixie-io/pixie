@@ -76,7 +76,7 @@ func ParsePrometheusTextToWriteReq(text string, clusterID string, podName string
 
 func toWriteRequest(samples []*model.Sample) *prompb.WriteRequest {
 	req := &prompb.WriteRequest{
-		Timeseries: make([]*prompb.TimeSeries, 0, len(samples)),
+		Timeseries: make([]prompb.TimeSeries, 0, len(samples)),
 	}
 
 	for _, s := range samples {
@@ -89,16 +89,16 @@ func toWriteRequest(samples []*model.Sample) *prompb.WriteRequest {
 				},
 			},
 		}
-		req.Timeseries = append(req.Timeseries, &ts)
+		req.Timeseries = append(req.Timeseries, ts)
 	}
 
 	return req
 }
 
-func metricToLabelProtos(metric model.Metric) []*prompb.Label {
-	labels := make([]*prompb.Label, 0, len(metric))
+func metricToLabelProtos(metric model.Metric) []prompb.Label {
+	labels := make([]prompb.Label, 0, len(metric))
 	for k, v := range metric {
-		labels = append(labels, &prompb.Label{
+		labels = append(labels, prompb.Label{
 			Name:  string(k),
 			Value: string(v),
 		})

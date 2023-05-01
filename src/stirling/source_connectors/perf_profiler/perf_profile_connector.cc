@@ -61,6 +61,12 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
       sampling_period_(
           std::chrono::milliseconds{1000 * FLAGS_stirling_profiler_table_update_period_seconds}),
       push_period_(sampling_period_ / 2),
+      profiler_state_overflow_counter_(
+          BuildCounter("perf_profiler_overflow",
+                       "Count of times the perf profiler overran CFG_OVERRUN_THRESHOLD")),
+      profiler_state_map_read_error_counter_(
+          BuildCounter("perf_profiler_map_read_error",
+                       "Count of times the perf profiler encountered a map lookup error")),
       stats_log_interval_(std::chrono::minutes(FLAGS_stirling_profiler_log_period_minutes) /
                           sampling_period_) {
   constexpr auto kMaxSamplingPeriod = std::chrono::milliseconds{30000};
@@ -228,7 +234,6 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   uint64_t cum_sum_count = 0;
 
   const uint32_t asid = ctx->GetASID();
-  const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
   // Cause symbolizers to perform any necessary updates before we put them to work.
   u_symbolizer_->IterationPreTick();
@@ -243,9 +248,8 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     std::string stack_trace_str;
 
     const md::UPID upid(asid, stack_trace_key.upid.pid, stack_trace_key.upid.start_time_ticks);
-    const bool symbolize = upids_for_symbolization.contains(upid);
 
-    if (symbolize) {
+    if (ctx->UPIDIsInContext(upid)) {
       // The stringifier clears stack-ids out of the stack traces table when it
       // first encounters them. If a stack-id is reused by a different stack-trace-key,
       // the stringifier returns its memoized stack trace string. Because the stack-ids
@@ -354,6 +358,27 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   profiler_state_->update_value(sample_count_idx, 0);
 }
 
+void PerfProfileConnector::CheckProfilerState() {
+  uint64_t error_code;
+  profiler_state_->get_value(kErrorStatusIdx, error_code);
+
+  DCHECK_EQ(error_code, kPerfProfilerStatusOk);
+
+  switch (error_code) {
+    case kOverflowError:
+      profiler_state_overflow_counter_.Increment();
+      break;
+    case kMapReadFailureError:
+      profiler_state_map_read_error_counter_.Increment();
+      break;
+  }
+  // Reset the BPF map to its default value so that each occurrence
+  // can be detected.
+  if (error_code != kPerfProfilerStatusOk) {
+    profiler_state_->update_value(kErrorStatusIdx, 0);
+  }
+}
+
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
   DCHECK_EQ(data_tables_.size(), 1U);
 
@@ -374,6 +399,8 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % stats_log_interval_ == 0) {
     PrintStats();
   }
+
+  CheckProfilerState();
 }
 
 void PerfProfileConnector::PrintStats() const {

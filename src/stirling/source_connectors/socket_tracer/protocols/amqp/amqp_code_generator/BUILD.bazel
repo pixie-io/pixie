@@ -59,5 +59,6 @@ py_binary(
         ":amqp_code_gen",
         requirement("fire"),
         requirement("pyshark"),
+        requirement("dill"),
     ],
 )

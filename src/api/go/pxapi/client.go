@@ -86,7 +86,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 }
 
 func (c *Client) init(ctx context.Context) error {
-	isInternal := strings.ContainsAny(c.cloudAddr, "cluster.local")
+	isInternal := strings.Contains(c.cloudAddr, "cluster.local")
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: isInternal}
 	creds := credentials.NewTLS(tlsConfig)

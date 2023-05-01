@@ -29,16 +29,15 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/gogo/protobuf/types"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
-	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	apb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/shared/artifacts/manifest"
 	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
-	"px.dev/pixie/src/shared/artifacts/versionspb/utils"
 )
 
 // URLSigner is the function used to sign urls.
@@ -52,16 +51,15 @@ const (
 
 // Server is the controller for the artifact tracker service.
 type Server struct {
-	db             *sqlx.DB
 	sc             stiface.Client
 	artifactBucket string
-	releaseBucket  string
 	gcsSA          *jwt.Config
+	m              *manifest.ArtifactManifest
 }
 
 // NewServer creates a new artifact tracker server.
-func NewServer(db *sqlx.DB, client stiface.Client, bucket string, releaseBucket string, gcsSA *jwt.Config) *Server {
-	return &Server{db: db, sc: client, artifactBucket: bucket, releaseBucket: releaseBucket, gcsSA: gcsSA}
+func NewServer(client stiface.Client, bucket string, gcsSA *jwt.Config) *Server {
+	return &Server{sc: client, artifactBucket: bucket, gcsSA: gcsSA}
 }
 
 func (s *Server) getArtifactListSpecifiedVizier() (*vpb.ArtifactSet, error) {
@@ -114,10 +112,10 @@ func (s *Server) getArtifactListSpecifiedOperator() (*vpb.ArtifactSet, error) {
 // GetArtifactList returns a list of artifacts matching the passed in criteria.
 func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListRequest) (*vpb.ArtifactSet, error) {
 	name := in.ArtifactName
-	at := utils.ToArtifactTypeDB(in.ArtifactType)
+	at := in.ArtifactType
 	limit := in.Limit
 
-	if at == utils.ATUnknown {
+	if at == vpb.AT_UNKNOWN {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
@@ -130,66 +128,14 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 		return s.getArtifactListSpecifiedOperator()
 	}
 
-	type dbResult struct {
-		ArtifactName       string         `db:"artifact_name"`
-		CreateTime         time.Time      `db:"create_time"`
-		CommitHash         string         `db:"commit_hash"`
-		VersionStr         string         `db:"version_str"`
-		AvailableArtifacts pq.StringArray `db:"available_artifacts"`
-		Changelog          string         `db:"changelog"`
-	}
-
-	dbResultToProto := func(res *dbResult) *vpb.Artifact {
-		t, _ := types.TimestampProto(res.CreateTime)
-		pb := &vpb.Artifact{
-			Timestamp:          t,
-			CommitHash:         res.CommitHash,
-			VersionStr:         res.VersionStr,
-			AvailableArtifacts: utils.ToProtoArtifactTypeArray(res.AvailableArtifacts),
-			Changelog:          res.Changelog,
-		}
-		return pb
-	}
-
-	query := `SELECT
-                artifact_name, create_time, commit_hash, version_str, available_artifacts, changelog
-              FROM artifacts, artifact_changelogs
-              WHERE artifact_name=$1
-                    AND artifact_changelogs.artifacts_id=artifacts.id
-                    AND $2=ANY(available_artifacts)
-                    -- Pre release builds contain a '-', so we filter those (but still make them available for download)
-                    -- The permissions of this should eventually be controlled using an RBAC rule.
-                    AND version_str NOT LIKE '%-%'
-              ORDER BY create_time DESC`
-
-	var rows *sqlx.Rows
-	var err error
-	if limit != 0 && limit != -1 {
-		query += " LIMIT $3;"
-		rows, err = s.db.Queryx(query, name, at, limit)
-	} else {
-		query += ";"
-		rows, err = s.db.Queryx(query, name, at)
-	}
-
+	artifacts, err := s.m.ListArtifacts(name, limit, manifest.RemovePrereleasesFilter(), manifest.ArtifactTypeFilter(at))
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to query database")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	defer rows.Close()
 
 	response := &vpb.ArtifactSet{
 		Name:     name,
-		Artifact: make([]*vpb.Artifact, 0),
-	}
-
-	for rows.Next() {
-		res := &dbResult{}
-		err = rows.StructScan(res)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to parse database result")
-		}
-		response.Artifact = append(response.Artifact, dbResultToProto(res))
+		Artifact: artifacts,
 	}
 
 	return response, nil
@@ -246,22 +192,19 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
 	} else {
-		query := `SELECT
-					1
-				FROM artifacts
-				WHERE artifact_name=$1
-						AND $2=ANY(available_artifacts)
-						AND version_str=$3
-				LIMIT 1;`
-
-		rows, err := s.db.Query(query, name, utils.ToArtifactTypeDB(at), versionStr)
+		a, err := s.m.GetArtifact(name, versionStr)
 		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to query database")
-		}
-		defer rows.Close()
-
-		if !rows.Next() {
 			return nil, status.Error(codes.NotFound, "artifact not found")
+		}
+		hasAT := false
+		for _, t := range a.AvailableArtifacts {
+			if t == at {
+				hasAT = true
+				break
+			}
+		}
+		if !hasAT {
+			return nil, status.Error(codes.NotFound, "artifact with given artifact_type not found")
 		}
 	}
 
@@ -269,40 +212,14 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	// Artifact found, generate the download link.
 	// location: gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64
-
-	// If the version is not an official release, it is contained in a private bucket which requires creds to
-	// generate a signed URL.
-	release := !strings.Contains(versionStr, "-")
 	bucket := s.artifactBucket
-	if release {
-		bucket = s.releaseBucket
-	}
-	if !release && s.gcsSA == nil {
-		return nil, status.Error(codes.Internal, "Could not get download URL for non-release build without creds")
-	}
 
-	var url string
-	var err error
 	objectPath := path.Join(name, versionStr, fmt.Sprintf("%s_%s", name, downloadSuffix(at)))
-	if !release {
-		url, err = URLSigner(bucket, objectPath, &storage.SignedURLOptions{
-			GoogleAccessID: s.gcsSA.Email,
-			PrivateKey:     s.gcsSA.PrivateKey,
-			Method:         "GET",
-			Expires:        expires,
-			Scheme:         0,
-		})
-
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to sign download URL")
-		}
-	} else {
-		attr, err := s.sc.Bucket(bucket).Object(objectPath).Attrs(ctx)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to get URL")
-		}
-		url = attr.MediaLink
+	attr, err := s.sc.Bucket(bucket).Object(objectPath).Attrs(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get URL")
 	}
+	url := attr.MediaLink
 
 	tpb, _ := types.TimestampProto(expires)
 
@@ -324,4 +241,11 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		SHA256:     strings.TrimSpace(string(sha256bytes)),
 		ValidUntil: tpb,
 	}, nil
+}
+
+// UpdateManifest switches the server's manifest to use the one given.
+func (s *Server) UpdateManifest(m *manifest.ArtifactManifest) error {
+	s.m = m
+	log.Info("Updated Artifact Manifest")
+	return nil
 }

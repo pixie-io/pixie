@@ -76,7 +76,11 @@ func DefaultDBURI() string {
 // MustCreateDefaultPostgresDB creates a postgres DB instance.
 func MustCreateDefaultPostgresDB() *sqlx.DB {
 	dbURI := DefaultDBURI()
-	log.WithField("dbURI", dbURI).Info("Setting up database")
+	log.WithField("db_hostname", viper.GetString("postgres_hostname")).
+		WithField("db_port", viper.GetInt32("postgres_port")).
+		WithField("db_name", viper.GetString("postgres_db")).
+		WithField("db_username", viper.GetString("postgres_username")).
+		Info("Setting up database")
 
 	db, err := sqlx.Open("pgx", dbURI)
 	if err != nil {

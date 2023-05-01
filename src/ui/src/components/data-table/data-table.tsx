@@ -21,10 +21,10 @@ import * as React from 'react';
 import {
   KeyboardArrowDown as DownIcon,
   KeyboardArrowUp as UpIcon,
-  Menu as MenuIcon,
+  Settings as GearIcon,
 } from '@mui/icons-material';
 import {
-  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem, Tooltip,
+  alpha, Checkbox, FormControlLabel, IconButton, Menu, MenuItem, Tooltip,
 } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
@@ -39,7 +39,6 @@ import {
 } from 'react-table';
 import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
 
-import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
 import { buildClass } from 'app/utils/build-class';
 import { useScrollbarSize } from 'app/utils/use-scrollbar-size';
@@ -62,6 +61,8 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     display: 'block',
     fontSize: theme.typography.pxToRem(15),
     overflow: 'hidden',
+    // Set here so that selection colors can be translucent and mix with it
+    backgroundColor: theme.palette.background.four,
   },
   tableHead: {
     overflow: 'hidden',
@@ -71,13 +72,17 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     maxHeight: '100%',
     width: '100%',
+    backgroundColor: theme.palette.background.four,
+    borderBottom: `1px ${theme.palette.background.two} solid`,
+    color: theme.palette.foreground.three,
+    textTransform: 'uppercase',
   },
   headerCell: {
     position: 'relative', // In case anything inside positions absolutely
     fontSize: theme.typography.pxToRem(14),
     padding: theme.spacing(1),
     alignSelf: 'baseline',
-    borderRight: '1px solid transparent',
+    borderRight: `1px ${theme.palette.background.two} dashed`,
     '&:last-child': {
       borderRightWidth: 0,
     },
@@ -106,21 +111,25 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     position: 'absolute',
   },
   bodyRow: {
-    '&:not(:last-child)': {
-      borderBottom: `1px solid ${theme.palette.background.three}`,
-    },
+    borderTop: `1px solid ${theme.palette.background.six}`,
+    '&:first-of-type': { borderTop: 0 },
   },
   bodyRowSelectable: {
     cursor: 'pointer',
-    '& .rowSelectionIcon': { opacity: 0 },
     '&:hover': {
-      backgroundColor: `${alpha(theme.palette.foreground.grey2, 0.42)}`,
-      '& .rowSelectionIcon': { opacity: 0.8 },
+      backgroundColor: theme.palette.background.six,
     },
   },
   bodyRowSelected: {
-    backgroundColor: theme.palette.foreground.grey3,
-    '& .rowSelectionIcon': { opacity: 1 },
+    backgroundColor: alpha(theme.palette.primary[theme.palette.mode], 0.25),
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.primary[theme.palette.mode], 0.375),
+    },
+
+    borderTopColor: theme.palette.primary.main,
+    '& + $bodyRowSelectable:not(:first-of-type)': {
+      borderTopColor: theme.palette.primary.main,
+    },
   },
   bodyCell: {
     position: 'relative', // In case anything inside positions absolutely
@@ -128,7 +137,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     padding: `0 ${theme.spacing(1)}`,
     height: `${ROW_HEIGHT_PX}px`, // Ensures the border stretches. See cellContents for the rest.
-    borderRight: `1px solid ${theme.palette.background.three}`,
+    borderRight: `1px solid ${theme.palette.background.two}`,
     '&:last-of-type': {
       borderRightWidth: 0,
     },
@@ -162,28 +171,39 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     opacity: 1,
   },
   resizeHandle: {
+    // It's a <button> so that it can use :active, so we need to remove the default styles from it.
+    border: 0,
+    padding: 0,
+    backgroundColor: 'transparent',
+
     userSelect: 'none',
     position: 'absolute',
-    right: '0',
-    top: 'calc(50% - 2px)',
-    transform: 'translate(50%, -50%)',
-  },
-  resizeHandleActive: {
-    color: theme.palette.foreground.three,
-    fontWeight: 'bold',
-  },
-  rowExpandButton: {
-    display: 'flex',
-    alignItems: 'center',
+    top: 0,
+    // Border math makes this a little weird
+    right: theme.spacing(-6 / 8),
+    width: theme.spacing(11 / 8),
+    borderRadius: theme.spacing(3 / 8),
     height: '100%',
+    zIndex: 1, // So that it's clickable from the cell to the right
+
+    '&:hover': {
+      backgroundColor: alpha(theme.palette.foreground.one, 0.25),
+    },
+
+    '&:active': {
+      backgroundColor: alpha(theme.palette.foreground.one, 0.375),
+    },
   },
-  columnSelector: {
-    position: 'relative',
-    top: '-2px', // The labels and icons don't quite line up otherwise due to how text renders
-    left: '50%',
-    transform: 'translate(-50%)',
-    width: theme.spacing(3),
-    height: theme.spacing(3),
+  columnMenu: {
+    display: 'grid',
+    gridAutoFlow: 'row',
+    gridTemplateRows: 'repeat(1, 1fr)',
+    gridTemplateColumns: 'repeat(2, auto)',
+    maxHeight: `calc(min(${theme.spacing(60)}, 100vh))`,
+    overflowY: 'auto',
+  },
+  columnMenuFew: { // Logic to expand columns first, then overflow into rows, is not possible in pure CSS :(
+    gridTemplateColumns: '1fr',
   },
 }), { name: 'DataTable' });
 
@@ -194,6 +214,7 @@ export interface DataTableProps {
   onRowSelected?: (row: Record<string, any> | null) => void;
   updateSelection?: React.MutableRefObject<(id: string | null) => void>;
   onRowsRendered?: (rendered: ListOnItemsRenderedProps) => void;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
@@ -206,9 +227,8 @@ DataTableContext.displayName = 'DataTableContext';
 
 const noPointerEvents = { pointerEvents: 'none' as const };
 
-const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) => {
+const ColumnSelector = React.memo(() => {
   const classes = useDataTableStyles();
-
   const [open, setOpen] = React.useState(false);
   const close = React.useCallback(() => setOpen(false), []);
   const toggleOpen = React.useCallback(() => setOpen((prev) => !prev), []);
@@ -216,30 +236,37 @@ const ColumnSelector = React.memo<{ columns: ColumnInstance[] }>(({ columns }) =
 
   // Workaround: since react-table directly mutates its objects, column.isVisible on individual columns doesn't cause
   // React to update this component. Monitoring the instance state with useEffect is sufficient to trigger an update.
-  const { hiddenColumns } = React.useContext(DataTableContext).instance.state;
+  const { instance: { state: { hiddenColumns }, columns } } = React.useContext(DataTableContext);
   React.useEffect(() => {}, [hiddenColumns.length]);
 
   const editableColumns = React.useMemo(() => columns.filter((col) => !col.isGutter), [columns]);
+  /* eslint-disable react-memo/require-usememo */
   return (
     <>
-      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={close}>
+      <Menu
+        open={open}
+        anchorEl={anchorEl.current}
+        onBackdropClick={close}
+        classes={{ list: buildClass(classes.columnMenu, (editableColumns.length < 8) && classes.columnMenuFew) }}
+        MenuListProps={{ dense: true }}
+      >
         {editableColumns.map((column) => (
-          // eslint-disable-next-line react-memo/require-usememo
           <MenuItem key={column.id} onClick={() => column.toggleHidden()}>
             <FormControlLabel
               style={noPointerEvents}
               label={column.id || JSON.stringify(column)}
-              // eslint-disable-next-line react-memo/require-usememo
               control={<Checkbox color='info' disableRipple checked={column.isVisible} />}
             />
           </MenuItem>
         ))}
       </Menu>
-      <Button className={classes.columnSelector} onClick={toggleOpen} ref={anchorEl}>
-        <MenuIcon />
-      </Button>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <IconButton onClick={toggleOpen} ref={anchorEl} size='small' sx={{ mr: -1 }}>
+        <GearIcon />
+      </IconButton>
     </>
   );
+  /* eslint-enable react-memo/require-usememo */
 });
 ColumnSelector.displayName = 'ColumnSelector';
 
@@ -258,13 +285,13 @@ const ColumnResizeHandle = React.memo<{ column: ColumnInstance }>(({ column }) =
   const { instance: { resetResizing } } = React.useContext(DataTableContext);
 
   return (
-    <span
+    <button
       {...column.getResizerProps()}
       onDoubleClick={resetResizing}
-      className={buildClass(classes.resizeHandle, column.isResizing && classes.resizeHandleActive)}
+      className={classes.resizeHandle}
     >
-      &#8942;
-    </span>
+      &nbsp;
+    </button>
   );
 });
 ColumnResizeHandle.displayName = 'ColumnResizeHandle';
@@ -408,42 +435,10 @@ const BodyRow = React.memo<{ index: number, style: React.CSSProperties }>(
 );
 BodyRow.displayName = 'BodyRow';
 
-function decorateTable({ table: { columns, data }, enableColumnSelect, enableRowSelect }: DataTableProps): ReactTable {
-  // Enabling row select will add icon indicators, but only if something else gives a reason to show a controls column.
-  if (enableColumnSelect && !columns.some((col) => col.id === 'controls')) {
-    columns.unshift({
-      // eslint-disable-next-line react/display-name
-      Header: function ControlHeader({ columns: columnInstances }) {
-        return enableRowSelect ? <ColumnSelector columns={columnInstances} /> : <></>;
-      },
-      // eslint-disable-next-line react/display-name
-      Cell: function ControlCell() {
-        const classes = useDataTableStyles();
-        return enableRowSelect ? (
-          <div className={classes.rowExpandButton}>
-            <UnexpandedIcon className='rowSelectionIcon' />
-          </div>
-        ) : null;
-      },
-      id: 'controls',
-      isGutter: true,
-      minWidth: 24,
-      maxWidth: 24,
-      width: 24,
-      disableSortBy: true,
-      disableFilters: true,
-      disableResizing: true,
-    });
-  }
-
-  return { columns, data };
-}
-
-const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
+const DataTableImpl = React.memo<DataTableProps>(({ table, setExternalControls, ...options }) => {
   const classes = useDataTableStyles();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const { columns, data } = React.useMemo(() => decorateTable({ table, ...options }), [table]);
+  const { columns, data } = table;
 
   // Begin: width math
   const [scrollbarContainer, setScrollbarContainer] = React.useState<HTMLElement>(null);
@@ -470,7 +465,9 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
   const defaultWidth = React.useMemo(() => {
     const staticWidths = columns.map((c) => Number(c.width)).filter((c) => c > 0);
     const staticSum = staticWidths.reduce((a, c) => a + c, 0);
-    return Math.floor((containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length));
+    // Not rounded, because a high number of columns would stack error and the table would end up too wide or thin.
+    // This way, the browser decides which way to round any given column and gets the total right.
+    return (containerWidth - staticSum - scrollbarWidth) / (columns.length - staticWidths.length);
   }, [columns, containerWidth, scrollbarWidth]);
 
   const defaultColumn = React.useMemo(() => ({
@@ -538,6 +535,21 @@ const DataTableImpl = React.memo<DataTableProps>(({ table, ...options }) => {
     colNames, expanded, toggleRowExpanded,
     /* eslint-enable react-hooks/exhaustive-deps */
   ]);
+
+  // Used to tell the column selector what its checkboxes should contain
+  const hiddenHash = instance.state.hiddenColumns?.join(';') ?? '';
+
+  React.useEffect(() => {
+    if (setExternalControls) {
+      setExternalControls(
+        <DataTableContext.Provider value={ctx}>
+          <ColumnSelector />
+        </DataTableContext.Provider>,
+      );
+    }
+    // The context itself changes often, but we only care about the column definitions changing for this
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx.instance, hiddenHash, setExternalControls]);
 
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
   if (!ready) return null;

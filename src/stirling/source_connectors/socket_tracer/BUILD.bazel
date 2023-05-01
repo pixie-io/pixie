@@ -419,6 +419,7 @@ pl_cc_test(
     flaky = True,
     tags = [
         "cpu:16",
+        "no_qemu",
         "requires_bpf",
     ],
     deps = [

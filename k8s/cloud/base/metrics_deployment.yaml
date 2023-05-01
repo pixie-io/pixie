@@ -14,8 +14,8 @@ spec:
         monitoring.gke.io/scrape: 'true'
       annotations:
         prometheus.io/scrape: 'true'
-        prometheus.io/port: '50800'
-        prometheus.io/scheme: 'https'
+        prometheus.io/port: '50801'
+        prometheus.io/scheme: 'http'
     spec:
       containers:
       - name: metrics-server

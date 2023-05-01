@@ -107,24 +107,10 @@ func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(s
 		Identity: id,
 	}
 
-	// We use a multilock in order to transition from EndpointsLock
-	// to LeaseLock.
-	// EndpointsLock are removed from k8s.io/client-go `v0.24.0`, so
-	// this transition needs to be completed before we can upgrade that
-	// dependency.
-	// TODO(vihang): Switch to a pure LeaseLock after atleast one
-	// release that uses a MulitLock.
-	lock := &resourcelock.MultiLock{
-		Primary: &resourcelock.EndpointsLock{
-			EndpointsMeta: obj,
-			Client:        client.CoreV1(),
-			LockConfig:    lockConfig,
-		},
-		Secondary: &resourcelock.LeaseLock{
-			LeaseMeta:  obj,
-			Client:     client.CoordinationV1(),
-			LockConfig: lockConfig,
-		},
+	lock := &resourcelock.LeaseLock{
+		LeaseMeta:  obj,
+		Client:     client.CoordinationV1(),
+		LockConfig: lockConfig,
 	}
 
 	// start the leader election code loop

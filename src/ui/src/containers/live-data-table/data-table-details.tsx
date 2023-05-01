@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 
-import { Close as CloseIcon } from '@mui/icons-material';
-import { IconButton, Typography } from '@mui/material';
-import { Theme, useTheme } from '@mui/material/styles';
+import { ContentCopy as CopyIcon, Close as CloseIcon } from '@mui/icons-material';
+import { IconButton, Tooltip, Typography } from '@mui/material';
+import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
-import { buildClass } from 'app/components';
+import { buildClass, useSnackbar } from 'app/components';
 import { JSONData } from 'app/containers/format-data/json-data';
 
 const useDetailPaneClasses = makeStyles((theme: Theme) => createStyles({
@@ -31,19 +31,23 @@ const useDetailPaneClasses = makeStyles((theme: Theme) => createStyles({
     position: 'relative',
     flex: 1,
     whiteSpace: 'pre-wrap',
-    overflow: 'auto',
+    overflow: 'hidden',
+    backgroundColor: theme.palette.background.paper,
+    display: 'flex',
+    flexFlow: 'column nowrap',
   },
   horizontal: {
-    borderTop: `1px solid ${theme.palette.background.three}`,
+    borderTop: `1px solid ${theme.palette.background.six}`,
     minWidth: 0,
     minHeight: theme.spacing(30),
   },
   vertical: {
-    borderLeft: `1px solid ${theme.palette.background.three}`,
+    borderLeft: `1px solid ${theme.palette.background.six}`,
     minWidth: theme.spacing(30),
     minHeight: 0,
   },
   header: {
+    flex: '0 0 auto',
     display: 'flex',
     flexFlow: 'row nowrap',
     justifyContent: 'space-between',
@@ -53,36 +57,16 @@ const useDetailPaneClasses = makeStyles((theme: Theme) => createStyles({
     width: '100%',
     height: theme.spacing(5),
     background: theme.palette.background.paper,
-    // The parent has a Paper elevation=1, which uses an overlay to change shades. Match it.
-    // Only in dark mode; see https://mui.com/components/paper/#elevation toward the bottom.
-    backgroundImage: (theme.palette.mode === 'dark'
-      ? 'linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05))'
-      : 'none'
-    ),
-    paddingLeft: theme.spacing(2),
+    borderBottom: `1px solid ${theme.palette.background.six}`,
     '& > h4': {
       margin: 0,
       textTransform: 'uppercase',
     },
-    '@media not (prefers-reduced-motion: reduce)': {
-      transition: 'box-shadow .1s linear',
-    },
-  },
-  pinned: {
-    boxShadow: theme.shadows[1],
-  },
-  pinDetect: {
-    position: 'sticky',
-    opacity: 0,
-    pointerEvents: 'none',
-    height: theme.spacing(5),
-    width: '1px',
-    overflow: 'hidden',
-    marginTop: theme.spacing(-5),
   },
   content: {
+    flex: '1 1 auto',
     padding: theme.spacing(2),
-    paddingTop: 0,
+    overflow: 'auto',
   },
 }), { name: 'DetailPane' });
 
@@ -94,39 +78,29 @@ interface DetailPaneProps {
 
 export const DetailPane = React.memo<DetailPaneProps>(({ details, closeDetails, splitMode = 'vertical' }) => {
   const classes = useDetailPaneClasses();
-  const { spacing } = useTheme();
+  const showSnackbar = useSnackbar();
 
-  const [pinned, setPinned] = React.useState(false);
-
-  // Trickery with IntersectionObserver to add a shadow to the sidebar header when needed.
-  const root = React.useRef<HTMLDivElement>();
-  const detector = React.useRef<HTMLDivElement>();
-  const header = React.useRef<HTMLDivElement>();
-  React.useEffect(() => {
-    if (!(details && root.current && detector.current && header.current)) {
-      return () => {};
-    }
-
-    const target = detector.current;
-    const obs = new IntersectionObserver(
-      ([e]) => setPinned(e.intersectionRatio < 1),
-      { threshold: 1, root: root.current, rootMargin: spacing(5) },
+  const copyDetails = React.useCallback(() => {
+    if (!details) return;
+    const text = JSON.stringify(details, null, 2);
+    navigator.clipboard.writeText(text).then(
+      () => { showSnackbar({ message: 'Copied!' }); },
+      (err) => {
+        showSnackbar({ message: 'Error: could not copy details automatically' });
+        console.error(err);
+      },
     );
-    obs.observe(target);
-    return () => {
-      obs.unobserve(target);
-      setPinned(false);
-    };
-  }, [details, spacing]);
+  }, [details, showSnackbar]);
 
   if (!details) return null;
   return (
     <div
       className={buildClass(classes.details, classes[splitMode])}
-      ref={root}
     >
-      <div className={classes.pinDetect} ref={detector}></div>
-      <div className={buildClass(classes.header, pinned && classes.pinned)} ref={header}>
+      <div className={classes.header}>
+        <Tooltip title='Copy Details to Clipboard'>
+          <IconButton onClick={copyDetails}><CopyIcon /></IconButton>
+        </Tooltip>
         <Typography variant='h4'>Details</Typography>
         <IconButton
           aria-label='close details'

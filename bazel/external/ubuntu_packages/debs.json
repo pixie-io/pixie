@@ -1,30 +1,30 @@
 [
    {
-      "path": "main/e/elfutils/libelf1_0.186-1build1_amd64.deb",
-      "checksum": "8effc4d7a0cc341bcf6cb11af0134f3defa6292376ecfdfc697a9b228606345c"
+      "path": "main/e/elfutils/libelf1_0.188-2.1_amd64.deb",
+      "checksum": "2322cad1fc9623303a57e7e4d10ee9af4ce976e1b46bbf770548baead810571e"
    },
    {
-      "path": "main/g/glibc/libc6_2.35-0ubuntu3_amd64.deb",
-      "checksum": "ea9a27e0ebdd0cfc9c750d94f8074f3a35d1f97dcc77ae04c370fb498a6b6db2"
+      "path": "main/g/glibc/libc6_2.37-0ubuntu2_amd64.deb",
+      "checksum": "f5a98389a7e33881a9e4b95439377389ff95b40ae9aa7f951a07848c6394dc76"
    },
    {
-      "path": "main/libx/libxcrypt/libcrypt1_4.4.27-1_amd64.deb",
-      "checksum": "3fa566e9f861a08736cbc5a97562d9d6e4f0c00450fbeafcb6d7583423b04a98"
+      "path": "main/libx/libxcrypt/libcrypt1_4.4.33-2_amd64.deb",
+      "checksum": "9a9aee10c7804ff678719fb2887fa4758d5d94c7cb03c1b50fbccb0c4ee43dcc"
    },
    {
-      "path": "main/n/ncurses/libtinfo6_6.3-2_amd64.deb",
-      "checksum": "5f7618187c6d1924ec758c2d5422c67377af92ecb21695008edf83a2d0c85ecd"
+      "path": "main/n/ncurses/libtinfo6_6.4-2_amd64.deb",
+      "checksum": "9627a3d3d2b9fed9fc5828962a52a6f70de8bb73dca9a9a432cab4b0159e68cb"
    },
    {
-      "path": "main/libu/libunwind/libunwind8_1.3.2-2build2_amd64.deb",
-      "checksum": "475ae509da614dd5d7210f605fd5894a3c98b6fb8c18738b16d8d4b700553c30"
+      "path": "main/libu/libunwind/libunwind8_1.6.2-3_amd64.deb",
+      "checksum": "571cb2968ba9eaa817ae3bad792e4dbb80950c72d28b92ea3ea67becd08e8711"
    },
    {
-      "path": "main/x/xz-utils/liblzma5_5.2.5-2ubuntu1_amd64.deb",
-      "checksum": "8f1c46e7d3f5102a5e4fdca7c949728a343ba71c2a7c124118df2c13d4c444f7"
+      "path": "main/x/xz-utils/liblzma5_5.4.1-0.2_amd64.deb",
+      "checksum": "2c9c51f281997ce5963e3b22b928dec13adafb8e3079bc02f89e51db9891bfd2"
    },
    {
-      "path": "main/z/zlib/zlib1g_1.2.11.dfsg-2ubuntu9_amd64.deb",
-      "checksum": "52449467942cc943d651fd16867014e9339f3657935fc09b75b3347aa5a78066"
+      "path": "main/z/zlib/zlib1g_1.2.13.dfsg-1ubuntu4_amd64.deb",
+      "checksum": "6962be4748fb4a36837353fdacdfd4199057eb70b893896fbb8b85e4ce9c7d94"
    }
 ]

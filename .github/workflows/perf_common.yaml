@@ -24,8 +24,6 @@ on:
         required: true
       PERF_PX_API_KEY:
         required: true
-      BB_API_KEY:
-        required: true
 permissions:
   contents: read
 jobs:
@@ -36,21 +34,22 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
+      options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         ref: ${{ inputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
-    - name: get buildbuddy bazel config
-      uses: ./.github/actions/buildbuddy
-      with:
-        bb_api_key: ${{ secrets.BB_API_KEY }}
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
     - name: Set matrix
       id: set-matrix
       run: |
@@ -59,14 +58,17 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: ubuntu-latest-16-cores
+    runs-on: [self-hosted, nokvm]
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
       options: --cpus 15
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
     strategy:
       matrix: ${{ fromJson(needs.generate-perf-matrix.outputs.matrix) }}
+      fail-fast: false
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         ref: ${{ inputs.ref }}
         fetch-depth: 0
@@ -80,21 +82,16 @@ jobs:
       run: |
         git log
         echo "commit-sha=$(git log -n 1 --format="%H")" >> $GITHUB_OUTPUT
-    - name: get buildbuddy bazel config
-      uses: ./.github/actions/buildbuddy
+    - name: Use github bazel config
+      uses: ./.github/actions/bazelrc
       with:
-        bb_api_key: ${{ secrets.BB_API_KEY }}
+        download_toplevel: 'true'
     - name: activate gcloud service account
       env:
         GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud.json"
       run: |
         service_account="$(jq -r '.client_email' "$GOOGLE_APPLICATION_CREDENTIALS")"
         gcloud auth activate-service-account "${service_account}" --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-    - name: bazel config
-      run: |
-        # Skaffold expects the <image>.tar file to exist in the local bazel cache,
-        # but that only happens with remote_download_outputs=toplevel
-        echo "build --remote_download_outputs=toplevel" >> .bazelrc
     - name: Install Pixie CLI
       run: |
         bazel build -c opt //src/pixie_cli:px
@@ -121,18 +118,19 @@ jobs:
       run: gcloud auth revoke
     # Github actions doesn't have native support for gathering outputs from matrix runs.
     # So we upload an artifact for each one and gather them ourselves in `get-perf-outputs`.
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
         name: ${{ hashFiles('run_output') }}
         path: run_output
         if-no-files-found: error
   get-perf-outputs:
     runs-on: ubuntu-latest
+    if: success() || failure()
     needs: run-perf-eval
     outputs:
       experiments: ${{ steps.get-outputs.outputs.run_output }}
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
     - id: get-outputs
       run: |
         all_run_output="$(cat */run_output | jq --slurp -c '.[]')"

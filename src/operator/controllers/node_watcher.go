@@ -117,7 +117,7 @@ func (nw *nodeWatcher) start(ctx context.Context) {
 	informer := nw.factory.Core().V1().Nodes().Informer()
 	stopper := make(chan struct{})
 	defer close(stopper)
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, _ = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    nw.onAdd,
 		UpdateFunc: nw.onUpdate,
 		DeleteFunc: nw.onDelete,

@@ -111,7 +111,8 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: pl-nats
-        image: gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:multiarch-2.8.4-alpine3.15
+        # yamllint disable-line rule:line-length
+        image: gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:multiarch-2.8.4-alpine3.15@sha256:988010f74b61749cfb82c28b50b47d26d0b972860ce6e9325a5afcde97713da2
         ports:
         - containerPort: 4222
           name: client

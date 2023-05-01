@@ -33,7 +33,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/timestamp"
+	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	log "github.com/sirupsen/logrus"
 
@@ -166,7 +166,7 @@ func (s *Server) startShardedHandler(shard string, bqWriteChan chan<- interface{
 	}()
 }
 
-func tsToRows(timeseries *prompb.TimeSeries, schema bigquery.Schema, bqWriteChan chan<- interface{}) {
+func tsToRows(timeseries prompb.TimeSeries, schema bigquery.Schema, bqWriteChan chan<- interface{}) {
 	var metricName string
 	labels := make(map[string]string)
 	for _, l := range timeseries.Labels {

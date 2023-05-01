@@ -2,8 +2,6 @@
 
 # Use strict action env to prevent leaks of env vars.
 build --incompatible_strict_action_env
-# podman requires $HOME to be set to pull images from gcr.
-test --action_env=HOME
 # Passthrough GH_API_KEY from the environment.
 build --action_env=GH_API_KEY
 
@@ -227,6 +225,8 @@ coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled,
 # jenkins.bazelrc is copied from ci/jenkins.bazelrc by Jenkins workers during the build.
 # The intention is to avoid polluting configurations of bazel for developers.
 try-import %workspace%/jenkins.bazelrc
+# github.bazelrc is copied from ci/github/bazelrc by the github action workers during the build.
+try-import %workspace%/github.bazelrc
 
 # Put your own configurations into user.bazelrc, which is ignored by git.
 try-import %workspace%/user.bazelrc

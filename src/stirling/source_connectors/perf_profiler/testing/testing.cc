@@ -35,8 +35,7 @@ const fs_path profiler_path_pfx = "src/stirling/source_connectors/perf_profiler"
 
 // Returns a string as the flag value for the --stirling_profiler_java_agent_libs.
 std::string GetAgentLibsFlagValueForTesting() {
-  const fs_path path =
-      profiler_path_pfx / "java" / "agent" / "px-java-agent" / "libpx-java-agent.so";
+  const fs_path path = profiler_path_pfx / "java" / "agent" / "libpx-java-agent.so";
   return BazelRunfilePath(path).string();
 }
 

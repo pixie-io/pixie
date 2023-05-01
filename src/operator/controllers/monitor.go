@@ -132,8 +132,8 @@ type VizierMonitor struct {
 	pvcState  *vizierState
 	certState *vizierState
 
-	vzUpdate     func(context.Context, client.Object, ...client.UpdateOption) error
-	vzGet        func(context.Context, types.NamespacedName, client.Object) error
+	vzUpdate     func(context.Context, client.Object, ...client.SubResourceUpdateOption) error
+	vzGet        func(context.Context, types.NamespacedName, client.Object, ...client.GetOption) error
 	vzSpecUpdate func(context.Context, client.Object, ...client.UpdateOption) error
 }
 
@@ -219,7 +219,7 @@ func (m *VizierMonitor) watchK8sPods() {
 	informer := m.factory.Core().V1().Pods().Informer()
 	stopper := make(chan struct{})
 	defer close(stopper)
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, _ = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    m.onAddPod,
 		UpdateFunc: m.onUpdatePod,
 		DeleteFunc: m.onDeletePod,

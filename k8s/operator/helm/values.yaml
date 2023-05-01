@@ -15,7 +15,12 @@ olmOperatorNamespace: "px-operator"
 # The bundle channel which OLM should listen to for the Vizier operator bundles.
 # Should be "stable" for production-versions of the operator, and "test" for release candidates.
 olmBundleChannel: "stable"
-
+# Optional annotations and labels for CatalogSource.
+olmCatalogSource:
+  # Optional custom annotations to add to deployed pods managed by CatalogSource object.
+  annotations: {}
+  # Optional custom labels to add to deployed pods managed by CatalogSource object.
+  labels: {}
 ## Vizier configuration
 # The name of the Vizier instance deployed to the cluster.
 name: "pixie"
