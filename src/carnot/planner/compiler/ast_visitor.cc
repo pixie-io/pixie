@@ -921,14 +921,20 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
   return TupleObject::Create(ast, expr_vec, this);
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node, bool negate) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
+      if (negate) {
+        node->floating *= -1;
+      }
       PX_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->CreateNode<FloatIR>(node, node->floating));
       return ExprObject::Create(ir_node, this);
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
+      if (negate) {
+        node->integer *= -1;
+      }
       PX_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
       return ExprObject::Create(ir_node, this);
     }
@@ -1116,6 +1122,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpP
   PX_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
   if (op.op_code == FuncIR::Opcode::non_op) {
     return ExprObject::Create(operand, this);
+  }
+  if (op.op_code == FuncIR::Opcode::negate) {
+    return ProcessNumber(PYPA_PTR_CAST(Number, node->operand), true);
   }
   std::vector<ExpressionIR*> args{operand};
   PX_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
