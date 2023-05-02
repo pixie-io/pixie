@@ -17,7 +17,6 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
-#include <prometheus/text_serializer.h>
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -666,10 +665,6 @@ void SocketTraceConnector::CheckTracerState() {
           .Add({{"name", openssl_mismatched_fds_metric}, {"exe", debug.comm}})
           .Increment();
     }
-    auto& registry = GetMetricsRegistry();
-    auto metrics = registry.Collect();
-    auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
-    LOG(WARNING) << absl::Substitute("with metric text: $0", metrics_text);
   }
   DCHECK_EQ(error_code, kOpenSSLTraceOk);
 

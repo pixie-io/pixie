@@ -171,7 +171,6 @@ static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
 static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) {
   struct nested_syscall_fd_t* nested_syscall_fd_ptr = ssl_user_space_call_map.lookup(&pid_tgid);
   if (nested_syscall_fd_ptr != NULL) {
-    nested_syscall_fd_ptr->mismatched_fds = true;
     int current_fd = nested_syscall_fd_ptr->fd;
     if (current_fd == kInvalidFD) {
       nested_syscall_fd_ptr->fd = fd;
