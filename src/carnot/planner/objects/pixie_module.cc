@@ -377,6 +377,37 @@ StatusOr<QLObjectPtr> ParseDuration(IR* graph, const pypa::AstPtr& ast, const Pa
   return ExprObject::Create(node, visitor);
 }
 
+StatusOr<QLObjectPtr> FormatDuration(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                     ASTVisitor* visitor) {
+  std::string s;
+  PX_ASSIGN_OR_RETURN(IntIR * duration, GetArgAs<IntIR>(ast, args, "duration"));
+  bool negative = duration->val() < 0;
+  auto duration_uint = negative ? -1 * duration->val() : duration->val();
+
+  int64_t ms_nanos = 1000 * 1000;
+  int64_t s_nanos = 1000 * ms_nanos;
+  int64_t min_nanos = 60 * s_nanos;
+  int64_t hour_nanos = 60 * min_nanos;
+  int64_t day_nanos = 24 * hour_nanos;
+  if (duration_uint >= day_nanos) {
+    s = absl::Substitute("$0d", duration_uint / day_nanos);
+  } else if (duration_uint >= hour_nanos) {
+    s = absl::Substitute("$0h", duration_uint / hour_nanos);
+  } else if (duration_uint >= min_nanos) {
+    s = absl::Substitute("$0m", duration_uint / min_nanos);
+  } else if (duration_uint >= s_nanos) {
+    s = absl::Substitute("$0s", duration_uint / s_nanos);
+  } else {
+    s = absl::Substitute("$0ms", duration_uint / ms_nanos);
+  }
+
+  if (negative) {
+    s = "-" + s;
+  }
+  auto node = graph->CreateNode<StringIR>(ast, s).ConsumeValueOrDie();
+  return ExprObject::Create(node, visitor);
+}
+
 StatusOr<QLObjectPtr> ParseTime(int64_t time_now, IR* graph, const pypa::AstPtr& ast,
                                 const ParsedArgs& args, ASTVisitor* visitor) {
   PX_ASSIGN_OR_RETURN(ExpressionIR * time_ir, GetArgAs<ExpressionIR>(ast, args, "time"));
@@ -499,6 +530,15 @@ Status PixieModule::RegisterCompileTimeFuncs() {
           std::bind(&ParseTime, compiler_state_->time_now().val, graph_, std::placeholders::_1,
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
+
+  PX_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> format_duration_fn,
+      FuncObject::Create(kFormatDurationOpID, {"duration"}, {},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(&FormatDuration, graph_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddMethod(kFormatDurationOpID, format_duration_fn);
 
   PX_RETURN_IF_ERROR(parse_time_fn->SetDocString(kParseTimeDocstring));
   AddMethod(kParseTimeOpID, parse_time_fn);
