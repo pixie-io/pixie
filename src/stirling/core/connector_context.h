@@ -72,6 +72,8 @@ class ConnectorContext {
    * tracing.
    */
   virtual std::vector<CIDRBlock> GetClusterCIDRs() = 0;
+
+  virtual void RefreshUPIDList() = 0;
 };
 
 /**
@@ -109,6 +111,8 @@ class AgentContext : public ConnectorContext {
 
   std::vector<CIDRBlock> GetClusterCIDRs() override;
 
+  void RefreshUPIDList() override{};
+
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
 };
@@ -141,6 +145,8 @@ class StandaloneContext : public ConnectorContext {
 
   Status SetClusterCIDR(std::string_view cidr_str);
 
+  void RefreshUPIDList() override{};
+
  protected:
   absl::flat_hash_set<md::UPID> upids_;
   absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> upid_pidinfo_map_;
@@ -165,8 +171,7 @@ class SystemWideStandaloneContext : public StandaloneContext {
 class EverythingLocalContext : public SystemWideStandaloneContext {
  public:
   bool UPIDIsInContext(const md::UPID& /*upid*/) const override { return true; }
-  const absl::flat_hash_set<md::UPID>& GetUPIDs() const override;
-  mutable absl::flat_hash_set<md::UPID> upids_;
+  void RefreshUPIDList() override;
 };
 
 }  // namespace stirling
