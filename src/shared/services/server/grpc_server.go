@@ -105,13 +105,21 @@ func createGRPCAuthFunc(env env.Env, opts *GRPCServerOptions) func(context.Conte
 	}
 }
 
+func CodeToLevel(code codes.Code) log.Level {
+	if code == codes.Unavailable {
+		return log.DebugLevel
+	}
+
+	return grpc_logrus.DefaultClientCodeToLevel(code)
+}
+
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
 func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
 	logrusOpts := []grpc_logrus.Option{
 		grpc_logrus.WithDurationField(func(duration time.Duration) (string, interface{}) {
 			return "time", duration
 		}),
-		grpc_logrus.WithLevels(grpc_logrus.DefaultClientCodeToLevel),
+		grpc_logrus.WithLevels(CodeToLevel),
 	}
 	opts := []grpc.ServerOption{}
 	if !serverOpts.DisableMiddleware {
