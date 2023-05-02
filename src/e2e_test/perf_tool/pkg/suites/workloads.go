@@ -86,7 +86,7 @@ data:
 `
 
 // HTTPLoadTestWorkload returns the WorkloadSpec to deploy a simple client/server http loadtest (see src/e2e_test/protocol_loadtest)
-func HTTPLoadTestWorkload(numConns int, targetRPS int) *pb.WorkloadSpec {
+func HTTPLoadTestWorkload(numConns int, targetRPS int, doPxLHealthCheck bool) *pb.WorkloadSpec {
 	return &pb.WorkloadSpec{
 		Name: "http_loadtest",
 		DeploySteps: []*pb.DeployStep{
@@ -114,7 +114,7 @@ func HTTPLoadTestWorkload(numConns int, targetRPS int) *pb.WorkloadSpec {
 				},
 			},
 		},
-		Healthchecks: HTTPHealthChecks("px-protocol-loadtest"),
+		Healthchecks: HTTPHealthChecks("px-protocol-loadtest", doPxLHealthCheck),
 	}
 }
 
@@ -138,7 +138,7 @@ func SockShopWorkload() *pb.WorkloadSpec {
 				},
 			},
 		},
-		Healthchecks: HTTPHealthChecks("px-sock-shop"),
+		Healthchecks: HTTPHealthChecks("px-sock-shop", true),
 	}
 }
 
@@ -162,7 +162,7 @@ func OnlineBoutiqueWorkload() *pb.WorkloadSpec {
 				},
 			},
 		},
-		Healthchecks: HTTPHealthChecks("px-online-boutique"),
+		Healthchecks: HTTPHealthChecks("px-online-boutique", true),
 	}
 }
 
@@ -186,7 +186,7 @@ func KafkaWorkload() *pb.WorkloadSpec {
 				},
 			},
 		},
-		Healthchecks: HTTPHealthChecks("px-kafka"),
+		Healthchecks: HTTPHealthChecks("px-kafka", true),
 	}
 }
 
@@ -218,22 +218,8 @@ func VizierHealthChecks() []*pb.HealthCheck {
 }
 
 // HTTPHealthChecks returns a healthcheck based on the existence of http_events in Pixie for a given namespace.
-func HTTPHealthChecks(namespace string) []*pb.HealthCheck {
-	t, err := template.New("").Parse(httpHealthCheckScript)
-	if err != nil {
-		log.WithError(err).Fatal("failed to parse HTTP healthcheck script")
-	}
-	buf := &strings.Builder{}
-	err = t.Execute(buf, &struct {
-		Namespace string
-	}{
-		Namespace: namespace,
-	})
-	if err != nil {
-		log.WithError(err).Fatal("failed to execute HTTP healthcheck template")
-	}
-
-	return []*pb.HealthCheck{
+func HTTPHealthChecks(namespace string, includePxL bool) []*pb.HealthCheck {
+	checks := []*pb.HealthCheck{
 		{
 			CheckType: &pb.HealthCheck_K8S{
 				K8S: &pb.K8SPodsReadyCheck{
@@ -241,13 +227,30 @@ func HTTPHealthChecks(namespace string) []*pb.HealthCheck {
 				},
 			},
 		},
-		{
+	}
+	if includePxL {
+		t, err := template.New("").Parse(httpHealthCheckScript)
+		if err != nil {
+			log.WithError(err).Fatal("failed to parse HTTP healthcheck script")
+		}
+		buf := &strings.Builder{}
+		err = t.Execute(buf, &struct {
+			Namespace string
+		}{
+			Namespace: namespace,
+		})
+		if err != nil {
+			log.WithError(err).Fatal("failed to execute HTTP healthcheck template")
+		}
+		checks = append(checks, &pb.HealthCheck{
 			CheckType: &pb.HealthCheck_PxL{
 				PxL: &pb.PxLHealthCheck{
 					Script:        buf.String(),
 					SuccessColumn: "success",
 				},
 			},
-		},
+		})
 	}
+
+	return checks
 }

@@ -40,11 +40,12 @@ func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
 	dur := 40 * time.Minute
 	httpNumConns := 100
 	exps := map[string]*pb.ExperimentSpec{
-		"http-loadtest/100/100":  HTTPLoadTestExperiment(httpNumConns, 100, defaultMetricPeriod, preDur, dur),
-		"http-loadtest/100/3000": HTTPLoadTestExperiment(httpNumConns, 3000, defaultMetricPeriod, preDur, dur),
-		"sock-shop":              SockShopExperiment(defaultMetricPeriod, preDur, dur),
-		"online-boutique":        OnlineBoutiqueExperiment(defaultMetricPeriod, preDur, dur),
-		"kafka":                  KafkaExperiment(defaultMetricPeriod, preDur, dur),
+		"http-loadtest/100/100":               HTTPLoadTestExperiment(httpNumConns, 100, defaultMetricPeriod, preDur, dur),
+		"http-loadtest/100/3000":              HTTPLoadTestExperiment(httpNumConns, 3000, defaultMetricPeriod, preDur, dur),
+		"sock-shop":                           SockShopExperiment(defaultMetricPeriod, preDur, dur),
+		"online-boutique":                     OnlineBoutiqueExperiment(defaultMetricPeriod, preDur, dur),
+		"kafka":                               KafkaExperiment(defaultMetricPeriod, preDur, dur),
+		"app-overhead/http-loadtest/100/3000": HTTPLoadApplicationOverheadExperiment(httpNumConns, 3000, defaultMetricPeriod),
 	}
 	for _, e := range exps {
 		addTags(e, "suite/nightly")

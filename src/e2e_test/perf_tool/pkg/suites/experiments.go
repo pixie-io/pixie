@@ -39,7 +39,7 @@ func HTTPLoadTestExperiment(
 	e := &pb.ExperimentSpec{
 		VizierSpec: VizierWorkload(),
 		WorkloadSpecs: []*pb.WorkloadSpec{
-			HTTPLoadTestWorkload(numConnections, targetRPS),
+			HTTPLoadTestWorkload(numConnections, targetRPS, true),
 		},
 		MetricSpecs: []*pb.MetricSpec{
 			ProcessStatsMetrics(metricPeriod),
@@ -232,10 +232,81 @@ func KafkaExperiment(
 	return e
 }
 
+// HTTPLoadApplicationOverheadExperiment is an experiment that runs a simple client/server http loadtest,
+// measuring pixie's impact on the application's performance.
+func HTTPLoadApplicationOverheadExperiment(
+	numConnections int,
+	targetRPS int,
+	metricPeriod time.Duration,
+) *pb.ExperimentSpec {
+	burninDur := 5 * time.Minute
+	vizierDur := 10 * time.Minute
+	noVizierDur := vizierDur
+	e := &pb.ExperimentSpec{
+		VizierSpec: VizierWorkload(),
+		WorkloadSpecs: []*pb.WorkloadSpec{
+			HTTPLoadTestWorkload(numConnections, targetRPS, false),
+		},
+		MetricSpecs: []*pb.MetricSpec{
+			addActionSelector(ProtocolLoadtestPromMetrics(metricPeriod), "no_vizier"),
+		},
+		RunSpec: &pb.RunSpec{
+			Actions: []*experimentpb.ActionSpec{
+				{
+					Type: experimentpb.START_WORKLOADS,
+				},
+				{
+					Type: experimentpb.START_METRIC_RECORDERS,
+					Name: "no_vizier",
+				},
+				{
+					Type:     experimentpb.BURNIN,
+					Duration: types.DurationProto(burninDur),
+				},
+				{
+					Type:     experimentpb.RUN,
+					Duration: types.DurationProto(noVizierDur),
+					Name:     "no_vizier",
+				},
+				{
+					Type: experimentpb.START_VIZIER,
+				},
+				{
+					Type:     experimentpb.BURNIN,
+					Duration: types.DurationProto(burninDur),
+				},
+				{
+					Type:     experimentpb.RUN,
+					Duration: types.DurationProto(vizierDur),
+					Name:     "with_vizier",
+				},
+				{
+					// Make sure metric recorders are stopped before vizier/workloads.
+					Type: experimentpb.STOP_METRIC_RECORDERS,
+					Name: "no_vizier",
+				},
+			},
+		},
+		ClusterSpec: DefaultCluster,
+	}
+	e = addTags(e,
+		"application_overhead",
+		"workload/http-loadtest",
+		fmt.Sprintf("parameter/num_conns/%d", numConnections),
+		fmt.Sprintf("parameter/target_rps/%d", targetRPS),
+	)
+	return e
+}
+
 func addTags(e *pb.ExperimentSpec, tags ...string) *pb.ExperimentSpec {
 	if e.Tags == nil {
 		e.Tags = []string{}
 	}
 	e.Tags = append(e.Tags, tags...)
 	return e
+}
+
+func addActionSelector(m *pb.MetricSpec, selector string) *pb.MetricSpec {
+	m.ActionSelector = selector
+	return m
 }

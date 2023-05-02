@@ -113,6 +113,26 @@ func HTTPDataLossMetric(outputPeriod time.Duration) *pb.MetricSpec {
 	}
 }
 
+// ProtocolLoadtestPromMetrics adds metrics that scrapes prometheus metrics from the protocol loadtest server, collecting process data (cpu usage, rss, vsize).
+func ProtocolLoadtestPromMetrics(scrapePeriod time.Duration) *pb.MetricSpec {
+	return &pb.MetricSpec{
+		MetricType: &pb.MetricSpec_Prom{
+			Prom: &pb.PrometheusScrapeSpec{
+				Namespace:       "px-protocol-loadtest",
+				MatchLabelKey:   "name",
+				MatchLabelValue: "server",
+				Port:            8080,
+				ScrapePeriod:    types.DurationProto(scrapePeriod),
+				MetricNames: map[string]string{
+					"process_cpu_seconds_total":     "cpu_seconds_counter",
+					"process_resident_memory_bytes": "rss",
+					"process_virtual_memory_bytes":  "vsize",
+				},
+			},
+		},
+	}
+}
+
 func singleMetricOutputWithPodNodeName(col string, newName ...string) *pb.PxLScriptOutputSpec {
 	metricName := col
 	if len(newName) > 0 {
