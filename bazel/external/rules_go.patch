@@ -12,3 +12,46 @@ index 11a8278f..7346aecd 100644
          ]
          env.update({
              "CGO_ENABLED": "1",
+diff --git a/go/tools/builders/link.go b/go/tools/builders/link.go
+index fcbea058..816c36fe 100644
+--- a/go/tools/builders/link.go
++++ b/go/tools/builders/link.go
+@@ -153,6 +153,23 @@ func link(args []string) error {
+ 	}
+ 
+ 	// add in the unprocess pass through options
++	isExtLinker := false
++	for i, arg := range toolArgs {
++		if isExtLinker {
++			isExtLinker = false
++			absPath, err := filepath.Abs(arg)
++			if err != nil {
++				continue
++			}
++			if isExecutable(absPath) {
++				// If the absolute path is an executable use that instead of the relative path.
++				toolArgs[i] = absPath
++			}
++		}
++		if arg == "-extld" {
++			isExtLinker = true
++		}
++	}
+ 	goargs = append(goargs, toolArgs...)
+ 	goargs = append(goargs, *main)
+ 	if err := goenv.runCommand(goargs); err != nil {
+@@ -167,3 +184,14 @@ func link(args []string) error {
+ 
+ 	return nil
+ }
++
++func isExecutable(p string) bool {
++	s, err := os.Stat(p)
++	if err != nil {
++		return false
++	}
++	if !s.IsDir() && (s.Mode()&0111) != 0 {
++		return true
++	}
++	return false
++}
