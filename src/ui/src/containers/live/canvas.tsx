@@ -148,6 +148,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: '100%',
   },
   vegaWidget: {
+    // Bust out of the extra padding from the <Paper/> container
+    width: `calc(100% + ${theme.spacing(1.5)})`,
+    margin: theme.spacing(-0.75),
+    marginTop: 0,
+    borderBottomLeftRadius: 'inherit',
+    borderBottomRightRadius: 'inherit',
+
     flex: 1,
     display: 'flex',
     border: '1px solid transparent',
@@ -224,6 +231,13 @@ const WidgetDisplay: React.FC<{
   const [affix, setAffix] = React.useState<React.ReactNode>(null);
   const affixRef = React.useCallback((el: React.ReactNode) => { setAffix(el); }, []);
 
+  // Needs to be memoized to avoid making graphs re-render every single frame
+  const parsedTable = React.useMemo(
+    () => table ? dataFromProto(table.relation, table.batches) : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [table?.relation, table?.batches],
+  );
+
   // Before we do any other processing, check if we have the chart that exist entirely in the vis spec with no data
   if (display[DISPLAY_TYPE_KEY] === TEXT_CHART_DISPLAY_TYPE) {
     return (
@@ -257,17 +271,16 @@ const WidgetDisplay: React.FC<{
     );
   }
 
-  const parsedTable = dataFromProto(table.relation, table.batches);
-
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
     return (
       <div className={classes.graphContainer}>
-        <WidgetTitlebar title={widgetName} />
+        <WidgetTitlebar title={widgetName} affix={affix} />
         <GraphWidget
           display={display as GraphDisplay}
           data={parsedTable}
           relation={table.relation}
           propagatedArgs={propagatedArgs}
+          setExternalControls={affixRef}
         />
       </div>
     );
@@ -276,12 +289,13 @@ const WidgetDisplay: React.FC<{
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
     return (
       <>
-        <WidgetTitlebar title={widgetName} />
+        <WidgetTitlebar title={widgetName} affix={affix} />
         <RequestGraphWidget
           display={display as RequestGraphDisplay}
           data={parsedTable}
           relation={table.relation}
           propagatedArgs={propagatedArgs}
+          setExternalControls={affixRef}
         />
       </>
     );
