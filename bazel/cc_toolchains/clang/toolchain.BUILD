@@ -88,7 +88,7 @@ cc_toolchain_config(
         "-Wl,-z,relro,-z,now",
         "-Bexternal/{this_repo}/{toolchain_path}/bin",
         "-lm",
-    ],
+    ] + (["-no-pie"] if {use_for_host_tools} else []),
     opt_compile_flags = [
         "-g0",
         "-O2",
