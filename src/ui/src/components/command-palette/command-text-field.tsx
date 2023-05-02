@@ -270,7 +270,7 @@ export const CommandTextField = React.memo<CommandTextFieldProps>(({
     setTimeout(() => {
       inputEl?.focus();
       const l = inputEl?.value.length ?? 0;
-      inputEl?.setSelectionRange(l, l);
+      inputEl?.setSelectionRange(0, l);
       onInputScroll();
     });
   }, [inputEl, onInputScroll]);
