@@ -264,13 +264,13 @@ func (p *requestProxyer) processNatsMsg(msg *nats.Msg) error {
 	v2c := cvmsgspb.V2CMessage{}
 	err := v2c.Unmarshal(msg.Data)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshall response: %w", err)
+		return fmt.Errorf("Failed to unmarshall v2cMessage: %w", err)
 	}
 
 	resp := cvmsgspb.V2CAPIStreamResponse{}
 	err = types.UnmarshalAny(v2c.Msg, &resp)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshall response: %w", err)
+		return fmt.Errorf("Failed to unmarshall v2cAPIStreamResponse: %w", err)
 	}
 
 	switch parsed := resp.Msg.(type) {
