@@ -14,8 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
