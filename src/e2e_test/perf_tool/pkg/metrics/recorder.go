@@ -19,25 +19,30 @@
 package metrics
 
 import (
+	"context"
+
+	"golang.org/x/sync/errgroup"
+
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 )
 
 // Recorder is an interface for all metric recorders.
 type Recorder interface {
-	Start() error
-	Close() error
+	Start(ctx context.Context) error
+	Close()
 }
 
 // NewMetricsRecorder creates a new Recorder for the given MetricSpec.
 // Currently, only supports PxL script recorders.
-func NewMetricsRecorder(pxCtx *pixie.Context, spec *experimentpb.MetricSpec, resultCh chan<- *ResultRow) Recorder {
+func NewMetricsRecorder(pxCtx *pixie.Context, spec *experimentpb.MetricSpec, eg *errgroup.Group, resultCh chan<- *ResultRow) Recorder {
 	switch spec.MetricType.(type) {
 	case *experimentpb.MetricSpec_PxL:
 		return &pxlScriptRecorderImpl{
 			pxCtx: pxCtx,
 			spec:  spec.GetPxL(),
 
+			eg:       eg,
 			resultCh: resultCh,
 		}
 	}

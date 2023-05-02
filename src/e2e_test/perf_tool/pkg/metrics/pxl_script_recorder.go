@@ -21,7 +21,9 @@ package metrics
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -38,29 +40,27 @@ import (
 )
 
 type pxlScriptRecorderImpl struct {
-	pxCtx *pixie.Context
-	spec  *experimentpb.PxLScriptSpec
-
+	pxCtx    *pixie.Context
+	spec     *experimentpb.PxLScriptSpec
 	resultCh chan<- *ResultRow
-
 	eg       *errgroup.Group
-	egCancel context.CancelFunc
 
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
 	vz     *pxapi.VizierClient
 	script string
 }
 
 // Start the pxlScriptRecorder.
-func (r *pxlScriptRecorderImpl) Start() error {
+func (r *pxlScriptRecorderImpl) Start(ctx context.Context) error {
 	vz, err := r.pxCtx.NewVizierClient()
 	if err != nil {
 		return err
 	}
 	r.vz = vz
 
-	ctx, cancel := context.WithCancel(context.Background())
-	r.egCancel = cancel
-	r.eg, ctx = errgroup.WithContext(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
 
 	err = r.prepareScript()
 	if err != nil {
@@ -68,21 +68,33 @@ func (r *pxlScriptRecorderImpl) Start() error {
 	}
 
 	if r.spec.Streaming {
+		r.wg.Add(1)
 		r.eg.Go(func() error {
-			return r.runStreamingScript(ctx)
+			defer r.wg.Done()
+			err := r.runStreamingScript(ctx)
+			if err != nil {
+				err = fmt.Errorf("error running streaming PxL script: %w", err)
+			}
+			return err
 		})
 	} else {
+		r.wg.Add(1)
 		r.eg.Go(func() error {
-			return r.runPeriodicScript(ctx)
+			defer r.wg.Done()
+			err := r.runPeriodicScript(ctx)
+			if err != nil {
+				err = fmt.Errorf("error running periodic PxL script: %w", err)
+			}
+			return err
 		})
 	}
 	return nil
 }
 
 // Close stops the recorder.
-func (r *pxlScriptRecorderImpl) Close() error {
-	r.egCancel()
-	return r.eg.Wait()
+func (r *pxlScriptRecorderImpl) Close() {
+	r.cancel()
+	r.wg.Wait()
 }
 
 func (r *pxlScriptRecorderImpl) prepareScript() error {
