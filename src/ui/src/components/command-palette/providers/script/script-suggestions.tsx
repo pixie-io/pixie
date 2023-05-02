@@ -24,7 +24,7 @@ import { PixieAPIClient } from 'app/api';
 import { isPixieEmbedded } from 'app/common/embed-context';
 import { PixieCommandIcon as ScriptIcon } from 'app/components';
 import { ParseResult, Token } from 'app/components/command-palette/parser';
-import { CommandProviderResult } from 'app/components/command-palette/providers/command-provider';
+import { CommandProviderState } from 'app/components/command-palette/providers/command-provider';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { pxTypeToEntityType } from 'app/containers/live/autocomplete-utils';
 import { GQLAutocompleteEntityKind, GQLAutocompleteFieldResult, GQLAutocompleteSuggestion } from 'app/types/schema';
@@ -93,10 +93,13 @@ export function getFullScriptSuggestions(
   partial: string,
   scripts: Map<string, Script>,
   focusArg?: string,
-): CommandProviderResult {
+): CommandProviderState {
   const idSuggestions = getScriptIdSuggestions(partial, scripts);
   return {
+    input: partial,
+    selection: [0, 0],
     providerName: 'getFullScriptSuggestions',
+    loading: false,
     completions: idSuggestions.suggestions.map(({ name, description, matchedIndexes }, i) => {
       return {
         heading: 'Scripts',

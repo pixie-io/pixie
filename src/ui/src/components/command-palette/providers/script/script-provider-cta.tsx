@@ -41,7 +41,8 @@ export function isScriptCommandValid(kvMap: Map<string, string>, scripts: Map<st
   for (const arg of script.vis.variables) {
     const val = kvMap.get(arg.name);
     const clearValidValues = arg.validValues?.includes(val) ?? true;
-    if (!clearValidValues || !kvMap.has(arg.name)) return false;
+    const required = !arg.defaultValue && !arg.validValues?.length;
+    if (!clearValidValues || !kvMap.has(arg.name) || (required && !kvMap.get(arg.name)?.trim().length)) return false;
   }
 
   // Extraneous keys are errors

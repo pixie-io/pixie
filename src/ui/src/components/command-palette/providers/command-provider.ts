@@ -46,17 +46,28 @@ export interface CommandCompletion {
   cta?: CommandCta;
 }
 
-export interface CommandProviderResult {
+export interface CommandProviderState {
+  input: string;
+  selection: [start: number, end: number];
   providerName: string;
+  loading: boolean;
   completions: CommandCompletion[];
   hasAdditionalMatches: boolean;
   cta?: CommandCta;
 }
 
+export type CommandProviderDispatchAction = (
+  // Invoke: tell the provider to start looking for results and to dispatch updates to itself as they come in
+  { type: 'invoke', input: string; selection: [start: number, end: number ] }
+  // Cancel: tells the provider to stop any running searches and consider itself loaded (if not already)
+  | { type: 'cancel' }
+);
+
 /**
- * A React hook (to can access contexts) that returns a callback to fetch input completions to the command palette.
+ * A React hook that returns a [state, dispatch] from useReducer(), to fetch input completions to the command palette.
  * Note: these are consumed in CommandPaletteContextProvider; can't use anything from that context (dependency cycle).
  */
-export type CommandProvider = () => (
-  (input: string, selection: [start: number, end: number]) => Promise<CommandProviderResult>
-);
+export type CommandProvider = () => [
+  state: CommandProviderState,
+  dispatch: React.Dispatch<CommandProviderDispatchAction>,
+];
