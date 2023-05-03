@@ -142,6 +142,30 @@ func SockShopWorkload() *pb.WorkloadSpec {
 	}
 }
 
+// OnlineBoutiqueWorkload returns the WorkloadSpec to deploy online boutique.
+func OnlineBoutiqueWorkload() *pb.WorkloadSpec {
+	return &pb.WorkloadSpec{
+		Name: "px-online-boutique",
+		DeploySteps: []*pb.DeployStep{
+			{
+				DeployType: &pb.DeployStep_Px{
+					Px: &pb.PxCLIDeploy{
+						Args: []string{
+							"demo",
+							"deploy",
+							"px-online-boutique",
+						},
+						Namespaces: []string{
+							"px-online-boutique",
+						},
+					},
+				},
+			},
+		},
+		Healthchecks: HTTPHealthChecks("px-online-boutique"),
+	}
+}
+
 //go:embed scripts/healthcheck/vizier.pxl
 var vizierHealthCheckScript string
 
