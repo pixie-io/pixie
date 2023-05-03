@@ -82,6 +82,7 @@ interface GraphProps {
   edgeHoverInfo?: ColInfo[];
   edgeLength?: number;
   enableDefaultHierarchy?: boolean;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 interface GraphData {
@@ -96,6 +97,7 @@ interface GraphWidgetProps {
   data: any[];
   relation: Relation;
   propagatedArgs?: Arguments;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 const INVALID_NODE_TYPES = [
@@ -126,6 +128,7 @@ function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds):
 export const Graph = React.memo<GraphProps>(({
   dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
   nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
+  setExternalControls,
 }) => {
   const theme = useTheme();
 
@@ -265,21 +268,29 @@ export const Graph = React.memo<GraphProps>(({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, doubleClickCallback, hierarchyEnabled]);
 
+  const controls = React.useMemo(() => (
+    <Button
+      size='small'
+      onClick={toggleHierarchy}
+    >
+      {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
+    </Button>
+  ), [hierarchyEnabled, toggleHierarchy]);
+
   return (
-    <GraphBase network={network} visRootRef={ref} showZoomButtons={true}>
-      <Button
-        size='small'
-        onClick={toggleHierarchy}
-      >
-        {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
-      </Button>
-    </GraphBase>
+    <GraphBase
+      network={network}
+      visRootRef={ref}
+      showZoomButtons={true}
+      setExternalControls={setExternalControls}
+      additionalButtons={controls}
+    />
   );
 });
 Graph.displayName = 'Graph';
 
 export const GraphWidget = React.memo<GraphWidgetProps>(({
-  display, data, relation, propagatedArgs,
+  display, data, relation, propagatedArgs, setExternalControls,
 }) => {
   if (display.dotColumn && data.length > 0) {
     return (
@@ -316,6 +327,7 @@ export const GraphWidget = React.memo<GraphWidgetProps>(({
           edgeColorColumn={colorColInfo}
           propagatedArgs={propagatedArgs}
           edgeHoverInfo={edgeHoverInfo}
+          setExternalControls={setExternalControls}
         />
       );
     }

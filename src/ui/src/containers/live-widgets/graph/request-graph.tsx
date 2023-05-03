@@ -50,6 +50,7 @@ interface RequestGraphProps {
   data: any[];
   relation: Relation;
   propagatedArgs?: Arguments;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -59,7 +60,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'RequestGraphWidget' });
 
 export const RequestGraphWidget = React.memo<RequestGraphProps>(({
-  data, relation, display, propagatedArgs,
+  data, relation, display, propagatedArgs, setExternalControls,
 }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
@@ -176,8 +177,9 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
   }, [network, doubleClickCallback]);
 
   const classes = useStyles();
-  return (
-    <GraphBase network={network} visRootRef={ref} showZoomButtons={true}>
+
+  const controls = React.useMemo(() => (
+    <>
       <Tooltip title={colorByLatency ? 'Colored by latency' : 'Colored by Error Rate'}>
         <IconButton
           size='small'
@@ -205,7 +207,19 @@ export const RequestGraphWidget = React.memo<RequestGraphProps>(({
           <WorkspacesIcon />
         </IconButton>
       </Tooltip>
-    </GraphBase>
+    </>
+    // toggleColor depends on graphMgr, which depends on stuff that can change every frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [classes.enabled, clusteredMode, colorByLatency, hierarchyEnabled, toggleHierarchy, toggleMode]);
+
+  return (
+    <GraphBase
+      network={network}
+      visRootRef={ref}
+      showZoomButtons={true}
+      setExternalControls={setExternalControls}
+      additionalButtons={controls}
+    />
   );
 });
 RequestGraphWidget.displayName = 'RequestGraphWidget';

@@ -28,11 +28,17 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { Network } from 'vis-network/standalone';
 
 import { buildClass } from 'app/components';
-import { WithChildren } from 'app/utils/react-boilerplate';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    width: '100%',
+    // Bust out of the extra padding from the <Paper/> container
+    width: `calc(100% + ${theme.spacing(1.5)})`,
+    margin: theme.spacing(-0.75),
+    marginTop: 0,
+    borderBottomLeftRadius: 'inherit',
+    borderBottomRightRadius: 'inherit',
+
+    // Layout
     flex: 1,
     minHeight: 0,
     display: 'flex',
@@ -45,6 +51,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: '100%',
     minHeight: 0,
     border: '1px solid transparent',
+    borderBottomLeftRadius: 'inherit',
+    borderBottomRightRadius: 'inherit',
     '&$focus': { borderColor: theme.palette.foreground.grey2 },
     '& > .vis-active': { boxShadow: 'none' },
   },
@@ -55,11 +63,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       padding: theme.spacing(0.375), // 3px
     },
   },
-  zoomButton: {
-    opacity: 0,
-    transition: 'opacity 0.25s linear',
-    '&$focus': { opacity: 1 },
+  buttonSeparator: {
+    display: 'inline-flex',
+    width: theme.spacing(2),
+    userSelect: 'none',
   },
+  zoomButton: {},
   focus: {/* Blank entry so the rule above has something to reference */},
 }), { name: 'Graph' });
 
@@ -67,17 +76,20 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 const MIN_ZOOM = 0.075;
 const MAX_ZOOM = 10;
 
-export interface GraphBaseProps extends WithChildren {
+export interface GraphBaseProps {
   network: Network;
   visRootRef: React.MutableRefObject<HTMLDivElement>;
   showZoomButtons?: boolean;
+  setExternalControls?: React.RefCallback<React.ReactNode>;
+  additionalButtons?: React.ReactNode;
 }
 
 export const GraphBase = React.memo<GraphBaseProps>(({
   network,
   visRootRef,
   showZoomButtons = false,
-  children: additionalButtons,
+  setExternalControls,
+  additionalButtons,
 }) => {
   const [focused, setFocused] = React.useState(false);
 
@@ -178,36 +190,55 @@ export const GraphBase = React.memo<GraphBaseProps>(({
   }, [focused, clickWrapper]);
 
   const classes = useStyles();
+
+  const controls = React.useMemo(() => (
+    <>
+      {showZoomButtons && (
+        <>
+          <Tooltip title='Zoom Out'>
+            <IconButton
+              className={buildClass(classes.zoomButton, focused && classes.focus)}
+              size='small'
+              onClick={zoomOut}
+              disabled={zoomLevel <= MIN_ZOOM}
+            >
+              <ZoomOutIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title='Zoom In'>
+            <IconButton
+              className={buildClass(classes.zoomButton, focused && classes.focus)}
+              size='small'
+              onClick={zoomIn}
+              disabled={zoomLevel >= MAX_ZOOM}
+            >
+              <ZoomInIcon />
+            </IconButton>
+          </Tooltip>
+          {additionalButtons && <div className={classes.buttonSeparator} />}
+        </>
+      )}
+      {additionalButtons}
+    </>
+  ), [
+    additionalButtons, focused, showZoomButtons, zoomIn, zoomLevel, zoomOut,
+    classes.focus, classes.zoomButton, classes.buttonSeparator,
+  ]);
+
+  React.useEffect(() => {
+    if (setExternalControls) {
+      setExternalControls(controls);
+    }
+  }, [controls, setExternalControls]);
+
   return (
     <div className={classes.root}>
       <div className={buildClass(classes.clickWrapper, focused && classes.focus)} ref={clickWrapperRef} />
-      <div className={classes.buttonContainer}>
-        {showZoomButtons && (
-          <>
-            <Tooltip title='Zoom Out'>
-              <IconButton
-                className={buildClass(classes.zoomButton, focused && classes.focus)}
-                size='small'
-                onClick={zoomOut}
-                disabled={zoomLevel <= MIN_ZOOM}
-              >
-                <ZoomOutIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title='Zoom In'>
-              <IconButton
-                className={buildClass(classes.zoomButton, focused && classes.focus)}
-                size='small'
-                onClick={zoomIn}
-                disabled={zoomLevel >= MAX_ZOOM}
-              >
-                <ZoomInIcon />
-              </IconButton>
-            </Tooltip>
-          </>
-        )}
-        {additionalButtons}
-      </div>
+      {!setExternalControls && (
+        <div className={classes.buttonContainer}>
+          {controls}
+        </div>
+      )}
     </div>
   );
 });
