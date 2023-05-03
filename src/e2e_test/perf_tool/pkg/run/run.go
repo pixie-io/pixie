@@ -55,10 +55,14 @@ type Runner struct {
 	clusterCtx          *cluster.Context
 	clusterCleanup      func()
 	vizier              deploy.Workload
-	wg                  sync.WaitGroup
 	metricsResultCh     chan *metrics.ResultRow
 	metricsBySelector   map[string][]metrics.Recorder
 	workloadsBySelector map[string][]deploy.Workload
+
+	// wg is for goroutines that are unrelated to the main execution of the experiment.
+	wg sync.WaitGroup
+	// eg is for goroutines that should fail the experiment if they return an error.
+	eg *errgroup.Group
 }
 
 // NewRunner creates a new Runner for the given contexts.
@@ -108,6 +112,47 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 	defer r.clusterCleanup()
 	defer r.clusterCtx.Close()
 
+	var egCtx context.Context
+	r.eg, egCtx = errgroup.WithContext(ctx)
+	// errgroup.WithContext causes the egCtx to be cancelled when the first goroutine in the group errors.
+	// We pass the group down. So, for example, if there's an error in one of the metric recorders' goroutines
+	// it will cause context cancellation for the whole experiment,
+	// allowing us to exit as soon as the error happens instead of waiting for the experiment to finish.
+	r.eg.Go(func() error {
+		return r.runActions(egCtx, spec)
+	})
+
+	if err := r.eg.Wait(); err != nil {
+		return err
+	}
+
+	// The experiment succeeded so we write the spec to bigquery.
+	encodedSpec, err := (&jsonpb.Marshaler{}).MarshalToString(spec)
+	if err != nil {
+		return err
+	}
+	specRow := &SpecRow{
+		ExperimentID:    expID.String(),
+		Spec:            encodedSpec,
+		CommitTopoOrder: commitTopoOrder,
+	}
+
+	inserter := r.specTable.Inserter()
+	inserter.SkipInvalidRows = false
+
+	putCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	if err := inserter.Put(putCtx, specRow); err != nil {
+		return err
+	}
+
+	metricsChCloseOnce.Do(func() { close(r.metricsResultCh) })
+	r.wg.Wait()
+
+	return nil
+}
+
+func (r *Runner) runActions(ctx context.Context, spec *experimentpb.ExperimentSpec) error {
 	canceledErr := backoff.Permanent(context.Canceled)
 	for _, a := range spec.RunSpec.Actions {
 		log.Tracef("started action %s", experimentpb.ActionType_name[int32(a.Type)])
@@ -162,30 +207,6 @@ func (r *Runner) RunExperiment(ctx context.Context, expID uuid.UUID, spec *exper
 			return canceledErr
 		}
 	}
-
-	// The experiment succeeded so we write the spec to bigquery.
-	encodedSpec, err := (&jsonpb.Marshaler{}).MarshalToString(spec)
-	if err != nil {
-		return err
-	}
-	specRow := &SpecRow{
-		ExperimentID:    expID.String(),
-		Spec:            encodedSpec,
-		CommitTopoOrder: commitTopoOrder,
-	}
-
-	inserter := r.specTable.Inserter()
-	inserter.SkipInvalidRows = false
-
-	putCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-	if err := inserter.Put(putCtx, specRow); err != nil {
-		return err
-	}
-
-	metricsChCloseOnce.Do(func() { close(r.metricsResultCh) })
-	r.wg.Wait()
-
 	return nil
 }
 
@@ -212,9 +233,9 @@ func (r *Runner) startMetricRecorders(ctx context.Context, spec *experimentpb.Ex
 			continue
 		}
 
-		recorder := metrics.NewMetricsRecorder(r.pxCtx, ms, r.metricsResultCh)
+		recorder := metrics.NewMetricsRecorder(r.pxCtx, ms, r.eg, r.metricsResultCh)
 		r.metricsBySelector[selector] = append(r.metricsBySelector[selector], recorder)
-		if err := recorder.Start(); err != nil {
+		if err := recorder.Start(ctx); err != nil {
 			_ = r.stopMetricRecorders(selector)
 			return noCleanup, fmt.Errorf("failed to start metrics recorder: %s", err)
 		}
@@ -267,11 +288,10 @@ func (r *Runner) stopMetricRecorders(selector string) error {
 	if !ok {
 		return nil
 	}
-	var errs []error
 	for _, mr := range mrs {
-		errs = append(errs, mr.Close())
+		mr.Close()
 	}
-	return errors.Join(errs...)
+	return nil
 }
 
 func (r *Runner) stopWorkloads(selector string) error {
