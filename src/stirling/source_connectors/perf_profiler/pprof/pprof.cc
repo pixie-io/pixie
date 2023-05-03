@@ -65,7 +65,7 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const histo_t& histo) {
   uint64_t next_location_id = 1;
   uint64_t next_string_id = 5;
 
-  // To build the profile, we iterate over the stack traces  histogram.
+  // To build the profile, we iterate over the stack traces histogram.
   for (const auto& [stack_trace_str, count] : histo) {
     // Each histo entry will be recorded as a new sample.
     auto sample = profile.add_sample();
@@ -85,7 +85,6 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const histo_t& histo) {
     // Note, because of how we built the stack trace string and how the pprof profile is
     // organized, we iterate in reverse order.
     for (auto symbols_iter = symbols.rbegin(); symbols_iter != symbols.rend(); ++symbols_iter) {
-      // For convenience.
       const auto& symbol = *symbols_iter;
 
       // try_emplace() looks up an existing entry in the strings table, or creates a new entry
@@ -95,7 +94,6 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const histo_t& histo) {
       if (inserted) {
         // New symbol: create a new location, add it to the sample, and create a new symbol.
 
-        // For convenience & clarity, store the ids in locals, then compute their next values.
         const uint64_t location_id = next_location_id;
         const uint64_t string_id = next_string_id;
         ++next_location_id;
@@ -129,10 +127,6 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const histo_t& histo) {
 
         // Add the new location-id into the sample in the profile.
         sample->add_location_id(location_id);
-
-        // Record the fact that we have written this string into the profile. Save the
-        // location-id because it is used if we find this symbol again.
-        strings[symbol] = location_id;
       } else {
         // Existing symbol.
         // Just place the pre-existing location id into the sample.
