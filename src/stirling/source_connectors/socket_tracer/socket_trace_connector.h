@@ -234,7 +234,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<ebpf::BPFArrayTable<int>> openssl_trace_state_;
   std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct openssl_trace_state_debug_t>>
       openssl_trace_state_debug_;
-  prometheus::Counter& openssl_trace_mismatched_fds_counter_;
+  prometheus::Family<prometheus::Counter>& openssl_trace_mismatched_fds_counter_family_;
 
   absl::flat_hash_set<int> pids_to_trace_disable_;
 

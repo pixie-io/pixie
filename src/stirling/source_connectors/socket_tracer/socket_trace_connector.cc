@@ -178,8 +178,8 @@ constexpr char openssl_mismatched_fds_help[] =
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
-      openssl_trace_mismatched_fds_counter_(
-          BuildCounter(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
+      openssl_trace_mismatched_fds_counter_family_(
+          BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
       uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
@@ -654,14 +654,15 @@ void SocketTraceConnector::CheckTracerState() {
   openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
 
   if (error_code == kOpenSSLMismatchedFDsDetected) {
-    openssl_trace_mismatched_fds_counter_.Increment();
+    openssl_trace_mismatched_fds_counter_family_.Add({{"name", openssl_mismatched_fds_metric}})
+        .Increment();
 
     // Record the offending applications and clear the BPF hash in the process.
     auto table = openssl_trace_state_debug_->get_table_offline(true);
     for (auto& entry : table) {
       struct openssl_trace_state_debug_t debug = std::get<1>(entry);
 
-      BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)
+      openssl_trace_mismatched_fds_counter_family_
           .Add({{"name", openssl_mismatched_fds_metric}, {"exe", debug.comm}})
           .Increment();
     }
