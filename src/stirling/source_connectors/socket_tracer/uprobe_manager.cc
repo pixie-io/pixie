@@ -500,11 +500,13 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
 
 }  // namespace
 
-std::thread UProbeManager::RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids) {
+std::thread UProbeManager::RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& upids) {
   // Increment before starting thread to avoid race in case thread starts late.
+  // And, capture upids by *copy* in case this thread outlives the connector context
+  // that passed in the const ref. of upids.
   ++num_deploy_uprobes_threads_;
-  return std::thread([this, pids]() {
-    DeployUProbes(pids);
+  return std::thread([this, upids]() {
+    DeployUProbes(upids);
     --num_deploy_uprobes_threads_;
   });
   return {};
