@@ -87,6 +87,7 @@ func (r *prometheusRecorderImpl) run() error {
 		return err
 	}
 	t := time.NewTicker(d)
+	defer t.Stop()
 	for {
 		select {
 		case <-r.stopCh:
