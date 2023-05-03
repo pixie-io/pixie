@@ -166,6 +166,30 @@ func OnlineBoutiqueWorkload() *pb.WorkloadSpec {
 	}
 }
 
+// KafkaWorkload returns the WorkloadSpec to deploy the kafka demo.
+func KafkaWorkload() *pb.WorkloadSpec {
+	return &pb.WorkloadSpec{
+		Name: "px-kafka",
+		DeploySteps: []*pb.DeployStep{
+			{
+				DeployType: &pb.DeployStep_Px{
+					Px: &pb.PxCLIDeploy{
+						Args: []string{
+							"demo",
+							"deploy",
+							"px-kafka",
+						},
+						Namespaces: []string{
+							"px-kafka",
+						},
+					},
+				},
+			},
+		},
+		Healthchecks: HTTPHealthChecks("px-kafka"),
+	}
+}
+
 //go:embed scripts/healthcheck/vizier.pxl
 var vizierHealthCheckScript string
 
