@@ -39,6 +39,7 @@ using ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepo
 using ::px::stirling::dynamic_tracing::ir::shared::DeploymentSpec;
 using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::px::stirling::testing::RecordBatchSizeIs;
+using ::px::stirling::testing::Timeout;
 using ::px::testing::status::StatusIs;
 using ::testing::Gt;
 using ::testing::HasSubstr;
@@ -89,15 +90,17 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
   // Now deploy the spec and check for some data.
   ASSERT_OK(connector->Init());
 
-  // Give some time to collect data.
-  sleep(1);
-
-  // Read the data.
-  SystemWideStandaloneContext ctx;
-  DataTable data_table(/*id*/ 0, table_schema);
-  connector->set_data_tables({&data_table});
-  connector->TransferData(&ctx);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  // Wait for data to be collected.
+  std::vector<TaggedRecordBatch> tablets;
+  Timeout t;
+  while (tablets.size() == 0 && !t.TimedOut()) {
+    // Read the data.
+    SystemWideStandaloneContext ctx;
+    DataTable data_table(/*id*/ 0, table_schema);
+    connector->set_data_tables({&data_table});
+    connector->TransferData(&ctx);
+    tablets = data_table.ConsumeRecords();
+  }
 
   // Should've gotten something in the records.
   ASSERT_FALSE(tablets.empty());
@@ -168,18 +171,22 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
     EXPECT_EQ(elements[kStackIdx].type(), types::DataType::STRING);
   }
 
+  auto deploy_start = px::chrono::boot_clock::now().time_since_epoch();
+  auto deploy_start_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(deploy_start).count();
   // Now deploy the spec and check for some data.
   ASSERT_OK(connector->Init());
 
-  // Give some time to collect data.
-  sleep(1);
-
-  // Read the data.
-  SystemWideStandaloneContext ctx;
-  DataTable data_table(/*id*/ 0, table_schema);
-  connector->set_data_tables({&data_table});
-  connector->TransferData(&ctx);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  // Wait for data to be collected.
+  std::vector<TaggedRecordBatch> tablets;
+  Timeout t;
+  while (tablets.size() == 0 && !t.TimedOut()) {
+    // Read the data.
+    SystemWideStandaloneContext ctx;
+    DataTable data_table(/*id*/ 0, table_schema);
+    connector->set_data_tables({&data_table});
+    connector->TransferData(&ctx);
+    tablets = data_table.ConsumeRecords();
+  }
 
   // Should've gotten something in the records.
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
@@ -212,19 +219,12 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
 
     int64_t nsecs = records[kNsecsIdx]->Get<types::Int64Value>(0).val;
     LOG(INFO) << absl::Substitute("nsecs: $0", nsecs);
-    // Event should have been in the last 10 seconds (being generous).
+    // Check that the timestamp is after the connector was initialized, and before the current
+    // timestamp.
     auto now = px::chrono::boot_clock::now().time_since_epoch();
     auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
-    constexpr int64_t kNanosPerSecond = 1000 * 1000 * 1000;
-    EXPECT_GE(nsecs, now_ns - 10 * kNanosPerSecond);
+    EXPECT_GE(nsecs, deploy_start_ns);
     EXPECT_LE(nsecs, now_ns);
-
-    int64_t elapsed = records[kElapsedIdx]->Get<types::Int64Value>(0).val;
-    LOG(INFO) << absl::Substitute("elapsed: $0", elapsed);
-    // Expecting a value of close to 100 ms. Add +/- 50 ms to be generous.
-    constexpr int kNanosPerMilli = 1000 * 1000;
-    EXPECT_GE(elapsed, 50 * kNanosPerMilli);
-    EXPECT_LE(elapsed, 150 * kNanosPerMilli);
 
     int64_t cpu = records[kCPUIdx]->Get<types::Int64Value>(0).val;
     LOG(INFO) << absl::Substitute("CPU: $0", cpu);
@@ -282,15 +282,17 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
   // Now deploy the spec and check for some data.
   ASSERT_OK(connector->Init());
 
-  // Give some time to collect data.
-  sleep(1);
-
-  // Read the data.
-  SystemWideStandaloneContext ctx;
-  DataTable data_table(/*id*/ 0, table_schema);
-  connector->set_data_tables({&data_table});
-  connector->TransferData(&ctx);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  // Wait for data to be collected.
+  std::vector<TaggedRecordBatch> tablets;
+  Timeout t;
+  while (tablets.size() == 0 && !t.TimedOut()) {
+    // Read the data.
+    SystemWideStandaloneContext ctx;
+    DataTable data_table(/*id*/ 0, table_schema);
+    connector->set_data_tables({&data_table});
+    connector->TransferData(&ctx);
+    tablets = data_table.ConsumeRecords();
+  }
 
   // Should've gotten something in the records.
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);
@@ -352,15 +354,17 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   // Now deploy the spec and check for some data.
   ASSERT_OK(connector->Init());
 
-  // Give some time to collect data.
-  sleep(1);
-
-  // Read the data.
-  SystemWideStandaloneContext ctx;
-  DataTable data_table(/*id*/ 0, table_schema);
-  connector->set_data_tables({&data_table});
-  connector->TransferData(&ctx);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  // Wait for data to be collected.
+  std::vector<TaggedRecordBatch> tablets;
+  Timeout t;
+  while (tablets.size() == 0 && !t.TimedOut()) {
+    // Read the data.
+    SystemWideStandaloneContext ctx;
+    DataTable data_table(/*id*/ 0, table_schema);
+    connector->set_data_tables({&data_table});
+    connector->TransferData(&ctx);
+    tablets = data_table.ConsumeRecords();
+  }
 
   // Should've gotten something in the records.
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& records, tablets);

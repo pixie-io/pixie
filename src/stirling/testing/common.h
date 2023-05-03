@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <utility>
@@ -166,6 +167,18 @@ inline types::ColumnWrapperRecordBatch ExtractRecordsMatchingPID(DataTable* data
   }
   return res;
 }
+
+class Timeout {
+ public:
+  explicit Timeout(std::chrono::nanoseconds timeout = std::chrono::minutes{5})
+      : timeout_(timeout), start_(std::chrono::steady_clock::now()) {}
+
+  bool TimedOut() { return !((std::chrono::steady_clock::now() - start_) < timeout_); }
+
+ private:
+  std::chrono::nanoseconds timeout_;
+  std::chrono::time_point<std::chrono::steady_clock> start_;
+};
 
 }  // namespace testing
 }  // namespace stirling
