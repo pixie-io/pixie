@@ -661,7 +661,7 @@ void SocketTraceConnector::CheckTracerState() {
     for (auto& entry : table) {
       struct openssl_trace_state_debug_t debug = std::get<1>(entry);
 
-      BuildRawCounter(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)
+      BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)
           .Add({{"name", openssl_mismatched_fds_metric}, {"exe", debug.comm}})
           .Increment();
     }
