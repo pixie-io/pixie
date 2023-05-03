@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"px.dev/pixie/src/e2e_test/perf_tool/experimentpb"
+	"px.dev/pixie/src/e2e_test/perf_tool/pkg/cluster"
 	"px.dev/pixie/src/e2e_test/perf_tool/pkg/pixie"
 )
 
@@ -34,8 +35,7 @@ type Recorder interface {
 }
 
 // NewMetricsRecorder creates a new Recorder for the given MetricSpec.
-// Currently, only supports PxL script recorders.
-func NewMetricsRecorder(pxCtx *pixie.Context, spec *experimentpb.MetricSpec, eg *errgroup.Group, resultCh chan<- *ResultRow) Recorder {
+func NewMetricsRecorder(pxCtx *pixie.Context, clusterCtx *cluster.Context, spec *experimentpb.MetricSpec, eg *errgroup.Group, resultCh chan<- *ResultRow) Recorder {
 	switch spec.MetricType.(type) {
 	case *experimentpb.MetricSpec_PxL:
 		return &pxlScriptRecorderImpl{
@@ -44,6 +44,13 @@ func NewMetricsRecorder(pxCtx *pixie.Context, spec *experimentpb.MetricSpec, eg 
 
 			eg:       eg,
 			resultCh: resultCh,
+		}
+	case *experimentpb.MetricSpec_Prom:
+		return &prometheusRecorderImpl{
+			clusterCtx: clusterCtx,
+			spec:       spec.GetProm(),
+			eg:         eg,
+			resultCh:   resultCh,
 		}
 	}
 	return nil

@@ -151,6 +151,7 @@ message PxCLIDeploy {
 message MetricSpec {
   oneof metric_type {
     PxLScriptSpec pxl = 1 [ (gogoproto.customname) = "PxL" ];
+    PrometheusScrapeSpec prom = 2;
   }
   string action_selector = 100;
 }
@@ -204,6 +205,21 @@ message DataLossCounterOutput {
   string metric_name = 2;
   string seq_id_col = 3 [ (gogoproto.customname) = "SeqIDCol" ];
   google.protobuf.Duration output_period = 4;
+}
+
+// PrometheusScrapeSpec specifies parameters for scraping prometheus metrics from the running pods.
+message PrometheusScrapeSpec {
+  // Namespace of pods to scrape.
+  string namespace = 1;
+  // Pod label key to match for scraping.
+  string match_label_key = 2;
+  // Pod label value to match for scraping.
+  string match_label_value = 3;
+  // HTTP port on pod serving prometheus metrics at http://<pod>:<port>/metrics
+  int32 port = 4;
+  // How often to scrape the matched pods.
+  google.protobuf.Duration scrape_period = 5;
+  map<string, string> metric_names = 6;
 }
 
 // ClusterSpec specifies the type and size of cluster an experiment should run on.
