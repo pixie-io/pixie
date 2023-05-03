@@ -91,6 +91,14 @@ func (m *ManagedIndex) MaxIndexSize(maxSize string) *ManagedIndex {
 	return m
 }
 
+// MaxIndexAge sets how long the index will live until its rolled over.
+// Rolled over indices can still be accessed until the Delete condition is reached.
+// It should be specified as a string, eg. "30d".
+func (m *ManagedIndex) MaxIndexAge(maxAge string) *ManagedIndex {
+	m.policy.Rollover(nil, nil, &maxAge)
+	return m
+}
+
 // TimeBeforeDelete sets the amount of time that should be waited after rollover, before deleting the index.
 // The time should be specified as a string with unit, eg. "1d".
 func (m *ManagedIndex) TimeBeforeDelete(timeBeforeDelete string) *ManagedIndex {

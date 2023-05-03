@@ -279,7 +279,7 @@ func TestIndexMigrate(t *testing.T) {
 			{
 				"settings": {
 					"index": {
-						"number_of_shards": 2
+						"number_of_shards": "2"
 					}
 				}
 			}
@@ -296,7 +296,7 @@ func TestIndexMigrate(t *testing.T) {
 				{
 					"settings": {
 						"index": {
-							"number_of_shards": 1
+							"number_of_shards": "1"
 						}
 					}
 				}
@@ -313,7 +313,7 @@ func TestIndexMigrate(t *testing.T) {
 			{
 				"settings": {
 					"index": {
-						"number_of_shards": 2,
+						"number_of_shards": "2",
 						"blocks": {
 							"write": "true",
 							"read": "false"
@@ -326,7 +326,7 @@ func TestIndexMigrate(t *testing.T) {
 			{
 				"settings": {
 					"index": {
-						"number_of_shards": 2	,
+						"number_of_shards": "2",
 						"blocks": {
 							"write": "true",
 							"read": "false"
@@ -351,7 +351,7 @@ func TestIndexMigrate(t *testing.T) {
 				{
 					"settings": {
 						"index": {
-							"number_of_shards": 2,
+							"number_of_shards": "2",
 							"blocks": {
 								"write": "false",
 								"read": "true"

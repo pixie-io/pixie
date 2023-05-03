@@ -23,6 +23,8 @@ import (
 	"fmt"
 
 	"github.com/olivere/elastic/v7"
+
+	"px.dev/pixie/src/cloud/shared/esutils"
 )
 
 // ESMDEntityState represents state for a metadata entity in elastic.
@@ -82,69 +84,70 @@ type EsMDEntity struct {
 const IndexMapping = `
 {
   "settings": {
-    "store": {
-      "preload": [
-        "nvd",
-        "dvd",
-        "tim",
-        "doc",
-        "dim"
-      ]
-    },
-    "max_ngram_diff": 10,
-    "number_of_shards": 4,
-    "number_of_replicas": 1,
-    "analysis": {
-      "filter": {
-        "dont_split_on_numerics": {
-          "type": "word_delimiter",
-          "preserve_original": true,
-          "generate_number_parts": false
-        }
+    "index": {
+      "store": {
+        "preload": [
+          "nvd",
+          "dvd",
+          "tim",
+          "doc",
+          "dim"
+        ]
       },
-      "tokenizer": {
-        "ngram_tokenizer": {
-          "type": "nGram",
-          "min_gram": 1,
-          "max_gram": 10,
-          "token_chars": [
-            "letter",
-            "digit",
-            "custom"
-          ],
-          "custom_token_chars": "-/"
+      "max_ngram_diff": "10",
+      "number_of_shards": "4",
+      "analysis": {
+        "filter": {
+          "dont_split_on_numerics": {
+            "type": "word_delimiter",
+            "preserve_original": "true",
+            "generate_number_parts": "false"
+          }
         },
-        "search_tokenizer": {
-          "type": "char_group",
-          "tokenize_on_chars": [
-            "whitespace",
-	          "-",
-            "\n",
-	          "/",
-	          "_"
-    	    ]
-        }
-      },
-      "analyzer": {
-        "autocomplete": {
-          "type": "custom",
-          "tokenizer": "ngram_tokenizer",
-          "filter": [
-            "lowercase"
-          ]
+        "tokenizer": {
+          "ngram_tokenizer": {
+            "type": "nGram",
+            "min_gram": "1",
+            "max_gram": "10",
+            "token_chars": [
+              "letter",
+              "digit",
+              "custom"
+            ],
+            "custom_token_chars": "-/"
+          },
+          "search_tokenizer": {
+            "type": "char_group",
+            "tokenize_on_chars": [
+              "whitespace",
+	            "-",
+              "\n",
+	            "/",
+	            "_"
+            ]
+          }
         },
-        "autocomplete_search": {
-          "tokenizer": "search_tokenizer",
-          "filter": [
-            "lowercase"
-          ]
-        },
-        "myAnalyzer": {
-          "type": "custom",
-          "tokenizer": "whitespace",
-          "filter": [
-            "dont_split_on_numerics"
-          ]
+        "analyzer": {
+          "autocomplete": {
+            "type": "custom",
+            "tokenizer": "ngram_tokenizer",
+            "filter": [
+              "lowercase"
+            ]
+          },
+          "autocomplete_search": {
+            "tokenizer": "search_tokenizer",
+            "filter": [
+              "lowercase"
+            ]
+          },
+          "myAnalyzer": {
+            "type": "custom",
+            "tokenizer": "whitespace",
+            "filter": [
+              "dont_split_on_numerics"
+            ]
+          }
         }
       }
     }
@@ -204,17 +207,16 @@ const IndexMapping = `
 `
 
 // InitializeMapping creates the index in elastic.
-func InitializeMapping(es *elastic.Client, indexName string, replicas int) error {
-	exists, err := es.IndexExists(indexName).Do(context.Background())
+func InitializeMapping(es *elastic.Client, indexName string, replicas int, maxAge string, deleteAfter string) error {
+	err := esutils.NewManagedIndex(es, indexName).
+		IndexFromJSONString(IndexMapping).
+		MaxIndexAge(maxAge).
+		TimeBeforeDelete(deleteAfter).
+		Migrate(context.Background())
 	if err != nil {
 		return err
 	}
-	if !exists {
-		_, err = es.CreateIndex(indexName).Body(IndexMapping).Do(context.Background())
-		if err != nil {
-			return err
-		}
-	}
+
 	replicaSetting := fmt.Sprintf("{\"index\": {\"number_of_replicas\": %d}}", replicas)
 	_, err = es.IndexPutSettings(indexName).BodyString(replicaSetting).Do(context.Background())
 	return err
