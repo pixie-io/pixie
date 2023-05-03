@@ -63,6 +63,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       padding: theme.spacing(0.375), // 3px
     },
   },
+  buttonSeparator: {
+    display: 'inline-flex',
+    width: theme.spacing(2),
+    userSelect: 'none',
+  },
   zoomButton: {},
   focus: {/* Blank entry so the rule above has something to reference */},
 }), { name: 'Graph' });
@@ -210,11 +215,15 @@ export const GraphBase = React.memo<GraphBaseProps>(({
               <ZoomInIcon />
             </IconButton>
           </Tooltip>
+          {additionalButtons && <div className={classes.buttonSeparator} />}
         </>
       )}
       {additionalButtons}
     </>
-  ), [additionalButtons, classes.focus, classes.zoomButton, focused, showZoomButtons, zoomIn, zoomLevel, zoomOut]);
+  ), [
+    additionalButtons, focused, showZoomButtons, zoomIn, zoomLevel, zoomOut,
+    classes.focus, classes.zoomButton, classes.buttonSeparator,
+  ]);
 
   React.useEffect(() => {
     if (setExternalControls) {
