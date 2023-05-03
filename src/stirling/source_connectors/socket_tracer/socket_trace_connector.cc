@@ -170,13 +170,16 @@ constexpr size_t kMaxHTTPHeadersBytes = 8192;
 // Protobuf printer will limit strings to this length.
 constexpr size_t kMaxPBStringLen = 64;
 
+constexpr char openssl_mismatched_fds_metric[] = "openssl_trace_mismatched_fds";
+constexpr char openssl_mismatched_fds_help[] =
+    "Count of the times a syscall's fd was mismatched when detecting fds from an active user space "
+    "call";
+
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
-      openssl_trace_mismatched_fds_counter_(BuildCounter(
-          "openssl_trace_mismatched_fds",
-          "Count of the times a syscall's fd was mismatched when detecting fds from an "
-          "active user space call")),
+      openssl_trace_mismatched_fds_counter_family_(
+          BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
       uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
@@ -495,6 +498,9 @@ Status SocketTraceConnector::InitImpl() {
 
   openssl_trace_state_ =
       std::make_unique<ebpf::BPFArrayTable<int>>(GetArrayTable<int>("openssl_trace_state"));
+  openssl_trace_state_debug_ =
+      std::make_unique<ebpf::BPFHashTable<uint32_t, struct openssl_trace_state_debug_t>>(
+          GetHashTable<uint32_t, openssl_trace_state_debug_t>("openssl_trace_state_debug"));
 
   return Status::OK();
 }
@@ -648,7 +654,18 @@ void SocketTraceConnector::CheckTracerState() {
   openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
 
   if (error_code == kOpenSSLMismatchedFDsDetected) {
-    openssl_trace_mismatched_fds_counter_.Increment();
+    openssl_trace_mismatched_fds_counter_family_.Add({{"name", openssl_mismatched_fds_metric}})
+        .Increment();
+
+    // Record the offending applications and clear the BPF hash in the process.
+    auto table = openssl_trace_state_debug_->get_table_offline(true);
+    for (auto& entry : table) {
+      struct openssl_trace_state_debug_t debug = std::get<1>(entry);
+
+      openssl_trace_mismatched_fds_counter_family_
+          .Add({{"name", openssl_mismatched_fds_metric}, {"exe", debug.comm}})
+          .Increment();
+    }
   }
   DCHECK_EQ(error_code, kOpenSSLTraceOk);
 

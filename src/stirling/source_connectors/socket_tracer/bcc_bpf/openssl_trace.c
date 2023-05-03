@@ -34,6 +34,7 @@
 BPF_HASH(openssl_symaddrs_map, uint32_t, struct openssl_symaddrs_t);
 
 BPF_ARRAY(openssl_trace_state, int, 1);
+BPF_HASH(openssl_trace_state_debug, uint32_t, struct openssl_trace_state_debug_t);
 
 /***********************************************************
  * General helpers
@@ -120,9 +121,15 @@ static __inline int get_fd_and_eval_nested_syscall_detection(uint64_t pid_tgid) 
   bool mismatched_fds = nested_syscall_fd_ptr->mismatched_fds;
 
   if (mismatched_fds) {
+    struct openssl_trace_state_debug_t debug = {};
+    bpf_get_current_comm(&debug.comm, sizeof(debug.comm));
+
     int error_status_idx = kOpenSSLTraceStatusIdx;
     int status_code = kOpenSSLMismatchedFDsDetected;
+    uint32_t tgid = pid_tgid >> 32;
+
     openssl_trace_state.update(&error_status_idx, &status_code);
+    openssl_trace_state_debug.update(&tgid, &debug);
   }
 
   int fd = nested_syscall_fd_ptr->fd;

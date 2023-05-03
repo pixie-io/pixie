@@ -263,6 +263,12 @@ struct openssl_symaddrs_t {
   int32_t RBIO_num_offset;  // 0x30 (openssl 1.1.1) or 0x28 (openssl 1.1.0)
 };
 
+#define MAX_CMD_SIZE 32
+
+struct openssl_trace_state_debug_t {
+  char comm[MAX_CMD_SIZE];
+};
+
 // For reading file descriptor from a TLSWrap pointer.
 struct node_tlswrap_symaddrs_t {
   // Offset of StreamListener base class of TLSWrap class.
