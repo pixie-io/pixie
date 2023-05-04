@@ -27,17 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// DefaultMaxIndexSize is the default size to allow the index to grow to before rollover.
-	DefaultMaxIndexSize = "50gb"
-	// DefaultTimeBeforeDelete is the default amount of time after rollover, to wait before deleting an index.
-	DefaultTimeBeforeDelete = "0d"
-)
-
-func strPtr(s string) *string {
-	return &s
-}
-
 type esILMPolicy struct {
 	Policy map[string]interface{} `json:"policy"`
 }
@@ -59,7 +48,7 @@ func NewILMPolicy(es *elastic.Client, policyName string) *ILMPolicy {
 			Policy: make(map[string]interface{}),
 		},
 	}
-	return p.Rollover(strPtr(DefaultMaxIndexSize), nil, nil).DeleteAfter(DefaultTimeBeforeDelete)
+	return p
 }
 
 func (p *ILMPolicy) mapForPhase(phaseName string) map[string]interface{} {

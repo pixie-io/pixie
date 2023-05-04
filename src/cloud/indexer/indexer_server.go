@@ -50,6 +50,8 @@ func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 
 	pflag.String("md_index_name", "", "The elastic index name for metadata.")
+	pflag.String("md_index_max_age", "", "The amount of time before rolling over the elastic index as a string, eg '30d'")
+	pflag.String("md_index_delete_after", "", "The amount of time after rollover to delete old elastic indices, as a string, eg '30d'")
 	pflag.Int("md_index_replicas", 4, "The number of replicas to setup for the metadata index.")
 }
 
@@ -121,7 +123,16 @@ func main() {
 	}
 	replicas := viper.GetInt("md_index_replicas")
 
-	err = md.InitializeMapping(es, indexName, replicas)
+	maxAge := viper.GetString("md_index_max_age")
+	if maxAge == "" {
+		log.Fatal("Must specify a max age for the elastic index.")
+	}
+	deleteAfter := viper.GetString("md_index_delete_after")
+	if deleteAfter == "" {
+		log.Fatal("Must specify a delete after time for the rolled over elastic indices.")
+	}
+
+	err = md.InitializeMapping(es, indexName, replicas, maxAge, deleteAfter)
 	if err != nil {
 		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}

@@ -80,7 +80,7 @@ func TestManagedIndexMigrate(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err := esutils.NewManagedIndex(elasticClient, tc.managedIndName).Migrate(context.Background())
+			err := esutils.NewManagedIndex(elasticClient, tc.managedIndName).MaxIndexSize("1gb").TimeBeforeDelete("10d").Migrate(context.Background())
 			if tc.expectErr {
 				require.NotNil(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())

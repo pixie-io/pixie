@@ -170,6 +170,7 @@ func (i *Index) updateMappings(ctx context.Context) (bool, error) {
 		// If the error was a failure to merge the mapping with the current index
 		// mapping, then a reindex is required.
 		if mustParseError(err).isMappingMergeFailure() {
+			log.WithError(err).Warn("cant merge mappings")
 			return true, nil
 		}
 		log.WithError(err).WithField("index", i.indexName).WithField("cause", err.(*elastic.Error).Details.CausedBy).
@@ -182,29 +183,60 @@ func (i *Index) updateMappings(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func getSettingsToUpdate(expected map[string]interface{}, actual map[string]interface{}) (bool, map[string]interface{}) {
-	toUpdate := make(map[string]interface{})
-	for k, expectedVal := range expected {
-		actualVal, ok := actual[k]
-		if !ok {
-			toUpdate[k] = expectedVal
-			continue
-		}
-		var m map[string]interface{}
-		if reflect.TypeOf(expectedVal) == reflect.TypeOf(m) {
-			if reflect.TypeOf(actualVal) != reflect.TypeOf(m) {
-				toUpdate[k] = expectedVal
+// updates returns the updates necessary to make current match desired.
+// if desired is a map then the updates can be a subset of the map,
+// for all other types the updates are either nil or the desired value.
+func updates(desired interface{}, current interface{}) interface{} {
+	if reflect.TypeOf(desired) != reflect.TypeOf(current) {
+		return desired
+	}
+	switch desired.(type) {
+	case map[string]interface{}:
+		cm := current.(map[string]interface{})
+		dm := desired.(map[string]interface{})
+		toUpdate := make(map[string]interface{})
+		for k, d := range dm {
+			c, ok := cm[k]
+			if !ok {
+				toUpdate[k] = d
 				continue
 			}
-			needsUpdate, newVal := getSettingsToUpdate(expectedVal.(map[string]interface{}), actualVal.(map[string]interface{}))
-			if needsUpdate {
-				toUpdate[k] = newVal
+			update := updates(d, c)
+			if update != nil {
+				toUpdate[k] = update
 			}
-		} else if expectedVal != actualVal && fmt.Sprint(expectedVal) != actualVal {
-			toUpdate[k] = expectedVal
 		}
+		if len(toUpdate) > 0 {
+			return toUpdate
+		}
+		return nil
+	case []interface{}:
+		cl := current.([]interface{})
+		dl := desired.([]interface{})
+		// We consider lists to be non-mergable, so if there's any difference we say the whole list needs to change.
+		if len(cl) != len(dl) {
+			return dl
+		}
+		for i, d := range dl {
+			if updates(d, cl[i]) != nil {
+				return d
+			}
+		}
+		return nil
+	case string:
+		cs := current.(string)
+		ds := desired.(string)
+		if cs != ds {
+			return ds
+		}
+		return nil
+	default:
+		// The elastic settings response should always be maps, lists, or strings, if another case arises we rely on golangs comparison of interfaces.
+		if current != desired {
+			return desired
+		}
+		return nil
 	}
-	return len(toUpdate) > 0, toUpdate
 }
 
 func (i *Index) updateSettings(ctx context.Context) (bool, error) {
@@ -214,15 +246,20 @@ func (i *Index) updateSettings(ctx context.Context) (bool, error) {
 			WithField("cause", err.(*elastic.Error).Details.CausedBy).Error("failed to get index settings")
 		return false, err
 	}
-	indexSettings := settingsResp[i.indexName].Settings
-	needsUpdate, settingsToUpdate := getSettingsToUpdate(i.index.Settings, indexSettings)
-	if !needsUpdate {
+	currentSettings := settingsResp[i.indexName].Settings
+	diff := updates(i.index.Settings, currentSettings)
+	if diff == nil {
 		return false, nil
 	}
+	settingsToUpdate := diff.(map[string]interface{})
 	resp, err := i.es.IndexPutSettings(i.indexName).BodyJson(settingsToUpdate).Do(ctx)
 	if err != nil {
 		// If any of the non-dynamic settings changed, then a reindex is required.
 		if mustParseError(err).isSettingsNonDynamicUpdateFailure() {
+			log.WithError(err).WithField("old_settings", currentSettings).
+				WithField("new_settings", i.index.Settings).
+				WithField("update", settingsToUpdate).
+				Warn("attempted to update non-dynamic settings")
 			return true, nil
 		}
 		log.WithError(err).WithField("index", i.indexName).WithField("cause", err.(*elastic.Error).Details.CausedBy).

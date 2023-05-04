@@ -4,5 +4,4 @@ kind: ConfigMap
 metadata:
   name: pl-indexer-config
 data:
-  PL_MD_INDEX_NAME: md_entities_8
   PL_MD_INDEX_REPLICAS: "1"
