@@ -33,22 +33,39 @@ using table_store::schema::Relation;
 
 using PruneUnusedContainsRuleTest = RulesTest;
 
-TEST_F(PruneUnusedContainsRuleTest, basic) {
+TEST_F(PruneUnusedContainsRuleTest, Basic) {
   MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
   compiler_state_->relation_map()->emplace("table", MakeRelation());
 
-  auto constant1 = graph->CreateNode<StringIR>(ast, "testing").ValueOrDie();
+  auto constant1 = graph->CreateNode<StringIR>(ast, "testing 1").ValueOrDie();
+  auto constant2 = graph->CreateNode<StringIR>(ast, "testing 2").ValueOrDie();
   auto empty_str = graph->CreateNode<StringIR>(ast, "").ValueOrDie();
 
-  auto filter_func =
+  auto filter_func_1 =
       graph
           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "contains"},
                                std::vector<ExpressionIR*>{constant1, empty_str})
           .ValueOrDie();
-  auto filter_func_id = filter_func->id();
 
-  auto filter_ir = graph->CreateNode<FilterIR>(ast, mem_src, filter_func).ValueOrDie();
-  auto filter_ir_id = filter_ir->id();
+  auto filter_func_2 =
+      graph
+          ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "contains"},
+                               std::vector<ExpressionIR*>{constant2, empty_str})
+          .ValueOrDie();
+
+  /* ColumnExpression empty_contains_1{"empty_contains_1", filter_func_1}; */
+  /* ColumnExpression contains{"contains", MakeFilter()}; */
+  /* ColumnExpression empty_contains_2{"empty_contains_2", filter_func_2}; */
+
+  auto filter_ir_1 = graph->CreateNode<FilterIR>(ast, mem_src, filter_func_1).ValueOrDie();
+  auto filter_ir_2 = graph->CreateNode<FilterIR>(ast, filter_ir_1, filter_func_2).ValueOrDie();
+
+  auto limit = MakeLimit(static_cast<OperatorIR*>(filter_ir_2), 1000);
+
+  /* auto map1 = MakeMap(mem_src, {}, false); */
+  /* ASSERT_OK(filter_ir_1->AddParent(map1)); */
+  /* auto map1_id = map1->id(); */
+
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
@@ -58,8 +75,11 @@ TEST_F(PruneUnusedContainsRuleTest, basic) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_FALSE(graph->HasNode(filter_ir_id));
-  EXPECT_FALSE(graph->HasNode(filter_func_id));
+  EXPECT_FALSE(graph->HasNode(filter_ir_1->id()));
+  EXPECT_FALSE(graph->HasNode(filter_ir_2->id()));
+  EXPECT_FALSE(graph->HasNode(filter_func_1->id()));
+  EXPECT_FALSE(graph->HasNode(filter_func_2->id()));
+  EXPECT_TRUE(graph->HasNode(limit->id()));
 }
 
 TEST_F(PruneUnusedContainsRuleTest, IgnoresNonEmptyStringContains) {

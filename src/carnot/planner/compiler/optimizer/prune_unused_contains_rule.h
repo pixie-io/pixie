@@ -42,6 +42,7 @@ class PruneUnusedContainsRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+  StatusOr<bool> RemoveMatchingFilter(IRNode* ir_node);
 };
 
 }  // namespace compiler
