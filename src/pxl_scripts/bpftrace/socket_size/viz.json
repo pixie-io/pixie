@@ -1,0 +1,101 @@
+{
+    "variables": [],
+    "globalFuncs": [
+        {
+            "outputName": "send_results",
+            "func": {
+                "name": "sock_sendmsg_func",
+                "args": []
+            }
+        },
+        {
+            "outputName": "recv_results",
+            "func": {
+                "name": "sock_recvmsg_func",
+                "args": []
+            }
+        }
+    ],
+    "widgets": [
+        {
+            "name": "Socket Send Messages",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 5
+            },
+            "globalFuncOutputName": "send_results",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Graph",
+                "adjacencyList": {
+                    "fromColumn": "src",
+                    "toColumn": "dst"
+                },
+                "edgeWeightColumn": "total_size",
+                "edgeColorColumn": "total_size",
+                "edgeLength": 300,
+                "edgeThresholds": {
+                    "mediumThreshold": 1000,
+                    "highThreshold": 100000
+                },
+                "edgeHoverInfo": [
+                    "total_size"
+                ]
+            }
+        },
+        {
+            "name": "Socket Receive Messages",
+            "position": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 5
+            },
+            "globalFuncOutputName": "recv_results",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Graph",
+                "adjacencyList": {
+                    "fromColumn": "src",
+                    "toColumn": "dst"
+                },
+                "edgeWeightColumn": "total_size",
+                "edgeColorColumn": "total_size",
+                "edgeLength": 300,
+                "edgeThresholds": {
+                    "mediumThreshold": 1000,
+                    "highThreshold": 100000
+                },
+                "edgeHoverInfo": [
+                    "total_size"
+                ]
+            }
+        },
+        {
+            "name": "Send Message Table",
+            "position": {
+                "x": 0,
+                "y": 5,
+                "w": 12,
+                "h": 4
+            },
+            "globalFuncOutputName": "send_results",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        },
+        {
+            "name": "Receive Message Table",
+            "position": {
+                "x": 0,
+                "y": 5,
+                "w": 12,
+                "h": 4
+            },
+            "globalFuncOutputName": "recv_results",
+            "displaySpec": {
+                "@type": "types.px.dev/px.vispb.Table"
+            }
+        }
+    ]
+}
