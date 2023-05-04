@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_bpf_test", "pl_cc_library", "pl_cc_test")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "jdk_names", "px_jattach", "stirling_profiler_java_args")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -41,7 +41,7 @@ jdk_image_names = ["%s-java-profiler-test-image" % jdk_name for jdk_name in jdk_
 
 image_tars = ["//src/stirling/source_connectors/perf_profiler/testing/java:%s-java-profiler-test-image.tar" % jdk_name for jdk_name in jdk_names]
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "perf_profiler_bpf_test",
     timeout = "long",
     srcs = ["perf_profiler_bpf_test.cc"],
@@ -70,7 +70,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "stringifier_bpf_test",
     srcs = ["stringifier_bpf_test.cc"],
     tags = [

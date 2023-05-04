@@ -84,7 +84,7 @@ flags+=(-netdev "user,id=net0,hostfwd=tcp::0-:22")
 flags+=(-monitor "unix:${MONITOR_SOCK},server,nowait")
 
 retval=0
-qemu-system-x86_64 "${flags[@]}" || retval=$?
+exec qemu-system-x86_64 "${flags[@]}" || retval=$?
 
 if [[ "${retval}" -gt 0 ]]; then
     if [[ "${retval}" -lt 128 ]]; then
