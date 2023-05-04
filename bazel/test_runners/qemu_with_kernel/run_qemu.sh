@@ -76,16 +76,23 @@ flags+=(-append "console=ttyS0 root=/dev/sda")
 # Disable graphics mode.
 flags+=(-nographic)
 
+if [[ "${INTERACTIVE_MODE}" == "true" ]]; then
+  flags+=(-device "virtio-net-pci,netdev=net0")
+  flags+=(-netdev "user,id=net0,hostfwd=tcp::${SSH_PORT}-:${SSH_PORT}")
+fi
+
 retval=0
-qemu-system-x86_64 "${flags[@]}" || retval=$?
+exec qemu-system-x86_64 "${flags[@]}" || retval=$?
 
 if [[ "${retval}" -gt 0 ]]; then
     if [[ "${retval}" -lt 128 ]]; then
-	echo "QEMU failed to launch with status code: ${retval}"
+	    echo "QEMU failed to launch with status code: ${retval}"
     else
-	retval="$(echo "($retval-128-1)/2" | bc)"
-	echo "Test failed with status: ${retval}"
+	    retval="$(echo "($retval-128-1)/2" | bc)"
     fi
+fi
+if [[ "${retval}" -ne 0 ]];  then
+  echo "Test failed with status: ${retval}"
 fi
 
 exit "${retval}"

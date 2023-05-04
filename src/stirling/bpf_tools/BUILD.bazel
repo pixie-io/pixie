@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_bpf_test", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -60,7 +60,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "bcc_wrapper_bpf_test",
     srcs = ["bcc_wrapper_bpf_test.cc"],
     tags = [
@@ -74,7 +74,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "bcc_symbolizer_bpf_test",
     srcs = ["bcc_symbolizer_bpf_test.cc"],
     tags = [
@@ -87,7 +87,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "bpftrace_wrapper_bpf_test",
     srcs = ["bpftrace_wrapper_bpf_test.cc"],
     tags = [
@@ -100,7 +100,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "task_struct_resolver_bpf_test",
     srcs = ["task_struct_resolver_bpf_test.cc"],
     tags = [
@@ -116,7 +116,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "uprobe_extra_trigger_bpf_test",
     srcs = ["uprobe_extra_trigger_bpf_test.cc"],
     tags = [

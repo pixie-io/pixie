@@ -98,11 +98,14 @@ if [ -f "${RUNFILES_DIR}_manifest" ]; then
   rewrite_manifest "${RUNFILES_DIR}_manifest" > "${runfiles_path}_manifest"
 fi
 
-# Copy over testlog file.
-testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
-qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
-qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
-cp -afL "${testlogs_dir}/" "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/"
+
+if [[ "$INTERACTIVE_MODE" != "true" ]]; then
+  # Copy over testlog file.
+  testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
+  qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
+  qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
+  cp -afL "${testlogs_dir}/" "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/"
+fi
 
 # Copy the test runner and test cmd into the sandbox.
 test_runner_file="${tmpdir_for_sandbox}/test_runner_inside_qemu.sh"
@@ -121,17 +124,21 @@ cp -afL "${BAZEL_QEMU_TEST_RUNNER_PATH}" "${test_runner_file}"
 
 # Launch the qemu test.
 retval=0
-(exec env - \
+exec env - \
   QEMU_TEST_FS_PATH="${tmpdir_for_sandbox}" \
   QEMU_KERNEL_IMAGE="${KERNEL_IMAGE}" \
   QEMU_DISK_BASE_RO="${PWD}/${DISK_IMAGE}" \
-  "${RUN_QEMU_SCRIPT}" ) || retval=$?
+  INTERACTIVE_MODE="${INTERACTIVE_MODE}" \
+  SSH_PORT="${SSH_PORT}" \
+  "${RUN_QEMU_SCRIPT}" || retval=$?
 
-# We use a known path to find the testlogs directory so that we can copy the results back from qemu.
-testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
-qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
-qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
+if [[ "$INTERACTIVE_MODE" != "true" ]]; then
+  # We use a known path to find the testlogs directory so that we can copy the results back from qemu.
+  testlogs_dir="${TEST_WARNINGS_OUTPUT_FILE%%/testlogs/*}/testlogs/"
+  qemu_warnings_file=$(strip_pwd_from_path "${TEST_WARNINGS_OUTPUT_FILE}")
+  qemu_testlogs_dir="${qemu_warnings_file/${qemu_warnings_file##*/testlogs/}}"
 
-cp -afL "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/" "${testlogs_dir}/"
+  cp -afL "${tmpdir_for_sandbox}/${qemu_testlogs_dir}/" "${testlogs_dir}/"
+fi
 
 exit $retval

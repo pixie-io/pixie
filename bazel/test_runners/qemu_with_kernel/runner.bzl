@@ -122,3 +122,43 @@ qemu_with_kernel_test_runner = rule(
     ],
     executable = True,
 )
+
+def _interactive_impl(ctx):
+    transitive_runfiles = []
+    transitive_runfiles.append(ctx.attr._qemu_runner[DefaultInfo].default_runfiles)
+    for target in ctx.attr.data:
+        transitive_runfiles.append(target[DefaultInfo].default_runfiles)
+    runfiles = ctx.runfiles()
+    runfiles = runfiles.merge_all(transitive_runfiles)
+
+    output_script = ctx.actions.declare_file(ctx.attr.name + ".sh")
+    ctx.actions.expand_template(
+        template = ctx.files._interactive_runner_tpl[0],
+        output = output_script,
+        substitutions = {
+            "%qemu_runner_path%": "bazel/test_runners/qemu_with_kernel/test_runner.sh",
+        },
+        is_executable = True,
+    )
+    return DefaultInfo(
+        files = depset(
+            [output_script],
+        ),
+        runfiles = runfiles,
+        executable = output_script,
+    )
+
+qemu_with_kernel_interactive_runner = rule(
+    implementation = _interactive_impl,
+    attrs = {
+        "data": attr.label_list(),
+        "_interactive_runner_tpl": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:interactive_runner.sh"),
+            allow_single_file = True,
+        ),
+        "_qemu_runner": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:runner"),
+        ),
+    },
+    executable = True,
+)

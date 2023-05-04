@@ -35,7 +35,25 @@ if [[ -n "${GTEST_TMP_DIR}" ]]; then
     mkdir -p "${GTEST_TMP_DIR}"
 fi
 
-# Actually run the test and capture the return value.
-retval=0
-"${test_exec_path:?}" || retval=$?
-exit $retval
+if [[ "$INTERACTIVE_MODE" != "true" ]]; then
+  # Actually run the test and capture the return value.
+  retval=0
+  "${test_exec_path:?}" || retval=$?
+  exit $retval
+else
+  echo "Setting up eth0"
+  ip link set dev eth0 up
+  ifconfig eth0 10.0.2.15 netmask 255.255.255.0
+  route add default gw 10.0.2.2
+  echo "Starting SSH Daemon for running interactive mode"
+  mkdir -p "/etc/ssh"
+  echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
+  mkdir -p "/root/.ssh"
+  cat "${SSH_PUB_KEY}" >> /root/.ssh/authorized_keys
+  ssh-keygen -A -N '' -b 1024 &> /dev/null
+  useradd sshd
+  mkdir -p "/run/sshd"
+  mkdir -p "/var/log"
+  exec /usr/sbin/sshd -p "${SSH_PORT}" -e -D
+  exit 0
+fi

@@ -75,6 +75,9 @@ function mount_system_dirs() {
 
   mkdir -p /dev/shm
   mount -t tmpfs tmpfs /dev/shm
+
+  mkdir -p /dev/pts
+  mount -t devpts devpts /dev/pts
 }
 
 function mount_test_fs() {

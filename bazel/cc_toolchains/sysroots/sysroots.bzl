@@ -34,9 +34,9 @@ SYSROOT_LOCATIONS = dict(
         urls = ["https://storage.googleapis.com/pixie-dev-public/sysroots/pl6/sysroot-amd64-test.tar.gz"],
     ),
     sysroot_x86_64_glibc2_36_debug = dict(
-        sha256 = "5639c73b5afd7c16bbdcbfcbd54262ea232283a5f5b4852e51c77062dea62f2e",
+        sha256 = "1430be9aa4290060c45f2afddeef59460746ccea91435605ce3d6fe907f6a558",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/sysroots/pl6/sysroot-amd64-debug.tar.gz"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/sysroots/pl7/sysroot-amd64-debug.tar.gz"],
     ),
     sysroot_aarch64_glibc2_36_runtime = dict(
         sha256 = "48ea0856326974dca562db5a4e7ef09befef50fdb7a13698966e06393a3b090c",
