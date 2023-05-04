@@ -4,7 +4,7 @@ import pxtrace
 import px
 
 sendmsg_program = """
-// socketsize tool shows the size stats (coutn, size, and throughput) for both read and write socket I/O requests.
+// socketsize tool shows the socket stats (count, size, and throughput) for both read and write socket I/O requests.
 
 #include <linux/socket.h>
 #include <net/sock.h>
