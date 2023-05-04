@@ -18,7 +18,10 @@
 
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -32,10 +35,13 @@
 #include "src/shared/upid/upid.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/output.h"
+#include "src/stirling/testing/overloads.h"
 
 #define ASSERT_NOT_EMPTY_AND_GET_RECORDS(lhs, tablets) \
   ASSERT_EQ(tablets.size(), 1);                        \
   lhs = tablets[0].records;
+
+using ::testing::IsSupersetOf;
 
 namespace px {
 
@@ -179,6 +185,41 @@ class Timeout {
   std::chrono::nanoseconds timeout_;
   std::chrono::time_point<std::chrono::steady_clock> start_;
 };
+
+template <typename TRecord>
+bool RecordsContains(const std::vector<TRecord>& records, const std::vector<TRecord>& expected) {
+  for (const auto& expected_record : expected) {
+    bool in_records = false;
+    for (const auto& r : records) {
+      if (expected_record == r) {
+        in_records = true;
+        break;
+      }
+    }
+    if (!in_records) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// WaitAndExpectRecords calls `get_records` repeatedly until all of the `expected` records are
+// contained in the response to `get_records`. `TRecord` is required to have a operator== overload,
+// and suggested to have a PrintTo overload, see overloads.h for examples. `TGetRecords`
+// should be a function that returns a std::vector<TRecord>.
+template <typename TRecord, typename TGetRecords>
+std::vector<TRecord> WaitAndExpectRecords(
+    TGetRecords get_records, std::vector<TRecord> expected,
+    std::chrono::nanoseconds sleep_time = std::chrono::milliseconds{200}) {
+  std::vector<TRecord> records;
+  Timeout t;
+  while (!RecordsContains(records, expected) && !t.TimedOut()) {
+    records = get_records();
+    std::this_thread::sleep_for(sleep_time);
+  }
+  EXPECT_THAT(records, IsSupersetOf(expected));
+  return records;
+}
 
 }  // namespace testing
 }  // namespace stirling

@@ -35,6 +35,8 @@ if [[ -n "${GTEST_TMP_DIR}" ]]; then
     mkdir -p "${GTEST_TMP_DIR}"
 fi
 
+export TESTING_UNDER_QEMU=true
+
 # Actually run the test and capture the return value.
 retval=0
 "${test_exec_path:?}" || retval=$?
