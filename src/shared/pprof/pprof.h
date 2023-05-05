@@ -31,7 +31,8 @@ using PProfProfile = ::perftools::profiles::Profile;
 using histo_t = absl::flat_hash_map<std::string, uint64_t>;
 
 // https://github.com/google/pprof/blob/main/proto/profile.proto
-PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms, const histo_t& histo);
+PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms,
+                                const histo_t& histo);
 
 }  // namespace shared
 }  // namespace px

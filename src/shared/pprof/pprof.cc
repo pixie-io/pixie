@@ -24,7 +24,8 @@
 namespace px {
 namespace shared {
 
-PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms, const histo_t& histo) {
+PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms,
+                                const histo_t& histo) {
   // Info on the pprof proto format:
   // https://github.com/google/pprof/blob/main/proto/profile.proto
 
@@ -134,5 +135,5 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_m
   return profile;
 }
 
-}  // namespace stirling
+}  // namespace shared
 }  // namespace px
