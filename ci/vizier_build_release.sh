@@ -20,6 +20,7 @@ set -ex
 
 printenv
 
+artifacts_dir="${ARTIFACTS_DIR:?}"
 versions_file="$(realpath "${VERSIONS_FILE:?}")"
 repo_path=$(pwd)
 release_tag=${TAG_NAME##*/v}
@@ -54,6 +55,9 @@ yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 sha256sum "${yamls_tar}" | awk '{print $1}' > sha
 gsutil cp "${yamls_tar}" "${output_path}/vizier_yamls.tar"
 gsutil cp sha "${output_path}/vizier_yamls.tar.sha256"
+
+cp "${yamls_tar}" "${artifacts_dir}/vizier_yamls.tar"
+cp sha "${artifacts_dir}/vizier_yamls.tar.sha256"
 
 # Upload templated YAMLs.
 tmp_dir="$(mktemp -d)"
