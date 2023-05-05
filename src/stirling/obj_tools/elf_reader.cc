@@ -614,6 +614,15 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
   if (!ifs.seekg(offset)) {
     return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
   }
+  // To protect against our ELF parsing logic locating bogus memory, set a bound on
+  // how large of a string we will allocate (100 MB). See
+  // https://github.com/pixie-io/pixie/issues/1111 for more details.
+  if (symbol.size > 100 * 1024 * 1024) {
+    return error::Internal(
+        "ELF symbol=$0 bytecode detected as size=$0 bytes. Refusing to preallocate that much "
+        "memory",
+        symbol.name, symbol.size);
+  }
   utils::u8string byte_code(symbol.size, '\0');
   auto* buf = reinterpret_cast<char*>(byte_code.data());
   if (!ifs.read(buf, symbol.size)) {
