@@ -23,9 +23,9 @@ push_images_for_arch() {
   build_type="$4"
   bazel_args="$5"
 
-  bazel run --stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
+  bazel run --config=stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
       --config="${arch}_sysroot" \
-      --stamp "${build_type}" "${image_rule}" "${bazel_args}" > /dev/null
+      --config=stamp "${build_type}" "${image_rule}" "${bazel_args}" > /dev/null
 }
 
 push_multiarch_image() {
@@ -55,6 +55,6 @@ push_all_multiarch_images() {
   while read -r image;
   do
     push_multiarch_image "${image}"
-  done < <(bazel run --stamp -c opt --//k8s:image_version="${release_tag}" \
-          --stamp "${build_type}" "${image_list_rule}" "${bazel_args}")
+  done < <(bazel run --config=stamp -c opt --//k8s:image_version="${release_tag}" \
+          --config=stamp "${build_type}" "${image_list_rule}" "${bazel_args}")
 }

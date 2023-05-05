@@ -19,8 +19,8 @@
 pixie_root=$(git rev-parse --show-toplevel)
 http_app_dir=src/stirling/source_connectors/socket_tracer/protocols/http/testing
 
-bazel run --stamp //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client:push_image
-bazel run --stamp //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server:push_image
+bazel run --config=stamp //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client:push_image
+bazel run --config=stamp //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server:push_image
 
 ns="px-go-http"
 

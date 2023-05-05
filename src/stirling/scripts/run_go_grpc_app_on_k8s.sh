@@ -16,8 +16,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-bazel run --stamp src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:push_image
-bazel run --stamp src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:push_image
+bazel run --config=stamp src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client:push_image
+bazel run --config=stamp src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server:push_image
 
 namespace_name="px-go-grpc"
 

@@ -38,7 +38,7 @@ darwin_arm64_binary=$(bazel cquery -c opt //src/pixie_cli:px_darwin_arm64 --outp
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-bazel build -c opt --stamp //src/pixie_cli:px_darwin_amd64 //src/pixie_cli:px_darwin_arm64 //src/pixie_cli:px
+bazel build -c opt --config=stamp //src/pixie_cli:px_darwin_amd64 //src/pixie_cli:px_darwin_arm64 //src/pixie_cli:px
 
 # Avoid dealing with bazel's symlinks by copying binaries into a temp dir.
 binary_dir="$(mktemp -d)"
@@ -50,7 +50,7 @@ cp "${darwin_arm64_binary}" "${binary_dir}"
 darwin_arm64_binary="${binary_dir}/$(basename "${darwin_arm64_binary}")"
 
 # Create and push docker image.
-bazel run -c opt --stamp //src/pixie_cli:push_px_image
+bazel run -c opt --config=stamp //src/pixie_cli:push_px_image
 
 if [[ ! "$release_tag" == *"-"* ]]; then
     # Create rpm package.
