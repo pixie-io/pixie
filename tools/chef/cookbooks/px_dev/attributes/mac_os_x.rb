@@ -54,6 +54,6 @@ default['prototool']['sha256'] =
   '5ca2a19f1cb04bc5059bb07e14d565231246e623f7523fafe9389b463addf645'
 
 default['shellcheck']['download_path'] =
-  'https://github.com/koalaman/shellcheck/releases/download/v0.7.0/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
+  'https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.darwin.x86_64.tar.xz'
 default['shellcheck']['sha256'] =
-  'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
+  '7d3730694707605d6e60cec4efcb79a0632d61babc035aa16cda1b897536acf5'
