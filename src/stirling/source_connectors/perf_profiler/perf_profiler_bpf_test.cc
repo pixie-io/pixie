@@ -232,10 +232,6 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
     }
   }
   
-  // void TearDown() override {
-  //   PX_UNUSED(source_.Stop());
-  // }
-
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     auto stack_traces_column = columns_[kStackTraceStackTraceStrIdx];
     auto counts_column = columns_[kStackTraceCountIdx];
