@@ -16,24 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/perf_profiler/pprof/pprof.h"
-
-#include <gflags/gflags.h>
+#include "src/shared/pprof/pprof.h"
 
 #include <absl/strings/str_split.h>
 #include <vector>
 
-DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
-
 namespace px {
-namespace stirling {
+namespace shared {
 
-PProfProfile CreatePProfProfile(const uint32_t num_cpus, const histo_t& histo) {
+PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms, const histo_t& histo) {
   // Info on the pprof proto format:
   // https://github.com/google/pprof/blob/main/proto/profile.proto
 
+  // period_ms is the stack trace sampling period used by the eBPF stack trace sampling probe.
   // period_ns will be used when populating the nanos count.
-  const uint64_t period_ms = FLAGS_stirling_profiler_stack_trace_sample_period_ms;
   const uint64_t period_ns = period_ms * 1000 * 1000;
 
   // Tracks which strings have been inserted into the profile.
