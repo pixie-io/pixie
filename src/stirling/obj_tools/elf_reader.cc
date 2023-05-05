@@ -622,7 +622,7 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
   // See https://github.com/pixie-io/pixie/issues/1111 for more details.
   if (symbol.size > 100 * 2048) {
     return error::Internal(
-        "ELF symbol=$0 bytecode detected as size=$0 bytes. Refusing to preallocate that much "
+        "ELF symbol=$0 bytecode detected as size=$1 bytes. Refusing to preallocate that much "
         "memory",
         symbol.name, symbol.size);
   }
