@@ -59,7 +59,7 @@ jobs:
         name: vizier-artifacts/
         path: artifacts/
   create-github-release:
-    if: ${{ !contains(github.event.ref, '-') }}
+    #if: ${{ !contains(github.event.ref, '-') }}
     name: Create Release on Github
     runs-on: ubuntu-latest
     needs: build-release
