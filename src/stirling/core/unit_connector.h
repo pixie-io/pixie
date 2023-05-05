@@ -111,6 +111,22 @@ class UnitConnector {
     return Status::OK();
   }
 
+  Status ResetConnectorContext(absl::flat_hash_set<md::UPID> upids) {
+    // Stop transferring data.
+    PX_RETURN_IF_ERROR(StopTransferDataThread());
+    if (upids.size() == 0) {
+      // The upids set is empty: trace all processes and use automatic context refresh.
+      ctx_ = std::make_unique<EverythingLocalContext>();
+    } else {
+      // The upids set is non-empty: we will trace only processes identified by that set.
+      ctx_ = std::make_unique<StandaloneContext>(upids);
+    }
+    // Restart.
+    PX_RETURN_IF_ERROR(StartTransferDataThread());
+
+    return Status::OK();
+  }
+
   Status Init(absl::flat_hash_set<md::UPID> upids = {}) {
     if (upids.size() == 0) {
       // Enter this branch if Init() is called with no arguments (i.e. with a default empty set).
