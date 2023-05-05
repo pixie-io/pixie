@@ -615,9 +615,12 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
     return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
   }
   // To protect against our ELF parsing logic locating bogus memory, set a bound on
-  // how large of a string we will allocate (100 MB). See
-  // https://github.com/pixie-io/pixie/issues/1111 for more details.
-  if (symbol.size > 100 * 1024 * 1024) {
+  // how large of a string we will allocate. SymbolByteCode's main use case is to determine
+  // return instructions for the crypto/tls.(*Conn).Write and crypto/tls.(*Conn).Read Go functions.
+  // These symbols' are roughly 2 KiB and were used to inform the threshold below. We apply
+  // an additional 100x multiplier for additional headroom.
+  // See https://github.com/pixie-io/pixie/issues/1111 for more details.
+  if (symbol.size > 100 * 2048) {
     return error::Internal(
         "ELF symbol=$0 bytecode detected as size=$0 bytes. Refusing to preallocate that much "
         "memory",
