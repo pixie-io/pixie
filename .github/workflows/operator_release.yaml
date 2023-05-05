@@ -40,9 +40,44 @@ jobs:
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
+        export ARTIFACTS_DIR="$(pwd)/artifacts"
+        mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
         ./ci/operator_build_release.sh
     - name: Update Manifest
       env:
         ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
       run: ./ci/update_artifact_manifest.sh
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: operator-artifacts
+        path: artifacts/
+  create-github-release:
+    if: ${{ !contains(github.event.ref, '-') }}
+    name: Create Release on Github
+    runs-on: ubuntu-latest
+    needs: build-release
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - name: Create Release
+      env:
+        REF: ${{ github.event.ref }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OWNER: pixie-io
+        REPO: pixie
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        # actions/checkout doesn't get the tag annotation properly.
+        git fetch origin tag "${TAG_NAME}" -f
+        export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
+        gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
+          --notes $'Pixie Operator Release:\n'"${changelog}"
+        gh release upload "${TAG_NAME}" operator-artifacts/*
+      # yamllint enable rule:indentation
