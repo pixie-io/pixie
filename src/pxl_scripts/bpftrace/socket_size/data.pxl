@@ -169,7 +169,7 @@ def sock_recvmsg_func():
 
     df = df.groupby(['src', 'dst']).agg(count=('size', px.count), total_size=('size', px.sum))
     df['avg_size'] = df['total_size'] / df['count']
-    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration)-1), 1) * 60)
+    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration) - 1), 1) * 60)
 
     # Filter for a particular service/pod, if desired.
     df = df[px.contains(df['src'], '')]
