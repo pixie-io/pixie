@@ -36,8 +36,11 @@ namespace stirling {
 class Profiler : public UnitConnector<PerfProfileConnector> {
  public:
   Status PrintData() {
-    // This prints a long spew of counts and stack traces.
-    // We will replace this with a pprof proto file writer.
+    // Build the stack traces histogram.
+    PX_RETURN_IF_ERROR(BuildHistogram());
+
+    // Print the stack traces histogram.
+    // TODO(jps): replace this with a pprof proto file writer.
     // 15x: libc.so;main;foo;bar
     // 12x: libc.so;main;foo;qux
     for (const auto& [str, count] : histo_) {
@@ -46,6 +49,7 @@ class Profiler : public UnitConnector<PerfProfileConnector> {
     return Status::OK();
   }
 
+ private:
   Status BuildHistogram() {
     PX_ASSIGN_OR_RETURN(const auto& records, ConsumeRecords(0));
 
@@ -62,7 +66,6 @@ class Profiler : public UnitConnector<PerfProfileConnector> {
     return Status::OK();
   }
 
- private:
   // A local stack trace histo (for convenience, to be populated after all samples are collected).
   absl::flat_hash_map<std::string, uint64_t> histo_;
 };
@@ -97,9 +100,6 @@ Status RunProfiler() {
 
   // Stop collecting data and do a final read out of eBPF perf buffer & maps.
   PX_RETURN_IF_ERROR(g_profiler->Stop());
-
-  // Build the stack traces histogram.
-  PX_RETURN_IF_ERROR(g_profiler->BuildHistogram());
 
   // Print the info. We will replace this with a pprof proto file write out.
   PX_RETURN_IF_ERROR(g_profiler->PrintData());
