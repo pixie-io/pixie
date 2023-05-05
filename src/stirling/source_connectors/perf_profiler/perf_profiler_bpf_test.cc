@@ -231,7 +231,7 @@ class PerfProfileBPFTest : public ::testing::TestWithParam<std::filesystem::path
       test_run_time_ = std::chrono::seconds{FLAGS_stirling_profiler_table_update_period_seconds};
     }
   }
-  
+
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     auto stack_traces_column = columns_[kStackTraceStackTraceStrIdx];
     auto counts_column = columns_[kStackTraceCountIdx];
@@ -505,7 +505,7 @@ TEST_F(FastPerfProfileBPFTest, PerfProfilerJavaArtifactsCleanupTest) {
   std::set<int> pids_with_java_symbols;
   {
     Timeout timer;
-    while( !timer.TimedOut() && pids_with_java_symbols.size() < kNumSubProcs) {
+    while (!timer.TimedOut() && pids_with_java_symbols.size() < kNumSubProcs) {
       ASSERT_OK(source_.Flush());
       auto s = source_.ConsumeRecords(kProfilerTableNum);
       if (s.ok()) {
@@ -552,8 +552,8 @@ TEST_F(FastPerfProfileBPFTest, PerfProfilerJavaArtifactsCleanupTest) {
 
   // Need to pass in an invalid upid set to prevent picking up the default context that
   // accepts all pids.
-  const md::UPID invalid_upid = { 0, 0, 0 };
-  const absl::flat_hash_set<md::UPID> invalid_upid_set = { invalid_upid };
+  const md::UPID invalid_upid = {0, 0, 0};
+  const absl::flat_hash_set<md::UPID> invalid_upid_set = {invalid_upid};
   ASSERT_OK(source_.ResetConnectorContext(invalid_upid_set));
 
   // Now that the sub-processes are gone, iterate over the previously found artifact paths.
@@ -588,7 +588,7 @@ TEST_F(FastPerfProfileBPFTest, TestOutOfContext) {
 
   // The "out of context" test needs to handle init., param. setup, and start each individually,
   //  so that it can pass in an empty set of upids rather than the subprocess upids.
-  const md::UPID invalid_upid = { 0, 0, 0 };
+  const md::UPID invalid_upid = {0, 0, 0};
   const absl::flat_hash_set<md::UPID> invalid_upid_set = {invalid_upid};
   ASSERT_OK(source_.Init(invalid_upid_set));
   ASSERT_OK(source_.Start());
