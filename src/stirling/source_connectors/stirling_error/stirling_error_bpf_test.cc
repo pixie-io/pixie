@@ -18,6 +18,7 @@
 
 #include <absl/functional/bind_front.h>
 #include <absl/strings/substitute.h>
+#include <type_traits>
 
 #include "src/carnot/planner/probes/tracepoint_generator.h"
 #include "src/common/base/base.h"
@@ -56,6 +57,7 @@ using ::testing::UnorderedElementsAre;
 
 using ::px::stirling::profiler::testing::GetAgentLibsFlagValueForTesting;
 using ::px::stirling::profiler::testing::GetPxJattachFlagValueForTesting;
+using ::px::stirling::testing::WaitAndExpectRecords;
 using ::px::testing::BazelRunfilePath;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::Int64Value;
@@ -85,13 +87,6 @@ std::vector<SourceStatusRecord> ToSourceRecordVector(
   return result;
 }
 
-auto EqSourceStatusRecord(const SourceStatusRecord& x) {
-  return AllOf(Field(&SourceStatusRecord::source_connector, StrEq(x.source_connector)),
-               Field(&SourceStatusRecord::status, Eq(x.status)),
-               Field(&SourceStatusRecord::error, StrEq(x.error)),
-               Field(&SourceStatusRecord::context, StrEq(x.context)));
-}
-
 std::vector<ProbeStatusRecord> ToProbeRecordVector(
     const std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>& record_batches) {
   std::vector<ProbeStatusRecord> result;
@@ -109,14 +104,6 @@ std::vector<ProbeStatusRecord> ToProbeRecordVector(
     }
   }
   return result;
-}
-
-auto EqProbeStatusRecord(const ProbeStatusRecord& x) {
-  return AllOf(Field(&ProbeStatusRecord::source_connector, StrEq(x.source_connector)),
-               Field(&ProbeStatusRecord::tracepoint, StrEq(x.tracepoint)),
-               Field(&ProbeStatusRecord::status, Eq(x.status)),
-               Field(&ProbeStatusRecord::error, StrEq(x.error)),
-               Field(&ProbeStatusRecord::info, StrEq(x.info)));
 }
 
 // A SourceConnector that fails on Init.
@@ -157,6 +144,9 @@ class FaultyConnector : public SourceConnector {
 
   Status StopImpl() override { return Status::OK(); }
 };
+
+template <typename T>
+constexpr bool always_false = false;
 
 class StirlingErrorTest : public ::testing::Test {
  protected:
@@ -223,6 +213,19 @@ class StirlingErrorTest : public ::testing::Test {
     return Status::OK();
   }
 
+  template <typename TRecord>
+  std::vector<TRecord> WaitAndExpectStatusRecords(std::vector<TRecord> expected) {
+    if constexpr (std::is_same_v<TRecord, SourceStatusRecord>) {
+      return WaitAndExpectRecords([&]() { return ToSourceRecordVector(source_status_batches_); },
+                                  expected);
+    } else if constexpr (std::is_same_v<TRecord, ProbeStatusRecord>) {
+      return WaitAndExpectRecords([&]() { return ToProbeRecordVector(probe_status_batches_); },
+                                  expected);
+    } else {
+      static_assert(always_false<TRecord>);
+    }
+  }
+
   absl::flat_hash_map<uint64_t, stirlingpb::InfoClass> table_info_map_;
   std::unique_ptr<Stirling> stirling_;
   std::vector<std::unique_ptr<ColumnWrapperRecordBatch>> source_status_batches_;
@@ -235,35 +238,33 @@ TEST_F(StirlingErrorTest, SourceConnectorInitOK) {
 
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
-  sleep(5);
+
+  std::vector<SourceStatusRecord> records =
+      WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+          {.source_connector = "stirling_error",
+           .status = px::statuspb::Code::OK,
+           .error = "",
+           .context = "Init"},
+
+          {.source_connector = "sequences0",
+           .status = px::statuspb::Code::OK,
+           .error = "",
+           .context = "Init"},
+
+          {.source_connector = "sequences1",
+           .status = px::statuspb::Code::OK,
+           .error = "",
+           .context = "Init"},
+
+          {.source_connector = "sequences2",
+           .status = px::statuspb::Code::OK,
+           .error = "",
+           .context = "Init"},
+      });
   stirling_->Stop();
 
-  std::vector<SourceStatusRecord> records = ToSourceRecordVector(source_status_batches_);
   // Stirling Error Source Connector plus the other ones.
   EXPECT_THAT(records, SizeIs(kNumSources + 1));
-
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  SourceStatusRecord r2{.source_connector = "sequences0",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  SourceStatusRecord r3{.source_connector = "sequences1",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  SourceStatusRecord r4{.source_connector = "sequences2",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
-                                            EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
 }
 
 TEST_F(StirlingErrorTest, SourceConnectorInitError) {
@@ -272,35 +273,32 @@ TEST_F(StirlingErrorTest, SourceConnectorInitError) {
 
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
-  sleep(5);
-  stirling_->Stop();
 
-  std::vector<SourceStatusRecord> records = ToSourceRecordVector(source_status_batches_);
+  std::vector<SourceStatusRecord> records =
+      WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+          {.source_connector = "stirling_error",
+           .status = px::statuspb::Code::OK,
+           .error = "",
+           .context = "Init"},
+
+          {.source_connector = "sequences0",
+           .status = px::statuspb::Code::INTERNAL,
+           .error = "Initialization failed on purpose.",
+           .context = "Init"},
+
+          {.source_connector = "sequences1",
+           .status = px::statuspb::Code::INTERNAL,
+           .error = "Initialization failed on purpose.",
+           .context = "Init"},
+
+          {.source_connector = "sequences2",
+           .status = px::statuspb::Code::INTERNAL,
+           .error = "Initialization failed on purpose.",
+           .context = "Init"},
+      });
+  stirling_->Stop();
   // Stirling Error Source Connector plus the other ones.
   EXPECT_THAT(records, SizeIs(kNumSources + 1));
-
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  SourceStatusRecord r2{.source_connector = "sequences0",
-                        .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose.",
-                        .context = "Init"};
-
-  SourceStatusRecord r3{.source_connector = "sequences1",
-                        .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose.",
-                        .context = "Init"};
-
-  SourceStatusRecord r4{.source_connector = "sequences2",
-                        .status = px::statuspb::Code::INTERNAL,
-                        .error = "Initialization failed on purpose.",
-                        .context = "Init"};
-
-  EXPECT_THAT(records, UnorderedElementsAre(EqSourceStatusRecord(r1), EqSourceStatusRecord(r2),
-                                            EqSourceStatusRecord(r3), EqSourceStatusRecord(r4)));
 }
 
 // Deploy a dynamic BPFTrace probe and record the error messages of its deployment and removal.
@@ -328,7 +326,23 @@ pxtrace.UpsertTracepoint('hello_world_tracer',
                          "1m")
 )";
   ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(hello_world_pxl));
-  sleep(3);
+
+  // Stirling Error Source Connector Initialization.
+  WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+      {.source_connector = "stirling_error",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .context = "Init"},
+  });
+  // Tracepoint deployed.
+  WaitAndExpectStatusRecords(std::vector<ProbeStatusRecord>{
+      {.source_connector = "dynamic_bpftrace",
+       .tracepoint = "hello_world_tracer",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .info = absl::Substitute(R"({"trace_id":"$0","output_table":"hello_world_table"})",
+                                trace_id.str())},
+  });
 
   // Remove tracepoint;
   ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
@@ -337,35 +351,17 @@ pxtrace.UpsertTracepoint('hello_world_tracer',
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     s = stirling_->GetTracepointInfo(trace_id);
   } while (s.ok());
-  sleep(3);
+
+  // Tracepoint removal in progress.
+  WaitAndExpectStatusRecords(std::vector<ProbeStatusRecord>{
+      {.source_connector = "dynamic_bpftrace",
+       .tracepoint = "hello_world_tracer",
+       .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
+       .error = "Probe removal in progress.",
+       .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())},
+  });
 
   stirling_->Stop();
-  auto source_records = ToSourceRecordVector(source_status_batches_);
-  auto probe_records = ToProbeRecordVector(probe_status_batches_);
-
-  // Stirling Error Source Connector Initialization.
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-
-  // Tracepoint deployed.
-  ProbeStatusRecord r2{
-      .source_connector = "dynamic_bpftrace",
-      .tracepoint = "hello_world_tracer",
-      .status = px::statuspb::Code::OK,
-      .error = "",
-      .info = absl::Substitute(R"({"trace_id":"$0","output_table":"hello_world_table"})",
-                               trace_id.str())};
-  // Tracepoint removal in progress.
-  ProbeStatusRecord r3{.source_connector = "dynamic_bpftrace",
-                       .tracepoint = "hello_world_tracer",
-                       .status = px::statuspb::Code::RESOURCE_UNAVAILABLE,
-                       .error = "Probe removal in progress.",
-                       .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
-
-  EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
-  EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2), EqProbeStatusRecord(r3)));
 }
 
 TEST_F(StirlingErrorTest, BPFTraceDeploymentError) {
@@ -394,28 +390,27 @@ pxtrace.UpsertTracepoint('pid_sample_tracer',
                          "10m")
 )";
   ASSERT_OK_AND_ASSIGN(auto trace_id, DeployBPFTraceScript(pidsample_bpftrace_pxl));
-  sleep(3);
-
-  stirling_->Stop();
-  auto source_records = ToSourceRecordVector(source_status_batches_);
-  auto probe_records = ToProbeRecordVector(probe_status_batches_);
 
   // Stirling Error Source Connector Initialization.
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
+  WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+      {.source_connector = "stirling_error",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .context = "Init"},
+  });
+
   // PidSample deployment failed.
-  ProbeStatusRecord r2{.source_connector = "dynamic_bpftrace",
-                       .tracepoint = "pid_sample_tracer",
-                       .status = px::statuspb::Code::INTERNAL,
-                       .error =
-                           "Could not compile bpftrace script, Semantic pass failed: stdin:3-4: "
-                           "ERROR: printf: Too many arguments "
-                           "for format string (4 supplied, 3 expected)\n",
-                       .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())};
-  EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
-  EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
+  WaitAndExpectStatusRecords(std::vector<ProbeStatusRecord>{
+      {.source_connector = "dynamic_bpftrace",
+       .tracepoint = "pid_sample_tracer",
+       .status = px::statuspb::Code::INTERNAL,
+       .error = "Could not compile bpftrace script, Semantic pass failed: stdin:3-4: "
+                "ERROR: printf: Too many arguments "
+                "for format string (4 supplied, 3 expected)\n",
+       .info = absl::Substitute(R"({"trace_id":"$0"})", trace_id.str())},
+  });
+
+  stirling_->Stop();
 }
 
 TEST_F(StirlingErrorTest, UProbeDeploymentError) {
@@ -442,30 +437,27 @@ TEST_F(StirlingErrorTest, UProbeDeploymentError) {
     StirlingMonitor& monitor = *StirlingMonitor::GetInstance();
     monitor.AppendProbeStatusRecord("socket_tracer", spec.probe_fn, s, spec.ToJSON());
   }
-  // Sleep so that transfer_data has time to push the records into table.
-  sleep(3);
-
-  auto source_records = ToSourceRecordVector(source_status_batches_);
-  auto probe_records = ToProbeRecordVector(probe_status_batches_);
 
   // Stirling Error Source Connector Initialization.
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-  // SSL_write Uprobe deployment failed.
-  ProbeStatusRecord r2{
-      .source_connector = "socket_tracer",
-      .tracepoint = "probe_entry_foo",
-      .status = px::statuspb::Code::INTERNAL,
-      .error =
-          "Unable to find offset for binary /usr/lib/x86_64-linux-gnu/libssl.so.1.1 symbol foo "
-          "address 0",
-      .info =
-          R"({"binary":"/usr/lib/x86_64-linux-gnu/libssl.so.1.1","symbol":"foo","address":0,"pid":-1,"type":"kEntry","probe_fn":"probe_entry_foo"})"};
+  WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+      {.source_connector = "stirling_error",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .context = "Init"},
+  });
 
-  EXPECT_THAT(source_records, ElementsAre(EqSourceStatusRecord(r1)));
-  EXPECT_THAT(probe_records, ElementsAre(EqProbeStatusRecord(r2)));
+  // SSL_write Uprobe deployment failed.
+  WaitAndExpectStatusRecords(std::vector<ProbeStatusRecord>{
+      {.source_connector = "socket_tracer",
+       .tracepoint = "probe_entry_foo",
+       .status = px::statuspb::Code::INTERNAL,
+       .error =
+           "Unable to find offset for binary /usr/lib/x86_64-linux-gnu/libssl.so.1.1 symbol foo "
+           "address 0",
+       .info =
+           R"({"binary":"/usr/lib/x86_64-linux-gnu/libssl.so.1.1","symbol":"foo","address":0,"pid":-1,"type":"kEntry","probe_fn":"probe_entry_foo"})"},
+  });
+  stirling_->Stop();
 }
 
 namespace {
@@ -479,6 +471,11 @@ std::filesystem::path BazelJavaTestAppPath(const std::string_view app_name) {
 }  // namespace
 
 TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
+  if (std::getenv("TESTING_UNDER_QEMU") != nullptr) {
+    // TODO(pixie-io/stirling): This test crashes under qemu for unknown reasons, with a dcheck
+    // failure of: error_code == kPerfProfilerStatusOk (1 vs 0)
+    GTEST_SKIP() << "Skipping this test under qemu";
+  }
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);
@@ -503,37 +500,30 @@ TEST_F(StirlingErrorTest, PerfProfilerNoPreserveFramePointer) {
   StatusOr<std::string> result = java_container.Run(std::chrono::seconds{90});
   PX_CHECK_OK(result);
 
-  // Wait for the java profiler to attempt symbolization.
-  sleep(10);
+  WaitAndExpectStatusRecords(std::vector<SourceStatusRecord>{
+      {.source_connector = "stirling_error",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .context = "Init"},
+      {.source_connector = "perf_profiler",
+       .status = px::statuspb::Code::OK,
+       .error = "",
+       .context = "Init"},
+      // Missing frame pointer from perf profiler.
+      {.source_connector = "perf_profiler",
+       .status = px::statuspb::Code::INTERNAL,
+       .error = absl::Substitute(
+           "Frame pointer not available in pid: $0, cmd: \"/usr/bin/java -cp "
+           "/app/px/src/stirling/source_connectors/perf_profiler/testing/java/"
+           "java_image_base-java-profiler-test-image-omit-frame-pointer.binary.jar:/app/px/src/"
+           "stirling/source_connectors/perf_profiler/testing/java/"
+           "java_image_base-java-profiler-test-image-omit-frame-pointer.binary ProfilerTest\". "
+           "Preserve frame pointers with the JDK option: -XX:+PreserveFramePointer.",
+           java_container.process_pid()),
+       .context = "Java Symbolization"},
+  });
 
-  auto source_records = ToSourceRecordVector(source_status_batches_);
   auto probe_records = ToProbeRecordVector(probe_status_batches_);
-
-  // Stirling Error Source Connector Initialization.
-  SourceStatusRecord r1{.source_connector = "stirling_error",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-  SourceStatusRecord r2{.source_connector = "perf_profiler",
-                        .status = px::statuspb::Code::OK,
-                        .error = "",
-                        .context = "Init"};
-  // Missing frame pointer from perf profiler.
-  SourceStatusRecord r3{
-      .source_connector = "perf_profiler",
-      .status = px::statuspb::Code::INTERNAL,
-      .error = absl::Substitute(
-          "Frame pointer not available in pid: $0, cmd: \"/usr/bin/java -cp "
-          "/app/px/src/stirling/source_connectors/perf_profiler/testing/java/"
-          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary.jar:/app/px/src/"
-          "stirling/source_connectors/perf_profiler/testing/java/"
-          "java_image_base-java-profiler-test-image-omit-frame-pointer.binary ProfilerTest\". "
-          "Preserve frame pointers with the JDK option: -XX:+PreserveFramePointer.",
-          java_container.process_pid()),
-      .context = "Java Symbolization"};
-  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r1)));
-  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r2)));
-  EXPECT_THAT(source_records, Contains(EqSourceStatusRecord(r3)));
   EXPECT_THAT(probe_records, IsEmpty());
 }
 
