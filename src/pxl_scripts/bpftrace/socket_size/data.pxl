@@ -14,6 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# WARNING: Depending on the size of your cluster and how network-intensive your Pods and services are, this tool
+# can generate a high volume of profiling data because it traces every single socket send/receive call.
+# Therefore, run it judiciously and for an approperiate amount of time based on your needs.
+
 import pxtrace
 import px
 
@@ -65,12 +69,10 @@ kprobe:sock_sendmsg
     @sdp[tid]= $dport;
     @ssad[tid] = $saddr;
     @slp[tid] = $lport;
-
 }
 
 kretprobe:sock_sendmsg
 {
-
     printf(\"time_:%llu tid:%u ssock:%d src_ip:%s lport:%d dst_ip:%s dst_port:%d size:%d",
         nsecs,
         tid,
@@ -166,7 +168,7 @@ kretprobe:sock_recvmsg
 
 def sock_sendmsg_func():
 
-    duration = "5m"
+    duration = "1m"
     table_name = 'sock_sendmsg_table'
     pxtrace.UpsertTracepoint('sock_sendmsg_tracer',
                              table_name,
@@ -196,7 +198,7 @@ def sock_sendmsg_func():
 
 def sock_recvmsg_func():
 
-    duration = "5m"
+    duration = "1m"
     table_name = 'sock_recvmsg_table'
     pxtrace.UpsertTracepoint('sock_recvmsg_tracer',
                              table_name,
