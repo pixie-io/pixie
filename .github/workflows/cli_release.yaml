@@ -13,8 +13,8 @@ jobs:
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
-  build-cli-release:
-    name: Build CLI Release
+  build-release:
+    name: Build Release
     runs-on: [self-hosted, nokvm]
     needs: get-dev-image
     container:
@@ -64,10 +64,10 @@ jobs:
       env:
         ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
       run: ./ci/update_artifact_manifest.sh
-  sign-cli-release:
-    name: Sign CLI Release for MacOS
+  sign-release:
+    name: Sign Release for MacOS
     runs-on: macos-latest
-    needs: build-cli-release
+    needs: build-release
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
@@ -95,10 +95,10 @@ jobs:
       with:
         name: macos-artifacts
         path: artifacts/
-  push-signed-cli-artifacts:
-    name: Push Signed CLI Artifacts for MacOS
+  push-signed-artifacts:
+    name: Push Signed Artifacts for MacOS
     runs-on: [self-hosted, nokvm]
-    needs: [get-dev-image, sign-cli-release]
+    needs: [get-dev-image, sign-release]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
     steps:
@@ -128,10 +128,11 @@ jobs:
       with:
         name: macos-artifacts
         path: artifacts/
-  create-github-cli-release:
-    name: Create CLI Release on Github
+  create-github-release:
+    if: ${{ !contains(github.event.ref, '-') }}
+    name: Create Release on Github
     runs-on: ubuntu-latest
-    needs: push-signed-cli-artifacts
+    needs: push-signed-artifacts
     permissions:
       contents: write
     steps:
