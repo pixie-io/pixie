@@ -617,7 +617,7 @@ StatusOr<utils::u8string> ElfReader::SymbolByteCode(std::string_view section,
   // To protect against our ELF parsing logic locating bogus memory, set a bound on
   // how large of a string we will allocate. SymbolByteCode's main use case is to determine
   // return instructions for the crypto/tls.(*Conn).Write and crypto/tls.(*Conn).Read Go functions.
-  // These symbols' are roughly 2 KiB and were used to inform the threshold below. We apply
+  // These symbols are roughly 2 KiB and were used to inform the threshold below. We apply
   // an additional 100x multiplier for additional headroom.
   // See https://github.com/pixie-io/pixie/issues/1111 for more details.
   if (symbol.size > 100 * 2048) {
