@@ -23,3 +23,5 @@ include:
 - aardvark-dns
 - netavark
 - podman
+# ssh is used to run qemu tests
+- openssh-server

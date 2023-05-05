@@ -60,7 +60,7 @@ def _test_runner_impl(ctx):
             "%diskimage%": "bazel/test_runners/qemu_with_kernel/disk_image.qcow2",
             "%kernelimage%": "bazel/test_runners/qemu_with_kernel/bzImage",
             "%runqemuscript%": "bazel/test_runners/qemu_with_kernel/run_qemu.sh",
-            "%testrunnerinsideqemu%": "bazel/test_runners/qemu_with_kernel/test_runner_inside_qemu.sh",
+            "%runsshd%": "bazel/test_runners/qemu_with_kernel/run_sshd.sh",
         },
         is_executable = True,
     )
@@ -68,7 +68,7 @@ def _test_runner_impl(ctx):
     runfiles = ctx.runfiles(files = [
         disk_image,
         kernel_bzimage,
-        ctx.files._test_runner_inside_qemu[0],
+        ctx.files._run_sshd[0],
         ctx.files._run_qemu_script[0],
     ])
 
@@ -108,12 +108,12 @@ qemu_with_kernel_test_runner = rule(
             default = Label("//bazel/test_runners/qemu_with_kernel:run_qemu.sh"),
             allow_single_file = True,
         ),
-        "_test_launcher_tpl": attr.label(
-            default = Label("//bazel/test_runners/qemu_with_kernel:launcher.sh"),
+        "_run_sshd": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:run_sshd.sh"),
             allow_single_file = True,
         ),
-        "_test_runner_inside_qemu": attr.label(
-            default = Label("//bazel/test_runners/qemu_with_kernel:test_runner_inside_qemu.sh"),
+        "_test_launcher_tpl": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:launcher.sh"),
             allow_single_file = True,
         ),
     },
