@@ -45,8 +45,8 @@ latest_output_path="gs://${bucket}/vizier/latest"
 
 push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${build_type}" "${extra_bazel_args[@]}"
 
-bazel build --stamp -c opt --//k8s:image_version="${release_tag}" \
-    --stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
+bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" \
+    --config=stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"

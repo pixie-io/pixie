@@ -113,7 +113,7 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
-    - --stamp
+    - --config=stamp
     - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
     path: /manifests/kustomize/paths
@@ -127,7 +127,7 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
-    - --stamp
+    - --config=stamp
     - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
     path: /manifests/kustomize/paths
@@ -141,7 +141,7 @@ profiles:
     path: /build/artifacts/context=./bazel/args
     value:
     - --compilation_mode=opt
-    - --stamp
+    - --config=stamp
     - --action_env=GOOGLE_APPLICATION_CREDENTIALS
   - op: replace
     path: /manifests/kustomize/paths

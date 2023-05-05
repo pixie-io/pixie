@@ -79,8 +79,8 @@ echo "Building and pushing stirling_wrapper image"
 echo "-------------------------------------------"
 
 bazel build -c "$COMPILATION_MODE" //src/stirling/binaries:stirling_wrapper_image
-# --stamp is needed to assign the image tag from username.
-bazel run -c "$COMPILATION_MODE" --stamp //src/stirling/binaries:push_stirling_wrapper_image
+# --config=stamp is needed to assign the image tag from username.
+bazel run -c "$COMPILATION_MODE" --config=stamp //src/stirling/binaries:push_stirling_wrapper_image
 
 echo ""
 echo "-------------------------------------------"
