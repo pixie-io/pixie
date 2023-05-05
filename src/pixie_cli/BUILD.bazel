@@ -76,7 +76,7 @@ container_push(
     format = "Docker",
     image = ":px_image",
     registry = "gcr.io",
-    repository = "pixie-prod/pixie-prod-artifacts/px",
+    repository = "pixie-oss/pixie-prod/px",
     tag = "{STABLE_BUILD_TAG}",
 )
 
