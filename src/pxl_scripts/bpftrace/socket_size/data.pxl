@@ -28,13 +28,13 @@ kprobe:sock_sendmsg
     }
 
     $lport = $s->__sk_common.skc_num;
-	$dport = $s->__sk_common.skc_dport;
+    $dport = $s->__sk_common.skc_dport;
 
     @ssock[tid] = $s;
-	@sdad[tid]= $daddr;
-	@sdp[tid]= $dport;
-	@ssad[tid] = $saddr;
-	@slp[tid] = $lport;
+    @sdad[tid]= $daddr;
+    @sdp[tid]= $dport;
+    @ssad[tid] = $saddr;
+    @slp[tid] = $lport;
 
 }
 
@@ -85,13 +85,13 @@ kprobe:sock_recvmsg
     }
 
     $lport = $s->__sk_common.skc_num;
-	$dport = $s->__sk_common.skc_dport;
+    $dport = $s->__sk_common.skc_dport;
 
     @rsock[tid] = $s;
-	@rdad[tid]= $daddr;
-	@rdp[tid]= $dport;
-	@rsad[tid] = $saddr;
-	@rlp[tid] = $lport;
+    @rdad[tid]= $daddr;
+    @rdp[tid]= $dport;
+    @rsad[tid] = $saddr;
+    @rlp[tid] = $lport;
 }
 
 kretprobe:sock_recvmsg
@@ -139,7 +139,7 @@ def sock_sendmsg_func():
 
     df = df.groupby(['src', 'dst']).agg(count=('size', px.count), total_size=('size', px.sum))
     df['avg_size'] = df['total_size'] / df['count']
-    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration)-1), 1) * 60)
+    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration) - 1), 1) * 60)
 
     # Filter for a particular service/pod, if desired.
     df = df[px.contains(df['src'], '')]
