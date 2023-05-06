@@ -55,15 +55,13 @@ jobs:
       pull-requests: write
       contents: write
     steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - name: Check for /perf command
-      uses: xt0rted/slash-command-action@bf51f8f5f4ea3d58abc7eca58f77104182b23e88
       id: command
+      uses: ./.github/actions/comment_command
       with:
-        command: perf
-        reaction: true
-        reaction-type: rocket
-        allow-edits: false
-        permission-level: admin
+        command-name: perf
+        admin-only: false
     - name: Parse /perf command
       id: parse
       run: |
