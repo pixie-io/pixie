@@ -75,12 +75,21 @@ function mount_system_dirs() {
 
   mkdir -p /dev/shm
   mount -t tmpfs tmpfs /dev/shm
+
+  mkdir -p /dev/pts
+  mount -t devpts devpts /dev/pts
 }
 
 function mount_test_fs() {
   # Mount the test filesystem.
   mkdir -p /test_fs
   mount -t 9p -o trans=virtio test_fs /test_fs || true
+}
+
+function setup_eth0() {
+  ip link set dev eth0 up
+  ifconfig eth0 10.0.2.15 netmask 255.255.255.0
+  route add default gw 10.0.2.2
 }
 
 function setup_networking() {
@@ -103,7 +112,8 @@ ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 
 EOF
-    fi
+  fi
+  setup_eth0
 }
 
 function setup_containers() {
@@ -166,9 +176,9 @@ Welcome to PX BPF Runner
 
 EOF
 
-test_runner="/test_fs/test_runner_inside_qemu.sh"
-if [[ -x "${test_runner}" ]]; then
-  exec /bin/bash -c "${test_runner}"
+run_sshd="/test_fs/run_sshd.sh"
+if [[ -x "${run_sshd}" ]]; then
+  exec /bin/bash -c "${run_sshd}"
 else
   exec /bin/exit_qemu_with_status 3
 fi

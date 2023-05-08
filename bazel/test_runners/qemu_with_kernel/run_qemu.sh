@@ -27,6 +27,7 @@ function check_env_set() {
 check_env_set QEMU_TEST_FS_PATH
 check_env_set QEMU_KERNEL_IMAGE
 check_env_set QEMU_DISK_BASE_RO
+check_env_set MONITOR_SOCK
 
 QEMU_MEMORY=${QEMU_MEMORY:-4096M}
 QEMU_CPU_COUNT=${QEMU_CPU_COUNT:-1}
@@ -76,16 +77,25 @@ flags+=(-append "console=ttyS0 root=/dev/sda")
 # Disable graphics mode.
 flags+=(-nographic)
 
+# Enable ssh port forwarding.
+flags+=(-device "virtio-net-pci,netdev=net0")
+flags+=(-netdev "user,id=net0,hostfwd=tcp::0-:22")
+
+flags+=(-monitor "unix:${MONITOR_SOCK},server,nowait")
+
 retval=0
 qemu-system-x86_64 "${flags[@]}" || retval=$?
 
 if [[ "${retval}" -gt 0 ]]; then
     if [[ "${retval}" -lt 128 ]]; then
-	echo "QEMU failed to launch with status code: ${retval}"
+	    echo "QEMU failed to launch with status code: ${retval}"
     else
-	retval="$(echo "($retval-128-1)/2" | bc)"
-	echo "Test failed with status: ${retval}"
+	    retval="$(echo "($retval-128-1)/2" | bc)"
     fi
+fi
+
+if [[ "${retval}" -ne 0 ]]; then
+  echo "Running sshd inside qemu failed with status: ${retval}"
 fi
 
 exit "${retval}"
