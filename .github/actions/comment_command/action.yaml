@@ -1,0 +1,72 @@
+---
+name: Parse comment command.
+description: Parses a `/...` style comment command.
+inputs:
+  command-name:
+    description: 'The name of the slash command eg for /perf it would be perf'
+    required: true
+  admin-only:
+    description: 'Whether the command can only be run by admins.'
+    default: 'true'
+outputs:
+  command-arguments:
+    description: "The arguments to the slash comment command."
+    value: ${{ steps.parse.outputs.args }}
+runs:
+  using: "composite"
+  steps:
+  - name: Is correct command
+    shell: bash
+    env:
+      BODY: ${{ github.event.comment.body }}
+      COMMAND_NAME: ${{ inputs.command-name }}
+    # yamllint disable rule:indentation
+    run: |
+      if [[ "${BODY}" =~ "/${COMMAND_NAME}"* ]]; then
+        exit 0
+      else
+        echo "${BODY} is not a /${COMMAND_NAME} command" >&2
+        exit 1
+      fi
+    # yamllint enable rule:indentation
+  - name: Check permissions
+    shell: bash
+    env:
+      PR_AUTHOR_ASSOC: ${{ github.event.issue.author_association }}
+      COMMENT_AUTHOR_ASSOC: ${{ github.event.comment.author_association }}
+      ADMIN_ONLY: ${{ inputs.admin-only }}
+    # yamllint disable rule:indentation
+    run: |
+      if [[ -z "${PR_AUTHOR_ASSOC}" ]] || [[ -z "${COMMENT_AUTHOR_ASSOC}" ]]; then
+        echo "failed to get permission levels of users involved" >&2
+        exit 1
+      fi
+      if [[ "${COMMENT_AUTHOR_ASSOC}" == "OWNER" ]]; then
+        # Allow admins no matter what
+        exit 0
+      fi
+      if [[ "${ADMIN_ONLY}" == "true" ]]; then
+        echo "commeter must be an admin: permission denied" >&2
+        exit 2
+      fi
+      if [[ "${COMMENT_AUTHOR_ASSOC}" != "MEMBER" ]]; then
+        echo "commenter must be at least a member: permission denied" >&2
+        exit 2
+      fi
+      if [[ "${PR_AUTHOR_ASSOC}" == "MEMBER" ]] || [[ "${PR_AUTHOR_ASSOC}" == "OWNER" ]]; then
+        # Allow members to run command on other members PRs.
+        exit 0
+      fi
+      echo "members can only run this command on other members prs: permission denied" >&2
+      exit 2
+    # yamllint enable rule:indentation
+  - name: Parse command
+    id: parse
+    shell: bash
+    env:
+      BODY: ${{ github.event.comment.body }}
+      COMMAND_NAME: ${{ inputs.command-name }}
+    run: |
+      args="$(echo "${BODY}" | head -n 1 | grep -Po "(?<=/${COMMAND_NAME}).*" | xargs)"
+      echo "${args}"
+      echo "args=${args}" >> $GITHUB_OUTPUT
