@@ -40,7 +40,7 @@ namespace stirling {
 class Profiler : public UnitConnector<PerfProfileConnector> {
  public:
   Status WritePProf() {
-    // Build the stack traces histogram.
+    // Build stack traces histogram.
     PX_RETURN_IF_ERROR(BuildHistogram());
 
     // Create the pprof profile.
