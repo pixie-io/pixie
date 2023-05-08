@@ -122,3 +122,49 @@ qemu_with_kernel_test_runner = rule(
     ],
     executable = True,
 )
+
+def _interactive_impl(ctx):
+    transitive_runfiles = []
+    transitive_runfiles.append(ctx.attr._qemu_runner[DefaultInfo].default_runfiles)
+    if ctx.attr.test:
+        transitive_runfiles.append(ctx.attr.test[DefaultInfo].default_runfiles)
+    runfiles = ctx.runfiles()
+    runfiles = runfiles.merge_all(transitive_runfiles)
+
+    test_path = ""
+    if ctx.attr.test:
+        test_path = ctx.attr.test[DefaultInfo].files_to_run.executable.short_path
+        # TODO(james): Once bazel supports an ArgsProvider we can add test args here.
+
+    output_script = ctx.actions.declare_file(ctx.attr.name + ".sh")
+    ctx.actions.expand_template(
+        template = ctx.files._interactive_runner_tpl[0],
+        output = output_script,
+        substitutions = {
+            "%qemu_runner_path%": "bazel/test_runners/qemu_with_kernel/test_runner.sh",
+            "%test_path%": test_path,
+        },
+        is_executable = True,
+    )
+    return DefaultInfo(
+        files = depset(
+            [output_script],
+        ),
+        runfiles = runfiles,
+        executable = output_script,
+    )
+
+qemu_with_kernel_interactive_runner = rule(
+    implementation = _interactive_impl,
+    attrs = {
+        "test": attr.label(),
+        "_interactive_runner_tpl": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:interactive_runner.sh"),
+            allow_single_file = True,
+        ),
+        "_qemu_runner": attr.label(
+            default = Label("//bazel/test_runners/qemu_with_kernel:runner"),
+        ),
+    },
+    executable = True,
+)

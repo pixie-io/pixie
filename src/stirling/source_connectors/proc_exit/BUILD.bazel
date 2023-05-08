@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_bpf_test", "pl_cc_library")
 
 package(default_visibility = ["//src/stirling:__pkg__"])
 
@@ -36,7 +36,7 @@ pl_cc_library(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "proc_exit_trace_bpf_test",
     srcs = ["proc_exit_trace_bpf_test.cc"],
     data = ["//src/stirling/source_connectors/proc_exit/testing:sleep"],

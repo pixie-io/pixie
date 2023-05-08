@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_bpf_test", "pl_cc_library")
 load("//src/stirling/source_connectors/perf_profiler/testing:testing.bzl", "agent_libs", "px_jattach", "stirling_profiler_java_args")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -35,7 +35,7 @@ pl_cc_library(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "stirling_error_bpf_test",
     timeout = "moderate",
     srcs = ["stirling_error_bpf_test.cc"],

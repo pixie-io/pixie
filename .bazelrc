@@ -131,8 +131,8 @@ test:qemu-bpf --test_tag_filters=requires_bpf,-disabled,-no_qemu
 build:gcc --copt -Wno-error=sign-compare
 build:gcc --copt -Wno-error=stringop-truncation
 build:gcc --copt -Wno-error=maybe-uninitialized
-build:gcc --build_tag_filters=-no_gcc
-build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled
+build:gcc --build_tag_filters=-no_gcc,-qemu_interactive
+build:gcc --test_tag_filters=-no_gcc,-requires_root,-requires_bpf,-disabled,-qemu_interactive
 build:gcc --//bazel/cc_toolchains:compiler=gcc
 test:gcc --config=tmp-sandbox
 

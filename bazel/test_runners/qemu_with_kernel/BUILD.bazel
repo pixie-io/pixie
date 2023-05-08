@@ -16,7 +16,10 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("//bazel:pl_qemu_kernels.bzl", "kernel_flag_name", "qemu_image_to_deps")
+load("//bazel:toolchain_transitions.bzl", "qemu_interactive_runner")
 load("//bazel/test_runners/qemu_with_kernel:runner.bzl", "qemu_with_kernel_test_runner")
+
+exports_files(["interactive_runner.sh"])
 
 kernel_image_deps = qemu_image_to_deps()
 
@@ -39,5 +42,14 @@ kernel_select_list = {kernel_flag_name(version): dep for version, dep in kernel_
 qemu_with_kernel_test_runner(
     name = "runner",
     kernel_image = select(kernel_select_list),
+    visibility = ["//visibility:public"],
+)
+
+qemu_interactive_runner(
+    name = "run_interactive",
+    tags = [
+        "manual",
+        "qemu_interactive",
+    ],
     visibility = ["//visibility:public"],
 )

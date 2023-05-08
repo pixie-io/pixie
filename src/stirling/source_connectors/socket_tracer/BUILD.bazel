@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_bpf_test", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -171,7 +171,7 @@ pl_cc_binary(
 # BPF Tests
 ###############################################################################
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "socket_trace_bpf_test",
     timeout = "long",
     srcs = ["socket_trace_bpf_test.cc"],
@@ -188,7 +188,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "conn_stats_bpf_test",
     timeout = "moderate",
     srcs = ["conn_stats_bpf_test.cc"],
@@ -208,7 +208,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "http_trace_bpf_test",
     timeout = "moderate",
     srcs = ["http_trace_bpf_test.cc"],
@@ -229,7 +229,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "mux_trace_bpf_test",
     timeout = "moderate",
     srcs = ["mux_trace_bpf_test.cc"],
@@ -249,7 +249,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "mysql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
@@ -273,7 +273,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "cql_trace_bpf_test",
     timeout = "moderate",
     srcs = [
@@ -294,7 +294,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "pgsql_trace_bpf_test",
     timeout = "moderate",
     srcs = [
@@ -316,7 +316,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "grpc_trace_bpf_test",
     timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
@@ -353,7 +353,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "http2_trace_bpf_test",
     timeout = "moderate",
     srcs = ["http2_trace_bpf_test.cc"],
@@ -376,7 +376,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "dns_trace_bpf_test",
     timeout = "moderate",
     srcs = [
@@ -397,7 +397,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "redis_trace_bpf_test",
     timeout = "long",
     srcs = ["redis_trace_bpf_test.cc"],
@@ -416,7 +416,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "nats_trace_bpf_test",
     timeout = "long",
     srcs = ["nats_trace_bpf_test.cc"],
@@ -433,7 +433,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "kafka_trace_bpf_test",
     timeout = "moderate",
     srcs = ["kafka_trace_bpf_test.cc"],
@@ -451,7 +451,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "openssl_trace_bpf_test",
     timeout = "long",
     srcs = ["openssl_trace_bpf_test.cc"],
@@ -474,7 +474,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "netty_tls_trace_bpf_test",
     timeout = "long",
     srcs = ["netty_tls_trace_bpf_test.cc"],
@@ -493,7 +493,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "dyn_lib_trace_bpf_test",
     timeout = "moderate",
     srcs = ["dyn_lib_trace_bpf_test.cc"],
@@ -512,7 +512,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "go_tls_trace_bpf_test",
     timeout = "moderate",
     srcs = ["go_tls_trace_bpf_test.cc"],
@@ -533,7 +533,7 @@ pl_cc_test(
     ],
 )
 
-pl_cc_test(
+pl_cc_bpf_test(
     name = "amqp_trace_bpf_test",
     timeout = "moderate",
     srcs = ["amqp_trace_bpf_test.cc"],
