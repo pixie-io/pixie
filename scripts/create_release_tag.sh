@@ -60,7 +60,7 @@ check_args() {
         exit
     fi
 
-    if [ "$ARTIFACT_TYPE" != "cli" ] && [ "$ARTIFACT_TYPE" != "vizier" ] && [ "$ARTIFACT_TYPE" != "operator" ]; then
+    if [ "$ARTIFACT_TYPE" != "cli" ] && [ "$ARTIFACT_TYPE" != "vizier" ] && [ "$ARTIFACT_TYPE" != "operator" ] && [ "$ARTIFACT_TYPE" != "cloud" ]; then
         echo "Unsupported artifact type."
         exit
     fi
@@ -71,6 +71,7 @@ get_bazel_target() {
         cli) BAZEL_TARGET=//src/pixie_cli:px;;
         vizier) BAZEL_TARGET=//k8s/vizier:image_bundle;;
         operator) BAZEL_TARGET=//k8s/operator:image_bundle;;
+        cloud) BAZEL_TARGET=//k8s/cloud:image_bundle;;
     esac
 }
 
@@ -202,7 +203,7 @@ git fetch --tags
 
 # Get the latest release tag.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
-    | grep "release/$ARTIFACT_TYPE" | grep -v "\-")
+    | grep "release/$ARTIFACT_TYPE/v" | grep -v "\-")
 
 # Get the most recent tag.
 prev_tag=$(echo "$tags" | head -1)
