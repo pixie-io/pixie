@@ -147,11 +147,6 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   update_node_ssl_tls_wrap_map(ssl);
 
-  struct nested_syscall_fd_t nested_syscall_fd = {
-      .fd = kInvalidFD,
-  };
-  ssl_user_space_call_map.update(&id, &nested_syscall_fd);
-
   char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
 
@@ -191,11 +186,6 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
 
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   update_node_ssl_tls_wrap_map(ssl);
-
-  struct nested_syscall_fd_t nested_syscall_fd = {
-      .fd = kInvalidFD,
-  };
-  ssl_user_space_call_map.update(&id, &nested_syscall_fd);
 
   char* buf = (char*)PT_REGS_PARM2(ctx);
   int32_t fd = get_fd(tgid, ssl);
