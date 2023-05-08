@@ -1,0 +1,67 @@
+---
+name: update-readme-on-release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        ref: main
+    - name: Import GPG key
+      shell: bash
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+      run: |
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+        git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
+        git config --global commit.gpgsign true
+    - name: Import SSH key
+      shell: bash
+      env:
+        BUILDBOT_SSH_KEY_B64: ${{ secrets.BUILDBOT_SSH_KEY_B64 }}
+      run: |
+        echo "${BUILDBOT_SSH_KEY_B64}" | base64 --decode > /tmp/ssh.key
+        chmod 600 /tmp/ssh.key
+    - name: Setup git
+      shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+        git remote add fork git@github.com:pixie-io-buildbot/pixie.git
+    - name: Update readme locally
+      shell: bash
+      env:
+        TAG_NAME: ${{ github.event.release.tag_name }}
+        URL: ${{ github.event.release.html_url }}
+      run: |
+        export COMPONENT="$(echo "${TAG_NAME}" | cut -d'/' -f2)"
+        export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
+        ./ci/update_readme_with_latest_release.sh "${COMPONENT}" "${VERSION}" "${URL}"
+    - name: Create PR
+      shell: bash
+      env:
+        TAG_NAME: ${{ github.event.release.tag_name }}
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      # yamllint disable rule:indentation
+      run: |
+        export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
+        export BRANCH="${VERSION}-update-readme"
+        git checkout -b "${BRANCH}"
+        git add README.md
+        git commit -s -m "$(cat pr_title)"
+        git push -f fork "${BRANCH}"
+        gh pr create --repo pixie-io/pixie \
+          --head "pixie-io-buildbot:${BRANCH}" \
+          --body "$(cat pr_body)" --title "$(cat pr_title)"
+      # yamllint enable rule:indentation
