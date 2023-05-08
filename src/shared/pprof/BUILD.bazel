@@ -17,7 +17,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = ["//src:__subpackages__"])
 
 cc_proto_library(
     name = "pprof_proto_cc",
