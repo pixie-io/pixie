@@ -66,12 +66,15 @@ jobs:
     needs: build-release
     permissions:
       contents: write
+    outputs:
+      release-url: ${{ steps.release.outputs.url }}
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
     - name: Create Release
+      id: release
       env:
         REF: ${{ github.event.ref }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -87,4 +90,27 @@ jobs:
         gh release create "${TAG_NAME}" --title "Vizier ${TAG_NAME#release/vizier/}" \
           --notes $'Pixie Vizier Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" vizier-artifacts/*
+        url="$(gh release view "${TAG_NAME}" -q '.url' --json url)"
+        echo "url=${url}" >> $GITHUB_OUTPUT
       # yamllint enable rule:indentation
+  update-readme:
+    name: Update README with latest release
+    runs-on: ubuntu-latest
+    needs: create-github-release
+    permissions:
+      contents: read
+    # Only run one update readme job at a time.
+    concurrency: update-readme
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        ref: main
+    - uses: ./.github/actions/update_readme_releases
+      with:
+        component-name: "vizier"
+        release-url: ${{ needs.create-github-release.outputs.release-url }}
+        ref: ${{ github.event.ref }}
+        BUILDBOT_GH_API_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+        BUILDBOT_SSH_KEY_B64: ${{ secrets.BUILDBOT_SSH_KEY_B64 }}
