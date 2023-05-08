@@ -37,6 +37,8 @@ parse_args() {
 
 parse_args "$@"
 
+artifacts_dir="${ARTIFACTS_DIR:?}"
+
 repo_path=$(pwd)
 
 release_tag=${TAG_NAME##*/v}
@@ -53,7 +55,7 @@ if [[ "$PUBLIC" == "true" ]]; then
   bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
       --//k8s:build_type=public //k8s/cloud:cloud_images_push
 
-  all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS")
+  all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
   all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
   bazel build "${all_licenses_opts[@]}"
 
@@ -84,6 +86,10 @@ if [[ "$PUBLIC" == "true" ]]; then
   if [[ "${release}" == "true" ]]; then
     gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
   fi
+
+  sha256sum "${repo_path}/pixie_cloud.tar.gz" | awk '{print $1}' > sha
+  cp "${repo_path}/pixie_cloud.tar.gz" "${artifacts_dir}/pixie_cloud.tar.gz"
+  cp sha "${artifacts_dir}/pixie_cloud.tar.gz.sha256"
 
   exit 0
 fi
