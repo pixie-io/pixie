@@ -20,17 +20,13 @@ set -ex
 printenv
 
 usage() {
-    echo "Usage: $0 [-r]"
-    echo " -r : Create a prod proprietary cloud release."
+    echo "Usage: $0 [-p]"
     echo " -p : Create a public cloud release."
 }
 
 parse_args() {
   while test $# -gt 0; do
       case "$1" in
-        -r) RELEASE=true
-            shift
-            ;;
         -p) PUBLIC=true
             shift
             ;;
@@ -43,23 +39,28 @@ parse_args "$@"
 
 repo_path=$(pwd)
 
-if [[ -z "${TAG_NAME}" ]]; then
-  image_tag=$(date +%s)
-else
-  image_tag=$(echo "${TAG_NAME}" | awk -F/ '{print $NF}')
+release_tag=${TAG_NAME##*/v}
+
+release="true"
+if [[ "${release_tag}" == *"-"* ]]; then
+  release="false"
 fi
 
-echo "The image tag is: ${image_tag}"
+echo "The image tag is: ${release_tag}"
 
 # We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
 if [[ "$PUBLIC" == "true" ]]; then
-  bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+  bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
       --//k8s:build_type=public //k8s/cloud:cloud_images_push
 
-  bazel build //tools/licenses:all_licenses --action_env=GOOGLE_APPLICATION_CREDENTIALS
+  all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS")
+  all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
+  bazel build "${all_licenses_opts[@]}"
 
-  gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/${image_tag}.json"
-  gsutil cp "${repo_path}/bazel-bin/tools/licenses/all_licenses.json" "gs://pixie-dev-public/oss-licenses/latest.json"
+  gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/${release_tag}.json"
+  if [[ "${release}" == "true" ]]; then
+    gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/latest.json"
+  fi
 
   # Write YAMLs + image paths to a tar file to support easy deployment.
   mkdir -p "${repo_path}/pixie_cloud/yamls"
@@ -79,22 +80,25 @@ if [[ "$PUBLIC" == "true" ]]; then
 
   cd "${repo_path}"
   tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
-  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${image_tag}/pixie_cloud.tar.gz"
-  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
+  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${release_tag}/pixie_cloud.tar.gz"
+  if [[ "${release}" == "true" ]]; then
+    gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
+  fi
 
   exit 0
 fi
 
-bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${image_tag}" \
+bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
     --//k8s:build_type=proprietary //k8s/cloud:cloud_images_push
 
 yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
-# Build prod YAMLs.
-if [[ "$RELEASE" == "true" ]]; then
+if [[ "${release}" == "true" ]]; then
+  # Build prod YAMLs.
   yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --config=stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_prod_cloud
-else # Build staging YAMLs.
-  bazel build --config=stamp -c opt --//k8s:image_version="${image_tag}" //k8s/cloud:pixie_staging_cloud
+  bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" //k8s/cloud:pixie_prod_cloud
+else
+  # Build staging YAMLs.
+  bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" //k8s/cloud:pixie_staging_cloud
 fi
 
 kubectl apply -f "$yaml_path"
