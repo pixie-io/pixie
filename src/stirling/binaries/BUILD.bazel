@@ -96,7 +96,7 @@ pl_cc_binary(
     name = "stirling_profiler",
     srcs = ["stirling_profiler.cc"],
     deps = [
-        "//src/stirling:cc_library",
+        "//src/stirling/source_connectors/perf_profiler:cc_library",
     ],
 )
 
