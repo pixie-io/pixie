@@ -302,3 +302,10 @@ def stirling_test_images():
         "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
         "google-samples/microservices-demo/emailservice:v0.1.3",
     )
+
+    container_pull(
+        name = "python3_10_base",
+        digest = "sha256:c4942b7e51fa35957e3b486ec454853e94e84afd4fbe1fe34fd817109030798f",
+        registry = "index.docker.io",
+        repository = "library/python:3.10-alpine3.17",
+    )

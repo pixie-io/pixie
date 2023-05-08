@@ -213,9 +213,12 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
          (!probe.symbol.empty() && probe.address == 0))
       << "Exactly one of 'symbol' and 'address' must be specified.";
-  PX_RETURN_IF_ERROR(bpf_.attach_uprobe(
+  auto status = bpf_.attach_uprobe(
       probe.binary_path, probe.symbol, std::string(probe.probe_fn), probe.address,
-      static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid));
+      static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
+  if (!probe.is_optional) {
+    PX_RETURN_IF_ERROR(status);
+  }
   uprobes_.push_back(probe);
   ++num_attached_uprobes_;
   return Status::OK();

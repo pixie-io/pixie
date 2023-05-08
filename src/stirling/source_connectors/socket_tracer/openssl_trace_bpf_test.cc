@@ -76,6 +76,11 @@ class Node14_18_1AlpineContainerWrapper
   int32_t PID() const { return process_pid(); }
 };
 
+class Python310ContainerWrapper : public ::px::stirling::testing::Python310Container {
+ public:
+  int32_t PID() const { return process_pid(); }
+};
+
 // Includes all information we need to extract from the trace records, which are used to verify
 // against the expected results.
 struct TraceRecords {
@@ -166,7 +171,8 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
                          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
     OpenSSLServerImplementations;
 
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
+typedef ::testing::Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+                         NginxOpenSSL_3_0_7_ContainerWrapper>
     OpenSSLServerNestedSyscallFDImplementations;
 
 template <typename T>
@@ -184,6 +190,7 @@ TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceNestedSyscallFD, OpenSSLServerNestedSyscallFDImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
+  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
