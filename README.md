@@ -169,7 +169,7 @@ Pixie is a community-driven project; we welcome your contribution! For code cont
 - File a [GitHub issue](https://github.com/pixie-io/pixie/issues) to report a bug or request a feature.
 - Join our [Slack](https://slackin.px.dev) for live conversations and quick questions. We are also available on the [CNCF slack](https://slack.cncf.io/app_redirect?channel=pixie").
 - Follow us on [Twitter](https://twitter.com/pixie_run) and [YouTube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg).
-- Add our community [calendar](https://calendar.google.com/calendar/u/0?cid=Y181OTA0Y2ZmNzdhNzdhOGYzMzQxNmNmMjQzODI4ZjY4ZGY5MWMzYzEzZWU3YmQ5NGFjODUzMmRiODg2Y2VjMjkxQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20).
+- Add our community meeting [calendar](https://calendar.google.com/calendar/u/0?cid=Y181OTA0Y2ZmNzdhNzdhOGYzMzQxNmNmMjQzODI4ZjY4ZGY5MWMzYzEzZWU3YmQ5NGFjODUzMmRiODg2Y2VjMjkxQGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20).
 - Provide feedback on our [roadmap](https://docs.px.dev/about-pixie/roadmap/).
 
 <br clear="all">
