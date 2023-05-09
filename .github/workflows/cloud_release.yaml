@@ -44,7 +44,7 @@ jobs:
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
-        ./ci/cloud_build_release.sh -p
+        ./ci/cloud_build_release.sh
     - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
         name: cloud-artifacts

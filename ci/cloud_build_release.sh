@@ -19,24 +19,6 @@
 set -ex
 printenv
 
-usage() {
-    echo "Usage: $0 [-p]"
-    echo " -p : Create a public cloud release."
-}
-
-parse_args() {
-  while test $# -gt 0; do
-      case "$1" in
-        -p) PUBLIC=true
-            shift
-            ;;
-        *)  usage ;;
-      esac
-  done
-}
-
-parse_args "$@"
-
 artifacts_dir="${ARTIFACTS_DIR:?}"
 
 repo_path=$(pwd)
@@ -50,61 +32,41 @@ fi
 
 echo "The image tag is: ${release_tag}"
 
-# We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
-if [[ "$PUBLIC" == "true" ]]; then
-  bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
-      --//k8s:build_type=public //k8s/cloud:cloud_images_push
-
-  all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
-  all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
-  bazel build "${all_licenses_opts[@]}"
-
-  gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/${release_tag}.json"
-  if [[ "${release}" == "true" ]]; then
-    gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/latest.json"
-  fi
-
-  # Write YAMLs + image paths to a tar file to support easy deployment.
-  mkdir -p "${repo_path}/pixie_cloud/yamls"
-  image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
-
-  kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-  kustomize build "k8s/cloud_deps/base/elastic/operator" > "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
-  kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
-
-  deploy_yamls=(
-    "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
-    "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
-    "${repo_path}/pixie_cloud/yamls/cloud.yaml"
-  )
-
-  bazel run @com_github_mikefarah_yq_v4//:v4 -- '..|.image?|select(.|type == "!!str")' -o=json "${deploy_yamls[@]}" | sort | uniq > "${image_list_file}"
-
-  cd "${repo_path}"
-  tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
-  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${release_tag}/pixie_cloud.tar.gz"
-  if [[ "${release}" == "true" ]]; then
-    gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
-  fi
-
-  sha256sum "${repo_path}/pixie_cloud.tar.gz" | awk '{print $1}' > sha
-  cp "${repo_path}/pixie_cloud.tar.gz" "${artifacts_dir}/pixie_cloud.tar.gz"
-  cp sha "${artifacts_dir}/pixie_cloud.tar.gz.sha256"
-
-  exit 0
-fi
-
 bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
-    --//k8s:build_type=proprietary //k8s/cloud:cloud_images_push
+    --//k8s:build_type=public //k8s/cloud:cloud_images_push
 
-yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
+all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
+all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
+bazel build "${all_licenses_opts[@]}"
+
+gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/${release_tag}.json"
 if [[ "${release}" == "true" ]]; then
-  # Build prod YAMLs.
-  yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-  bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" //k8s/cloud:pixie_prod_cloud
-else
-  # Build staging YAMLs.
-  bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" //k8s/cloud:pixie_staging_cloud
+  gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/latest.json"
 fi
 
-kubectl apply -f "$yaml_path"
+# Write YAMLs + image paths to a tar file to support easy deployment.
+mkdir -p "${repo_path}/pixie_cloud/yamls"
+image_list_file="${repo_path}/pixie_cloud/cloud_image_list.txt"
+
+kustomize build "k8s/cloud_deps/public/" > "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+kustomize build "k8s/cloud_deps/base/elastic/operator" > "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+kustomize build "k8s/cloud/public/" > "${repo_path}/pixie_cloud/yamls/cloud.yaml"
+
+deploy_yamls=(
+  "${repo_path}/pixie_cloud/yamls/cloud_deps.yaml"
+  "${repo_path}/pixie_cloud/yamls/cloud_deps_elastic_operator.yaml"
+  "${repo_path}/pixie_cloud/yamls/cloud.yaml"
+)
+
+bazel run @com_github_mikefarah_yq_v4//:v4 -- '..|.image?|select(.|type == "!!str")' -o=json "${deploy_yamls[@]}" | sort | uniq > "${image_list_file}"
+
+cd "${repo_path}"
+tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
+gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${release_tag}/pixie_cloud.tar.gz"
+if [[ "${release}" == "true" ]]; then
+  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
+fi
+
+sha256sum "${repo_path}/pixie_cloud.tar.gz" | awk '{print $1}' > sha
+cp "${repo_path}/pixie_cloud.tar.gz" "${artifacts_dir}/pixie_cloud.tar.gz"
+cp sha "${artifacts_dir}/pixie_cloud.tar.gz.sha256"
