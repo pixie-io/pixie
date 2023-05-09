@@ -22,6 +22,7 @@
 #include <magic_enum.hpp>
 
 #include "src/stirling/utils/monitor.h"
+#include "src/stirling/utils/tcp_stats.h"
 
 namespace px {
 namespace stirling {
@@ -50,6 +51,18 @@ inline void PrintTo(const ProbeStatusRecord& r, std::ostream* os) {
       "info: $5}",
       r.timestamp_ns, r.source_connector, r.tracepoint, magic_enum::enum_name(r.status), r.error,
       r.info);
+}
+
+inline bool operator==(const TcpStatsRecord& a, const TcpStatsRecord& b) {
+  return (a.remote_port == b.remote_port) && (a.remote_addr == b.remote_addr) && (a.tx == b.tx) &&
+         (a.rx == b.rx) && (a.retransmits == b.retransmits);
+}
+
+inline void PrintTo(const TcpStatsRecord& r, std::ostream* os) {
+  *os << absl::Substitute(
+      "TcpStatsRecord{remote_port: $0, remote_addr: $1, tx: $2, rx: "
+      "$3, retransmits: $4, ",
+      r.remote_port, r.remote_addr, r.tx, r.rx, r.retransmits);
 }
 
 }  // namespace stirling
