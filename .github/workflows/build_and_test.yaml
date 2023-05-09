@@ -65,8 +65,7 @@ jobs:
       id: set-matrix
       shell: bash
       run: |
-        echo '${{ toJSON(github) }}' > github.json
-        matrix="$(./ci/github/matrix.sh github.json)"
+        matrix="$(./ci/github/matrix.sh '${{ github.event_name }}')"
         echo "Build & Test matrix: ${matrix}"
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
     - name: Upload Target Files

@@ -17,13 +17,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # This script outputs a github actions matrix with each of the configs we want to build and test
-# It takes a file with the github context as its first argument: https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
-github_context="$1"
+# It takes the github event_name as its argument
 
-event_name="$(jq -r '.event_name' < "${github_context}")"
-pr_body="$(jq -r '.event.pull_request.body' < "${github_context}")"
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <event_name>"
+  exit 1
+fi
+event_name="$1"
 commit_message="$(git log "$(git merge-base origin/main HEAD)"..HEAD --format="%B")"
-combined_message="${pr_body} \n${commit_message}"
 
 nightly_regression_test_iterations="${NIGHTLY_REGRESSION_TEST_ITERATIONS:-5}"
 
@@ -43,7 +44,7 @@ kernel_versions=( "${default_kernel_versions[@]}" )
 
 check_tag() {
   tag="$1"
-  echo "${combined_message}" | grep -P "${tag}([^\-a-zA-Z]|$)" > /dev/null
+  echo "${commit_message}" | grep -P "${tag}([^\-a-zA-Z]|$)" > /dev/null
 }
 
 build_deps_flags=()
@@ -58,12 +59,12 @@ elif [[ "${event_name}" == "schedule" ]]; then
   extra_bazel_args+=("--runs_per_test=${nightly_regression_test_iterations}")
   kernel_versions=( "${all_kernel_versions[@]}" )
 elif [[ "${event_name}" == "pull_request" ]]; then
-  # Ignore bazel dependency tracking and run all targets if #ci:ignore-deps is in the pr body/commit message.
+  # Ignore bazel dependency tracking and run all targets if #ci:ignore-deps is in the commit message.
   if check_tag '#ci:ignore-deps'; then
     echo "Found #ci:ignore-deps tag. Building all targets" >&2
     build_deps_flags+=("-a")
   fi
-  # Build/Test bpf targets if #ci:bpf-build{-all-kernels} is in the pr body/commit message.
+  # Build/Test bpf targets if #ci:bpf-build{-all-kernels} is in the commit message.
   if check_tag '#ci:bpf-build-all-kernels'; then
     echo "Found #ci:bpf-build tag. Building bpf targets" >&2
     build_deps_flags+=("-b")
