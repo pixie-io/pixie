@@ -16,35 +16,48 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <sys/sysinfo.h>
+
 #include <csignal>
 #include <iostream>
 #include <thread>
 
 #include "src/common/base/base.h"
+#include "src/shared/pprof/pprof.h"
 #include "src/shared/upid/upid.h"
 #include "src/stirling/core/unit_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
-#include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 
 using ::px::Status;
 
 DEFINE_uint32(time, 30, "Number of seconds to run the profiler.");
+DEFINE_string(pprof_pb_file, "profile.pb", "File path for pprof protobuf output.");
+DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
 
 namespace px {
 namespace stirling {
 
 class Profiler : public UnitConnector<PerfProfileConnector> {
  public:
-  Status PrintData() {
-    // Build the stack traces histogram.
+  Status WritePProf() {
+    // Build stack traces histogram.
     PX_RETURN_IF_ERROR(BuildHistogram());
 
-    // Print the stack traces histogram.
-    // TODO(jps): replace this with a pprof proto file writer.
-    // 15x: libc.so;main;foo;bar
-    // 12x: libc.so;main;foo;qux
-    for (const auto& [str, count] : histo_) {
-      LOG(INFO) << count << "x: " << str;
+    // Create the pprof profile.
+    const uint32_t num_cpus = get_nprocs_conf();
+    const uint32_t period_ms = FLAGS_stirling_profiler_stack_trace_sample_period_ms;
+    const auto pprof_pb = px::shared::CreatePProfProfile(num_cpus, period_ms, histo_);
+
+    // Write the pprof profile to disk.
+    std::fstream outfile(FLAGS_pprof_pb_file, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!outfile.is_open()) {
+      char const* const err_msg = "Failed to open output file: $0.";
+      return error::Internal(absl::Substitute(err_msg, FLAGS_pprof_pb_file));
+    }
+
+    if (!pprof_pb.SerializeToOstream(&outfile)) {
+      char const* const err_msg = "Failed to write pprof protobuf to file: $0.";
+      return error::Internal(absl::Substitute(err_msg, FLAGS_pprof_pb_file));
     }
     return Status::OK();
   }
@@ -101,8 +114,8 @@ Status RunProfiler() {
   // Stop collecting data and do a final read out of eBPF perf buffer & maps.
   PX_RETURN_IF_ERROR(g_profiler->Stop());
 
-  // Print the info. We will replace this with a pprof proto file write out.
-  PX_RETURN_IF_ERROR(g_profiler->PrintData());
+  // Write a pprof proto file.
+  PX_RETURN_IF_ERROR(g_profiler->WritePProf());
 
   // Phew. We are outta here.
   return Status::OK();
