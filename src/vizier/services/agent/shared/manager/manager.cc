@@ -65,6 +65,9 @@ DEFINE_string(vizier_id, gflags::StringFromEnv("PL_VIZIER_ID", ""), "The ID of t
 DEFINE_string(vizier_name, gflags::StringFromEnv("PL_VIZIER_NAME", ""),
               "The name of the cluster according to vizier.");
 
+DEFINE_string(vizier_namespace, gflags::StringFromEnv("PL_POD_NAMESPACE", ""),
+              "The namespace in which vizier is deployed.");
+
 namespace px {
 namespace vizier {
 namespace agent {
@@ -285,7 +288,8 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   mds_manager_ = std::make_unique<px::md::AgentMetadataStateManagerImpl>(
       info_.hostname, info_.asid, info_.pid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), px::system::Config::GetInstance(),
-      agent_metadata_filter_.get(), sole::rebuild(FLAGS_vizier_id), FLAGS_vizier_name);
+      agent_metadata_filter_.get(), sole::rebuild(FLAGS_vizier_id), FLAGS_vizier_name,
+      FLAGS_vizier_namespace);
   // Register the Carnot callback for metadata.
   carnot_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));

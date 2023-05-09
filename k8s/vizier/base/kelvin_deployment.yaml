@@ -95,7 +95,7 @@ spec:
               key: cluster-name
               name: pl-cluster-secrets
               optional: true
-        - name: PL_NAMESPACE
+        - name: PL_POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace

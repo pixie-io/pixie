@@ -122,11 +122,11 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
                                 std::string pod_name, sole::uuid agent_id, bool collects_data,
                                 const px::system::Config& config,
                                 AgentMetadataFilter* metadata_filter, sole::uuid vizier_id,
-                                std::string vizier_name)
+                                std::string vizier_name, std::string vizier_namespace)
       : pod_name_(pod_name), collects_data_(collects_data), metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id,
-                                                                 pod_name, vizier_id, vizier_name);
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(
+        hostname, asid, pid, agent_id, pod_name, vizier_id, vizier_name, vizier_namespace);
   }
 
   AgentMetadataFilter* metadata_filter() const override { return metadata_filter_; }
