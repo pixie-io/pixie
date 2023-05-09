@@ -24,7 +24,7 @@ jobs:
       - /etc/bazelrc:/etc/bazelrc
       options: --cpus 16
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
     - name: Add pwd to git safe dir
@@ -54,7 +54,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
     - name: Add pwd to git safe dir
@@ -70,7 +70,7 @@ jobs:
         echo "Build & Test matrix: ${matrix}"
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
     - name: Upload Target Files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
         name: target_files
         path: |
@@ -93,10 +93,10 @@ jobs:
       fail-fast: false
     name: ${{ matrix.name }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
     - name: get dev bazel config
       if: github.event_name != 'push'
       uses: ./.github/actions/bazelrc
