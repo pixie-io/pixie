@@ -5,6 +5,9 @@ inputs:
   download_toplevel:
     description: 'whether to download cached toplevel files during bazel builds'
     default: 'false'
+  dev:
+    description: 'Whether to use DEV or CI settings for the bazelrc. defaults to dev'
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -20,4 +23,15 @@ runs:
     if: inputs.download_toplevel == 'true'
     run: |
       echo "build --remote_download_outputs=toplevel" >> github.bazelrc
+    shell: bash
+  - name: Add DEV settings
+    if: inputs.dev == 'true'
+    run: |
+      echo "build --remote_upload_local_results=false" >> github.bazelrc
+      echo "build --build_metadata=ROLE=DEV" >> github.bazelrc
+    shell: bash
+  - name: Add CI settings
+    if: inputs.dev != 'true'
+    run: |
+      echo "build --build_metadata=ROLE=CI" >> github.bazelrc
     shell: bash

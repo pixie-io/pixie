@@ -30,7 +30,7 @@ check_env_set QEMU_DISK_BASE_RO
 check_env_set MONITOR_SOCK
 
 QEMU_MEMORY=${QEMU_MEMORY:-4096M}
-QEMU_CPU_COUNT=${QEMU_CPU_COUNT:-1}
+QEMU_CPU_COUNT=${QEMU_CPU_COUNT:-2}
 
 # This needs to match what is in the exit c file.
 QEMU_EXIT_BASE="0xf4"

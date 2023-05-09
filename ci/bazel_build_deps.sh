@@ -103,7 +103,7 @@ function compute_targets() {
   for file in $(git diff --name-only "${commit_range}" ); do
     for pat in "${poison_patterns[@]}"; do
       if [[ "$file" =~ ${pat} ]]; then
-        echo "File ${file} with ${pat} modified. Triggering full build"
+        echo "File ${file} with ${pat} modified. Triggering full build" >&2
         targets=("//...")
         return 0
       fi
@@ -130,7 +130,7 @@ function check_bpf_trigger() {
   for file in $(git diff --name-only "${commit_range}" ); do
     for pat in "${bpf_patterns[@]}"; do
       if [[ "$file" =~ ${pat} ]]; then
-        echo "File ${file} with ${pat} modified. Triggering bpf targets"
+        echo "File ${file} with ${pat} modified. Triggering bpf targets" >&2
         run_bpf_targets=true
         return 0
       fi

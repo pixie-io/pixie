@@ -1,0 +1,51 @@
+---
+configs:
+- name: Clang opt + UI
+  runner: nokvm
+  args: "--config=clang --compilation_mode=opt"
+  buildables: bazel_buildables_clang_opt
+  tests: bazel_tests_clang_opt
+- name: Clang debug
+  runner: nokvm
+  args: "--config=clang --compilation_mode=dbg"
+  buildables: bazel_buildables_clang_dbg
+  tests: bazel_tests_clang_dbg
+- name: ASAN
+  runner: nokvm
+  args: "--config=asan --compilation_mode=dbg"
+  buildables: bazel_buildables_sanitizer
+  tests: bazel_tests_sanitizer
+- name: TSAN
+  runner: nokvm
+  args: "--config=tsan --compilation_mode=dbg"
+  buildables: bazel_buildables_sanitizer
+  tests: bazel_tests_sanitizer
+- name: GCC opt
+  runner: nokvm
+  args: "--config=gcc --compilation_mode=opt"
+  buildables: bazel_buildables_gcc_opt
+  tests: bazel_tests_gcc_opt
+- name: Go race detector
+  runner: nokvm
+  args: "--config=go_race --compilation_mode=opt"
+  buildables: bazel_buildables_go_race
+  tests: bazel_tests_go_race
+
+- name: BPF opt
+  runner: kvm
+  args: "--config=qemu-bpf --compilation_mode=opt"
+  buildables: bazel_buildables_bpf
+  tests: bazel_tests_bpf
+  use_kernel_matrix: true
+- name: BPF ASAN (latest kernel)
+  disabled: true
+  runner: kvm
+  args: "--config=asan --config=qemu-bpf --compilation_mode=opt"
+  buildables: bazel_buildables_bpf_sanitizer
+  tests: bazel_tests_bpf_sanitizer
+- name: BPF TSAN (latest kernel)
+  disabled: true
+  runner: kvm
+  args: "--config=tsan --config=qemu-bpf --compilation_mode=opt"
+  buildables: bazel_buildables_bpf_sanitizer
+  tests: bazel_tests_bpf_sanitizer

@@ -1,0 +1,135 @@
+---
+name: build-and-test
+on:
+  pull_request:
+  push:
+    branches:
+    - 'main'
+  schedule:
+  # Run at 23:09 PST (07:09 UTC) every day. Github suggests not running actions on the hour.
+  - cron: '9 7 * * *'
+permissions:
+  contents: read
+jobs:
+  get-dev-image:
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image_with_extras"
+  clang-tidy:
+    needs: get-dev-image
+    runs-on: [self-hosted, nokvm]
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+      options: --cpus 16
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: get bazel config
+      uses: ./.github/actions/bazelrc
+    - name: Save Diff Info
+      run: ./ci/save_diff_info.sh
+    - name: Run Clang Tidy
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        diff_file="diff_origin_main_cc"
+        if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
+          diff_file="diff_head_cc"
+        fi
+        ./ci/run_clang_tidy.sh -f "${diff_file}"
+      # yamllint enable rule:indentation
+  generate-matrix:
+    needs: get-dev-image
+    runs-on: [self-hosted, nokvm]
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+      options: --cpus 16
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: get bazel config
+      uses: ./.github/actions/bazelrc
+    - name: Set matrix
+      id: set-matrix
+      shell: bash
+      run: |
+        echo '${{ toJSON(github) }}' > github.json
+        matrix="$(./ci/github/matrix.sh github.json)"
+        echo "Build & Test matrix: ${matrix}"
+        echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+    - name: Upload Target Files
+      uses: actions/upload-artifact@v3
+      with:
+        name: target_files
+        path: |
+          bazel_buildables_*
+          bazel_tests_*
+  build-and-test:
+    needs: [get-dev-image, generate-matrix]
+    runs-on:
+    - self-hosted
+    - ${{ matrix.runner }}
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+      - /var/run/docker.sock:/var/run/docker.sock
+      options: --privileged
+    if: needs.generate-matrix.outputs.matrix
+    strategy:
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
+    name: ${{ matrix.name }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - uses: actions/download-artifact@v3
+    - name: get dev bazel config
+      if: github.event_name != 'push'
+      uses: ./.github/actions/bazelrc
+      with:
+        dev: 'true'
+    - name: get ci bazel config
+      if: github.event_name == 'push'
+      uses: ./.github/actions/bazelrc
+      with:
+        dev: 'false'
+    - name: Build ${{ matrix.name }}
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        ./scripts/bazel_ignore_codes.sh build \
+          ${{ matrix.args }} \
+          --target_pattern_file=target_files/${{ matrix.buildables }} \
+          2> >(tee bazel_stderr)
+      # yamllint enable rule:indentation
+    - name: Test ${{ matrix.name }}
+      if: ${{ matrix.tests }}
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
+        sysctl -w net.ipv6.conf.lo.disable_ipv6=0
+        ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
+          2> >(tee bazel_stderr)
+      # yamllint enable rule:indentation
+    - name: Buildbuddy URL
+      if: always()
+      run: |
+        [[ -f bazel_stderr ]] || (echo "Error before bazel ran" && exit 1)
+        bb_url="$(cat bazel_stderr | grep -Po "(?<=Streaming build results to: ).*" | tail -n 1)"
+        echo "${bb_url}"
+      shell: bash
