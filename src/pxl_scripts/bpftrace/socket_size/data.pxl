@@ -1,0 +1,226 @@
+# Copyright 2018- The Pixie Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# WARNING: Depending on the size of your cluster and how network-intensive your Pods and services are, this tool
+# can generate a high volume of profiling data because it traces every single socket send/receive call.
+# Therefore, run it judiciously and for an approperiate amount of time based on your needs.
+
+import pxtrace
+import px
+
+sendmsg_program = """
+// Adapted From "BPF Performance Tools" book by Brendan Gregg; Chapter 10: Networking
+// Available at: https://github.com/brendangregg/bpf-perf-tools-book/blob/master/originals/Ch10_Networking/socksize.bt
+
+/*
+ * socket_sendmsg tool shows the socket stats (count, size, and throughput) for write socket I/O requests.
+ *
+ * See BPF Performance Tools, Chapter 10, for an explanation of this tool.
+ *
+ * Copyright (c) 2019 Brendan Gregg.
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * This was originally created for the BPF Performance Tools book
+ * published by Addison Wesley. ISBN-13: 9780136554820
+ * When copying or porting, include this comment.
+ *
+ * 12-Apr-2019  Brendan Gregg   Created this.
+ * 5-May-2023 Ata Fatahi modified to extract more info such as source and destination IP:Port pairs.
+ */
+
+#include <linux/socket.h>
+#include <net/sock.h>
+
+
+kprobe:sock_sendmsg
+{
+    $AF_INET = (uint16) 2;
+
+    $sock = (struct socket *)arg0;
+    @ssocket[tid] = $sock;
+    $s = (struct sock *) $sock->sk;
+    $inet_family = $s->__sk_common.skc_family;
+
+    if ($inet_family == $AF_INET) {
+        $daddr = ntop($s->__sk_common.skc_daddr);
+        $saddr = ntop($s->__sk_common.skc_rcv_saddr);
+    } else {
+        $daddr = ntop($s->__sk_common.skc_v6_daddr.in6_u.u6_addr8);
+        $saddr = ntop($s->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8);
+    }
+
+    $lport = $s->__sk_common.skc_num;
+    $dport = $s->__sk_common.skc_dport;
+
+    @ssock[tid] = $s;
+    @sdad[tid]= $daddr;
+    @sdp[tid]= $dport;
+    @ssad[tid] = $saddr;
+    @slp[tid] = $lport;
+}
+
+kretprobe:sock_sendmsg
+{
+    printf(\"time_:%llu tid:%u ssock:%d src_ip:%s lport:%d dst_ip:%s dst_port:%d size:%d",
+        nsecs,
+        tid,
+        @ssock[tid],
+        @ssad[tid],
+        @slp[tid],
+        @sdad[tid],
+        @sdp[tid],
+        retval);
+
+    delete(@ssocket[tid]);
+    delete(@ssock[tid]);
+    delete(@sdad[tid]);
+    delete(@sdp[tid]);
+    delete(@ssad[tid]);
+    delete(@slp[tid]);
+}
+
+"""
+
+recvmsg_program = """
+// Adapted From "BPF Performance Tools" book by Brendan Gregg; Chapter 10: Networking
+// Available at: https://github.com/brendangregg/bpf-perf-tools-book/blob/master/originals/Ch10_Networking/socksize.bt
+
+/*
+ * socket_recvmsg tool shows the socket stats (count, size, and throughput) for read socket I/O requests.
+ *
+ * See BPF Performance Tools, Chapter 10, for an explanation of this tool.
+ *
+ * Copyright (c) 2019 Brendan Gregg.
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * This was originally created for the BPF Performance Tools book
+ * published by Addison Wesley. ISBN-13: 9780136554820
+ * When copying or porting, include this comment.
+ *
+ * 12-Apr-2019  Brendan Gregg   Created this.
+ * 5-May-2023 Ata Fatahi modified to extract more info such as source and destination IP:Port pairs.
+ */
+
+#include <linux/socket.h>
+#include <net/sock.h>
+
+
+kprobe:sock_recvmsg
+{
+    $AF_INET = (uint16) 2;
+
+    $sock = (struct socket *)arg0;
+    @rsocket[tid] = $sock;
+    $s = (struct sock *) $sock->sk;
+    $inet_family = $s->__sk_common.skc_family;
+
+    if ($inet_family == $AF_INET) {
+            $daddr = ntop($s->__sk_common.skc_daddr);
+    $saddr = ntop($s->__sk_common.skc_rcv_saddr);
+    } else{
+            $daddr = ntop($s->__sk_common.skc_v6_daddr.in6_u.u6_addr8);
+    $saddr = ntop($s->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8);
+    }
+
+    $lport = $s->__sk_common.skc_num;
+    $dport = $s->__sk_common.skc_dport;
+
+    @rsock[tid] = $s;
+    @rdad[tid]= $daddr;
+    @rdp[tid]= $dport;
+    @rsad[tid] = $saddr;
+    @rlp[tid] = $lport;
+}
+
+kretprobe:sock_recvmsg
+{
+    printf(\"time_:%llu tid:%u rsock:%d src_ip:%s lport:%d dst_ip:%s dst_port:%d size:%d",
+        nsecs,
+        tid,
+        @rsock[tid],
+        @rsad[tid],
+        @rlp[tid],
+        @rdad[tid],
+        @rdp[tid],
+        retval);
+
+    delete(@rsocket[tid]);
+    delete(@rsock[tid]);
+    delete(@rdad[tid]);
+    delete(@rdp[tid]);
+    delete(@rsad[tid]);
+    delete(@rlp[tid]);
+}
+
+"""
+
+
+def sock_sendmsg_func():
+
+    duration = "1m"
+    table_name = 'sock_sendmsg_table'
+    pxtrace.UpsertTracepoint('sock_sendmsg_tracer',
+                             table_name,
+                             sendmsg_program,
+                             pxtrace.kprobe(),
+                             duration)
+
+    df = px.DataFrame(table=table_name)
+
+    # Convert IPs to domain names.
+    df.src = px.pod_id_to_pod_name(px.ip_to_pod_id(df.src_ip))
+    df.src = px.select(df.src == '', df.src_ip, df.src)
+    df.dst = px.pod_id_to_pod_name(px.ip_to_pod_id(df.dst_ip))
+    df.dst = px.select(df.dst == '', df.dst_ip, df.dst)
+
+    df = df.head(100000)
+
+    df = df.groupby(['src', 'dst']).agg(count=('size', px.count), total_size=('size', px.sum))
+    df['avg_size'] = df['total_size'] / df['count']
+    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration) - 1), 1) * 60)
+
+    # Filter for a particular service/pod, if desired.
+    df = df[px.contains(df['src'], '')]
+
+    return df
+
+
+def sock_recvmsg_func():
+
+    duration = "1m"
+    table_name = 'sock_recvmsg_table'
+    pxtrace.UpsertTracepoint('sock_recvmsg_tracer',
+                             table_name,
+                             recvmsg_program,
+                             pxtrace.kprobe(),
+                             duration)
+
+    df = px.DataFrame(table=table_name)
+
+    # Convert IPs to domain names.
+    df.src = px.pod_id_to_pod_name(px.ip_to_pod_id(df.src_ip))
+    df.src = px.select(df.src == '', df.src_ip, df.src)
+    df.dst = px.pod_id_to_pod_name(px.ip_to_pod_id(df.dst_ip))
+    df.dst = px.select(df.dst == '', df.dst_ip, df.dst)
+
+    df = df.head(100000)
+
+    df = df.groupby(['src', 'dst']).agg(count=('size', px.count), total_size=('size', px.sum))
+    df['avg_size'] = df['total_size'] / df['count']
+    df['throughput'] = df['total_size'] / (px.atoi(px.substring(duration, 0, px.length(duration) - 1), 1) * 60)
+
+    # Filter for a particular service/pod, if desired.
+    df = df[px.contains(df['src'], '')]
+
+    return df
