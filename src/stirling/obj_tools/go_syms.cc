@@ -27,6 +27,7 @@ namespace obj_tools {
 // This symbol points to a static string variable that describes the Golang tool-chain version used
 // to build the executable. This symbol is embedded in a Golang executable's data section.
 constexpr std::string_view kGoBuildVersionSymbol = "runtime.buildVersion";
+constexpr std::string_view kGoBuildVersionStrSymbol = "runtime.buildVersion.str";
 
 namespace {
 
@@ -43,7 +44,30 @@ bool IsGoExecutable(ElfReader* elf_reader) {
   return elf_reader->SearchTheOnlySymbol(obj_tools::kGoBuildVersionSymbol).ok();
 }
 
+// TODO(ddelnano): Between Go 1.20.2 and 1.20.4 our build version detection started failing.
+// Our version detection's assumptions is very different from how Go does this internally
+// and needs a signficant rehaul. That is being tracked in
+// https://github.com/pixie-io/pixie/issues/1318 but in the meantime optimisitcally read the
+// runtime.buildVersion.str before following our previous heuristic.
+StatusOr<std::string> ReadBuildVersionDirect(ElfReader* elf_reader) {
+  auto str_symbol_status = elf_reader->SearchTheOnlySymbol(kGoBuildVersionStrSymbol);
+  if (!str_symbol_status.ok()) {
+    return error::NotFound("Unable to find runtime.buildVersion.str");
+  }
+  auto str_symbol = str_symbol_status.ValueOrDie();
+  PX_ASSIGN_OR_RETURN(auto symbol_bytecode, elf_reader->SymbolByteCode(".rodata", str_symbol));
+  return std::string(reinterpret_cast<const char*>(symbol_bytecode.data()),
+                     symbol_bytecode.size() - 1);
+}
+
 StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
+  auto direct_version_str = ReadBuildVersionDirect(elf_reader);
+  if (!direct_version_str.ok()) {
+    LOG(INFO) << absl::Substitute(
+        "Falling back to the runtime.buildVersion symbol for go version detection");
+  } else {
+    return direct_version_str;
+  }
   PX_ASSIGN_OR_RETURN(ElfReader::SymbolInfo symbol,
                       elf_reader->SearchTheOnlySymbol(kGoBuildVersionSymbol));
 
