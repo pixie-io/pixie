@@ -23,9 +23,9 @@ default['owner'] = 'root'
 default['group'] = 'root'
 
 default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/6.0.0/bazel-6.0.0-linux-x86_64"
+  "https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel-6.2.0-linux-x86_64"
 default['bazel']['sha256'] =
-  'f03d44ecaac3878e3d19489e37caa4ca1dc57427b686a78a85065ea3c27ebe68'
+  '3d11c26fb9ba12c833844450bb90165b176e8a19cb5cf5923f3cec855837f17c'
 
 default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/linux/codecov'
