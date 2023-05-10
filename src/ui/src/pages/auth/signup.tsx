@@ -23,6 +23,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { AuthBox, SignupMarcom } from 'app/components';
+import pixieAnalytics from 'app/utils/analytics';
 
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
@@ -43,6 +44,10 @@ const useStyles = makeStyles(({ breakpoints }: Theme) => createStyles({
 }), { name: 'SignupPage' });
 
 export const SignupPage = React.memo(() => {
+  React.useEffect(() => {
+    pixieAnalytics.track('Signup page viewed');
+  }, []);
+
   const classes = useStyles();
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const buttons = React.useMemo(
