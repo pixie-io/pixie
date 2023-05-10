@@ -43,6 +43,30 @@ jobs:
         fi
         ./ci/run_clang_tidy.sh -f "${diff_file}"
       # yamllint enable rule:indentation
+  code-coverage:
+    if: github.event_name == 'push'
+    needs: get-dev-image
+    runs-on: [self-hosted, nokvm]
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+      volumes:
+      - /etc/bazelrc:/etc/bazelrc
+      options: --cpus 16
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: get bazel config
+      uses: ./.github/actions/bazelrc
+      with:
+        dev: 'false'
+    - name: Collect and upload coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
   generate-matrix:
     needs: get-dev-image
     runs-on: [self-hosted, nokvm]
