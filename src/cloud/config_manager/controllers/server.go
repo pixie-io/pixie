@@ -118,7 +118,11 @@ func AddDefaultTableStoreSize(pemMemoryRequest string, customPEMFlags map[string
 	if pemMemoryRequest == "" {
 		defaultTableStoreSizeMB = defaultUncappedTableStoreSizeMB
 	} else {
-		pemMemorySizeBytes := resource.MustParse(pemMemoryRequest)
+		pemMemorySizeBytes, err := resource.ParseQuantity(pemMemoryRequest)
+		if err != nil {
+			log.Errorf("Failed to parse quantity %s", pemMemoryRequest)
+			return
+		}
 		defaultTableStoreSizeBytes := defaultTableStorePercentage * float64(pemMemorySizeBytes.Value())
 		defaultTableStoreSizeMB = int(math.Floor(defaultTableStoreSizeBytes / bytesPerMiB))
 		if defaultTableStoreSizeMB == 0 {
