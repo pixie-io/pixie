@@ -40,7 +40,6 @@ pl_cc_bpf_test(
     timeout = "long",
     srcs = ["tcp_stats_bpf_test.cc"],
     tags = [
-        "no_qemu",
         "requires_bpf",
     ],
     deps = [
