@@ -24,9 +24,9 @@ default['owner'] = node['current_user']
 default['group'] = 'wheel'
 
 default['bazel']['download_path'] =
-  "https://github.com/bazelbuild/bazel/releases/download/6.0.0/bazel-6.0.0-darwin-x86_64"
+  "https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel-6.2.0-darwin-x86_64"
 default['bazel']['sha256'] =
-  '8e543c5c9f1c8c91df945cd2fb4c3b43587929a43044a0ed87d13da0d19f96e8'
+  'd2356012843ce3a2fbba89f88191673a6ad2f7716cc46ad43ec1bcee78d36b44'
 
 default['codecov']['download_path'] =
   'https://uploader.codecov.io/v0.2.3/macos/codecov'
