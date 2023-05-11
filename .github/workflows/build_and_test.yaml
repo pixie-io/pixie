@@ -66,6 +66,8 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
+        # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
+        sysctl -w net.ipv6.conf.lo.disable_ipv6=0
         ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
   generate-matrix:
     needs: get-dev-image
