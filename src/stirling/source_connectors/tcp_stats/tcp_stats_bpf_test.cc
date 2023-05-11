@@ -101,6 +101,8 @@ TEST_F(TcpTraceTest, Capture) {
 
   std::vector<TcpStatsRecord> expected = {
       {
+          .local_addr = "",
+          .local_port = 0,
           .remote_addr = "127.0.0.1",
           .remote_port = 12345,
           .tx = 6,
