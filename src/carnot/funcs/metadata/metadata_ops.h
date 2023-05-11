@@ -3120,6 +3120,21 @@ class VizierNameUDF : public ScalarUDF {
   }
 };
 
+class VizierNamespaceUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx) {
+    auto md = GetMetadataState(ctx);
+    return md->vizier_namespace();
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the namespace where Vizier is deployed.")
+        .Details("Get the Kubernetes namespace in which the Vizier is deployed.")
+        .Example("df.vizier_namespace = px.vizier_namespace()")
+        .Returns("The Kubernetes namespace in which Vizier is deployed");
+  }
+};
+
 class CreateUPIDUDF : public udf::ScalarUDF {
  public:
   UInt128Value Exec(FunctionContext* ctx, Int64Value pid, Int64Value pid_start_time) {

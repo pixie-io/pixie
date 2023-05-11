@@ -57,7 +57,7 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
   explicit FakeAgentMetadataStateManager(md::AgentMetadataFilter* metadata_filter)
       : metadata_filter_(metadata_filter) {
     metadata_state_ = std::make_shared<px::md::AgentMetadataState>(
-        "myhost", 1, 963, sole::uuid4(), "mypod", sole::uuid4(), "myvizier");
+        "myhost", 1, 963, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace");
   }
 
   virtual ~FakeAgentMetadataStateManager() = default;

@@ -38,7 +38,7 @@ DEFINE_string(mds_addr, gflags::StringFromEnv("PL_MDS_SVC_NAME", "vizier-metadat
 DEFINE_string(mds_port, gflags::StringFromEnv("PL_MDS_PORT", "50400"),
               "The port of the metadata service");
 
-DEFINE_string(namespace, gflags::StringFromEnv("PL_NAMESPACE", "pl"),
+DEFINE_string(namespace, gflags::StringFromEnv("PL_POD_NAMESPACE", "pl"),
               "The namespace of the Vizier instance");
 
 DEFINE_string(pod_ip, gflags::StringFromEnv("PL_POD_IP", ""),

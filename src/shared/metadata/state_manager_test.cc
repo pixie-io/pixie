@@ -247,11 +247,13 @@ class AgentMetadataStateTest : public ::testing::Test {
   static constexpr char kHostname[] = "myhost";
   static constexpr char kPodName[] = "mypod";
   static constexpr char kVizierName[] = "myvizier";
+  static constexpr char kVizierNamespace[] = "myviziernamespace";
 
   AgentMetadataStateTest()
       : agent_id_(sole::uuid4()),
         vizier_id_(sole::uuid4()),
-        metadata_state_(kHostname, kASID, kPID, agent_id_, kPodName, vizier_id_, kVizierName) {}
+        metadata_state_(kHostname, kASID, kPID, agent_id_, kPodName, vizier_id_, kVizierName,
+                        kVizierNamespace) {}
 
   sole::uuid agent_id_;
   sole::uuid vizier_id_;
@@ -273,6 +275,7 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ(agent_id_.str(), metadata_state_.agent_id().str());
   EXPECT_EQ(vizier_id_.str(), metadata_state_.vizier_id().str());
   EXPECT_EQ("myvizier", metadata_state_.vizier_name());
+  EXPECT_EQ("myviziernamespace", metadata_state_.vizier_namespace());
 
   K8sMetadataState* state = metadata_state_.k8s_metadata_state();
   EXPECT_THAT(state->pods_by_name(), UnorderedElementsAre(Pair(Pair("pl", "pod1"), "pod_id1")));
@@ -406,7 +409,8 @@ TEST_F(AgentMetadataStateTest, cidr_test) {
   AgentMetadataStateManagerImpl mgr("test_host", /*asid*/ 0, /*pid*/ 987, "test_pod",
                                     /*id*/ sole::uuid4(),
                                     /*collects_data*/ true, px::system::Config::GetInstance(),
-                                    &md_filter_, /*vizier_id*/ sole::uuid4(), "test_vizier");
+                                    &md_filter_, /*vizier_id*/ sole::uuid4(), "test_vizier",
+                                    "test_vizier_namespace");
 
   EXPECT_OK(mgr.PerformMetadataStateUpdate());
   // Should not be updated yet.
