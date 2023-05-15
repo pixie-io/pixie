@@ -42,8 +42,9 @@ ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
 buildables_excludes="except(kind(test, //...)) except(kind(container_image, //...))"
-default_excludes="attr('tags', 'disabled_flaky_test', //...) \
-  except //third_party/..."
+default_excludes="except attr('tags', 'manual', //...) \
+  except //third_party/... \
+  intersect attr('tags', 'disabled_flaky_test', //...)";
 
 sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \
@@ -127,6 +128,7 @@ function compute_targets() {
 }
 
 function check_bpf_trigger() {
+  run_bpf_targets=true
   for file in $(git diff --name-only "${commit_range}" ); do
     for pat in "${bpf_patterns[@]}"; do
       if [[ "$file" =~ ${pat} ]]; then
