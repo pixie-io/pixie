@@ -166,15 +166,8 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1
                          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
     OpenSSLServerImplementations;
 
-// TODO(ddelnano): Remove once new tls tracing implementation is
-// the default and we are ready to enable tracing of openssl v3.
-#ifdef ENABLE_OPENSSL_V3_TRACING
 typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper, NginxOpenSSL_3_0_7_ContainerWrapper>
     OpenSSLServerNestedSyscallFDImplementations;
-#else
-typedef ::testing::Types<NginxOpenSSL_1_1_1_ContainerWrapper>
-    OpenSSLServerNestedSyscallFDImplementations;
-#endif
 
 template <typename T>
 using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
