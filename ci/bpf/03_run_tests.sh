@@ -42,7 +42,7 @@ bazel build "${BAZEL_ARGS[@]}" --target_pattern_file "${BUILDABLE_FILE}" || retv
 check_retval $retval
 
 retval=0
-bazel test "${BAZEL_ARGS[@]}" --target_pattern_file "${TEST_FILE}" || retval=$?
+bazel test --runs_per=30 "${BAZEL_ARGS[@]}" --target_pattern_file "${TEST_FILE}" || retval=$?
 check_retval $retval
 
 rm -rf bazel-testlogs-archive
