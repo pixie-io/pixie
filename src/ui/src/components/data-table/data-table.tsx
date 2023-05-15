@@ -72,9 +72,9 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     maxHeight: '100%',
     width: '100%',
-    backgroundColor: theme.palette.background.four,
-    borderBottom: `1px ${theme.palette.background.two} solid`,
-    color: theme.palette.foreground.three,
+    backgroundColor: theme.palette.background.three,
+    borderBottom: `1px ${theme.palette.background.six} solid`,
+    color: theme.palette.foreground.one,
     textTransform: 'uppercase',
   },
   headerCell: {
@@ -82,7 +82,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     fontSize: theme.typography.pxToRem(14),
     padding: theme.spacing(1),
     alignSelf: 'baseline',
-    borderRight: `1px ${theme.palette.background.two} dashed`,
+    borderRight: `1px ${theme.palette.background.six} dashed`,
     '&:last-child': {
       borderRightWidth: 0,
     },
@@ -137,7 +137,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     padding: `0 ${theme.spacing(1)}`,
     height: `${ROW_HEIGHT_PX}px`, // Ensures the border stretches. See cellContents for the rest.
-    borderRight: `1px solid ${theme.palette.background.two}`,
+    borderRight: `1px solid ${theme.palette.background.six}`,
     '&:last-of-type': {
       borderRightWidth: 0,
     },
@@ -163,7 +163,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   center: { textAlign: 'center' },
   fill: { textAlign: 'center' },
   sortButton: {
-    opacity: 0.2,
+    opacity: 0.5,
     width: theme.spacing(3),
     paddingLeft: theme.spacing(1),
   },
@@ -204,6 +204,11 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
   columnMenuFew: { // Logic to expand columns first, then overflow into rows, is not possible in pure CSS :(
     gridTemplateColumns: '1fr',
+  },
+  gearButton: {
+    marginRight: theme.spacing(-1),
+    fontSize: theme.spacing(2.25),
+    '& > svg': { fontSize: 'inherit' },
   },
 }), { name: 'DataTable' });
 
@@ -261,7 +266,7 @@ const ColumnSelector = React.memo(() => {
         ))}
       </Menu>
       {/* eslint-disable-next-line react-memo/require-usememo */}
-      <IconButton onClick={toggleOpen} ref={anchorEl} size='small' sx={{ mr: -1 }}>
+      <IconButton onClick={toggleOpen} ref={anchorEl} size='small' className={classes.gearButton}>
         <GearIcon />
       </IconButton>
     </>
