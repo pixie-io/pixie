@@ -23,6 +23,7 @@ import { UserManager } from 'oidc-client';
 import { FormStructure } from 'app/components';
 import { Auth0Buttons } from 'app/containers/auth/auth0-buttons';
 import { AUTH_CLIENT_ID, AUTH_EMAIL_PASSWORD_CONN, AUTH_URI } from 'app/containers/constants';
+import pixieAnalytics from 'app/utils/analytics';
 
 import { getSignupArgs, CallbackArgs, getLoginArgs } from './callback-url';
 
@@ -37,6 +38,7 @@ export const Auth0Client = {
   }),
 
   redirectToGoogleLogin(): void {
+    pixieAnalytics.track('Redirect to Google login');
     this.userManager.signinRedirect({
       extraQueryParams: {
         connection: 'google-oauth2',
@@ -49,6 +51,7 @@ export const Auth0Client = {
   },
 
   redirectToGoogleSignup(): void {
+    pixieAnalytics.track('Redirect to Google signup');
     this.userManager.signinRedirect({
       extraQueryParams: {
         connection: 'google-oauth2',
@@ -61,6 +64,7 @@ export const Auth0Client = {
   },
 
   redirectToEmailLogin(): void {
+    pixieAnalytics.track('Redirect to email login');
     this.userManager.signinRedirect({
       extraQueryParams: {
         connection: AUTH_EMAIL_PASSWORD_CONN,
@@ -75,6 +79,7 @@ export const Auth0Client = {
   },
 
   redirectToEmailSignup(): void {
+    pixieAnalytics.track('Redirect to email signup');
     this.userManager.signinRedirect({
       extraQueryParams: {
         connection: AUTH_EMAIL_PASSWORD_CONN,
