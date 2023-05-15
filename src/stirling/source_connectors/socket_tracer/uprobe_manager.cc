@@ -344,7 +344,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
       return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
     }
 
-    if (!FLAGS_access_tls_socket_fd_via_syscall) {
+    if (!FLAGS_access_tls_socket_fd_via_syscall || libssl == kLibNettyTcnativePrefix) {
       auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
 
       PX_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
@@ -361,7 +361,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
 
       // TODO(ddelnano): Remove this conditional logic once the new tls tracing
       // implementation is the default.
-      if (FLAGS_access_tls_socket_fd_via_syscall) {
+      if (FLAGS_access_tls_socket_fd_via_syscall && libssl != kLibNettyTcnativePrefix) {
         spec.probe_fn = absl::Substitute("$0_syscall_fd_access", spec.probe_fn);
       }
       PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
