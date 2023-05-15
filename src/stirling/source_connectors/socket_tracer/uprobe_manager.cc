@@ -285,21 +285,17 @@ struct SSLLibMatcher {
   HostPathForPIDPathSearchType search_type;
 };
 
-// TODO(ddelnano): Remove the ENABLE_OPENSSL_V3_TRACING ifdef once this
-// code this could should be enabled outside of test use cases
 static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
     SSLLibMatcher{
         .libssl = "libssl.so.1.1",
         .libcrypto = "libcrypto.so.1.1",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
     },
-#ifdef ENABLE_OPENSSL_V3_TRACING
     SSLLibMatcher{
         .libssl = "libssl.so.3",
         .libcrypto = "libcrypto.so.3",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
     },
-#endif
     SSLLibMatcher{
         .libssl = kLibNettyTcnativePrefix,
         .libcrypto = kLibNettyTcnativePrefix,
@@ -313,6 +309,12 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   for (auto ssl_library_match : kLibSSLMatchers) {
     const auto libssl = ssl_library_match.libssl;
     const auto libcrypto = ssl_library_match.libcrypto;
+
+    // TODO(ddelnano): The legacy tls tracing implementation does not support OpenSSL v3.
+    // Remove this once that implementation is removed in addition to the feature toggle.
+    if (!FLAGS_access_tls_socket_fd_via_syscall && absl::EndsWith(libssl, "so.3")) {
+      continue;
+    }
 
     const std::vector<std::string_view> lib_names = {libssl, libcrypto};
     const auto search_type = ssl_library_match.search_type;
