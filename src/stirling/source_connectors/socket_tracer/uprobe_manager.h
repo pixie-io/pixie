@@ -452,7 +452,7 @@ class UProbeManager {
           .probe_fn = "probe_ret_SSL_read",
       },
       // The _ex variants are declared optional since they were not available
-      // prior to OpenSSL 1.1.0 and may not be available for statically linked
+      // prior to OpenSSL 1.1.1 and may not be available for statically linked
       // applications (NodeJS).
       bpf_tools::UProbeSpec{
           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
