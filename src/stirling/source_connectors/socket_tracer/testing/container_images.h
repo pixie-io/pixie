@@ -125,8 +125,8 @@ class Python310Container : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/py_https_server/"
-      "https_server.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ssl/"
+      "python_https_server.tar";
   static constexpr std::string_view kContainerNamePrefix = "py_https_server";
   static constexpr std::string_view kReadyMessage = "INFO";
 };

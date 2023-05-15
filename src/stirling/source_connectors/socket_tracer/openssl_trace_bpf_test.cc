@@ -190,7 +190,6 @@ TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 TYPED_TEST_SUITE(OpenSSLTraceNestedSyscallFD, OpenSSLServerNestedSyscallFDImplementations);
 
 OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
-  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
