@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -43,6 +44,13 @@ using K8sMetadataObjectUPtr = std::unique_ptr<K8sMetadataObject>;
 using ContainerInfoUPtr = std::unique_ptr<ContainerInfo>;
 using PIDInfoUPtr = std::unique_ptr<PIDInfo>;
 using AgentID = sole::uuid;
+
+using UIDAndStart = std::pair<UID, int64_t>;
+struct SortByStart {
+  bool operator()(const UIDAndStart& lhs, const UIDAndStart& rhs) const {
+    return lhs.second < rhs.second;
+  }
+};
 
 /**
  * This class contains all kubernetes relate metadata.
@@ -106,7 +114,8 @@ class K8sMetadataState : NotCopyable {
   using DeploymentByNameMap = K8sEntityByNameMap;
   using NamespacesByNameMap = K8sEntityByNameMap;
   using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
-  using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
+  using PodsByPodIPMap = absl::flat_hash_map<std::string, UID>;
+  using PodsByIPAndStartTime = absl::flat_hash_map<std::string, std::set<UIDAndStart, SortByStart>>;
   using ServicesByServiceIpMap = absl::flat_hash_map<std::string, UID>;
 
   void set_service_cidr(CIDRBlock cidr) {
@@ -143,7 +152,15 @@ class K8sMetadataState : NotCopyable {
    * @param pod_ip string of the pod ip.
    * @return the pod_id or empty string if the pod does not exist.
    */
-  UID PodIDByIP(std::string_view pod_ip) const;
+  [[deprecated("switch to PodIDByIPAtTime instead")]] UID PodIDByIP(std::string_view pod_ip) const;
+
+  /**
+   * PodIDByIPAtTime returns the PodID for the pod with the given IP at the given timestamp.
+   * @param pod_ip string of the pod IP.
+   * @param timestamp_ns time at which this request occured.
+   * @return the pod_id or empty string if the pod does not exist.
+   */
+  UID PodIDByIPAtTime(std::string_view pod_ip, int64_t timestamp_ns) const;
 
   /**
    * ServiceIDByClusterIP returns the ServiceID for the service with the given Cluster IP.
@@ -307,7 +324,13 @@ class K8sMetadataState : NotCopyable {
   /**
    * Mapping of Pods by host ip.
    */
-  PodsByPodIpMap pods_by_ip_;
+  PodsByPodIPMap pods_by_ip_;
+
+  /**
+   * Mapping of Pods by host ip, to a set of UID,start_time pairs
+   * sorted by start_time.
+   */
+  PodsByIPAndStartTime pods_by_ip_and_start_time_;
 
   /**
    * Mapping of Services by Cluster IP.
