@@ -154,6 +154,12 @@ TEST_F(BCCSymbolizerTest, JavaSymbols) {
 
 // Expect that Java symbolization agents will not be injected after disabling.
 TEST_F(BCCSymbolizerTest, DisableJavaSymbols) {
+  if (std::getenv("TESTING_UNDER_QEMU") != nullptr) {
+    // TODO(pixie-io/stirling): This test fails under qemu, likely due to timing issues.
+    // We should remove the sleep(s) and instead wait for certain conditions to occur
+    // (with appropriate timeouts)s.
+    GTEST_SKIP() << "Skipping this test under qemu";
+  }
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_agent_libs, GetAgentLibsFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_px_jattach_path, GetPxJattachFlagValueForTesting());
   PX_SET_FOR_SCOPE(FLAGS_stirling_profiler_java_symbols, true);

@@ -115,14 +115,12 @@ test:clang-libstdc++ --config=tmp-sandbox
 build:qemu-bpf --config=clang-base
 build:qemu-bpf --//bazel:enable_libcpp
 build:qemu-bpf --features=libc++ --features=-libstdc++
-build:qemu-bpf --build_tag_filters=-no_libcpp
-build:qemu-bpf --test_tag_filters=-no_libcpp,-requires_root,-requires_bpf,-disabled
+build:qemu-bpf --build_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp
+build:qemu-bpf --test_tag_filters=requires_bpf,requires_root,-no_qemu,-no_libcpp,-disabled
 build:qemu-bpf --sandbox_fake_username
 build:qemu-bpf --//bazel/cc_toolchains:libc_version=glibc2_36
 build:qemu-bpf --//bazel/test_runners:test_runner=qemu_with_kernel
 build:qemu-bpf --run_under="bazel/test_runners/qemu_with_kernel/test_runner.sh"
-build:qemu-bpf --build_tag_filters=requires_bpf,-no_qemu
-test:qemu-bpf --test_tag_filters=requires_bpf,-disabled,-no_qemu
 test:qemu-bpf --test_timeout=180,600,1800,3600
 
 # Build for GCC.
