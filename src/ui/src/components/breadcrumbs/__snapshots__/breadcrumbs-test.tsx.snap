@@ -3,35 +3,35 @@
 exports[`<Breadcrumbs/> renders correctly 1`] = `
 <div>
   <div
-    class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation2 css-2psz7m-MuiPaper-root"
+    class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 Breadcrumbs-triggerWrapper-1 css-zsf01h-MuiPaper-root"
   >
     <div
-      class="Breadcrumbs-breadcrumbs-1"
+      class="Breadcrumbs-breadcrumbs-2"
     >
       <div
-        class="Breadcrumbs-breadcrumb-2"
+        class="Breadcrumbs-breadcrumb-3"
       >
         <div
-          class="Breadcrumbs-body-6"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-7"
+            class="Breadcrumbs-content-9"
           >
             <span
-              class="Breadcrumbs-title-3"
+              class="Breadcrumbs-title-5"
             >
               cluster: 
             </span>
             <span
-              class="Breadcrumbs-selectable-5"
+              class="Breadcrumbs-selectable-7"
             >
               <span
-                class="Breadcrumbs-value-4"
+                class="Breadcrumbs-value-6"
               >
                 gke-prod
               </span>
               <div
-                class="Breadcrumbs-dropdownArrow-8"
+                class="Breadcrumbs-dropdownArrow-10"
               >
                 <svg
                   aria-hidden="true"
@@ -50,29 +50,32 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         </div>
       </div>
       <div
-        class="Breadcrumbs-breadcrumb-2"
+        class="Breadcrumbs-divider-12 Breadcrumbs-dividerHidden-13"
+      />
+      <div
+        class="Breadcrumbs-breadcrumb-3"
       >
         <div
-          class="Breadcrumbs-body-6"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-7"
+            class="Breadcrumbs-content-9"
           >
             <span
-              class="Breadcrumbs-title-3"
+              class="Breadcrumbs-title-5"
             >
               pod: 
             </span>
             <span
-              class="Breadcrumbs-selectable-5"
+              class="Breadcrumbs-selectable-7"
             >
               <span
-                class="Breadcrumbs-value-4"
+                class="Breadcrumbs-value-6"
               >
                 pod-123
               </span>
               <div
-                class="Breadcrumbs-dropdownArrow-8"
+                class="Breadcrumbs-dropdownArrow-10"
               >
                 <svg
                   aria-hidden="true"
@@ -91,16 +94,19 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         </div>
       </div>
       <div
-        class="Breadcrumbs-breadcrumb-2"
+        class="Breadcrumbs-divider-12 Breadcrumbs-dividerHidden-13"
+      />
+      <div
+        class="Breadcrumbs-breadcrumb-3"
       >
         <div
-          class="Breadcrumbs-body-6"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-7"
+            class="Breadcrumbs-content-9"
           >
             <span
-              class="Breadcrumbs-title-3"
+              class="Breadcrumbs-title-5"
             >
               script: 
             </span>
@@ -108,13 +114,13 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               class=""
             >
               <span
-                class="Breadcrumbs-value-4"
+                class="Breadcrumbs-value-6"
               >
                 px/pod
               </span>
             </span>
             <div
-              class="Breadcrumbs-spacer-9"
+              class="Breadcrumbs-spacer-11"
             />
           </div>
         </div>
