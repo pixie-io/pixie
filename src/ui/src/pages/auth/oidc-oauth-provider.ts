@@ -26,6 +26,7 @@ import {
   OIDC_CLIENT_ID, OIDC_HOST, OIDC_METADATA_URL, OIDC_ADDITIONAL_SCOPES,
   OIDC_SOCIAL_CONFIG_LOGIN, OIDC_SOCIAL_CONFIG_SIGNUP,
 } from 'app/containers/constants';
+import pixieAnalytics from 'app/utils/analytics';
 
 import { CallbackArgs, getLoginArgs, getSignupArgs } from './callback-url';
 
@@ -49,6 +50,7 @@ export const OIDCClient = {
       extraQueryParams.invite = true;
     }
 
+    pixieAnalytics.track('Redirect to login', { args, extraQueryParams });
     this.userManager.signinRedirect({
       extraQueryParams,
       prompt: 'login',
@@ -65,6 +67,7 @@ export const OIDCClient = {
       extraQueryParams.invite = true;
     }
 
+    pixieAnalytics.track('Redirect to signup', { args, extraQueryParams });
     this.userManager.signinRedirect({
       extraQueryParams,
       prompt: 'login',
