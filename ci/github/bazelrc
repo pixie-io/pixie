@@ -45,3 +45,4 @@ test:qemu-bpf --local_cpu_resources=46
 
 build:qemu-bpf --jobs=48
 test:qemu-bpf --jobs=48
+test:qemu-bpf --runs_per_test=30
