@@ -73,6 +73,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   description: {
+    backgroundColor: theme.palette.background.one,
     flex: 2,
     borderLeftStyle: 'solid',
     borderLeftWidth: '1px',
@@ -88,17 +89,18 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     opacity: 0.3,
   },
   completion: {
-    ...theme.typography.body1,
+    color: theme.palette.text.disabled,
+    backgroundColor: theme.palette.background.one,
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
     cursor: 'pointer',
+    '& > span': {
+      ...theme.typography.body1,
+      fontFamily: theme.typography.monospace.fontFamily,
+    },
     '&.active': {
-      backgroundColor: theme.palette.action.active,
-      color: theme.palette.text.secondary,
-      borderLeftStyle: 'solid',
-      borderLeftWidth: theme.spacing(0.5),
-      borderLeftColor: theme.palette.primary.main,
-      paddingLeft: theme.spacing(1.5),
+      color: theme.palette.text.primary,
+      backgroundColor: theme.palette.background.five,
     },
     display: 'flex',
     alignItems: 'center',

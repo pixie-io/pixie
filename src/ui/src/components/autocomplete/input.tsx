@@ -31,15 +31,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     ...theme.typography.h6,
     position: 'relative',
     cursor: 'text',
-    padding: theme.spacing(2.5),
+    padding: `${theme.spacing(1.25)} ${theme.spacing(3)}`,
     fontWeight: theme.typography.fontWeightLight,
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'baseline',
-
-    '> *': {
-      flex: '1',
-    },
   },
   inputWrapper: {
     position: 'relative',

@@ -24,26 +24,71 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { ClusterContext } from 'app/common/cluster-context';
-import { StatusCell, Select } from 'app/components';
+import { StatusCell, Select, buildClass } from 'app/components';
 import { clusterStatusGroup } from 'app/containers/admin/utils';
 import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 
-const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
-  container: {
+const useStyles = makeStyles(({ shape, spacing, typography, palette, zIndex }: Theme) => createStyles({
+  borderWrapper: {
+    transition: 'all 0.125s linear',
+    borderRadius: spacing(2),
+    border: `1px ${palette.foreground.grey1} solid`,
+    padding: spacing(0.375),
+    paddingLeft: spacing(1.5),
     display: 'flex',
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  label: {
-    marginRight: spacing(0.5),
-    justifyContent: 'center',
+  borderWrapperOpen: {
+    backgroundColor: palette.background.three,
+    position: 'relative',
+    // Illusion to merge this element's border with the popover
+    borderRadius: 0,
+    borderTopLeftRadius: shape.borderRadius,
+    borderTopRightRadius: shape.borderRadius,
+    '&::after': {
+      pointerEvents: 'none',
+      color: 'transparent',
+      content: '"\u00a0"', // nbsp
+      fontSize: '0.01px',
+      // TODO: This isn't covering the border of the <Popover />. Same trick worked for breadcrumbs, but not here.
+      //  The stacking context for the modal is higher than that of the topbar (this makes sense).
+      //  The `transform-style: preserve-3d` trick was not enough to break out of the stacking context.
+      //  Likely, Material is doing something wonky to ensure its own behavior is consistent that makes this not work?
+      //  It isn't that something else in our code is using z-index or `transform:`, but probably some other way to
+      //  generate a stacking context is in there (the topbar itself has one, obviously).
+      //  But why would any of that break the `transform-style` workaround?
+      //  Might have to put this little line in a <Portal> or something.
+      //  Can't really ignore it, gotta make these things consistent or it'll look real bad with multiple on the page.
+      //  Layer view in Chrome didn't help, either. That feature is pretty buggy, actually.
+      //    Is that feature unmaintained? Firefox removed their version of the feature a few years ago...
+      zIndex: zIndex.modal + 1,
+      position: 'absolute',
+      bottom: '-2px',
+      left: 0,
+      width: '100%',
+      height: 0,
+      borderBottom: `2px ${palette.background.three} solid`,
+    },
+  },
+  labelWrapper: {
+    ...typography.body2,
     display: 'flex',
-    alignItems: 'center',
-    color: palette.text.secondary,
-    fontWeight: 800,
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    flexDirection: 'row',
+  },
+  labelPrefix: {
+    marginRight: spacing(0.5),
+    fontWeight: typography.fontWeightMedium,
+  },
+  clusterName: {
+    ...typography.monospace,
+    color: palette.primary.main,
   },
   status: {
     alignSelf: 'center',
+    lineHeight: 0,
     marginRight: spacing(0.5),
   },
 }), { name: 'ClusterSelector' });
@@ -93,16 +138,7 @@ const ClusterSelector: React.FC = () => {
   const statusGroup = clusterStatusGroup(selectedClusterStatus);
 
   const selectedLabel = React.useMemo(() => (
-    <div className={classes.container}>
-      <div className={classes.label}>Cluster:</div>
-      <span>{selectedClusterPrettyName}</span>
-    </div>
-  ), [classes, selectedClusterPrettyName]);
-
-  if (loading || !clusters || error) return (<></>);
-
-  return (
-    <div className={classes.container}>
+    <div className={classes.labelWrapper}>
       {statusGroup !== 'healthy' && (
         <Tooltip title={`Status: ${selectedClusterStatusMessage}`}>
           <div className={classes.status}>
@@ -110,11 +146,23 @@ const ClusterSelector: React.FC = () => {
           </div>
         </Tooltip>
       )}
+      <div className={classes.labelPrefix}>cluster:</div>
+      <span className={classes.clusterName}>{selectedClusterPrettyName}</span>
+    </div>
+  ), [classes, selectedClusterPrettyName, selectedClusterStatusMessage, statusGroup]);
+
+  const [selectOpen, setSelectOpen] = React.useState(false);
+
+  if (loading || !clusters || error) return (<></>);
+
+  return (
+    <div className={buildClass([classes.borderWrapper, selectOpen && classes.borderWrapperOpen])}>
       <Select
         value={selectedLabel}
         getListItems={getListItems}
         onSelect={setClusterByName}
         requireCompletion
+        setOpen={setSelectOpen}
       />
     </div>
   );
