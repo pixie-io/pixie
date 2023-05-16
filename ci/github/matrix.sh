@@ -66,11 +66,11 @@ elif [[ "${event_name}" == "pull_request" ]]; then
   fi
   # Build/Test bpf targets if #ci:bpf-build{-all-kernels} is in the commit message.
   if check_tag '#ci:bpf-build-all-kernels'; then
-    echo "Found #ci:bpf-build tag. Building bpf targets" >&2
+    echo "Found #ci:bpf-build-all-kernels tag. Building bpf targets on all kernel versions" >&2
     build_deps_flags+=("-b")
     kernel_versions=( "${all_kernel_versions[@]}" )
   elif check_tag '#ci:bpf-build'; then
-    echo "Found #ci:bpf-build-all-kernels. Building bpf targets on all kernel versions" >&2
+    echo "Found #ci:bpf-build tag. Building bpf targets" >&2
     build_deps_flags+=("-b")
   fi
 fi
