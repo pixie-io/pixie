@@ -44,9 +44,8 @@ class Profiler : public UnitConnector<PerfProfileConnector> {
     PX_RETURN_IF_ERROR(BuildHistogram());
 
     // Create the pprof profile.
-    const uint32_t num_cpus = get_nprocs_conf();
     const uint32_t period_ms = FLAGS_stirling_profiler_stack_trace_sample_period_ms;
-    const auto pprof_pb = px::shared::CreatePProfProfile(num_cpus, period_ms, histo_);
+    const auto pprof_pb = px::shared::CreatePProfProfile(period_ms, histo_);
 
     // Write the pprof profile to disk.
     std::fstream outfile(FLAGS_pprof_pb_file, std::ios::out | std::ios::trunc | std::ios::binary);
