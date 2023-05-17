@@ -168,10 +168,12 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-using OpenSSLServerImplementations = Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
-using OpenSSLServerNestedSyscallFDImplementations = Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         NginxOpenSSL_3_0_7_ContainerWrapper>;
+using OpenSSLServerImplementations =
+    Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
+using OpenSSLServerNestedSyscallFDImplementations =
+    Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+          NginxOpenSSL_3_0_7_ContainerWrapper>;
 
 template <typename T>
 using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
