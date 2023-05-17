@@ -45,6 +45,7 @@ using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::StrEq;
+using ::testing::Types;
 using ::testing::UnorderedElementsAre;
 
 class NginxOpenSSL_1_1_0_ContainerWrapper
@@ -167,13 +168,10 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-typedef ::testing::Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>
-    OpenSSLServerImplementations;
-
-typedef ::testing::Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-                         NginxOpenSSL_3_0_7_ContainerWrapper>
-    OpenSSLServerNestedSyscallFDImplementations;
+using OpenSSLServerImplementations = Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+                         Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
+using OpenSSLServerNestedSyscallFDImplementations = Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+                         NginxOpenSSL_3_0_7_ContainerWrapper>;
 
 template <typename T>
 using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
