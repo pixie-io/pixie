@@ -440,7 +440,6 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
   // Here they are attached on statically linked OpenSSL library (eg. for node).
   for (auto spec : kOpenSSLUProbes) {
     spec.binary_path = host_proc_exe.string();
-    spec.is_optional = true;
     PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
   }
 

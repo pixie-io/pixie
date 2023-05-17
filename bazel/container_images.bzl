@@ -302,11 +302,3 @@ def stirling_test_images():
         "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
         "google-samples/microservices-demo/emailservice:v0.1.3",
     )
-
-    # Tag: library/python:3.10-alpine3.17
-    # Arch: linux/amd64
-    _gcr_io_image(
-        "python3_10_base",
-        "sha256:a1d19bc3a5a3dc4f816868f162687530cfd22f604f39ca336be528544925791a",
-        "pixie-oss/pixie-dev-public/docker-deps/library/python:3.10-alpine3.17",
-    )
