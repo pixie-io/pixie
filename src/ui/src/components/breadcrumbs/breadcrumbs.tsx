@@ -38,6 +38,8 @@ import { CompletionItem } from 'app/components/autocomplete/completions';
 import { buildClass } from 'app/utils/build-class';
 import useIsMounted from 'app/utils/use-is-mounted';
 
+const TRANSITION_DURATION_MS = 250;
+
 const useStyles = makeStyles(({
   shape, spacing, typography, palette, breakpoints,
 }: Theme) => createStyles({
@@ -218,7 +220,7 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
 // eslint-disable-next-line react/display-name
 const DialogTransition = React.forwardRef<typeof Fade, FadeProps>(
   // eslint-disable-next-line react-memo/require-memo
-  (props, ref) => <Fade ref={ref} timeout={250} {...props} />,
+  (props, ref) => <Fade ref={ref} timeout={TRANSITION_DURATION_MS} {...props} />,
 );
 
 export const DialogDropdown = React.memo<DialogDropdownProps>(({
@@ -337,7 +339,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
     anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
     transformOrigin: { vertical: 'top', horizontal: 'left' },
     TransitionComponent: DialogTransition,
-    transitionDuration: 250,
+    transitionDuration: TRANSITION_DURATION_MS,
   }), [onClose, anchorEl, classes.completionsContainer]);
 
   // To place the eraser border, we need to figure out where the anchor element actually is relative to the dialog.
