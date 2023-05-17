@@ -21,22 +21,31 @@ import * as React from 'react';
 import { ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import {
   Card,
+  Fade,
+  FadeProps,
   Paper,
   Popover,
   PopoverProps,
 } from '@mui/material';
-import { Theme, ThemeProvider } from '@mui/material/styles';
+import { Theme, ThemeProvider, alpha } from '@mui/material/styles';
 import createTypography from '@mui/material/styles/createTypography';
 import { createStyles, makeStyles } from '@mui/styles';
+import { deepmerge } from '@mui/utils';
 
 import { Autocomplete } from 'app/components/autocomplete/autocomplete';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import { CompletionItem } from 'app/components/autocomplete/completions';
+import { buildClass } from 'app/utils/build-class';
 import useIsMounted from 'app/utils/use-is-mounted';
 
+const TRANSITION_DURATION_MS = 250;
+
 const useStyles = makeStyles(({
-  spacing, typography, palette, breakpoints,
+  shape, spacing, typography, palette, breakpoints,
 }: Theme) => createStyles({
+  triggerWrapper: {
+    background: 'none',
+  },
   breadcrumbs: {
     height: '100%',
     scrollbarWidth: 'none', // Firefox
@@ -55,12 +64,30 @@ const useStyles = makeStyles(({
     paddingRight: spacing(0.5),
     alignItems: 'center',
     height: '100%',
+
+    transition: 'all 0.125s linear',
+    border: `1px ${palette.foreground.grey1} solid`,
+    '&:not($active)': {
+      '&:not(:first-child)': { borderLeftColor: 'transparent' },
+      '&:not(:last-child)': { borderRightColor: 'transparent' },
+      '&:first-child': { borderTopLeftRadius: spacing(2), borderBottomLeftRadius: spacing(2) },
+      '&:last-child': { borderTopRightRadius: spacing(2), borderBottomRightRadius: spacing(2) },
+    },
+  },
+  active: {
+    backgroundColor: palette.background.three,
+    position: 'relative',
+    // Illusion to merge this element's border with the popover
+    borderTopLeftRadius: shape.borderRadius,
+    borderTopRightRadius: shape.borderRadius,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   title: {
+    cursor: 'pointer',
     fontWeight: typography.fontWeightMedium,
     paddingRight: spacing(0.5),
     paddingLeft: spacing(0.5),
-    fontFamily: typography.monospace.fontFamily,
   },
   value: {
     color: palette.primary.main,
@@ -69,6 +96,9 @@ const useStyles = makeStyles(({
     maxWidth: spacing(50),
     overflowX: 'hidden',
     textOverflow: 'ellipsis',
+    // Font metrics are a bit wonky between this and the body font next to it, so re-center
+    position: 'relative',
+    top: '-1px',
   },
   selectable: {
     cursor: 'pointer',
@@ -79,13 +109,13 @@ const useStyles = makeStyles(({
     ...typography.body2,
     display: 'inline-block',
     color: palette.text.primary,
-    height: spacing(5),
+    height: spacing(4),
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     paddingLeft: spacing(1),
-    height: spacing(5),
+    height: spacing(4),
   },
   dropdownArrow: {
     height: spacing(3),
@@ -97,10 +127,29 @@ const useStyles = makeStyles(({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.foreground.three,
-    height: '75%',
-    width: '1px',
-    opacity: 0.4,
+    height: '100%',
+    width: '3px',
+    borderTop: `1px ${palette.foreground.grey1} solid`,
+    borderBottom: `1px ${palette.foreground.grey1} solid`,
+    position: 'relative',
+    left: '-1px',
+    marginRight: '-2px',
+
+    '&::after': {
+      display: 'block',
+      pointerEvents: 'none',
+      color: 'transparent',
+      content: '"\u00a0"', // nbsp
+      fontSize: '0.01px',
+      backgroundColor: palette.foreground.three,
+      margin: '12.5% 0',
+      height: '75%',
+      width: '1px',
+      opacity: 0.4,
+    },
+  },
+  dividerHidden: {
+    '&::after': { opacity: 0 },
   },
 }), { name: 'Breadcrumbs' });
 
@@ -114,22 +163,49 @@ export interface DialogDropdownProps {
 }
 
 // Used to shrink the <Autocomplete/>'s fonts and negative space, to not be as huge / central as the Command Input.
-const themeCompactor = (theme: Theme) => ({
-  ...theme,
-  typography: createTypography(theme.palette, {
-    fontSize: theme.typography.fontSize * 0.8,
-  }),
-  spacing: (factor) => theme.spacing(factor * 0.8),
-});
+const themeCompactor = (theme: Theme) => (deepmerge<any>(
+  theme,
+  {
+    typography: createTypography(theme.palette, {
+      fontSize: theme.typography.fontSize * 0.8,
+    }),
+    spacing: (factor: number) => theme.spacing(factor * 0.8),
+  },
+));
 
 const useDialogStyles = makeStyles((theme: Theme) => createStyles({
   card: {
     width: theme.spacing(76), // 608px
+    // Make it look like it's selected
+    borderTopLeftRadius: 0,
+    border: `1px ${alpha(theme.palette.foreground.grey1, 1)} solid`,
+
+    // An illusion to erase the part of the border between the anchor and the popover so they appear to be one element
+    // These two CSS vars are computed when the card opens, so that the illusion can be placed correctly.
+    '--illusion-border-width': '0px',
+    '--illusion-border-left': '0px',
+    '&::after': {
+      pointerEvents: 'none',
+      color: 'transparent',
+      content: '"\u00a0"', // nbsp
+      fontSize: '0.01px',
+      zIndex: theme.zIndex.modal + 2,
+      position: 'absolute',
+      top: '-1px',
+      left: 'calc(var(--illusion-border-left) + 1px)',
+      width: 'max(0px, calc(var(--illusion-border-width) - 2px))',
+      height: 0,
+      borderBottom: `2px ${theme.palette.background.three} solid`,
+    },
   },
   autocomplete: {
     maxHeight: '60vh',
+    borderRadius: 'inherit',
+    overflow: 'hidden', // Scroll container is deeper within
   },
   completionsContainer: {
+    overflow: 'visible', // So the border doesn't create a nesting scrollbar
+    borderTopLeftRadius: 0,
     maxWidth: `min(95vw, min(auto, ${theme.spacing(76)}px))`,
     maxHeight: '60vh',
   },
@@ -140,6 +216,12 @@ const useDialogStyles = makeStyles((theme: Theme) => createStyles({
     borderColor: theme.palette.background.five,
   },
 }), { name: 'DialogDropdown' });
+
+// eslint-disable-next-line react/display-name
+const DialogTransition = React.forwardRef<typeof Fade, FadeProps>(
+  // eslint-disable-next-line react-memo/require-memo
+  (props, ref) => <Fade ref={ref} timeout={TRANSITION_DURATION_MS} {...props} />,
+);
 
 export const DialogDropdown = React.memo<DialogDropdownProps>(({
   placeholder,
@@ -248,7 +330,7 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
   }), [allowTyping, requireCompletion, anchorEl]);
 
   const popoverProps: PopoverProps = React.useMemo(() => ({
-    elevation: 0,
+    elevation: 3,
     keepMounted: false,
     classes: { paper: classes.completionsContainer },
     onClose,
@@ -256,28 +338,58 @@ export const DialogDropdown = React.memo<DialogDropdownProps>(({
     open: !!anchorEl,
     anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
     transformOrigin: { vertical: 'top', horizontal: 'left' },
+    TransitionComponent: DialogTransition,
+    transitionDuration: TRANSITION_DURATION_MS,
   }), [onClose, anchorEl, classes.completionsContainer]);
+
+  // To place the eraser border, we need to figure out where the anchor element actually is relative to the dialog.
+  const [cardEl, setCardEl] = React.useState<HTMLElement>(null);
+  const setCardRef = React.useCallback((el?: HTMLElement) => setCardEl(el), []);
+  const [cardLeft, setCardLeft] = React.useState(0);
+  React.useEffect(() => {
+    if (anchorEl && cardEl) {
+      // Need to delay for the dialog's position to change
+      setTimeout(() => {
+        setCardLeft(cardEl.getBoundingClientRect().x);
+      });
+    } else {
+      setCardLeft(0);
+    }
+  }, [anchorEl, cardEl]);
+
+  const cardStyle: React.CSSProperties = React.useMemo(() => {
+    let w = 0;
+    let l = 0;
+
+    if (anchorEl) {
+      w = anchorEl.offsetWidth;
+      const { x: anchorLeft } = anchorEl.getBoundingClientRect();
+      l = anchorLeft - cardLeft;
+    }
+
+    return {
+      '--illusion-border-width': `${w}px`,
+      '--illusion-border-left': `${l}px`,
+    } as unknown as React.CSSProperties;
+  }, [cardLeft, anchorEl]);
 
   return (
     <Popover {...popoverProps}>
       <ThemeProvider theme={themeCompactor}>
-        <Card className={classes.card}>
+        <Card className={classes.card} ref={setCardRef} style={cardStyle}>
           <AutocompleteContext.Provider value={autocompleteContextValue}>
             <Autocomplete
               className={classes.autocomplete}
               placeholder={placeholder}
               onSelection={onCompletionSelected}
               getCompletions={getCompletions}
+              hint={explanation && (
+                <div className={classes.explanationContainer}>
+                  { explanation }
+                </div>
+              )}
             />
           </AutocompleteContext.Provider>
-          {
-            explanation != null
-            && (
-              <div className={classes.explanationContainer}>
-                { explanation }
-              </div>
-            )
-          }
         </Card>
       </ThemeProvider>
     </Popover>
@@ -311,7 +423,7 @@ const Breadcrumb = React.memo<BreadcrumbProps>(({
 
   const handleClick = React.useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
-      setAnchorEl(event.currentTarget.parentElement);
+      setAnchorEl(event.currentTarget);
     },
     [setAnchorEl],
   );
@@ -323,30 +435,35 @@ const Breadcrumb = React.memo<BreadcrumbProps>(({
   }, [setAnchorEl]);
 
   return (
-    <div className={classes.breadcrumb}>
-      <div className={classes.body}>
-        <div className={classes.content}>
-          {!omitKey && <span className={classes.title}>{`${title}: `}</span>}
-          <span className={selectable ? classes.selectable : ''} onClick={selectable ? handleClick : null}>
-            <span className={classes.value} >{value}</span>
-            {selectable && (
-              <div className={classes.dropdownArrow}>
-                <ArrowDropDownIcon />
-              </div>
-            )}
-          </span>
-          {!selectable && <div className={classes.spacer} />}
-          <DialogDropdown
-            placeholder={placeholder || 'Filter...'}
-            onSelect={onSelect}
-            onClose={onClose}
-            getListItems={getListItems}
-            anchorEl={anchorEl}
-            explanation={explanation}
-          />
+    <>
+      <div
+        className={buildClass([classes.breadcrumb, !!anchorEl && classes.active])}
+        onClick={selectable ? handleClick : null}
+      >
+        <div className={classes.body}>
+          <div className={classes.content}>
+            {!omitKey && <span className={classes.title} >{`${title}: `}</span>}
+            <span className={selectable ? classes.selectable : ''}>
+              <span className={classes.value} >{value}</span>
+              {selectable && (
+                <div className={classes.dropdownArrow}>
+                  <ArrowDropDownIcon />
+                </div>
+              )}
+            </span>
+            {!selectable && <div className={classes.spacer} />}
+          </div>
         </div>
       </div>
-    </div>
+      <DialogDropdown
+        placeholder={placeholder || 'Filter...'}
+        onSelect={onSelect}
+        onClose={onClose}
+        getListItems={getListItems}
+        anchorEl={anchorEl}
+        explanation={explanation}
+      />
+    </>
   );
 });
 Breadcrumb.displayName = 'Breadcrumb';
@@ -379,7 +496,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(({ breadcrumbs
     AutocompleteContext,
   );
   return (
-    <Paper elevation={2}>
+    <Paper className={classes.triggerWrapper}>
       <div className={classes.breadcrumbs}>
         {breadcrumbs.map((breadcrumb, i) => (
           // Key is needed to prevent a console error when a key is missing in a list element.
@@ -394,7 +511,9 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(({ breadcrumbs
           >
             <Breadcrumb key={i} {...breadcrumb} />
             {
-              breadcrumb.divider && i !== breadcrumbs.length - 1 && <div className={classes.divider} />
+              i !== breadcrumbs.length - 1 && (
+                <div className={buildClass([classes.divider, !breadcrumb.divider && classes.dividerHidden])} />
+              )
             }
           </AutocompleteContext.Provider>
         ))}

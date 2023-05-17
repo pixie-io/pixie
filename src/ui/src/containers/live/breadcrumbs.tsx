@@ -93,7 +93,9 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     // Use an over sized element to let shadows always appear,
     // but let a horizontal scrollbar show up if there are more breadcrumbs than space allows.
     margin: `${spacing(-0.5)} ${spacing(2.5)}`,
+    marginRight: spacing(2),
     padding: spacing(0.5),
+    paddingBottom: spacing(1),
     overflow: 'auto hidden',
     position: 'relative',
   },

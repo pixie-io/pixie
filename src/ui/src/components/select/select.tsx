@@ -24,6 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
+import { SetStateFunc } from 'app/context/common';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -44,12 +45,13 @@ export interface SelectProps {
   value: React.ReactNode;
   getListItems?: (input: string) => Promise<{ items: BreadcrumbListItem[], hasMoreItems: boolean }>;
   onSelect?: (input: string) => void;
+  setOpen?: SetStateFunc<boolean>;
   requireCompletion?: boolean;
   placeholder?: string;
 }
 
 export const Select: React.FC<SelectProps> = React.memo(({
-  value, getListItems, onSelect, requireCompletion, placeholder,
+  value, getListItems, onSelect, setOpen, requireCompletion, placeholder,
 }) => {
   const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -64,6 +66,10 @@ export const Select: React.FC<SelectProps> = React.memo(({
   const onClose = React.useCallback(() => {
     setAnchorEl(null);
   }, [setAnchorEl]);
+
+  React.useEffect(() => {
+    setOpen?.(!!anchorEl);
+  }, [setOpen, anchorEl]);
 
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   return (

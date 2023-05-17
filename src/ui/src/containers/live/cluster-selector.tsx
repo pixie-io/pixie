@@ -24,26 +24,45 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { ClusterContext } from 'app/common/cluster-context';
-import { StatusCell, Select } from 'app/components';
+import { StatusCell, Select, buildClass } from 'app/components';
 import { clusterStatusGroup } from 'app/containers/admin/utils';
 import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
 
-const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
-  container: {
+const useStyles = makeStyles(({ shape, spacing, typography, palette }: Theme) => createStyles({
+  borderWrapper: {
+    transition: 'all 0.125s linear',
+    borderRadius: spacing(2),
+    border: `1px ${palette.foreground.grey1} solid`,
+    padding: spacing(0.375),
+    paddingLeft: spacing(1.5),
     display: 'flex',
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  label: {
-    marginRight: spacing(0.5),
-    justifyContent: 'center',
+  borderWrapperOpen: {
+    backgroundColor: palette.background.three,
+    borderRadius: 0,
+    borderTopLeftRadius: shape.borderRadius,
+    borderTopRightRadius: shape.borderRadius,
+  },
+  labelWrapper: {
+    ...typography.body2,
     display: 'flex',
-    alignItems: 'center',
-    color: palette.text.secondary,
-    fontWeight: 800,
+    justifyContent: 'center',
+    alignItems: 'baseline',
+    flexDirection: 'row',
+  },
+  labelPrefix: {
+    marginRight: spacing(0.5),
+    fontWeight: typography.fontWeightMedium,
+  },
+  clusterName: {
+    ...typography.monospace,
+    color: palette.primary.main,
   },
   status: {
     alignSelf: 'center',
+    lineHeight: 0,
     marginRight: spacing(0.5),
   },
 }), { name: 'ClusterSelector' });
@@ -93,16 +112,7 @@ const ClusterSelector: React.FC = () => {
   const statusGroup = clusterStatusGroup(selectedClusterStatus);
 
   const selectedLabel = React.useMemo(() => (
-    <div className={classes.container}>
-      <div className={classes.label}>Cluster:</div>
-      <span>{selectedClusterPrettyName}</span>
-    </div>
-  ), [classes, selectedClusterPrettyName]);
-
-  if (loading || !clusters || error) return (<></>);
-
-  return (
-    <div className={classes.container}>
+    <div className={classes.labelWrapper}>
       {statusGroup !== 'healthy' && (
         <Tooltip title={`Status: ${selectedClusterStatusMessage}`}>
           <div className={classes.status}>
@@ -110,11 +120,23 @@ const ClusterSelector: React.FC = () => {
           </div>
         </Tooltip>
       )}
+      <div className={classes.labelPrefix}>cluster:</div>
+      <span className={classes.clusterName}>{selectedClusterPrettyName}</span>
+    </div>
+  ), [classes, selectedClusterPrettyName, selectedClusterStatusMessage, statusGroup]);
+
+  const [selectOpen, setSelectOpen] = React.useState(false);
+
+  if (loading || !clusters || error) return (<></>);
+
+  return (
+    <div className={buildClass([classes.borderWrapper, selectOpen && classes.borderWrapperOpen])}>
       <Select
         value={selectedLabel}
         getListItems={getListItems}
         onSelect={setClusterByName}
         requireCompletion
+        setOpen={setSelectOpen}
       />
     </div>
   );

@@ -38,14 +38,14 @@ import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    backgroundColor: theme.palette.background.five,
+    backgroundColor: theme.palette.background.one,
     cursor: 'text',
     display: 'flex',
     flexDirection: 'column',
     ...scrollbarStyles(theme),
   },
   input: {
-    backgroundColor: theme.palette.background.four,
+    backgroundColor: theme.palette.background.three,
   },
   completions: {
     flex: 1,
@@ -67,6 +67,7 @@ interface AutoCompleteProps {
   placeholder?: string;
   prefix?: React.ReactNode;
   className?: string;
+  hint?: React.ReactNode;
 }
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
@@ -107,6 +108,7 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
   placeholder,
   prefix,
   className,
+  hint,
 }) => {
   const classes = useStyles();
   const {
@@ -203,6 +205,7 @@ export const Autocomplete = React.memo<AutoCompleteProps>(({
           Showing top matches
         </div>
       )}
+      {hint}
     </div>
   );
 });
