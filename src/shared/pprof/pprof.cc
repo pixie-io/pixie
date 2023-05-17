@@ -24,8 +24,7 @@
 namespace px {
 namespace shared {
 
-PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms,
-                                const absl::flat_hash_map<std::string, uint64_t>& histo) {
+PProfProfile CreatePProfProfile(const uint32_t period_ms, const PProfHisto& histo) {
   // Info on the pprof proto format:
   // https://github.com/google/pprof/blob/main/proto/profile.proto
 
@@ -68,7 +67,7 @@ PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_m
     auto sample = profile.add_sample();
 
     // That sample will record its count and time in nanos.
-    const uint64_t nanos = count * period_ns / num_cpus;
+    const uint64_t nanos = count * period_ns;
     sample->add_value(count);
     sample->add_value(nanos);
 
