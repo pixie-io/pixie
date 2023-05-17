@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
-load("@io_bazel_rules_docker//python3:image.bzl", "py3_image")
+load("@io_bazel_rules_docker//python3:image.bzl", "DEFAULT_BASE", "py3_image")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -91,28 +91,16 @@ container_layer(
 
 container_image(
     name = "python_base_with_ssl",
-    base = "@python3_10_base//image",
+    base = DEFAULT_BASE,
     layers = [
         ":nginx_html",
         ":ssl_keys_layer",
     ],
-    symlinks = {
-        "/app/src/stirling/source_connectors/socket_tracer/testing/containers/ssl/https_server.binary.runfiles/python3_10_x86_64-unknown-linux-gnu/bin/python3": "/usr/bin/python",
-        "/usr/bin/python": "/usr/local/bin/python",
-    },
 )
 
 py3_image(
-    name = "python_base_https_server",
+    name = "python_min_310_https_server",
     srcs = ["https_server.py"],
     base = ":python_base_with_ssl",
     main = "https_server.py",
-)
-
-container_image(
-    name = "python_https_server",
-    base = ":python_base_https_server",
-    symlinks = {
-        "/app/src/stirling/source_connectors/socket_tracer/testing/containers/ssl/python_base_https_server.binary.runfiles/python3_10_x86_64-unknown-linux-gnu/bin/python3": "/usr/bin/python",
-    },
 )

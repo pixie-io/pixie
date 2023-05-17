@@ -296,6 +296,24 @@ static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
         .libcrypto = "libcrypto.so.3",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
     },
+#ifdef PL_BPF_TESTING
+    // TODO(ddelnano): Remove this once Pixie can TLS trace libpython linked interpreters.
+    //
+    // This ifdef allows the test for TLS tracing python 3.10 and later to succeed. Python 3.10
+    // and later require probing the _ex variants of SSL_write/SSL_read, but depending on the
+    // python interpreter may also require probing an so file not probed today
+    // (libpython${VERSION}.so).
+    //
+    // Our BPF test uses a distroless python container image, which ships with an interpreter built
+    // with --enable-shared. This results in a libpython shared library that contains openssl
+    // and other dynamically linked library's symbols. Please see
+    // https://github.com/pixie-io/pixie/issues/1347 for more background and the follow up work.
+    SSLLibMatcher{
+        .libssl = "libpython3.10.so.1.0",
+        .libcrypto = "libpython3.10.so.1.0",
+        .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
+    },
+#endif
     SSLLibMatcher{
         .libssl = kLibNettyTcnativePrefix,
         .libcrypto = kLibNettyTcnativePrefix,

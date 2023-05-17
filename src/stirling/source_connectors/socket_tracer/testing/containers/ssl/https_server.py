@@ -18,11 +18,18 @@ import logging
 import ssl
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from sys import exit, version_info
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s',
     handlers=[logging.StreamHandler()])
+
+major, minor = version_info.major, version_info.minor
+logging.info(f"{version_info}")
+if major < 3 or minor < 10:
+    logging.fatal(f"Python version must be 3.10 or greater for this test assertion. Detected {version_info} instead")
+    exit(-1)
 
 pid = os.getpid()
 logging.info(f"pid={pid}")
