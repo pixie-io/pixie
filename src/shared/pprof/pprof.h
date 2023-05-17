@@ -28,10 +28,10 @@ namespace px {
 namespace shared {
 
 using PProfProfile = ::perftools::profiles::Profile;
+using PProfHisto = absl::flat_hash_map<std::string, uint64_t>;
 
 // https://github.com/google/pprof/blob/main/proto/profile.proto
-PProfProfile CreatePProfProfile(const uint32_t num_cpus, const uint32_t period_ms,
-                                const absl::flat_hash_map<std::string, uint64_t>& histo);
+PProfProfile CreatePProfProfile(const uint32_t period_ms, const PProfHisto& histo);
 
 }  // namespace shared
 }  // namespace px
