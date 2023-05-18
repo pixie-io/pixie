@@ -219,8 +219,11 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   if (!probe.is_optional) {
     PX_RETURN_IF_ERROR(status);
   }
-  uprobes_.push_back(probe);
-  ++num_attached_uprobes_;
+
+  if (status.ok()) {
+    uprobes_.push_back(probe);
+    ++num_attached_uprobes_;
+  }
   return Status::OK();
 }
 
