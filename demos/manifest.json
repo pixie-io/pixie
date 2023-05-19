@@ -42,5 +42,9 @@
             "Mux tracing is only enabled on newer kernels (>= 5.2) by default.",
             "Make sure your system meets these requirements before deploying."
         ]
+    },
+    "px-k8ssandra": {
+        "description": "tmp", 
+	"instructions": ["tmp"] 
     }
 }
