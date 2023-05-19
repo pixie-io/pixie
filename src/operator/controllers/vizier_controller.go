@@ -127,8 +127,8 @@ func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerC
 	return resp.Artifact[0].VersionStr, nil
 }
 
-// missingNecessaryCSIDriver checks if the user is running an EKS cluster, and if so, whether they have
-// the CSIDriver enabled such that persistent volumes can be deployed.
+// missingNecessaryCSIDriver checks if the user is running an EKS cluster, and if so, whether they are
+// missing the CSIDriver. Without the CSI driver, persistent volumes may not be able to be deployed.
 func missingNecessaryCSIDriver(clientset *kubernetes.Clientset, k8sVersion string) bool {
 	// This check only needs to be done for eks clusters with K8s version > 1.22.0.
 	if !strings.Contains(k8sVersion, "-eks-") {
