@@ -127,32 +127,32 @@ func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerC
 	return resp.Artifact[0].VersionStr, nil
 }
 
-// validCSIDriver checks if the user is running an EKS cluster, and if so, whether they have
+// missingNecessaryCSIDriver checks if the user is running an EKS cluster, and if so, whether they have
 // the CSIDriver enabled such that persistent volumes can be deployed.
-func validCSIDriver(clientset *kubernetes.Clientset, k8sVersion string) (bool, error) {
+func missingNecessaryCSIDriver(clientset *kubernetes.Clientset, k8sVersion string) bool {
 	// This check only needs to be done for eks clusters with K8s version > 1.22.0.
 	if !strings.Contains(k8sVersion, "-eks-") {
-		return true, nil
+		return false
 	}
 
-	parsedVersion, err := semver.Parse(strings.TrimPrefix(k8sVersion, "v"))
+	parsedVersion, err := semver.ParseTolerant(k8sVersion)
 	if err != nil {
 		log.WithError(err).Error("Failed to parse K8s cluster version")
-		return true, err
+		return false
 	}
 	driverVersionRange, _ := semver.ParseRange("<=1.22.0")
 	if driverVersionRange(parsedVersion) {
-		return true, nil
+		return false
 	}
 
 	_, err = clientset.AppsV1().Deployments("kube-system").Get(context.Background(), "ebs-csi-controller", metav1.GetOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
 		log.WithError(err).Error("Error trying to check for ebs-csi-controller")
-		return true, nil
+		return false
 	} else if k8serrors.IsNotFound(err) {
-		return false, nil
+		return true
 	}
-	return true, nil
+	return false
 }
 
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
@@ -402,11 +402,9 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		if err != nil {
 			log.WithError(err).Error("Error checking default storage classes")
 		}
-		csiDriverExists, err := validCSIDriver(r.Clientset, r.K8sVersion)
-		if err != nil {
-			log.WithError(err).Error("Error checking for CSI driver")
-		}
-		if !defaultStorageExists || !csiDriverExists {
+		missingCSIDriver := missingNecessaryCSIDriver(r.Clientset, r.K8sVersion)
+
+		if !defaultStorageExists || missingCSIDriver {
 			log.Warn("No default storage class detected for cluster. Deploying etcd operator instead of statefulset for metadata backend.")
 			vz.Spec.UseEtcdOperator = true
 		}
