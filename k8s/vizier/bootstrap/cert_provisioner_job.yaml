@@ -8,7 +8,7 @@ spec:
     metadata:
       name: cert-provisioner-job
     spec:
-      serviceAccountName: pl-updater-service-account
+      serviceAccountName: pl-cert-provisioner-service-account
       containers:
       - name: provisioner
         image: gcr.io/pixie-oss/pixie-dev/vizier/cert_provisioner_image:latest
