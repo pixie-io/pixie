@@ -58,7 +58,7 @@ func init() {
 	pflag.String("vizier_name", "", "The name of the user's K8s cluster, assigned by Pixie cloud")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 	pflag.Bool("disable_auto_update", false, "Whether auto-update should be disabled")
-	pflag.Duration("metrics_scrape_period", time.Minute, "Period that the metrics scraper should run at.")
+	pflag.Duration("metrics_scrape_period", 15*time.Minute, "Period that the metrics scraper should run at.")
 }
 func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
