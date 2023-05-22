@@ -11,7 +11,7 @@
 # Data node.
 - op: replace
   path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/resources/requests/storage
-  value: 500Gi
+  value: 100Gi
 
 - op: add
   path: /spec/nodeSets/1/volumeClaimTemplates/0/spec/storageClassName
