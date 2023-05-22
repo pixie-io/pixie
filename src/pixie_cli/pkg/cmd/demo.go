@@ -32,6 +32,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/fatih/color"
 	"github.com/segmentio/analytics-go/v3"
 	log "github.com/sirupsen/logrus"
@@ -484,10 +485,18 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 		newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
 			for _, yamlBytes := range yamls {
 				yamlBytes := yamlBytes
-				err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
-				if err != nil {
+				bo := backoff.NewExponentialBackOff()
+				bo.MaxElapsedTime = 1 * time.Minute
+
+				op := func() error {
+					err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
+					if err != nil {
+						log.WithError(err).Errorf("Error deploying retry")
+					}
 					return err
 				}
+
+				return backoff.Retry(op, bo)
 			}
 			return nil
 		}),
