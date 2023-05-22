@@ -11,6 +11,9 @@ inputs:
   use-buildbuddy:
     description: 'Whether to add buildbuddy settings to the bazelrc. default to true'
     default: 'true'
+  buildbuddy-api-key:
+    description: 'API key for buildbuddy'
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -22,6 +25,14 @@ runs:
     if: inputs.use-buildbuddy == 'true'
     run: |
       cp ci/bes-oss-k8s.bazelrc bes.bazelrc
+    shell: bash
+  - name: Copy Public BES bazel config
+    if: inputs.use-buildbuddy == 'public'
+    env:
+      BB_API_KEY: ${{ inputs.buildbuddy-api-key }}
+    run: |
+      cp ci/bes-oss-pub.bazelrc bes.bazelrc
+      echo "build --remote_header=x-buildbuddy-api-key=$BB_API_KEY" >> bes.bazelrc
     shell: bash
   - name: Add remote_download_outputs=toplevel
     if: inputs.download_toplevel == 'true'

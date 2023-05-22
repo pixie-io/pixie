@@ -29,7 +29,8 @@ jobs:
     - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use-buildbuddy: 'false'
+        use-buildbuddy: 'public'
+        buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
     - name: Save Diff Info
       run: ./ci/save_diff_info.sh
     - name: Run Clang Tidy
@@ -60,7 +61,8 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         dev: 'false'
-        use-buildbuddy: 'false'
+        use-buildbuddy: 'public'
+        buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
     - name: Collect and upload coverage
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -121,13 +123,15 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         dev: 'true'
-        use-buildbuddy: 'false'
+        use-buildbuddy: 'public'
+        buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
     - name: get ci bazel config
       if: github.event_name == 'push'
       uses: ./.github/actions/bazelrc
       with:
         dev: 'false'
-        use-buildbuddy: 'false'
+        use-buildbuddy: 'public'
+        buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
     - name: Build ${{ matrix.name }}
       shell: bash
       # yamllint disable rule:indentation
