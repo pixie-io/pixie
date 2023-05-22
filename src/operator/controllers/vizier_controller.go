@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -126,6 +127,34 @@ func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerC
 	return resp.Artifact[0].VersionStr, nil
 }
 
+// missingNecessaryCSIDriver checks if the user is running an EKS cluster, and if so, whether they are
+// missing the CSIDriver. Without the CSI driver, persistent volumes may not be able to be deployed.
+func missingNecessaryCSIDriver(clientset *kubernetes.Clientset, k8sVersion string) bool {
+	// This check only needs to be done for eks clusters with K8s version > 1.22.0.
+	if !strings.Contains(k8sVersion, "-eks-") {
+		return false
+	}
+
+	parsedVersion, err := semver.ParseTolerant(k8sVersion)
+	if err != nil {
+		log.WithError(err).Error("Failed to parse K8s cluster version")
+		return false
+	}
+	driverVersionRange, _ := semver.ParseRange("<=1.22.0")
+	if driverVersionRange(parsedVersion) {
+		return false
+	}
+
+	_, err = clientset.AppsV1().Deployments("kube-system").Get(context.Background(), "ebs-csi-controller", metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		log.WithError(err).Error("Error trying to check for ebs-csi-controller")
+		return false
+	} else if k8serrors.IsNotFound(err) {
+		return true
+	}
+	return false
+}
+
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
 // 1 default storage class or not.
 func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
@@ -154,7 +183,6 @@ func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, er
 // Reconcile updates the Vizier running in the cluster to match the expected state.
 func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log.WithField("req", req).Info("Reconciling Vizier...")
-
 	// Fetch vizier CRD to determine what operation should be performed.
 	var vizier v1alpha1.Vizier
 	if err := r.Get(ctx, req.NamespacedName, &vizier); err != nil {
@@ -374,7 +402,9 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		if err != nil {
 			log.WithError(err).Error("Error checking default storage classes")
 		}
-		if !defaultStorageExists {
+		missingCSIDriver := missingNecessaryCSIDriver(r.Clientset, r.K8sVersion)
+
+		if !defaultStorageExists || missingCSIDriver {
 			log.Warn("No default storage class detected for cluster. Deploying etcd operator instead of statefulset for metadata backend.")
 			vz.Spec.UseEtcdOperator = true
 		}
