@@ -8,6 +8,9 @@ inputs:
   dev:
     description: 'Whether to use DEV or CI settings for the bazelrc. defaults to dev'
     default: 'true'
+  use-buildbuddy:
+    description: 'Whether to add buildbuddy settings to the bazelrc. default to true'
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -16,6 +19,7 @@ runs:
       cp ci/github/bazelrc github.bazelrc
     shell: bash
   - name: Copy BES bazel config
+    if: inputs.use-buildbuddy == 'true'
     run: |
       cp ci/bes-oss-k8s.bazelrc bes.bazelrc
     shell: bash

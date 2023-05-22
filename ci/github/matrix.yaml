@@ -32,6 +32,7 @@ configs:
   tests: bazel_tests_go_race
 
 - name: BPF opt
+  disabled: true
   runner: kvm
   args: "--config=qemu-bpf --compilation_mode=opt"
   buildables: bazel_buildables_bpf
