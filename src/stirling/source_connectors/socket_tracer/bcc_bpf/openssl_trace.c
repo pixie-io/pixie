@@ -42,7 +42,7 @@ BPF_HASH(openssl_trace_state_debug, uint32_t, struct openssl_trace_state_debug_t
 
 static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
                                           const enum traffic_direction_t direction,
-                                          const struct data_args_t* args) {
+                                          const struct data_args_t* args, bool is_ex_call) {
   // Do not change bytes_count to 'ssize_t' or 'long'.
   // Using a 64b data type for bytes_count causes negative values,
   // returned as 'int' from open-ssl, to be aliased into positive
@@ -52,6 +52,16 @@ static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
   // 2. miscalculate the expected next position (with a very large value)
   // Succinctly, DO NOT MODIFY THE DATATYPE for bytes_count.
   int bytes_count = PT_REGS_RC(ctx);
+
+  // SSL_write_ex and SSL_read_ex will return 1 on success, which means that
+  // all requested application data bytes have been written to the SSL connection.
+  // The number of bytes read or written will be contained in the pointer passed
+  // as the fourth argument to the function.
+  if (bytes_count == 1 && args->ssl_ex_len != NULL) {
+    size_t ex_bytes;
+    BPF_PROBE_READ_VAR(ex_bytes, args->ssl_ex_len);
+    bytes_count = ex_bytes;
+  }
   process_data(/* vecs */ false, ctx, id, direction, args, bytes_count, /* ssl */ true);
 }
 
@@ -171,7 +181,7 @@ int probe_ret_SSL_write(struct pt_regs* ctx) {
 
   const struct data_args_t* write_args = active_ssl_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_openssl_data(ctx, id, kEgress, write_args);
+    process_openssl_data(ctx, id, kEgress, write_args, false);
   }
 
   active_ssl_write_args_map.delete(&id);
@@ -211,16 +221,14 @@ int probe_ret_SSL_read(struct pt_regs* ctx) {
 
   const struct data_args_t* read_args = active_ssl_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_openssl_data(ctx, id, kIngress, read_args);
+    process_openssl_data(ctx, id, kIngress, read_args, false);
   }
 
   active_ssl_read_args_map.delete(&id);
   return 0;
 }
 
-// Function signature being probed:
-// int SSL_write(SSL *ssl, const void *buf, int num);
-int probe_entry_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+static int probe_entry_SSL_write_syscall_fd_access_agnostic(struct pt_regs* ctx, bool is_ex_call) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
 
@@ -236,12 +244,31 @@ int probe_entry_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
   struct data_args_t write_args = {};
   write_args.source_fn = kSSLWrite;
   write_args.buf = buf;
+  if (is_ex_call) {
+    size_t* ssl_ex_len = (size_t*)PT_REGS_PARM4(ctx);
+    write_args.ssl_ex_len = ssl_ex_len;
+  }
+
   active_ssl_write_args_map.update(&id, &write_args);
 
   return 0;
 }
 
-int probe_ret_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+// Function signature being probed:
+// int SSL_write(SSL *ssl, const void *buf, int num);
+int probe_entry_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_entry_SSL_write_syscall_fd_access_agnostic(ctx, false);
+}
+
+// Function signature being probed:
+// int SSL_write_ex(SSL *ssl, const void *buf, size_t* written);
+//
+// On success SSL_write_ex will store the number of bytes written in *written.
+int probe_entry_SSL_write_ex_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_entry_SSL_write_syscall_fd_access_agnostic(ctx, true);
+}
+
+static int probe_ret_SSL_write_syscall_fd_access_agnostic(struct pt_regs* ctx, bool is_ex_call) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   int fd = get_fd_and_eval_nested_syscall_detection(id);
@@ -253,16 +280,22 @@ int probe_ret_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
   // Set socket fd
   if (write_args != NULL) {
     write_args->fd = fd;
-    process_openssl_data(ctx, id, kEgress, write_args);
+    process_openssl_data(ctx, id, kEgress, write_args, is_ex_call);
   }
 
   active_ssl_write_args_map.delete(&id);
   return 0;
 }
 
-// Function signature being probed:
-// int SSL_read(SSL *s, void *buf, int num)
-int probe_entry_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+int probe_ret_SSL_write_ex_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_ret_SSL_write_syscall_fd_access_agnostic(ctx, true);
+}
+
+int probe_ret_SSL_write_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_ret_SSL_write_syscall_fd_access_agnostic(ctx, false);
+}
+
+static int probe_entry_SSL_read_syscall_fd_access_agnostic(struct pt_regs* ctx, bool is_ex_call) {
   uint64_t id = bpf_get_current_pid_tgid();
   uint32_t tgid = id >> 32;
 
@@ -278,12 +311,31 @@ int probe_entry_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
   struct data_args_t read_args = {};
   read_args.source_fn = kSSLRead;
   read_args.buf = buf;
+  if (is_ex_call) {
+    size_t* ssl_ex_len = (size_t*)PT_REGS_PARM4(ctx);
+    read_args.ssl_ex_len = ssl_ex_len;
+  }
+
   active_ssl_read_args_map.update(&id, &read_args);
 
   return 0;
 }
 
-int probe_ret_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+// Function signature being probed:
+// int SSL_read(SSL *s, void *buf, int num)
+int probe_entry_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_entry_SSL_read_syscall_fd_access_agnostic(ctx, false);
+}
+
+// Function signature being probed:
+// int SSL_read_ex(SSL *ssl, void *buf, size_t num, size_t *readbytes);
+//
+// On success SSL_read_ex will store the number of bytes actually read in *readbytes.
+int probe_entry_SSL_read_ex_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_entry_SSL_read_syscall_fd_access_agnostic(ctx, true);
+}
+
+static int probe_ret_SSL_read_syscall_fd_access_agnostic(struct pt_regs* ctx, bool is_ex_call) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   int fd = get_fd_and_eval_nested_syscall_detection(id);
@@ -294,9 +346,17 @@ int probe_ret_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
   struct data_args_t* read_args = active_ssl_read_args_map.lookup(&id);
   if (read_args != NULL) {
     read_args->fd = fd;
-    process_openssl_data(ctx, id, kIngress, read_args);
+    process_openssl_data(ctx, id, kIngress, read_args, is_ex_call);
   }
 
   active_ssl_read_args_map.delete(&id);
   return 0;
+}
+
+int probe_ret_SSL_read_ex_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_ret_SSL_read_syscall_fd_access_agnostic(ctx, true);
+}
+
+int probe_ret_SSL_read_syscall_fd_access(struct pt_regs* ctx) {
+  return probe_ret_SSL_read_syscall_fd_access_agnostic(ctx, false);
 }

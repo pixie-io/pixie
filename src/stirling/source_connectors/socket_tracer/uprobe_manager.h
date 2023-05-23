@@ -451,6 +451,37 @@ class UProbeManager {
           .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
           .probe_fn = "probe_ret_SSL_read",
       },
+      // The _ex variants are declared optional since they were not available
+      // prior to OpenSSL 1.1.1 and may not be available for statically linked
+      // applications (NodeJS).
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_write_ex",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_write_ex",
+          .is_optional = true,
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_write_ex",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_write_ex",
+          .is_optional = true,
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_read_ex",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+          .probe_fn = "probe_entry_SSL_read_ex",
+          .is_optional = true,
+      },
+      bpf_tools::UProbeSpec{
+          .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+          .symbol = "SSL_read_ex",
+          .attach_type = bpf_tools::BPFProbeAttachType::kReturn,
+          .probe_fn = "probe_ret_SSL_read_ex",
+          .is_optional = true,
+      },
       // Used by node tracing to record the mapping from SSL object to TLSWrap object.
       // TODO(yzhao): Move this to a separate list for node application only.
       bpf_tools::UProbeSpec{

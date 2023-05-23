@@ -117,6 +117,20 @@ class NginxOpenSSL_3_0_7_Container : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
+class Python310Container : public ContainerRunner {
+ public:
+  Python310Container()
+      : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
+                        kReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ssl/"
+      "python_min_310_https_server.tar";
+  static constexpr std::string_view kContainerNamePrefix = "python_min_310_https_server";
+  static constexpr std::string_view kReadyMessage = "INFO";
+};
+
 class CurlContainer : public ContainerRunner {
  public:
   CurlContainer()

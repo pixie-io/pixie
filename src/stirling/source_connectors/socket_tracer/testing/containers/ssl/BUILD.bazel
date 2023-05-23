@@ -14,7 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_layer")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
+load("@io_bazel_rules_docker//python3:image.bzl", "DEFAULT_BASE", "py3_image")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -86,4 +87,20 @@ container_layer(
     name = "node_client_server_layer",
     directory = "/etc/node",
     tars = [":node_client_server"],
+)
+
+container_image(
+    name = "python_base_with_ssl",
+    base = DEFAULT_BASE,
+    layers = [
+        ":nginx_html",
+        ":ssl_keys_layer",
+    ],
+)
+
+py3_image(
+    name = "python_min_310_https_server",
+    srcs = ["https_server.py"],
+    base = ":python_base_with_ssl",
+    main = "https_server.py",
 )

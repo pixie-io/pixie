@@ -121,6 +121,9 @@ build:qemu-bpf --sandbox_fake_username
 build:qemu-bpf --//bazel/cc_toolchains:libc_version=glibc2_36
 build:qemu-bpf --//bazel/test_runners:test_runner=qemu_with_kernel
 build:qemu-bpf --run_under="bazel/test_runners/qemu_with_kernel/test_runner.sh"
+# TODO(ddelnano): Temporary until https://github.com/pixie-io/pixie/issues/1347
+# is addressed. This is to limit the size of the change needed to fix
+build:qemu-bpf --copt -DPL_BPF_TESTING
 test:qemu-bpf --test_timeout=180,600,1800,3600
 
 # Build for GCC.

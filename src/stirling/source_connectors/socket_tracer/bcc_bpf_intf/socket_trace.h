@@ -281,6 +281,9 @@ struct data_args_t {
 
   // For sendmmsg()
   unsigned int* msg_len;
+
+  // For SSL_write_ex and SSL_read_ex
+  size_t* ssl_ex_len;
 };
 
 struct close_args_t {
