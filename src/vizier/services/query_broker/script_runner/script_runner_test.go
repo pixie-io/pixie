@@ -21,636 +21,241 @@ package scriptrunner
 import (
 	"context"
 	"errors"
-	"fmt"
-	"sync"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/nats-io/nats.go"
-	"github.com/stretchr/testify/assert"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
+	mock_vizierpb "px.dev/pixie/src/api/proto/vizierpb/mock"
 	"px.dev/pixie/src/carnot/planner/compilerpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
-	"px.dev/pixie/src/shared/scripts"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
-func TestScriptRunner_CompareScriptState(t *testing.T) {
-	tests := []struct {
-		name             string
-		persistedScripts map[string]*cvmsgspb.CronScript
-		cloudScripts     map[string]*cvmsgspb.CronScript
-		checksumMatch    bool
-	}{
-		{
-			name: "checksums match",
-			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			checksumMatch: true,
-		},
-		{
-			name: "checksums mismatch: one field different",
-			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 6,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			checksumMatch: false,
-		},
-		{
-			name: "checksums mismatch: missing script",
-			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 6,
-				},
-			},
-			checksumMatch: false,
-		},
-		{
-			name:             "checksums match: empty",
-			persistedScripts: map[string]*cvmsgspb.CronScript{},
-			cloudScripts:     map[string]*cvmsgspb.CronScript{},
-			checksumMatch:    true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			nc, natsCleanup := testingutils.MustStartTestNATS(t)
-			defer natsCleanup()
-			fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
-			sr, err := New(nc, &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}, fvs, "test")
-			require.NoError(t, err)
-
-			// Subscribe to request channel.
-			mdSub, err := nc.Subscribe(CronScriptChecksumRequestChannel, func(msg *nats.Msg) {
-				v2cMsg := &cvmsgspb.V2CMessage{}
-				err := proto.Unmarshal(msg.Data, v2cMsg)
-				require.NoError(t, err)
-				req := &cvmsgspb.GetCronScriptsChecksumRequest{}
-				err = types.UnmarshalAny(v2cMsg.Msg, req)
-				require.NoError(t, err)
-				topic := req.Topic
-
-				checksum, err := scripts.ChecksumFromScriptMap(test.cloudScripts)
-				require.NoError(t, err)
-				resp := &cvmsgspb.GetCronScriptsChecksumResponse{
-					Checksum: checksum,
-				}
-				anyMsg, err := types.MarshalAny(resp)
-				require.NoError(t, err)
-				c2vMsg := cvmsgspb.C2VMessage{
-					Msg: anyMsg,
-				}
-				b, err := c2vMsg.Marshal()
-				require.NoError(t, err)
-
-				err = nc.Publish(fmt.Sprintf("%s:%s", CronScriptChecksumResponseChannel, topic), b)
-				require.NoError(t, err)
-			})
-			defer func() {
-				err = mdSub.Unsubscribe()
-				require.NoError(t, err)
-			}()
-			match, err := sr.compareScriptState(test.persistedScripts)
-			require.Nil(t, err)
-			assert.Equal(t, test.checksumMatch, match)
-		})
-	}
-}
-
-func TestScriptRunner_GetCloudScripts(t *testing.T) {
-	nc, natsCleanup := testingutils.MustStartTestNATS(t)
-	defer natsCleanup()
-
-	fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
-	sr, err := New(nc, nil, fvs, "test")
-	require.NoError(t, err)
-
-	scripts := map[string]*cvmsgspb.CronScript{
-		"223e4567-e89b-12d3-a456-426655440000": {
-			ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-			Script:     "px.display()",
-			Configs:    "config1",
-			FrequencyS: 5,
-		},
-		"223e4567-e89b-12d3-a456-426655440001": {
-			ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-			Script:     "test script",
-			Configs:    "config2",
-			FrequencyS: 22,
-		},
-	}
-
-	// Subscribe to request channel.
-	mdSub, err := nc.Subscribe(GetCronScriptsRequestChannel, func(msg *nats.Msg) {
-		v2cMsg := &cvmsgspb.V2CMessage{}
-		err := proto.Unmarshal(msg.Data, v2cMsg)
-		require.NoError(t, err)
-		req := &cvmsgspb.GetCronScriptsRequest{}
-		err = types.UnmarshalAny(v2cMsg.Msg, req)
-		require.NoError(t, err)
-		topic := req.Topic
-
-		resp := &cvmsgspb.GetCronScriptsResponse{
-			Scripts: scripts,
-		}
-		anyMsg, err := types.MarshalAny(resp)
-		require.NoError(t, err)
-		c2vMsg := cvmsgspb.C2VMessage{
-			Msg: anyMsg,
-		}
-		b, err := c2vMsg.Marshal()
-		require.NoError(t, err)
-
-		err = nc.Publish(fmt.Sprintf("%s:%s", GetCronScriptsResponseChannel, topic), b)
-		require.NoError(t, err)
-	})
-	defer func() {
-		err = mdSub.Unsubscribe()
-		require.NoError(t, err)
-	}()
-
-	resp, err := sr.getCloudScripts()
-	require.Nil(t, err)
-	assert.Equal(t, scripts, resp)
-}
-
-type fakeCronStore struct {
-	scripts                 map[uuid.UUID]*cvmsgspb.CronScript
-	receivedResultRequestCh chan<- *metadatapb.RecordExecutionResultRequest
-}
-
-// GetScripts fetches all scripts in the cron script store.
-func (s *fakeCronStore) GetScripts(ctx context.Context, req *metadatapb.GetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.GetScriptsResponse, error) {
-	m := make(map[string]*cvmsgspb.CronScript)
-	for k, v := range s.scripts {
-		m[k.String()] = v
-	}
-
-	return &metadatapb.GetScriptsResponse{
-		Scripts: m,
-	}, nil
-}
-
-// AddOrUpdateScript updates or adds a cron script to the store, based on ID.
-func (s *fakeCronStore) AddOrUpdateScript(ctx context.Context, req *metadatapb.AddOrUpdateScriptRequest, opts ...grpc.CallOption) (*metadatapb.AddOrUpdateScriptResponse, error) {
-	s.scripts[utils.UUIDFromProtoOrNil(req.Script.ID)] = req.Script
-
-	return &metadatapb.AddOrUpdateScriptResponse{}, nil
-}
-
-// DeleteScript deletes a cron script from the store by ID.
-func (s *fakeCronStore) DeleteScript(ctx context.Context, req *metadatapb.DeleteScriptRequest, opts ...grpc.CallOption) (*metadatapb.DeleteScriptResponse, error) {
-	_, ok := s.scripts[utils.UUIDFromProtoOrNil(req.ScriptID)]
-	if ok {
-		delete(s.scripts, utils.UUIDFromProtoOrNil(req.ScriptID))
-	}
-
-	return &metadatapb.DeleteScriptResponse{}, nil
-}
-
-// SetScripts sets the list of all cron scripts to match the given set of scripts.
-func (s *fakeCronStore) SetScripts(ctx context.Context, req *metadatapb.SetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.SetScriptsResponse, error) {
-	m := make(map[uuid.UUID]*cvmsgspb.CronScript)
-	for k, v := range req.Scripts {
-		m[uuid.FromStringOrNil(k)] = v
-	}
-	s.scripts = m
-
-	return &metadatapb.SetScriptsResponse{}, nil
-}
-
-// RecordExecutionResult stores the result of execution, whether that's an error or the stats about the execution.
-func (s *fakeCronStore) RecordExecutionResult(ctx context.Context, req *metadatapb.RecordExecutionResultRequest, opts ...grpc.CallOption) (*metadatapb.RecordExecutionResultResponse, error) {
-	s.receivedResultRequestCh <- req
-	return &metadatapb.RecordExecutionResultResponse{}, nil
-}
-
-// RecordExecutionResult stores the result of execution, whether that's an error or the stats about the execution.
-func (s *fakeCronStore) GetAllExecutionResults(ctx context.Context, req *metadatapb.GetAllExecutionResultsRequest, opts ...grpc.CallOption) (*metadatapb.GetAllExecutionResultsResponse, error) {
-	return &metadatapb.GetAllExecutionResultsResponse{}, nil
-}
-
 func TestScriptRunner_SyncScripts(t *testing.T) {
+	t.Run("returns an error when the script source fails", func(t *testing.T) {
+		err := errors.New("failed to initialize scripts")
+		sr := New(nil, nil, "test", errorSource(err))
+
+		require.Error(t, sr.SyncScripts())
+	})
+
+	t.Run("returns when we call Stop", func(t *testing.T) {
+		sr := New(nil, nil, "test", dummySource())
+		stopped := make(chan struct{}, 1)
+
+		go func() {
+			require.NoError(t, sr.SyncScripts())
+			stopped <- struct{}{}
+		}()
+
+		requireNoReceive(t, stopped, time.Millisecond)
+
+		sr.Stop()
+
+		requireReceiveWithin(t, stopped, 10*time.Millisecond)
+	})
+
+	t.Run("stops updates when we stop the ScriptRunner", func(t *testing.T) {
+		stopped := make(chan struct{}, 1)
+		sr := New(nil, nil, "test", fakeSource(nil, func() {
+			stopped <- struct{}{}
+		}, nil))
+
+		go func() {
+			require.NoError(t, sr.SyncScripts())
+		}()
+
+		requireNoReceive(t, stopped, time.Millisecond)
+
+		sr.Stop()
+
+		requireReceiveWithin(t, stopped, 10*time.Millisecond)
+	})
+
+	t.Run("runs initial scripts on an interval", func(t *testing.T) {
+		const scriptID = "223e4567-e89b-12d3-a456-426655440002"
+		ctrl := gomock.NewController(t)
+		mvs := mock_vizierpb.NewMockVizierServiceClient(ctrl)
+		mvsExecuteScriptClient := mock_vizierpb.NewMockVizierService_ExecuteScriptClient(ctrl)
+		mvsExecuteScriptClient.EXPECT().
+			Recv().
+			Return(nil, io.EOF).
+			Times(1)
+
+		scriptExecuted := make(chan struct{}, 1)
+		mvs.EXPECT().
+			ExecuteScript(
+				gomock.Not(gomock.Nil()),
+				NewCustomMatcher(
+					"an ExecuteScriptRequest with the proper QueryName",
+					func(req *vizierpb.ExecuteScriptRequest) bool {
+						return req.GetQueryName() == "cron_"+scriptID
+					},
+				),
+			).
+			Do(func(_ context.Context, _ *vizierpb.ExecuteScriptRequest) { scriptExecuted <- struct{}{} }).
+			Return(mvsExecuteScriptClient, nil).
+			Times(1)
+
+		fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
+		source := fakeSource(map[string]*cvmsgspb.CronScript{
+			scriptID: {
+				ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+				Script:     "px.display()",
+				Configs:    "otelEndpointConfig: {url: example.com}",
+				FrequencyS: 1,
+			},
+		}, func() {}, nil)
+		sr := New(fcs, mvs, "test", source)
+
+		go func() {
+			require.NoError(t, sr.SyncScripts())
+		}()
+		defer sr.Stop()
+
+		requireReceiveWithin(t, scriptExecuted, 10*time.Second)
+	})
+
+	t.Run("stops executing scripts when we stop the ScriptRunner", func(t *testing.T) {
+		const scriptID = "223e4567-e89b-12d3-a456-426655440002"
+		ctrl := gomock.NewController(t)
+		scriptExecuted := make(chan struct{}, 1)
+		mvsExecuteScriptClient := mock_vizierpb.NewMockVizierService_ExecuteScriptClient(ctrl)
+		mvsExecuteScriptClient.EXPECT().
+			Recv().
+			Return(nil, io.EOF).
+			Times(1)
+
+		mvs := mock_vizierpb.NewMockVizierServiceClient(ctrl)
+		mvs.EXPECT().
+			ExecuteScript(
+				gomock.Any(),
+				gomock.Any(),
+			).
+			Do(func(_ context.Context, _ *vizierpb.ExecuteScriptRequest) { scriptExecuted <- struct{}{} }).
+			Return(mvsExecuteScriptClient, nil).
+			Times(1)
+
+		fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
+		source := fakeSource(map[string]*cvmsgspb.CronScript{
+			scriptID: {
+				ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+				Script:     "px.display()",
+				Configs:    "otelEndpointConfig: {url: example.com}",
+				FrequencyS: 1,
+			},
+		}, func() {}, nil)
+		sr := New(fcs, mvs, "test", source)
+
+		go func() {
+			require.NoError(t, sr.SyncScripts())
+		}()
+
+		requireReceiveWithin(t, scriptExecuted, 10*time.Second)
+
+		sr.Stop()
+
+		requireNoReceive(t, scriptExecuted, 1100*time.Millisecond)
+	})
+}
+
+func TestScriptRunner_ScriptUpdates(t *testing.T) {
+	const scriptID = "223e4567-e89b-12d3-a456-426655440002"
 	tests := []struct {
-		name             string
-		persistedScripts map[string]*cvmsgspb.CronScript
-		cloudScripts     map[string]*cvmsgspb.CronScript
-		updates          []*cvmsgspb.CronScriptUpdate
-		expectedScripts  map[string]*cvmsgspb.CronScript
+		name     string
+		queryStr string
+		updates  []*cvmsgspb.CronScriptUpdate
 	}{
 		{
-			name: "initial match",
-			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
+			name:     "tracks new cron scripts",
+			queryStr: "updated script",
 			updates: []*cvmsgspb.CronScriptUpdate{
 				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
 							},
 						},
 					},
-					RequestID: "1",
 					Timestamp: 1,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-						},
-					},
-					RequestID: "2",
-					Timestamp: 2,
-				},
-			},
-			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440002": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
 				},
 			},
 		},
 		{
-			name: "initial mismatch",
-			persistedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440000": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
-					Script:     "px.display()",
-					Configs:    "config1",
-					FrequencyS: 5,
-				},
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
+			name:     "tracks updates to cron scripts",
+			queryStr: "second updated script",
 			updates: []*cvmsgspb.CronScriptUpdate{
 				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
 							},
 						},
 					},
-					RequestID: "1",
 					Timestamp: 1,
 				},
 				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "second updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
+							},
 						},
 					},
-					RequestID: "2",
 					Timestamp: 2,
-				},
-			},
-			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
 				},
 			},
 		},
 		{
-			name:             "persisted empty",
-			persistedScripts: map[string]*cvmsgspb.CronScript{},
-			cloudScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-			},
+			name:     "discards out of order updates",
+			queryStr: "second updated script",
 			updates: []*cvmsgspb.CronScriptUpdate{
 				{
 					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
 						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
 							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "second updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
 							},
 						},
 					},
-					RequestID: "1",
+					Timestamp: 2,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "first updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
+							},
+						},
+					},
 					Timestamp: 1,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						},
-					},
-					RequestID: "2",
-					Timestamp: 2,
-				},
-			},
-			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440001": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
-					Script:     "test script",
-					Configs:    "config2",
-					FrequencyS: 22,
-				},
-				"223e4567-e89b-12d3-a456-426655440002": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
-				},
-			},
-		},
-		{
-			name:             "cloud empty",
-			persistedScripts: map[string]*cvmsgspb.CronScript{},
-			cloudScripts:     map[string]*cvmsgspb.CronScript{},
-			updates: []*cvmsgspb.CronScriptUpdate{
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "1",
-					Timestamp: 1,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "2",
-					Timestamp: 2,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "3",
-					Timestamp: 3,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						},
-					},
-					RequestID: "4",
-					Timestamp: 4,
-				},
-			},
-			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
-				},
-				"223e4567-e89b-12d3-a456-426655440004": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
-				},
-			},
-		},
-		{
-			name:             "out-of-order update",
-			persistedScripts: map[string]*cvmsgspb.CronScript{},
-			cloudScripts:     map[string]*cvmsgspb.CronScript{},
-			updates: []*cvmsgspb.CronScriptUpdate{
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "1",
-					Timestamp: 1,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "2",
-					Timestamp: 2,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "3",
-					Timestamp: 3,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-						},
-					},
-					RequestID: "4",
-					Timestamp: 4,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
-								Script:     "test script 2",
-								Configs:    "config3",
-								FrequencyS: 123,
-							},
-						},
-					},
-					RequestID: "5",
-					Timestamp: 2,
-				},
-			},
-			expectedScripts: map[string]*cvmsgspb.CronScript{
-				"223e4567-e89b-12d3-a456-426655440002": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440002"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
-				},
-				"223e4567-e89b-12d3-a456-426655440004": {
-					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440004"),
-					Script:     "test script 2",
-					Configs:    "config3",
-					FrequencyS: 123,
 				},
 			},
 		},
@@ -658,153 +263,159 @@ func TestScriptRunner_SyncScripts(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			nc, natsCleanup := testingutils.MustStartTestNATS(t)
-			defer natsCleanup()
+			ctrl := gomock.NewController(t)
+			mvsExecuteScriptClient := mock_vizierpb.NewMockVizierService_ExecuteScriptClient(ctrl)
+			mvsExecuteScriptClient.EXPECT().
+				Recv().
+				Return(nil, io.EOF).
+				Times(1)
 
-			initialScripts := make(map[uuid.UUID]*cvmsgspb.CronScript)
-			for k, v := range test.persistedScripts {
-				initialScripts[uuid.FromStringOrNil(k)] = v
-			}
+			scriptExecuted := make(chan struct{}, 1)
+			mvs := mock_vizierpb.NewMockVizierServiceClient(ctrl)
+			mvs.EXPECT().
+				ExecuteScript(
+					gomock.Not(gomock.Nil()),
+					NewCustomMatcher(
+						"an ExecuteScriptRequest with the proper QueryName amd QueryStr",
+						func(req *vizierpb.ExecuteScriptRequest) bool {
+							return req.GetQueryName() == "cron_"+scriptID && req.GetQueryStr() == test.queryStr
+						},
+					),
+				).
+				Do(func(_ context.Context, _ *vizierpb.ExecuteScriptRequest) { scriptExecuted <- struct{}{} }).
+				Return(mvsExecuteScriptClient, nil).
+				Times(1)
 
-			fcs := &fakeCronStore{scripts: initialScripts}
-			fvs := &fakeVizierServiceClient{err: errors.New("not implemented")}
-			sr, err := New(nc, fcs, fvs, "test")
-			require.NoError(t, err)
-
-			var wg sync.WaitGroup
-			wg.Add(len(test.updates))
-
-			// Subscribe to request channel.
-			mdSub, err := nc.Subscribe(CronScriptChecksumRequestChannel, func(msg *nats.Msg) {
-				v2cMsg := &cvmsgspb.V2CMessage{}
-				err := proto.Unmarshal(msg.Data, v2cMsg)
-				require.NoError(t, err)
-				req := &cvmsgspb.GetCronScriptsChecksumRequest{}
-				err = types.UnmarshalAny(v2cMsg.Msg, req)
-				require.NoError(t, err)
-				topic := req.Topic
-				checksum, err := scripts.ChecksumFromScriptMap(test.cloudScripts)
-				require.NoError(t, err)
-				resp := &cvmsgspb.GetCronScriptsChecksumResponse{
-					Checksum: checksum,
-				}
-				anyMsg, err := types.MarshalAny(resp)
-				require.NoError(t, err)
-				c2vMsg := cvmsgspb.C2VMessage{
-					Msg: anyMsg,
-				}
-				b, err := c2vMsg.Marshal()
-				require.NoError(t, err)
-
-				err = nc.Publish(fmt.Sprintf("%s:%s", CronScriptChecksumResponseChannel, topic), b)
-				require.NoError(t, err)
-			})
-			defer func() {
-				err = mdSub.Unsubscribe()
-				require.NoError(t, err)
-			}()
-
-			md2Sub, err := nc.Subscribe(GetCronScriptsRequestChannel, func(msg *nats.Msg) {
-				v2cMsg := &cvmsgspb.V2CMessage{}
-				err := proto.Unmarshal(msg.Data, v2cMsg)
-				require.NoError(t, err)
-				req := &cvmsgspb.GetCronScriptsRequest{}
-				err = types.UnmarshalAny(v2cMsg.Msg, req)
-				require.NoError(t, err)
-				topic := req.Topic
-
-				resp := &cvmsgspb.GetCronScriptsResponse{
-					Scripts: test.cloudScripts,
-				}
-				anyMsg, err := types.MarshalAny(resp)
-				require.NoError(t, err)
-				c2vMsg := cvmsgspb.C2VMessage{
-					Msg: anyMsg,
-				}
-				b, err := c2vMsg.Marshal()
-				require.NoError(t, err)
-
-				err = nc.Publish(fmt.Sprintf("%s:%s", GetCronScriptsResponseChannel, topic), b)
-				require.NoError(t, err)
-			})
-			defer func() {
-				err = md2Sub.Unsubscribe()
-				require.NoError(t, err)
-			}()
-
-			for _, u := range test.updates {
-				md3Sub, err := nc.Subscribe(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, u.RequestID), func(msg *nats.Msg) {
-					wg.Done()
-				})
-				defer func() {
-					err = md3Sub.Unsubscribe()
-					require.NoError(t, err)
+			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
+			source := func(_ context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
+				go func() {
+					for _, update := range test.updates {
+						updateCb(update)
+					}
 				}()
-
-				anyMsg, err := types.MarshalAny(u)
-				require.NoError(t, err)
-				c2vMsg := cvmsgspb.C2VMessage{
-					Msg: anyMsg,
-				}
-				b, err := c2vMsg.Marshal()
-				require.NoError(t, err)
-				err = nc.Publish(CronScriptUpdatesChannel, b)
+				return nil, func() {}, nil
 			}
+			sr := New(fcs, mvs, "test", source)
+			defer sr.Stop()
 
 			go func() {
-				err = sr.SyncScripts()
-				require.NoError(t, err)
+				require.NoError(t, sr.SyncScripts())
 			}()
-			wg.Wait()
-			assert.Equal(t, len(test.expectedScripts), len(fcs.scripts))
-			for k, v := range test.expectedScripts {
-				val, ok := fcs.scripts[uuid.FromStringOrNil(k)]
-				assert.True(t, ok)
-				assert.Equal(t, v, val)
-			}
 
-			assert.Equal(t, len(test.expectedScripts), len(sr.runnerMap))
-			for k, v := range test.expectedScripts {
-				val, ok := sr.runnerMap[uuid.FromStringOrNil(k)]
-				assert.True(t, ok)
-				assert.Equal(t, v, val.cronScript)
-			}
+			requireReceiveWithin(t, scriptExecuted, 10*time.Second)
 		})
 	}
 }
 
-type fakeExecuteScriptClient struct {
-	// The error to send if not nil. The client does not send responses if this is not nil.
-	err       error
-	responses []*vizierpb.ExecuteScriptResponse
-	responseI int
-	grpc.ClientStream
-}
-
-func (es *fakeExecuteScriptClient) Recv() (*vizierpb.ExecuteScriptResponse, error) {
-	if es.err != nil {
-		return nil, es.err
+func TestScriptRunner_ScriptDeletes(t *testing.T) {
+	const scriptID = "223e4567-e89b-12d3-a456-426655440002"
+	const nonExistentScriptID = "223e4567-e89b-12d3-a456-426655440001"
+	tests := []struct {
+		name     string
+		queryStr string
+		updates  []*cvmsgspb.CronScriptUpdate
+	}{
+		{
+			name: "tracks deletes to cron scripts",
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil(scriptID),
+						},
+					},
+					Timestamp: 1,
+				},
+			},
+		},
+		{
+			name: "can delete non-existent runners",
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil(nonExistentScriptID),
+						},
+					},
+					Timestamp: 1,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil(scriptID),
+						},
+					},
+					Timestamp: 1,
+				},
+			},
+		},
+		{
+			name: "discards updates after deletes",
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil(scriptID),
+						},
+					},
+					Timestamp: 2,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+								Script:     "updated script",
+								Configs:    "otelEndpointConfig: {url: example.com}",
+								FrequencyS: 1,
+							},
+						},
+					},
+					Timestamp: 1,
+				},
+			},
+		},
 	}
 
-	resp := es.responses[es.responseI]
-	es.responseI++
-	return resp, nil
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			mvs := mock_vizierpb.NewMockVizierServiceClient(ctrl)
+			scriptExecuted := make(chan struct{}, 1)
+			mvs.EXPECT().
+				ExecuteScript(
+					gomock.Any(),
+					gomock.Any(),
+				).
+				Do(func(_ context.Context, _ *vizierpb.ExecuteScriptRequest) { scriptExecuted <- struct{}{} }).
+				Times(0)
 
-type fakeVizierServiceClient struct {
-	responses []*vizierpb.ExecuteScriptResponse
-	err       error
-}
+			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
+			source := func(_ context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
+				go func() {
+					for _, update := range test.updates {
+						updateCb(update)
+					}
+				}()
+				return map[string]*cvmsgspb.CronScript{
+					scriptID: {
+						ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+						Script:     "initial script",
+						Configs:    "otelEndpointConfig: {url: example.com}",
+						FrequencyS: 1,
+					},
+				}, func() {}, nil
+			}
+			sr := New(fcs, mvs, "test", source)
+			defer sr.Stop()
 
-func (vs *fakeVizierServiceClient) ExecuteScript(ctx context.Context, in *vizierpb.ExecuteScriptRequest, opts ...grpc.CallOption) (vizierpb.VizierService_ExecuteScriptClient, error) {
-	return &fakeExecuteScriptClient{responses: vs.responses, err: vs.err}, nil
-}
-func (vs *fakeVizierServiceClient) HealthCheck(ctx context.Context, in *vizierpb.HealthCheckRequest, opts ...grpc.CallOption) (vizierpb.VizierService_HealthCheckClient, error) {
-	return nil, errors.New("Not implemented")
-}
+			go func() {
+				require.NoError(t, sr.SyncScripts())
+			}()
 
-func (vs *fakeVizierServiceClient) GenerateOTelScript(ctx context.Context, req *vizierpb.GenerateOTelScriptRequest, opts ...grpc.CallOption) (*vizierpb.GenerateOTelScriptResponse, error) {
-	return nil, errors.New("Not implemented")
+			requireNoReceive(t, scriptExecuted, 1100*time.Millisecond)
+		})
+	}
 }
 
 func TestScriptRunner_StoreResults(t *testing.T) {
@@ -928,26 +539,23 @@ func TestScriptRunner_StoreResults(t *testing.T) {
 			script := &cvmsgspb.CronScript{
 				ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
 				Script:     "px.display()",
-				Configs:    "config1",
+				Configs:    "otelEndpointConfig: {url: example.com}",
 				FrequencyS: 1,
 			}
 
 			id := uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
 			fvs := &fakeVizierServiceClient{responses: test.execScriptResponses, err: test.err}
-			runner := newRunner(script, fvs, "test", id, fcs)
-			runner.start()
+			Runner := newRunner(script, fvs, "test", id, fcs)
+			Runner.start()
 
-			var result *metadatapb.RecordExecutionResultRequest
-			select {
-			case result = <-receivedResultRequestCh:
-			case <-time.After(time.Second * 10):
-			}
-			runner.stop()
+			result := requireReceiveWithin(t, receivedResultRequestCh, 10*time.Second)
+
+			Runner.stop()
 			require.NotNil(t, result, "Failed to receive a valid result")
 
-			assert.Equal(t, utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"), result.ScriptID)
-			assert.Equal(t, test.expectedExecutionResult.GetError(), result.GetError())
-			assert.Equal(t, test.expectedExecutionResult.GetExecutionStats(), result.GetExecutionStats())
+			require.Equal(t, utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"), result.ScriptID)
+			require.Equal(t, test.expectedExecutionResult.GetError(), result.GetError())
+			require.Equal(t, test.expectedExecutionResult.GetExecutionStats(), result.GetExecutionStats())
 		})
 	}
 }

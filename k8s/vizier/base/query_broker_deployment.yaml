@@ -105,6 +105,7 @@ spec:
             - ALL
           seccompProfile:
             type: RuntimeDefault
+      serviceAccountName: query-broker-service-account
       securityContext:
         runAsUser: 10100
         runAsGroup: 10100

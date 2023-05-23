@@ -20,7 +20,6 @@ package scriptrunner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -32,9 +31,7 @@ import (
 	"px.dev/pixie/src/common/base/statuspb"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -69,208 +66,121 @@ var (
 
 // ScriptRunner tracks registered cron scripts and runs them according to schedule.
 type ScriptRunner struct {
-	nc         *nats.Conn
 	csClient   metadatapb.CronScriptStoreServiceClient
 	vzClient   vizierpb.VizierServiceClient
 	signingKey string
 
 	runnerMap   map[uuid.UUID]*runner
 	runnerMapMu sync.Mutex
+
 	// scriptLastUpdateTime tracks the last time we latest update we processed for a script.
 	// As we may receive updates out-of-order, this prevents us from processing a change out-of-order.
 	scriptLastUpdateTime map[uuid.UUID]int64
 	updateTimeMu         sync.Mutex
 
-	done chan struct{}
-	once sync.Once
+	stops   []func()
+	stopsMu sync.Mutex
+	once    sync.Once
 
-	updatesCh  chan *nats.Msg
-	updatesSub *nats.Subscription
+	baseCtx context.Context
+	sources []Source
 }
 
 // New creates a new script runner.
-func New(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, vzClient vizierpb.VizierServiceClient, signingKey string) (*ScriptRunner, error) {
-	updatesCh := make(chan *nats.Msg, 4096)
-	sub, err := nc.ChanSubscribe(CronScriptUpdatesChannel, updatesCh)
-	if err != nil {
-		log.WithError(err).Error("Failed to listen for cron script updates")
-		return nil, err
-	}
+func New(
+	csClient metadatapb.CronScriptStoreServiceClient,
+	vzClient vizierpb.VizierServiceClient,
+	signingKey string,
+	scriptSources ...Source,
+) *ScriptRunner {
+	baseCtx, cancel := context.WithCancel(context.Background())
+	return &ScriptRunner{
+		csClient:   csClient,
+		vzClient:   vzClient,
+		signingKey: signingKey,
 
-	sr := &ScriptRunner{nc: nc, csClient: csClient, done: make(chan struct{}), updatesCh: updatesCh, updatesSub: sub, scriptLastUpdateTime: make(map[uuid.UUID]int64), runnerMap: make(map[uuid.UUID]*runner), vzClient: vzClient, signingKey: signingKey}
-	return sr, nil
+		runnerMap: make(map[uuid.UUID]*runner),
+
+		scriptLastUpdateTime: make(map[uuid.UUID]int64),
+
+		stops: []func(){cancel},
+		once:  sync.Once{},
+
+		baseCtx: baseCtx,
+		sources: scriptSources,
+	}
 }
 
 // Stop performs any necessary cleanup before shutdown.
 func (s *ScriptRunner) Stop() {
 	s.once.Do(func() {
-		close(s.updatesCh)
-		s.updatesSub.Unsubscribe()
-		close(s.done)
+		s.stopsMu.Lock()
+		for _, stop := range s.stops {
+			stop()
+		}
+		s.stopsMu.Unlock()
+		s.runnerMapMu.Lock()
+		for _, runner := range s.runnerMap {
+			runner.stop()
+		}
+		s.runnerMapMu.Unlock()
 	})
 }
 
 // SyncScripts syncs the known set of scripts in Vizier with scripts in Cloud.
 func (s *ScriptRunner) SyncScripts() error {
-	// Fetch persisted scripts.
-	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
-	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", token))
-
-	resp, err := s.csClient.GetScripts(ctx, &metadatapb.GetScriptsRequest{})
-	if err != nil {
-		log.WithError(err).Error("Failed to fetch scripts from store")
-		return err
-	}
-	scripts := resp.Scripts
-
-	// Check if persisted scripts are up-to-date.
-	upToDate, err := s.compareScriptState(scripts)
-	if err != nil {
-		// In the case there is a failure, we should just refetch the scripts.
-		log.WithError(err).Error("Failed to verify script checksum")
-	}
-
-	// If hash is not equal, fetch scripts from cloud.
-	if !upToDate {
-		cloudScripts, err := s.getCloudScripts()
+	for _, setupSource := range s.sources {
+		initialScripts, unsubscribe, err := setupSource(s.baseCtx, s.processUpdate)
 		if err != nil {
-			log.WithError(err).Error("Failed to fetch scripts from cloud")
-		} else {
-			// Clear out persisted scripts.
-			_, err = s.csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
-			if err != nil {
-				log.WithError(err).Error("Failed to delete scripts from store")
-				return err
-			}
-			scripts = cloudScripts
+			return err
+		}
+		s.stopsMu.Lock()
+		s.stops = append(s.stops, unsubscribe)
+		s.stopsMu.Unlock()
+		for k, v := range initialScripts {
+			s.upsertScript(uuid.FromStringOrNil(k), v)
 		}
 	}
-
-	// Add runners.
-	for k, v := range scripts {
-		err = s.upsertScript(uuid.FromStringOrNil(k), v)
-		if err != nil {
-			log.WithError(err).Error("Failed to upsert script, skipping...")
-		}
-	}
-	s.processUpdates()
+	<-s.baseCtx.Done()
 	return nil
 }
 
-func (s *ScriptRunner) processUpdates() {
-	for {
-		select {
-		case <-s.done:
-			return
-		case msg := <-s.updatesCh:
-			c2vMsg := &cvmsgspb.C2VMessage{}
-			err := proto.Unmarshal(msg.Data, c2vMsg)
-			if err != nil {
-				log.WithError(err).Error("Failed to unmarshal c2v message")
-				continue
-			}
-			resp := &cvmsgspb.CronScriptUpdate{}
-			err = types.UnmarshalAny(c2vMsg.Msg, resp)
-			if err != nil {
-				log.WithError(err).Error("Failed to unmarshal c2v message")
-				continue
-			}
-
-			switch resp.Msg.(type) {
-			case *cvmsgspb.CronScriptUpdate_UpsertReq:
-				uResp := resp.GetUpsertReq()
-
-				// Filter out out-of-order updates.
-				sID := utils.UUIDFromProtoOrNil(uResp.Script.ID)
-				time := int64(0)
-				s.updateTimeMu.Lock()
-				if v, ok := s.scriptLastUpdateTime[sID]; ok {
-					time = v
-				}
-
-				if time < resp.Timestamp {
-					err := s.upsertScript(sID, uResp.Script)
-					if err != nil {
-						log.WithError(err).Error("Failed to upsert script")
-					}
-					s.scriptLastUpdateTime[sID] = resp.Timestamp
-				}
-				s.updateTimeMu.Unlock()
-
-				// Send response.
-				r := &cvmsgspb.RegisterOrUpdateCronScriptResponse{}
-				reqAnyMsg, err := types.MarshalAny(r)
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal update script response")
-					continue
-				}
-				v2cMsg := cvmsgspb.V2CMessage{
-					Msg: reqAnyMsg,
-				}
-				// Publish request.
-				b, err := v2cMsg.Marshal()
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal update script response")
-					continue
-				}
-				err = s.nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, resp.RequestID), b)
-				if err != nil {
-					log.WithError(err).Error("Failed to publish update script response")
-				}
-			case *cvmsgspb.CronScriptUpdate_DeleteReq:
-				dResp := resp.GetDeleteReq()
-
-				// Filter out out-of-order updates.
-				sID := utils.UUIDFromProtoOrNil(dResp.ScriptID)
-				time := int64(0)
-				s.updateTimeMu.Lock()
-				if v, ok := s.scriptLastUpdateTime[sID]; ok {
-					time = v
-				}
-
-				if time < resp.Timestamp { // Update is newer than last processed update.
-					err := s.deleteScript(sID)
-					if err != nil {
-						log.WithError(err).Error("Failed to delete script")
-					}
-					s.scriptLastUpdateTime[sID] = resp.Timestamp
-				}
-				s.updateTimeMu.Unlock()
-
-				// Send response.
-				r := &cvmsgspb.DeleteCronScriptResponse{}
-				reqAnyMsg, err := types.MarshalAny(r)
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal update script response")
-					continue
-				}
-				v2cMsg := cvmsgspb.V2CMessage{
-					Msg: reqAnyMsg,
-				}
-				// Publish request.
-				b, err := v2cMsg.Marshal()
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal update script response")
-					continue
-				}
-				err = s.nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, resp.RequestID), b)
-				if err != nil {
-					log.WithError(err).Error("Failed to publish update script response")
-				}
-			default:
-				log.Error("Received unknown message for cronScriptUpdate")
-			}
-		}
+func (s *ScriptRunner) processUpdate(update *cvmsgspb.CronScriptUpdate) {
+	select {
+	case <-s.baseCtx.Done():
+		return
+	default:
+	}
+	switch update.Msg.(type) {
+	case *cvmsgspb.CronScriptUpdate_UpsertReq:
+		req := update.GetUpsertReq()
+		sID := utils.UUIDFromProtoOrNil(req.Script.ID)
+		s.executeInOrder(sID, update.Timestamp, func() {
+			s.upsertScript(sID, req.Script)
+		})
+	case *cvmsgspb.CronScriptUpdate_DeleteReq:
+		req := update.GetDeleteReq()
+		sID := utils.UUIDFromProtoOrNil(req.ScriptID)
+		s.executeInOrder(sID, update.Timestamp, func() {
+			s.deleteScript(sID)
+		})
+	default:
+		log.Error("Received unknown message for cronScriptUpdate")
 	}
 }
 
-func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) error {
+func (s *ScriptRunner) executeInOrder(sID uuid.UUID, timestamp int64, exec func()) {
+	s.updateTimeMu.Lock()
+	defer s.updateTimeMu.Unlock()
+	if s.scriptLastUpdateTime[sID] < timestamp {
+		exec()
+		s.scriptLastUpdateTime[sID] = timestamp
+	}
+}
+
+func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) {
 	s.runnerMapMu.Lock()
 	defer s.runnerMapMu.Unlock()
-
 	if v, ok := s.runnerMap[id]; ok {
 		v.stop()
 		delete(s.runnerMap, id)
@@ -278,142 +188,17 @@ func (s *ScriptRunner) upsertScript(id uuid.UUID, script *cvmsgspb.CronScript) e
 	r := newRunner(script, s.vzClient, s.signingKey, id, s.csClient)
 	s.runnerMap[id] = r
 	go r.start()
-	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
-	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", token))
-
-	_, err := s.csClient.AddOrUpdateScript(ctx, &metadatapb.AddOrUpdateScriptRequest{Script: script})
-	if err != nil {
-		log.WithError(err).Error("Failed to upsert script in metadata")
-	}
-
-	return nil
 }
 
-func (s *ScriptRunner) deleteScript(id uuid.UUID) error {
+func (s *ScriptRunner) deleteScript(id uuid.UUID) {
 	s.runnerMapMu.Lock()
 	defer s.runnerMapMu.Unlock()
-
 	v, ok := s.runnerMap[id]
 	if !ok {
-		return nil
+		return
 	}
 	v.stop()
 	delete(s.runnerMap, id)
-	claims := svcutils.GenerateJWTForService("cron_script_store", "vizier")
-	token, _ := svcutils.SignJWTClaims(claims, s.signingKey)
-
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", token))
-
-	_, err := s.csClient.DeleteScript(ctx, &metadatapb.DeleteScriptRequest{ScriptID: utils.ProtoFromUUID(id)})
-	if err != nil {
-		log.WithError(err).Error("Failed to delete script from metadata")
-	}
-
-	return nil
-}
-
-func (s *ScriptRunner) compareScriptState(existingScripts map[string]*cvmsgspb.CronScript) (bool, error) {
-	// Get hash of map.
-	existingChecksum, err := scripts.ChecksumFromScriptMap(existingScripts)
-	if err != nil {
-		return false, err
-	}
-
-	topicID := uuid.Must(uuid.NewV4())
-	req := &cvmsgspb.GetCronScriptsChecksumRequest{
-		Topic: topicID.String(),
-	}
-	reqAnyMsg, err := types.MarshalAny(req)
-	if err != nil {
-		return false, err
-	}
-	v2cMsg := cvmsgspb.V2CMessage{
-		Msg: reqAnyMsg,
-	}
-	c2vMsg, err := s.natsReplyAndResponse(&v2cMsg, CronScriptChecksumRequestChannel, fmt.Sprintf("%s:%s", CronScriptChecksumResponseChannel, topicID.String()))
-	if err != nil {
-		return false, err
-	}
-
-	resp := &cvmsgspb.GetCronScriptsChecksumResponse{}
-	err = types.UnmarshalAny(c2vMsg.Msg, resp)
-	if err != nil {
-		log.WithError(err).Error("Failed to unmarshal checksum response")
-		return false, err
-	}
-	return existingChecksum == resp.Checksum, nil
-}
-
-func (s *ScriptRunner) getCloudScripts() (map[string]*cvmsgspb.CronScript, error) {
-	topicID := uuid.Must(uuid.NewV4())
-	req := &cvmsgspb.GetCronScriptsRequest{
-		Topic: topicID.String(),
-	}
-	reqAnyMsg, err := types.MarshalAny(req)
-	if err != nil {
-		return nil, err
-	}
-	v2cMsg := cvmsgspb.V2CMessage{
-		Msg: reqAnyMsg,
-	}
-
-	c2vMsg, err := s.natsReplyAndResponse(&v2cMsg, GetCronScriptsRequestChannel, fmt.Sprintf("%s:%s", GetCronScriptsResponseChannel, topicID.String()))
-	if err != nil {
-		return nil, err
-	}
-
-	resp := &cvmsgspb.GetCronScriptsResponse{}
-	err = types.UnmarshalAny(c2vMsg.Msg, resp)
-	if err != nil {
-		log.WithError(err).Error("Failed to unmarshal checksum response")
-		return nil, err
-	}
-	return resp.Scripts, nil
-}
-
-func (s *ScriptRunner) natsReplyAndResponse(req *cvmsgspb.V2CMessage, requestTopic string, responseTopic string) (*cvmsgspb.C2VMessage, error) {
-	// Subscribe to topic that the response will be sent on.
-	subCh := make(chan *nats.Msg, 4096)
-	sub, err := s.nc.ChanSubscribe(responseTopic, subCh)
-	if err != nil {
-		return nil, err
-	}
-	defer sub.Unsubscribe()
-
-	// Publish request.
-	b, err := req.Marshal()
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.nc.Publish(requestTopic, b)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for response.
-	t := time.NewTimer(natsWaitTimeout)
-	defer t.Stop()
-	for {
-		select {
-		case <-s.done:
-			return nil, errors.New("Cancelled")
-		case msg := <-subCh:
-			c2vMsg := &cvmsgspb.C2VMessage{}
-			err := proto.Unmarshal(msg.Data, c2vMsg)
-			if err != nil {
-				log.WithError(err).Error("Failed to unmarshal c2v message")
-				return nil, err
-			}
-			return c2vMsg, nil
-		case <-t.C:
-			return nil, errors.New("Failed to get response")
-		}
-	}
 }
 
 // Logic for "runners" which handle the script execution.
@@ -442,7 +227,14 @@ func newRunner(script *cvmsgspb.CronScript, vzClient vizierpb.VizierServiceClien
 	}
 
 	return &runner{
-		cronScript: script, done: make(chan struct{}), csClient: csClient, vzClient: vzClient, signingKey: signingKey, config: &config, scriptID: id,
+		cronScript: script,
+		done:       make(chan struct{}),
+		once:       sync.Once{},
+		csClient:   csClient,
+		vzClient:   vzClient,
+		signingKey: signingKey,
+		config:     &config,
+		scriptID:   id,
 	}
 }
 

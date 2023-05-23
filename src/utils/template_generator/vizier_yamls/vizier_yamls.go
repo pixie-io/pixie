@@ -419,6 +419,18 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 			TemplateValue:   nsTmpl,
 		},
 		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-query-broker-crd-binding"),
+			Patch:           `{ "subjects": [{ "name": "query-broker-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-query-broker-binding"),
+			Patch:           `{ "subjects": [{ "name": "query-broker-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-node-view-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
