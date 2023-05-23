@@ -39,10 +39,8 @@ import { SetupRedirect, SetupView } from 'app/pages/setup/setup';
 import {
   GQLClusterInfo,
   GQLUserInfo,
-  GQLUserSettings,
   GQLOrgInfo,
 } from 'app/types/schema';
-import pixieAnalytics from 'app/utils/analytics';
 
 import { selectClusterName } from './cluster-info';
 import { DeployInstructions } from './deploy-instructions';
@@ -224,33 +222,6 @@ export default function PixieWithContext(): React.ReactElement {
   const userEmail = user?.email;
   const userOrg = user?.orgName;
   const ldClient = useLDClient();
-
-  // Load analytics for the user (if they haven't disabled analytics).
-  const { data: userSettingsData } = useQuery<{ userSettings: GQLUserSettings }>(
-    gql`
-      query getSettingsForCurrentUser{
-        userSettings {
-          id
-          analyticsOptout
-        }
-      }
-    `);
-
-  const userSettings = userSettingsData?.userSettings;
-  React.useEffect(() => {
-    if (userSettings && !userSettings.analyticsOptout) {
-      pixieAnalytics.enable();
-      pixieAnalytics.load();
-    } else {
-      pixieAnalytics.disable();
-    }
-  }, [userSettings]);
-
-  React.useEffect(() => {
-    if (userSettings && !userSettings.analyticsOptout && user?.id && user?.email) {
-      pixieAnalytics.identify(user.id, { email: user.email });
-    }
-  }, [userSettings, user?.id, user?.email]);
 
   const userContext = React.useMemo(() => ({
     user: {

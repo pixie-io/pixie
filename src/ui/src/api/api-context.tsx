@@ -23,8 +23,10 @@ import { ApolloProvider } from '@apollo/client/react';
 import { AuthContext } from 'app/common/auth-context';
 import { WithChildren } from 'app/utils/react-boilerplate';
 
-import { PixieAPIClientAbstract, PixieAPIClient } from './api';
+import { PixieAPIClient, PixieAPIClientAbstract } from './api-client';
+import { PixieAPIManager } from './api-manager';
 import { PixieAPIClientOptions } from './api-options';
+
 
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 PixieAPIContext.displayName = 'PixieAPIContext';
@@ -32,21 +34,18 @@ PixieAPIContext.displayName = 'PixieAPIContext';
 export type PixieAPIContextProviderProps = WithChildren<PixieAPIClientOptions>;
 
 export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = React.memo(({ children, ...opts }) => {
-  const [pixieClient, setPixieClient] = React.useState<PixieAPIClient>(null);
   const { authToken } = React.useContext(AuthContext);
 
-  React.useEffect(() => {
-    setPixieClient(PixieAPIClient.create({ ...opts, authToken }));
-    return () => {
-      setPixieClient(null);
-    };
-    // Destructuring the options instead of checking directly because the identity of the object changes every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.uri, opts.onUnauthorized, authToken]);
+  // PixieAPIManager already reinitializes the API client when options change, making this context just a wrapper.
+  React.useEffect(() => { PixieAPIManager.uri = opts.uri; }, [opts.uri]);
+  React.useEffect(() => { PixieAPIManager.authToken = authToken; }, [authToken]);
+  React.useEffect(() => { PixieAPIManager.onUnauthorized = opts.onUnauthorized; }, [opts.onUnauthorized]);
 
-  return !pixieClient ? null : (
-    <PixieAPIContext.Provider value={pixieClient}>
-      <ApolloProvider client={pixieClient.getCloudClient().graphQL}>
+  const instance = PixieAPIManager.instance as PixieAPIClient;
+
+  return !instance ? null : (
+    <PixieAPIContext.Provider value={instance}>
+      <ApolloProvider client={instance.getCloudClient().graphQL}>
         { children }
       </ApolloProvider>
     </PixieAPIContext.Provider>

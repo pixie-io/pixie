@@ -21,6 +21,7 @@ export * from './vizier';
 export * from './vizier-grpc-client';
 export * from './vizier-table';
 
-export * from './api';
 export * from './api-options';
+export * from './api-client';
+export * from './api-manager';
 export * from './api-context';
