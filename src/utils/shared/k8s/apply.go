@@ -193,6 +193,7 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 
 	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
 	if err != nil {
+		log.WithError(err).Info("API GROUP")
 		return err
 	}
 	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
@@ -200,6 +201,8 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 	for _, resource := range resources {
 		mapping, err := rm.RESTMapping(resource.GVK.GroupKind(), resource.GVK.Version)
 		if err != nil {
+			log.WithError(err).Info("REST MAPPING")
+
 			return err
 		}
 
@@ -223,6 +226,8 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 		}
 		dynamicClient, err := dynamic.NewForConfig(restconfig)
 		if err != nil {
+			log.WithError(err).Info("DYNAMIC CLIENT")
+
 			return err
 		}
 
@@ -236,13 +241,16 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 		nsRes := res.Namespace(objNS)
 
 		createRes := nsRes
-		if k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" || k8sRes == "customresourcedefinitions" {
+		if k8sRes == "validatingwebhookconfigurations" || k8sRes == "mutatingwebhookconfigurations" || k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" || k8sRes == "customresourcedefinitions" {
 			createRes = res
 		}
 
 		_, err = createRes.Create(context.Background(), resource.Object, metav1.CreateOptions{})
 		if err != nil {
 			if !k8serrors.IsAlreadyExists(err) {
+				log.Info(resource.Object)
+				log.WithError(err).Info("NOT ALREADY EXISTS")
+
 				return err
 			} else if (k8sRes == "clusterroles" || k8sRes == "cronjobs") || allowUpdate {
 				// TODO(michelle,vihang,philkuz) Update() fails on services and PVCs that are already running on the
