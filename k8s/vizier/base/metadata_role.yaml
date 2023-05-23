@@ -11,18 +11,24 @@ metadata:
 rules:
 - apiGroups:
   - ""
-  - "apps"
   resources:
   - pods
   - services
   - endpoints
   - namespaces
-  - replicasets
-  - deployments
   verbs:
   - "watch"
   - "get"
   - "list"
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  - deployments
+  verbs:
+  - watch
+  - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -72,7 +78,10 @@ rules:
   - ""
   resources:
   - endpoints
-  verbs: ["*"]
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - coordination.k8s.io
   resources:

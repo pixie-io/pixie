@@ -365,6 +365,12 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 			TemplateValue:   fmt.Sprintf(".%s.svc", nsTmpl),
 		},
 		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cert-provisioner-binding"),
+			Patch:           `{ "subjects": [{ "name": "pl-cert-provisioner-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-binding"),
 			Patch:           `{ "subjects": [{ "name": "pl-updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",

@@ -12,5 +12,6 @@ resources:
 - cloud_connector_service.yaml
 - updater_role.yaml
 - cloud_connector_role.yaml
+- cert_provisioner_role.yaml
 - cert_provisioner_job.yaml
 - vizier_crd_role.yaml

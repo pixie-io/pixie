@@ -5,63 +5,67 @@ metadata:
   name: pl-updater-service-account
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: pl-updater-cluster-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: pl-updater-role
-subjects:
-- kind: ServiceAccount
-  name: pl-updater-service-account
-  namespace: pl
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: pl-updater-cluster-role
-rules:
-# Allow actions on Kubernetes objects
-- apiGroups:
-  - rbac.authorization.k8s.io
-  - etcd.database.coreos.com
-  - nats.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - persistentvolumes
-  - etcdclusters
-  - natsclusters
-  verbs: ["*"]
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: pl-updater-role
 rules:
 - apiGroups:
   - ""
-  - apps
-  - rbac.authorization.k8s.io
-  - extensions
-  - batch
-  - policy
   resources:
   - configmaps
   - secrets
   - pods
   - services
+  - persistentvolumes
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
   - deployments
   - daemonsets
-  - persistentvolumes
-  - roles
-  - rolebindings
-  - serviceaccounts
   - statefulsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
   - cronjobs
   - jobs
-  verbs: ["*"]
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
