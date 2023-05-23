@@ -248,9 +248,6 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 		_, err = createRes.Create(context.Background(), resource.Object, metav1.CreateOptions{})
 		if err != nil {
 			if !k8serrors.IsAlreadyExists(err) {
-				log.Info(resource.Object)
-				log.WithError(err).Info("NOT ALREADY EXISTS")
-
 				return err
 			} else if (k8sRes == "clusterroles" || k8sRes == "cronjobs") || allowUpdate {
 				// TODO(michelle,vihang,philkuz) Update() fails on services and PVCs that are already running on the

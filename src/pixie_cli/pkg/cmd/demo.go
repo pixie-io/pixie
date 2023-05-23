@@ -478,48 +478,29 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 		return errNamespaceAlreadyExists
 	}
 
-	createNamespace(appName)
+	tasks := []utils.Task{
+		newTaskWrapper(fmt.Sprintf("Creating namespace %s", appName), func() error {
+			return createNamespace(appName)
+		}),
+		newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
+			for _, yamlBytes := range yamls {
+				yamlBytes := yamlBytes
+				bo := backoff.NewExponentialBackOff()
+				bo.MaxElapsedTime = 5 * time.Minute
 
-	for _, yamlBytes := range yamls {
-		yamlBytes := yamlBytes
-		bo := backoff.NewExponentialBackOff()
-		bo.MaxElapsedTime = 1 * time.Minute
+				op := func() error {
+					return k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
+				}
 
-		op := func() error {
-			err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
-			if err != nil {
-				log.WithError(err).Errorf("Error deploying retry")
+				err := backoff.Retry(op, bo)
+				if err != nil {
+					return err
+				}
 			}
-			return err
-		}
-
-		backoff.Retry(op, bo)
+			return nil
+		}),
 	}
-	return nil
-	// tasks := []utils.Task{
-	// 	newTaskWrapper(fmt.Sprintf("Creating namespace %s", appName), func() error {
-	// 		return createNamespace(appName)
-	// 	}),
-	// 	newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
-	// 		for _, yamlBytes := range yamls {
-	// 			yamlBytes := yamlBytes
-	// 			bo := backoff.NewExponentialBackOff()
-	// 			bo.MaxElapsedTime = 1 * time.Minute
 
-	// 			op := func() error {
-	// 				err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes), false)
-	// 				if err != nil {
-	// 					log.WithError(err).Errorf("Error deploying retry")
-	// 				}
-	// 				return err
-	// 			}
-
-	// 			return backoff.Retry(op, bo)
-	// 		}
-	// 		return nil
-	// 	}),
-	// }
-
-	// tr := utils.NewSerialTaskRunner(tasks)
-	// return tr.RunAndMonitor()
+	tr := utils.NewSerialTaskRunner(tasks)
+	return tr.RunAndMonitor()
 }
