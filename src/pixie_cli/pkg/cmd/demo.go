@@ -52,6 +52,7 @@ import (
 const manifestFile = "manifest.json"
 
 var errNamespaceAlreadyExists = errors.New("namespace already exists")
+var errCertMgrDoesNotExist = errors.New("cert-manager does not exist")
 
 func init() {
 	DemoCmd.PersistentFlags().String("artifacts", "https://storage.googleapis.com/pixie-prod-artifacts/prod-demo-apps", "The path to the demo apps")
@@ -325,10 +326,13 @@ func deployCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	err = setupDemoApp(appName, yamls)
+	err = setupDemoApp(appName, yamls, appSpec.Dependencies)
 	if err != nil {
 		if errors.Is(err, errNamespaceAlreadyExists) {
 			utils.Error("Failed to deploy demo application: namespace already exists.")
+			return
+		} else if errors.Is(err, errCertMgrDoesNotExist) {
+			utils.Error("Failed to deploy demo application: cert-manager needs to be installed. To deploy, please follow instructions at https://cert-manager.io/docs/getting-started/")
 			return
 		}
 		// Using log.Errorf rather than CLI log in order to track this unexpected error in Sentry.
@@ -352,8 +356,9 @@ func deployCmd(cmd *cobra.Command, args []string) {
 }
 
 type manifestAppSpec struct {
-	Description  string   `json:"description"`
-	Instructions []string `json:"instructions"`
+	Description  string          `json:"description"`
+	Instructions []string        `json:"instructions"`
+	Dependencies map[string]bool `json:"dependencies"`
 }
 
 type manifest = map[string]*manifestAppSpec
@@ -469,9 +474,40 @@ func createNamespace(namespace string) error {
 	return err
 }
 
-func setupDemoApp(appName string, yamls map[string][]byte) error {
+func certManagerExists() (bool, error) {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+
+	deps, err := clientset.AppsV1().Deployments("").List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	for _, d := range deps.Items {
+		if d.Name == "cert-manager" {
+			return true, nil
+		}
+	}
+
+	return false, err
+}
+
+func setupDemoApp(appName string, yamls map[string][]byte, deps map[string]bool) error {
+	kubeConfig := k8s.GetConfig()
+	clientset := k8s.GetClientset(kubeConfig)
+
+	// Check deps.
+	if deps["cert-manager"] {
+		certMgrExists, err := certManagerExists()
+		if err != nil && !k8s_errors.IsNotFound(err) {
+			return err
+		}
+
+		if !certMgrExists || k8s_errors.IsNotFound(err) {
+			return errCertMgrDoesNotExist
+		}
+	}
+
 	if namespaceExists(appName) {
 		fmt.Printf("%s: namespace %s already exists. If created with px, run %s to remove\n",
 			color.RedString("Error"), color.RedString(appName), color.GreenString(fmt.Sprintf("px demo delete %s", appName)))

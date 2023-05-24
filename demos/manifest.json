@@ -44,7 +44,10 @@
         ]
     },
     "px-k8ssandra": {
-        "description": "tmp", 
-	"instructions": ["tmp"] 
+        "description": "Microservice demo that spins up Cassandra and the Spring PetClinic demo app.",
+	"instructions": ["Use the px/cql_data script to view the Cassandra traffic flowing from the demo app."],
+	"dependencies": {
+            "cert-manager": true
+        }
     }
 }
