@@ -166,9 +166,10 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 				require.NoError(t, scriptSub.Unsubscribe())
 			}()
 
-			_, stop, err := CloudSource(nc, fcs, "test")(context.Background(), dummyUpdateCb())
+			source := NewCloudSource(nc, fcs, "test")
+			err := source.Start(context.Background(), nil)
 			require.NoError(t, err)
-			defer stop()
+			defer source.Stop()
 
 			select {
 			case <-gotCronScripts:
@@ -216,8 +217,9 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 			}
 		}()
 
-		updateCb, updatesCh := mockUpdateCb()
-		_, _, err := CloudSource(nc, scs, "test")(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		source := NewCloudSource(nc, scs, "test")
+		err := source.Start(context.Background(), updatesCh)
 		require.Error(t, err)
 
 		sendUpdates(t, nc, sentUpdates)
@@ -297,8 +299,9 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 			}
 		}()
 
-		updateCb, updatesCh := mockUpdateCb()
-		_, _, err := CloudSource(nc, scs, "test")(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		source := NewCloudSource(nc, scs, "test")
+		err := source.Start(context.Background(), updatesCh)
 		require.Error(t, err)
 
 		sendUpdates(t, nc, sentUpdates)
@@ -447,10 +450,11 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 				}
 			}()
 
-			updateCb, updatesCh := mockUpdateCb()
-			_, stop, err := CloudSource(nc, fcs, "test")(context.Background(), updateCb)
+			updatesCh := mockUpdatesCh()
+			source := NewCloudSource(nc, fcs, "test")
+			err := source.Start(context.Background(), updatesCh)
 			require.NoError(t, err)
-			defer stop()
+			defer source.Stop()
 
 			<-gotChecksumReq
 			sendUpdates(t, nc, test.updates)
@@ -528,10 +532,11 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 			}
 		}()
 
-		updateCb, updatesCh := mockUpdateCb()
-		_, stop, err := CloudSource(nc, fcs, "test")(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		source := NewCloudSource(nc, fcs, "test")
+		err := source.Start(context.Background(), updatesCh)
 		require.NoError(t, err)
-		stop()
+		source.Stop()
 
 		sendUpdates(t, nc, sentUpdates)
 

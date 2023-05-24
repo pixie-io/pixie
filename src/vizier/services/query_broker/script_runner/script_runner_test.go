@@ -287,13 +287,17 @@ func TestScriptRunner_ScriptUpdates(t *testing.T) {
 				Times(1)
 
 			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
-			source := func(_ context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
-				go func() {
+			source := &MockSource{
+				scriptDelegate: func() map[string]*cvmsgspb.CronScript {
+					return map[string]*cvmsgspb.CronScript{}
+				},
+				stopDelegate: func() {},
+				startDelegate: func(_ context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
 					for _, update := range test.updates {
-						updateCb(update)
+						updatesCh <- update
 					}
-				}()
-				return nil, func() {}, nil
+					return nil
+				},
 			}
 			sr := New(fcs, mvs, "test", source)
 			defer sr.Stop()
@@ -391,20 +395,25 @@ func TestScriptRunner_ScriptDeletes(t *testing.T) {
 				Times(0)
 
 			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
-			source := func(_ context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
-				go func() {
+
+			source := &MockSource{
+				startDelegate: func(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
 					for _, update := range test.updates {
-						updateCb(update)
+						updatesCh <- update
 					}
-				}()
-				return map[string]*cvmsgspb.CronScript{
-					scriptID: {
-						ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
-						Script:     "initial script",
-						Configs:    "otelEndpointConfig: {url: example.com}",
-						FrequencyS: 1,
-					},
-				}, func() {}, nil
+					return nil
+				},
+				stopDelegate: func() {},
+				scriptDelegate: func() map[string]*cvmsgspb.CronScript {
+					return map[string]*cvmsgspb.CronScript{
+						scriptID: {
+							ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
+							Script:     "initial script",
+							Configs:    "otelEndpointConfig: {url: example.com}",
+							FrequencyS: 1,
+						},
+					}
+				},
 			}
 			sr := New(fcs, mvs, "test", source)
 			defer sr.Stop()
@@ -414,6 +423,9 @@ func TestScriptRunner_ScriptDeletes(t *testing.T) {
 			}()
 
 			requireNoReceive(t, scriptExecuted, 1100*time.Millisecond)
+			sr.runnerMapMu.Lock()
+			defer sr.runnerMapMu.Unlock()
+			require.Empty(t, sr.runnerMap)
 		})
 	}
 }

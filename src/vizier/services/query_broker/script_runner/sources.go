@@ -19,13 +19,10 @@
 package scriptrunner
 
 import (
-	"context"
-
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils/shared/k8s"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
@@ -39,23 +36,20 @@ const (
 // DefaultSources is a list of sources enabled by default
 var DefaultSources = []string{CloudSourceName}
 
-// A Source provides an initial set of cron scripts and sends incremental updates to that set
-type Source func(ctx context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (initial map[string]*cvmsgspb.CronScript, unsubscribe func(), err error)
-
 // Sources initializes multiple sources based on the set of sourceNames provided.
 func Sources(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, signingKey string, namespace string, sourceNames []string) []Source {
 	var sources []Source
 	for _, selectedName := range sourceNames {
 		switch selectedName {
 		case CloudSourceName:
-			sources = append(sources, CloudSource(nc, csClient, signingKey))
+			sources = append(sources, NewCloudSource(nc, csClient, signingKey))
 		case ConfigMapSourceName:
 			kubeConfig, err := rest.InClusterConfig()
 			if err != nil {
 				log.WithError(err).Fatal("Unable to get incluster kubeconfig")
 			}
 			client := k8s.GetClientset(kubeConfig).CoreV1().ConfigMaps(namespace)
-			sources = append(sources, ConfigMapSource(client))
+			sources = append(sources, NewConfigMapSource(client))
 		default:
 			log.Errorf(`Unknown source "%s"`, selectedName)
 		}

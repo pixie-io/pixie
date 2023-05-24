@@ -37,28 +37,57 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
-// CloudSource constructs a [Source] that will pull cron scripts from the control plane
-func CloudSource(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, signingKey string) Source {
-	return func(baseCtx context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
-		ctx := metadata.AppendToOutgoingContext(baseCtx,
-			"authorization", fmt.Sprintf("bearer %s", cronScriptStoreToken(signingKey)),
-		)
-		sub, err := nc.Subscribe(CronScriptUpdatesChannel, natsUpdater(ctx, nc, csClient, updateCb))
-		if err != nil {
-			return nil, nil, err
-		}
-		unsubscribe := func() {
-			if err := sub.Unsubscribe(); err != nil {
-				log.WithError(err).Error("could not unsubscribe from cloud cron script updates")
-			}
-		}
-		initialScripts, err := fetchInitialScripts(ctx, nc, csClient)
-		if err != nil {
-			unsubscribe()
-			return nil, nil, err
-		}
-		return initialScripts, unsubscribe, nil
+// CloudSource is a Source that pulls cron scripts from the cloud.
+type CloudSource struct {
+	scripts    map[string]*cvmsgspb.CronScript
+	stop       func()
+	client     metadatapb.CronScriptStoreServiceClient
+	nc         *nats.Conn
+	signingKey string
+}
+
+// NewCloudSource constructs a Source that will pull cron scripts from the cloud.
+func NewCloudSource(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, signingKey string) *CloudSource {
+	return &CloudSource{
+		client:     csClient,
+		nc:         nc,
+		signingKey: signingKey,
 	}
+}
+
+// Start subscribes to updates from the cloud on the CronScriptUpdatesChannel and sends resulting updates on updatesCh.
+func (source *CloudSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+	ctx := metadata.AppendToOutgoingContext(baseCtx,
+		"authorization", fmt.Sprintf("bearer %s", cronScriptStoreToken(source.signingKey)),
+	)
+	sub, err := source.nc.Subscribe(CronScriptUpdatesChannel, natsUpdater(ctx, source.nc, source.client, updatesCh))
+	if err != nil {
+		return err
+	}
+	unsubscribe := func() {
+		if err := sub.Unsubscribe(); err != nil {
+			log.WithError(err).Error("could not unsubscribe from cloud cron script updates")
+		}
+	}
+	initialScripts, err := fetchInitialScripts(ctx, source.nc, source.client)
+	if err != nil {
+		unsubscribe()
+		return err
+	}
+
+	source.scripts = initialScripts
+	source.stop = unsubscribe
+	return nil
+}
+
+// GetInitialScripts returns the initial set of scripts that all updates will be based on.
+func (source *CloudSource) GetInitialScripts() map[string]*cvmsgspb.CronScript {
+	return source.scripts
+}
+
+// Stop stops further updates from being sent.
+func (source *CloudSource) Stop() {
+	source.stop()
 }
 
 func cronScriptStoreToken(signingKey string) string {
@@ -67,7 +96,7 @@ func cronScriptStoreToken(signingKey string) string {
 	return token
 }
 
-func natsUpdater(ctx context.Context, nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, updateCb func(*cvmsgspb.CronScriptUpdate)) func(msg *nats.Msg) {
+func natsUpdater(ctx context.Context, nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, updatesCh chan<- *cvmsgspb.CronScriptUpdate) func(msg *nats.Msg) {
 	return func(msg *nats.Msg) {
 		var cronScriptUpdate cvmsgspb.CronScriptUpdate
 		if err := unmarshalC2V(msg, &cronScriptUpdate); err != nil {
@@ -75,7 +104,7 @@ func natsUpdater(ctx context.Context, nc *nats.Conn, csClient metadatapb.CronScr
 			return
 		}
 
-		updateCb(&cronScriptUpdate)
+		updatesCh <- &cronScriptUpdate
 
 		switch cronScriptUpdate.Msg.(type) {
 		case *cvmsgspb.CronScriptUpdate_UpsertReq:

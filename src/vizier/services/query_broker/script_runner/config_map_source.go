@@ -33,38 +33,60 @@ import (
 	"px.dev/pixie/src/utils"
 )
 
-// ConfigMapSource constructs a [Source] that extracts cron scripts from config maps with the label "purpose=cron-script".
+// ConfigMapSource pulls cron scripts from config maps.
+type ConfigMapSource struct {
+	scripts map[string]*cvmsgspb.CronScript
+	stop    func()
+	client  clientv1.ConfigMapInterface
+}
+
+// NewConfigMapSource constructs a [Source] that extracts cron scripts from config maps with the label "purpose=cron-script".
 // Each config map must contain
 //   - a script.pxl with the pixel script
 //   - a configs.yaml which will be stored in the Configs field of [cvmsgspb.CronScript]
 //   - a cron.yaml that contains a "frequency_s" key
-func ConfigMapSource(client clientv1.ConfigMapInterface) Source {
-	return func(baseCtx context.Context, updateCb func(*cvmsgspb.CronScriptUpdate)) (map[string]*cvmsgspb.CronScript, func(), error) {
-		options := metav1.ListOptions{LabelSelector: "purpose=cron-script"}
-		watcher, err := client.Watch(baseCtx, options)
-		if err != nil {
-			return nil, nil, err
-		}
-		go configMapUpdater(watcher, updateCb)
-		configmaps, err := client.List(baseCtx, options)
-		if err != nil {
-			watcher.Stop()
-			return nil, nil, err
-		}
-		scripts := map[string]*cvmsgspb.CronScript{}
-		for _, configmap := range configmaps.Items {
-			id, cronScript, err := configmapToCronScript(&configmap)
-			if err != nil {
-				logCronScriptParseError(err)
-				continue
-			}
-			scripts[id] = cronScript
-		}
-		return scripts, watcher.Stop, nil
-	}
+func NewConfigMapSource(client clientv1.ConfigMapInterface) *ConfigMapSource {
+	return &ConfigMapSource{client: client}
 }
 
-func configMapUpdater(watcher watch.Interface, updateCb func(*cvmsgspb.CronScriptUpdate)) {
+// Start watches for updates to matching configmaps and sends resulting updates on updatesCh.
+func (source *ConfigMapSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+	options := metav1.ListOptions{LabelSelector: "purpose=cron-script"}
+	watcher, err := source.client.Watch(baseCtx, options)
+	if err != nil {
+		return err
+	}
+	go configMapUpdater(watcher, updatesCh)
+	configmaps, err := source.client.List(baseCtx, options)
+	if err != nil {
+		watcher.Stop()
+		return err
+	}
+	scripts := map[string]*cvmsgspb.CronScript{}
+	for _, configmap := range configmaps.Items {
+		id, cronScript, err := configmapToCronScript(&configmap)
+		if err != nil {
+			logCronScriptParseError(err)
+			continue
+		}
+		scripts[id] = cronScript
+	}
+	source.scripts = scripts
+	source.stop = watcher.Stop
+	return nil
+}
+
+// GetInitialScripts returns the initial set of scripts that all updates will be based on.
+func (source *ConfigMapSource) GetInitialScripts() map[string]*cvmsgspb.CronScript {
+	return source.scripts
+}
+
+// Stop stops further updates from being sent.
+func (source *ConfigMapSource) Stop() {
+	source.stop()
+}
+
+func configMapUpdater(watcher watch.Interface, updatesCh chan<- *cvmsgspb.CronScriptUpdate) {
 	for event := range watcher.ResultChan() {
 		switch event.Type {
 		case watch.Modified, watch.Added:
@@ -83,7 +105,7 @@ func configMapUpdater(watcher watch.Interface, updateCb func(*cvmsgspb.CronScrip
 				RequestID: id,
 				Timestamp: time.Now().Unix(),
 			}
-			updateCb(cronScriptUpdate)
+			updatesCh <- cronScriptUpdate
 		case watch.Deleted:
 			configmap := event.Object.(*v1.ConfigMap)
 			id, script, err := configmapToCronScript(configmap)
@@ -100,7 +122,7 @@ func configMapUpdater(watcher watch.Interface, updateCb func(*cvmsgspb.CronScrip
 				RequestID: id,
 				Timestamp: time.Now().Unix(),
 			}
-			updateCb(cronScriptUpdate)
+			updatesCh <- cronScriptUpdate
 		}
 	}
 }

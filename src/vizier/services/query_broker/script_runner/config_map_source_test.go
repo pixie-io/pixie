@@ -41,10 +41,11 @@ const ConfigMapUID = "5b054918-d670-45f3-99d4-015bb07036b3"
 func TestConfigMapScriptsSource(t *testing.T) {
 	t.Run("returns the initial scripts from a configmap", func(t *testing.T) {
 		client := fake.NewSimpleClientset(cronScriptConfigMap())
-		initialScripts, _, _ := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), dummyUpdateCb())
-
-		require.Len(t, initialScripts, 1)
-		initialScript := initialScripts[ConfigMapUID]
+		source := NewConfigMapSource(client.CoreV1().ConfigMaps("pl"))
+		err := source.Start(context.Background(), nil)
+		require.Equal(t, err, nil)
+		require.Len(t, source.GetInitialScripts(), 1)
+		initialScript := source.GetInitialScripts()[ConfigMapUID]
 		require.Equal(t, "px.display()", initialScript.Script)
 		require.Equal(t, "otelEndpointConfig: {url: example.com}", initialScript.Configs)
 		require.Equal(t, int64(1), initialScript.FrequencyS)
@@ -55,7 +56,7 @@ func TestConfigMapScriptsSource(t *testing.T) {
 		client.PrependWatchReactor("configmaps", func(_ k8stesting.Action) (bool, watch.Interface, error) {
 			return true, nil, errors.New("could not watch")
 		})
-		_, _, err := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), dummyUpdateCb())
+		err := NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), nil)
 
 		require.Error(t, err)
 	})
@@ -65,10 +66,7 @@ func TestConfigMapScriptsSource(t *testing.T) {
 		client.PrependReactor("list", "configmaps", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("could not list")
 		})
-		syncConfigMaps := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))
-
-		_, _, err := syncConfigMaps(context.Background(), dummyUpdateCb())
-
+		err := NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), nil)
 		require.Error(t, err)
 	})
 
@@ -77,10 +75,7 @@ func TestConfigMapScriptsSource(t *testing.T) {
 		client.PrependReactor("list", "configmaps", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("could not list")
 		})
-		syncConfigMaps := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))
-
-		_, _, err := syncConfigMaps(context.Background(), dummyUpdateCb())
-
+		err := NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), nil)
 		require.Error(t, err)
 	})
 
@@ -89,10 +84,8 @@ func TestConfigMapScriptsSource(t *testing.T) {
 		client.PrependReactor("list", "configmaps", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("could not list")
 		})
-		updateCb, updatesCh := mockUpdateCb()
-		syncConfigMaps := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))
-
-		_, _, _ = syncConfigMaps(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		_ = NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), updatesCh)
 
 		_, _ = client.CoreV1().ConfigMaps("pl").Create(context.Background(), cronScriptConfigMap(), metav1.CreateOptions{})
 
@@ -101,11 +94,10 @@ func TestConfigMapScriptsSource(t *testing.T) {
 
 	t.Run("stop causes no further updates to be sent", func(t *testing.T) {
 		client := fake.NewSimpleClientset()
-		updateCb, updatesCh := mockUpdateCb()
-		syncConfigMaps := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))
-		_, stop, _ := syncConfigMaps(context.Background(), updateCb)
-
-		stop()
+		updatesCh := mockUpdatesCh()
+		syncConfigMaps := NewConfigMapSource(client.CoreV1().ConfigMaps("pl"))
+		_ = syncConfigMaps.Start(context.Background(), updatesCh)
+		syncConfigMaps.Stop()
 
 		_, _ = client.CoreV1().ConfigMaps("pl").Create(context.Background(), cronScriptConfigMap(), metav1.CreateOptions{})
 
@@ -126,15 +118,16 @@ func TestConfigMapScriptsSource(t *testing.T) {
 				"cron.yaml":    "frequency_s: 1",
 			},
 		})
-		initialScripts, _, _ := ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), dummyUpdateCb())
+		source := NewConfigMapSource(client.CoreV1().ConfigMaps("pl"))
+		_ = source.Start(context.Background(), nil)
 
-		require.Empty(t, initialScripts)
+		require.Empty(t, source.GetInitialScripts())
 	})
 
 	t.Run("updates with newly added scripts", func(t *testing.T) {
 		client := fake.NewSimpleClientset()
-		updateCb, updatesCh := mockUpdateCb()
-		_, _, _ = ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		_ = NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), updatesCh)
 
 		_, _ = client.CoreV1().ConfigMaps("pl").Create(context.Background(), cronScriptConfigMap(), metav1.CreateOptions{})
 
@@ -149,8 +142,8 @@ func TestConfigMapScriptsSource(t *testing.T) {
 	t.Run("updates existing scripts", func(t *testing.T) {
 		configMapTemplate := cronScriptConfigMap()
 		client := fake.NewSimpleClientset(configMapTemplate)
-		updateCb, updatesCh := mockUpdateCb()
-		_, _, _ = ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		_ = NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), updatesCh)
 
 		configMapTemplate.Data["script.pxl"] = "px.display2()"
 		_, _ = client.CoreV1().ConfigMaps("pl").Update(context.Background(), configMapTemplate, metav1.UpdateOptions{})
@@ -170,7 +163,7 @@ func TestConfigMapScriptsSource(t *testing.T) {
 			watchLabelSelector = action.(k8stesting.WatchActionImpl).WatchRestrictions.Labels
 			return false, nil, nil
 		})
-		_, _, _ = ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), dummyUpdateCb())
+		_ = NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), nil)
 
 		require.False(t, watchLabelSelector.Matches(labels.Set(map[string]string{})))
 		require.True(t, watchLabelSelector.Matches(labels.Set(map[string]string{"purpose": "cron-script"})))
@@ -179,8 +172,8 @@ func TestConfigMapScriptsSource(t *testing.T) {
 	t.Run("updates when a config map cron script is deleted", func(t *testing.T) {
 		configMapTemplate := cronScriptConfigMap()
 		client := fake.NewSimpleClientset(configMapTemplate)
-		updateCb, updatesCh := mockUpdateCb()
-		_, _, _ = ConfigMapSource(client.CoreV1().ConfigMaps("pl"))(context.Background(), updateCb)
+		updatesCh := mockUpdatesCh()
+		_ = NewConfigMapSource(client.CoreV1().ConfigMaps("pl")).Start(context.Background(), updatesCh)
 
 		configMapTemplate.Data["script.pxl"] = "px.display2()"
 		_ = client.CoreV1().ConfigMaps("pl").Delete(context.Background(), configMapTemplate.GetName(), metav1.DeleteOptions{})
