@@ -114,6 +114,18 @@ config_setting(
     },
 )
 
+platform(
+    name = "remote_exec_platform",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+    exec_properties = {
+        "container-image": "docker://gcr.io/pixie-oss/pixie-dev-public/dev_image:202305102201@sha256:ead63d8e267a04ce643174bbcb851416d4a35e0cbb71a13fa20bf7fa36d193dd",
+        "OSFamily": "Linux",
+    },
+)
+
 # Jenkins uses `bazel query` to find the reverse dependencies of a changed file.
 # Without this, that query on pl_build_system.bzl will fail, in the case of changing its content.
 exports_files(["pl_build_system.bzl"])
