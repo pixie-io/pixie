@@ -42,5 +42,12 @@
             "Mux tracing is only enabled on newer kernels (>= 5.2) by default.",
             "Make sure your system meets these requirements before deploying."
         ]
+    },
+    "px-k8ssandra": {
+        "description": "Microservice demo that spins up Cassandra and the Spring PetClinic demo app.",
+	"instructions": ["Use the px/cql_data script to view the Cassandra traffic flowing from the demo app."],
+	"dependencies": {
+            "cert-manager": true
+        }
     }
 }

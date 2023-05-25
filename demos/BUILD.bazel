@@ -45,11 +45,19 @@ pkg_tar(
     strip_prefix = "online-boutique",
 )
 
+pkg_tar(
+    name = "px-k8ssandra",
+    srcs = glob(["k8ssandra/*"]),
+    extension = "tar.gz",
+    strip_prefix = "k8ssandra",
+)
+
 ARCHIVES = [
     ":px-finagle",
     ":px-kafka",
     ":px-sock-shop",
     ":px-online-boutique",
+    ":px-k8ssandra",
 ]
 
 demo_upload(

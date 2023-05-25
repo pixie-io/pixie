@@ -236,7 +236,7 @@ func ApplyResources(clientset kubernetes.Interface, config *rest.Config, resourc
 		nsRes := res.Namespace(objNS)
 
 		createRes := nsRes
-		if k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" || k8sRes == "customresourcedefinitions" {
+		if k8sRes == "validatingwebhookconfigurations" || k8sRes == "mutatingwebhookconfigurations" || k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" || k8sRes == "customresourcedefinitions" {
 			createRes = res
 		}
 
