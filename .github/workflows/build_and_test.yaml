@@ -31,6 +31,7 @@ jobs:
       with:
         use-buildbuddy: 'public'
         buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
+        buildbarn-api-key: ${{ secrets.BUILDBARN_API_KEY }}
     - name: Save Diff Info
       run: ./ci/save_diff_info.sh
     - name: Run Clang Tidy
@@ -63,6 +64,7 @@ jobs:
         dev: 'false'
         use-buildbuddy: 'public'
         buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
+        buildbarn-api-key: ${{ secrets.BUILDBARN_API_KEY }}
     - name: Collect and upload coverage
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -125,6 +127,7 @@ jobs:
         dev: 'true'
         use-buildbuddy: 'public'
         buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
+        buildbarn-api-key: ${{ secrets.BUILDBARN_API_KEY }}
     - name: get ci bazel config
       if: github.event_name == 'push'
       uses: ./.github/actions/bazelrc
@@ -132,6 +135,7 @@ jobs:
         dev: 'false'
         use-buildbuddy: 'public'
         buildbuddy-api-key: ${{ secrets.BB_PUBLIC_API_KEY_TESTING }}
+        buildbarn-api-key: ${{ secrets.BUILDBARN_API_KEY }}
     - name: Build ${{ matrix.name }}
       shell: bash
       # yamllint disable rule:indentation
@@ -148,6 +152,8 @@ jobs:
       run: |
         # Github actions container runner creates a docker network without IPv6 support. We enable it manually.
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
-        ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
+        ./scripts/bazel_ignore_codes.sh test \
+          ${{ matrix.args }} \
+          --target_pattern_file=target_files/${{ matrix.tests }} \
           2> >(tee bazel_stderr)
       # yamllint enable rule:indentation

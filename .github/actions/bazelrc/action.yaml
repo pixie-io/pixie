@@ -14,12 +14,23 @@ inputs:
   buildbuddy-api-key:
     description: 'API key for buildbuddy'
     default: ''
+  buildbarn-api-key:
+    description: 'API key for buildbarn remote execution'
+    default: ''
 runs:
   using: "composite"
   steps:
   - name: Copy github.bazelrc
     run: |
       cp ci/github/bazelrc github.bazelrc
+    shell: bash
+  - name: Add buildbarn API key
+    if: inputs.buildbarn-api-key != ''
+    env:
+      BUILDBARN_API_KEY: ${{ inputs.buildbarn-api-key }}
+    run: |
+      echo "build:remote --remote_exec_header=x-buildbarn-api-key=$BUILDBARN_API_KEY" >> github.bazelrc
+      echo "build --config=remote" >> github.bazelrc
     shell: bash
   - name: Copy BES bazel config
     if: inputs.use-buildbuddy == 'true'
