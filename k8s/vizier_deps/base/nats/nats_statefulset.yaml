@@ -32,6 +32,7 @@ data:
       cert_file: "/etc/nats-server-tls-certs/server.crt",
       key_file: "/etc/nats-server-tls-certs/server.key",
       timeout: 3
+      verify: true
     }
   # yamllint enable rule:indentation
 ---
