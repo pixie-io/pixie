@@ -143,7 +143,7 @@ jobs:
     - name: Create Release
       env:
         REF: ${{ github.event.ref }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
         OWNER: pixie-io
         REPO: pixie
       shell: bash
