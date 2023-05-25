@@ -22,7 +22,7 @@ import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 
 import { PixieAPIContext, PixieAPIContextProviderProps } from 'app/api';
 
-import { MockPixieAPIClient } from './api-mock';
+import { MockPixieAPIClient } from './api-client-mock';
 
 export interface MockPixieAPIContextProviderProps extends Partial<PixieAPIContextProviderProps> {
   mocks?: MockedResponse[];

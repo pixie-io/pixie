@@ -30,6 +30,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { GQLUserSettings } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 
 import {
   StyledTableCell, StyledTableHeaderCell,
@@ -114,7 +115,12 @@ export const UserSettings = React.memo(() => {
                       },
                     },
                     variables: { analyticsOptout: !userSettings.analyticsOptout },
-                  }).then();
+                  }).then(() => {
+                    // Propagate the opt-in/opt-out preference immediately.
+                    // The act of changing this setting is not tracked.
+                    // Opting in will promptly set analytics up; opting out will instantly stop tracking everything.
+                    pixieAnalytics.reinit();
+                  });
                 }}
                 variant='outlined'
                 color='primary'
