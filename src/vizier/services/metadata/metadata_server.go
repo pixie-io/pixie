@@ -36,6 +36,7 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
@@ -158,6 +159,7 @@ func etcdTLSConfig() (*tls.Config, error) {
 }
 
 func main() {
+	namespaces := []string{v1.NamespaceAll}
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
@@ -235,7 +237,7 @@ func main() {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
 
-	k8sMc, err := k8smeta.NewController(updateCh)
+	k8sMc, err := k8smeta.NewController(namespaces, updateCh)
 	defer k8sMc.Stop()
 
 	ads := agent.NewDatastore(dataStore, 24*time.Hour)
