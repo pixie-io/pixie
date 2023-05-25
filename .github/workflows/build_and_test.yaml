@@ -158,3 +158,24 @@ jobs:
         bb_url="$(cat bazel_stderr | grep -Po "(?<=Streaming build results to: ).*" | tail -n 1)"
         echo "${bb_url}"
       shell: bash
+  build-and-test-status:
+    if: always()
+    needs: [build-and-test, clang-tidy, generate-matrix]
+    runs-on: ubuntu-latest
+    steps:
+    - if: needs.build-and-test.result == 'success' && needs.clang-tidy.result == 'success'
+      run: echo "Build and Test complete ✓"
+    - if: >
+        needs.generate-matrix.result == 'success' && needs.clang-tidy.result == 'success'
+        && needs.build-and-test.result == 'skipped'
+      run: echo "Build and Test skipped no matrix configs generated ✓"
+    # yamllint disable rule:indentation
+    - if: >
+        !(needs.build-and-test.result == 'success' && needs.clang-tidy.result == 'success') &&
+        !(needs.generate-matrix.result == 'success' &&
+          needs.clang-tidy.result == 'success' &&
+          needs.build-and-test.result == 'skipped')
+    # yamllint enable rule:indentation
+      run: |
+        echo "Build and Test failed"
+        exit 1
