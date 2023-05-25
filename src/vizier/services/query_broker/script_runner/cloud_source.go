@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -31,6 +32,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
+	"px.dev/pixie/src/utils"
+
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/scripts"
 	svcutils "px.dev/pixie/src/shared/services/utils"
@@ -39,30 +42,35 @@ import (
 
 // CloudSource is a Source that pulls cron scripts from the cloud.
 type CloudSource struct {
-	scripts    map[string]*cvmsgspb.CronScript
 	stop       func()
 	client     metadatapb.CronScriptStoreServiceClient
 	nc         *nats.Conn
 	signingKey string
+
+	// scriptLastUpdateTime tracks the last time we latest update we processed for a script.
+	// As we may receive updates out-of-order, this prevents us from processing a change out-of-order.
+	scriptLastUpdateTime map[uuid.UUID]int64
+	updateTimeMu         sync.Mutex
 }
 
 // NewCloudSource constructs a Source that will pull cron scripts from the cloud.
 func NewCloudSource(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, signingKey string) *CloudSource {
 	return &CloudSource{
-		client:     csClient,
-		nc:         nc,
-		signingKey: signingKey,
+		client:               csClient,
+		nc:                   nc,
+		signingKey:           signingKey,
+		scriptLastUpdateTime: make(map[uuid.UUID]int64),
 	}
 }
 
 // Start subscribes to updates from the cloud on the CronScriptUpdatesChannel and sends resulting updates on updatesCh.
-func (source *CloudSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+func (source *CloudSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
 	ctx := metadata.AppendToOutgoingContext(baseCtx,
 		"authorization", fmt.Sprintf("bearer %s", cronScriptStoreToken(source.signingKey)),
 	)
-	sub, err := source.nc.Subscribe(CronScriptUpdatesChannel, natsUpdater(ctx, source.nc, source.client, updatesCh))
+	sub, err := source.nc.Subscribe(CronScriptUpdatesChannel, source.natsUpdater(ctx, updatesCh))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	unsubscribe := func() {
 		if err := sub.Unsubscribe(); err != nil {
@@ -72,22 +80,24 @@ func (source *CloudSource) Start(baseCtx context.Context, updatesCh chan<- *cvms
 	initialScripts, err := fetchInitialScripts(ctx, source.nc, source.client)
 	if err != nil {
 		unsubscribe()
-		return err
+		return nil, err
 	}
-
-	source.scripts = initialScripts
 	source.stop = unsubscribe
-	return nil
-}
-
-// GetInitialScripts returns the initial set of scripts that all updates will be based on.
-func (source *CloudSource) GetInitialScripts() map[string]*cvmsgspb.CronScript {
-	return source.scripts
+	return initialScripts, nil
 }
 
 // Stop stops further updates from being sent.
 func (source *CloudSource) Stop() {
 	source.stop()
+}
+
+func (source *CloudSource) executeInOrder(sID uuid.UUID, timestamp int64, exec func()) {
+	source.updateTimeMu.Lock()
+	defer source.updateTimeMu.Unlock()
+	if source.scriptLastUpdateTime[sID] < timestamp {
+		exec()
+		source.scriptLastUpdateTime[sID] = timestamp
+	}
 }
 
 func cronScriptStoreToken(signingKey string) string {
@@ -96,7 +106,7 @@ func cronScriptStoreToken(signingKey string) string {
 	return token
 }
 
-func natsUpdater(ctx context.Context, nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, updatesCh chan<- *cvmsgspb.CronScriptUpdate) func(msg *nats.Msg) {
+func (source *CloudSource) natsUpdater(ctx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) func(msg *nats.Msg) {
 	return func(msg *nats.Msg) {
 		var cronScriptUpdate cvmsgspb.CronScriptUpdate
 		if err := unmarshalC2V(msg, &cronScriptUpdate); err != nil {
@@ -104,47 +114,56 @@ func natsUpdater(ctx context.Context, nc *nats.Conn, csClient metadatapb.CronScr
 			return
 		}
 
-		updatesCh <- &cronScriptUpdate
-
 		switch cronScriptUpdate.Msg.(type) {
 		case *cvmsgspb.CronScriptUpdate_UpsertReq:
 			upsertReq := cronScriptUpdate.GetUpsertReq()
-			_, err := csClient.AddOrUpdateScript(ctx, &metadatapb.AddOrUpdateScriptRequest{Script: upsertReq.Script})
-			if err != nil {
-				log.WithError(err).Error("Failed to upsert script in metadata")
-			}
+			id := utils.UUIDFromProtoOrNil(upsertReq.Script.ID)
+			source.executeInOrder(id, cronScriptUpdate.Timestamp, func() {
+				updatesCh <- &cronScriptUpdate
 
-			// Send response.
-			data, err := marshalV2C(&cvmsgspb.RegisterOrUpdateCronScriptResponse{})
-			if err != nil {
-				log.WithError(err).Error("Failed to marshal update script response")
-				return
-			}
-			err = nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, cronScriptUpdate.RequestID), data)
-			if err != nil {
-				log.WithError(err).Error("Failed to publish update script response")
-			}
+				_, err := source.client.AddOrUpdateScript(ctx, &metadatapb.AddOrUpdateScriptRequest{Script: upsertReq.Script})
+				if err != nil {
+					log.WithError(err).Error("Failed to upsert script in metadata")
+				}
+
+				// Send response.
+				data, err := marshalV2C(&cvmsgspb.RegisterOrUpdateCronScriptResponse{})
+				if err != nil {
+					log.WithError(err).Error("Failed to marshal update script response")
+					return
+				}
+				err = source.nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, cronScriptUpdate.RequestID), data)
+				if err != nil {
+					log.WithError(err).Error("Failed to publish update script response")
+				}
+			})
 		case *cvmsgspb.CronScriptUpdate_DeleteReq:
 			deleteReq := cronScriptUpdate.GetDeleteReq()
-			_, err := csClient.DeleteScript(ctx, &metadatapb.DeleteScriptRequest{ScriptID: deleteReq.ScriptID})
-			if err != nil {
-				log.WithError(err).Error("Failed to delete script from metadata")
-			}
+			id := utils.UUIDFromProtoOrNil(deleteReq.ScriptID)
+			source.executeInOrder(id, cronScriptUpdate.Timestamp, func() {
+				updatesCh <- &cronScriptUpdate
 
-			// Send response.
-			data, err := marshalV2C(&cvmsgspb.DeleteCronScriptResponse{})
-			if err != nil {
-				log.WithError(err).Error("Failed to marshal update script response")
-				return
-			}
-			if err != nil {
-				log.WithError(err).Error("Failed to marshal update script response")
-				return
-			}
-			err = nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, cronScriptUpdate.RequestID), data)
-			if err != nil {
-				log.WithError(err).Error("Failed to publish update script response")
-			}
+				_, err := source.client.DeleteScript(ctx, &metadatapb.DeleteScriptRequest{ScriptID: deleteReq.ScriptID})
+				if err != nil {
+					log.WithError(err).Error("Failed to delete script from metadata")
+				}
+
+				// Send response.
+				data, err := marshalV2C(&cvmsgspb.DeleteCronScriptResponse{})
+				if err != nil {
+					log.WithError(err).Error("Failed to marshal update script response")
+					return
+				}
+				if err != nil {
+					log.WithError(err).Error("Failed to marshal update script response")
+					return
+				}
+				err = source.nc.Publish(fmt.Sprintf("%s:%s", CronScriptUpdatesResponseChannel, cronScriptUpdate.RequestID), data)
+				if err != nil {
+					log.WithError(err).Error("Failed to publish update script response")
+				}
+			})
+
 		default:
 			log.Error("Received unknown message for cronScriptUpdate")
 		}
@@ -195,9 +214,9 @@ func fetchInitialScripts(ctx context.Context, nc *nats.Conn, csClient metadatapb
 			log.WithError(err).Error("Failed to fetch initialScripts from cloud")
 		} else {
 			// Clear out persisted initialScripts.
-			_, err = csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: make(map[string]*cvmsgspb.CronScript)})
+			_, err = csClient.SetScripts(ctx, &metadatapb.SetScriptsRequest{Scripts: cloudScripts})
 			if err != nil {
-				log.WithError(err).Error("Failed to delete initialScripts from store")
+				log.WithError(err).Error("Failed to save initialScripts in store")
 				return nil, err
 			}
 			initialScripts = cloudScripts

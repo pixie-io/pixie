@@ -33,21 +33,16 @@ import (
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
-type MockSource struct {
-	scriptDelegate func() map[string]*cvmsgspb.CronScript
-	stopDelegate   func()
-	startDelegate  func(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error
+type TestSource struct {
+	stopDelegate  func()
+	startDelegate func(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error)
 }
 
-func (m *MockSource) GetInitialScripts() map[string]*cvmsgspb.CronScript {
-	return m.scriptDelegate()
-}
-
-func (m *MockSource) Stop() {
+func (m *TestSource) Stop() {
 	m.stopDelegate()
 }
 
-func (m *MockSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+func (m *TestSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
 	return m.startDelegate(baseCtx, updatesCh)
 }
 
@@ -73,12 +68,9 @@ func requireReceiveWithin[T any](t *testing.T, messages chan T, timeout time.Dur
 }
 
 func fakeSource(scripts map[string]*cvmsgspb.CronScript, stop func(), err error) Source {
-	return &MockSource{
-		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) error {
-			return err
-		},
-		scriptDelegate: func() map[string]*cvmsgspb.CronScript {
-			return scripts
+	return &TestSource{
+		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
+			return scripts, err
 		},
 		stopDelegate: func() {
 			stop()
@@ -87,24 +79,18 @@ func fakeSource(scripts map[string]*cvmsgspb.CronScript, stop func(), err error)
 }
 
 func dummySource() Source {
-	return &MockSource{
-		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) error {
-			return nil
-		},
-		scriptDelegate: func() map[string]*cvmsgspb.CronScript {
-			return nil
+	return &TestSource{
+		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
+			return nil, nil
 		},
 		stopDelegate: func() {},
 	}
 }
 
 func errorSource(err error) Source {
-	return &MockSource{
-		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) error {
-			return err
-		},
-		scriptDelegate: func() map[string]*cvmsgspb.CronScript {
-			return nil
+	return &TestSource{
+		startDelegate: func(_ context.Context, _ chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
+			return nil, err
 		},
 		stopDelegate: func() {},
 	}

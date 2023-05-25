@@ -35,9 +35,8 @@ import (
 
 // ConfigMapSource pulls cron scripts from config maps.
 type ConfigMapSource struct {
-	scripts map[string]*cvmsgspb.CronScript
-	stop    func()
-	client  clientv1.ConfigMapInterface
+	stop   func()
+	client clientv1.ConfigMapInterface
 }
 
 // NewConfigMapSource constructs a [Source] that extracts cron scripts from config maps with the label "purpose=cron-script".
@@ -50,17 +49,17 @@ func NewConfigMapSource(client clientv1.ConfigMapInterface) *ConfigMapSource {
 }
 
 // Start watches for updates to matching configmaps and sends resulting updates on updatesCh.
-func (source *ConfigMapSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+func (source *ConfigMapSource) Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
 	options := metav1.ListOptions{LabelSelector: "purpose=cron-script"}
 	watcher, err := source.client.Watch(baseCtx, options)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go configMapUpdater(watcher, updatesCh)
 	configmaps, err := source.client.List(baseCtx, options)
 	if err != nil {
 		watcher.Stop()
-		return err
+		return nil, err
 	}
 	scripts := map[string]*cvmsgspb.CronScript{}
 	for _, configmap := range configmaps.Items {
@@ -71,14 +70,8 @@ func (source *ConfigMapSource) Start(baseCtx context.Context, updatesCh chan<- *
 		}
 		scripts[id] = cronScript
 	}
-	source.scripts = scripts
 	source.stop = watcher.Stop
-	return nil
-}
-
-// GetInitialScripts returns the initial set of scripts that all updates will be based on.
-func (source *ConfigMapSource) GetInitialScripts() map[string]*cvmsgspb.CronScript {
-	return source.scripts
+	return scripts, nil
 }
 
 // Stop stops further updates from being sent.

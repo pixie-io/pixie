@@ -26,12 +26,8 @@ import (
 
 // A Source provides an initial set of cron scripts and sends incremental updates to that set.
 type Source interface {
-	// Start sends updates on updatesCh. It does not block.
-	Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error
-
-	// GetInitialScripts returns the initial set of scripts that all updates will be based on.
-	// This method must not be called before Start.
-	GetInitialScripts() map[string]*cvmsgspb.CronScript
+	// Start sends updates on updatesCh and returns the initial set of scripts which the updates are based on. It does not block.
+	Start(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error)
 
 	// Stop sending updates on the updatesCh provided in Start.
 	// This method must not be called before Start.

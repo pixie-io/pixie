@@ -227,38 +227,6 @@ func TestScriptRunner_ScriptUpdates(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:     "discards out of order updates",
-			queryStr: "second updated script",
-			updates: []*cvmsgspb.CronScriptUpdate{
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
-								Script:     "second updated script",
-								Configs:    "otelEndpointConfig: {url: example.com}",
-								FrequencyS: 1,
-							},
-						},
-					},
-					Timestamp: 2,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
-								Script:     "first updated script",
-								Configs:    "otelEndpointConfig: {url: example.com}",
-								FrequencyS: 1,
-							},
-						},
-					},
-					Timestamp: 1,
-				},
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -287,16 +255,13 @@ func TestScriptRunner_ScriptUpdates(t *testing.T) {
 				Times(1)
 
 			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
-			source := &MockSource{
-				scriptDelegate: func() map[string]*cvmsgspb.CronScript {
-					return map[string]*cvmsgspb.CronScript{}
-				},
+			source := &TestSource{
 				stopDelegate: func() {},
-				startDelegate: func(_ context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+				startDelegate: func(_ context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
 					for _, update := range test.updates {
 						updatesCh <- update
 					}
-					return nil
+					return map[string]*cvmsgspb.CronScript{}, nil
 				},
 			}
 			sr := New(fcs, mvs, "test", source)
@@ -353,32 +318,6 @@ func TestScriptRunner_ScriptDeletes(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "discards updates after deletes",
-			updates: []*cvmsgspb.CronScriptUpdate{
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
-						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
-							ScriptID: utils.ProtoFromUUIDStrOrNil(scriptID),
-						},
-					},
-					Timestamp: 2,
-				},
-				{
-					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
-						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
-							Script: &cvmsgspb.CronScript{
-								ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
-								Script:     "updated script",
-								Configs:    "otelEndpointConfig: {url: example.com}",
-								FrequencyS: 1,
-							},
-						},
-					},
-					Timestamp: 1,
-				},
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -396,15 +335,11 @@ func TestScriptRunner_ScriptDeletes(t *testing.T) {
 
 			fcs := &fakeCronStore{scripts: map[uuid.UUID]*cvmsgspb.CronScript{}}
 
-			source := &MockSource{
-				startDelegate: func(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) error {
+			source := &TestSource{
+				startDelegate: func(baseCtx context.Context, updatesCh chan<- *cvmsgspb.CronScriptUpdate) (map[string]*cvmsgspb.CronScript, error) {
 					for _, update := range test.updates {
 						updatesCh <- update
 					}
-					return nil
-				},
-				stopDelegate: func() {},
-				scriptDelegate: func() map[string]*cvmsgspb.CronScript {
 					return map[string]*cvmsgspb.CronScript{
 						scriptID: {
 							ID:         utils.ProtoFromUUIDStrOrNil(scriptID),
@@ -412,8 +347,9 @@ func TestScriptRunner_ScriptDeletes(t *testing.T) {
 							Configs:    "otelEndpointConfig: {url: example.com}",
 							FrequencyS: 1,
 						},
-					}
+					}, nil
 				},
+				stopDelegate: func() {},
 			}
 			sr := New(fcs, mvs, "test", source)
 			defer sr.Stop()

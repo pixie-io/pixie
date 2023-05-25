@@ -167,9 +167,16 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 			}()
 
 			source := NewCloudSource(nc, fcs, "test")
-			err := source.Start(context.Background(), nil)
+			initialScripts, err := source.Start(context.Background(), nil)
 			require.NoError(t, err)
 			defer source.Stop()
+
+			require.Equal(t, test.cloudScripts, initialScripts)
+			storedScripts := map[string]*cvmsgspb.CronScript{}
+			for id, script := range fcs.scripts {
+				storedScripts[id.String()] = script
+			}
+			require.Equal(t, test.cloudScripts, storedScripts)
 
 			select {
 			case <-gotCronScripts:
@@ -219,7 +226,7 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 
 		updatesCh := mockUpdatesCh()
 		source := NewCloudSource(nc, scs, "test")
-		err := source.Start(context.Background(), updatesCh)
+		_, err := source.Start(context.Background(), updatesCh)
 		require.Error(t, err)
 
 		sendUpdates(t, nc, sentUpdates)
@@ -301,7 +308,7 @@ func TestCloudScriptsSource_InitialState(t *testing.T) {
 
 		updatesCh := mockUpdatesCh()
 		source := NewCloudSource(nc, scs, "test")
-		err := source.Start(context.Background(), updatesCh)
+		_, err := source.Start(context.Background(), updatesCh)
 		require.Error(t, err)
 
 		sendUpdates(t, nc, sentUpdates)
@@ -452,7 +459,7 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 
 			updatesCh := mockUpdatesCh()
 			source := NewCloudSource(nc, fcs, "test")
-			err := source.Start(context.Background(), updatesCh)
+			_, err := source.Start(context.Background(), updatesCh)
 			require.NoError(t, err)
 			defer source.Stop()
 
@@ -534,7 +541,7 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 
 		updatesCh := mockUpdatesCh()
 		source := NewCloudSource(nc, fcs, "test")
-		err := source.Start(context.Background(), updatesCh)
+		_, err := source.Start(context.Background(), updatesCh)
 		require.NoError(t, err)
 		source.Stop()
 
@@ -545,6 +552,213 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 			requireNoReceive(t, getCronScriptResponse, time.Millisecond)
 		}
 	})
+}
+
+func TestCloudScriptsSource_UpdateOrdering(t *testing.T) {
+	tests := []struct {
+		name            string
+		expectedUpdates int
+		scripts         map[string]*cvmsgspb.CronScript
+		updates         []*cvmsgspb.CronScriptUpdate
+	}{
+		{
+			name:            "old upsert after delete",
+			expectedUpdates: 1,
+			scripts: map[string]*cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Script:     "test script 1",
+					Configs:    "config1",
+					FrequencyS: 123,
+				},
+			},
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+								Script:     "test script 2",
+								Configs:    "config2",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "1",
+					Timestamp: 1,
+				},
+			},
+		},
+		{
+			name:            "old upsert after upsert",
+			expectedUpdates: 1,
+			scripts: map[string]*cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Script:     "test script 1",
+					Configs:    "config1",
+					FrequencyS: 123,
+				},
+			},
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+								Script:     "test script 3",
+								Configs:    "config3",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "3",
+					Timestamp: 3,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+								Script:     "test script 2",
+								Configs:    "config2",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
+				},
+			},
+		},
+		{
+			name:            "old delete after upsert",
+			expectedUpdates: 1,
+			scripts: map[string]*cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Script:     "test script 1",
+					Configs:    "config1",
+					FrequencyS: 123,
+				},
+			},
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_UpsertReq{
+						UpsertReq: &cvmsgspb.RegisterOrUpdateCronScriptRequest{
+							Script: &cvmsgspb.CronScript{
+								ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+								Script:     "test script 2",
+								Configs:    "config2",
+								FrequencyS: 123,
+							},
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						},
+					},
+					RequestID: "1",
+					Timestamp: 1,
+				},
+			},
+		},
+		{
+			name:            "old delete after delete",
+			expectedUpdates: 1,
+			scripts: map[string]*cvmsgspb.CronScript{
+				"223e4567-e89b-12d3-a456-426655440001": {
+					ID:         utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+					Script:     "test script 1",
+					Configs:    "config1",
+					FrequencyS: 123,
+				},
+			},
+			updates: []*cvmsgspb.CronScriptUpdate{
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						},
+					},
+					RequestID: "2",
+					Timestamp: 2,
+				},
+				{
+					Msg: &cvmsgspb.CronScriptUpdate_DeleteReq{
+						DeleteReq: &cvmsgspb.DeleteCronScriptRequest{
+							ScriptID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						},
+					},
+					RequestID: "1",
+					Timestamp: 1,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			nc, natsCleanup := testingutils.MustStartTestNATS(t)
+			defer natsCleanup()
+			persistedScripts := map[uuid.UUID]*cvmsgspb.CronScript{}
+			for id, script := range test.scripts {
+				persistedScripts[uuid.Must(uuid.FromString(id))] = script
+			}
+			fcs := &fakeCronStore{scripts: persistedScripts}
+
+			checksumSub, gotChecksumReq := setupChecksumSubscription(t, nc, test.scripts)
+			defer func() {
+				require.NoError(t, checksumSub.Unsubscribe())
+			}()
+
+			cronScriptResSubs, _ := setupCronScriptResponses(t, nc, test.updates)
+			defer func() {
+				for _, sub := range cronScriptResSubs {
+					require.NoError(t, sub.Unsubscribe())
+				}
+			}()
+
+			updatesCh := mockUpdatesCh()
+			source := NewCloudSource(nc, fcs, "test")
+			_, err := source.Start(context.Background(), updatesCh)
+			require.NoError(t, err)
+			defer source.Stop()
+
+			<-gotChecksumReq
+			sendUpdates(t, nc, test.updates)
+
+			actualUpdates := countAllMessages(updatesCh)
+
+			require.Equalf(t, test.expectedUpdates, actualUpdates, "expected %d updates, but got %d", test.expectedUpdates, actualUpdates)
+		})
+	}
+}
+
+func countAllMessages(updatesCh chan *cvmsgspb.CronScriptUpdate) int {
+	actualUpdates := 0
+	for {
+		select {
+		case <-updatesCh:
+			actualUpdates++
+		case <-time.After(time.Millisecond):
+			return actualUpdates
+		}
+	}
 }
 
 func sendUpdates(t *testing.T, nc *nats.Conn, updates []*cvmsgspb.CronScriptUpdate) {
