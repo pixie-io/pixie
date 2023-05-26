@@ -48,9 +48,9 @@ default['kubectl']['sha256'] =
   'b6769d8ac6a0ed0f13b307d289dc092ad86180b08f5b5044af152808c04950ae'
 
 default['kustomize']['download_path'] =
-  'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64'
+  'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_linux_amd64.tar.gz'
 default['kustomize']['sha256'] =
-  '7db89e32575d81393d5d84f0dc6cbe444457e61ce71af06c6e6b7b6718299c22'
+  'c627b1575c3fecbc7ad1c181c23a7adcacf19732dab627eb57e89a7bc4c1e929'
 
 default['lego']['download_path'] =
   'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_linux_amd64.tar.gz'
