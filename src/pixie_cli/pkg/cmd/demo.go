@@ -393,7 +393,31 @@ func deleteDemoApp(appName string) error {
 			kubeConfig := k8s.GetConfig()
 			clientset := k8s.GetClientset(kubeConfig)
 
-			err := clientset.CoreV1().Namespaces().Delete(context.Background(), appName, metav1.DeleteOptions{})
+			// Resources labeled as "pixie-demo-initial-cleanup" should be cleaned up first.
+			od := k8s.ObjectDeleter{
+				Clientset:  clientset,
+				RestConfig: kubeConfig,
+				Timeout:    2 * time.Minute,
+			}
+
+			_, err := od.DeleteByLabel(fmt.Sprintf("pixie-demo-initial-cleanup=true,pixie-demo=%s", appName))
+			if err != nil {
+				return err
+			}
+
+			// Delete the remaining resources before namespace deletion.
+			od = k8s.ObjectDeleter{
+				Clientset:  clientset,
+				RestConfig: kubeConfig,
+				Timeout:    2 * time.Minute,
+			}
+
+			_, err = od.DeleteByLabel(fmt.Sprintf("pixie-demo=%s", appName))
+			if err != nil {
+				return err
+			}
+
+			err = clientset.CoreV1().Namespaces().Delete(context.Background(), appName, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
