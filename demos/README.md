@@ -70,9 +70,15 @@ file describes the demo scenarios.
     # Your kustomize version must be v4.5.7 or newer for these configs
 
     k8ssandra-operator-root-dir $ cd config/crd
+    # Edit config/crd/kustomization.yaml to append the following:
+    # commonLabels:
+    #   pixie-demo: px-k8ssandra
     kustomize build . > crd.yaml
 
     k8ssandra-operator-root-dir $ cd config/deployments/control-plane/cluster-scope
+    # Edit config/deployments/control-plane/cluster-scope/kustomization.yaml to append the following:
+    # commonLabels:
+    #   pixie-demo: px-k8ssandra
     kustomize build . > k8ssandra-control-plane.yaml
     ```
 
