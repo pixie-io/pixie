@@ -50,6 +50,7 @@ import ExecuteScriptButton from 'app/containers/live/execute-button';
 import { ScriptLoader } from 'app/containers/live/script-loader';
 import ShareButton from 'app/containers/live/share-button';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
+import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import { SetStateFunc } from 'app/context/common';
 import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
 import { EditorContext, EditorContextProvider } from 'app/context/editor-context';
