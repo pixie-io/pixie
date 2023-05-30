@@ -18,20 +18,20 @@
 
 import * as React from 'react';
 
-import { SideBar } from 'app/containers/App/sidebar';
+import { LinkItemProps, SideBar } from 'app/containers/App/sidebar';
 import { TopBar } from 'app/containers/App/topbar';
 import { WithChildren } from 'app/utils/react-boilerplate';
 
-const NavBars = React.memo<WithChildren>(({ children }) => {
+const NavBars = React.memo<WithChildren<{ sidebarButtons?: LinkItemProps[] }>>(({ children, sidebarButtons }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
   const toggleSidebar = React.useCallback(() => setSidebarOpen((open) => !open), [setSidebarOpen]);
 
   return (
     <>
-      <TopBar toggleSidebar={toggleSidebar} setSidebarOpen={setSidebarOpen}>
+      <TopBar toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}>
         {children}
       </TopBar>
-      <SideBar open={sidebarOpen} />
+      <SideBar open={sidebarOpen} buttons={sidebarButtons} />
     </>
   );
 });

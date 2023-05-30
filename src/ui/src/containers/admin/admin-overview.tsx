@@ -29,35 +29,34 @@ import {
 } from 'react-router-dom';
 
 import { scrollbarStyles } from 'app/components';
-import { APIKeysTable } from 'app/containers/admin/api-keys';
 import { ClustersTable } from 'app/containers/admin/clusters-list';
-import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
 import { InviteUserButton } from 'app/containers/admin/invite-user-button';
 import { OrgSettings } from 'app/containers/admin/org-settings';
 import { UsersTable } from 'app/containers/admin/org-users';
 import { PluginsOverview } from 'app/containers/admin/plugins/plugins-overview';
 import { UserSettings } from 'app/containers/admin/user-settings';
-import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
 import { GetOAuthProvider } from 'app/pages/auth/utils';
 import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 
+import { KeysOverview } from './keys-overview';
+
 const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {
-    margin: `${theme.spacing(0.75)} ${theme.spacing(3)}`,
+    margin: `${theme.spacing(1)} ${theme.spacing(4)}`,
     padding: `${theme.spacing(0.375)} ${theme.spacing(1.875)}`, // 3px 15px
+    backgroundColor: theme.palette.background.default,
   },
   tabRoot: {
     height: '100%',
     overflowY: 'auto',
     ...scrollbarStyles(theme),
   },
-  tabBar: {
-    position: 'sticky',
-    top: 0,
+  tabExtras: {
+    position: 'fixed',
+    right: 0,
     display: 'flex',
-    zIndex: 1, // Without this, inputs and icons in the table layer on top and break the illusion.
-    paddingBottom: theme.spacing(1), // Aligns the visual size of the tab bar with the margin above it.
-    backgroundColor: theme.palette.background.paper,
+    zIndex: 2, // Without this, inputs and icons in the table layer on top and break the illusion. Same for the tab bar.
+    justifyContent: 'right',
   },
   tabContents: {
     margin: theme.spacing(1),
@@ -111,14 +110,13 @@ export const AdminOverview = React.memo(() => {
   const tabList: Array<{
     slug: string, label: string, component: React.ComponentType, enabled: boolean,
   }> = React.useMemo(() => [
-    { slug: 'clusters',        label: 'Clusters',        component: ClustersTable,       enabled: true },
-    { slug: 'deployment-keys', label: 'Deployment Keys', component: DeploymentKeysTable, enabled: true },
-    { slug: 'api-keys',        label: 'API Keys',        component: APIKeysTable,        enabled: true },
-    { slug: 'plugins',         label: 'Plugins',         component: PluginsOverview,     enabled: true },
-    { slug: 'users',           label: 'Users',           component: UsersTable,          enabled: true },
-    { slug: 'org',             label: 'Org Settings',    component: OrgSettings,         enabled: true },
-    { slug: 'user',            label: 'User Settings',   component: UserSettings,        enabled: true },
-    { slug: 'invite',          label: 'Invitations',     component: InvitationTab,       enabled: showInvitationsTab },
+    { slug: 'clusters', label: 'Clusters',      component: ClustersTable,   enabled: true },
+    { slug: 'keys',     label: 'Keys',          component: KeysOverview,    enabled: true },
+    { slug: 'plugins',  label: 'Plugins',       component: PluginsOverview, enabled: true },
+    { slug: 'users',    label: 'Users',         component: UsersTable,      enabled: true },
+    { slug: 'org',      label: 'Org Settings',  component: OrgSettings,     enabled: true },
+    { slug: 'user',     label: 'User Settings', component: UserSettings,    enabled: true },
+    { slug: 'invite',   label: 'Invitations',   component: InvitationTab,   enabled: showInvitationsTab },
   ], [InvitationTab, showInvitationsTab]);
 
   // Example: extracts 'tabName' from '/admin/tabName/foo/bar' when 'path' is '/admin' or '/admin/'
@@ -126,6 +124,7 @@ export const AdminOverview = React.memo(() => {
     const fromPath = location.pathname.slice(path.length).split('/').filter((s: string) => s)[0].trim().toLowerCase();
     return tabList.find(t => t.enabled && t.slug === fromPath)?.slug ?? '';
   }, [tabList, location.pathname, path]);
+  const subTab = location.pathname.split('/').slice(-1)[0];
 
   const [tab, setTab] = React.useState<string>(pathTab || 'clusters');
 
@@ -143,14 +142,8 @@ export const AdminOverview = React.memo(() => {
 
   return (
     <div className={classes.tabRoot}>
-      <div className={classes.tabBar}>
-        {/* eslint-disable-next-line react-memo/require-usememo */}
-        <StyledTabs value={tab} onChange={(_, newTab) => navTab(newTab)}>
-          {tabList.filter(t => t.enabled).map(({ slug, label }) => (
-            <StyledTab key={slug} value={slug} label={label} />
-          ))}
-        </StyledTabs>
-        {tab.endsWith('deployment-keys') && (
+      <div className={classes.tabExtras}>
+        {tab === 'keys' && subTab === 'deployment' && (
           <Button
             // eslint-disable-next-line react-memo/require-usememo
             onClick={() => createDeploymentKey({
@@ -184,7 +177,7 @@ export const AdminOverview = React.memo(() => {
             New key
           </Button>
         )}
-        {tab.endsWith('api-keys') && (
+        {tab === 'keys' && subTab === 'api' && (
           <Button
             // eslint-disable-next-line react-memo/require-usememo
             onClick={() => createAPIKey({
