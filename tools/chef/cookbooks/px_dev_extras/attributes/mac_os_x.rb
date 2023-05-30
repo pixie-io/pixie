@@ -49,9 +49,9 @@ default['kubectl']['sha256'] =
   'be9dc0782a7b257d9cfd66b76f91081e80f57742f61e12cd29068b213ee48abc'
 
 default['kustomize']['download_path'] =
-  'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_darwin_amd64'
+  'https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.0.3/kustomize_v5.0.3_darwin_amd64.tar.gz'
 default['kustomize']['sha256'] =
-  'c7991a79470a52a95f1fac33f588b76f64e597ac64b54106e452f3a8f642c62e'
+  'a3300ccc81ed8e7df415f3537b49e70d89f985a28c9ade8a885ebf6f1689b4e0'
 
 default['lego']['download_path'] =
   'https://github.com/go-acme/lego/releases/download/v4.5.3/lego_v4.5.3_darwin_amd64.tar.gz'
