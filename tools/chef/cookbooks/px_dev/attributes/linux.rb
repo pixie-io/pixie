@@ -43,9 +43,9 @@ default['golangci-lint']['sha256'] =
   '17aeb26c76820c22efa0e1838b0ab93e90cfedef43fbfc9a2f33f27eb9e5e070'
 
 default['nodejs']['download_path'] =
-  'https://nodejs.org/dist/v16.13.2/node-v16.13.2-linux-x64.tar.xz'
+  'https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar.xz'
 default['nodejs']['sha256'] =
-  '7f5e9a42d6e86147867d35643c7b1680c27ccd45db85666fc52798ead5e74421'
+  '44d93d9b4627fe5ae343012d855491d62c7381b236c347f7666a7ad070f26548'
 
 default['prototool']['download_path'] =
   'https://github.com/uber/prototool/releases/download/v1.10.0/prototool-Linux-x86_64'
