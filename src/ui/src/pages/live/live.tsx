@@ -44,6 +44,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-conte
 import { LinkItemProps } from 'app/containers/App/sidebar';
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'app/containers/editor/editor';
+import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import { LiveViewBreadcrumbs } from 'app/containers/live/breadcrumbs';
 import Canvas from 'app/containers/live/canvas';
 import ClusterSelector from 'app/containers/live/cluster-selector';
