@@ -103,8 +103,8 @@ TEST_F(CQLParserTest, BadOpcode) {
 }
 
 TEST_F(CQLParserTest, LengthTooLarge) {
-  // Length is 0x01000000
-  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0x01,
+  // Length is 0x020000000
+  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0x07, 0x20,
                                          0x00, 0x00, 0x00, 0x00, 0x00};
 
   std::string_view frame_view =
@@ -119,7 +119,7 @@ TEST_F(CQLParserTest, LengthTooLarge) {
 
 TEST_F(CQLParserTest, LengthNegative) {
   // Length is 0xf0000000
-  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0xff, 0xf0,
+  constexpr uint8_t kBadLengthFrame[] = {0x04, 0x00, 0x00, 0x06, 0x07, 0xf0,
                                          0x00, 0x00, 0x00, 0x00, 0x00};
 
   std::string_view frame_view =
@@ -134,7 +134,7 @@ TEST_F(CQLParserTest, LengthNegative) {
 
 TEST_F(CQLParserTest, VersionTooOld) {
   // Version is set to 2.
-  constexpr uint8_t kBadLengthFrame[] = {0x02, 0x00, 0x00, 0x06, 0xff, 0x00,
+  constexpr uint8_t kBadLengthFrame[] = {0x02, 0x00, 0x00, 0x06, 0x07, 0x00,
                                          0x00, 0x00, 0x02, 0x00, 0x00};
 
   std::string_view frame_view =
@@ -149,7 +149,7 @@ TEST_F(CQLParserTest, VersionTooOld) {
 
 TEST_F(CQLParserTest, VersionTooNew) {
   // Version is set to 5.
-  constexpr uint8_t kBadLengthFrame[] = {0x05, 0x00, 0x00, 0x06, 0xff, 0x00,
+  constexpr uint8_t kBadLengthFrame[] = {0x05, 0x00, 0x00, 0x06, 0x07, 0x00,
                                          0x00, 0x00, 0x02, 0x00, 0x00};
 
   std::string_view frame_view =
