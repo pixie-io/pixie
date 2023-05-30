@@ -35,7 +35,6 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 
 build_type="--//k8s:build_type=public"
 bucket="pixie-dev-public"
-extra_bazel_args=()
 if [[ $release_tag == *"-"* ]]; then
   build_type="--//k8s:build_type=dev"
   # Use the same bucket as above for RCs
@@ -44,10 +43,10 @@ fi
 output_path="gs://${bucket}/vizier/${release_tag}"
 latest_output_path="gs://${bucket}/vizier/latest"
 
-push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${build_type}" "${extra_bazel_args[@]}"
+push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${build_type}"
 
 bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" \
-    --config=stamp "${build_type}" //k8s/vizier:vizier_yamls "${extra_bazel_args[@]}"
+    --config=stamp "${build_type}" //k8s/vizier:vizier_yamls
 
 output_path="gs://${bucket}/vizier/${release_tag}"
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
