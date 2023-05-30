@@ -26,7 +26,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/segmentio/analytics-go/v3"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -35,7 +34,6 @@ import (
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/shared/services/authcontext"
-	"px.dev/pixie/src/shared/services/events"
 	"px.dev/pixie/src/shared/services/httpmiddleware"
 	"px.dev/pixie/src/shared/services/utils"
 )
@@ -165,18 +163,6 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 			if err := aCtx.UseJWTAuth(env.JWTSigningKey(), apiKeyResp.Token, viper.GetString("domain_name")); err != nil {
 				return "", ErrGetAuthTokenFailed
 			}
-
-			url := ""
-			if r.URL != nil {
-				url = r.URL.String()
-			}
-			events.Client().Enqueue(&analytics.Track{
-				UserId: aCtx.Claims.GetUserClaims().UserID,
-				Event:  events.APIRequest,
-				Properties: analytics.NewProperties().
-					Set("url", url).
-					Set("api-client", r.Header.Get("pixie-api-client")),
-			})
 
 			return apiKeyResp.Token, nil
 		}
