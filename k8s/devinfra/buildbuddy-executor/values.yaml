@@ -1,0 +1,65 @@
+---
+replicas: 48
+resources: null
+config:
+  executor:
+    app_target: "grpcs://remote.buildbuddy.io:443"
+    api_key: $BB_EXECUTOR_API_KEY
+    docker_socket: ""
+    enable_bare_runner: true
+    local_cache_size_bytes: 375000000000  # 375GB
+    millicpu: 4000
+    memory_bytes: 24000000000
+
+extraInitContainers:
+- name: download-executor
+  # yamllint disable-line rule:line-length
+  image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
+  # yamllint disable rule:indentation rule:line-length
+  command: ['sh', '-c', 'set -e;
+    curl -fsSL https://github.com/buildbuddy-io/buildbuddy/releases/download/v2.12.42/executor-enterprise-linux-amd64 > /bb-executor/executor;
+    chmod +x /bb-executor/executor']
+  # yamllint enable rule:indentation rule:line-length
+  volumeMounts:
+  - name: bb-executor
+    mountPath: /bb-executor
+
+image:
+  repository: gcr.io/pixie-oss/pixie-dev-public/dev_image
+  tag: '$IMAGE_TAG'
+
+customExecutorCommand: ['/bb-executor/executor', '--server_type=buildbuddy-executor']
+
+poolName: '"$IMAGE_TAG"'
+
+extraVolumeMounts:
+- name: bb-executor
+  mountPath: /bb-executor
+- name: var-run
+  mountPath: /var/run
+extraVolumes:
+- name: bb-executor
+  emptyDir: {}
+- name: var-run
+  emptyDir: {}
+
+containerSecurityContext:
+  privileged: true
+
+extraContainers:
+- name: dind
+  image: docker:dind
+  securityContext:
+    privileged: true
+  volumeMounts:
+  - name: var-run
+    mountPath: /var/run
+  lifecycle:
+    postStart:
+      exec:
+        # Waiting for the docker daemon to start in this postStart hook
+        # causes the main executor container to not start until the docker daemon is ready.
+        command:
+        - /bin/sh
+        - -c
+        - 'while ! docker ps; do sleep 1; done;'
