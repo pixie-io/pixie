@@ -97,6 +97,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '& > span': {
       ...theme.typography.body1,
       fontFamily: theme.typography.monospace.fontFamily,
+      '&$highlight': { fontWeight: 600 },
     },
     '&.active': {
       color: theme.palette.text.primary,
