@@ -17,6 +17,7 @@
 execute 'install go linters' do
   command %(go install golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 && \
             go install golang.org/x/tools/cmd/goimports@v0.1.2 && \
+            go clean -modcache && \
             go clean -cache)
 end
 
