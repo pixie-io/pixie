@@ -314,12 +314,9 @@ pl_cc_bpf_test(
     flaky = True,
     shard_count = 3,
     tags = [
-        "requires_bpf",
         "cpu:16",
-        # This test runs Go gRPC client & server, which causes other tests to attach & detach
-        # uprobes and slowed down significantly.
-        "exclusive",
         "no_asan",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",
@@ -338,12 +335,9 @@ pl_cc_bpf_test(
     srcs = ["http2_trace_bpf_test.cc"],
     flaky = True,
     tags = [
-        "requires_bpf",
         "cpu:16",
-        # This test runs Go gRPC client & server, which causes other tests to attach & detach
-        # uprobes, slowing them down significantly.
-        "exclusive",
         "no_asan",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",
@@ -495,7 +489,6 @@ pl_cc_bpf_test(
     flaky = True,
     tags = [
         "cpu:16",
-        "exclusive",
         "no_asan",
         "requires_bpf",
     ],

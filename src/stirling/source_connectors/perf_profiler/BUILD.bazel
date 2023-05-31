@@ -58,7 +58,6 @@ pl_cc_bpf_test(
     shard_count = 3,
     tags = [
         "cpu:16",
-        "exclusive",
         "no_qemu",
         "requires_bpf",
     ],
