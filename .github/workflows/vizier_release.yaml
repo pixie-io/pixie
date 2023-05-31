@@ -37,6 +37,8 @@ jobs:
         REF: ${{ github.event.ref }}
         BUILD_NUMBER: ${{ github.run_attempt }}
         JOB_NAME: ${{ github.job }}
+        COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+        COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
