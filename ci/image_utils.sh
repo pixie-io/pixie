@@ -16,6 +16,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+sign_image() {
+  multiarch_image="$1"
+  image_digest="$2"
+
+  cosign sign --key env://COSIGN_PRIVATE_KEY --yes -r "${multiarch_image}@${image_digest}"
+}
+
 push_images_for_arch() {
   arch="$1"
   image_rule="$2"
@@ -38,7 +45,9 @@ push_multiarch_image() {
   # instead it seems to just ignore images that already exist in the local manifest.
   docker manifest rm "${multiarch_image}" || true
   docker manifest create "${multiarch_image}" "${x86_image}" "${aarch64_image}"
-  docker manifest push "${multiarch_image}"
+  pushed_digest=$(docker manifest push "${multiarch_image}")
+
+  sign_image "${multiarch_image}" "${pushed_digest}"
 }
 
 push_all_multiarch_images() {
