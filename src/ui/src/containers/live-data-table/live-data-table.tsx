@@ -57,7 +57,7 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
 
 export type CompleteColumnDef =
   ReactTableColumn<Record<string, any>>
-  & { Cell: ({ value: any }) => (JSX.Element | null) };
+  & { Cell: ({ value }: { value: any }) => (JSX.Element | null) };
 
 /** Transforms a table coming from a script into something react-table understands. */
 function useConvertedTable(

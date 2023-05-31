@@ -21,6 +21,7 @@ export function debounce<P extends any[] = any[]>(func: (...args: P) => void, wa
   let context;
   let lastArgs;
   return function call(...args: P): void {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     context = this;
     lastArgs = args;
     const onTimeout = () => {

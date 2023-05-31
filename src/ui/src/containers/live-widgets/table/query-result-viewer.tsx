@@ -23,8 +23,8 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 import { ROW_RETENTION_LIMIT, VizierTable } from 'app/api';
-import { CompleteColumnDef, LiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import { WidgetDisplay } from 'app/containers/live/vis';
+import { CompleteColumnDef, LiveDataTable } from 'app/containers/live-data-table/live-data-table';
 import { ResultsContext, useLatestRowCount } from 'app/context/results-context';
 import { Arguments } from 'app/utils/args-utils';
 

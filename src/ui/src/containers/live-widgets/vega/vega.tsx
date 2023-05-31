@@ -59,8 +59,8 @@ import {
 import { formatFloat64Data } from 'app/utils/format-data';
 import noop from 'app/utils/noop';
 
-import { TimeSeriesContext } from '../context/time-series-context';
 import { FlamegraphIDEMenu } from './flamegraph-ide';
+import { TimeSeriesContext } from '../context/time-series-context';
 
 const NUMERAL_FORMAT_STRING = '0.00';
 

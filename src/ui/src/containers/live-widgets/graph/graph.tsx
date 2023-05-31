@@ -36,8 +36,6 @@ import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
 import { GaugeLevel, getColor, getLatencyNSLevel } from 'app/utils/metric-thresholds';
 
-import { formatByDataType, formatBySemType } from '../../format-data/format-data';
-import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
 import { GraphBase } from './graph-base';
 import {
   ColInfo,
@@ -45,6 +43,8 @@ import {
   getGraphOptions,
   semTypeToShapeConfig,
 } from './graph-utils';
+import { formatByDataType, formatBySemType } from '../../format-data/format-data';
+import { deepLinkURLFromSemanticType } from '../utils/live-view-params';
 
 interface AdjacencyList {
   toColumn: string;
