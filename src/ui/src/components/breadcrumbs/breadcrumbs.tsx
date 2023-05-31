@@ -496,7 +496,7 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = React.memo(({ breadcrumbs
     AutocompleteContext,
   );
   return (
-    <Paper className={classes.triggerWrapper}>
+    <Paper className={classes.triggerWrapper} elevation={0}>
       <div className={classes.breadcrumbs}>
         {breadcrumbs.map((breadcrumb, i) => (
           // Key is needed to prevent a console error when a key is missing in a list element.
