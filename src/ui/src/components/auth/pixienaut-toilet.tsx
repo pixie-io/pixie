@@ -20,7 +20,7 @@ import React from 'react';
 
 // eslint-disable-next-line react-memo/require-memo,react/display-name
 export const PixienautToiletSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  /* eslint-disable max-len */
+  /* eslint-disable max-len,react/no-unknown-property */
   <svg {...props} width='882' height='1045' viewBox='0 0 882 1045' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
       d='M184.025 691.843L275.173 695.709C294.849 696.544 304.686 696.961 312.753 700.741C319.769 704.028 325.802 709.094 330.256 715.434C335.376 722.724 337.491 732.34 341.721 751.574L341.721 751.574C348.015 780.193 351.163 794.503 345.206 807.858C340.886 817.545 328.496 828.707 318.412 831.996C304.51 836.531 294.116 833.079 273.33 826.174C222.881 809.417 184.025 771.539 184.025 691.843Z'

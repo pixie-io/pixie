@@ -25,8 +25,8 @@ import { vegaLite, VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
 
 import { getFormatFnMetadata, DataWithUnits } from 'app/containers/format-data/format-data';
-import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
 import { DISPLAY_TYPE_KEY, WidgetDisplay } from 'app/containers/live/vis';
+import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 import { BarDisplay, convertToBarChart } from './bar';

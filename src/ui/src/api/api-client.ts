@@ -25,7 +25,6 @@ import { switchMap } from 'rxjs/operators';
 import { Status } from 'app/types/generated/vizierapi_pb';
 import { containsMutation } from 'app/utils/pxl';
 
-import { GetCSRFCookie } from '../pages/auth/utils';
 import { PixieAPIClientOptions } from './api-options';
 import { CloudClient } from './cloud-gql-client';
 import { VizierQueryError } from './vizier';
@@ -35,6 +34,7 @@ import {
   VizierQueryFunc,
   ExecuteScriptOptions,
 } from './vizier-grpc-client';
+import { GetCSRFCookie } from '../pages/auth/utils';
 
 /**
  * When calling `PixieAPIClient.create`, this specifies which clusters to connect to, and any special configuration for

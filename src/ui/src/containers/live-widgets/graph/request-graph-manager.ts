@@ -19,8 +19,8 @@
 import { data as visData } from 'vis-network/standalone';
 
 import { dataWithUnitsToString, formatBySemType } from 'app/containers/format-data/format-data';
-import { deepLinkURLFromSemanticType, EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { WidgetDisplay } from 'app/containers/live/vis';
+import { deepLinkURLFromSemanticType, EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import { Arguments } from 'app/utils/args-utils';
 import { formatFloat64Data } from 'app/utils/format-data';

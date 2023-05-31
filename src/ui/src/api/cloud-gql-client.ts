@@ -33,8 +33,8 @@ import fetch from 'cross-fetch';
 
 import { isPixieEmbedded } from 'app/common/embed-context';
 
-import { GetCSRFCookie } from '../pages/auth/utils';
 import { PixieAPIClientOptions } from './api-options';
+import { GetCSRFCookie } from '../pages/auth/utils';
 
 // Apollo link that adds cookies in the request.
 const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({

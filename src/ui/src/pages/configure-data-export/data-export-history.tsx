@@ -26,9 +26,9 @@ import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
 import { Spinner, StatusCell, StatusGroup } from 'app/components';
+import { DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE } from 'app/containers/live/vis';
 import { CompleteColumnDef } from 'app/containers/live-data-table/live-data-table';
 import { QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
-import { DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE } from 'app/containers/live/vis';
 import { SetStateFunc } from 'app/context/common';
 import { ResultsContext } from 'app/context/results-context';
 import { GQLClusterStatus, GQLDetailedRetentionScript, GQLRetentionScript } from 'app/types/schema';

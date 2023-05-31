@@ -37,7 +37,6 @@ import { CancellablePromise, makeCancellable } from 'app/utils/cancellable-promi
 import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { Script } from 'app/utils/script-bundle';
 
-import { CommandPaletteContext } from '../../command-palette-context';
 import {
   CompletionLabel,
   getFieldSuggestions,
@@ -50,10 +49,11 @@ import {
   getScriptArgSuggestions,
   getScriptArgValueSuggestions,
 } from './script-suggestions';
+import { CommandPaletteContext } from '../../command-palette-context';
 
 const DEFAULT: CommandProviderState = Object.freeze({
   input: '',
-  selection: [0, 0],
+  selection: [0, 0] as [start: number, end: number],
   providerName: 'ScriptProvider',
   loading: false,
   completions: [],

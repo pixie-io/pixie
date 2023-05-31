@@ -20,7 +20,7 @@ import React from 'react';
 
 // eslint-disable-next-line react-memo/require-memo,react/display-name
 export const PixienautOctopusSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  /* eslint-disable max-len */
+  /* eslint-disable max-len,react/no-unknown-property */
   <svg {...props} width='3681' height='1684' viewBox='0 0 3681 1684' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
       d='M255.23 1413.48C255.23 1413.48 375.911 1507.73 471.019 1497.44C566.699 1487.09 623.566 1429.79 603.898 1377.1C584.23 1324.4 492.114 1378.5 459.752 1354.9C427.39 1331.27 413.834 1311.11 413.834 1311.11L255.23 1413.48Z'

@@ -35,7 +35,6 @@ import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { Script } from 'app/utils/script-bundle';
 import { highlightNamespacedScoredMatch, highlightScoredMatch } from 'app/utils/string-search';
 
-import { CommandPaletteContext } from '../../command-palette-context';
 import {
   CompletionDescription,
   CompletionLabel,
@@ -48,12 +47,13 @@ import {
   getFullScriptSuggestions,
   getSuggestedArgsFromPossibleEntity,
 } from './script-suggestions';
+import { CommandPaletteContext } from '../../command-palette-context';
 
 type DecoratedCompletion = CommandCompletion & { forScript: string };
 
 const DEFAULT: CommandProviderState = Object.freeze({
   input: '',
-  selection: [0, 0],
+  selection: [0, 0] as [start: number, end: number],
   providerName: 'MissingScriptProvider',
   loading: false,
   completions: [],
