@@ -28,6 +28,9 @@
 namespace px {
 namespace stirling {
 
+using testing::AnyOf;
+using testing::StartsWith;
+
 class FDResolverTest : public ::testing::Test {
  protected:
   void SetUp() { proc_parser_ = std::make_unique<system::ProcParser>(); }
@@ -64,8 +67,8 @@ TEST_F(FDResolverTest, ResolveStdin) {
   // FD link captured during established time window.
   fd_link = resolver.InferFDLink(t);
   EXPECT_TRUE(fd_link.has_value());
-  // Value should be a path.
-  EXPECT_TRUE(absl::StartsWith(*fd_link, "/"));
+  // Value should be a path or a pipe
+  EXPECT_THAT(*fd_link, AnyOf(StartsWith("/"), StartsWith("pipe")));
 
   // Resolver can't conclude anything for outside the time window.
   fd_link = resolver.InferFDLink(std::chrono::steady_clock::now());
