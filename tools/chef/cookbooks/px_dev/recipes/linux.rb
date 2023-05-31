@@ -67,5 +67,3 @@ execute 'enable docker' do
   command 'systemctl enable docker'
   action :run
 end
-
-include_recipe 'px_dev::linux_gcc_musl'

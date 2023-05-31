@@ -22,7 +22,6 @@ HOST_GLIBC_VERSION = "glibc_host"
 def _settings():
     libc_versions = sysroot_libc_versions + [
         HOST_GLIBC_VERSION,
-        "static_musl",
     ]
     string_flag(
         name = "libc_version",

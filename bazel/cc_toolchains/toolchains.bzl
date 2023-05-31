@@ -49,7 +49,6 @@ def _pl_register_cc_toolchains():
 
     native.register_toolchains(
         "//bazel/cc_toolchains:cc-toolchain-gcc-x86_64-gnu",
-        "//bazel/cc_toolchains:cc-toolchain-gcc-x86_64-static-musl",
     )
 
 pl_register_cc_toolchains = _pl_register_cc_toolchains
