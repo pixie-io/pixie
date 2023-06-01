@@ -4,7 +4,9 @@ on:
   push:
     branches:
     - main
+  # Temporarily also run on pull_request.
   pull_request:
+  pull_request_target:
     branches:
     - main
   schedule:
@@ -12,7 +14,23 @@ on:
 permissions:
   contents: read
 jobs:
+  env-protect-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      env-name: ${{ steps.output.outputs.env-name }}
+      ref: ${{ steps.output.outputs.ref }}
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - id: output
+      uses: ./.github/actions/env_protected_pr
+  authorize:
+    runs-on: ubuntu-latest
+    needs: env-protect-setup
+    environment: ${{ needs.env-protect-setup.outputs.env-name }}
+    steps:
+    - run: echo "Authorized"
   get-dev-image:
+    needs: authorize
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
@@ -21,25 +39,26 @@ jobs:
       fail-fast: false
       matrix:
         artifact: [cloud, operator, vizier]
-    runs-on: [self-hosted, nokvm]
-    needs: get-dev-image
+    runs-on: ubuntu-latest
+    needs: [authorize, env-protect-setup, get-dev-image]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-      options: --cpus 15
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
     permissions:
       actions: read
       contents: read
       security-events: write
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
       with:
         download_toplevel: 'true'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Build images
       run: |
         bazel build \
