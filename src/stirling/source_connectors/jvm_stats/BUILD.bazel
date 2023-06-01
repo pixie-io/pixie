@@ -40,7 +40,6 @@ pl_cc_test(
         "//src/stirling/source_connectors/jvm_stats/testing:HelloWorld",
     ],
     tags = [
-        "exclusive",
         "no_coverage",
         # Currently we detect java processes by checking the name of the command run.
         # This fails when run under userspace qemu, because the name of the command run is qemu-aarch64-static.

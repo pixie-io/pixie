@@ -120,12 +120,8 @@ pl_cc_bpf_test(
     name = "uprobe_extra_trigger_bpf_test",
     srcs = ["uprobe_extra_trigger_bpf_test.cc"],
     tags = [
-        # This test must be exclusive, because other tests that deploy the same container images
-        # could cause extra BPF triggers. In fact, this is what the test internally demonstrates
-        # is a problem.
-        "exclusive",
-        "requires_bpf",
         "cpu:16",
+        "requires_bpf",
     ],
     deps = [
         ":cc_library",

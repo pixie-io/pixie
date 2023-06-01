@@ -78,7 +78,6 @@ pl_sh_bpf_test(
     flaky = True,
     tags = [
         "cpu:16",
-        "exclusive",
         "requires_bpf",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
@@ -101,11 +100,8 @@ pl_sh_bpf_test(
     # TODO(PL-1462): Uprobe attaching sometimes fails.
     flaky = True,
     tags = [
-        "requires_bpf",
         "cpu:16",
-        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
-        # which will emit warnings, that will then be considered a test failure.
-        "exclusive",
+        "requires_bpf",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
@@ -123,11 +119,8 @@ pl_sh_bpf_test(
     ],
     flaky = True,
     tags = [
-        "requires_bpf",
         "cpu:16",
-        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
-        # which will emit warnings, that will then be considered a test failure.
-        "exclusive",
+        "requires_bpf",
     ],
     deps = [
         "//src/stirling/scripts:sh_library",
@@ -151,9 +144,6 @@ pl_sh_bpf_test(
     tags = [
         "requires_bpf",
         "cpu:16",
-        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
-        # which will emit warnings, that will then be considered a test failure.
-        "exclusive",
         # TODO(oazizi): This test times out in TSAN. Figure out why.
         # Likely related to the fact that its running though docker.
         "no_tsan",
@@ -174,8 +164,6 @@ pl_sh_bpf_test(
     tags = [
         "requires_bpf",
         "cpu:16",
-        # Run exclusive to get as little noise as possible while measuring performance.
-        "exclusive",
         # Only intention is to run this with opt builds.
         # Can still run it with -c dbg, but on Jenkins, we only run opt version.
         "no_asan",
@@ -203,9 +191,6 @@ pl_sh_bpf_test(
     tags = [
         "requires_bpf",
         "cpu:16",
-        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
-        # which will emit warnings, that will then be considered a test failure.
-        "exclusive",
         # TODO(PP-1742): Test is flaky, especially with ASAN, likely due to timing issues.
         "manual",
         "no_asan",
@@ -242,7 +227,6 @@ pl_sh_bpf_test(
     flaky = True,
     tags = [
         "cpu:16",
-        "exclusive",
         "requires_bpf",
     ],
     deps = ["//src/stirling/scripts:sh_library"],

@@ -97,7 +97,6 @@ pl_cc_test(
         "//src/stirling/source_connectors/perf_profiler/testing/java:profiler_test_with_agent",
     ],
     tags = [
-        "exclusive",
         "no_asan",
     ],
     deps = [
