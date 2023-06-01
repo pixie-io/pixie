@@ -100,15 +100,11 @@ def add_trace_id_link(df, start_time: str):
     any data frames that have empty trace ids have been filtered prior.
     '''
 
-    # Until PxL has support for performing the inverse of px.parse_duration,
-    # compute 2x the original start_time manually. The goal is to avoid allowing
-    # a user to load the script with a specified trace id when the requests involved
-    # have aged out of the original start_time window. If PxL supported specifying
-    # the sort order of the table visualization (descending time), this
-    # wouldn't be a concern.
-    extended_start = 2 * px.parse_duration(start_time)
-    nanos_per_min = 60 * 1000 * 1000 * 1000
-    extended_start_time = px.itoa(px.floor(extended_start / nanos_per_min)) + 'm'
+    # Use 2x the original start_time to avoid allowing a user to load the script for
+    # a specified trace id when the requests involved have aged out of their original
+    # start_time window. If PxL supported specifying the sort order of the table visualization
+    # (descending time), this wouldn't be a concern.
+    extended_start_time = px.format_duration(2 * px.parse_duration(start_time))
 
     df.trace_id_link = px.script_reference(df.trace_id, 'px/http_trace_id', {
         'start_time': extended_start_time,
