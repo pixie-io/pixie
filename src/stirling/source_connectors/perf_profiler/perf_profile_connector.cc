@@ -382,7 +382,7 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
           static_cast<double>(num_stack_traces) / static_cast<double>(expected_stack_traces_);
       profiler_state_overflow_gauge_.Set(overflow_ratio);
 
-      // We compute the increment to profiler_transfer_data_counter_ such that the counter value is
+      // Compute the increment to profiler_transfer_data_counter_ such that the counter value is
       // equal to the total number of transfer data invocations.
       const double current_transfer_counter = profiler_transfer_data_counter_.Value();
       const double transfer_count_increment = transfer_count_ - current_transfer_counter;
