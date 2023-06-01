@@ -1,3 +1,7 @@
+- For each server, run the following only once:
+```
+./setup_raid.sh <SERVER_IP>
+```
 - Install k3sup (this installs k3sup to `~/bin` if that's not in your path choose somewhere that is)
 ```
 curl -sLS https://get.k3sup.dev | sh
