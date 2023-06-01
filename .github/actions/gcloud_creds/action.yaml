@@ -1,0 +1,30 @@
+---
+name: setup-gcloud-creds
+description: Sets up the given gcloud service account.
+inputs:
+  SERVICE_ACCOUNT_KEY:
+    description: 'base64 encoded PEM file for the service account'
+    required: true
+outputs:
+  gcloud-creds:
+    description: 'value for GOOGLE_APPLICATION_CREDENTIALS environment variable'
+    value: ${{ steps.create-gcloud-key.outputs.gcloud-creds }}
+runs:
+  using: "composite"
+  steps:
+  - id: create-gcloud-key
+    shell: bash
+    env:
+      SERVICE_ACCOUNT_KEY: ${{ inputs.SERVICE_ACCOUNT_KEY }}
+    run: |
+      echo "$SERVICE_ACCOUNT_KEY" | base64 --decode > /tmp/gcloud.json
+      chmod 600 /tmp/gcloud.json
+      echo "gcloud-creds=/tmp/gcloud.json" >> $GITHUB_OUTPUT
+  - name: setup gcloud service account
+    shell: bash
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.create-gcloud-key.outputs.gcloud-creds }}
+    run: |
+      service_account="$(jq -r '.client_email' "$GOOGLE_APPLICATION_CREDENTIALS")"
+      gcloud auth activate-service-account "${service_account}" --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+      gcloud auth configure-docker
