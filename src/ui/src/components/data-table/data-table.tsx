@@ -109,6 +109,11 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   // The body is pushed down by the height of the (sticky-positioned) header. react-window already accounts for this.
   tableBody: {
     position: 'absolute',
+    // If we don't do this, react-window tends to recompute overflow back-and-forth between two values every frame
+    // when scrolling to the bottom. Firefox blocks that from happening after 10 loops, Chrome lets it keep going.
+    // Firefox blocks it by disabling scroll anchoring, after which the behavior is returned to something acceptable.
+    // If we disable it from the start, the bug never triggers.
+    '& > div:first-child': { overflowAnchor: 'none' },
   },
   bodyRow: {
     borderTop: `1px solid ${theme.palette.background.six}`,
