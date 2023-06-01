@@ -376,12 +376,19 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
 
   switch (error_code) {
     case kOverflowError: {
+      // overflow_ratio is actual:expected. That is, the actual number of stack traces sampled
+      // vs. the expected number of stack traces.
       const double overflow_ratio =
           static_cast<double>(num_stack_traces) / static_cast<double>(expected_stack_traces_);
+      profiler_state_overflow_gauge_.Set(overflow_ratio);
+
+      // We compute the increment to profiler_transfer_data_counter_ such that the counter value is
+      // equal to the total number of transfer data invocations.
       const double current_transfer_counter = profiler_transfer_data_counter_.Value();
       const double transfer_count_increment = transfer_count_ - current_transfer_counter;
+
+      // Track the total number of overflows and the total number of transfer data invocations.
       profiler_transfer_data_counter_.Increment(transfer_count_increment);
-      profiler_state_overflow_gauge_.Set(overflow_ratio);
       profiler_state_overflow_counter_.Increment();
       break;
     }
