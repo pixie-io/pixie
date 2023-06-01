@@ -1,0 +1,53 @@
+---
+name: env-protected-pr
+description: Setups actions that run on pull_request_target events, protected by github's deployment environments.
+outputs:
+  env-name:
+    description: 'name of deployment environment to use'
+    value: ${{ steps.output.outputs.env-name }}
+  ref:
+    description: 'ref to checkout'
+    value: ${{ steps.output.outputs.ref }}
+runs:
+  using: "composite"
+  steps:
+  - name: Not pull_request_target
+    # yamllint disable rule:indentation
+    if: github.event_name != 'pull_request_target'
+    shell: bash
+    run:
+      echo "" > env_name
+      echo "${{ github.ref }}" >> ref
+  - name: Member pull_request_target
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      (
+        github.event.pull_request.author_association == 'OWNER' ||
+        github.event.pull_request.author_association == 'MEMBER'
+      )
+    # yamllint enable rule:indentation
+    shell: bash
+    run: |
+      echo "" > env_name
+      echo "${{ github.event.pull_request.head.sha  }}" >> ref
+  - name: Require external environment authorization.
+    # yamllint disable rule:indentation
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      !(
+        github.event.pull_request.author_association == 'OWNER' ||
+        github.event.pull_request.author_association == 'MEMBER'
+      )
+    # yamllint enable rule:indentation
+    shell: bash
+    run: |
+      echo "pr-actions-approval" > env_name
+      echo "${{ github.event.pull_request.head.sha  }}" >> ref
+  - name: Set Output
+    id: output
+    shell: bash
+    run: |
+      echo "env: $(cat env_name)"
+      echo "ref: $(cat ref)"
+      echo "env-name=$(cat env_name)" >> $GITHUB_OUTPUT
+      echo "ref=$(cat ref)" >> $GITHUB_OUTPUT

@@ -58,7 +58,7 @@ elif [[ "${event_name}" == "schedule" ]]; then
   build_deps_flags+=("-a" "-b")
   extra_bazel_args+=("--runs_per_test=${nightly_regression_test_iterations}")
   kernel_versions=( "${all_kernel_versions[@]}" )
-elif [[ "${event_name}" == "pull_request" ]]; then
+elif [[ "${event_name}" == "pull_request_target" ]] || [[ "${event_name}" == "pull_request" ]]; then
   # Ignore bazel dependency tracking and run all targets if #ci:ignore-deps is in the commit message.
   if check_tag '#ci:ignore-deps'; then
     echo "Found #ci:ignore-deps tag. Building all targets" >&2
