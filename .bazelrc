@@ -250,3 +250,18 @@ test --flaky_test_attempts=//src/stirling/source_connectors/socket_tracer/.*bpf_
 
 # Disable XNNPACK for tensorflow lite. There's currently an ASAN issue with XNNPACK, so disable for now.
 build --define=tflite_with_xnnpack=false
+
+build:remote --remote_executor=grpcs://remote.buildbuddy.io
+build:remote --host_platform=//bazel:remote_exec_platform
+build:remote --extra_execution_platforms=//bazel:remote_exec_platform
+build:remote --bes_results_url=https://app.buildbuddy.io/invocation/
+build:remote --bes_backend=grpcs://remote.buildbuddy.io
+build:remote --remote_cache=grpcs://remote.buildbuddy.io
+build:remote --experimental_remote_downloader=grpcs://remote.buildbuddy.io
+build:remote --remote_timeout=1h
+build:remote --remote_retries=5
+build:remote --spawn_strategy=remote,local
+build:remote --experimental_remote_cache_compression
+build:remote --jobs=100
+build:remote --nolegacy_important_outputs
+build:remote --build_metadata=VISIBILITY=PUBLIC
