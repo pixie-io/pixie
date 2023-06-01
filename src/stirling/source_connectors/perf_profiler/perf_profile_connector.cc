@@ -63,7 +63,7 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
       push_period_(sampling_period_ / 2),
       profiler_state_overflow_gauge_(
           BuildGauge("perf_profiler_overflow_gauge",
-                     "Fraction of the overflow, e.g. overflowed by 1.25x the expected amount.")),
+                     "Overflow ratio, i.e. actual:expected number of stack traces.")),
       profiler_transfer_data_counter_(
           BuildCounter("perf_profiler_transfer_data_counter",
                        "Count of times perf profiler transfer data is invoked.")),
@@ -377,10 +377,12 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
   switch (error_code) {
     case kOverflowError: {
       // overflow_ratio is actual:expected. That is, the actual number of stack traces sampled
-      // vs. the expected number of stack traces.
+      // vs. the expected number of stack traces. We keep its max value in the gauge.
       const double overflow_ratio =
           static_cast<double>(num_stack_traces) / static_cast<double>(expected_stack_traces_);
-      profiler_state_overflow_gauge_.Set(overflow_ratio);
+      if (overflow_ratio > profiler_state_overflow_gauge_.Value()) {
+        profiler_state_overflow_gauge_.Set(overflow_ratio);
+      }
 
       // Compute the increment to profiler_transfer_data_counter_ such that the counter value is
       // equal to the total number of transfer data invocations.
