@@ -8,6 +8,12 @@ inputs:
   dev:
     description: 'Whether to use DEV or CI settings for the bazelrc. defaults to dev'
     default: 'true'
+  use_remote_exec:
+    description: 'Use buildbuddy remote execution'
+    default: 'false'
+  BB_API_KEY:
+    description: 'API key to use for buildbuddy if `use_remote_exec`'
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -34,4 +40,12 @@ runs:
     if: inputs.dev != 'true'
     run: |
       echo "build --build_metadata=ROLE=CI" >> github.bazelrc
+    shell: bash
+  - name: Add remote execution
+    if: inputs.use_remote_exec == 'true'
+    env:
+      BB_API_KEY: ${{ inputs.BB_API_KEY }}
+    run: |
+      echo "build:remote --remote_header=x-buildbuddy-api-key=$BB_API_KEY" >> github.bazelrc
+      echo "build --config=remote" >> github.bazelrc
     shell: bash

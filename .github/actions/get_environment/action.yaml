@@ -1,0 +1,46 @@
+---
+name: Get PR environment
+description: Uses the github context to determine the correct secrets environment to use.
+outputs:
+  env-name:
+    description: 'name of secrets environment to use'
+    value: ${{ steps.output.outputs.env-name }}
+runs:
+  using: "composite"
+  steps:
+  - name: No environment needed.
+    if: github.event_name != 'pull_request'
+    run: |
+      touch env_name
+    shell: bash
+  - name: Using internal environment.
+    # yamllint disable rule:indentation
+    if: >-
+      github.event_name == 'pull_request' &&
+      (
+        github.event.pull_request.author_association == 'OWNER' ||
+        github.event.pull_request.author_association == 'MEMBER'
+      )
+    # yamllint enable rule:indentation
+    run: |
+      echo "pr-secrets-members" > env_name
+    shell: bash
+  - name: Using external environment.
+    # yamllint disable rule:indentation
+    if: >-
+      github.event_name == 'pull_request' &&
+      !(
+        github.event.pull_request.author_association == 'OWNER' ||
+        github.event.pull_request.author_association == 'MEMBER'
+      )
+    # yamllint enable rule:indentation
+    run: |
+      echo "pr-secrets-external" > env_name
+    shell: bash
+  - name: Set Output
+    id: output
+    run: |
+      echo "Github author_association: ${{ github.event.pull_request.author_association }}"
+      echo "Env: $(cat env_name)"
+      echo "env-name=$(cat env_name)" >> $GITHUB_OUTPUT
+    shell: bash
