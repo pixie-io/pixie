@@ -144,7 +144,7 @@ cd $(bazel info workspace)
 bazel coverage --remote_download_outputs=all --combined_report=lcov //src/...
 
 # Copy the output file
-cp "$(bazel info output_path)/_coverage/_coverage_report.dat" ${COVERAGE_FILE}
+cp --no-preserve=mode "$(bazel info output_path)/_coverage/_coverage_report.dat" ${COVERAGE_FILE}
 
 # Print out the summary.
 lcov --summary ${COVERAGE_FILE}
