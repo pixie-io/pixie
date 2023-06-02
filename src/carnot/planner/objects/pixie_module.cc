@@ -539,6 +539,7 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                                    std::placeholders::_2, std::placeholders::_3),
                          ast_visitor()));
   AddMethod(kFormatDurationOpID, format_duration_fn);
+  PX_RETURN_IF_ERROR(format_duration_fn->SetDocString(kFormatDurationDocstring));
 
   PX_RETURN_IF_ERROR(parse_time_fn->SetDocString(kParseTimeDocstring));
   AddMethod(kParseTimeOpID, parse_time_fn);
