@@ -212,7 +212,6 @@ class PixieModule : public QLObject {
     duration = px.format_duration(-5 * 60 * 1000 * 1000 * 1000)
     # duration = "5m" duration is rounded down to nearest whole minute.
     duration = px.parse_duration(-5 * 60 * 1000 * 1000 * 1000 + 5)
-
     # duration = "-5h"
     duration = px.format_duration(-5 * 60 * 60 * 1000 * 1000 * 1000)
 
