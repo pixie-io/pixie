@@ -50,7 +50,7 @@ func requireNoReceive[T any](t *testing.T, messages chan T, timeout time.Duratio
 	t.Helper()
 	select {
 	case <-messages:
-		t.Fatal("should no longer receive any messages")
+		t.Fatal("should not receive any messages")
 	case <-time.After(timeout):
 		// it works
 	}
@@ -159,7 +159,7 @@ func (s *fakeCronStore) GetAllExecutionResults(ctx context.Context, req *metadat
 }
 
 type fakeExecuteScriptClient struct {
-	// The error to send if not nil. The client does not send responses if this is not nil.
+	// The error to send if not nil. The informer does not send responses if this is not nil.
 	err       error
 	responses []*vizierpb.ExecuteScriptResponse
 	responseI int

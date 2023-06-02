@@ -48,8 +48,8 @@ func Sources(nc *nats.Conn, csClient metadatapb.CronScriptStoreServiceClient, si
 			if err != nil {
 				log.WithError(err).Fatal("Unable to get incluster kubeconfig")
 			}
-			client := k8s.GetClientset(kubeConfig).CoreV1().ConfigMaps(namespace)
-			sources = append(sources, NewConfigMapSource(client))
+			client := k8s.GetClientset(kubeConfig)
+			sources = append(sources, NewConfigMapSource(client, namespace))
 		default:
 			log.Errorf(`Unknown source "%s"`, selectedName)
 		}
