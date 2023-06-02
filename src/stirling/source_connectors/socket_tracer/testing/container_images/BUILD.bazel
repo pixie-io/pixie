@@ -192,7 +192,7 @@ pl_cc_test_library(
         "nginx_worker_pid.h",
     ],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_alpine_OpenSSL_3_0_8_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_alpine_openssl_3_0_8_image.tar",
     ],
     deps = ["//src/common/testing/test_utils:cc_library"],
 )
