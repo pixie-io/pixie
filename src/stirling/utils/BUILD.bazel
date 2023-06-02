@@ -137,7 +137,7 @@ pl_cc_bpf_test(
     ],
     deps = [
         ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing:container_images",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:node_14_18_1_alpine_container",
     ],
 )
 

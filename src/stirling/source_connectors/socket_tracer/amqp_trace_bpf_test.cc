@@ -27,7 +27,9 @@
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/rabbitmq_consumer_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/rabbitmq_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/rabbitmq_producer_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
