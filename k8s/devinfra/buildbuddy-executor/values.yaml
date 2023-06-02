@@ -1,6 +1,11 @@
 ---
 replicas: 48
-resources: null
+resources:
+  limits:
+    memory: 8Gi
+    cpu: null
+  requests:
+    cpu: null
 config:
   executor:
     app_target: "grpcs://remote.buildbuddy.io:443"
@@ -9,7 +14,6 @@ config:
     enable_bare_runner: true
     local_cache_size_bytes: 375000000000  # 375GB
     millicpu: 4000
-    memory_bytes: 24000000000
 
 extraInitContainers:
 - name: download-executor
