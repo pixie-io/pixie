@@ -102,15 +102,20 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   void PrintStats() const;
-  void CheckProfilerState();
+  void CheckProfilerState(const uint64_t num_stack_traces);
 
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
 
   std::unique_ptr<ebpf::BPFArrayTable<uint64_t>> profiler_state_;
+  prometheus::Gauge& profiler_state_overflow_gauge_;
+  prometheus::Counter& profiler_transfer_data_counter_;
   prometheus::Counter& profiler_state_overflow_counter_;
   prometheus::Counter& profiler_state_map_read_error_counter_;
+
+  // Expected number of stack traces sampled per transfer data invocation.
+  int32_t expected_stack_traces_;
 
   // Number of iterations, where each iteration is drains the information collected in BPF.
   uint64_t transfer_count_ = 0;

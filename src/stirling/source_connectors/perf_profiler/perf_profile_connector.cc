@@ -61,6 +61,12 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
       sampling_period_(
           std::chrono::milliseconds{1000 * FLAGS_stirling_profiler_table_update_period_seconds}),
       push_period_(sampling_period_ / 2),
+      profiler_state_overflow_gauge_(
+          BuildGauge("perf_profiler_overflow_gauge",
+                     "Overflow ratio, i.e. actual:expected number of stack traces.")),
+      profiler_transfer_data_counter_(
+          BuildCounter("perf_profiler_transfer_data_counter",
+                       "Count of times perf profiler transfer data is invoked.")),
       profiler_state_overflow_counter_(
           BuildCounter("perf_profiler_overflow",
                        "Count of times the perf profiler overran CFG_OVERRUN_THRESHOLD")),
@@ -89,19 +95,19 @@ Status PerfProfileConnector::InitImpl() {
       IntRoundUpDivide(sampling_period_.count(), stack_trace_sampling_period_.count());
 
   // Because sampling occurs per-cpu, the total number of expected stack traces is:
-  const int32_t expected_stack_traces = ncpus * expected_stack_traces_per_cpu;
+  expected_stack_traces_ = ncpus * expected_stack_traces_per_cpu;
 
   // Include some margin to ensure that hash collisions and data races do not cause data drop:
   const double stack_traces_overprovision_factor = FLAGS_stirling_profiler_stack_trace_size_factor;
 
   // Compute the size of the stack traces map.
   const int32_t provisioned_stack_traces =
-      static_cast<int32_t>(stack_traces_overprovision_factor * expected_stack_traces);
+      static_cast<int32_t>(stack_traces_overprovision_factor * expected_stack_traces_);
 
   // A threshold for checking that we've overrun the maps.
   // This should be higher than expected_stack_traces due to timing variations,
   // but it should be lower than provisioned_stack_traces.
-  const int32_t overrun_threshold = (expected_stack_traces + provisioned_stack_traces) / 2;
+  const int32_t overrun_threshold = (expected_stack_traces_ + provisioned_stack_traces) / 2;
 
   // Compute the size of the perf buffers.
   const double perf_buffer_overprovision_factor = FLAGS_stirling_profiler_perf_buffer_size_factor;
@@ -354,23 +360,44 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(stack_traces.get(), ctx, data_table);
 
+  uint64_t num_stack_traces_sampled;
+  profiler_state_->get_value(sample_count_idx, num_stack_traces_sampled);
+  CheckProfilerState(num_stack_traces_sampled);
+
   // Now that we've consumed the data, reset the sample count in BPF.
   profiler_state_->update_value(sample_count_idx, 0);
 }
 
-void PerfProfileConnector::CheckProfilerState() {
+void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
   uint64_t error_code;
   profiler_state_->get_value(kErrorStatusIdx, error_code);
 
   DCHECK_EQ(error_code, kPerfProfilerStatusOk);
 
   switch (error_code) {
-    case kOverflowError:
+    case kOverflowError: {
+      // overflow_ratio is actual:expected. That is, the actual number of stack traces sampled
+      // vs. the expected number of stack traces. We keep its max value in the gauge.
+      const double overflow_ratio =
+          static_cast<double>(num_stack_traces) / static_cast<double>(expected_stack_traces_);
+      if (overflow_ratio > profiler_state_overflow_gauge_.Value()) {
+        profiler_state_overflow_gauge_.Set(overflow_ratio);
+      }
+
+      // Compute the increment to profiler_transfer_data_counter_ such that the counter value is
+      // equal to the total number of transfer data invocations.
+      const double current_transfer_counter = profiler_transfer_data_counter_.Value();
+      const double transfer_count_increment = transfer_count_ - current_transfer_counter;
+
+      // Track the total number of overflows and the total number of transfer data invocations.
+      profiler_transfer_data_counter_.Increment(transfer_count_increment);
       profiler_state_overflow_counter_.Increment();
       break;
-    case kMapReadFailureError:
+    }
+    case kMapReadFailureError: {
       profiler_state_map_read_error_counter_.Increment();
       break;
+    }
   }
   // Reset the BPF map to its default value so that each occurrence
   // can be detected.
@@ -399,8 +426,6 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % stats_log_interval_ == 0) {
     PrintStats();
   }
-
-  CheckProfilerState();
 }
 
 void PerfProfileConnector::PrintStats() const {
