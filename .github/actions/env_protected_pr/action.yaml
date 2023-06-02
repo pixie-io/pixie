@@ -15,7 +15,7 @@ runs:
     # yamllint disable rule:indentation
     if: github.event_name != 'pull_request_target'
     shell: bash
-    run:
+    run: |
       echo "" > env_name
       echo "${{ github.ref }}" >> ref
   - name: Member pull_request_target
