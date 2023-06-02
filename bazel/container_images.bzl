@@ -176,10 +176,10 @@ def stirling_test_images():
     )
 
     # Ruby container, for OpenSSL tracing tests.
-    # ruby:3.0.0-buster
+    # ruby:3.0.0-slim-buster
     _gcr_io_image(
         "ruby_base_image",
-        "sha256:beeed8e63b1ae4a1492f4be9cd40edc6bdb1009b94228438f162d0d05e10c8fd",
+        "sha256:47eeeb05f545b5a7d18a84c16d585ed572d38379ebb7106061f800f5d9abeb38",
         "pixie-oss/pixie-dev-public/docker-deps/library/ruby",
     )
 
@@ -192,10 +192,10 @@ def stirling_test_images():
     )
 
     # Postgres server, for PGSQL tracing tests.
-    # postgres:13.2
+    # postgres:13.2-alpine
     _gcr_io_image(
         "postgres_base_image",
-        "sha256:661dc59f4a71e689c51d4823963baa56b8fcc8daa5b16cf740cad236fa5ffe74",
+        "sha256:3335d0494b62ae52f0c18a1e4176a83991c9d3727fe67d8b1907b569de2f6175",
         "pixie-oss/pixie-dev-public/docker-deps/library/postgres",
     )
 
@@ -244,13 +244,13 @@ def stirling_test_images():
         "pixie-oss/pixie-dev-public/docker-deps/confluentinc/cp-zookeeper",
     )
 
-    # Tag: node:12.3.1
+    # Tag: node:12.3.1-stretch-slim
     # Arch: linux/amd64
     # This is the oldest tag on docker hub that can be pulled. Older tags cannot be pulled because
     # of server error on docker hub, which presumably is because of they are too old.
     _gcr_io_image(
         "node_12_3_1_linux_amd64_image",
-        "sha256:ade8d367d98b5074a8c3a4e2d74bd657b578d4a500090d66c2da33801ec4b58d",
+        "sha256:86acb148010d15bc63200493000bb8fc70ea052f7da2a80d34d7741110378eb3",
         "pixie-oss/pixie-dev-public/docker-deps/node",
     )
 
