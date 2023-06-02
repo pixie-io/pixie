@@ -31,19 +31,6 @@ namespace px {
 class ContainerRunner {
  public:
   /**
-   * Set-up a container runner with image from a registry.
-   *
-   * @param image Image to run.
-   * @param instance_name_prefix The container instance name prefix. The instance name will
-   * automatically be suffixed with a timestamp.
-   * @param ready_message A pattern in the container logs that indicates that the container is
-   * ready. The Run() function will not return until this pattern is observed. Leave blank to skip
-   * this feature.
-   */
-  ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
-                  std::string_view ready_message);
-
-  /**
    * Set-up a container runner from local tarball image.
    *
    * @param image_tar Image tarball.
