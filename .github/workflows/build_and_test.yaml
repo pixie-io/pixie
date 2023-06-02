@@ -1,7 +1,7 @@
 ---
 name: build-and-test
 on:
-  pull_request:
+  pull_request_target:
   push:
     branches:
     - 'main'
@@ -11,26 +11,43 @@ on:
 permissions:
   contents: read
 jobs:
+  env-protect-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      env-name: ${{ steps.output.outputs.env-name }}
+      ref: ${{ steps.output.outputs.ref }}
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - id: output
+      uses: ./.github/actions/env_protected_pr
+  authorize:
+    runs-on: ubuntu-latest
+    needs: env-protect-setup
+    environment: ${{ needs.env-protect-setup.outputs.env-name }}
+    steps:
+    - run: echo "Authorized"
   get-dev-image:
+    needs: authorize
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
   clang-tidy:
-    needs: get-dev-image
-    runs-on: [self-hosted, nokvm]
+    runs-on: ubuntu-latest-16-cores
+    needs: [authorize, env-protect-setup, get-dev-image]
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
-      options: --cpus 16
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: get bazel config
       uses: ./.github/actions/bazelrc
+      with:
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Save Diff Info
       run: ./ci/save_diff_info.sh
     - name: Run Clang Tidy
@@ -45,24 +62,23 @@ jobs:
       # yamllint enable rule:indentation
   code-coverage:
     if: github.event_name == 'push'
-    needs: get-dev-image
-    runs-on: [self-hosted, nokvm]
+    needs: [authorize, env-protect-setup, get-dev-image]
+    runs-on: ubuntu-latest-16-cores
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
-      # Needs to be priviledged to enable IPV6
-      options: --cpus 16 --privileged
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
         dev: 'false'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Collect and upload coverage
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -71,23 +87,24 @@ jobs:
         sysctl -w net.ipv6.conf.lo.disable_ipv6=0
         ./ci/collect_coverage.sh -u -b main -c "$(git rev-parse HEAD)" -r pixie-io/pixie
   generate-matrix:
-    needs: get-dev-image
-    runs-on: [self-hosted, nokvm]
+    needs: [authorize, env-protect-setup, get-dev-image]
+    runs-on: ubuntu-latest-16-cores
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
-      options: --cpus 16
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - name: get bazel config
       uses: ./.github/actions/bazelrc
+      with:
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Set matrix
       id: set-matrix
       shell: bash
@@ -103,15 +120,10 @@ jobs:
           bazel_buildables_*
           bazel_tests_*
   build-and-test:
-    needs: [get-dev-image, generate-matrix]
-    runs-on:
-    - self-hosted
-    - ${{ matrix.runner }}
+    needs: [authorize, env-protect-setup, get-dev-image, generate-matrix]
+    runs-on: ubuntu-latest-16-cores
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
-      - /var/run/docker.sock:/var/run/docker.sock
       options: --privileged
     if: ${{ needs.generate-matrix.outputs.matrix && (toJson(fromJson(needs.generate-matrix.outputs.matrix)) != '[]') }}
     strategy:
@@ -119,6 +131,8 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
@@ -127,11 +141,15 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         dev: 'true'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: get ci bazel config
       if: github.event_name == 'push'
       uses: ./.github/actions/bazelrc
       with:
         dev: 'false'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Build ${{ matrix.name }}
       shell: bash
       # yamllint disable rule:indentation
