@@ -26,13 +26,6 @@ namespace px {
 // Number of seconds to wait between each attempt.
 constexpr int kSleepSeconds = 1;
 
-ContainerRunner::ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
-                                 std::string_view ready_message)
-    : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
-  std::string out = px::Exec("podman pull -q" + image_).ConsumeValueOrDie();
-  LOG(INFO) << out;
-}
-
 ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
                                  std::string_view instance_name_prefix,
                                  std::string_view ready_message)
