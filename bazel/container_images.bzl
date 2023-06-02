@@ -261,7 +261,7 @@ def stirling_test_images():
     # Tag: node:14.18.1-alpine
     # Arch: linux/amd64
     _gcr_io_image(
-        "node_14_18_1_alpine_amd64_image",
+        "node_14_18_1_alpine_linux_amd64_image",
         "sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
         "pixie-oss/pixie-dev-public/docker-deps/node",
     )

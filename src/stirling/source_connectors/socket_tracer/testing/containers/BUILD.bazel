@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("//src/stirling/source_connectors/socket_tracer/testing/containers:node_http_server_image.bzl", "node_http_server_image")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -112,15 +111,20 @@ container_image(
     base = "@zookeeper_base_image//image",
 )
 
-node_http_server_image(
-    name = "node_12_3_1_image",
-    base = "@node_12_3_1_linux_amd64_image//image",
-)
-
-node_http_server_image(
-    name = "node_14_18_1_alpine_image",
-    base = "@node_14_18_1_alpine_amd64_image//image",
-)
+[
+    container_image(
+        name = "node_%s_image" % node_version.replace(".", "_").replace("-", "_"),
+        base = "@node_%s_linux_amd64_image//image" % node_version.replace(".", "_").replace("-", "_"),
+        cmd = [
+            "node",
+            "/etc/node/https_server.js",
+        ],
+        layers = [
+            "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
+            "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:node_client_server_layer",
+        ],
+    ) for node_version in ["12.3.1", "14.18.1-alpine"]
+]
 
 container_image(
     name = "amqp_image",
