@@ -1,7 +1,6 @@
 ---
 name: update-docs-px-dev-on-release
 on:
-  push:
   release:
     types: [published]
 permissions:
