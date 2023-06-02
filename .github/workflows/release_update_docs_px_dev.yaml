@@ -2,9 +2,6 @@
 name: update-docs-px-dev-on-release
 on:
   push:
-    # TODO(ddelnano): Remove this in favor of vizier release events only once testing is complete
-    branches:
-    - test-create-docs-px-dev-prs-on-documentation-updates
     tags:
     - release/vizier/**
 permissions:
