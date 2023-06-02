@@ -21,6 +21,7 @@ package scriptrunner
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -97,12 +98,15 @@ func errorSource(err error) Source {
 }
 
 type fakeCronStore struct {
+	scriptsMu               sync.Mutex
 	scripts                 map[uuid.UUID]*cvmsgspb.CronScript
 	receivedResultRequestCh chan<- *metadatapb.RecordExecutionResultRequest
 }
 
 // GetScripts fetches all scripts in the cron script store.
 func (s *fakeCronStore) GetScripts(ctx context.Context, req *metadatapb.GetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.GetScriptsResponse, error) {
+	s.scriptsMu.Lock()
+	defer s.scriptsMu.Unlock()
 	if s.scripts == nil {
 		return &metadatapb.GetScriptsResponse{}, nil
 	}
@@ -116,8 +120,20 @@ func (s *fakeCronStore) GetScripts(ctx context.Context, req *metadatapb.GetScrip
 	}, nil
 }
 
+func (s *fakeCronStore) Scripts() map[uuid.UUID]*cvmsgspb.CronScript {
+	s.scriptsMu.Lock()
+	defer s.scriptsMu.Unlock()
+	result := make(map[uuid.UUID]*cvmsgspb.CronScript, len(s.scripts))
+	for id, script := range s.scripts {
+		result[id] = script
+	}
+	return result
+}
+
 // AddOrUpdateScript updates or adds a cron script to the store, based on ID.
 func (s *fakeCronStore) AddOrUpdateScript(ctx context.Context, req *metadatapb.AddOrUpdateScriptRequest, opts ...grpc.CallOption) (*metadatapb.AddOrUpdateScriptResponse, error) {
+	s.scriptsMu.Lock()
+	defer s.scriptsMu.Unlock()
 	if s.scripts == nil {
 		s.scripts = map[uuid.UUID]*cvmsgspb.CronScript{}
 	}
@@ -128,6 +144,8 @@ func (s *fakeCronStore) AddOrUpdateScript(ctx context.Context, req *metadatapb.A
 
 // DeleteScript deletes a cron script from the store by ID.
 func (s *fakeCronStore) DeleteScript(ctx context.Context, req *metadatapb.DeleteScriptRequest, opts ...grpc.CallOption) (*metadatapb.DeleteScriptResponse, error) {
+	s.scriptsMu.Lock()
+	defer s.scriptsMu.Unlock()
 	_, ok := s.scripts[utils.UUIDFromProtoOrNil(req.ScriptID)]
 	if ok {
 		delete(s.scripts, utils.UUIDFromProtoOrNil(req.ScriptID))
@@ -138,6 +156,8 @@ func (s *fakeCronStore) DeleteScript(ctx context.Context, req *metadatapb.Delete
 
 // SetScripts sets the list of all cron scripts to match the given set of scripts.
 func (s *fakeCronStore) SetScripts(ctx context.Context, req *metadatapb.SetScriptsRequest, opts ...grpc.CallOption) (*metadatapb.SetScriptsResponse, error) {
+	s.scriptsMu.Lock()
+	defer s.scriptsMu.Unlock()
 	m := make(map[uuid.UUID]*cvmsgspb.CronScript)
 	for k, v := range req.Scripts {
 		m[uuid.FromStringOrNil(k)] = v

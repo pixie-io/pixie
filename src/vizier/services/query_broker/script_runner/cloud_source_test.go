@@ -497,10 +497,10 @@ func TestCloudScriptsSource_Updates(t *testing.T) {
 				switch update.Msg.(type) {
 				case *cvmsgspb.CronScriptUpdate_UpsertReq:
 					req := update.GetUpsertReq()
-					require.Contains(t, fcs.scripts, utils.UUIDFromProtoOrNil(req.GetScript().GetID()))
+					require.Contains(t, fcs.Scripts(), utils.UUIDFromProtoOrNil(req.GetScript().GetID()))
 				case *cvmsgspb.CronScriptUpdate_DeleteReq:
 					req := update.GetDeleteReq()
-					require.NotContains(t, fcs.scripts, utils.UUIDFromProtoOrNil(req.GetScriptID()))
+					require.NotContains(t, fcs.Scripts(), utils.UUIDFromProtoOrNil(req.GetScriptID()))
 				}
 			}
 		})
