@@ -2,17 +2,13 @@
 name: update-docs-px-dev-on-release
 on:
   push:
-    # TODO(ddelnano): Remove this in favor of vizier release events only once testing is complete
-    branches:
-    - test-create-docs-px-dev-prs-on-documentation-updates
   release:
     types: [published]
 permissions:
   contents: read
 jobs:
-  # TODO(ddelnano): Uncomment this and retest after job is verified fully
   get-dev-image:
-    if: startsWith(github.head_ref, 'release/vizier/')
+    if: startsWith(github.ref, 'release/vizier/')
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
