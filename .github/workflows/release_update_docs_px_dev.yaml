@@ -2,18 +2,23 @@
 name: update-docs-px-dev-on-release
 on:
   push:
-    tags:
-    - release/vizier/**
+    # TODO(ddelnano): Remove this in favor of vizier release events only once testing is complete
+    branches:
+    - test-create-docs-px-dev-prs-on-documentation-updates
+  release:
+    types: [published]
 permissions:
   contents: read
 jobs:
+  # TODO(ddelnano): Uncomment this and retest after job is verified fully
+  # if: startsWith(github.head_ref, 'release/vizier/')
   get-dev-image:
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
   generate-docs:
     needs: get-dev-image
-    runs-on: [self-hosted, nokvm]
+    runs-on: ubuntu-latest-8-cores
     permissions:
       contents: read
     container:
@@ -25,10 +30,12 @@ jobs:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
-    - name: get bazel config
+    - name: get dev bazel config
       uses: ./.github/actions/bazelrc
       with:
         dev: 'true'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Generate documentation files
       shell: bash
       run: |
@@ -48,7 +55,6 @@ jobs:
       with:
         repository: pixie-io/docs.px.dev
         ref: main
-        fetch-depth: 0
     - name: Import GPG key
       shell: bash
       env:
@@ -90,7 +96,7 @@ jobs:
         fi
 
         DATE=$(date +%Y-%m-%d)
-        PR_TITLE="Update pxl script documentation ${DATE}"
+        PR_TITLE="[bot] Update pxl script documentation ${DATE}"
         export BRANCH="update-docs-px-dev-documentation-${DATE}"
         git checkout -b "${BRANCH}"
         git add external
