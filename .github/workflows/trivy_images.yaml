@@ -74,3 +74,4 @@ jobs:
     - uses: github/codeql-action/upload-sarif@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
       with:
         sarif_file: sarif/${{ matrix.artifact }}
+        ref: ${{ needs.env-protect-setup.outputs.ref }}
