@@ -17,6 +17,7 @@ jobs:
     outputs:
       env-name: ${{ steps.output.outputs.env-name }}
       ref: ${{ steps.output.outputs.ref }}
+      sha: ${{ steps.output.outputs.sha }}
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
     - id: output
@@ -75,3 +76,4 @@ jobs:
       with:
         sarif_file: sarif/${{ matrix.artifact }}
         ref: ${{ needs.env-protect-setup.outputs.ref }}
+        sha: ${{ needs.env-protect-setup.outputs.sha }}
