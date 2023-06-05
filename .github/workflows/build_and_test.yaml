@@ -10,6 +10,9 @@ on:
   - cron: '9 7 * * 0'
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 jobs:
   env-protect-setup:
     runs-on: ubuntu-latest
