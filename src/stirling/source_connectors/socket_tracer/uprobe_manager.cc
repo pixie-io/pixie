@@ -299,7 +299,7 @@ static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
     SSLLibMatcher{
         // This must match independent of python version and INSTSONAME suffix
         // (e.g. libpython3.10.so.0.1).
-        .libssl    = "libpython",
+        .libssl = "libpython",
         .libcrypto = "libpython",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeContains,
     },
