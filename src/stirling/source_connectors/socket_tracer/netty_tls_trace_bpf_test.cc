@@ -28,7 +28,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/thrift_mux_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"

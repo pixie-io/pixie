@@ -33,7 +33,8 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/test_output_generator/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/mysql_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/python_mysql_connector_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 

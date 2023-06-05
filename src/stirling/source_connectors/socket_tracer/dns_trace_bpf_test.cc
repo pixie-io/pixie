@@ -24,7 +24,7 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/exec.h"
 #include "src/stirling/core/output.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/dns_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 

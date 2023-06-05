@@ -19,7 +19,8 @@
 #include "src/common/exec/exec.h"
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/redis_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/redis_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 

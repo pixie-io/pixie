@@ -21,7 +21,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_grpc_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_grpc_server_container.h"
 
 namespace px {
 namespace stirling {

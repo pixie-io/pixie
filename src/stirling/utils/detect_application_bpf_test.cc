@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_14_18_1_alpine_container.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 namespace px {
@@ -31,32 +31,10 @@ namespace stirling {
 using ::px::system::ProcParser;
 using ::testing::StrEq;
 
-// Tests that we can execute the executable of container process (with the set of
-// permissions granted through our requires_bpf tag, although the exact permission might be more
-// limited, perhaps only need 'root' permission to have access to the file).
-//
-// NOTE: Disabled to reduce flakiness. The mechanism tested here is replaced by the mount namespace
-// execution. Didn't remove it because it's an interesting case that might be useful.
-TEST(NodeVersionTest, DISABLED_ResultsAreAsExpected) {
-  constexpr std::string_view kNode15_0ImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/node_15_0_image.tar";
-  ContainerRunner node_server(px::testing::BazelRunfilePath(kNode15_0ImageTar), "node_server", "");
-  ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
-
-  ProcParser proc_parser;
-
-  ASSERT_OK_AND_ASSIGN(const auto proc_exe_path, proc_parser.GetExePath(node_server.process_pid()));
-  ASSERT_OK_AND_THAT(px::Exec(absl::StrCat(proc_exe_path.string(), " --version")),
-                     StrEq("v15.0.1\n"));
-}
-
 // Tests that the mntexec cli can execute into the alpine container.
 TEST(AlpineNodeExecTest, MountNSSubprocessWorks) {
-  ContainerRunner node_server(px::testing::BazelRunfilePath(
-                                  "src/stirling/source_connectors/socket_tracer/testing/containers/"
-                                  "node_14_18_1_alpine_image.tar"),
-                              "node_server", "");
-  ASSERT_OK_AND_ASSIGN(std::string output, node_server.Run(std::chrono::seconds{60}));
+  ::px::stirling::testing::Node14_18_1AlpineContainer node_server;
+  node_server.Run(std::chrono::seconds{60});
   pid_t node_server_pid = node_server.process_pid();
 
   ProcParser proc_parser;

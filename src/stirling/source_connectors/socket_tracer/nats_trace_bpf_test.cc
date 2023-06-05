@@ -19,7 +19,8 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nats_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nats_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
 namespace px {
