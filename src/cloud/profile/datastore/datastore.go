@@ -347,6 +347,33 @@ func (d *Datastore) GetUserByAuthProviderID(id string) (*UserInfo, error) {
 	return nil, ErrUserNotFound
 }
 
+// DeleteUser deletes a user, but not the org.
+func (d *Datastore) DeleteUser(userID uuid.UUID) error {
+	txn, err := d.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	deleteUserSettingsQuery := `DELETE FROM user_settings WHERE user_id=$1`
+	deleteUserAttributesQuery := `DELETE FROM user_attributes WHERE user_id=$1`
+	deleteUserQuery := `DELETE FROM users WHERE id=$1`
+
+	_, err = txn.Exec(deleteUserSettingsQuery, userID)
+	if err != nil {
+		return err
+	}
+	_, err = txn.Exec(deleteUserAttributesQuery, userID)
+	if err != nil {
+		return err
+	}
+	_, err = txn.Exec(deleteUserQuery, userID)
+	if err != nil {
+		return err
+	}
+	return txn.Commit()
+}
+
 // DeleteOrgAndUsers deletes the org and users with a given org ID.
 func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 	txn, err := d.db.Beginx()
@@ -355,8 +382,18 @@ func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 	}
 	defer txn.Rollback()
 
+	deleteUserSettingsQuery := `DELETE from user_settings USING users where users.id=user_settings.user_id and users.org_id=$1`
+	deleteUserAttributesQuery := `DELETE from user_attributes USING users where users.id=user_attributes.user_id and users.org_id=$1`
 	deleteUsersQuery := `DELETE FROM users WHERE org_id=$1`
 	deleteOrgQuery := `DELETE FROM orgs WHERE id=$1`
+	_, err = txn.Exec(deleteUserSettingsQuery, orgID)
+	if err != nil {
+		return err
+	}
+	_, err = txn.Exec(deleteUserAttributesQuery, orgID)
+	if err != nil {
+		return err
+	}
 	_, err = txn.Exec(deleteUsersQuery, orgID)
 	if err != nil {
 		return err

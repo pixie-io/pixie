@@ -903,6 +903,73 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
+func TestServer_DeleteUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	userID := uuid.Must(uuid.NewV4())
+	orgID := uuid.Must(uuid.NewV4())
+
+	userInfo := &datastore.UserInfo{
+		ID:         userID,
+		FirstName:  "first",
+		LastName:   "last",
+		IsApproved: false,
+		OrgID:      &orgID,
+	}
+	uds.EXPECT().GetUser(userID).Return(userInfo, nil)
+	ods.EXPECT().GetUsersInOrg(orgID).Return([]*datastore.UserInfo{userInfo}, nil)
+	ods.EXPECT().DeleteOrgAndUsers(orgID).Return(nil)
+
+	resp, err := s.DeleteUser(context.Background(), &profilepb.DeleteUserRequest{ID: utils.ProtoFromUUID(userID)})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestServer_DeleteUser_MultiUserOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uds := mock_controllers.NewMockUserDatastore(ctrl)
+	ods := mock_controllers.NewMockOrgDatastore(ctrl)
+	usds := mock_controllers.NewMockUserSettingsDatastore(ctrl)
+	osds := mock_controllers.NewMockOrgSettingsDatastore(ctrl)
+
+	s := controllers.NewServer(nil, uds, usds, ods, osds)
+
+	userID := uuid.Must(uuid.NewV4())
+	orgID := uuid.Must(uuid.NewV4())
+
+	userInfo := &datastore.UserInfo{
+		ID:         userID,
+		FirstName:  "first",
+		LastName:   "last",
+		IsApproved: false,
+		OrgID:      &orgID,
+	}
+	userInfo2 := &datastore.UserInfo{
+		ID:         uuid.Must(uuid.NewV4()),
+		FirstName:  "first2",
+		LastName:   "last2",
+		IsApproved: false,
+		OrgID:      &orgID,
+	}
+	uds.EXPECT().GetUser(userID).Return(userInfo, nil)
+	ods.EXPECT().GetUsersInOrg(orgID).Return([]*datastore.UserInfo{userInfo, userInfo2}, nil)
+	uds.EXPECT().DeleteUser(userID).Return(nil)
+
+	resp, err := s.DeleteUser(context.Background(), &profilepb.DeleteUserRequest{ID: utils.ProtoFromUUID(userID)})
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
 func TestServer_DeleteOrgAndUsers(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
