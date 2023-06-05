@@ -20,7 +20,7 @@
 #include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/curl_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_open_ssl_1_1_1_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_openssl_1_1_1_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 

@@ -159,10 +159,10 @@ pl_cc_test_library(
 )
 
 pl_cc_test_library(
-    name = "nginx_open_ssl_1_1_0_container",
+    name = "nginx_openssl_1_1_0_container",
     srcs = [],
     hdrs = [
-        "nginx_open_ssl_1_1_0_container.h",
+        "nginx_openssl_1_1_0_container.h",
         "nginx_worker_pid.h",
     ],
     data = [
@@ -172,10 +172,10 @@ pl_cc_test_library(
 )
 
 pl_cc_test_library(
-    name = "nginx_open_ssl_1_1_1_container",
+    name = "nginx_openssl_1_1_1_container",
     srcs = [],
     hdrs = [
-        "nginx_open_ssl_1_1_1_container.h",
+        "nginx_openssl_1_1_1_container.h",
         "nginx_worker_pid.h",
     ],
     data = [
@@ -185,14 +185,14 @@ pl_cc_test_library(
 )
 
 pl_cc_test_library(
-    name = "nginx_open_ssl_3_0_7_container",
+    name = "nginx_openssl_3_0_8_container",
     srcs = [],
     hdrs = [
-        "nginx_open_ssl_3_0_7_container.h",
+        "nginx_openssl_3_0_8_container.h",
         "nginx_worker_pid.h",
     ],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_alpine_openssl_3_0_7_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:nginx_alpine_OpenSSL_3_0_8_image.tar",
     ],
     deps = ["//src/common/testing/test_utils:cc_library"],
 )

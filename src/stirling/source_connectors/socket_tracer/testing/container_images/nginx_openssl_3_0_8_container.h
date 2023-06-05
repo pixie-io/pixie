@@ -29,9 +29,9 @@ namespace px {
 namespace stirling {
 namespace testing {
 
-class NginxOpenSSL_3_0_7_Container : public ContainerRunner {
+class NginxOpenSSL_3_0_8_Container : public ContainerRunner {
  public:
-  NginxOpenSSL_3_0_7_Container()
+  NginxOpenSSL_3_0_8_Container()
       : ContainerRunner(::px::testing::BazelRunfilePath(kBazelImageTar), kContainerNamePrefix,
                         kReadyMessage) {}
 
@@ -42,7 +42,7 @@ class NginxOpenSSL_3_0_7_Container : public ContainerRunner {
   // It is not pushed to any repo.
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "nginx_alpine_openssl_3_0_7_image.tar";
+      "nginx_alpine_OpenSSL_3_0_8_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };

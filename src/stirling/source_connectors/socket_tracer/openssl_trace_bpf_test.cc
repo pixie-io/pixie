@@ -28,9 +28,9 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/curl_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_open_ssl_1_1_0_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_open_ssl_1_1_1_container.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_open_ssl_3_0_7_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_openssl_1_1_0_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_openssl_1_1_1_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/nginx_openssl_3_0_8_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_12_3_1_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_14_18_1_alpine_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/node_client_container.h"
@@ -68,8 +68,8 @@ class NginxOpenSSL_1_1_1_ContainerWrapper
   int32_t PID() const { return NginxWorkerPID(); }
 };
 
-class NginxOpenSSL_3_0_7_ContainerWrapper
-    : public ::px::stirling::testing::NginxOpenSSL_3_0_7_Container {
+class NginxOpenSSL_3_0_8_ContainerWrapper
+    : public ::px::stirling::testing::NginxOpenSSL_3_0_8_Container {
  public:
   int32_t PID() const { return NginxWorkerPID(); }
 };
@@ -181,7 +181,7 @@ using OpenSSLServerImplementations =
           Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
 using OpenSSLServerNestedSyscallFDImplementations =
     Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-          NginxOpenSSL_3_0_7_ContainerWrapper>;
+          NginxOpenSSL_3_0_8_ContainerWrapper>;
 
 template <typename T>
 using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
