@@ -78,6 +78,26 @@ func (mr *MockProfileServiceClientMockRecorder) CreateUser(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockProfileServiceClient)(nil).CreateUser), varargs...)
 }
 
+// DeleteUser mocks base method.
+func (m *MockProfileServiceClient) DeleteUser(ctx context.Context, in *profilepb.DeleteUserRequest, opts ...grpc.CallOption) (*profilepb.DeleteUserResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteUser", varargs...)
+	ret0, _ := ret[0].(*profilepb.DeleteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockProfileServiceClientMockRecorder) DeleteUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockProfileServiceClient)(nil).DeleteUser), varargs...)
+}
+
 // GetUser mocks base method.
 func (m *MockProfileServiceClient) GetUser(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -289,6 +309,21 @@ func (m *MockProfileServiceServer) CreateUser(arg0 context.Context, arg1 *profil
 func (mr *MockProfileServiceServerMockRecorder) CreateUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockProfileServiceServer)(nil).CreateUser), arg0, arg1)
+}
+
+// DeleteUser mocks base method.
+func (m *MockProfileServiceServer) DeleteUser(arg0 context.Context, arg1 *profilepb.DeleteUserRequest) (*profilepb.DeleteUserResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.DeleteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockProfileServiceServerMockRecorder) DeleteUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockProfileServiceServer)(nil).DeleteUser), arg0, arg1)
 }
 
 // GetUser mocks base method.
