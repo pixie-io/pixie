@@ -1,0 +1,100 @@
+---
+name: update-docs-px-dev-on-release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  get-dev-image:
+    if: startsWith(github.ref, 'release/vizier/')
+    uses: ./.github/workflows/get_image.yaml
+    with:
+      image-base-name: "dev_image_with_extras"
+  generate-docs:
+    needs: get-dev-image
+    runs-on: ubuntu-latest-8-cores
+    permissions:
+      contents: read
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: get dev bazel config
+      uses: ./.github/actions/bazelrc
+      with:
+        dev: 'true'
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
+    - name: Generate documentation files
+      shell: bash
+      run: |
+        bazel run src/carnot/docstring:docstring -- \
+        --output_json=$(pwd)/pxl_documentation.json
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: pxl_documentation
+        path: pxl_documentation.json
+        if-no-files-found: error
+  update-docs-px-dev:
+    needs: [get-dev-image, generate-docs]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone docs.px.dev repo
+      uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        repository: pixie-io/docs.px.dev
+        ref: main
+    - name: Import GPG key
+      shell: bash
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+      run: |
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+        git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
+        git config --global commit.gpgsign true
+    - name: Import SSH key
+      shell: bash
+      env:
+        BUILDBOT_SSH_KEY_B64: ${{ secrets.BUILDBOT_SSH_KEY_B64 }}
+      run: |
+        echo "${BUILDBOT_SSH_KEY_B64}" | base64 --decode > /tmp/ssh.key
+        chmod 600 /tmp/ssh.key
+    - name: Setup git
+      shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+        git remote add fork git@github.com:pixie-io-buildbot/docs.px.dev.git
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+      with:
+        name: pxl_documentation
+        path: external/
+    - name: Create PR
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      # yamllint disable rule:indentation
+      run: |
+        if [[ $(git status --porcelain=v1 | wc -l) -eq 0 ]]; then
+          echo "No updates to the documentation detected, exiting."
+          exit 0
+        fi
+
+        DATE=$(date +%Y-%m-%d)
+        PR_TITLE="[bot] Update pxl script documentation ${DATE}"
+        export BRANCH="update-docs-px-dev-documentation-${DATE}"
+        git checkout -b "${BRANCH}"
+        git add external
+        git commit -s -m "${PR_TITLE}"
+        git push -f fork "${BRANCH}"
+        gh pr create --repo pixie-io/docs.px.dev \
+          --head "pixie-io-buildbot:${BRANCH}" \
+          --body "This change updates the generated documentation against the latest pixie repo changes." \
+          --title "${PR_TITLE}"
