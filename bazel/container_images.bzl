@@ -36,12 +36,6 @@ def _gcr_io_image(name, digest, repo):
 
 def base_images():
     _gcr_io_image(
-        "nginx_base",
-        "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
-    )
-
-    _gcr_io_image(
         # This should be 1.21.4.1-7 but that version hasn't been tagged yet. So picking the versionless build.
         # 1.21.4.1-6 uses alpine:3.15.7 with some open CVEs.
         # As of writing this, alpine-apk-amd64 maps to a future 1.21.4.1-7 release based on alpine:3.15.8 with no known CVEs.
@@ -158,8 +152,10 @@ def stirling_test_images():
         "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
 
+    # NGINX with OpenSSL 3.0.8, for OpenSSL tracing tests.
+    # nginx:1.23.3-alpine-slim
     _gcr_io_image(
-        "nginx_alpine_OpenSSL_3_0_8_base_image",
+        "nginx_alpine_openssl_3_0_8_base_image",
         "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
         "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
     )
