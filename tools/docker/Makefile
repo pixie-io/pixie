@@ -127,7 +127,7 @@ KERNEL_BUILD_TARGETS = $(addprefix $(KERNEL_BUILD_DIR)/, $(patsubst %,$(KERNEL_B
 KERNEL_BUILD_TS := $(shell date +%Y%m%d%H%M%S)
 KERNEL_BUILD_GS_PATH := gs://pixie-dev-public/kernel-build/$(KERNEL_BUILD_TS)
 
-ETCD_IMAGE_VERSION := 3.5.8
+ETCD_IMAGE_VERSION := 3.5.9
 ETCD_IMAGE_TAG := "gcr.io/pixie-oss/pixie-dev-public/etcd:$(ETCD_IMAGE_VERSION)"
 
 ##############################################
