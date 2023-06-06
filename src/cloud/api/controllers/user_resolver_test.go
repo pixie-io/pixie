@@ -420,3 +420,33 @@ func TestUserSettingsResolver_SetUserAttributes(t *testing.T) {
 		})
 	}
 }
+
+func TestUserSettingsResolver_DeleteUser(t *testing.T) {
+	t.Run("deletion succeeds", func(t *testing.T) {
+		gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+		defer cleanup()
+		ctx := CreateTestContext()
+
+		mockClients.MockUser.EXPECT().DeleteUser(gomock.Any(), &cloudpb.DeleteUserRequest{
+			ID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		}).Return(&cloudpb.DeleteUserResponse{}, nil)
+
+		gqlSchema := LoadSchema(gqlEnv)
+		gqltesting.RunTests(t, []*gqltesting.Test{
+			{
+				Schema:  gqlSchema,
+				Context: ctx,
+				Query: `
+						mutation {
+							DeleteUser()
+						}
+					`,
+				ExpectedResult: `
+						{
+							"DeleteUser": true
+						}
+					`,
+			},
+		})
+	})
+}

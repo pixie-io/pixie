@@ -57,6 +57,7 @@ export interface GQLMutation {
   DeleteAPIKey: boolean;
   UpdateUserSettings: GQLUserSettings;
   SetUserAttributes: GQLUserAttributes;
+  DeleteUser: boolean;
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
   CreateOrg: string;
@@ -640,6 +641,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
   SetUserAttributes?: MutationToSetUserAttributesResolver<TParent>;
+  DeleteUser?: MutationToDeleteUserResolver<TParent>;
   InviteUser?: MutationToInviteUserResolver<TParent>;
   UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
   CreateOrg?: MutationToCreateOrgResolver<TParent>;
@@ -695,6 +697,10 @@ export interface MutationToSetUserAttributesArgs {
 }
 export interface MutationToSetUserAttributesResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToSetUserAttributesArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteUserResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface MutationToInviteUserArgs {

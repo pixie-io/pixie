@@ -44,6 +44,7 @@ extend type Mutation {
   DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(settings: EditableUserSettings!): UserSettings!
   SetUserAttributes(attributes: EditableUserAttributes!): UserAttributes!
+  DeleteUser: Boolean!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   CreateOrg(orgName: String!): ID!

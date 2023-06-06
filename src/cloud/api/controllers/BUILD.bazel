@@ -156,6 +156,7 @@ pl_go_test(
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",
         "@com_github_graph_gophers_graphql_go//:graphql-go",
+        "@com_github_graph_gophers_graphql_go//errors",
         "@com_github_graph_gophers_graphql_go//gqltesting",
         "@com_github_lestrrat_go_jwx//jwt",
         "@com_github_spf13_viper//:viper",
