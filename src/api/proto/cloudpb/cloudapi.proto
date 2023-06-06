@@ -78,7 +78,7 @@ message UpdateUserRequest {
 }
 
 // DeleteUserRequest is a request to delete a user. This request must be made with the user's
-// credentials.
+// credentials. If the user is the last user in the org, the org will also be deleted.
 message DeleteUserRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
