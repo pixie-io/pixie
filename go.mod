@@ -288,7 +288,6 @@ require (
 	k8s.io/component-base v0.26.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20230303024457-afdc3dddf62d // indirect
 	k8s.io/utils v0.0.0-20230308161112-d77c459e9343 // indirect
-	px.dev/pxapi v0.4.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/cmd/config v0.10.9 // indirect
