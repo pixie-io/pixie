@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+        "google.golang.org/grpc/credentials/insecure"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
 	"px.dev/pixie/src/api/go/pxapi/utils"
@@ -79,10 +80,32 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		opt(c)
 	}
 
+	if (strings.Contains(c.cloudAddr, "0.0.0.0") == true) {
+		if err := c.initLocalClient(ctx); err != nil {
+			return nil, err
+		}
+		return c, nil
+	}
+
 	if err := c.init(ctx); err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+
+// initLocalClient is for establishing gRPC connection to standalonePEM
+func (c *Client) initLocalClient(ctx context.Context) error {
+        conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+        if err != nil {
+                return err
+        }
+
+        c.grpcConn = conn
+        c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
+
+        c.vizier = vizierpb.NewVizierServiceClient(conn)
+        return nil
 }
 
 func (c *Client) init(ctx context.Context) error {
