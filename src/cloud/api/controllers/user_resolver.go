@@ -241,3 +241,23 @@ func (q *QueryResolver) SetUserAttributes(ctx context.Context, args *setUserAttr
 
 	return resp, nil
 }
+
+// DeleteUser deletes the user with the current credentials.
+func (q *QueryResolver) DeleteUser(ctx context.Context) (bool, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	id := sCtx.Claims.GetUserClaims().UserID
+	req := &cloudpb.DeleteUserRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(id),
+	}
+
+	_, err = q.Env.UserServer.DeleteUser(ctx, req)
+	if err != nil {
+		return false, rpcErrorHelper(err)
+	}
+
+	return true, nil
+}
