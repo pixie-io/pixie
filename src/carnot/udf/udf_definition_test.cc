@@ -24,6 +24,7 @@
 #include "src/carnot/udf/udf_definition.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/types.h"
 
 namespace px {
 namespace carnot {
@@ -198,6 +199,24 @@ class InitArgUDA : public udf::UDA {
   std::vector<std::string> updates_;
 };
 
+class SerdeUDA : public UDA {
+ public:
+  void Update(FunctionContext*, types::Int64Value v) { sum_ += v.val; }
+  void Merge(FunctionContext*, const SerdeUDA& other) { sum_ = sum_ + other.sum_; }
+  Int64Value Finalize(FunctionContext*) { return sum_; }
+  StringValue Serialize(FunctionContext*) { return absl::StrCat(sum_); }
+
+  Status Deserialize(FunctionContext*, const StringValue& data) {
+    if (!absl::SimpleAtoi(data, &sum_)) {
+      return Status{statuspb::Code::INVALID_ARGUMENT, "invalid serialized"};
+    }
+    return Status::OK();
+  }
+
+ private:
+  int64_t sum_ = 0;
+};
+
 TEST(UDADefinition, without_merge) {
   auto ctx = FunctionContext(nullptr, nullptr);
   UDADefinition def("minsum");
@@ -275,6 +294,31 @@ TEST(UDADefinition, init_args) {
   EXPECT_OK(def.ExecBatchUpdate(uda.get(), &ctx, {&v1}));
   EXPECT_OK(def.FinalizeValue(uda.get(), &ctx, &out));
   EXPECT_EQ("123, init_arg, true, [1, 2, 3]", out);
+}
+
+TEST(UDADefinition, serialize_deserialize) {
+  auto ctx = FunctionContext(nullptr, nullptr);
+  UDADefinition def("serdeuda");
+  EXPECT_OK(def.Init<SerdeUDA>());
+
+  auto uda = def.Make();
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+  EXPECT_OK(def.ExecBatchUpdate(uda.get(), &ctx, {&v1}));
+
+  auto output_builder = std::make_shared<arrow::StringBuilder>();
+  EXPECT_OK(def.SerializeArrow(uda.get(), &ctx, output_builder.get()));
+  std::shared_ptr<arrow::Array> ser;
+  EXPECT_TRUE(output_builder->Finish(&ser).ok());
+  EXPECT_EQ(1, ser->length());
+  auto casted = static_cast<arrow::StringArray*>(ser.get());
+  EXPECT_EQ("6", casted->GetView(0));
+
+  auto uda2 = def.Make();
+  EXPECT_OK(def.Deserialize(uda2.get(), &ctx, "100"));
+
+  types::Int64Value out;
+  EXPECT_OK(def.FinalizeValue(uda2.get(), &ctx, &out));
+  EXPECT_EQ(100, out.val);
 }
 
 }  // namespace udf
