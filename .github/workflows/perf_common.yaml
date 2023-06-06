@@ -34,12 +34,9 @@ jobs:
       ref: ${{ inputs.ref }}
   generate-perf-matrix:
     needs: get-dev-image-with-extras
-    runs-on: [self-hosted, nokvm]
+    runs-on: ubuntu-latest-16-cores
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
-      options: --cpus 15
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -50,6 +47,9 @@ jobs:
       run: git config --global --add safe.directory `pwd`
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
+      with:
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Set matrix
       id: set-matrix
       run: |
@@ -58,12 +58,9 @@ jobs:
         echo "matrix=${matrix}" >> $GITHUB_OUTPUT
   run-perf-eval:
     needs: [get-dev-image-with-extras, generate-perf-matrix]
-    runs-on: [self-hosted, nokvm]
+    runs-on: ubuntu-latest-16-cores
     container:
       image: ${{ needs.get-dev-image-with-extras.outputs.image-with-tag }}
-      options: --cpus 15
-      volumes:
-      - /etc/bazelrc:/etc/bazelrc
     strategy:
       matrix: ${{ fromJson(needs.generate-perf-matrix.outputs.matrix) }}
       fail-fast: false
@@ -72,10 +69,6 @@ jobs:
       with:
         ref: ${{ inputs.ref }}
         fetch-depth: 0
-    - id: create-gcloud-key
-      env:
-        SERVICE_ACCOUNT_KEY: ${{ secrets.PERF_GCLOUD_KEY }}
-      run: echo "$SERVICE_ACCOUNT_KEY" | base64 --decode > /tmp/gcloud.json && chmod 600 /tmp/gcloud.json
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - id: get-commit-sha
@@ -85,23 +78,23 @@ jobs:
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
       with:
+        use_remote_exec: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
         download_toplevel: 'true'
-    - name: activate gcloud service account
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud.json"
-      run: |
-        service_account="$(jq -r '.client_email' "$GOOGLE_APPLICATION_CREDENTIALS")"
-        gcloud auth activate-service-account "${service_account}" --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
     - name: Install Pixie CLI
       run: |
         bazel build -c opt //src/pixie_cli:px
         p="$(bazel cquery -c opt //src/pixie_cli:px --output starlark --starlark:expr 'target.files.to_list()[0].path')"
         cp "${p}" /usr/bin/px
+    - id: gcloud-creds
+      uses: ./.github/actions/gcloud_creds
+      with:
+        SERVICE_ACCOUNT_KEY: ${{ secrets.PERF_GCLOUD_KEY }}
     - name: Run perf for ${{ matrix.suite }}/${{ matrix.experiment_name }}
       id: run-perf
       env:
         PX_API_KEY: ${{ secrets.PERF_PX_API_KEY }}
-        GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud.json"
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       # yamllint disable rule:indentation
       run: |
         echo "$GOOGLE_APPLICATION_CREDENTIALS"
