@@ -78,9 +78,10 @@ TEST_F(PartialOpMgrTest, agg_test) {
   auto service_col = MakeColumn("service", 0);
   EXPECT_OK(service_col->SetResolvedType(ValueType::Create(types::STRING, types::ST_NONE)));
   auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
-  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col}, {{"mean", mean_func}});
-  Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
-                        {"count", "service", "mean"});
+  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
+                             {{"mean", mean_func}, {"mean2", mean_func}});
+  Relation agg_relation({types::INT64, types::STRING, types::FLOAT64, types::FLOAT64},
+                        {"count", "service", "mean", "mean2"});
   MakeMemSink(agg, "out");
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -118,8 +119,8 @@ TEST_F(PartialOpMgrTest, agg_test) {
   }
   // Confirm that the relations are good.
   EXPECT_THAT(*prepare_agg->resolved_table_type(),
-              IsTableType(Relation({types::INT64, types::STRING, types::STRING},
-                                   {"count", "service", "serialized_expressions"})));
+              IsTableType(Relation({types::INT64, types::STRING, types::STRING, types::STRING},
+                                   {"count", "service", "serialized_mean", "serialized_mean2"})));
 
   EXPECT_THAT(*merge_agg->resolved_table_type(), IsTableType(agg_relation));
 }

@@ -144,6 +144,8 @@ class AggregateOperator : public Operator {
   const std::vector<GroupInfo>& groups() const { return groups_; }
   const std::vector<std::shared_ptr<AggregateExpression>>& values() const { return values_; }
   bool windowed() const { return pb_.windowed(); }
+  bool partial_agg() const { return pb_.partial_agg(); }
+  bool finalize_results() const { return pb_.finalize_results(); }
 
  private:
   std::vector<std::shared_ptr<AggregateExpression>> values_;

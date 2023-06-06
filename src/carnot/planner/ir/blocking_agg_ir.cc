@@ -119,7 +119,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
 
 Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_agg_op();
-  if (finalize_results_ && !partial_agg_) {
+  if (!partial_agg_) {
     (*pb->mutable_values()) = pre_split_proto_.values();
     (*pb->mutable_value_names()) = pre_split_proto_.value_names();
   } else {

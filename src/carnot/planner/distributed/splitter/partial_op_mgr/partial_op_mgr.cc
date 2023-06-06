@@ -58,8 +58,10 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR
     new_type->AddColumn(group->col_name(), group->resolved_type());
   }
 
-  // Add column for the serialized expression
-  new_type->AddColumn("serialized_expressions", ValueType::Create(types::STRING, types::ST_NONE));
+  for (const auto& col_expr : agg->aggregate_expressions()) {
+    new_type->AddColumn("serialized_" + col_expr.name,
+                        ValueType::Create(types::STRING, types::ST_NONE));
+  }
   PX_RETURN_IF_ERROR(new_agg->SetResolvedType(new_type));
 
   DCHECK(Match(new_agg, PartialAgg()));
