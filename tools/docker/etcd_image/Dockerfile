@@ -14,15 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$TARGETPLATFORM quay.io/coreos/etcd:3.5.8@sha256:522b262f24209d7f60c01eaa98a925aa9c20a5c17aa307aeb9dff0345ffb92db
-
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
-
-FROM --platform=$TARGETPLATFORM alpine:3.17@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126
-COPY --from=0 /usr/local/bin/etcd /usr/local/bin/etcd
-COPY --from=0 /usr/local/bin/etcdctl /usr/local/bin/etcdctl
-COPY --from=0 /usr/local/bin/etcdutl /usr/local/bin/etcdutl
+FROM quay.io/coreos/etcd:3.5.9@sha256:18ca110b5ce9a177bb80d6b4a08d73bda54b549d7a0eb6f66e6da69bf919c63f
+COPY --from=busybox:1.36.1-musl@sha256:a0f497089b970e099fe76fc28f352851c6a99d8191c67c9269b02f1e96db5db9 /bin /bin
 
 COPY ./*.sh /etc/etcd/scripts/
 
