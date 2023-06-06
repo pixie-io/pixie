@@ -202,3 +202,30 @@ func (u *UserServiceServer) SetUserAttributes(ctx context.Context, req *cloudpb.
 
 	return &cloudpb.SetUserAttributesResponse{}, nil
 }
+
+// DeleteUser will delete the user. The request must be made by the user being deleted.
+func (u *UserServiceServer) DeleteUser(ctx context.Context, req *cloudpb.DeleteUserRequest) (*cloudpb.DeleteUserResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claimsutils.GetClaimsType(sCtx.Claims) != claimsutils.UserClaimType {
+		return nil, errors.New("Unauthorized")
+	}
+
+	claimsUserID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().UserID)
+
+	if claimsUserID != utils.UUIDFromProtoOrNil(req.ID) {
+		return nil, errors.New("Unauthorized")
+	}
+
+	_, err = u.ProfileServiceClient.DeleteUser(ctx, &profilepb.DeleteUserRequest{
+		ID: req.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.DeleteUserResponse{}, nil
+}

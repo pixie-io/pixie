@@ -38,6 +38,26 @@ func (m *MockUserServiceClient) EXPECT() *MockUserServiceClientMockRecorder {
 	return m.recorder
 }
 
+// DeleteUser mocks base method.
+func (m *MockUserServiceClient) DeleteUser(ctx context.Context, in *cloudpb.DeleteUserRequest, opts ...grpc.CallOption) (*cloudpb.DeleteUserResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteUser", varargs...)
+	ret0, _ := ret[0].(*cloudpb.DeleteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockUserServiceClientMockRecorder) DeleteUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserServiceClient)(nil).DeleteUser), varargs...)
+}
+
 // GetUser mocks base method.
 func (m *MockUserServiceClient) GetUser(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cloudpb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -179,6 +199,21 @@ func NewMockUserServiceServer(ctrl *gomock.Controller) *MockUserServiceServer {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUserServiceServer) EXPECT() *MockUserServiceServerMockRecorder {
 	return m.recorder
+}
+
+// DeleteUser mocks base method.
+func (m *MockUserServiceServer) DeleteUser(arg0 context.Context, arg1 *cloudpb.DeleteUserRequest) (*cloudpb.DeleteUserResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.DeleteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockUserServiceServerMockRecorder) DeleteUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserServiceServer)(nil).DeleteUser), arg0, arg1)
 }
 
 // GetUser mocks base method.

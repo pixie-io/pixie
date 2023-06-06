@@ -221,3 +221,60 @@ func TestServer_UpdateUser(t *testing.T) {
 		})
 	}
 }
+
+func TestServer_DeleteUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	updateUserTest := []struct {
+		name         string
+		userID       string
+		shouldReject bool
+		ctx          context.Context
+	}{
+		{
+			name:         "user can delete themselves",
+			userID:       "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			shouldReject: false,
+			ctx:          CreateTestContext(),
+		},
+		{
+			name:         "user cannot delete another user",
+			userID:       "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			shouldReject: true,
+			ctx:          CreateTestContext(),
+		},
+	}
+
+	for _, tc := range updateUserTest {
+		t.Run(tc.name, func(t *testing.T) {
+			reqUserID := uuid.FromStringOrNil(tc.userID)
+
+			req := &cloudpb.DeleteUserRequest{
+				ID: utils.ProtoFromUUID(reqUserID),
+			}
+
+			mockDeleteReq := &profilepb.DeleteUserRequest{
+				ID: utils.ProtoFromUUID(reqUserID),
+			}
+
+			if !tc.shouldReject {
+				mockClients.MockProfile.EXPECT().DeleteUser(gomock.Any(), mockDeleteReq).
+					Return(&profilepb.DeleteUserResponse{}, nil)
+			}
+
+			userServer := &controllers.UserServiceServer{mockClients.MockProfile, mockClients.MockOrg}
+			resp, err := userServer.DeleteUser(tc.ctx, req)
+
+			if !tc.shouldReject {
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+			} else {
+				assert.NotNil(t, err)
+			}
+		})
+	}
+}
