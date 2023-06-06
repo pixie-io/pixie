@@ -456,6 +456,10 @@ func TestDatastore(t *testing.T) {
 		db.MustExec(insertOrgQuery, orgID, "not-my-org", "not-my-org.com")
 		insertUserQuery := `INSERT INTO users (id, org_id, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6)`
 		db.MustExec(insertUserQuery, userID, orgID, "first", "last", "person@not-my-org.com", "github")
+		insertUserSetting := `INSERT INTO user_settings (user_id, analytics_optout) VALUES ($1, $2)`
+		db.MustExec(insertUserSetting, userID, false)
+		insertUserAttr := `INSERT INTO user_attributes (user_id, tour_seen) VALUES ($1, $2)`
+		db.MustExec(insertUserAttr, userID, false)
 
 		d := datastore.NewDatastore(db, "test_key")
 
@@ -466,6 +470,12 @@ func TestDatastore(t *testing.T) {
 		orgInfo, err := d.GetOrg(uuid.FromStringOrNil(orgID))
 		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
+		settings, err := d.GetUserSettings(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+		require.NotNil(t, settings)
+		attrs, err := d.GetUserAttributes(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+		require.NotNil(t, attrs)
 
 		err = d.DeleteOrgAndUsers(uuid.FromStringOrNil(orgID))
 		require.NoError(t, err)
@@ -477,6 +487,61 @@ func TestDatastore(t *testing.T) {
 		orgInfo, err = d.GetOrg(uuid.FromStringOrNil(orgID))
 		require.NotNil(t, err)
 		require.Nil(t, orgInfo)
+		settings, err = d.GetUserSettings(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, settings)
+		attrs, err = d.GetUserAttributes(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, attrs)
+	})
+
+	t.Run("delete user", func(t *testing.T) {
+		mustLoadTestData(db)
+		orgID := "223e4567-e89b-12d3-a456-426655440009"
+		userID := "223e4567-e89b-12d3-a456-426655440001"
+
+		// Add in data to be deleted
+		insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
+		db.MustExec(insertOrgQuery, orgID, "not-my-org", "not-my-org.com")
+		insertUserQuery := `INSERT INTO users (id, org_id, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6)`
+		db.MustExec(insertUserQuery, userID, orgID, "first", "last", "person@not-my-org.com", "github")
+		insertUserSetting := `INSERT INTO user_settings (user_id, analytics_optout) VALUES ($1, $2)`
+		db.MustExec(insertUserSetting, userID, false)
+		insertUserAttr := `INSERT INTO user_attributes (user_id, tour_seen) VALUES ($1, $2)`
+		db.MustExec(insertUserAttr, userID, false)
+
+		d := datastore.NewDatastore(db, "test_key")
+
+		// Should show up before the deletion
+		userInfo, err := d.GetUser(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+		require.NotNil(t, userInfo)
+		orgInfo, err := d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		require.NotNil(t, orgInfo)
+		settings, err := d.GetUserSettings(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+		require.NotNil(t, settings)
+		attrs, err := d.GetUserAttributes(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+		require.NotNil(t, attrs)
+
+		err = d.DeleteUser(uuid.FromStringOrNil(userID))
+		require.NoError(t, err)
+
+		// Should not show up before the deletion
+		userInfo, err = d.GetUser(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, userInfo)
+		orgInfo, err = d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		require.NotNil(t, orgInfo)
+		settings, err = d.GetUserSettings(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, settings)
+		attrs, err = d.GetUserAttributes(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, attrs)
 	})
 
 	t.Run("update user", func(t *testing.T) {

@@ -66,6 +66,20 @@ func (mr *MockUserDatastoreMockRecorder) CreateUserAndOrg(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserAndOrg", reflect.TypeOf((*MockUserDatastore)(nil).CreateUserAndOrg), arg0, arg1)
 }
 
+// DeleteUser mocks base method.
+func (m *MockUserDatastore) DeleteUser(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUser", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUser indicates an expected call of DeleteUser.
+func (mr *MockUserDatastoreMockRecorder) DeleteUser(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockUserDatastore)(nil).DeleteUser), arg0)
+}
+
 // GetUser mocks base method.
 func (m *MockUserDatastore) GetUser(arg0 uuid.UUID) (*datastore.UserInfo, error) {
 	m.ctrl.T.Helper()

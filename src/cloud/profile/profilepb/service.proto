@@ -42,6 +42,7 @@ service ProfileService {
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
 // Org service tracks organization information.
@@ -162,6 +163,16 @@ message GetOrgsRequest {}
 message GetOrgsResponse {
   repeated OrgInfo orgs = 1;
 }
+
+// DeleteUserRequest is a request to delete a user. This request must be made with the user's
+// credentials.
+message DeleteUserRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
+
+// DeleteUserResponse is the response to a user deletion request.
+message DeleteUserResponse {}
 
 message UpdateUserRequest {
   // The ID of the user.

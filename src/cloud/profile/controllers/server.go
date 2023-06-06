@@ -60,6 +60,8 @@ type UserDatastore interface {
 	CreateUserAndOrg(*datastore.OrgInfo, *datastore.UserInfo) (orgID uuid.UUID, userID uuid.UUID, err error)
 	// UpdateUser updates the user info.
 	UpdateUser(*datastore.UserInfo) error
+	// DeleteUser deletes the user.
+	DeleteUser(uuid.UUID) error
 }
 
 // OrgDatastore is the interface used as the backing store for org information.
@@ -403,6 +405,37 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 	}
 
 	return userInfoToProto(userInfo), nil
+}
+
+// DeleteUser deletes a user. If they are the last user in the org, also deletes the org.
+func (s *Server) DeleteUser(ctx context.Context, req *profilepb.DeleteUserRequest) (*profilepb.DeleteUserResponse, error) {
+	userID := utils.UUIDFromProtoOrNil(req.ID)
+	userInfo, err := s.uds.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+	if userInfo == nil {
+		return nil, status.Error(codes.NotFound, "no such user")
+	}
+
+	// Check whether user is the last user in the org.
+	users, err := s.ods.GetUsersInOrg(*userInfo.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only delete the user, not the org.
+	if len(users) > 1 {
+		err = s.uds.DeleteUser(userID)
+	} else { // Otherwise, delete the user and org.
+		err = s.ods.DeleteOrgAndUsers(*userInfo.OrgID)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.DeleteUserResponse{}, nil
 }
 
 // GetUserSettings gets the user settings for the given user.
