@@ -45,7 +45,7 @@ class KelvinManager : public Manager {
                 std::string_view addr, int grpc_server_port, std::string_view nats_url,
                 std::string_view mds_url)
       : Manager(agent_id, pod_name, host_ip, grpc_server_port, KelvinManager::Capabilities(),
-                nats_url, mds_url) {
+                KelvinManager::Parameters(), nats_url, mds_url) {
     info()->address = std::string(addr);
   }
 
@@ -60,6 +60,12 @@ class KelvinManager : public Manager {
     services::shared::agent::AgentCapabilities capabilities;
     capabilities.set_collects_data(false);
     return capabilities;
+  }
+
+  static services::shared::agent::AgentParameters Parameters() {
+    services::shared::agent::AgentParameters parameters;
+    parameters.set_profiler_stack_trace_sample_period_ms(-1);
+    return parameters;
   }
 };
 
