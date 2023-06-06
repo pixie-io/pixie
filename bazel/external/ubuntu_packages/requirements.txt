@@ -1,2 +1,2 @@
 pyzstd==0.15.2
-requests==2.27.1
+requests==2.31.0
