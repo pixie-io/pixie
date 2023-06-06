@@ -2571,7 +2571,6 @@ __metadata:
     webpack-bundle-analyzer: ^4.8.0
     webpack-cli: ^5.1.1
     webpack-dev-server: ^4.15.0
-    webpack-plugin-replace: ^1.2.0
     yaml: ^1.6.0
   languageName: unknown
   linkType: soft
@@ -15640,13 +15639,6 @@ __metadata:
     clone-deep: ^4.0.1
     wildcard: ^2.0.0
   checksum: 09608c3a4928246e9c1c09c22b5f867c38d0ab0fb027ebcc3b15d42659f06a10cfa7f7e2cf2a0ace6f2d571c1cd744ec23e7b2069d34a70378e163e8e035c290
-  languageName: node
-  linkType: hard
-
-"webpack-plugin-replace@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "webpack-plugin-replace@npm:1.2.0"
-  checksum: 9334e8f7f5c47566937c91c310fe6d1bdbb7f6768a4f1a03e0d1b5f8f51198469652e15ce98f639abcbb17560a90633007535d6a1a3eef686015cf342a9f716b
   languageName: node
   linkType: hard
 
