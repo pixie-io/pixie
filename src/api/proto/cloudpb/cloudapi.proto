@@ -44,6 +44,7 @@ service UserService {
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
 }
 
 // OrganizationService enables users to make changes to their organization.
@@ -75,6 +76,16 @@ message UpdateUserRequest {
   google.protobuf.StringValue display_picture = 2;
   google.protobuf.BoolValue is_approved = 3;
 }
+
+// DeleteUserRequest is a request to delete a user. This request must be made with the user's
+// credentials. If the user is the last user in the org, the org will also be deleted.
+message DeleteUserRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+}
+
+// DeleteUserResponse is the response to a user deletion request.
+message DeleteUserResponse {}
 
 // A request to update the user settings for a particular user.
 message UpdateUserSettingsRequest {
