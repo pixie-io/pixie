@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <utility>
 #include <vector>
 
@@ -73,10 +74,7 @@ class K8sUpdateHandlerTest : public ::testing::Test {
   void TearDown() override { dispatcher_->Exit(); }
 
   K8sUpdateHandlerTest() {
-    start_monotonic_time_ = std::chrono::steady_clock::now();
-    start_system_time_ = std::chrono::system_clock::now();
-    time_system_ =
-        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    time_system_ = std::make_unique<event::SimulatedTimeSystem>();
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
@@ -92,8 +90,6 @@ class K8sUpdateHandlerTest : public ::testing::Test {
                 TestResourceUpdate(70, 60)};
   }
 
-  event::MonotonicTimePoint start_monotonic_time_;
-  event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
@@ -121,7 +117,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdates) {
   EXPECT_EQ(0, nats_conn_->published_msgs().size());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
@@ -148,7 +144,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeout) {
   EXPECT_EQ(0, nats_conn_->published_msgs().size());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
@@ -160,7 +156,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeout) {
   EXPECT_EQ(0, missing_md.to_update_version());
 
   // Push forward the clock so that the new request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
+  time_system_->Sleep(std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(2, nats_conn_->published_msgs().size());
@@ -177,7 +173,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeoutMiddleMsg) {
   EXPECT_EQ(0, nats_conn_->published_msgs().size());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
@@ -199,7 +195,7 @@ TEST_F(K8sUpdateHandlerTest, RequestInitialK8sUpdatesTimeoutMiddleMsg) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(2, nats_conn_->published_msgs().size());
@@ -230,7 +226,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdates) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.
@@ -264,7 +260,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdates) {
   EXPECT_EQ(7, fake_mds_manager_->num_k8s_updates());
 
   // Check that no more re-request messages were sent to NATS.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
@@ -288,7 +284,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesTimeoutRerequest) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.
@@ -301,7 +297,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesTimeoutRerequest) {
   EXPECT_EQ(50, missing_md.to_update_version());
 
   // Push forward the clock so that the re-request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that the re-request got sent.
@@ -329,7 +325,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncated) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.
@@ -347,7 +343,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncated) {
   EXPECT_EQ(4, fake_mds_manager_->num_k8s_updates());
 
   // Check that no more re-request messages were sent to NATS.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
@@ -374,7 +370,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncatedZeroResp) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.
@@ -392,7 +388,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesMDSTruncatedZeroResp) {
   EXPECT_EQ(2, fake_mds_manager_->num_k8s_updates());
 
   // Check that no more re-request messages were sent to NATS.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
@@ -422,7 +418,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesDropBacklog) {
   EXPECT_EQ(1, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_);
+  time_system_->Sleep(std::chrono::seconds(0));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.
@@ -449,7 +445,7 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesDropBacklog) {
   EXPECT_EQ(2, fake_mds_manager_->num_k8s_updates());
 
   // Push forward the clock so that the 2nd dropped backlog request gets sent.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
+  time_system_->Sleep(std::chrono::seconds(6));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check that NATS has received a missing metadata request.

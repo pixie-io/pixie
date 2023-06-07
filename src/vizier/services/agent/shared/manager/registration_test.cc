@@ -50,10 +50,7 @@ class RegistrationHandlerTest : public ::testing::Test {
   void TearDown() override { dispatcher_->Exit(); }
 
   RegistrationHandlerTest() {
-    start_monotonic_time_ = std::chrono::steady_clock::now();
-    start_system_time_ = std::chrono::system_clock::now();
-    time_system_ =
-        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    time_system_ = std::make_unique<event::SimulatedTimeSystem>();
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
@@ -83,8 +80,6 @@ class RegistrationHandlerTest : public ::testing::Test {
         dispatcher_.get(), &agent_info_, nats_conn_.get(), register_hook, reregister_hook);
   }
 
-  event::MonotonicTimePoint start_monotonic_time_;
-  event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
@@ -102,7 +97,7 @@ TEST_F(RegistrationHandlerTest, RegisterAgent) {
   registration_handler_->RegisterAgent();
 
   // Advance the clock to account for the random wait time.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000));
+  time_system_->Sleep(std::chrono::milliseconds(60 * 1000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
@@ -131,7 +126,7 @@ TEST_F(RegistrationHandlerTest, RegisterAndReregisterAgent) {
   // Agent registration setup
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   registration_handler_->RegisterAgent();
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000 + 1));
+  time_system_->Sleep(std::chrono::milliseconds(60 * 1000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
   auto registration_ack = std::make_unique<messages::VizierMessage>();
@@ -142,7 +137,7 @@ TEST_F(RegistrationHandlerTest, RegisterAndReregisterAgent) {
 
   // Now reregister the agent.
   registration_handler_->ReregisterAgent();
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(120 * 1000 + 1));
+  time_system_->Sleep(std::chrono::milliseconds(120 * 1000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(2, nats_conn_->published_msgs().size());
 
@@ -164,11 +159,11 @@ TEST_F(RegistrationHandlerTest, RegisterAgentTimeout) {
   registration_handler_->RegisterAgent();
 
   // Advance the clock to account for the random wait time.
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(60 * 1000));
+  time_system_->Sleep(std::chrono::milliseconds(60 * 1000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
   EXPECT_EQ(1, nats_conn_->published_msgs().size());
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(120 * 1000));
+  time_system_->Sleep(std::chrono::milliseconds(120 * 1000));
   ASSERT_DEATH(dispatcher_->Run(event::Dispatcher::RunType::NonBlock),
                "Timeout waiting for registration ack");
 }

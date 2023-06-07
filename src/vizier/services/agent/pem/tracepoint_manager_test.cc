@@ -61,10 +61,7 @@ class TracepointManagerTest : public ::testing::Test {
   void TearDown() override { dispatcher_->Exit(); }
 
   TracepointManagerTest() {
-    start_monotonic_time_ = std::chrono::steady_clock::now();
-    start_system_time_ = std::chrono::system_clock::now();
-    time_system_ =
-        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    time_system_ = std::make_unique<event::SimulatedTimeSystem>();
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
@@ -92,8 +89,6 @@ class TracepointManagerTest : public ::testing::Test {
     return msg.tracepoint_message().tracepoint_info_update();
   }
 
-  event::MonotonicTimePoint start_monotonic_time_;
-  event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
@@ -127,7 +122,7 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillOnce(Return(error::ResourceUnavailable("Not ready yet")));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(5));
+  time_system_->Sleep(std::chrono::seconds(5));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
@@ -139,7 +134,7 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(expected_publish_pb));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
+  time_system_->Sleep(std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   ASSERT_EQ(1, nats_conn_->published_msgs().size());
@@ -164,7 +159,7 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillOnce(Return(error::ResourceUnavailable("Not ready yet")));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(5));
+  time_system_->Sleep(std::chrono::seconds(5));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
@@ -172,7 +167,7 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(error::Internal("Probe failed for unknown reasons")));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
+  time_system_->Sleep(std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   ASSERT_EQ(1, nats_conn_->published_msgs().size());
@@ -197,7 +192,7 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillOnce(Return(error::ResourceUnavailable("Not ready yet")));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(5));
+  time_system_->Sleep(std::chrono::seconds(5));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   // Check to make sure no updates were sent to MDS.
@@ -205,7 +200,7 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(error::FailedPrecondition("nothing to see here")));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
+  time_system_->Sleep(std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   ASSERT_EQ(1, nats_conn_->published_msgs().size());

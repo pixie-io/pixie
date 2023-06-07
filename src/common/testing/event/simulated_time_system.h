@@ -35,8 +35,14 @@ namespace event {
 
 class SimulatedTimer;
 
+constexpr auto kDefaultSimulatedTime = std::chrono::seconds(1577865601);
+
 class SimulatedTimeSystem final : public TimeSystem {
  public:
+  SimulatedTimeSystem() 
+    : index_(0), 
+      monotonic_time_(kDefaultSimulatedTime), 
+      system_time_(kDefaultSimulatedTime) {}
   SimulatedTimeSystem(MonotonicTimePoint monotonic_time, SystemTimePoint system_time)
       : index_(0), monotonic_time_(monotonic_time), system_time_(system_time) {}
   ~SimulatedTimeSystem();
@@ -56,6 +62,7 @@ class SimulatedTimeSystem final : public TimeSystem {
    * Sleep for the given duration. This updates the monotonic and system time.
    */
   void Sleep(const Duration& duration);
+
   /**
    * Sets the time forward monotonically. If the supplied argument moves
    * backward in time, the call is a no-op. If the supplied argument moves
