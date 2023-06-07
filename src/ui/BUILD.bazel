@@ -51,6 +51,7 @@ LICENSES_SRCS = [
 pl_webpack_deps(
     name = "ui_deps",
     srcs = UI_DEP_PACKAGES,
+    tags = ["no-remote-exec"],
 )
 
 pl_webpack_library(
@@ -62,12 +63,14 @@ pl_webpack_library(
         "//conditions:default": False,
     }),
     deps = ":ui_deps",
+    tags = ["no-remote-exec"],
 )
 
 pl_ui_test(
     name = "ui_tests",
     srcs = UI_SRCS,
     deps = ":ui_deps",
+    tags = ["no-remote-exec"],
 )
 
 pl_deps_licenses(
@@ -77,4 +80,5 @@ pl_deps_licenses(
     # Move that into source and remove this.
     visibility = ["//visibility:public"],
     deps = ":ui_deps",
+    tags = ["no-remote-exec"],
 )
