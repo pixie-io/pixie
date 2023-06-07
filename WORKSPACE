@@ -239,6 +239,22 @@ go_download_sdk(
     version = "1.20.5",
 )
 
+# The go_sdk_boringcrypto SDK is used for testing boringcrypto specific functionality (TLS tracing).
+# This SDK is used for specific test cases and is not meant to be used wholesale for a particular go
+# version.
+#
+# rules_go doesn't support using multiple SDKs with the same version and differing
+# GOEXPERIMENTs. Until this is addressed in https://github.com/bazelbuild/rules_go/issues/3582,
+# go_sdk_boringcrypto is meant to be 1 bug fix version behind our latest go release. In the event
+# our primary toolchain is upgraded to the first release of a new major version (i.e. 1.20.0) an
+# rc suffixed build should be used for go_sdk_boringcrypto (1.20rcX) until the first minor release
+# is available (1.20.1).
+go_download_sdk(
+    name = "go_sdk_boringcrypto",
+    experiments = ["boringcrypto"],
+    version = "1.20.4",
+)
+
 pip_parse(
     name = "amqp_gen_reqs",
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.bazel.txt",

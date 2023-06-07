@@ -28,6 +28,8 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_19_tls_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_20_tls_client_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_1_20_tls_server_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_boringcrypto_tls_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/go_boringcrypto_tls_server_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -85,8 +87,14 @@ struct Go1_20TLSClientServerContainers {
   using GoTLSClientContainer = ::px::stirling::testing::Go1_20_TLSClientContainer;
 };
 
+struct GoBoringCryptoTLSClientServerContainers {
+  using GoTLSServerContainer = ::px::stirling::testing::GoBoringCryptoTLSServerContainer;
+  using GoTLSClientContainer = ::px::stirling::testing::GoBoringCryptoTLSClientContainer;
+};
+
 typedef ::testing::Types<Go1_17TLSClientServerContainers, Go1_18TLSClientServerContainers,
-                         Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers>
+                         Go1_19TLSClientServerContainers, Go1_20TLSClientServerContainers,
+                         GoBoringCryptoTLSClientServerContainers>
     GoVersions;
 TYPED_TEST_SUITE(GoTLSTraceTest, GoVersions);
 
