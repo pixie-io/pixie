@@ -102,10 +102,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   void TearDown() override { dispatcher_->Exit(); }
 
   HeartbeatMessageHandlerTest() {
-    start_monotonic_time_ = std::chrono::steady_clock::now();
-    start_system_time_ = std::chrono::system_clock::now();
-    time_system_ =
-        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    time_system_ = std::make_unique<event::SimulatedTimeSystem>();
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
@@ -148,8 +145,6 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     }
   }
 
-  event::MonotonicTimePoint start_monotonic_time_;
-  event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
@@ -164,7 +159,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
 };
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
-  auto start_time_nanos = time_to_nanos(start_monotonic_time_);
+  auto start_time_nanos = time_to_nanos(time_system_->MonotonicTime());
   md::UPID upid(1, 2, start_time_nanos);
   md::PIDInfo pid_info(upid, "", "./a_command", "example_container");
   mds_manager_->AddPIDStatusEvent(std::make_unique<md::PIDStartedEvent>(pid_info));
@@ -180,7 +175,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
               Partially(EqualsProto(absl::Substitute(kAgentPIDStartedTemplate, start_time_nanos))));
   CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
+  time_system_->Sleep(std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   auto hb_ack = std::make_unique<messages::VizierMessage>();
@@ -189,13 +184,13 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
 
   auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
 
-  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
-  auto stop_time_nanos = time_to_nanos(new_time);
+  auto sleep = std::chrono::milliseconds(5 * 5000 + 1);
+  auto stop_time_nanos = time_to_nanos(time_system_->MonotonicTime() + sleep);
 
   mds_manager_->AddPIDStatusEvent(
       std::make_unique<md::PIDTerminatedEvent>(pid_info.upid(), stop_time_nanos));
 
-  time_system_->SetMonotonicTime(new_time);
+  time_system_->Sleep(sleep);
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
@@ -212,7 +207,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
 }
 
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatLongPIDCmdLine) {
-  auto start_time_nanos = time_to_nanos(start_monotonic_time_);
+  auto start_time_nanos = time_to_nanos(time_system_->MonotonicTime());
   md::UPID upid(1, 2, start_time_nanos);
   std::string s(4097, 'a');
   md::PIDInfo pid_info(upid, "", s, "example_container");
@@ -235,7 +230,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataChange) {
   // Check that all of the information we expect is there.
   CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
+  time_system_->Sleep(std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   auto hb_ack = std::make_unique<messages::VizierMessage>();
@@ -246,8 +241,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataChange) {
 
   EXPECT_OK(md_filter_->InsertEntity(md::MetadataType::SERVICE_NAME, "pl/another_service"));
 
-  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
-  time_system_->SetMonotonicTime(new_time);
+  time_system_->Sleep(std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
@@ -267,7 +261,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataAfterDisable) {
   // Check that all of the information we expect is there.
   CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
+  time_system_->Sleep(std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   auto hb_ack = std::make_unique<messages::VizierMessage>();
@@ -279,8 +273,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataAfterDisable) {
   heartbeat_handler_->DisableHeartbeats();
   heartbeat_handler_->EnableHeartbeats();
 
-  auto new_time = start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1);
-  time_system_->SetMonotonicTime(new_time);
+  time_system_->Sleep(std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
@@ -297,7 +290,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
   EXPECT_EQ(0, hb.sequence_number());
   EXPECT_THAT(hb.update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
+  time_system_->Sleep(std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   auto hb_ack = std::make_unique<messages::VizierMessage>();
@@ -309,7 +302,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatRelationUpdates) {
   RelationInfo relation_info2("relation2", /* id */ 1, "desc2", relation2);
   s = relation_info_manager_->AddRelationInfo(relation_info2);
 
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
+  time_system_->Sleep(std::chrono::milliseconds(5 * 5000 + 1));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
 
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
@@ -324,10 +317,7 @@ class HeartbeatNackMessageHandlerTest : public ::testing::Test {
   void TearDown() override { dispatcher_->Exit(); }
 
   HeartbeatNackMessageHandlerTest() {
-    start_monotonic_time_ = std::chrono::steady_clock::now();
-    start_system_time_ = std::chrono::system_clock::now();
-    time_system_ =
-        std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
+    time_system_ = std::make_unique<event::SimulatedTimeSystem>();
     api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
     nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
@@ -342,8 +332,6 @@ class HeartbeatNackMessageHandlerTest : public ::testing::Test {
         });
   }
 
-  event::MonotonicTimePoint start_monotonic_time_;
-  event::SystemTimePoint start_system_time_;
   std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
