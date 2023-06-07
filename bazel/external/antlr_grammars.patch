@@ -2,7 +2,7 @@ diff --git a/sql/mysql/Positive-Technologies/MySqlLexer.g4 b/sql/mysql/Positive-
 similarity index 99%
 rename from sql/mysql/Positive-Technologies/MySqlLexer.g4
 rename to sql/mysql/Positive-Technologies/MySQLLexer.g4
-index 98dd6d8d..10dd0d1a 100644
+index 98dd6d8d..4ecdb4c5 100644
 --- a/sql/mysql/Positive-Technologies/MySqlLexer.g4
 +++ b/sql/mysql/Positive-Technologies/MySQLLexer.g4
 @@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -23,6 +23,17 @@ index 98dd6d8d..10dd0d1a 100644
  COLLATE:                             'COLLATE';
  COLUMN:                              'COLUMN';
  CONDITION:                           'CONDITION';
+@@ -290,8 +290,8 @@ BIT_OR:                              'BIT_OR';
+ BIT_XOR:                             'BIT_XOR';
+ COUNT:                               'COUNT';
+ GROUP_CONCAT:                        'GROUP_CONCAT';
+-MAX:                                 'MAX';
+-MIN:                                 'MIN';
++MAX_TOKEN:                           'MAX';
++MIN_TOKEN:                           'MIN';
+ STD:                                 'STD';
+ STDDEV:                              'STDDEV';
+ STDDEV_POP:                          'STDDEV_POP';
 @@ -811,7 +811,7 @@ ASYMMETRIC_SIGN:                     'ASYMMETRIC_SIGN';
  ASYMMETRIC_VERIFY:                   'ASYMMETRIC_VERIFY';
  ATAN:                                'ATAN';
@@ -54,7 +65,7 @@ diff --git a/sql/mysql/Positive-Technologies/MySqlParser.g4 b/sql/mysql/Positive
 similarity index 93%
 rename from sql/mysql/Positive-Technologies/MySqlParser.g4
 rename to sql/mysql/Positive-Technologies/MySQLParser.g4
-index 6110ba86..9ac133f7 100644
+index 6110ba86..b992c407 100644
 --- a/sql/mysql/Positive-Technologies/MySqlParser.g4
 +++ b/sql/mysql/Positive-Technologies/MySQLParser.g4
 @@ -23,9 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -150,6 +161,15 @@ index 6110ba86..9ac133f7 100644
 -    | fullColumnName (AS? uid)?                                     #selectColumnElement
 -    | functionCall (AS? uid)?                                       #selectFunctionElement
      | (LOCAL_ID VAR_ASSIGN)? expression (AS? uid)?                  #selectExpressionElement
+     ;
+ 
+@@ -1356,7 +1352,7 @@ blockStatement
+         (declareCursor SEMI)*
+         (declareHandler SEMI)*
+         procedureSqlStatement*
+-      )?
++      )
+       END uid?
      ;
  
 @@ -1622,7 +1618,7 @@ analyzeTable
@@ -318,6 +338,19 @@ index 6110ba86..9ac133f7 100644
      )*
      ;
  
+@@ -2479,10 +2363,10 @@ keywordsCanBeId
+     | MASTER_SSL_CRL | MASTER_SSL_CRLPATH | MASTER_SSL_KEY
+     | MASTER_TLS_VERSION | MASTER_USER
+     | MAX_CONNECTIONS_PER_HOUR | MAX_QUERIES_PER_HOUR
+-    | MAX | MAX_ROWS | MAX_SIZE | MAX_UPDATES_PER_HOUR
++    | MAX_TOKEN | MAX_ROWS | MAX_SIZE | MAX_UPDATES_PER_HOUR
+     | MAX_USER_CONNECTIONS | MEDIUM | MEMBER | MEMORY | MERGE | MESSAGE_TEXT
+     | MID | MIGRATE
+-    | MIN | MIN_ROWS | MODE | MODIFY | MUTEX | MYSQL | MYSQL_ERRNO | NAME | NAMES
++    | MIN_TOKEN | MIN_ROWS | MODE | MODIFY | MUTEX | MYSQL | MYSQL_ERRNO | NAME | NAMES
+     | NCHAR | NDB_STORED_USER | NEVER | NEXT | NO | NODEGROUP | NONE | NUMBER | OFFLINE | OFFSET
+     | OF | OJ | OLD_PASSWORD | ONE | ONLINE | ONLY | OPEN | OPTIMIZER_COSTS
+     | OPTIONS | ORDER | OWNER | PACK_KEYS | PAGE | PARSER | PARTIAL
 @@ -2518,7 +2402,7 @@ functionNameBase
      | AREA | ASBINARY | ASIN | ASTEXT | ASWKB | ASWKT
      | ASYMMETRIC_DECRYPT | ASYMMETRIC_DERIVE
