@@ -93,7 +93,8 @@ class PEMManager : public Manager {
 
   static services::shared::agent::AgentParameters Parameters() {
     services::shared::agent::AgentParameters parameters;
-    parameters.set_profiler_stack_trace_sample_period_ms(FLAGS_stirling_profiler_stack_trace_sample_period_ms);
+    parameters.set_profiler_stack_trace_sample_period_ms(
+        FLAGS_stirling_profiler_stack_trace_sample_period_ms);
     return parameters;
   }
 

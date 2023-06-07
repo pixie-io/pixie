@@ -351,7 +351,7 @@ class GetProfilerSamplingPeriodMS final : public carnot::udf::UDTF<GetProfilerSa
   using SchemaResponse = vizier::services::metadata::SchemaResponse;
   GetProfilerSamplingPeriodMS() = delete;
   GetProfilerSamplingPeriodMS(std::shared_ptr<MDSStub> stub,
-                 std::function<void(grpc::ClientContext*)> add_context_authentication)
+                              std::function<void(grpc::ClientContext*)> add_context_authentication)
       : idx_(0), stub_(stub), add_context_authentication_func_(add_context_authentication) {}
 
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ONE_KELVIN; }
