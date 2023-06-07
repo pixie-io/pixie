@@ -17,12 +17,17 @@
  */
 
 #include <google/protobuf/text_format.h>
+#include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "src/common/event/event.h"
+#include "src/common/testing/event/simulated_time_system.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader_mock.h"
+#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/metadata/state_manager.h"
 #include "src/shared/metadata/test_utils.h"
 
@@ -252,11 +257,18 @@ class AgentMetadataStateTest : public ::testing::Test {
   AgentMetadataStateTest()
       : agent_id_(sole::uuid4()),
         vizier_id_(sole::uuid4()),
+        start_monotonic_time_(std::chrono::steady_clock::now()),
+        start_system_time_(std::chrono::system_clock::now()),
+        time_system_(std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_,
+                                                                  start_system_time_)),
         metadata_state_(kHostname, kASID, kPID, agent_id_, kPodName, vizier_id_, kVizierName,
-                        kVizierNamespace) {}
+                        kVizierNamespace, time_system_.get()) {}
 
   sole::uuid agent_id_;
   sole::uuid vizier_id_;
+  event::MonotonicTimePoint start_monotonic_time_;
+  event::SystemTimePoint start_system_time_;
+  std::unique_ptr<event::SimulatedTimeSystem> time_system_;
   AgentMetadataState metadata_state_;
   TestAgentMetadataFilter md_filter_;
 };
@@ -406,11 +418,11 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
 }
 
 TEST_F(AgentMetadataStateTest, cidr_test) {
-  AgentMetadataStateManagerImpl mgr("test_host", /*asid*/ 0, /*pid*/ 987, "test_pod",
-                                    /*id*/ sole::uuid4(),
-                                    /*collects_data*/ true, px::system::Config::GetInstance(),
-                                    &md_filter_, /*vizier_id*/ sole::uuid4(), "test_vizier",
-                                    "test_vizier_namespace");
+  AgentMetadataStateManagerImpl mgr(
+      "test_host", /*asid*/ 0, /*pid*/ 987, "test_pod",
+      /*id*/ sole::uuid4(),
+      /*collects_data*/ true, px::system::Config::GetInstance(), &md_filter_,
+      /*vizier_id*/ sole::uuid4(), "test_vizier", "test_vizier_namespace", time_system_.get());
 
   EXPECT_OK(mgr.PerformMetadataStateUpdate());
   // Should not be updated yet.

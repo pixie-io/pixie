@@ -74,7 +74,7 @@ Status StandaloneAgentMetadataStateManager::PerformMetadataStateUpdate() {
     asid = agent_metadata_state_->asid();
   }
 
-  int64_t ts = CurrentTimeNS();
+  int64_t ts = agent_metadata_state_->current_time();
   auto upids = ListUPIDs(px::system::proc_path(), asid);
   for (const md::UPID& up : agent_metadata_state_->upids()) {
     if (!upids.contains(up)) {
