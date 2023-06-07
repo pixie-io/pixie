@@ -485,26 +485,40 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t now, int64_t retention_t
       continue;
     }
 
-    std::string pod_ip;
     switch (k8s_object->type()) {
-      case K8sObjectType::kPod:
+      case K8sObjectType::kPod: {
         if (PodIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
             k8s_object->uid()) {
           pods_by_name_.erase({k8s_object->ns(), k8s_object->name()});
         }
-        pod_ip = static_cast<PodInfo*>(k8s_object.get())->pod_ip();
+        auto pod_ip = static_cast<PodInfo*>(k8s_object.get())->pod_ip();
         // There could be a new pod assigned to the podIP now, we should only
         // delete the IP from the map if it belongs to the terminated pod.
         if (PodIDByIP(pod_ip) == k8s_object->uid()) {
           pods_by_ip_.erase(pod_ip);
         }
-        if (pods_by_ip_and_start_time_.contains(pod_ip)) {
-          pods_by_ip_and_start_time_.find(pod_ip)->second.erase(
-              pods_by_ip_and_start_time_.find(pod_ip)->second.begin(),
-              pods_by_ip_and_start_time_.find(pod_ip)->second.upper_bound(
-                  {"", now - retention_time_ns}));
+
+        auto it = pods_by_ip_and_start_time_.find(pod_ip);
+        if (it != pods_by_ip_and_start_time_.end()) {
+          auto& pod_set = it->second;
+          auto erase_end = pod_set.upper_bound({"", now - retention_time_ns});
+
+          if (erase_end != pod_set.begin()) {
+            // Check if the last pod we might erase is still running.
+            // If the last of the pods being erased is running though it's
+            // before the expiration time, leave it alone.
+            auto prev_obj = k8s_objects_by_id_.find(std::prev(erase_end)->first);
+            if (prev_obj != k8s_objects_by_id_.end()) {
+              auto prev_pod = static_cast<PodInfo*>(prev_obj->second.get());
+              if (prev_pod->phase() == PodPhase::kRunning || prev_pod->stop_time_ns() == 0) {
+                --erase_end;
+              }
+            }
+          }
+          pod_set.erase(pod_set.begin(), erase_end);
         }
         break;
+      }
       case K8sObjectType::kNamespace:
         if (NamespaceIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
             k8s_object->uid()) {

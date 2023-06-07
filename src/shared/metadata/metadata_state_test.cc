@@ -71,7 +71,7 @@ constexpr char kPod1UpdatePbTxt[] = R"(
   container_names: "container0"
   container_names: "container1"
   qos_class: QOS_CLASS_GUARANTEED
-  phase: RUNNING
+  phase: TERMINATED
   conditions: {
     type: READY
     status: CONDITION_STATUS_TRUE
@@ -541,15 +541,33 @@ TEST(K8sMetadataStateTest, ReusedIPs) {
   ASSERT_EQ("pod2_uid", state.PodIDByIPAtTime("1.2.3.5", 107));
   ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.4", 99));
 
-  // TODO(vihang): Inject the clock and then add these tests.
-  // int64_t zero_retention_time = 0;
-  // ASSERT_OK(state.CleanupExpiredMetadata(zero_retention_time));
+  int64_t large_retention_time = 30;
+  ASSERT_OK(state.CleanupExpiredMetadata(terminated_ip_pod_update.start_timestamp_ns(),
+                                         large_retention_time));
 
-  // ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.4", 102));
-  // ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.4", 99));
-  // ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.5", 101));
-  // ASSERT_EQ("pod2_uid", state.PodIDByIPAtTime("1.2.3.5", 107));
-  // ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.4", 99));
+  ASSERT_EQ("pod0_uid", state.PodIDByIPAtTime("1.2.3.4", 102));
+  ASSERT_EQ("pod1_uid", state.PodIDByIPAtTime("1.2.3.5", 101));
+  ASSERT_EQ("pod2_uid", state.PodIDByIPAtTime("1.2.3.5", 107));
+
+  // Validate that the last running pod for an IP doesn't get cleaned up even
+  // if it's past expiration.
+  int64_t large_time_since_start = 100;
+  int64_t small_retention_time = 3;
+  ASSERT_OK(state.CleanupExpiredMetadata(
+      running_ip_pod_update.start_timestamp_ns() + large_time_since_start, small_retention_time));
+
+  ASSERT_EQ("pod0_uid", state.PodIDByIPAtTime("1.2.3.4", 102));  // still running
+  ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.5", 101));
+  ASSERT_EQ("pod2_uid", state.PodIDByIPAtTime("1.2.3.5", 107));  // still running
+
+  pod_update.set_phase(px::shared::k8s::metadatapb::PodPhase::TERMINATED);
+  EXPECT_OK(state.HandlePodUpdate(pod_update));
+
+  // Trigger cleanup with the same params to check the terminated pod.
+  ASSERT_OK(state.CleanupExpiredMetadata(
+      running_ip_pod_update.start_timestamp_ns() + large_time_since_start, small_retention_time));
+  ASSERT_EQ("", state.PodIDByIPAtTime("1.2.3.4", 102));          // now terminated
+  ASSERT_EQ("pod2_uid", state.PodIDByIPAtTime("1.2.3.5", 107));  // still running
 }
 
 TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
