@@ -29,6 +29,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/types.h"
 
 namespace px {
 namespace carnot {
@@ -434,6 +435,59 @@ struct UDAWrapper {
     auto* casted_uda = static_cast<TUDA*>(uda);
     *casted_output = casted_uda->Finalize(ctx);
     return Status::OK();
+  }
+
+  /**
+   * Call the UDA's Serialize method.
+   *
+   * @param uda a pointer to the UDA
+   * @param ctx The function context.
+   * @param output An arrow array builder to put the serialized output in.
+   * @return Status from the uda's serialize function.
+   */
+  template <typename Q = TUDA, std::enable_if_t<UDATraits<Q>::SupportsPartial(), void>* = nullptr>
+  static Status SerializeArrowImpl(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
+    auto* casted_builder = static_cast<arrow::StringBuilder*>(output);
+    auto* casted_uda = static_cast<TUDA*>(uda);
+    PX_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Serialize(ctx))));
+    return Status::OK();
+  }
+
+  /**
+   * Return Status::OK, if the UDA doesn't have a Serialize method.
+   */
+  template <typename Q = TUDA, std::enable_if_t<!UDATraits<Q>::SupportsPartial(), void>* = nullptr>
+  static Status SerializeArrowImpl(UDA*, FunctionContext*, arrow::ArrayBuilder*) {
+    return Status::OK();
+  }
+  static Status SerializeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
+    return SerializeArrowImpl(uda, ctx, output);
+  }
+  /**
+   * Call the UDA's Deserialize method.
+   *
+   * @param uda a pointer to the UDA
+   * @param ctx The function context.
+   * @param serialized A StringValue holding the data to deserialize.
+   * @return Status from the uda's deserialize function.
+   */
+  template <typename Q = TUDA, std::enable_if_t<UDATraits<Q>::SupportsPartial(), void>* = nullptr>
+  static Status DeserializeImpl(UDA* uda, FunctionContext* ctx,
+                                const types::StringValue& serialized) {
+    auto* casted_uda = static_cast<TUDA*>(uda);
+    PX_RETURN_IF_ERROR(casted_uda->Deserialize(ctx, serialized));
+    return Status::OK();
+  }
+
+  /**
+   * Return Status::OK, if the UDA doesn't have a Deserialize method.
+   */
+  template <typename Q = TUDA, std::enable_if_t<!UDATraits<Q>::SupportsPartial(), void>* = nullptr>
+  static Status DeserializeImpl(UDA*, FunctionContext*, const types::StringValue&) {
+    return Status::OK();
+  }
+  static Status Deserialize(UDA* uda, FunctionContext* ctx, const types::StringValue& serialized) {
+    return DeserializeImpl(uda, ctx, serialized);
   }
 };
 
