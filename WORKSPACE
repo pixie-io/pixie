@@ -33,7 +33,7 @@ pl_go_overrides()
 
 go_download_sdk(
     name = "go_sdk",
-    version = "1.20.4",
+    version = "1.20.5",
 )
 
 go_rules_dependencies()
@@ -231,12 +231,12 @@ go_download_sdk(
 
 go_download_sdk(
     name = "go_sdk_1_19",
-    version = "1.19.9",
+    version = "1.19.10",
 )
 
 go_download_sdk(
     name = "go_sdk_1_20",
-    version = "1.20.4",
+    version = "1.20.5",
 )
 
 pip_parse(
