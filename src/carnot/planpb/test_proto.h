@@ -213,6 +213,8 @@ groups {
 }
 group_names: "group1"
 value_names: "value1"
+partial_agg: true
+finalize_results: true
 )";
 
 constexpr char kWindowedAggOperator1[] = R"(
@@ -232,6 +234,8 @@ groups {
 }
 group_names: "group1"
 value_names: "value1"
+partial_agg: true
+finalize_results: true
 )";
 
 constexpr char kFilterOperator1[] = R"(
