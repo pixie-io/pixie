@@ -24,6 +24,7 @@
 #include <absl/base/internal/spinlock.h>
 
 #include "src/common/base/error.h"
+#include "src/common/event/time_system.h"
 #include "src/shared/metadata/state_manager.h"
 
 namespace px {
@@ -35,10 +36,10 @@ namespace md {
 class StandaloneAgentMetadataStateManager : public AgentMetadataStateManager {
  public:
   StandaloneAgentMetadataStateManager(std::string_view hostname, uint32_t asid, uint32_t pid,
-                                      sole::uuid agent_id) {
-    agent_metadata_state_ =
-        std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id,
-                                             /*pod_name=*/"", sole::uuid(), "standalone_pem", "");
+                                      sole::uuid agent_id, event::TimeSystem* time_system) {
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id,
+                                                                 /*pod_name=*/"", sole::uuid(),
+                                                                 "standalone_pem", "", time_system);
   }
   virtual ~StandaloneAgentMetadataStateManager() = default;
   AgentMetadataFilter* metadata_filter() const override { return nullptr; }

@@ -28,6 +28,9 @@
 #include <absl/container/flat_hash_set.h>
 
 #include "src/common/base/base.h"
+#include "src/common/event/event.h"
+#include "src/common/event/real_time_system.h"
+#include "src/common/event/time_system.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/k8s_objects.h"
 #include "src/shared/metadata/pids.h"
@@ -251,7 +254,7 @@ class K8sMetadataState : NotCopyable {
   Status HandleReplicaSetUpdate(const ReplicaSetUpdate& update);
   Status HandleDeploymentUpdate(const DeploymentUpdate& update);
 
-  Status CleanupExpiredMetadata(int64_t retention_time_ns);
+  Status CleanupExpiredMetadata(int64_t now, int64_t retention_time_ns);
 
   absl::flat_hash_map<CID, ContainerInfoUPtr>& containers_by_id() { return containers_by_id_; }
   std::string DebugString(int indent_level = 0) const;
@@ -317,7 +320,7 @@ class AgentMetadataState : NotCopyable {
   AgentMetadataState() = delete;
   AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, AgentID agent_id,
                      std::string_view pod_name, sole::uuid vizier_id, std::string_view vizier_name,
-                     std::string_view vizier_namespace)
+                     std::string_view vizier_namespace, event::TimeSystem* time_system)
       : hostname_(std::string(hostname)),
         pod_name_(std::string(pod_name)),
         asid_(asid),
@@ -326,6 +329,7 @@ class AgentMetadataState : NotCopyable {
         vizier_id_(vizier_id),
         vizier_name_(std::string(vizier_name)),
         vizier_namespace_(std::string(vizier_namespace)),
+        time_system_(time_system),
         k8s_metadata_state_(new K8sMetadataState()) {}
 
   const std::string& hostname() const { return hostname_; }
@@ -382,6 +386,12 @@ class AgentMetadataState : NotCopyable {
 
   std::string DebugString(int indent_level = 0) const;
 
+  int64_t current_time() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               time_system_->SystemTime().time_since_epoch())
+        .count();
+  }
+
  private:
   /**
    * Tracks the time that this K8s metadata object was created. The object should be periodically
@@ -405,6 +415,8 @@ class AgentMetadataState : NotCopyable {
   sole::uuid vizier_id_;
   std::string vizier_name_;
   std::string vizier_namespace_;
+
+  event::TimeSystem* time_system_;
 
   std::unique_ptr<K8sMetadataState> k8s_metadata_state_;
 

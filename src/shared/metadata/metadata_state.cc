@@ -452,9 +452,7 @@ bool IsExpired(const T& obj, int64_t retention_time, int64_t now) {
   return now > expiry_time;
 }
 
-Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
-  int64_t now = CurrentTimeNS();
-
+Status K8sMetadataState::CleanupExpiredMetadata(int64_t now, int64_t retention_time_ns) {
   for (auto iter = k8s_objects_by_id_.begin(); iter != k8s_objects_by_id_.end();) {
     const auto& k8s_object = iter->second;
 
@@ -512,8 +510,9 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
 }
 
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
-  auto state = std::make_shared<AgentMetadataState>(hostname_, asid_, pid_, agent_id_, pod_name_,
-                                                    vizier_id_, vizier_name_, vizier_namespace_);
+  auto state =
+      std::make_shared<AgentMetadataState>(hostname_, asid_, pid_, agent_id_, pod_name_, vizier_id_,
+                                           vizier_name_, vizier_namespace_, time_system_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
   state->epoch_id_ = epoch_id_;
   state->k8s_metadata_state_ = k8s_metadata_state_->Clone();

@@ -25,6 +25,7 @@
 
 #include "src/common/event/dispatcher.h"
 #include "src/common/event/nats.h"
+#include "src/common/testing/event/simulated_time_system.h"
 #include "src/shared/metadata/state_manager.h"
 
 namespace px {
@@ -55,9 +56,12 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
   FakeAgentMetadataStateManager() : FakeAgentMetadataStateManager(/*metadata filter*/ nullptr) {}
 
   explicit FakeAgentMetadataStateManager(md::AgentMetadataFilter* metadata_filter)
-      : metadata_filter_(metadata_filter) {
+      : metadata_filter_(metadata_filter),
+        time_system_(std::make_unique<event::SimulatedTimeSystem>(
+            std::chrono::steady_clock::now(), std::chrono::system_clock::now())) {
     metadata_state_ = std::make_shared<px::md::AgentMetadataState>(
-        "myhost", 1, 963, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace");
+        "myhost", 1, 963, sole::uuid4(), "mypod", sole::uuid4(), "myvizier", "myviziernamespace",
+        time_system_.get());
   }
 
   virtual ~FakeAgentMetadataStateManager() = default;
@@ -100,6 +104,7 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
 
  private:
   md::AgentMetadataFilter* metadata_filter_ = nullptr;
+  std::unique_ptr<event::TimeSystem> time_system_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
   int32_t state_updated_count_ = 0;
   std::vector<std::unique_ptr<md::ResourceUpdate>> updates_;

@@ -30,6 +30,7 @@
 #include <absl/container/flat_hash_set.h>
 
 #include "src/common/base/base.h"
+#include "src/common/event/time_system.h"
 #include "src/common/system/system.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
@@ -122,11 +123,13 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
                                 std::string pod_name, sole::uuid agent_id, bool collects_data,
                                 const px::system::Config& config,
                                 AgentMetadataFilter* metadata_filter, sole::uuid vizier_id,
-                                std::string vizier_name, std::string vizier_namespace)
+                                std::string vizier_name, std::string vizier_namespace,
+                                event::TimeSystem* time_system)
       : pod_name_(pod_name), collects_data_(collects_data), metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
-    agent_metadata_state_ = std::make_shared<AgentMetadataState>(
-        hostname, asid, pid, agent_id, pod_name, vizier_id, vizier_name, vizier_namespace);
+    agent_metadata_state_ =
+        std::make_shared<AgentMetadataState>(hostname, asid, pid, agent_id, pod_name, vizier_id,
+                                             vizier_name, vizier_namespace, time_system);
   }
 
   AgentMetadataFilter* metadata_filter() const override { return metadata_filter_; }
