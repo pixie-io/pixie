@@ -40,10 +40,8 @@ constexpr auto kDefaultSimulatedTime = std::chrono::seconds(1577865601);
 
 class SimulatedTimeSystem final : public TimeSystem {
  public:
-  SimulatedTimeSystem() 
-    : index_(0), 
-      monotonic_time_(kDefaultSimulatedTime), 
-      system_time_(kDefaultSimulatedTime) {}
+  SimulatedTimeSystem()
+      : index_(0), monotonic_time_(kDefaultSimulatedTime), system_time_(kDefaultSimulatedTime) {}
   SimulatedTimeSystem(MonotonicTimePoint monotonic_time, SystemTimePoint system_time)
       : index_(0), monotonic_time_(monotonic_time), system_time_(system_time) {}
   ~SimulatedTimeSystem();

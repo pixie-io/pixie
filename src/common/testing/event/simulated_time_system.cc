@@ -85,8 +85,8 @@ SystemTimePoint SimulatedTimeSystem::SystemTime() const { return system_time_; }
 MonotonicTimePoint SimulatedTimeSystem::MonotonicTime() const { return monotonic_time_; }
 
 void SimulatedTimeSystem::Sleep(const Duration& duration) {
-  SystemTimePoint system_time = 
-    system_time_ + std::chrono::duration_cast<SystemTimePoint::duration>(duration);
+  SystemTimePoint system_time =
+      system_time_ + std::chrono::duration_cast<SystemTimePoint::duration>(duration);
   SetSystemTime(system_time);
 }
 
