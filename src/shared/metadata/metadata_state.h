@@ -315,10 +315,6 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  explicit AgentMetadataState(uint32_t asid, uint32_t pid)
-      : AgentMetadataState(/* hostname */ "unknown", asid, pid, sole::uuid(),
-                           /* pod_name */ "unknown", sole::uuid(), "", "") {}
-
   AgentMetadataState(std::string_view hostname, uint32_t asid, uint32_t pid, AgentID agent_id,
                      std::string_view pod_name, sole::uuid vizier_id, std::string_view vizier_name,
                      std::string_view vizier_namespace)
