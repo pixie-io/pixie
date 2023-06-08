@@ -28,6 +28,7 @@
 
 #include <absl/strings/str_join.h>
 #include <absl/strings/substitute.h>
+#include <google/protobuf/text_format.h>
 #include <magic_enum.hpp>
 
 #include "src/carnot/plan/scalar_expression.h"
@@ -193,9 +194,12 @@ std::string AggregateOperator::DebugString() const {
   const auto& g = groups();
   std::vector<std::string> group_names(g.size());
   std::transform(begin(g), end(g), begin(group_names), [](auto val) { return val.name; });
-
-  return absl::Substitute("Op:Aggregate(values=($0), groups=($1))",
-                          absl::StrJoin(value_names, ", "), absl::StrJoin(group_names, ", "));
+  std::string out;
+  ::google::protobuf::TextFormat::PrintToString(pb_, &out);
+  return absl::Substitute(
+      "Op:Aggregate(values=($0), groups=($1), partial=($2), finalize=($3)):\n$4",
+      absl::StrJoin(value_names, ", "), absl::StrJoin(group_names, ", "), partial_agg(),
+      finalize_results(), out);
 }
 
 Status AggregateOperator::Init(const planpb::AggregateOperator& pb) {
@@ -251,17 +255,13 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
     output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
   }
 
-  // If this node is a partial aggregate we output a simple schema where the last column has
-  // serialized aggregates.
-  // TODO(philkuz) need the column name and maybe type from somewhere else.
-  if (pb_.partial_agg() && !pb_.finalize_results()) {
-    output_relation.AddColumn(types::STRING, "serialized_expressions");
-    return output_relation;
-  }
-
   for (const auto& [i, value] : Enumerate(values_)) {
-    PX_ASSIGN_OR_RETURN(auto dt, value->OutputDataType(state, schema));
-    output_relation.AddColumn(dt, pb_.value_names(i));
+    if (pb_.finalize_results()) {
+      PX_ASSIGN_OR_RETURN(auto dt, value->OutputDataType(state, schema));
+      output_relation.AddColumn(dt, pb_.value_names(i));
+    } else {
+      output_relation.AddColumn(types::STRING, pb_.value_names(i));
+    }
   }
   return output_relation;
 }

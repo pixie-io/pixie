@@ -83,8 +83,7 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
   VLOG(2) << "Current State: \n" << shadow_state->DebugString(1 /* indent_level */);
 
   // Get timestamp so all updates happen at the same timestamp.
-  // TODO(zasgar): Change this to an injected clock.
-  int64_t ts = CurrentTimeNS();
+  int64_t ts = agent_metadata_state_->current_time();
   PX_RETURN_IF_ERROR(
       ApplyK8sUpdates(ts, shadow_state.get(), metadata_filter_, &incoming_k8s_updates_));
 
@@ -299,7 +298,8 @@ Status ProcessPIDUpdates(
 }
 
 Status DeleteMetadataForDeadObjects(AgentMetadataState* state, int64_t retention_time) {
-  PX_RETURN_IF_ERROR(state->k8s_metadata_state()->CleanupExpiredMetadata(retention_time));
+  PX_RETURN_IF_ERROR(
+      state->k8s_metadata_state()->CleanupExpiredMetadata(state->current_time(), retention_time));
   return Status::OK();
 }
 

@@ -289,7 +289,7 @@ Status Manager::PostRegisterHook(uint32_t asid) {
       info_.hostname, info_.asid, info_.pid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), px::system::Config::GetInstance(),
       agent_metadata_filter_.get(), sole::rebuild(FLAGS_vizier_id), FLAGS_vizier_name,
-      FLAGS_vizier_namespace);
+      FLAGS_vizier_namespace, time_system_.get());
   // Register the Carnot callback for metadata.
   carnot_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));

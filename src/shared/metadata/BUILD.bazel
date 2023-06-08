@@ -35,6 +35,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
+        "//src/common/event:cc_library",
         "//src/common/system:cc_library",
         "//src/shared/bloomfilter:cc_library",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
@@ -64,6 +65,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":test_utils",
+        "//src/common/testing/event:cc_library",
     ],
 )
 
@@ -108,5 +110,6 @@ pl_cc_test(
     srcs = ["metadata_state_test.cc"],
     deps = [
         ":cc_library",
+        "//src/common/testing/event:cc_library",
     ],
 )

@@ -209,6 +209,9 @@ class UDADefinition : public UDFDefinition {
     finalize_value_fn = UDAWrapper<T>::FinalizeValue;
 
     supports_partial_ = UDAWrapper<T>::SupportsPartial;
+
+    deserialize_fn_ = UDAWrapper<T>::Deserialize;
+    serialize_arrow_fn_ = UDAWrapper<T>::SerializeArrow;
     return Status::OK();
   }
 
@@ -245,6 +248,12 @@ class UDADefinition : public UDFDefinition {
   Status FinalizeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
     return finalize_arrow_fn_(uda, ctx, output);
   }
+  Status Deserialize(UDA* uda, FunctionContext* ctx, const types::StringValue& serialized) {
+    return deserialize_fn_(uda, ctx, serialized);
+  }
+  Status SerializeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
+    return serialize_arrow_fn_(uda, ctx, output);
+  }
 
  private:
   std::vector<types::DataType> init_arguments_;
@@ -270,6 +279,10 @@ class UDADefinition : public UDFDefinition {
   std::function<Status(UDA* uda, FunctionContext* ctx,
                        const std::vector<std::shared_ptr<types::BaseValueType>>& inputs)>
       init_wrapper_fn_;
+  std::function<Status(UDA* uda, FunctionContext* ctx, const types::StringValue& serialized)>
+      deserialize_fn_;
+  std::function<Status(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output)>
+      serialize_arrow_fn_;
 };
 
 class UDTFDefinition : public UDFDefinition {

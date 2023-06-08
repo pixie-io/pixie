@@ -547,43 +547,11 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
   EXPECT_OK(state.HandlePodUpdate(running_ip_pod_update));
   EXPECT_OK(state.HandleServiceUpdate(service_update));
 
-  int64_t current_time = CurrentTimeNS();
-
-  // All the pod updates above have stop times, which means they have all stopped.
-  // Since their stop_times are close to 0, they all effectively expired years ago
-  // relative to CurrentTimeNS().
-  // Check these assumptions.
-  {
-    const PodInfo* pod_info = state.PodInfoByID("pod0_uid");
-    ASSERT_NE(pod_info, nullptr);
-    ASSERT_GT(pod_info->stop_time_ns(), 0);
-    ASSERT_LT(pod_info->stop_time_ns(), current_time);
-
-    const PodInfo* pod_info1 = state.PodInfoByID("pod1_uid");
-    ASSERT_NE(pod_info1, nullptr);
-    ASSERT_GT(pod_info1->stop_time_ns(), 0);
-    ASSERT_LT(pod_info1->stop_time_ns(), current_time);
-
-    const ServiceInfo* service_info = state.ServiceInfoByID("service0_uid");
-    ASSERT_NE(service_info, nullptr);
-    ASSERT_GT(service_info->stop_time_ns(), 0);
-    ASSERT_LT(service_info->stop_time_ns(), current_time);
-
-    const NamespaceInfo* ns_info = state.NamespaceInfoByID("ns0_uid");
-    ASSERT_NE(ns_info, nullptr);
-    ASSERT_GT(ns_info->stop_time_ns(), 0);
-    ASSERT_LT(ns_info->stop_time_ns(), current_time);
-
-    const ContainerInfo* container_info = state.ContainerInfoByID("container0_uid");
-    ASSERT_NE(container_info, nullptr);
-    ASSERT_GT(container_info->stop_time_ns(), 0);
-    ASSERT_LT(container_info->stop_time_ns(), current_time);
-  }
+  int64_t current_time = 150ULL;
 
   // In this test, we give an expiry window that is large to make sure they live on.
-  // Then we give them an expiry time that is short
-  int64_t long_retention_time = 2 * current_time;
-  ASSERT_OK(state.CleanupExpiredMetadata(long_retention_time));
+  int64_t long_retention_time = current_time;
+  ASSERT_OK(state.CleanupExpiredMetadata(current_time, long_retention_time));
 
   {
     const PodInfo* pod_info = state.PodInfoByID("pod0_uid");
@@ -608,8 +576,9 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
     ASSERT_NE(container_info, nullptr);
   }
 
-  int64_t zero_retention_time = 0;
-  ASSERT_OK(state.CleanupExpiredMetadata(zero_retention_time));
+  // Now we give them an expiry time that is short
+  int64_t short_retention_time = 1ULL;
+  ASSERT_OK(state.CleanupExpiredMetadata(current_time, short_retention_time));
 
   {
     const PodInfo* pod_info = state.PodInfoByID("pod0_uid");

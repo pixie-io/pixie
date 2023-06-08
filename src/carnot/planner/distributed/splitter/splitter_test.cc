@@ -172,12 +172,10 @@ TEST_F(SplitterTest, partial_agg_test) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source->source_id());
 
   // Confirm that the relations have serialized in their relation.
-  EXPECT_THAT(
-      *grpc_sink->resolved_table_type(),
-      IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"})));
-  EXPECT_THAT(
-      *grpc_source->resolved_table_type(),
-      IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"})));
+  EXPECT_THAT(*grpc_sink->resolved_table_type(),
+              IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_mean"})));
+  EXPECT_THAT(*grpc_source->resolved_table_type(),
+              IsTableType(Relation({types::INT64, types::STRING}, {"count", "serialized_mean"})));
 
   // Verify that the aggregate connects back into the original group.
   ASSERT_EQ(finalize_agg->Children().size(), 1);

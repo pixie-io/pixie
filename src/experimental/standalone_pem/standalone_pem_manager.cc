@@ -103,7 +103,7 @@ StandalonePEMManager::StandalonePEMManager(sole::uuid agent_id, std::string_view
                 .ConsumeValueOrDie();
 
   mds_manager_ = std::make_unique<px::md::StandaloneAgentMetadataStateManager>(
-      info_.hostname, info_.asid, info_.pid, info_.agent_id);
+      info_.hostname, info_.asid, info_.pid, info_.agent_id, time_system_.get());
 
   tracepoint_manager_ =
       std::make_unique<TracepointManager>(dispatcher_.get(), stirling_.get(), table_store_.get());

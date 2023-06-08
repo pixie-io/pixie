@@ -26,6 +26,7 @@
 
 #include <absl/base/thread_annotations.h>
 #include <absl/synchronization/mutex.h>
+#include <gtest/gtest_prod.h>
 
 #include "src/common/event/dispatcher.h"
 #include "src/common/event/time_system.h"
@@ -35,8 +36,12 @@ namespace event {
 
 class SimulatedTimer;
 
+constexpr auto kDefaultSimulatedTime = std::chrono::seconds(1577865601);
+
 class SimulatedTimeSystem final : public TimeSystem {
  public:
+  SimulatedTimeSystem()
+      : index_(0), monotonic_time_(kDefaultSimulatedTime), system_time_(kDefaultSimulatedTime) {}
   SimulatedTimeSystem(MonotonicTimePoint monotonic_time, SystemTimePoint system_time)
       : index_(0), monotonic_time_(monotonic_time), system_time_(system_time) {}
   ~SimulatedTimeSystem();
@@ -56,6 +61,27 @@ class SimulatedTimeSystem final : public TimeSystem {
    * Sleep for the given duration. This updates the monotonic and system time.
    */
   void Sleep(const Duration& duration);
+
+ private:
+  friend class SimulatedTimer;
+  friend class SimulatedTimeSystemTest;
+
+  FRIEND_TEST(SimulatedTimeSystemTest, Monotonic);
+  FRIEND_TEST(SimulatedTimeSystemTest, System);
+  FRIEND_TEST(SimulatedTimeSystemTest, SystemTimeOrdering);
+
+  bool IsCorrectThread() {
+    // Make sure that only one thread is advancing time during tests.
+    if (run_tid_ == std::thread::id()) {  // No thread ID assigned yet.
+      run_tid_ = std::this_thread::get_id();
+      return true;
+    }
+
+    return run_tid_ == std::this_thread::get_id();
+  }
+
+  std::thread::id run_tid_;
+
   /**
    * Sets the time forward monotonically. If the supplied argument moves
    * backward in time, the call is a no-op. If the supplied argument moves
@@ -79,21 +105,6 @@ class SimulatedTimeSystem final : public TimeSystem {
    * @param system_time The desired new system time.
    */
   void SetSystemTime(const SystemTimePoint& system_time);
-
- private:
-  friend class SimulatedTimer;
-
-  bool IsCorrectThread() {
-    // Make sure that only one thread is advancing time during tests.
-    if (run_tid_ == std::thread::id()) {  // No thread ID assigned yet.
-      run_tid_ = std::this_thread::get_id();
-      return true;
-    }
-
-    return run_tid_ == std::this_thread::get_id();
-  }
-
-  std::thread::id run_tid_;
 
   /**
    * Sets the time forward monotonically. If the supplied argument moves
