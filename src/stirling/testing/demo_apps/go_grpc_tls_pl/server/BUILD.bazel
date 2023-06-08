@@ -56,12 +56,6 @@ pl_go_binary(
     for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
-pl_go_binary(
-    name = "server_boringcrypto",
-    embed = [":server_lib"],
-    gotags = ["boringcrypto"],
-)
-
 [
     container_image(
         name = pl_go_sdk_version_template_to_label("golang_%s_grpc_tls_server", sdk_version),
