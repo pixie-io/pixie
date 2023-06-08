@@ -21,6 +21,7 @@ patches:
     kind: StatefulSet
 resources:
 - ../bootstrap
+- default_role.yaml
 - kelvin_deployment.yaml
 - kelvin_service.yaml
 - metadata_role.yaml

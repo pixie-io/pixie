@@ -59,6 +59,7 @@ func init() {
 	pflag.String("mds_service", "vizier-metadata-svc", "The metadata service name")
 	pflag.String("mds_port", "50400", "The querybroker service port")
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in.")
+	pflag.StringArray("cron_script_sources", scriptrunner.DefaultSources, "Where to find cron scripts (cloud, configmaps)")
 }
 
 // NewVizierServiceClient creates a new vz RPC client stub.
@@ -206,10 +207,14 @@ func main() {
 	defer ptProxy.Close()
 
 	// Start cron script runner.
-	sr, err := scriptrunner.New(natsConn, csClient, vzServiceClient, viper.GetString("jwt_signing_key"))
-	if err != nil {
-		log.WithError(err).Fatal("Failed to start script runner")
-	}
+	sources := scriptrunner.Sources(
+		natsConn,
+		csClient,
+		viper.GetString("jwt_signing_key"),
+		viper.GetString("pod_namespace"),
+		viper.GetStringSlice("cron_script_sources"),
+	)
+	sr := scriptrunner.New(csClient, vzServiceClient, viper.GetString("jwt_signing_key"), sources...)
 
 	// Load the scripts and start the background sync.
 	go func() {
@@ -218,6 +223,7 @@ func main() {
 			log.WithError(err).Error("Failed to sync cron scripts")
 		}
 	}()
+
 	s.Start()
 	s.StopOnInterrupt()
 }

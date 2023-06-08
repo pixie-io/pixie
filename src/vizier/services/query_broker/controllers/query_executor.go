@@ -508,7 +508,7 @@ func (q *QueryExecutorImpl) prepareScript(ctx context.Context, resultCh chan<- *
 func (q *QueryExecutorImpl) runScript(ctx context.Context, resultCh chan<- *vizierpb.ExecuteScriptResponse, req *vizierpb.ExecuteScriptRequest) error {
 	defer close(resultCh)
 	q.startTime = time.Now()
-	log.WithField("query_id", q.queryID).Infof("Running script")
+	log.WithField("query_id", q.queryID).WithField("query_name", q.queryName).Infof("Running script")
 
 	if req.QueryID == "" {
 		if err := q.prepareScript(ctx, resultCh, req); err != nil {
