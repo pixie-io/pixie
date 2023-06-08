@@ -32,7 +32,7 @@ pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypt
 def pl_go_sdk_version_template_to_label(tpl, version):
     # If version matches sdk configured to use boringcrypto
     # the label name should not contain the sdk version string
-    if version == pl_all_supported_go_sdk_versions[-1]:
+    if version in pl_boringcrypto_go_sdk:
         return tpl % "boringcrypto"
     return tpl % version.replace(".", "_")
 
