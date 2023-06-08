@@ -21,8 +21,6 @@ ui_shared_cmds_start = [
     "export PATH=/usr/local/bin:/opt/px_dev/tools/node/bin:$PATH",
     'export HOME="$(mktemp -d)"',  # This makes node-gyp happy.
     'export TMPPATH="$(mktemp -d)"',
-    'cp -aL "$BASE_PATH"/* "$TMPPATH"',
-    'pushd "$TMPPATH/src/ui" &> /dev/null',
 ]
 
 ui_shared_cmds_finish = [
@@ -36,7 +34,10 @@ def _pl_webpack_deps_impl(ctx):
     output_fname = "{}.tar.gz".format(ctx.attr.name)
     out = ctx.actions.declare_file(output_fname)
 
-    cmd = ui_shared_cmds_start + [
+    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+
+    cmd = ui_shared_cmds_start + cp_cmds + [
+        'pushd "$TMPPATH/src/ui" &> /dev/null',
         "yarn install --immutable &> build.log",
         # Pick a deterministic mtime so that the output is not volatile.
         # This helps ensure that bazel can cache the ui builds as expected.
@@ -77,7 +78,10 @@ def _pl_webpack_library_impl(ctx):
         all_files.append(ctx.info_file)
         all_files.append(ctx.version_file)
 
-    cmd = env_cmds + ui_shared_cmds_start + [
+    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+
+    cmd = env_cmds + ui_shared_cmds_start + cp_cmds + [
+        'pushd "$TMPPATH/src/ui" &> /dev/null',
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
         '[ ! -d src/configurables/private ] || mv "$BASE_PATH/{}" src/configurables/private/licenses.json'.format(ctx.file.licenses.path),
         "retval=0",
@@ -102,6 +106,8 @@ def _pl_webpack_library_impl(ctx):
     ]
 
 def _pl_ui_test_impl(ctx):
+    all_files = list(ctx.files.srcs)
+
     test_cmd = [
         "yarn test_ci",
     ]
@@ -113,7 +119,10 @@ def _pl_ui_test_impl(ctx):
             "cp coverage/lcov.info ${COVERAGE_OUTPUT_FILE}",
         ]
 
-    cmd = ui_shared_cmds_start + [
+    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+
+    cmd = ui_shared_cmds_start + cp_cmds + [
+        'pushd "$TMPPATH/src/ui" &> /dev/null',
         "export JEST_JUNIT_OUTPUT_NAME=${XML_OUTPUT_FILE:-junit.xml}",
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.short_path),
     ] + test_cmd + ui_shared_cmds_finish
@@ -146,11 +155,14 @@ def _pl_deps_licenses_impl(ctx):
     output_fname = "{}.json".format(ctx.attr.name)
     out = ctx.actions.declare_file(output_fname)
 
-    cmd = ui_shared_cmds_start + [
-        'export TMPPATH="$(mktemp -d)"',
+    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+
+    cmd = ui_shared_cmds_start + cp_cmds + [
+        'pushd "$TMPPATH/src/ui" &> /dev/null',
+        'export LIC_TMPPATH="$(mktemp -d)"',
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
-        "yarn license_check --excludePrivatePackages --production --json --out $TMPPATH/checker.json",
-        'yarn pnpify node ./tools/licenses/yarn_license_extractor.js --input=$TMPPATH/checker.json --output="$BASE_PATH/{}"'.format(out.path),
+        "yarn license_check --excludePrivatePackages --production --json --out $LIC_TMPPATH/checker.json",
+        'yarn pnpify node ./tools/licenses/yarn_license_extractor.js --input=$LIC_TMPPATH/checker.json --output="$BASE_PATH/{}"'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
