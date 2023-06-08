@@ -25,7 +25,8 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { buildClass, scrollbarStyles, Footer } from 'app/components';
 import { WithChildren } from 'app/utils/react-boilerplate';
 import { Copyright } from 'configurable/copyright';
-import licenseJson from 'configurable/licenses.json';
+
+import licenseJson from './licenses.json';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
