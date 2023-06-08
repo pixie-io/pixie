@@ -35,7 +35,8 @@ class GoBoringCryptoGRPCServerContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/golang_boringcrypto_grpc_tls_server.tar";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/"
+      "golang_boringcrypto_grpc_tls_server.tar";
   static constexpr std::string_view kContainerNamePrefix = "grpc_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTP/2 server";
 };

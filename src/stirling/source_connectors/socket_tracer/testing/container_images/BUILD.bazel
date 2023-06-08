@@ -23,6 +23,7 @@ pl_supported_go_sdk_versions = [
     "1.19",
     "1.20",
 ]
+
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
