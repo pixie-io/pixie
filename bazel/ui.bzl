@@ -34,7 +34,7 @@ def _pl_webpack_deps_impl(ctx):
     output_fname = "{}.tar.gz".format(ctx.attr.name)
     out = ctx.actions.declare_file(output_fname)
 
-    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+    cp_cmds = ["cp -aL --parents {} $TMPPATH".format(file.path) for file in all_files]
 
     cmd = ui_shared_cmds_start + cp_cmds + [
         'pushd "$TMPPATH/src/ui" &> /dev/null',
@@ -78,7 +78,7 @@ def _pl_webpack_library_impl(ctx):
         all_files.append(ctx.info_file)
         all_files.append(ctx.version_file)
 
-    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+    cp_cmds = ["cp -aL --parents {} $TMPPATH".format(file.path) for file in all_files]
 
     cmd = env_cmds + ui_shared_cmds_start + cp_cmds + [
         'pushd "$TMPPATH/src/ui" &> /dev/null',
@@ -119,7 +119,7 @@ def _pl_ui_test_impl(ctx):
             "cp coverage/lcov.info ${COVERAGE_OUTPUT_FILE}",
         ]
 
-    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+    cp_cmds = ["cp -aL --parents {} $TMPPATH".format(file.path) for file in all_files]
 
     cmd = ui_shared_cmds_start + cp_cmds + [
         'pushd "$TMPPATH/src/ui" &> /dev/null',
@@ -155,7 +155,7 @@ def _pl_deps_licenses_impl(ctx):
     output_fname = "{}.json".format(ctx.attr.name)
     out = ctx.actions.declare_file(output_fname)
 
-    cp_cmds = ['cp -aL --parents {} $TMPPATH'.format(file.path) for file in all_files]
+    cp_cmds = ["cp -aL --parents {} $TMPPATH".format(file.path) for file in all_files]
 
     cmd = ui_shared_cmds_start + cp_cmds + [
         'pushd "$TMPPATH/src/ui" &> /dev/null',
