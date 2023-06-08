@@ -57,7 +57,6 @@ pl_webpack_deps(
 pl_webpack_library(
     name = "ui_bundle",
     srcs = UI_SRCS,
-    licenses = "//tools/licenses:all_licenses",
     stamp = select({
         "//bazel:stamped": True,
         "//conditions:default": False,

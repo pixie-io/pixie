@@ -78,13 +78,12 @@ def _pl_webpack_library_impl(ctx):
 
     cmd = env_cmds + ui_shared_cmds_start + [
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
-        '[ ! -d src/configurables/private ] || mv "$BASE_PATH/{}" src/configurables/private/licenses.json'.format(ctx.file.licenses.path),
         "output=`yarn build_prod 2>&1` || echo $output",
         'cp dist/bundle.tar.gz "$BASE_PATH/{}"'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
-        inputs = all_files + ctx.files.deps + ctx.files.licenses,
+        inputs = all_files + ctx.files.deps,
         outputs = [out],
         command = " && ".join(cmd),
         progress_message =
@@ -176,7 +175,6 @@ pl_webpack_library = rule(
     implementation = _pl_webpack_library_impl,
     attrs = dict({
         "deps": attr.label(allow_single_file = True),
-        "licenses": attr.label(allow_single_file = True),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,

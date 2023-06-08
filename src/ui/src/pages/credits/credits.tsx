@@ -21,11 +21,14 @@ import * as React from 'react';
 import { Button } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
+import Axios from 'axios';
 
 import { buildClass, scrollbarStyles, Footer } from 'app/components';
+import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import { WithChildren } from 'app/utils/react-boilerplate';
 import { Copyright } from 'configurable/copyright';
-import licenseJson from 'configurable/licenses.json';
+
+const licenseURL = `https://storage.googleapis.com/pixie-dev-public/oss-licenses/${PIXIE_CLOUD_VERSION.tag}.json`;
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -144,11 +147,16 @@ const LicenseEntryRow = React.memo<LicenseEntry>(({ name, url, licenseText }) =>
 LicenseEntryRow.displayName = 'LicenseEntryRow';
 
 // eslint-disable-next-line react-memo/require-memo
-const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
+const Credits: React.FC = () => {
   const classes = useStyles();
+  const [licenses, setLicenses] = React.useState<LicenseEntry[]>(null);
+
+  React.useEffect(() => {
+    Axios.get(licenseURL).then((response) => { setLicenses(response.data); });
+  }, []);
 
   if (!licenses) {
-    return (<div> not found </div>);
+    return (<div>Loading</div>);
   }
 
   return (
@@ -171,7 +179,7 @@ const CreditsOverviewPage: React.FC = () => {
   return (
     <CreditsPage>
       <div className={classes.mainBlock}>
-        <Credits licenses={licenseJson} />
+        <Credits/>
       </div>
       <div className={classes.mainFooter}>
         <Footer copyright={Copyright} />
