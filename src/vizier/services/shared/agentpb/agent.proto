@@ -31,7 +31,8 @@ message AgentCapabilities {
 }
 
 message AgentParameters {
-  int32 profiler_stack_trace_sample_period_ms = 1;
+  int32 profiler_stack_trace_sample_period_ms = 1
+      [ (gogoproto.customname) = "ProfilerStackTraceSamplePeriodMS" ];
 }
 
 // AgentInfo contains information about host and agent running on a given machine.
