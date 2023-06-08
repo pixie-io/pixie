@@ -45,6 +45,7 @@ def _pl_webpack_deps_impl(ctx):
 
     ctx.actions.run_shell(
         inputs = all_files,
+        execution_requirements = {tag: "" for tag in ctx.attr.tags},
         outputs = [out],
         command = " && ".join(cmd),
         progress_message =
@@ -79,12 +80,15 @@ def _pl_webpack_library_impl(ctx):
     cmd = env_cmds + ui_shared_cmds_start + [
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
         '[ ! -d src/configurables/private ] || mv "$BASE_PATH/{}" src/configurables/private/licenses.json'.format(ctx.file.licenses.path),
-        "output=`yarn build_prod 2>&1` || echo $output",
+        "retval=0",
+        "output=`yarn build_prod 2>&1` || retval=$?",
+        '[ "$retval" -eq 0 ] || (echo $output; echo "Build Failed with Code: $retval"; exit $retval)',
         'cp dist/bundle.tar.gz "$BASE_PATH/{}"'.format(out.path),
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps + ctx.files.licenses,
+        execution_requirements = {tag: "" for tag in ctx.attr.tags},
         outputs = [out],
         command = " && ".join(cmd),
         progress_message =
@@ -151,6 +155,7 @@ def _pl_deps_licenses_impl(ctx):
 
     ctx.actions.run_shell(
         inputs = all_files + ctx.files.deps,
+        execution_requirements = {tag: "" for tag in ctx.attr.tags},
         outputs = [out],
         command = " && ".join(cmd),
         progress_message =
