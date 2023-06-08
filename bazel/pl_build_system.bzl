@@ -23,7 +23,18 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_python//python:defs.bzl", "py_test")
 load("//bazel:toolchain_transitions.bzl", "qemu_interactive_runner")
 
+pl_boringcrypto_go_sdk = ["1.20.4"]
 pl_supported_go_sdk_versions = ["1.16", "1.17", "1.18", "1.19", "1.20"]
+
+# The last version in this list corresponds to the boringcrypto go sdk version.
+pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
+
+def pl_go_sdk_version_template_to_label(tpl, version):
+    # If version matches sdk configured to use boringcrypto
+    # the label name should not contain the sdk version string
+    if version in pl_boringcrypto_go_sdk:
+        return tpl % "boringcrypto"
+    return tpl % version.replace(".", "_")
 
 def pl_copts():
     posix_options = [

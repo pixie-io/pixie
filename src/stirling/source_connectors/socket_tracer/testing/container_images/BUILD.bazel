@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_test_library", "pl_go_sdk_version_template_to_label")
 
 # TODO(vihang): load this from pl_build_system once we remove go 1.16
 pl_supported_go_sdk_versions = [
@@ -58,11 +58,11 @@ pl_cc_test_library(
 
 [
     pl_cc_test_library(
-        name = "go_%s_grpc_client_container" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("go_%s_grpc_client_container", sdk_version),
         srcs = [],
-        hdrs = ["go_%s_grpc_client_container.h" % sdk_version.replace(".", "_")],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_client_container.h", sdk_version)],
         data = [
-            "//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:golang_%s_grpc_tls_client.tar" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:golang_%s_grpc_tls_client.tar", sdk_version),
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
@@ -71,11 +71,11 @@ pl_cc_test_library(
 
 [
     pl_cc_test_library(
-        name = "go_%s_grpc_server_container" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("go_%s_grpc_server_container", sdk_version),
         srcs = [],
-        hdrs = ["go_%s_grpc_server_container.h" % sdk_version.replace(".", "_")],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_grpc_server_container.h", sdk_version)],
         data = [
-            "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_%s_grpc_tls_server.tar" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_%s_grpc_tls_server.tar", sdk_version),
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
@@ -84,11 +84,11 @@ pl_cc_test_library(
 
 [
     pl_cc_test_library(
-        name = "go_%s_tls_client_container" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("go_%s_tls_client_container", sdk_version),
         srcs = [],
-        hdrs = ["go_%s_tls_client_container.h" % sdk_version.replace(".", "_")],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_client_container.h", sdk_version)],
         data = [
-            "//src/stirling/testing/demo_apps/go_https/client:golang_%s_https_client.tar" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_https/client:golang_%s_https_client.tar", sdk_version),
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
@@ -97,11 +97,11 @@ pl_cc_test_library(
 
 [
     pl_cc_test_library(
-        name = "go_%s_tls_server_container" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("go_%s_tls_server_container", sdk_version),
         srcs = [],
-        hdrs = ["go_%s_tls_server_container.h" % sdk_version.replace(".", "_")],
+        hdrs = [pl_go_sdk_version_template_to_label("go_%s_tls_server_container.h", sdk_version)],
         data = [
-            "//src/stirling/testing/demo_apps/go_https/server:golang_%s_https_server.tar" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label("//src/stirling/testing/demo_apps/go_https/server:golang_%s_https_server.tar", sdk_version),
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )

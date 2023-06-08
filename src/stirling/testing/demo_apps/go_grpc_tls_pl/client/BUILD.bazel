@@ -16,7 +16,7 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_supported_go_sdk_versions")
+load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_sdk_version_template_to_label", "pl_supported_go_sdk_versions")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -47,7 +47,7 @@ pl_go_binary(
 
 [
     go_cross_binary(
-        name = "golang_%s_grpc_tls_client_binary" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_tls_client_binary", sdk_version),
         sdk_version = sdk_version,
         tags = ["manual"],
         target = ":client",
@@ -57,17 +57,17 @@ pl_go_binary(
 
 [
     container_image(
-        name = "golang_%s_grpc_tls_client" % sdk_version.replace(".", "_"),
+        name = pl_go_sdk_version_template_to_label("golang_%s_grpc_tls_client", sdk_version),
         base = "//:pl_go_base_image",
         entrypoint = [
-            "./golang_%s_grpc_tls_client_binary" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label("./golang_%s_grpc_tls_client_binary", sdk_version),
             "--client_tls_cert=/certs/client.crt",
             "--client_tls_key=/certs/client.key",
             "--tls_ca_cert=/certs/ca.crt",
             "--count=1",
         ],
         files = [
-            ":golang_%s_grpc_tls_client_binary" % sdk_version.replace(".", "_"),
+            pl_go_sdk_version_template_to_label(":golang_%s_grpc_tls_client_binary", sdk_version),
         ],
         layers = [":certs_layer"],
     )
