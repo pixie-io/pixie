@@ -83,7 +83,7 @@ def _pl_webpack_library_impl(ctx):
     cmd = env_cmds + ui_shared_cmds_start + cp_cmds + [
         'pushd "$TMPPATH/src/ui" &> /dev/null',
         'tar -xzf "$BASE_PATH/{}"'.format(ctx.file.deps.path),
-        '[ ! -d src/configurables/private ] || mv "$BASE_PATH/{}" src/configurables/private/licenses.json'.format(ctx.file.licenses.path),
+        'mv -f "$BASE_PATH/{}" src/pages/credits/licenses.json'.format(ctx.file.licenses.path),
         "retval=0",
         "output=`yarn build_prod 2>&1` || retval=$?",
         '[ "$retval" -eq 0 ] || (echo $output; echo "Build Failed with Code: $retval"; exit $retval)',
