@@ -23,31 +23,17 @@ import { SEGMENT_UI_WRITE_KEY } from 'app/containers/constants';
 // Webpack's EnvPlugin has trouble understanding destructuring when Babel gets to it first.
 // This is the case in our build (by necessity), so we must write this long-form.
 /* eslint-disable prefer-destructuring */
-const STABLE_BUILD_NUMBER = process.env.STABLE_BUILD_NUMBER;
-const STABLE_BUILD_SCM_REVISION = process.env.STABLE_BUILD_SCM_REVISION;
-const STABLE_BUILD_SCM_STATUS = process.env.STABLE_BUILD_SCM_STATUS;
+const STABLE_BUILD_TAG = process.env.STABLE_BUILD_TAG;
 const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
 /* eslint-enable prefer-destructuring */
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
 const date = Number.isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
 const dateStr = format(date, 'yyyy.MM.dd.hh.mm');
-const parts = [];
-if (typeof STABLE_BUILD_SCM_REVISION === 'string') {
-  parts.push(STABLE_BUILD_SCM_REVISION.substr(0, 7));
-}
-if (STABLE_BUILD_SCM_STATUS) {
-  parts.push(STABLE_BUILD_SCM_STATUS);
-}
-parts.push(Number.isNaN(timestampSec) ? Math.floor(date.valueOf() / 1000) : timestampSec);
-if (STABLE_BUILD_NUMBER) {
-  parts.push(STABLE_BUILD_NUMBER);
-}
 
 export const PIXIE_CLOUD_VERSION = {
   date: dateStr,
-  build: parts.join('.'),
-  full: `${dateStr}+${parts.join('.')}`,
+  tag: STABLE_BUILD_TAG,
 };
 
 function isValidSegmentKey(k) {
