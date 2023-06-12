@@ -80,6 +80,7 @@ Status RegistrationHandler::DispatchRegistration() {
   host_info->set_pod_name(agent_info()->pod_name);
   host_info->set_host_ip(agent_info()->host_ip);
   *req_info->mutable_capabilities() = agent_info()->capabilities;
+  *req_info->mutable_parameters() = agent_info()->parameters;
 
   PX_RETURN_IF_ERROR(nats_conn()->Publish(req));
   return Status::OK();

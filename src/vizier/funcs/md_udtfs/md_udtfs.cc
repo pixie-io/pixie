@@ -34,6 +34,9 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
                                                                                       ctx);
   registry->RegisterFactoryOrDie<GetAgentStatus, UDTFWithMDFactory<GetAgentStatus>>(
       "GetAgentStatus", ctx);
+  registry->RegisterFactoryOrDie<GetProfilerSamplingPeriodMS,
+                                 UDTFWithMDFactory<GetProfilerSamplingPeriodMS>>(
+      "GetProfilerSamplingPeriodMS", ctx);
 
   registry->RegisterOrDie<GetDebugMDState>("_DebugMDState");
   registry->RegisterFactoryOrDie<GetDebugMDWithPrefix, UDTFWithMDFactory<GetDebugMDWithPrefix>>(

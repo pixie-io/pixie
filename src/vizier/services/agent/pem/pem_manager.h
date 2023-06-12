@@ -30,6 +30,8 @@
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
 
+DECLARE_uint32(stirling_profiler_stack_trace_sample_period_ms);
+
 namespace px {
 namespace vizier {
 namespace agent {
@@ -57,7 +59,7 @@ class PEMManager : public Manager {
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
              std::string_view nats_url, std::unique_ptr<stirling::Stirling> stirling)
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
-                nats_url,
+                PEMManager::Parameters(), nats_url,
                 /*mds_url*/ ""),
         stirling_(std::move(stirling)),
         node_available_memory_(prometheus::BuildGauge()
@@ -87,6 +89,13 @@ class PEMManager : public Manager {
     services::shared::agent::AgentCapabilities capabilities;
     capabilities.set_collects_data(true);
     return capabilities;
+  }
+
+  static services::shared::agent::AgentParameters Parameters() {
+    services::shared::agent::AgentParameters parameters;
+    parameters.set_profiler_stack_trace_sample_period_ms(
+        FLAGS_stirling_profiler_stack_trace_sample_period_ms);
+    return parameters;
   }
 
   std::unique_ptr<stirling::Stirling> stirling_;

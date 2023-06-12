@@ -43,6 +43,7 @@ struct Info {
   std::string pod_name;
   std::string host_ip;
   services::shared::agent::AgentCapabilities capabilities;
+  services::shared::agent::AgentParameters parameters;
 };
 
 }  // namespace agent

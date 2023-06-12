@@ -97,7 +97,8 @@ std::shared_ptr<services::metadata::CronScriptStoreService::Stub> CreateCronScri
 
 Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
                  int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
-                 std::string_view nats_url, std::string_view mds_url)
+                 services::shared::agent::AgentParameters parameters, std::string_view nats_url,
+                 std::string_view mds_url)
     : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       time_system_(std::make_unique<px::event::RealTimeSystem>()),
       api_(std::make_unique<px::event::APIImpl>(time_system_.get())),
@@ -130,6 +131,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 
   info_.agent_id = agent_id;
   info_.capabilities = std::move(capabilities);
+  info_.parameters = std::move(parameters);
   info_.pod_name = std::string(pod_name);
   info_.host_ip = std::string(host_ip);
 }
