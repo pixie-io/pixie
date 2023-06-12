@@ -209,20 +209,24 @@ func (s *Service) Delete(ctx context.Context, req *vzmgrpb.DeleteDeploymentKeyRe
 }
 
 // FetchOrgUserIDUsingDeploymentKey gets the org and user ID based on the deployment key.
-func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, uuid.UUID, error) {
 	resp, err := s.fetchDeploymentKeyUsingKeyFromDB(ctx, key)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, err
+		return uuid.Nil, uuid.Nil, uuid.Nil, err
 	}
 	oid, err := utils.UUIDFromProto(resp.OrgID)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, err
+		return uuid.Nil, uuid.Nil, uuid.Nil, err
 	}
 	uid, err := utils.UUIDFromProto(resp.UserID)
 	if err != nil {
-		return uuid.Nil, uuid.Nil, err
+		return uuid.Nil, uuid.Nil, uuid.Nil, err
 	}
-	return oid, uid, nil
+	keyID, err := utils.UUIDFromProto(resp.ID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, uuid.Nil, err
+	}
+	return oid, uid, keyID, nil
 }
 
 // LookupDeploymentKey gets the complete Deployment key information using just the Key.
