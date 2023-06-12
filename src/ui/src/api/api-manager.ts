@@ -47,7 +47,7 @@ export class PixieAPIManager {
     if (PixieAPIManager._onUnauthorized != null) opts.onUnauthorized = PixieAPIManager._onUnauthorized;
     PixieAPIManager._instance = PixieAPIClient.create(opts);
     // See api-context.tsx for why this exists
-    if (window.apiContextUpdates) window.apiContextUpdates((prev) => prev + 1);
+    if (window.setApiContextUpdatesFromOutsideReact) window.setApiContextUpdatesFromOutsideReact((prev) => prev + 1);
   }
 
   public static get uri() { return PixieAPIManager._uri; }

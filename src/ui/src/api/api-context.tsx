@@ -35,7 +35,7 @@ export type PixieAPIContextProviderProps = WithChildren<PixieAPIClientOptions>;
 
 declare global {
   interface Window {
-    apiContextUpdates?: SetStateFunc<number>;
+    setApiContextUpdatesFromOutsideReact?: SetStateFunc<number>;
   }
 }
 
@@ -44,16 +44,18 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = R
 
   // PixieAPIManager exists outside of React's scope. If it replaces its instance, we'll never know.
   // By putting a setState function somwhere that PixieAPIManager can reach, we can force the update from there.
-  // Let this variable's name stand as eternal testament to the crimes against convention committed here this day.
-  const [outOfScopeHackery, setOutOfScopeHackery] = React.useState(0);
+  // This is not a typical or conventional thing to need to do, so please don't do this anywhere else.
+  const [updateFromOutsideReact, setUpdateFromOutsideReact] = React.useState(0);
   React.useEffect(() => {
     // Technically this means PixieAPIContextProvider has to be singleton - and it already is, in practice.
-    if (!window.apiContextUpdates) window.apiContextUpdates = setOutOfScopeHackery;
+    if (!window.setApiContextUpdatesFromOutsideReact) {
+      window.setApiContextUpdatesFromOutsideReact = setUpdateFromOutsideReact;
+    }
     return () => {
-      delete window.apiContextUpdates;
+      delete window.setApiContextUpdatesFromOutsideReact;
     };
   }, []);
-  React.useEffect(() => { /* Just need to update this context, nothing more */ }, [outOfScopeHackery]);
+  React.useEffect(() => { /* Just need to update this context, nothing more */ }, [updateFromOutsideReact]);
 
   // PixieAPIManager already reinitializes the API client when options change, making this context just a wrapper.
   React.useEffect(() => { PixieAPIManager.uri = opts.uri; }, [opts.uri]);
@@ -62,7 +64,7 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = R
 
   const instance = PixieAPIManager.instance as PixieAPIClient;
   const gqlClient = instance.getCloudClient().graphQL;
-  React.useEffect(() => { /* Similar to the above hackery, must re-render to update ApolloProvider */ }, [gqlClient]);
+  React.useEffect(() => { /* Similar to the above trick, must re-render to update ApolloProvider */ }, [gqlClient]);
 
   return !instance ? null : (
     <PixieAPIContext.Provider value={instance}>
