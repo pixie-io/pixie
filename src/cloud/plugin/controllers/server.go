@@ -640,6 +640,8 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 			return nil, err
 		}
 
+		log.WithField("plugin_id", req.PluginID).WithField("version", req.Version).WithField("org", orgID).Info("Plugin enabled")
+
 		// Track enable event.
 		events.Client().Enqueue(&analytics.Track{
 			UserId: orgID.String(),
@@ -655,6 +657,7 @@ func (s *Server) UpdateOrgRetentionPluginConfig(ctx context.Context, req *plugin
 		if err != nil {
 			return nil, err
 		}
+		log.WithField("plugin_id", req.PluginID).WithField("org", orgID).Info("Plugin disabled")
 
 		// Track disable event.
 		events.Client().Enqueue(&analytics.Track{
