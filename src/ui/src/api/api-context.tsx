@@ -43,7 +43,7 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = R
   const { authToken } = React.useContext(AuthContext);
 
   // PixieAPIManager exists outside of React's scope. If it replaces its instance, we'll never know.
-  // By putting a setState function somwhere that PixieAPIManager can reach, we can force the update from there.
+  // By putting a setState function somewhere that PixieAPIManager can reach, we can force the update from there.
   // This is not a typical or conventional thing to need to do, so please don't do this anywhere else.
   const [updateFromOutsideReact, setUpdateFromOutsideReact] = React.useState(0);
   React.useEffect(() => {
