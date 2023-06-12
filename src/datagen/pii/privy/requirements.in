@@ -1,0 +1,19 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+--no-binary=numpy
+alive-progress==3.1.4
+baluhn==0.1.2
+dicttoxml==1.7.4
+faker_airtravel==0.4
+faker==18.10.1
+hypothesis==6.78.1
+joblib==1.2.0
+json2html==1.3.0
+numpy==1.24.3
+pandas==2.0.2
+plotly==5.9.0
+privy-presidio-utils==0.0.71
+PyPika==0.48.9
+schemathesis==3.19.5
+tqdm==4.65.0
+tqdm-joblib==0.0.2
+wordcloud==1.8.2.2

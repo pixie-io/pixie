@@ -24,7 +24,7 @@ py_test(
     srcs = ["test_providers.py"],
     srcs_version = "PY3",
     deps = [
-        ":test_utils",
+        requirement("hypothesis"),
         "//privy:privy_library",
     ],
 )
@@ -38,11 +38,8 @@ py_test(
     ],
     srcs_version = "PY3",
     deps = [
-        # httpx is transitively required by starlette.testclient but doesn't get
-        # automatically included by rules_python
-        requirement("httpx"),
-        "//privy:privy_library",
         ":test_utils",
+        "//privy:privy_library",
     ],
 )
 
@@ -55,11 +52,8 @@ py_test(
     ],
     srcs_version = "PY3",
     deps = [
-        # httpx is transitively required by starlette.testclient but doesn't get
-        # automatically included by rules_python
-        requirement("httpx"),
-        "//privy:privy_library",
         ":test_utils",
+        "//privy:privy_library",
     ],
 )
 
@@ -68,4 +62,8 @@ py_library(
     testonly = True,
     srcs = ["utils.py"],
     srcs_version = "PY3",
+    deps = [
+        requirement("numpy"),
+        requirement("pandas"),
+    ],
 )

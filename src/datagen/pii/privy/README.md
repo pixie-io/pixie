@@ -1,4 +1,5 @@
 _Privy_ is a command line tool for generating synthetic protocol traces similar to those that Pixie collects from pods in a Kubernetes cluster. It uses [OpenAPI descriptors](https://swagger.io/resources/open-api/) and fake data sources for Personally Identifiable Information (PII) to produce full-body messages in a variety of formats:
+
 - `JSON`
 - `XML`
 - `SQL` (PostgreSQL and MySQL)
@@ -16,13 +17,15 @@ For more information, see this [blog post on PII detection in debugging data](ht
 # Quickstart
 
 1. Generate json data in bazel's sandboxed runtime directory. By default, privy downloads ~4000 API specs from the [OpenAPI directory](https://github.com/APIs-guru/openapi-directory) to generate data from.
+
 ```bazel
-bazel run //privy/run:privy_generate
+bazel run //privy/generate:privy_generate
 ```
 
 2. [Optional] Specify an absolute path to store synthetic data in with `--out_folder`, the type(s) of data to generate with `--generate`, and log priority level with `--logging`. For brevity, you can also use the first letter of each option.
+
 ```bazel
-bazel run //privy/run:privy_generate -- --out_folder=/path/to/output/directory --generate json sql --logging=debug
+bazel run //privy/generate:privy_generate -- --out_folder=/path/to/output/directory --generate json sql --logging=debug
 ```
 
 # Synthetic Data Formats
@@ -59,26 +62,31 @@ Privy produces three dataset files for each specified protocol type (e.g. json).
 **spans** → train a Named Entity Recognition model for token-wise classification (and redaction) of PII.
 
 ## Train a sequence labelling model using [FlairNLP](https://github.com/flairNLP/flair)
+
 ```
 bazel run //privy/train:privy_flair_ner -- --input=/path/to/input/spans.json
 ```
 
 ## Visualize PII distribution in generated synthetic data
+
 ```
 bazel run //privy/generate:privy_visualize -- --input=path/to/input/data-payloads.csv
 ```
 
 ## Truncate protocol traces to a maximum number of characters per line like Pixie does
+
 ```
 bazel run //privy/generate:privy_truncate -- --input=path/to/input/data-payloads.csv
 ```
 
 ## Run Tests
+
 ```bazel
 bazel test ...
 ```
 
 # More options
+
 ```
 options:
   -h, --help            show this help message and exit

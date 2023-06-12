@@ -13,7 +13,7 @@ load("@rules_python//python:pip.bzl", "pip_parse")
 
 pip_parse(
     name = "privy_deps",
-    requirements_lock = "//:requirements.txt",
+    requirements_lock = "//:requirements.bazel.txt",
 )
 
 load("@privy_deps//:requirements.bzl", privy_install_deps = "install_deps")
