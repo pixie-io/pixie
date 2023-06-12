@@ -141,7 +141,7 @@ tomli_w==1.0.0
 torch==1.13.1+cpu
 tqdm==4.64.0
 tqdm-joblib==0.0.2
-transformers==4.19.2
+transformers==4.30.0
 typer==0.4.2
 typing_extensions==4.4.0
 urllib3==1.26.14
