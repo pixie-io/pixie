@@ -244,11 +244,8 @@ go_download_sdk(
 # version.
 #
 # rules_go doesn't support using multiple SDKs with the same version and differing
-# GOEXPERIMENTs. Until this is addressed in https://github.com/bazelbuild/rules_go/issues/3582,
-# go_sdk_boringcrypto is meant to be 1 bug fix version behind our latest go release. In the event
-# our primary toolchain is upgraded to the first release of a new major version (i.e. 1.20.0) an
-# rc suffixed build should be used for go_sdk_boringcrypto (1.20rcX) until the first minor release
-# is available (1.20.1).
+# GOEXPERIMENTs. This can use the same version as our latest go version once
+# https://github.com/bazelbuild/rules_go/issues/3582 is addressed.
 go_download_sdk(
     name = "go_sdk_boringcrypto",
     experiments = ["boringcrypto"],
