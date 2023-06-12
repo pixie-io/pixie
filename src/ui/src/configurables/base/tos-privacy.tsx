@@ -18,14 +18,14 @@
 
 import * as React from 'react';
 
-export const TermsAndPrivacy = React.memo(() => (
-  <>
-    <a href='https://pixielabs.ai/terms/'>
-      Terms & Conditions
+export const TermsAndPrivacy = React.memo<{ classes: Record<'text', string> }>(({ classes }) => {
+  return (<>
+    <a href='https://www.linuxfoundation.org/terms' className={classes.text}>
+      Terms & Conditionss
     </a>
-    <a href='https://pixielabs.ai/privacy'>
+    <a href='https://www.linuxfoundation.org/privacy' className={classes.text}>
       Privacy Policy
     </a>
-  </>
-));
+  </>);
+});
 TermsAndPrivacy.displayName = 'TermsAndPrivacy';

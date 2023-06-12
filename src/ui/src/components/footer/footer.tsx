@@ -77,7 +77,7 @@ export const Footer = React.memo<FooterProps>(({
   return (
     <div className={classes.root}>
       <div className={classes.left}>
-        <TermsAndPrivacy />
+        <TermsAndPrivacy classes={classes} />
         <div className={classes.text}><VersionInfo /></div>
       </div>
       <div className={classes.right}>
