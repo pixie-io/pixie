@@ -283,7 +283,8 @@ export default function PixieWithContext(): React.ReactElement {
   if (errMsg) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
-    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+    // Wait one update cycle, since this can happen in the middle of updating other components in some cases
+    setTimeout(() => showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 }));
     // eslint-disable-next-line no-console
     console.error(errMsg);
   }
