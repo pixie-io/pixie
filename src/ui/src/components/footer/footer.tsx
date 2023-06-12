@@ -24,6 +24,7 @@ import { createStyles, makeStyles } from '@mui/styles';
 import { Link } from 'react-router-dom';
 
 import { VersionInfo } from 'app/components/version-info/version-info';
+import { TermsAndPrivacy } from 'configurable/tos-privacy';
 
 const useDefaultStyles = makeStyles(({ spacing, typography, breakpoints, palette }: Theme) => createStyles({
   root: {
@@ -76,12 +77,7 @@ export const Footer = React.memo<FooterProps>(({
   return (
     <div className={classes.root}>
       <div className={classes.left}>
-        <a href='https://pixielabs.ai/terms/' className={classes.text}>
-          Terms & Conditions
-        </a>
-        <a href='https://pixielabs.ai/privacy' className={classes.text}>
-          Privacy Policy
-        </a>
+        <TermsAndPrivacy classes={classes} />
         <div className={classes.text}><VersionInfo /></div>
       </div>
       <div className={classes.right}>
