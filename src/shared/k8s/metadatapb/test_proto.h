@@ -70,6 +70,25 @@ owner_references: {
 }
 )";
 
+const char* kReusedIPPodUpdatePbTxt = R"(
+uid: "101_uid"
+name: "reused_ip"
+namespace: "pl"
+start_timestamp_ns: 100
+container_ids: "pod1_container_1"
+qos_class: QOS_CLASS_GUARANTEED
+node_name: "test_node"
+hostname: "test_host"
+pod_ip: "1.1.1.1"
+phase: RUNNING
+message: "Running message"
+reason: "Running reason"
+conditions {
+  type: 2
+  status: 1
+}
+)";
+
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
 uid: "2_uid"
 name: "terminating_pod"
@@ -346,6 +365,14 @@ conditions: {
 std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateReusedIPUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kReusedIPPodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;
