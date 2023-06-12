@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -32,7 +33,7 @@ import (
 
 // InfoFetcher fetches information about deployments using the key.
 type InfoFetcher interface {
-	FetchOrgUserIDUsingDeploymentKey(context.Context, string) (uuid.UUID, uuid.UUID, error)
+	FetchOrgUserIDUsingDeploymentKey(context.Context, string) (uuid.UUID, uuid.UUID, uuid.UUID, error)
 }
 
 // VizierProvisioner provisions a new Vizier.
@@ -60,7 +61,7 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 		return nil, status.Error(codes.InvalidArgument, "empty cluster UID is not allowed")
 	}
 	// Fetch the orgID and userID based on the deployment key.
-	orgID, userID, err := s.deploymentInfoFetcher.FetchOrgUserIDUsingDeploymentKey(ctx, req.DeploymentKey)
+	orgID, userID, keyID, err := s.deploymentInfoFetcher.FetchOrgUserIDUsingDeploymentKey(ctx, req.DeploymentKey)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid/unknown deployment key")
 	}
@@ -73,6 +74,9 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 	if err != nil {
 		return nil, vzerrors.ToGRPCError(err)
 	}
+
+	log.WithField("orgID", orgID).WithField("keyID", keyID).WithField("clusterID", clusterID).WithField("clusterName", clusterName).Info("Successfully registered Vizier deployment")
+
 	return &vzmgrpb.RegisterVizierDeploymentResponse{
 		VizierID:   utils.ProtoFromUUID(clusterID),
 		VizierName: clusterName,

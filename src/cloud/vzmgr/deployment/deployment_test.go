@@ -38,6 +38,7 @@ import (
 var (
 	testOrgID  = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
 	testUserID = uuid.FromStringOrNil("423e4567-e89b-12d3-a456-426655440000")
+	testKeyID  = uuid.FromStringOrNil("323e4567-e89b-12d3-a456-426655440000")
 
 	testValidClusterID = uuid.FromStringOrNil("553e4567-e89b-12d3-a456-426655440000")
 
@@ -46,11 +47,11 @@ var (
 
 type fakeDF struct{}
 
-func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, uuid.UUID, error) {
 	if key == testValidDeploymentKey {
-		return testOrgID, testUserID, nil
+		return testOrgID, testUserID, testKeyID, nil
 	}
-	return uuid.Nil, uuid.Nil, vzerrors.ErrDeploymentKeyNotFound
+	return uuid.Nil, uuid.Nil, uuid.Nil, vzerrors.ErrDeploymentKeyNotFound
 }
 
 type fakeProvisioner struct {

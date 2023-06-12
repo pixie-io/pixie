@@ -454,10 +454,11 @@ func TestService_FetchOrgUserIDUsingDeploymentKey(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
 
-			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "px-dep-key1")
+			orgID, userID, keyID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "px-dep-key1")
 			require.NoError(t, err)
 			assert.Equal(t, testAuthOrgID, orgID)
 			assert.Equal(t, testAuthUserID, userID)
+			assert.Equal(t, testKey1ID, keyID)
 		})
 	}
 }
@@ -484,10 +485,11 @@ func TestService_FetchOrgUserIDUsingDeploymentKey_OldKeys(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
 
-			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
+			orgID, userID, keyID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
 			require.NoError(t, err)
 			assert.Equal(t, testAuthOrgID, orgID)
 			assert.Equal(t, testAuthUserID, userID)
+			assert.Equal(t, testKey1ID, keyID)
 		})
 	}
 }
@@ -513,11 +515,12 @@ func TestService_FetchOrgUserIDUsingDeploymentKey_BadKey(t *testing.T) {
 			ctx := test.ctx
 			svc := New(db, testDBKey)
 
-			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "some rando key that does not exist")
+			orgID, userID, keyID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "some rando key that does not exist")
 			assert.NotNil(t, err)
 			assert.Equal(t, vzerrors.ErrDeploymentKeyNotFound, err)
 			assert.Equal(t, uuid.Nil, orgID)
 			assert.Equal(t, uuid.Nil, userID)
+			assert.Equal(t, uuid.Nil, keyID)
 		})
 	}
 }
