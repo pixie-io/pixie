@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_test_library", "pl_go_sdk_version_template_to_label")
+load("//bazel:pl_build_system.bzl", "pl_boringcrypto_go_sdk", "pl_cc_test_library", "pl_go_sdk_version_template_to_label")
 
 # TODO(vihang): load this from pl_build_system once we remove go 1.16
 pl_supported_go_sdk_versions = [
@@ -23,6 +23,8 @@ pl_supported_go_sdk_versions = [
     "1.19",
     "1.20",
 ]
+
+pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -66,7 +68,7 @@ pl_cc_test_library(
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
 [
@@ -79,7 +81,7 @@ pl_cc_test_library(
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
 [
@@ -92,7 +94,7 @@ pl_cc_test_library(
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
 [
@@ -105,7 +107,7 @@ pl_cc_test_library(
         ],
         deps = ["//src/common/testing/test_utils:cc_library"],
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
 pl_cc_test_library(

@@ -16,7 +16,7 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_cross_binary", "go_library")
-load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_sdk_version_template_to_label", "pl_supported_go_sdk_versions")
+load("//bazel:pl_build_system.bzl", "pl_all_supported_go_sdk_versions", "pl_go_binary", "pl_go_sdk_version_template_to_label")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
@@ -62,7 +62,7 @@ pl_go_binary(
         tags = ["manual"],
         target = ":server",
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]
 
 [
@@ -79,5 +79,5 @@ pl_go_binary(
             ":server_certs",
         ],
     )
-    for sdk_version in pl_supported_go_sdk_versions
+    for sdk_version in pl_all_supported_go_sdk_versions
 ]

@@ -193,7 +193,8 @@ INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest,
                              TestParams{"1_17", false, true}, TestParams{"1_17", false, false},
                              TestParams{"1_18", false, true}, TestParams{"1_18", true, false},
                              TestParams{"1_19", false, false}, TestParams{"1_19", true, true},
-                             TestParams{"1_20", true, true}, TestParams{"1_20", true, false}));
+                             TestParams{"1_20", true, true}, TestParams{"1_20", true, false},
+                             TestParams{"boringcrypto", true, true}));
 
 class PyGRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
