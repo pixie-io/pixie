@@ -87,10 +87,10 @@ class CreatePProfRowAggregate : public udf::UDA {
     return output;
   }
 
-  Status Deserialize(FunctionContext*, const StringValue& upstream_pprof_str) {
-    // Parse upstream data into a pprof proto object.
+  Status Deserialize(FunctionContext*, const StringValue& pprof_str) {
+    // Parse serialized input a pprof proto object.
     PProfProfile pprof;
-    if (!pprof.ParseFromString(upstream_pprof_str)) {
+    if (!pprof.ParseFromString(pprof_str)) {
       return error::Internal("Could not parse input string into a pprof proto.");
     }
 
