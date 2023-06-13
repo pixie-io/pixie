@@ -59,7 +59,7 @@
 			"**/.yarn": true,
 			"**/.pnp.*": true,
 		},
-		"typescript.tsdk": "src/ui/.yarn/sdks/typescript/lib",
+		"typescript.tsdk": "@pixielabs/ui/.yarn/sdks/typescript/lib",
 		"typescript.enablePromptUseWorkspaceTsdk": true
 	}
 }

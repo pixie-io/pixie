@@ -260,7 +260,7 @@ export const useMissingScriptProvider: CommandProvider = () => {
   const { setScriptAndArgs } = React.useContext(ScriptContext);
   const { setOpen } = React.useContext(CommandPaletteContext);
 
-  const [promises, setPromises] = React.useState<CancellablePromise[]>([]);
+  const [promises, setPromises] = React.useState<CancellablePromise<DecoratedCompletion[]>[]>([]);
   const [state, setState] = React.useState<CommandProviderState>(DEFAULT);
 
   const invoke = React.useCallback((
