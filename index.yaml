@@ -1,3 +1,12 @@
 apiVersion: v1
-entries: {}
-generated: "2023-06-13T00:00:00.000000+00:00"
+entries:
+  pixie-operator-chart:
+  - apiVersion: v2
+    created: "2023-06-13T21:38:02.269486969Z"
+    digest: e317aa73b3fb0075482837180a89f41bd75aec6b9efd3990630e4cc7658b1915
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://github.com/pixie-io/pixie/releases/download/release/operator/v0.1.2-pre-z6.9/pixie-operator-chart-0.1.2-pre-z6.9.tgz
+    version: 0.1.2-pre-z6.9
+generated: "2023-06-13T21:38:02.266305129Z"
