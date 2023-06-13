@@ -51,25 +51,16 @@ df = df.agg(pprof=('stack_trace', 'count', 'profiler_sampling_period_ms', px.ppr
 
   void Update(FunctionContext*, const StringValue stack_trace, const Int64Value count,
               const Int64Value profiler_period_ms) {
+    UpdateOrCheckSamplingPeriod(profiler_period_ms.val);
+
     histo_[stack_trace] += count.val;
-
-    // Initialize profiler_period_ms_.
-    if (profiler_period_ms_ == -1) {
-      profiler_period_ms_ = profiler_period_ms.val;
-    }
-
-    // If any inconsistent profiler period is observed, set the error flag.
-    if (profiler_period_ms_ != profiler_period_ms.val) {
-      multiple_profiler_periods_found_ = true;
-    }
   }
 
   void Merge(FunctionContext*, const CreatePProfRowAggregate& other) {
+    UpdateOrCheckSamplingPeriod(other.profiler_period_ms_);
+
     for (const auto& [stack_trace, count] : other.histo_) {
       histo_[stack_trace] += count;
-    }
-    if (profiler_period_ms_ != other.profiler_period_ms_) {
-      multiple_profiler_periods_found_ = true;
     }
   }
 
@@ -94,16 +85,7 @@ df = df.agg(pprof=('stack_trace', 'count', 'profiler_sampling_period_ms', px.ppr
       return error::Internal("Could not parse input string into a pprof proto.");
     }
 
-    if (profiler_period_ms_ == -1) {
-      // Initialize profiler_period_ms_ from the upstream pprof.
-      profiler_period_ms_ = pprof.period() / 1000 / 1000;
-    } else {
-      // Verify consistency of profiler_period_ms_ with the upstream pprof.
-      const int64_t profiler_period_ns = profiler_period_ms_ * 1000 * 1000;
-      if (profiler_period_ns != pprof.period()) {
-        multiple_profiler_periods_found_ = true;
-      }
-    }
+    UpdateOrCheckSamplingPeriod(pprof.period() / 1000 / 1000);
 
     // Deserialize into a map from stack_trace string to count.
     const auto upstream_histo = ::px::shared::DeserializePProfProfile(pprof);
@@ -118,6 +100,18 @@ df = df.agg(pprof=('stack_trace', 'count', 'profiler_sampling_period_ms', px.ppr
   StringValue Finalize(FunctionContext* ctx) { return Serialize(ctx); }
 
  protected:
+  void UpdateOrCheckSamplingPeriod(const int32_t profiler_period_ms) {
+    // Initialize profiler_period_ms_ if needed.
+    if (profiler_period_ms_ == -1) {
+      profiler_period_ms_ = profiler_period_ms;
+    }
+
+    // If any inconsistent profiler period is observed, set the error flag.
+    if (profiler_period_ms_ != profiler_period_ms) {
+      multiple_profiler_periods_found_ = true;
+    }
+  }
+
   absl::flat_hash_map<std::string, uint64_t> histo_;
   int32_t profiler_period_ms_ = -1;
   bool multiple_profiler_periods_found_ = false;
