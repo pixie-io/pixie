@@ -43,6 +43,7 @@ jobs:
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
+        GH_REPO: ${{ github.repository }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -93,4 +94,19 @@ jobs:
         gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
           --notes $'Pixie Operator Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" operator-artifacts/*
+      # yamllint enable rule:indentation
+    - name: Push Helm YAML to gh-pages
+      shell: bash
+      env:
+        TAG_NAME: ${{ github.event.release.tag_name }}
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      # yamllint disable rule:indentation
+      run: |
+        git checkout -b "gh-pages"
+        cp operator-artifacts/index.yaml .
+        git add index.yaml
+        export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
+        git commit -s -m "Release Helm chart ${VERSION}"
+        git push origin "gh-pages"
       # yamllint enable rule:indentation

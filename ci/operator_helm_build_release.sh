@@ -34,6 +34,7 @@ parse_args() {
 parse_args "$@"
 tmp_dir="$(mktemp -d)"
 artifacts_dir="${ARTIFACTS_DIR:?}"
+gh_repo="${GH_REPO:?}"
 
 helm_gcs_bucket="pixie-operator-charts"
 if [[ $VERSION == *"-"* ]]; then
@@ -88,3 +89,12 @@ cp sha "${artifacts_dir}/pixie-operator-chart-${VERSION}.tgz.sha256"
 
 # Upload the new index and tar to gcs by syncing. This will help keep the timestamps for pre-existing tars the same.
 gsutil rsync "${tmp_dir}/${helm_gcs_bucket}" "gs://${helm_gcs_bucket}"
+
+# Generate separate index file for GH.
+mkdir -p "${tmp_dir}/gh_helm_chart"
+helm package "${helm_path}" -d "${tmp_dir}/gh_helm_chart"
+# Pull index file.
+wget https://pixie-io.github.io/pixie/index.yaml -O old_index.yaml
+# Update the index file.
+helm repo index "${tmp_dir}/gh_helm_chart" --merge old_index.yaml --url "https://github.com/${gh_repo}/releases/download/release%2Foperator%2Fv${VERSION}"
+mv "${tmp_dir}/gh_helm_chart/index.yaml" "${artifacts_dir}/index.yaml"
