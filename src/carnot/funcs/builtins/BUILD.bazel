@@ -35,6 +35,7 @@ pl_cc_library(
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/funcs/builtins/sql_parsing:cc_library",
         "//src/carnot/udf:cc_library",
+        "//src/shared/pprof:cc_library",
         "@com_github_derrickburns_tdigest//:tdigest",
         "@com_github_google_sentencepiece//:libsentencepiece",
         "@com_github_grpc_grpc//:grpc++",
@@ -204,5 +205,15 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/udf:udf_testutils",
         "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+pl_cc_test(
+    name = "pprof_ops_test",
+    srcs = ["pprof_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+        "//src/shared/pprof:cc_library",
     ],
 )

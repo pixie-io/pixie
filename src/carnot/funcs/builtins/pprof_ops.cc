@@ -16,23 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#pragma once
+#include "src/carnot/funcs/builtins/pprof_ops.h"
 
-#include <string>
-
-#include <absl/container/flat_hash_map.h>
-
-#include "proto/profile.pb.h"
+#include "src/carnot/udf/registry.h"
+#include "src/common/base/base.h"
 
 namespace px {
-namespace shared {
+namespace carnot {
+namespace builtins {
 
-using PProfProfile = ::perftools::profiles::Profile;
-using PProfHisto = absl::flat_hash_map<std::string, uint64_t>;
+void RegisterPProfOpsOrDie(udf::Registry* registry) {
+  CHECK(registry != nullptr);
 
-// https://github.com/google/pprof/blob/main/proto/profile.proto
-PProfProfile CreatePProfProfile(const uint32_t period_ms, const PProfHisto& histo);
-PProfHisto DeserializePProfProfile(const PProfProfile& pprof);
+  registry->RegisterOrDie<CreatePProfRowAggregate>("pprof");
+}
 
-}  // namespace shared
+}  // namespace builtins
+}  // namespace carnot
 }  // namespace px
