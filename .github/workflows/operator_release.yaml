@@ -111,7 +111,8 @@ jobs:
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
       # yamllint disable rule:indentation
       run: |
-        git checkout -b "gh-pages"
+        git checkout "gh-pages"
+        git pull origin "gh-pages"
         cp operator-artifacts/index.yaml .
         git add index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
