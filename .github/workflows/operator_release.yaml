@@ -69,7 +69,7 @@ jobs:
         path: artifacts/
     - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
-        name: index.yaml
+        name: helm_index.yaml
         path: index.yaml
   create-github-release:
     if: ${{ !contains(github.event.ref, '-') }}
@@ -128,7 +128,7 @@ jobs:
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
       # yamllint disable rule:indentation
       run: |
-        cp index.yaml .
+        cp helm_index.yaml index.yaml
         git add index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         git commit -s -m "Release Helm chart ${VERSION}"
