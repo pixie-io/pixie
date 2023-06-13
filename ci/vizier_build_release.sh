@@ -21,6 +21,7 @@ set -ex
 printenv
 
 versions_file="$(realpath "${VERSIONS_FILE:?}")"
+manifest_updates="${MANIFEST_UPDATES:?}"
 repo_path=$(pwd)
 release_tag=${TAG_NAME##*/v}
 
@@ -46,14 +47,14 @@ bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" \
 
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 
-upload_artifact_to_mirrors "vizier" "${release_tag}" "${yamls_tar}" "vizier_yamls.tar"
+upload_artifact_to_mirrors "vizier" "${release_tag}" "${yamls_tar}" "vizier_yamls.tar" AT_CONTAINER_SET_YAMLS
 
 # Upload templated YAMLs.
 tmp_dir="$(mktemp -d)"
 bazel run -c opt //src/utils/template_generator:template_generator -- \
       --base "${yamls_tar}" --version "${release_tag}" --out "${tmp_dir}"
 tmpl_path="${tmp_dir}/yamls.tar"
-upload_artifact_to_mirrors "vizier" "${release_tag}" "${tmpl_path}" "vizier_template_yamls.tar"
+upload_artifact_to_mirrors "vizier" "${release_tag}" "${tmpl_path}" "vizier_template_yamls.tar" AT_CONTAINER_SET_TEMPLATE_YAMLS
 
 # Update helm chart if it is a release.
 if [[ $VERSION != *"-"* ]]; then
@@ -62,3 +63,5 @@ if [[ $VERSION != *"-"* ]]; then
 
   ./ci/helm_build_release.sh "${release_tag}" "${tmpl_path}"
 fi
+
+create_manifest_update "vizier" "${release_tag}" > "${manifest_updates}"

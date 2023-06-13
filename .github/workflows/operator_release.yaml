@@ -19,6 +19,9 @@ jobs:
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+    env:
+      MANIFEST_UPDATES: "manifest_updates.json"
+      ARTIFACT_UPLOAD_LOG: "artifact_uploads.json"
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
@@ -58,11 +61,17 @@ jobs:
         mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
         ./ci/operator_build_release.sh
-    - name: Update Manifest
+    - name: Update GCS Manifest
       env:
         ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
+        # Use the old style versions file instead of the new updates for the gcs manifest.
+        MANIFEST_UPDATES: ""
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       run: ./ci/update_artifact_manifest.sh
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: manifest-updates
+        path: ${{ env.MANIFEST_UPDATES }}
     - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
         name: operator-artifacts
@@ -72,7 +81,6 @@ jobs:
         name: index-artifacts
         path: index.yaml
   create-github-release:
-    if: ${{ !contains(github.event.ref, '-') }}
     name: Create Release on Github
     runs-on: ubuntu-latest
     needs: build-release
@@ -87,8 +95,6 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
-        OWNER: pixie-io
-        REPO: pixie
       shell: bash
       # yamllint disable rule:indentation
       run: |
@@ -96,7 +102,12 @@ jobs:
         # actions/checkout doesn't get the tag annotation properly.
         git fetch origin tag "${TAG_NAME}" -f
         export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
-        gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
+        prerelease=""
+        if [[ "${REF}" == *"-"* ]]; then
+          prerelease="--prerelease"
+        fi
+        gh release create "${TAG_NAME}" "${prerelease}" \
+          --title "Operator ${TAG_NAME#release/operator/}" \
           --notes $'Pixie Operator Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" operator-artifacts/*
   create-helm-chart:
@@ -134,3 +145,52 @@ jobs:
         git commit -s -m "Release Helm chart ${VERSION}"
         git push origin "gh-pages"
       # yamllint enable rule:indentation
+  update-gh-artifacts-manifest:
+    runs-on: ubuntu-latest-8-cores
+    needs: [get-dev-image, create-github-release]
+    container:
+      image: ${{ needs.get-dev-image.outputs.image-with-tag }}
+    concurrency: gh-pages
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        ref: gh-pages
+        path: gh-pages
+    - name: Add pwd to git safe dir
+      run: |
+        git config --global --add safe.directory `pwd`
+        git config --global --add safe.directory "$(pwd)/gh-pages"
+    - name: Import GPG key
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+      run: |
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - name: Setup git
+      shell: bash
+      env:
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
+        git config --global commit.gpgsign true
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+      id: download-artifact
+      with:
+        name: manifest-updates
+    - name: Update gh-pages Manifest
+      env:
+        ARTIFACT_MANIFEST_PATH: "gh-pages/artifacts/manifest.json"
+        MANIFEST_UPDATES: "manifest_updates.json"
+      run: |
+        ./ci/update_artifact_manifest.sh
+        cd gh-pages
+        export ARTIFACT_MANIFEST_PATH="${ARTIFACT_MANIFEST_PATH##gh-pages/}"
+        git add "${ARTIFACT_MANIFEST_PATH}" "${ARTIFACT_MANIFEST_PATH}.sha256"
+        git commit -s -m "Update artifact manifest"
+        git push origin "gh-pages"
