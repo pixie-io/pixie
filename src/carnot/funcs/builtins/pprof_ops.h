@@ -97,10 +97,10 @@ class CreatePProfRowAggregate : public udf::UDA {
     UpdateOrCheckSamplingPeriod(pprof.period() / 1000 / 1000);
 
     // Deserialize into a map from stack_trace string to count.
-    const auto upstream_histo = ::px::shared::DeserializePProfProfile(pprof);
+    const auto merge_histo = ::px::shared::DeserializePProfProfile(pprof);
 
     // Incorporate the deserialized result into our histo_.
-    for (const auto& [stack_trace, count] : upstream_histo) {
+    for (const auto& [stack_trace, count] : merge_histo) {
       histo_[stack_trace] += count;
     }
     return Status::OK();
