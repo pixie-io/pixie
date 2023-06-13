@@ -194,6 +194,15 @@ message ArtifactSet {
   repeated Artifact artifact = 2;
 }
 
+// ArtifactMirrors stores the urls for all mirrors of a single artifact type.
+message ArtifactMirrors {
+  ArtifactType artifact_type = 1;
+  // The sha256sum of the artifact.
+  string sha256 = 2 [ (gogoproto.customname) = "SHA256" ];
+  // The urls of each mirror of an artifact.
+  repeated string urls = 3 [ (gogoproto.customname) = "URLs" ];
+}
+
 // Artifact stores information about a specific artifact version.
 message Artifact {
   // The timestamp that this artifact was released.
@@ -209,9 +218,12 @@ message Artifact {
   // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64 with it's sha hash at:
   // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64.sha256.
   // For container_sets, the path is typically gcr.io/..../image_name:<version_str>.
-  repeated ArtifactType available_artifacts = 4;
+  repeated ArtifactType available_artifacts = 4 [ deprecated = true ];
   // The changelog for this version (in markdown format).
   string changelog = 5;
+  // Effectively a map from ArtifactType to a list of all mirrors for that artifact, but protobuf
+  // disallows enums as map keys, so the map is represented by a list of pairs.
+  repeated ArtifactMirrors available_artifact_mirrors = 6;
 }
 
 // ArtifactTracker tracks versions of released artifacts.

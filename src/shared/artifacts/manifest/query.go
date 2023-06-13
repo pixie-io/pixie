@@ -87,6 +87,11 @@ func RemovePrereleasesFilter() ArtifactFilter {
 // ArtifactTypeFilter filters out any artifacts that don't have the specified ArtifactType available.
 func ArtifactTypeFilter(at versionspb.ArtifactType) ArtifactFilter {
 	return func(a *versionspb.Artifact) bool {
+		for _, am := range a.AvailableArtifactMirrors {
+			if at == am.ArtifactType {
+				return true
+			}
+		}
 		for _, t := range a.AvailableArtifacts {
 			if at == t {
 				return true

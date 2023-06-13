@@ -72,6 +72,7 @@ func mergeArtifact(base, updates *versionspb.Artifact) *versionspb.Artifact {
 	merged.Timestamp = updates.Timestamp
 	merged.CommitHash = updates.CommitHash
 	merged.AvailableArtifacts = updates.AvailableArtifacts
+	merged.AvailableArtifactMirrors = updates.AvailableArtifactMirrors
 	merged.Changelog = updates.Changelog
 	return merged
 }
