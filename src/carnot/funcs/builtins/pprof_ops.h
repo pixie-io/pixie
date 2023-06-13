@@ -38,8 +38,11 @@ class CreatePProfRowAggregate : public udf::UDA {
     return udf::UDADocBuilder("Convert perf profiling data to pprof format.")
         .Details("Converts perf profiling stack traces into pprof format.")
         .Example(
-            R"example(df = px.DataFrame(table='stack_traces.beta', start_time='-1m')
-df = df.agg(pprof=('stack_trace', 'count', px.pprof)))example")
+            R"example(stack_traces = px.DataFrame(table='stack_traces.beta', start_time='-1m')
+sample_period = px.GetProfilerSamplingPeriodMS()
+stack_traces.asid = px.asid()
+df = stack_traces.merge(sample_period, how='inner', left_on=['asid'], right_on=['asid'])df = df.groupby(['profiler_sampling_period_ms'])
+df = df.agg(pprof=('stack_trace', 'count', 'profiler_sampling_period_ms', px.pprof)))example")
         .Arg("stack_trace", "Stack trace string.")
         .Arg("count", "Count of the stack trace string.")
         .Arg("profiler_period_ms", "Profiler stack trace sampling period in ms.")
