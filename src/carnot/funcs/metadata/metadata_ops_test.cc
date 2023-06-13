@@ -717,6 +717,25 @@ TEST_F(MetadataOpsTest, ip_to_pod_id_test) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "127.0.0.2"), "");
 }
 
+TEST_F(MetadataOpsTest, ip_to_pod_id_at_time_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+
+  IPToPodIDAtTimeUDF udf;
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 4), "");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 8), "1_uid");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 100), "1_uid");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2", 4), "");
+
+  updates_->enqueue(px::metadatapb::testutils::CreateReusedIPUpdatePB());
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 4), "");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 8), "1_uid");
+  // Now a new pod 101_uid is using this IP address and has a start_time of 100
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1", 100), "101_uid");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2", 4), "");
+}
+
 TEST_F(MetadataOpsTest, ip_to_service_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   IPToServiceIDUDF udf;
