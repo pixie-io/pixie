@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
+load("@privy_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library")
 
 package(default_visibility = ["//privy:__subpackages__"])
@@ -25,4 +27,11 @@ py_library(
         "**/*.py",
     ]),
     srcs_version = "PY3",
+    deps = [
+        requirement("baluhn"),
+        requirement("faker"),
+        requirement("faker_airtravel"),
+        requirement("pandas"),
+        requirement("privy-presidio-utils"),
+    ],
 )
