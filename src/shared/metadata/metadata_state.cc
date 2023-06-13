@@ -182,6 +182,7 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->deployments_by_name_ = deployments_by_name_;
   other->containers_by_name_ = containers_by_name_;
   other->pods_by_ip_ = pods_by_ip_;
+  other->pods_by_ip_and_start_time_ = pods_by_ip_and_start_time_;
   other->services_by_cluster_ip_ = services_by_cluster_ip_;
 
   return other;
