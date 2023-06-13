@@ -23,6 +23,6 @@ import { Tooltip } from '@mui/material';
 import { PIXIE_CLOUD_VERSION } from 'app/utils/env';
 
 export const VersionInfo = React.memo(() => (
-  <Tooltip title={PIXIE_CLOUD_VERSION.tag}><span>Built {PIXIE_CLOUD_VERSION.date}</span></Tooltip>
+  <Tooltip title={PIXIE_CLOUD_VERSION.tag ?? ''}><span>Built {PIXIE_CLOUD_VERSION.date}</span></Tooltip>
 ));
 VersionInfo.displayName = 'VersionInfo';
