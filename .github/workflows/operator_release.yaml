@@ -67,7 +67,7 @@ jobs:
         name: operator-artifacts
         path: artifacts/
   create-github-release:
-    # if: ${{ !contains(github.event.ref, '-') }}
+    if: ${{ !contains(github.event.ref, '-') }}
     name: Create Release on Github
     runs-on: ubuntu-latest
     needs: build-release
@@ -78,22 +78,22 @@ jobs:
       with:
         fetch-depth: 0
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
-    # - name: Create Release
-    #   env:
-    #     REF: ${{ github.event.ref }}
-    #     GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
-    #     OWNER: pixie-io
-    #     REPO: pixie
-    #   shell: bash
-    #   # yamllint disable rule:indentation
-    #   run: |
-    #     export TAG_NAME="${REF#*/tags/}"
-    #     # actions/checkout doesn't get the tag annotation properly.
-    #     git fetch origin tag "${TAG_NAME}" -f
-    #     export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
-    #     gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
-    #       --notes $'Pixie Operator Release:\n'"${changelog}"
-    #     gh release upload "${TAG_NAME}" operator-artifacts/*
+    - name: Create Release
+      env:
+        REF: ${{ github.event.ref }}
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        OWNER: pixie-io
+        REPO: pixie
+      shell: bash
+      # yamllint disable rule:indentation
+      run: |
+        export TAG_NAME="${REF#*/tags/}"
+        # actions/checkout doesn't get the tag annotation properly.
+        git fetch origin tag "${TAG_NAME}" -f
+        export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
+        gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
+          --notes $'Pixie Operator Release:\n'"${changelog}"
+        gh release upload "${TAG_NAME}" operator-artifacts/*
     #   # yamllint enable rule:indentation
     - name: Setup git
       shell: bash
