@@ -94,7 +94,7 @@ gsutil rsync "${tmp_dir}/${helm_gcs_bucket}" "gs://${helm_gcs_bucket}"
 mkdir -p "${tmp_dir}/gh_helm_chart"
 helm package "${helm_path}" -d "${tmp_dir}/gh_helm_chart"
 # Pull index file.
-curl https://pixie-io.github.io/pixie/index.yaml -o old_index.yaml
+curl http://artifacts.px.dev/index.yaml -o old_index.yaml
 # Update the index file.
 helm repo index "${tmp_dir}/gh_helm_chart" --merge old_index.yaml --url "https://github.com/${gh_repo}/releases/download/release%2Foperator%2Fv${VERSION}"
 mv "${tmp_dir}/gh_helm_chart/index.yaml" "${artifacts_dir}/index.yaml"
