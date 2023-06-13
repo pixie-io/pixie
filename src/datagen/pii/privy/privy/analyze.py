@@ -13,10 +13,12 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-from privy.providers.generic import GenericProvider
+
+import logging
 from collections import Counter
 from typing import Tuple
-import logging
+
+from privy.providers.generic import GenericProvider
 
 
 class DatasetAnalyzer:

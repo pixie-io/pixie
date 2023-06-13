@@ -13,12 +13,15 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
 import json
 import logging
+
 from dicttoxml import dicttoxml
 from json2html import json2html
-from privy.sql import SQLQueryBuilder
+
 from privy.generate.utils import PrivyFileType
+from privy.sql import SQLQueryBuilder
 
 
 class PayloadRoute:

@@ -14,13 +14,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import io
 import csv
+import io
 import json
 from collections import defaultdict
-import pandas as pd
+
 import numpy as np
-from privy.generate.utils import PrivyWriter, PrivyFileType
+import pandas as pd
+
+from privy.generate.utils import PrivyFileType, PrivyWriter
 from privy.payload import PayloadGenerator
 
 

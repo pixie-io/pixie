@@ -13,12 +13,14 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
 import ast
 import logging
 import random
-from enum import Enum
 from copy import deepcopy
-from typing import Union, Optional, Tuple
+from enum import Enum
+from typing import Optional, Tuple, Union
+
 import schemathesis
 from hypothesis import given
 from hypothesis import strategies as st

@@ -14,13 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from tempfile import NamedTemporaryFile
-import shutil
+import argparse
 import csv
+import logging
 import os
 import pathlib
-import argparse
-import logging
+import shutil
+from tempfile import NamedTemporaryFile
 
 
 def parse_args():

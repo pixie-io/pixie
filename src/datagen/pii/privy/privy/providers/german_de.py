@@ -13,10 +13,13 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import string
+
 import random
-from privy.providers.english_us import English_US
+import string
+
 from faker.providers import BaseProvider
+
+from privy.providers.english_us import English_US
 
 
 # override gender provider from English_US

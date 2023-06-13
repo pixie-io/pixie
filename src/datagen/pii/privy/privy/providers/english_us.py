@@ -13,34 +13,25 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import pkg_resources
-from pathlib import Path
+
 import datetime
 from decimal import Decimal
-from faker_airtravel import AirTravelProvider
+from pathlib import Path
+
 import pandas as pd
+import pkg_resources
+from faker_airtravel import AirTravelProvider
 from presidio_evaluator.data_generator import PresidioDataGenerator
-from presidio_evaluator.data_generator.faker_extensions.providers import (
-    NationalityProvider,
-    AgeProvider,
-    AddressProviderNew,
-    PhoneNumberProviderNew,
-    IpAddressProvider,
-    OrganizationProvider,
-    UsDriverLicenseProvider,
-    ReligionProvider,
-)
 from presidio_evaluator.data_generator.faker_extensions import RecordsFaker
-from privy.providers.generic import (
-    GenericProvider,
-    Provider,
-    MacAddressProvider,
-    IMEIProvider,
-    GenderProvider,
-    PassportProvider,
-    StringProvider,
-    ITINProvider,
-)
+from presidio_evaluator.data_generator.faker_extensions.providers import (
+    AddressProviderNew, AgeProvider, IpAddressProvider, NationalityProvider,
+    OrganizationProvider, PhoneNumberProviderNew, ReligionProvider,
+    UsDriverLicenseProvider)
+
+from privy.providers.generic import (GenderProvider, GenericProvider,
+                                     IMEIProvider, ITINProvider,
+                                     MacAddressProvider, PassportProvider,
+                                     Provider, StringProvider)
 
 
 # English United States - inherits standard, region-agnostic methods

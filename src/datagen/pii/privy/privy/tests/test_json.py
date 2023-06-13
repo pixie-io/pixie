@@ -14,14 +14,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import unittest
 import os
 import pathlib
+import unittest
+
+from privy.generate.utils import PrivyFileType
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
-from privy.tests.utils import generate_one_api_spec
-from privy.tests.utils import read_generated_csv
-from privy.generate.utils import PrivyFileType
+from privy.tests.utils import generate_one_api_spec, read_generated_csv
 
 
 class TestPayloadGenerator(unittest.TestCase):

@@ -14,10 +14,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import csv
 import argparse
+import csv
 import sys
 from collections import Counter
+
 import pandas as pd
 import plotly.express as px
 

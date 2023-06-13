@@ -14,15 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import argparse
 import csv
 import logging
-import argparse
-import requests
 import tarfile
-from pathlib import Path
-from typing import Tuple, Any
 from collections import defaultdict
-from privy.generate.utils import check_positive, check_percentage, PrivyWriter, PrivyFileType
+from pathlib import Path
+from typing import Any, Tuple
+
+import requests
+
+from privy.generate.utils import (PrivyFileType, PrivyWriter, check_percentage,
+                                  check_positive)
 from privy.payload import PayloadGenerator
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
