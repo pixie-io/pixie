@@ -18,8 +18,12 @@
 
 #include "src/shared/pprof/pprof.h"
 
+#include <absl/strings/str_join.h>
 #include <absl/strings/str_split.h>
+
 #include <vector>
+
+#include "src/common/base/base.h"
 
 namespace px {
 namespace shared {
@@ -54,6 +58,12 @@ PProfProfile CreatePProfProfile(const uint32_t period_ms, const PProfHisto& hist
   sample_type->set_unit(4);
   profile.add_string_table("cpu");
   profile.add_string_table("nanoseconds");
+
+  // Store the underlying stack trace sampling period.
+  auto period_type = profile.mutable_period_type();
+  period_type->set_type(3);
+  period_type->set_unit(4);
+  profile.set_period(period_ns);
 
   // State variables useful as we build the pprof profile message.
   // No locations messages exist (yet); next_location_id starts at 1.
@@ -132,6 +142,44 @@ PProfProfile CreatePProfProfile(const uint32_t period_ms, const PProfHisto& hist
     }
   }
   return profile;
+}
+
+absl::flat_hash_map<std::string, uint64_t> DeserializePProfProfile(const PProfProfile& pprof) {
+  // This function reads from the protobuf pprof to populate and return this stack trace histogram.
+  absl::flat_hash_map<std::string, uint64_t> histo;
+
+  // Iterate over each sample to find the underlying stack trace string and its count.
+  for (const auto& sample : pprof.sample()) {
+    // Collect symbols into this vector.
+    std::vector<std::string> symbols;
+
+    // Iterate through the symbols, i.e. the stack trace locations. Two notes...
+    // 1. Our stack trace strings (e.g. "main;compute;leaf") are in reversed in order vs. pprof.
+    // 2. PProf proto locations are 1 indexed but C++ is 0 indexed, hence the "-1" offset applied to
+    // the indices below. With 0 indexing, `go tool pprof` refused to render the pprof with
+    // the following message: malformed profile: found function with reserved ID=0.
+    auto& location_ids = sample.location_id();
+    for (auto id_iter = location_ids.rbegin(); id_iter != location_ids.rend(); id_iter++) {
+      const auto& location = pprof.location(*id_iter - 1);
+
+      // Each location points to a line, which points to a function, which points to a symbol.
+      DCHECK_EQ(location.line_size(), 1);
+      const auto& line = location.line(0);
+      const auto& function = pprof.function(line.function_id() - 1);
+      const auto& symbol = pprof.string_table(function.name());
+
+      // Found a symbol; store it.
+      symbols.push_back(symbol);
+    }
+
+    // There are two values for each sample: count & nanos. Here, we ignore the nanos value because
+    // it cannot be stored in the histogram that this function produces.
+    DCHECK_EQ(sample.value_size(), 2);
+    const uint64_t count = sample.value(0);
+    const std::string stack_trace = absl::StrJoin(symbols, ";");
+    histo[stack_trace] = count;
+  }
+  return histo;
 }
 
 }  // namespace shared
