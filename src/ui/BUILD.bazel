@@ -51,6 +51,7 @@ LICENSES_SRCS = [
 pl_webpack_deps(
     name = "ui_deps",
     srcs = UI_DEP_PACKAGES,
+    tags = ["no-remote-exec"],
 )
 
 pl_webpack_library(
@@ -61,18 +62,21 @@ pl_webpack_library(
         "//bazel:stamped": True,
         "//conditions:default": False,
     }),
+    tags = ["no-remote-exec"],
     deps = ":ui_deps",
 )
 
 pl_ui_test(
     name = "ui_tests",
     srcs = UI_SRCS,
+    tags = ["no-remote-exec"],
     deps = ":ui_deps",
 )
 
 pl_deps_licenses(
     name = "npm_licenses",
     srcs = UI_DEP_PACKAGES + LICENSES_SRCS,
+    tags = ["no-remote-exec"],
     # TODO(PP-2567): This is used by tools/licenses.
     # Move that into source and remove this.
     visibility = ["//visibility:public"],
