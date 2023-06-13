@@ -146,6 +146,9 @@ Status AggNode::OpenImpl(ExecState* exec_state) {
   if (HasNoGroups()) {
     PX_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
   }
+  if (!plan_node_->partial_agg()) {
+    PX_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_for_deserialize_, exec_state));
+  }
   return Status::OK();
 }
 
@@ -180,19 +183,30 @@ Status AggNode::ClearAggState(ExecState* exec_state) {
 
 Status AggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) {
   auto values = plan_node_->values();
-  for (size_t i = 0; i < values.size(); ++i) {
-    PX_RETURN_IF_ERROR(
-        EvaluateSingleExpressionNoGroups(exec_state, udas_no_groups_[i], values[i].get(), rb));
+  if (plan_node_->partial_agg()) {
+    for (size_t i = 0; i < values.size(); ++i) {
+      PX_RETURN_IF_ERROR(
+          EvaluateSingleExpressionNoGroups(exec_state, udas_no_groups_[i], values[i].get(), rb));
+    }
+  } else {
+    PX_RETURN_IF_ERROR(DeserializeAndMergeNoGroups(rb));
   }
 
   if (ReadyToEmitBatches(rb)) {
     RowBatch output_rb(*output_descriptor_, 1);
     for (size_t i = 0; i < values.size(); ++i) {
       const auto& uda_info = udas_no_groups_[i];
-      auto builder = types::MakeArrowBuilder(uda_info.def->finalize_return_type(),
-                                             exec_state->exec_mem_pool());
-      PX_RETURN_IF_ERROR(
-          uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(), builder.get()));
+      std::unique_ptr<arrow::ArrayBuilder> builder;
+      if (plan_node_->finalize_results()) {
+        builder = types::MakeArrowBuilder(uda_info.def->finalize_return_type(),
+                                          exec_state->exec_mem_pool());
+        PX_RETURN_IF_ERROR(
+            uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(), builder.get()));
+      } else {
+        builder = types::MakeArrowBuilder(types::STRING, exec_state->exec_mem_pool());
+        PX_RETURN_IF_ERROR(
+            uda_info.def->SerializeArrow(uda_info.uda.get(), function_ctx_.get(), builder.get()));
+      }
       SharedArray out_col;
       PX_RETURN_IF_ERROR(builder->Finish(&out_col));
       PX_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
@@ -254,16 +268,23 @@ Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
     ga.av = val;
   }
 
-  auto values = plan_node_->values();
   // Now extract the values in the agg hash value.
   for (size_t i = 0; i < stored_cols_data_types_.size(); ++i) {
     const auto& rb_col_idx = stored_cols_to_plan_idx_[i];
     const auto& dt = input_descriptor_->type(rb_col_idx);
 
+    // Even if we're not doing a partial agg we want to extract the group values.
+    if (plan_node_->partial_agg() || i < plan_node_->groups().size()) {
 #define TYPE_CASE(_dt_) ExtractToColumnWrapper<_dt_>(group_args_chunk_, rb, i, rb_col_idx);
 
-    PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+      PX_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
+    }
+  }
+  if (!plan_node_->partial_agg()) {
+    // If we're not performing a partial_agg, then we're receiving serialized partial aggs, so we
+    // deserialize and merge them here.
+    PX_RETURN_IF_ERROR(DeserializeAndMergeGrouped(group_args_chunk_, rb));
   }
 
   return Status::OK();
@@ -323,12 +344,23 @@ Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* out
       PX_SWITCH_FOREACH_DATATYPE(group_data_types_[i], TYPE_CASE);
 #undef TYPE_CASE
     }
-    // Actually Finalize the UDA based on the column wrapper chunks.
-    PX_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
-    for (size_t i = 0; i < val->udas.size(); ++i) {
-      const auto& uda_info = val->udas[i];
-      PX_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(),
-                                                     value_builders[i].get()));
+    if (plan_node_->partial_agg()) {
+      PX_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
+    }
+
+    if (plan_node_->finalize_results()) {
+      // Actually Finalize the UDA based on the column wrapper chunks.
+      for (size_t i = 0; i < val->udas.size(); ++i) {
+        const auto& uda_info = val->udas[i];
+        PX_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(),
+                                                       value_builders[i].get()));
+      }
+    } else {
+      for (size_t i = 0; i < val->udas.size(); ++i) {
+        const auto& uda_info = val->udas[i];
+        PX_RETURN_IF_ERROR(uda_info.def->SerializeArrow(uda_info.uda.get(), function_ctx_.get(),
+                                                        value_builders[i].get()));
+      }
     }
   }
 
@@ -358,7 +390,7 @@ Status AggNode::AggregateGroupByClause(ExecState* exec_state, const RowBatch& rb
   // 5. If it's the last batch then emit the values.
   PX_RETURN_IF_ERROR(ExtractRowTupleForBatch(rb));
   PX_RETURN_IF_ERROR(HashRowBatch(exec_state, rb));
-  if (plan_node_->values().size() > 0) {
+  if (plan_node_->partial_agg() && plan_node_->values().size() > 0) {
     PX_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
   }
   PX_RETURN_IF_ERROR(ResetGroupArgs());
@@ -480,6 +512,18 @@ Status AggNode::EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val) {
 }
 
 Status AggNode::CreateColumnMapping() {
+  if (!plan_node_->partial_agg()) {
+    // If we're deserializing partial aggregates, then we have 1 column for each group and 1 column
+    // for each value.
+    auto groups_size = static_cast<int64_t>(plan_node_->groups().size());
+    auto values_size = static_cast<int64_t>(plan_node_->values().size());
+    for (int64_t i = 0; i < groups_size + values_size; i++) {
+      plan_cols_to_stored_map_[i] = i;
+      stored_cols_to_plan_idx_.emplace_back(i);
+      stored_cols_data_types_.emplace_back(input_descriptor_->type(i));
+    }
+    return Status::OK();
+  }
   for (const auto& expr : plan_node_->values()) {
     plan::ExpressionWalker<int> walker;
 
@@ -519,23 +563,57 @@ Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_s
   CHECK_EQ(val->size(), 0ULL);
 
   for (const auto& value : plan_node_->values()) {
-    std::vector<types::DataType> types;
-    types.reserve(value->Deps().size());
-    for (auto* dep : value->Deps()) {
-      PX_ASSIGN_OR_RETURN(auto type, GetTypeOfDep(*dep));
-      types.push_back(type);
-    }
     auto def = exec_state->GetUDADefinition(value->uda_id());
     auto uda = def->Make();
 
-    std::vector<std::shared_ptr<types::BaseValueType>> init_args;
-    for (const auto& arg : value->init_arguments()) {
-      init_args.push_back(arg.ToBaseValueType());
+    // We only init the UDAs if we're doing the partial agg ourself. If another node did the partial
+    // agg, then this node will deserialize and merge into these UDAs, so there's no need for init.
+    if (plan_node_->partial_agg()) {
+      std::vector<std::shared_ptr<types::BaseValueType>> init_args;
+      for (const auto& arg : value->init_arguments()) {
+        init_args.push_back(arg.ToBaseValueType());
+      }
+      // We currently don't use FunctionContext in UDAs so continuing that tradition here, but at
+      // some point we probably want to change this.
+      PX_RETURN_IF_ERROR(def->ExecInit(uda.get(), nullptr, init_args));
     }
-    // We currently don't use FunctionContext in UDAs so continuing that tradition here, but at some
-    // point we probably want to change this.
-    PX_RETURN_IF_ERROR(def->ExecInit(uda.get(), nullptr, init_args));
     val->emplace_back(std::move(uda), def);
+  }
+  return Status::OK();
+}
+
+Status AggNode::DeserializeAndMergeNoGroups(const RowBatch& rb) {
+  for (int64_t row_idx = 0; row_idx < rb.num_rows(); row_idx++) {
+    PX_RETURN_IF_ERROR(DeserializeAndMergeRow(&udas_no_groups_, rb, row_idx, 0));
+  }
+  return Status::OK();
+}
+
+Status AggNode::DeserializeAndMergeGrouped(const std::vector<GroupArgs>& group_args,
+                                           const RowBatch& rb) {
+  auto groups_size = static_cast<int64_t>(plan_node_->groups().size());
+  for (int64_t row_idx = 0; row_idx < rb.num_rows(); row_idx++) {
+    DCHECK(group_args[row_idx].av != nullptr);
+    PX_RETURN_IF_ERROR(
+        DeserializeAndMergeRow(&group_args[row_idx].av->udas, rb, row_idx, groups_size));
+  }
+
+  return Status::OK();
+}
+
+Status AggNode::DeserializeAndMergeRow(std::vector<UDAInfo>* udas, const RowBatch& rb,
+                                       int64_t row_idx, int64_t groups_size) {
+  for (size_t uda_idx = 0; uda_idx < udas->size(); ++uda_idx) {
+    auto& deserial_uda_info = udas_for_deserialize_[uda_idx];
+    auto& merge_uda_info = (*udas)[uda_idx];
+    int64_t col_idx = groups_size + static_cast<int64_t>(uda_idx);
+    DCHECK_EQ(types::STRING, rb.desc().type(col_idx));
+    auto serialized =
+        types::GetValueFromArrowArray<types::STRING>(rb.ColumnAt(col_idx).get(), row_idx);
+    PX_RETURN_IF_ERROR(deserial_uda_info.def->Deserialize(deserial_uda_info.uda.get(),
+                                                          function_ctx_.get(), serialized));
+    PX_RETURN_IF_ERROR(merge_uda_info.def->Merge(merge_uda_info.uda.get(),
+                                                 deserial_uda_info.uda.get(), function_ctx_.get()));
   }
   return Status::OK();
 }

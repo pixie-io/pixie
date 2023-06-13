@@ -38,11 +38,14 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/hash_utils.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/schema/row_batch.h"
 #include "src/table_store/table_store.h"
 
 namespace px {
 namespace carnot {
 namespace exec {
+
+using table_store::schema::RowBatch;
 
 struct UDAInfo {
   UDAInfo(std::unique_ptr<udf::UDA> uda_inst, udf::UDADefinition* def_ptr)
@@ -98,11 +101,20 @@ class AggNode : public ProcessingNode {
   Status EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val);
   StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression& expr) const;
 
+  Status DeserializeAndMergeNoGroups(const RowBatch& rb);
+
+  Status DeserializeAndMergeGrouped(const std::vector<GroupArgs>& group_args, const RowBatch& rb);
+
+  Status DeserializeAndMergeRow(std::vector<UDAInfo>* udas, const RowBatch& rb, int64_t row_idx,
+                                int64_t groups_size);
+
   // Store information about aggregate node from the query planner.
   std::unique_ptr<plan::AggregateOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
 
   std::unique_ptr<udf::FunctionContext> function_ctx_;
+
+  std::vector<UDAInfo> udas_for_deserialize_;
 
   // Variables specific to GroupByNone Agg.
   std::vector<UDAInfo> udas_no_groups_;

@@ -25,9 +25,12 @@
 #include <sole.hpp>
 
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/plan/operators.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/types/types.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
 namespace px {
@@ -48,6 +51,11 @@ class MinSumUDA : public udf::UDA {
   }
   void Merge(udf::FunctionContext*, const MinSumUDA& other) { sum_ = sum_.val + other.sum_.val; }
   types::Int64Value Finalize(udf::FunctionContext*) { return sum_; }
+  StringValue Serialize(udf::FunctionContext*) { return absl::StrCat(sum_.val); }
+  Status Deserialize(udf::FunctionContext*, const types::StringValue& serialized) {
+    PX_UNUSED(absl::SimpleAtoi(serialized, &sum_.val));
+    return Status::OK();
+  }
 
  protected:
   types::Int64Value sum_ = 0;
@@ -66,6 +74,11 @@ class MinSumWithInitUDA : public udf::UDA {
     sum_ = sum_.val + other.sum_.val;
   }
   types::Int64Value Finalize(udf::FunctionContext*) { return sum_; }
+  StringValue Serialize(udf::FunctionContext*) { return absl::StrCat(sum_.val); }
+  Status Deserialize(udf::FunctionContext*, const types::StringValue& serialized) {
+    PX_UNUSED(absl::SimpleAtoi(serialized, &sum_.val));
+    return Status::OK();
+  }
 
  protected:
   types::Int64Value sum_ = 0;
@@ -91,6 +104,8 @@ agg_op {
     }
   }
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kBlockingSingleGroupAgg[] = R"(
@@ -118,6 +133,8 @@ agg_op {
   }
   group_names: "g1"
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kBlockingMultipleGroupAgg[] = R"(
@@ -150,6 +167,8 @@ agg_op {
   group_names: "g1"
   group_names: "g2"
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kWindowedNoGroupAgg[] = R"(
@@ -172,6 +191,8 @@ agg_op {
     }
   }
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kWindowedSingleGroupAgg[] = R"(
@@ -199,6 +220,8 @@ agg_op {
   }
   group_names: "g1"
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kSingleGroupNoValues[] = R"(
@@ -209,6 +232,8 @@ agg_op {
      index: 0
   }
   group_names: "g1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kBlockingNoGroupInitArgAgg[] = R"(
@@ -236,6 +261,8 @@ agg_op {
     id: 1
   }
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
 })";
 
 constexpr char kBlockingSingleGroupInitArgAgg[] = R"(
@@ -268,6 +295,181 @@ agg_op {
   }
   group_names: "g1"
   value_names: "value1"
+  partial_agg: true
+  finalize_results: true
+})";
+
+constexpr char kPartialNoGroupAgg[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 0
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+  }
+  value_names: "value1"
+  partial_agg: true
+  finalize_results: false
+})";
+
+constexpr char kPartialNoGroupAggFinalize[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 0
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+  }
+  value_names: "value1"
+  partial_agg: false
+  finalize_results: true
+})";
+
+constexpr char kPartialSingleGroupAgg[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 2
+      }
+    }
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  group_names: "g1"
+  value_names: "value1"
+  partial_agg: true
+  finalize_results: false
+})";
+
+constexpr char kPartialSingleGroupAggFinalize[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 2
+      }
+    }
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  group_names: "g1"
+  value_names: "value1"
+  partial_agg: false
+  finalize_results: true
+})";
+
+constexpr char kPartialMultipleGroupAgg[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 2
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  groups {
+     node: 0
+     index: 1
+  }
+  group_names: "g1"
+  group_names: "g2"
+  value_names: "value1"
+  partial_agg: true
+  finalize_results: false
+})";
+constexpr char kPartialMultipleGroupAggFinalize[] = R"(
+op_type: AGGREGATE_OPERATOR
+agg_op {
+  windowed: false
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 2
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  groups {
+     node: 0
+     index: 1
+  }
+  group_names: "g1"
+  group_names: "g2"
+  value_names: "value1"
+  partial_agg: false
+  finalize_results: true
 })";
 
 std::unique_ptr<ExecState> MakeTestExecState(udf::Registry* registry) {
@@ -606,6 +808,175 @@ TEST_F(AggNodeTest, single_group_blocking_init_args) {
       .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({12, 13, 13, 14, 11, 15})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, no_groups_partial) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialNoGroupAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::STRING});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                       .AddColumn<types::Int64Value>({2, 5, 6, 8})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 5, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
+                          .AddColumn<types::StringValue>({types::StringValue("23")})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, no_groups_partial_finalize) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialNoGroupAggFinalize);
+  RowDescriptor input_rd({types::DataType::STRING});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::StringValue>({"10", "23"})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
+                       .AddColumn<types::StringValue>({"1", "0", "0"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 1, true, true).AddColumn<types::Int64Value>({34}).get(), false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, single_group_partial) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialSingleGroupAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::STRING});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 1, 2, 2})
+                       .AddColumn<types::Int64Value>({1, 1, 2, 2})
+                       .AddColumn<types::Int64Value>({2, 3, 3, 1})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 5, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
+                          .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
+                          .AddColumn<types::StringValue>({"2", "3", "3", "4", "1", "5"})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, single_group_partial_finalize) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialSingleGroupAggFinalize);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 1, 2, 2})
+                       .AddColumn<types::StringValue>({"2", "3", "3", "1"})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 6, 3, 4})
+                       .AddColumn<types::StringValue>({"1", "5", "3", "8"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
+                          .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
+                          .AddColumn<types::Int64Value>({5, 4, 3, 8, 1, 5})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, multiple_groups_partial) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialMultipleGroupAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd(
+      {types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 5, 1, 2})
+                       .AddColumn<types::Int64Value>({2, 1, 3, 1})
+                       .AddColumn<types::Int64Value>({2, 5, 3, 1})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 1, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 3, 3, 8})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true, true)
+                          .AddColumn<types::Int64Value>({1, 1, 2, 5, 3})
+                          .AddColumn<types::Int64Value>({2, 3, 1, 1, 3})
+                          .AddColumn<types::StringValue>({"4", "3", "1", "2", "6"})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(AggNodeTest, multiple_groups_partial_finalize) {
+  auto plan_node = PlanNodeFromPbtxt(kPartialMultipleGroupAggFinalize);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<AggNode, plan::AggregateOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
+                       .AddColumn<types::Int64Value>({1, 5, 1, 2})
+                       .AddColumn<types::Int64Value>({2, 1, 3, 1})
+                       .AddColumn<types::StringValue>({"2", "5", "3", "1"})
+                       .get(),
+                   0, 0)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
+                       .AddColumn<types::Int64Value>({5, 1, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 3})
+                       .AddColumn<types::StringValue>({"1", "3", "3", "8"})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true, true)
+                          .AddColumn<types::Int64Value>({1, 1, 2, 5, 3})
+                          .AddColumn<types::Int64Value>({2, 3, 1, 1, 3})
+                          .AddColumn<types::Int64Value>({5, 3, 1, 6, 11})
                           .get(),
                       false)
       .Close();
