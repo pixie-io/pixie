@@ -95,6 +95,14 @@ jobs:
     #       --notes $'Pixie Operator Release:\n'"${changelog}"
     #     gh release upload "${TAG_NAME}" operator-artifacts/*
     #   # yamllint enable rule:indentation
+    - name: Setup git
+      shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+        git remote add fork git@github.com:pixie-io-buildbot/pixie.git
     - name: Push Helm YAML to gh-pages
       shell: bash
       env:
