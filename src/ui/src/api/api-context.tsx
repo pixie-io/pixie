@@ -21,20 +21,41 @@ import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
 
 import { AuthContext } from 'app/common/auth-context';
+import { SetStateFunc } from 'app/context/common';
 import { WithChildren } from 'app/utils/react-boilerplate';
 
 import { PixieAPIClient, PixieAPIClientAbstract } from './api-client';
 import { PixieAPIManager } from './api-manager';
 import { PixieAPIClientOptions } from './api-options';
 
-
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 PixieAPIContext.displayName = 'PixieAPIContext';
 
 export type PixieAPIContextProviderProps = WithChildren<PixieAPIClientOptions>;
 
+declare global {
+  interface Window {
+    setApiContextUpdatesFromOutsideReact?: SetStateFunc<number>;
+  }
+}
+
 export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = React.memo(({ children, ...opts }) => {
   const { authToken } = React.useContext(AuthContext);
+
+  // PixieAPIManager exists outside of React's scope. If it replaces its instance, we'll never know.
+  // By putting a setState function somewhere that PixieAPIManager can reach, we can force the update from there.
+  // This is not a typical or conventional thing to need to do, so please don't do this anywhere else.
+  const [updateFromOutsideReact, setUpdateFromOutsideReact] = React.useState(0);
+  React.useEffect(() => {
+    // Technically this means PixieAPIContextProvider has to be singleton - and it already is, in practice.
+    if (!window.setApiContextUpdatesFromOutsideReact) {
+      window.setApiContextUpdatesFromOutsideReact = setUpdateFromOutsideReact;
+    }
+    return () => {
+      delete window.setApiContextUpdatesFromOutsideReact;
+    };
+  }, []);
+  React.useEffect(() => { /* Just need to update this context, nothing more */ }, [updateFromOutsideReact]);
 
   // PixieAPIManager already reinitializes the API client when options change, making this context just a wrapper.
   React.useEffect(() => { PixieAPIManager.uri = opts.uri; }, [opts.uri]);
@@ -42,6 +63,8 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = R
   React.useEffect(() => { PixieAPIManager.onUnauthorized = opts.onUnauthorized; }, [opts.onUnauthorized]);
 
   const instance = PixieAPIManager.instance as PixieAPIClient;
+  const gqlClient = instance.getCloudClient().graphQL;
+  React.useEffect(() => { /* Similar to the above trick, must re-render to update ApolloProvider */ }, [gqlClient]);
 
   return !instance ? null : (
     <PixieAPIContext.Provider value={instance}>
