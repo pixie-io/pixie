@@ -159,8 +159,7 @@ export const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: theme.typography.fontWeightLight,
   fontSize: theme.typography.body2.fontSize,
   color: theme.palette.foreground.one,
-  borderWidth: theme.spacing(1),
-  borderColor: theme.palette.background.default,
+  borderColor: 'transparent',
 }));
 
 // eslint-disable-next-line react-memo/require-memo
