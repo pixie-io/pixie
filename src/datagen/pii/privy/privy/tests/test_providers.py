@@ -15,7 +15,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unittest
-from hypothesis import strategies as st, given
+
+from hypothesis import given
+from hypothesis import strategies as st
+
 from privy.providers.english_us import English_US
 from privy.providers.german_de import German_DE
 

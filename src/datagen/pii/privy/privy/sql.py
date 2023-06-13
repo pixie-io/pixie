@@ -13,12 +13,11 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
+
 import random
-from pypika import Case, Table, Criterion, functions
-from pypika.dialects import (
-    MySQLQuery,
-    PostgreSQLQuery,
-)
+
+from pypika import Case, Criterion, Table, functions
+from pypika.dialects import MySQLQuery, PostgreSQLQuery
 
 
 class SQLQueryBuilder:

@@ -14,16 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import argparse
 import ast
+import os
 from copy import deepcopy
-from presidio_evaluator.data_objects import InputSample
-from presidio_evaluator.data_generator.faker_extensions.data_objects import FakerSpansResult
-from presidio_evaluator.validation import split_dataset, save_to_json
-from presidio_evaluator.models import FlairTrainer
 from pathlib import Path
+
+from presidio_evaluator.data_generator.faker_extensions.data_objects import \
+    FakerSpansResult
+from presidio_evaluator.data_objects import InputSample
 from presidio_evaluator.evaluation import Evaluator
+from presidio_evaluator.models import FlairTrainer
+from presidio_evaluator.validation import save_to_json, split_dataset
 
 
 # entity mappings for flair sequence labelling model

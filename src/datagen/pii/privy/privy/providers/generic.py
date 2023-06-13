@@ -18,12 +18,14 @@ import dataclasses
 import random
 import string
 from abc import ABC
-from typing import Union, Optional, Type, Set
 from decimal import Decimal
+from typing import Optional, Set, Type, Union
+
 import baluhn
 from faker.providers import BaseProvider
 from faker.providers.lorem.en_US import Provider as LoremProvider
-from presidio_evaluator.data_generator.faker_extensions.data_objects import FakerSpansResult
+from presidio_evaluator.data_generator.faker_extensions.data_objects import \
+    FakerSpansResult
 
 
 @dataclasses.dataclass()

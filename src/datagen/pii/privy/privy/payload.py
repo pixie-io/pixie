@@ -13,34 +13,34 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import os
-import time
-import warnings
+
 import logging
+import os
 import random
-from pathlib import Path
-from datetime import timedelta
-from copy import deepcopy
+import time
 import traceback
+import warnings
+from copy import deepcopy
+from datetime import timedelta
+from pathlib import Path
+
 import schemathesis
-from joblib import Parallel, delayed
-from tqdm_joblib import tqdm_joblib
-from tqdm import tqdm
 from alive_progress import alive_bar
+from hypothesis import HealthCheck, Verbosity, given, settings
+from hypothesis import strategies as st
+from joblib import Parallel, delayed
 from schemathesis import DataGenerationMethod
 from schemathesis.specs.openapi.schemas import BaseOpenAPISchema
-from hypothesis import (
-    HealthCheck,
-    given,
-    Verbosity,
-    settings,
-    strategies as st,
-)
-from privy.generate.utils import PrivyWriter
-from privy.providers.generic import Provider
-from privy.hooks import SchemaHooks, ParamType
-from privy.route import PayloadRoute
+from tqdm import tqdm
+from tqdm_joblib import tqdm_joblib
+
 from privy.analyze import DatasetAnalyzer
+from privy.generate.utils import PrivyWriter
+from privy.hooks import ParamType, SchemaHooks
+from privy.providers.generic import Provider
+from privy.route import PayloadRoute
+
+
 # todo @benkilimnik add fine grained warning filter for schemathesis
 warnings.filterwarnings("ignore")
 
