@@ -38,15 +38,11 @@ import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'app/common/cluster-context';
 import UserContext from 'app/common/user-context';
-import {
-  ClusterIcon, DataDisksIcon, DocsIcon, NamespaceIcon,
-} from 'app/components';
-import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { buildClass, DataDisksIcon, DocsIcon } from 'app/components';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL,
 } from 'app/containers/constants';
-import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 import { SidebarFooter } from 'configurable/sidebar-footer';
 
@@ -114,8 +110,27 @@ const useStyles = makeStyles(({
       overflow: 'hidden',
     },
   },
+  activeListIcon: {
+    position: 'relative',
+    '&:after': {
+      position: 'absolute',
+      content: '""',
+      pointerEvents: 'none',
+      fontSize: '0.01px',
+      height: '100%',
+      top: 0,
+      right: 0,
+      borderRight: `${spacing(0.25)} ${palette.primary.main} solid`,
+    },
+    '&$listIcon > div': {
+      color: palette.primary.main,
+    },
+  },
   clippedItem: {
     height: spacing(6),
+  },
+  divider: {
+    borderColor: palette.background.five,
   },
   sidebarToggle: {
     position: 'absolute',
@@ -130,19 +145,26 @@ const useStyles = makeStyles(({
   },
 }), { name: 'SideBar' });
 
-interface LinkItemProps {
+export interface LinkItemProps {
   icon: React.ReactNode;
   link: string;
   text: string;
+  active?: boolean;
 }
 
 const SideBarInternalLinkItem = React.memo<LinkItemProps>(({
-  icon, link, text,
+  icon, link, text, active,
 }) => {
   const classes = useStyles();
   return (
     <Tooltip title={text} disableInteractive>
-      <ListItem button component={Link} to={link} key={text} className={classes.listIcon}>
+      <ListItem
+        button
+        component={Link}
+        to={link}
+        key={text}
+        className={buildClass(classes.listIcon, active && classes.activeListIcon)}
+      >
         <ListItemIcon>{icon}</ListItemIcon>
         <ListItemText primary={text} />
       </ListItem>
@@ -166,31 +188,11 @@ const SideBarExternalLinkItem = React.memo<LinkItemProps>(({
 });
 SideBarExternalLinkItem.displayName = 'SideBarExternalLinkItem';
 
-export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
+export const SideBar: React.FC<{ open: boolean, buttons?: LinkItemProps[] }> = React.memo(({ open, buttons = [] }) => {
   const classes = useStyles();
   const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
 
-  // If we're not in the live view, LiveViewContext is null.
-  const embedState = React.useContext(LiveRouteContext)?.embedState ?? null;
-
   const { user } = React.useContext(UserContext);
-
-  const navItems = React.useMemo(() => {
-    if (!selectedClusterName || !embedState) {
-      return [];
-    }
-    return [{
-      icon: <ClusterIcon />,
-      link: deepLinkURLFromScript('px/cluster', selectedClusterName, embedState, {}),
-      text: 'Cluster',
-    },
-    {
-      icon: <NamespaceIcon />,
-      link: deepLinkURLFromScript('px/namespaces', selectedClusterName, embedState, {}),
-      text: 'Namespaces',
-    }];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClusterName, embedState]);
 
   const pluginItems = React.useMemo(() => {
     return [{
@@ -220,17 +222,17 @@ export const SideBar: React.FC<{ open: boolean }> = React.memo(({ open }) => {
         <List>
           <ListItem button className={classes.clippedItem} />
         </List>
-        {navItems.length > 0 && (
+        {buttons.length > 0 && (
           <List>
-            {navItems.map(({ icon, link, text }) => (
-              <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
+            {buttons.map((props) => (
+              <SideBarInternalLinkItem key={props.text} {...props} />
             ))}
           </List>
         )}
-        { navItems.length > 0 && <Divider variant='middle' />}
+        {buttons.length > 0 && <Divider variant='middle' className={classes.divider} />}
         <List>
-          {pluginItems.map(({ icon, link, text }) => (
-            <SideBarInternalLinkItem key={text} icon={icon} link={link} text={text} />
+          {pluginItems.map((props) => (
+            <SideBarInternalLinkItem key={props.text} {...props} />
           ))}
         </List>
         <div className={classes.spacer} />

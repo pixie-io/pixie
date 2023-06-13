@@ -29,7 +29,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { ClusterContext } from 'app/common/cluster-context';
 import { isPixieEmbedded } from 'app/common/embed-context';
-import { EditIcon, Footer, scrollbarStyles } from 'app/components';
+import { ClusterIcon, EditIcon, Footer, NamespaceIcon, scrollbarStyles } from 'app/components';
 import { CommandPalette } from 'app/components/command-palette';
 import {
   CommandPaletteContext,
@@ -41,6 +41,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { LiveTourContextProvider } from 'app/containers/App/live-tour';
 import NavBars from 'app/containers/App/nav-bars';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { LinkItemProps } from 'app/containers/App/sidebar';
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'app/containers/editor/editor';
 import { LiveViewBreadcrumbs } from 'app/containers/live/breadcrumbs';
@@ -50,6 +51,7 @@ import ExecuteScriptButton from 'app/containers/live/execute-button';
 import { ScriptLoader } from 'app/containers/live/script-loader';
 import ShareButton from 'app/containers/live/share-button';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
+import { deepLinkURLFromScript } from 'app/containers/live-widgets/utils/live-view-params';
 import { SetStateFunc } from 'app/context/common';
 import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
 import { EditorContext, EditorContextProvider } from 'app/context/editor-context';
@@ -295,12 +297,33 @@ const Nav: React.FC<{
   const classes = useStyles();
   const { showCommandPalette } = useFlags();
 
+  const selectedClusterName = React.useContext(ClusterContext)?.selectedClusterName ?? '';
+  const embedState = React.useContext(LiveRouteContext)?.embedState ?? null;
+
+  const sidebarButtons: LinkItemProps[] = React.useMemo(() => {
+    if (!selectedClusterName || !embedState) {
+      return [];
+    }
+    return [
+      {
+        icon: <ClusterIcon />,
+        link: deepLinkURLFromScript('px/cluster', selectedClusterName, embedState, {}),
+        text: 'Cluster',
+      },
+      {
+        icon: <NamespaceIcon />,
+        link: deepLinkURLFromScript('px/namespaces', selectedClusterName, embedState, {}),
+        text: 'Namespaces',
+      },
+    ];
+  }, [embedState, selectedClusterName]);
+
   if (isPixieEmbedded()) {
     return <></>;
   }
 
   return <>
-    <NavBars>
+    <NavBars sidebarButtons={sidebarButtons}>
       <ClusterSelector />
       <div className={classes.middle}>
         {showCommandPalette && <CommandPalette />}

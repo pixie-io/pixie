@@ -23,7 +23,7 @@ import {
   Brightness4Outlined,
   Explore as ExploreIcon,
   Keyboard as KeyboardIcon,
-  Menu as MenuIcon,
+  ChevronRight as MenuIcon,
 } from '@mui/icons-material';
 import {
   AppBar,
@@ -71,6 +71,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   menu: {
     color: theme.palette.text.secondary,
+    transformOrigin: '50% 50%',
+    transition: 'transform 0.125s linear', // Match up speed with the sidebar slide animation
+    transform: 'rotate(0)',
+  },
+  openMenu: {
+    transform: 'rotate(90deg)',
   },
   clickable: {
     cursor: 'pointer',
@@ -311,19 +317,20 @@ ProfileItem.displayName = 'ProfileItem';
 
 interface TopBarProps {
   toggleSidebar: () => void;
+  sidebarOpen: boolean;
   setSidebarOpen: SetStateFunc<boolean>;
 }
 
 export const TopBar: React.FC<WithChildren<TopBarProps>> = React.memo(({
-  children, toggleSidebar, setSidebarOpen,
+  children, toggleSidebar, sidebarOpen, setSidebarOpen,
 }) => {
   const classes = useStyles();
   return (
     <AppBar className={classes.container} position='static'>
       <Toolbar>
         {/* eslint-disable-next-line react-memo/require-usememo */}
-        <IconButton edge='start' size='large' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
-          <MenuIcon className={classes.menu} />
+        <IconButton size='large' color='inherit' aria-label='menu' sx={{ ml: -2, mr: 2.5 }} onClick={toggleSidebar}>
+          <MenuIcon className={buildClass(classes.menu, sidebarOpen && classes.openMenu)} />
         </IconButton>
         <div className={classes.logoContainer}>
           <Link to='/'><Logo /></Link>
