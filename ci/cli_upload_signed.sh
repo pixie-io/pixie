@@ -18,31 +18,23 @@
 
 repo_path=$(bazel info workspace)
 
-# shellcheck source=ci/gcs_utils.sh
-. "${repo_path}/ci/gcs_utils.sh"
+# shellcheck source=ci/artifact_utils.sh
+. "${repo_path}/ci/artifact_utils.sh"
 
 set -ex
 
 printenv
 
-artifacts_dir="${ARTIFACTS_DIR:-?}"
 release_tag=${TAG_NAME##*/v}
-bucket="pixie-dev-public"
 
-gpg --no-tty --batch --yes --import "${BUILDBOT_GPG_KEY_FILE}"
-
-output_path="gs://${bucket}/cli/${release_tag}"
+export GCS_ARTIFACT_OPTS="-h 'Content-Disposition:filename=px'"
 for arch in amd64 arm64 universal
 do
-  copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
+  upload_artifact_to_mirrors "cli" "${release_tag}" "cli_darwin_${arch}" "cli_darwin_${arch}"
 
   # Check to see if it's production build. If so we should also write it to the latest directory.
   if [[ ! "$release_tag" == *"-"* ]]; then
-    output_path="gs://${bucket}/cli/latest"
-    copy_artifact_to_gcs "$output_path" "cli_darwin_${arch}" "cli_darwin_${arch}"
-
-    gpg --no-tty --batch --yes --local-user "${BUILDBOT_GPG_KEY_ID}" --armor --detach-sign "cli_darwin_${arch}"
-    cp "cli_darwin_${arch}" "${artifacts_dir}"
-    cp "cli_darwin_${arch}.asc" "${artifacts_dir}"
+    upload_artifact_to_mirrors "cli" "latest" "cli_darwin_${arch}" "cli_darwin_${arch}"
   fi
 done
+unset GCS_ARTIFACT_OPTS
