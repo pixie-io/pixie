@@ -2982,7 +2982,7 @@ class IPToPodIDAtTimeUDF : public ScalarUDF {
   /**
    * @brief Gets the pod id of pod with given pod_ip
    */
-  StringValue Exec(FunctionContext* ctx, StringValue pod_ip, Int64Value time) {
+  StringValue Exec(FunctionContext* ctx, StringValue pod_ip, Time64NSValue time) {
     auto md = GetMetadataState(ctx);
     return md->k8s_metadata_state().PodIDByIPAtTime(pod_ip, time.val);
   }
