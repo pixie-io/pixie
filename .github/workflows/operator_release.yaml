@@ -94,7 +94,7 @@ jobs:
         gh release create "${TAG_NAME}" --title "Operator ${TAG_NAME#release/operator/}" \
           --notes $'Pixie Operator Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" operator-artifacts/*
-    #   # yamllint enable rule:indentation
+    # yamllint enable rule:indentation
     - name: Setup git
       shell: bash
       env:
