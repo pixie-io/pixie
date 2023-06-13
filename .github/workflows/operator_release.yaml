@@ -48,6 +48,7 @@ jobs:
       run: |
         export TAG_NAME="${REF#*/tags/}"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
+        export INDEX_FILE="$(pwd)/index.yaml"
         mkdir -p "${ARTIFACTS_DIR}"
         ./ci/save_version_info.sh
         ./ci/operator_build_release.sh
@@ -66,6 +67,10 @@ jobs:
       with:
         name: operator-artifacts
         path: artifacts/
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: index.yaml
+        path: index.yaml
   create-github-release:
     if: ${{ !contains(github.event.ref, '-') }}
     name: Create Release on Github
@@ -106,6 +111,7 @@ jobs:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
       with:
         fetch-depth: 0
+      ref: gh-pages
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
     - name: Setup git
       shell: bash
@@ -122,9 +128,7 @@ jobs:
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
       # yamllint disable rule:indentation
       run: |
-        git checkout "gh-pages"
-        git pull origin "gh-pages"
-        cp operator-artifacts/index.yaml .
+        cp index.yaml .
         git add index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         git commit -s -m "Release Helm chart ${VERSION}"

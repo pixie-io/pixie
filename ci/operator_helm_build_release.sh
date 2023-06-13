@@ -34,6 +34,7 @@ parse_args() {
 parse_args "$@"
 tmp_dir="$(mktemp -d)"
 artifacts_dir="${ARTIFACTS_DIR:?}"
+index_file="${INDEX_FILE:?}"
 gh_repo="${GH_REPO:?}"
 
 helm_gcs_bucket="pixie-operator-charts"
@@ -97,4 +98,4 @@ helm package "${helm_path}" -d "${tmp_dir}/gh_helm_chart"
 curl https://artifacts.px.dev/index.yaml -o old_index.yaml
 # Update the index file.
 helm repo index "${tmp_dir}/gh_helm_chart" --merge old_index.yaml --url "https://github.com/${gh_repo}/releases/download/release%2Foperator%2Fv${VERSION}"
-mv "${tmp_dir}/gh_helm_chart/index.yaml" "${artifacts_dir}/index.yaml"
+mv "${tmp_dir}/gh_helm_chart/index.yaml" "${index_file}"
