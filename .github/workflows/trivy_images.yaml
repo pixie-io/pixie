@@ -38,7 +38,7 @@ jobs:
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Build images
       run: |
-        bazel build \
+        ./scripts/bazel_ignore_codes.sh build \
         --//k8s:image_version=nightly --config=x86_64_sysroot \
         //k8s/${{ matrix.artifact }}:image_bundle.tar //k8s/${{ matrix.artifact }}:list_image_bundle
     - name: Load Images
