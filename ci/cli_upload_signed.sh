@@ -26,13 +26,21 @@ set -ex
 printenv
 
 release_tag=${TAG_NAME##*/v}
+manifest_updates="${MANIFEST_UPDATES:?}"
 
 for arch in amd64 arm64 universal
 do
-  upload_artifact_to_mirrors "cli" "${release_tag}" "cli_darwin_${arch}" "cli_darwin_${arch}"
+  artifact_type=""
+  case "${arch}" in
+    amd64) artifact_type="AT_DARWIN_AMD64" ;;
+    arm64) artifact_type="AT_DARWIN_ARM64" ;;
+  esac
+  upload_artifact_to_mirrors "cli" "${release_tag}" "cli_darwin_${arch}" "cli_darwin_${arch}" "${artifact_type}"
 
   # Check to see if it's production build. If so we should also write it to the latest directory.
   if [[ ! "$release_tag" == *"-"* ]]; then
     upload_artifact_to_mirrors "cli" "latest" "cli_darwin_${arch}" "cli_darwin_${arch}"
   fi
 done
+
+create_manifest_update "cli" "${release_tag}" > "${manifest_updates}"

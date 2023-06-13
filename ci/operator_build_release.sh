@@ -19,6 +19,7 @@
 set -ex
 
 versions_file="$(realpath "${VERSIONS_FILE:?}")"
+manifest_updates="${MANIFEST_UPDATES:?}"
 repo_path=$(pwd)
 release_tag=${TAG_NAME##*/v}
 
@@ -121,6 +122,8 @@ output_path="gs://${bucket}/operator/${release_tag}"
 bazel build //k8s/operator:operator_templates
 yamls_tar="${repo_path}/bazel-bin/k8s/operator/operator_templates.tar"
 
-upload_artifact_to_mirrors "operator" "${release_tag}" "${yamls_tar}" "operator_template_yamls.tar"
+upload_artifact_to_mirrors "operator" "${release_tag}" "${yamls_tar}" "operator_template_yamls.tar" AT_CONTAINER_SET_TEMPLATE_YAMLS
 
 ./ci/operator_helm_build_release.sh "${release_tag}"
+
+create_manifest_update "operator" "${release_tag}" > "${manifest_updates}"

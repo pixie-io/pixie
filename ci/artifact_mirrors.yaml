@@ -3,7 +3,7 @@
 # So the first mirror in the list will be pulled from first.
 - name: gh-releases
   type: gh-releases
-  url_format: 'https://github.com/pixie-io/pixie/releases/download/release/${component}/v${version}/${artifact_name}'
+  url_format: 'https://github.com/${gh_repo}/releases/download/release/${component}/v${version}/${artifact_name}'
 - name: pixie-oss-gcs
   type: gcs
   bucket: pixie-dev-public
