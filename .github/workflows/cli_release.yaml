@@ -36,11 +36,11 @@ jobs:
         # With some kernel configs (eg. COS), podman only works with legacy iptables.
         update-alternatives --set iptables /usr/sbin/iptables-legacy
         update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-    - name: Get GPG Key from secrets
+    - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
-        echo "$BUILDBOT_GPG_KEY_B64" | base64 --decode > /tmp/gpg.key
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
     - id: gcloud-creds
       uses: ./.github/actions/gcloud_creds
       with:
@@ -49,7 +49,6 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-        BUILDBOT_GPG_KEY_FILE: "/tmp/gpg.key"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BUILD_NUMBER: ${{ github.run_attempt }}
         JOB_NAME: ${{ github.job }}
@@ -115,11 +114,11 @@ jobs:
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
       with:
         name: macos-artifacts
-    - name: Get GPG Key from secrets
+    - name: Import GPG key
       env:
         BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
       run: |
-        echo "$BUILDBOT_GPG_KEY_B64" | base64 --decode > /tmp/gpg.key
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
     - id: gcloud-creds
       uses: ./.github/actions/gcloud_creds
       with:
@@ -128,7 +127,6 @@ jobs:
       env:
         REF: ${{ github.event.ref }}
         BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-        BUILDBOT_GPG_KEY_FILE: "/tmp/gpg.key"
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       shell: bash
       run: |
