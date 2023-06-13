@@ -35,6 +35,11 @@ jobs:
       uses: ./.github/actions/gcloud_creds
       with:
         SERVICE_ACCOUNT_KEY: ${{ secrets.GH_RELEASE_SA_PEM_B64 }}
+    - name: Import GPG key
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+      run: |
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
     - name: Build & Push Artifacts
       env:
         REF: ${{ github.event.ref }}
@@ -43,6 +48,7 @@ jobs:
         COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
         COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_PRIVATE_KEY}}
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
       shell: bash
       run: |
         export TAG_NAME="${REF#*/tags/}"
@@ -62,12 +68,6 @@ jobs:
         ARTIFACT_MANIFEST_BUCKET: "pixie-dev-public"
         GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.gcloud-creds.outputs.gcloud-creds }}
       run: ./ci/update_artifact_manifest.sh
-    - name: Sign Artifacts
-      uses: ./.github/actions/sign_artifacts
-      with:
-        artifacts-dir: artifacts
-        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
-        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
     - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
       with:
         name: vizier-artifacts

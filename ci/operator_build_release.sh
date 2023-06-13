@@ -24,6 +24,8 @@ release_tag=${TAG_NAME##*/v}
 
 # shellcheck source=ci/image_utils.sh
 . "${repo_path}/ci/image_utils.sh"
+# shellcheck source=ci/artifact_utils.sh
+. "${repo_path}/ci/artifact_utils.sh"
 
 echo "The release tag is: ${release_tag}"
 
@@ -118,9 +120,7 @@ cd "${repo_path}"
 output_path="gs://${bucket}/operator/${release_tag}"
 bazel build //k8s/operator:operator_templates
 yamls_tar="${repo_path}/bazel-bin/k8s/operator/operator_templates.tar"
-sha256sum "${yamls_tar}" | awk '{print $1}' > tmplSha
-gsutil cp "${yamls_tar}" "${output_path}/operator_template_yamls.tar"
-gsutil cp tmplSha "${output_path}/operator_template_yamls.tar.sha256"
 
+upload_artifact_to_mirrors "operator" "${release_tag}" "${yamls_tar}" "operator_template_yamls.tar"
 
 ./ci/operator_helm_build_release.sh "${release_tag}"
