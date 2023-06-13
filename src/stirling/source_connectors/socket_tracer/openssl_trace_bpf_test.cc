@@ -97,10 +97,10 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename TServerContainer, bool UseNestedSyscallFD>
-class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
+template <typename TServerContainer>
+class OpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  BaseOpenSSLTraceTest() {
+  OpenSSLTraceTest() {
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
@@ -109,12 +109,6 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
 
     // Sleep an additional second, just to be safe.
     sleep(1);
-  }
-
-  void SetUp() override {
-    FLAGS_access_tls_socket_fd_via_syscall = UseNestedSyscallFD;
-
-    SocketTraceBPFTestFixture::SetUp();
   }
 
   // Returns the trace records of the process specified by the input pid.
@@ -178,26 +172,12 @@ http::Record GetExpectedHTTPRecord() {
 
 using OpenSSLServerImplementations =
     Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+          NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
           Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
-using OpenSSLServerNestedSyscallFDImplementations =
-    Types<Python310ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-          NginxOpenSSL_3_0_8_ContainerWrapper>;
-
-template <typename T>
-using OpenSSLTraceTest = BaseOpenSSLTraceTest<T, false>;
-
-template <typename T>
-using OpenSSLTraceNestedSyscallFD = BaseOpenSSLTraceTest<T, true>;
-
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock)               \
-  TYPED_TEST(OpenSSLTraceTest, TestCase)                      \
-  CodeBlock TYPED_TEST(OpenSSLTraceNestedSyscallFD, TestCase) \
-  CodeBlock
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
-TYPED_TEST_SUITE(OpenSSLTraceNestedSyscallFD, OpenSSLServerNestedSyscallFDImplementations);
 
-OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
@@ -218,9 +198,9 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-})
+}
 
-OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   this->StartTransferDataThread();
 
   // Make multiple requests and make sure we capture all of them.
@@ -261,9 +241,9 @@ OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
                                    EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address,
               UnorderedElementsAre(StrEq("127.0.0.1"), StrEq("127.0.0.1"), StrEq("127.0.0.1")));
-})
+}
 
-OPENSSL_TYPED_TEST(ssl_capture_node_client, {
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
   this->StartTransferDataThread();
 
   // Make an SSL request with the client.
@@ -281,7 +261,7 @@ OPENSSL_TYPED_TEST(ssl_capture_node_client, {
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
   LOG(INFO) << "Trigger tests to see if it reduces flakiness";
-})
+}
 
 }  // namespace stirling
 }  // namespace px
