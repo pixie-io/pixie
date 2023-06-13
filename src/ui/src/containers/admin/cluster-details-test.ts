@@ -16,17 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { formatAgent } from './cluster-details';
+import { type AgentInfo, AgentState, formatAgent } from './cluster-details';
 
 describe('formatAgent', () => {
   it('correctly formats agent info', () => {
-    const agentResults = [
+    const agentResults: AgentInfo[] = [
       {
         agent_id: '00000000-0000-006f-0000-0000000000de',
         asid: 1780,
         hostname: 'gke-host',
         ip_address: '',
-        agent_state: 'AGENT_STATE_HEALTHY',
+        agent_state: AgentState.AGENT_STATE_HEALTHY,
         create_time: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
         last_heartbeat_ns: 100074517116,
       },
@@ -35,7 +35,7 @@ describe('formatAgent', () => {
         asid: 1780,
         hostname: 'gke-host2',
         ip_address: '',
-        agent_state: 'AGENT_STATE_UNKNOWN',
+        agent_state: AgentState.AGENT_STATE_UNKNOWN,
         create_time: new Date(new Date().getTime() - 1000 * 60 * 60 * 3), // 3 hours ago
         last_heartbeat_ns: 1574517116,
       },
