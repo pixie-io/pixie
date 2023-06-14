@@ -56,7 +56,10 @@ func (a *ArtifactManifest) MarshalJSON() ([]byte, error) {
 
 func (as *sortedArtifactSet) UnmarshalJSON(b []byte) error {
 	pb := &versionspb.ArtifactSet{}
-	if err := jsonpb.Unmarshal(bytes.NewReader(b), pb); err != nil {
+	u := &jsonpb.Unmarshaler{
+		AllowUnknownFields: true,
+	}
+	if err := u.Unmarshal(bytes.NewReader(b), pb); err != nil {
 		return err
 	}
 	as.name = pb.Name
