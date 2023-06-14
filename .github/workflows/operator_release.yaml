@@ -128,8 +128,8 @@ jobs:
         GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
       # yamllint disable rule:indentation
       run: |
-        cp index-artifacts/index.yaml helm-chart/index.yaml
-        git add helm-chart/index.yaml
+        cp index-artifacts/index.yaml helm_chart/index.yaml
+        git add helm_chart/index.yaml
         export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
         git commit -s -m "Release Helm chart ${VERSION}"
         git push origin "gh-pages"
