@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   get-dev-image:
-    if: startsWith(github.ref, 'release/vizier/')
+    if: contains(github.ref, 'release/vizier/')
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
