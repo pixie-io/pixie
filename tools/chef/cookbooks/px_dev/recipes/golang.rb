@@ -48,6 +48,8 @@ execute 'install go binaries' do
             go install github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible && \
             go install github.com/google/go-containerregistry/cmd/crane@v0.15.2 && \
             go install github.com/sigstore/cosign/v2/cmd/cosign@v2.0.2 && \
+            go install github.com/regclient/regclient/cmd/regctl@v0.4.8 && \
+            go install github.com/regclient/regclient/cmd/regsync@v0.4.8 && \
             go clean -modcache && \
             go clean -cache)
 end

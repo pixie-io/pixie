@@ -27,6 +27,6 @@ jobs:
         ref: ${{ inputs.ref }}
     - id: get-version
       run: >-
-        IMAGE_NAME="gcr.io/pixie-oss/pixie-dev-public/${{ inputs.image-base-name }}";
+        IMAGE_NAME="ghcr.io/pixie-io/${{ inputs.image-base-name }}";
         IMAGE_TAG="$(grep DOCKER_IMAGE_TAG docker.properties | cut -d'=' -f2)";
         echo "image=${IMAGE_NAME}:${IMAGE_TAG}" >> $GITHUB_OUTPUT

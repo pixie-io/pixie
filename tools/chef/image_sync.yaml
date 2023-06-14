@@ -1,0 +1,36 @@
+---
+version: 1
+creds:
+- registry: gcr.io
+- registry: ghcr.io
+  user: "{{env \"GHCR_USER\"}}"
+  pass: "{{env \"GHCR_PASS\"}}"
+defaults:
+  ratelimit:
+    retry: 15m
+  parallel: 8
+sync:
+- source: gcr.io/pixie-oss/pixie-dev-public/base_image
+  target: ghcr.io/pixie-io/base_image
+  type: repository
+  tags:
+    allow:
+    - "202306.*"
+- source: gcr.io/pixie-oss/pixie-dev-public/dev_image
+  target: ghcr.io/pixie-io/dev_image
+  type: repository
+  tags:
+    allow:
+    - "202306.*"
+- source: gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
+  target: ghcr.io/pixie-io/dev_image_with_extras
+  type: repository
+  tags:
+    allow:
+    - "202306.*"
+- source: gcr.io/pixie-oss/pixie-dev-public/linter_image
+  target: ghcr.io/pixie-io/linter_image
+  type: repository
+  tags:
+    allow:
+    - "202306.*"
