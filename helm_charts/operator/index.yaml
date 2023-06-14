@@ -1,3 +1,638 @@
 apiVersion: v1
-entries: {}
-generated: "2023-06-13T23:07:05.039901044Z"
+entries:
+  pixie-operator-chart:
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.78510732Z"
+    digest: f98a4ace070bfd2e38897c05e178c8bd22dda7f7f15b6fa309f52ff2c7b63327
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.782832954Z"
+    digest: 851ed315c4eb90fb6389a81b4f4a913151f06d4c08bfa32ee72c59973aed7d41
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.779766707Z"
+    digest: d8626e1168d4e2bf3fedc3f20843f73e2dfd5a057b1d952e4e26d27faa3fe73f
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.764673112Z"
+    digest: 88ddfa11eb533ef555b4d43dbb191d277e9d62bf730f58aed58e062b5cf3985e
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.38.tgz
+    version: 0.0.38
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.76212092Z"
+    digest: 0b71f4ecc32f11e9e767a3c33fbaa1be59f9fddd57c0d6e4896bf7aa7f69c229
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.37.tgz
+    version: 0.0.37
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.760130775Z"
+    digest: cb603500d7ad32076b2f86170c72efe292e2bb98e9485210373cfb958d34558f
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.36.tgz
+    version: 0.0.36
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.757601116Z"
+    digest: b452e9469d8f51938f5b17d146665a73482905137d164cef136999c33e8c8d3a
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.35.tgz
+    version: 0.0.35
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.755541922Z"
+    digest: af1e07a77599fbf7ad67466d15ff0924646baec23b53834a650a9f8a5775b71b
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.34.tgz
+    version: 0.0.34
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.753568537Z"
+    digest: 76f481d4f3747412394f2f193dea2a910b8c922acbc9ebd3c2dffb4104fb45cb
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.33.tgz
+    version: 0.0.33
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.750992077Z"
+    digest: c134bc4a59cd0ddec43898c1c8581648c7a691ec2e383b0bbd318c9be27339d1
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.32.tgz
+    version: 0.0.32
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.74871166Z"
+    digest: 6f63c4cc80e32e8961412daeddc8adb9f4ac52281027e88e09c0bd77047dfe3f
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.31.tgz
+    version: 0.0.31
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.746106121Z"
+    digest: 46b4641e2a83a389541f74308821f50faa3a0ac78e0a91854bd517c9df8ec367
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.30.tgz
+    version: 0.0.30
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.741805161Z"
+    digest: f752ffa02d31caf5127ddfde4361c23eafa1c97af8107e4da15f8b8a30683efd
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.29.tgz
+    version: 0.0.29
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.739150822Z"
+    digest: a80785f9b08750b71e16f903411a2538ed6464107b0277dc06c4c598e3f3002a
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.28.tgz
+    version: 0.0.28
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.737110463Z"
+    digest: 5f5caf6b2beb63bd07399b431730a7136c33f23f906b4794f02dbf9cc4247f71
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.27.tgz
+    version: 0.0.27
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.734695863Z"
+    digest: 94a41aadc4aba04ec5698bd1376d4be6e35330f50cb0eb2d0fb5d4a367d86c81
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.26.tgz
+    version: 0.0.26
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.732576135Z"
+    digest: bc7c5787621e0f573b911a0fb51c37bd4de379691ff85a5c806ccabbf065bf90
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.25.tgz
+    version: 0.0.25
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.730617679Z"
+    digest: 563cced4ea7d460846aa357e9745002df6f60609fece63bb323d40b05af7081d
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.24.tgz
+    version: 0.0.24
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.728034957Z"
+    digest: 296495a96cb8f25e9d55f012923ece5632a89ca353dfda3bf6665eedc3174231
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.23.tgz
+    version: 0.0.23
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.726091348Z"
+    digest: e01a337aa7a9f5e4bf15f4d9228b3ae11f5132737598744842af42e694b8f56c
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.22.tgz
+    version: 0.0.22
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.723217723Z"
+    digest: 99dc55a0b40e138100b0736dbc03f417040aaa92b579dadec10a05ec4a40a93b
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.21.tgz
+    version: 0.0.21
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.721256963Z"
+    digest: 5f3577607f6650c8210da55e53ab2137f20a6c82c39c495b9a28f4fe7d00cd51
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.20.tgz
+    version: 0.0.20
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.716823913Z"
+    digest: c240a236b676d1fbae531f1efacfb47b28edec75ded640e875f567d5732906f2
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.19.tgz
+    version: 0.0.19
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.714887839Z"
+    digest: 1d6d2025fc6a48837fe6a285c2610c2718f5dbbb828d7bfef8828329090a2989
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.18.tgz
+    version: 0.0.18
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.71237225Z"
+    digest: 124f6dfc6ecc5afb310f4772b5290c92d76dccf1d2435413b2c78f3ed198ecaf
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.17.tgz
+    version: 0.0.17
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.71028303Z"
+    digest: 0a8ca7dc6ad66d603828b0541895a5f5216ba83aee5ef3fc99a4069402844ba1
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.16.tgz
+    version: 0.0.16
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.708337998Z"
+    digest: dad5aa0ddd434ed3a77dd46289306a356181c0b8a0919c97b0c11f52959471ba
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.15.tgz
+    version: 0.0.15
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.705843698Z"
+    digest: 2959ded2b662bad207441ce761a37d7ecc56636fa51e7201c05bdbfa6edacc67
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.14.tgz
+    version: 0.0.14
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.703918755Z"
+    digest: c678c27e99a0be65f7565531ebdc8696d9c69c41c4969a82d926f21711fc5382
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.13.tgz
+    version: 0.0.13
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.701566235Z"
+    digest: 54220c826fffcd55d56c09350a80ff11091eac23558ac3afcac4009b225ec26b
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.12.tgz
+    version: 0.0.12
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.699454252Z"
+    digest: c42109f33141ea2a836750dda07130ef7762c8d2733b01b17dd6449220562d94
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.11.tgz
+    version: 0.0.11
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.697480487Z"
+    digest: 75dca46331f6ef1ff789771d9bdacedf7c6b3d57a369a0141b17c8c146729f4e
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.10.tgz
+    version: 0.0.10
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.777393967Z"
+    digest: 1705c597a5cbad910e66b0e97ce8a0bdd7d56fd725e8e3e091324f99eaf0f192
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.77544046Z"
+    digest: d2c3886c74538779cb91c8fed365f0c5d196ed4de861e7c607c7deb9aed9e3c2
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.8.tgz
+    version: 0.0.8
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.77308799Z"
+    digest: 370dfca2ada14d7cba5ac5e7eb4e6af79ff9162ed4b3896b07a4006493536d30
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.7.tgz
+    version: 0.0.7
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.771150313Z"
+    digest: 3a2631f498d981aaf59ddc65bb4bdd33e1f434dcbf20208ae600b328cf759a41
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.6.tgz
+    version: 0.0.6
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.768696333Z"
+    digest: 38f8186d879aeb8075ba3ac463eba1c33638bbb633d9f2fc52b6e9be8b8c6a94
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.5.tgz
+    version: 0.0.5
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.766633111Z"
+    digest: df4d45341ea3f8cd0b784380f1a6246dfec3cf9f004e5e08912ce386405eba11
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.4.tgz
+    version: 0.0.4
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.743940047Z"
+    digest: 20520988fed862c35b444651c7878a0c43941798d3db2b9f5de38328de6e9527
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.3.tgz
+    version: 0.0.3
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.719254454Z"
+    digest: 3aa29e2c4f4cbf893778584a98d102037eb59f398994e9f0dbbfa5bfc8d98b41
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
+    created: "2023-06-14T20:48:33.694810588Z"
+    digest: f629e0620f753f3e98abc174c2d67e16afa677b636ae91abe0ab3bf016b487f7
+    name: pixie-operator-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-chart-0.0.1.tgz
+    version: 0.0.1
+  pixie-operator-helm2-chart:
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.796757553Z"
+    digest: bdc39b45b81adf4624332ea63f6520e59fd69a751dfbaa689b5353f8c306e8e4
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.796440131Z"
+    digest: 53fcc4862f79e60ec872c6e512c7e2d487ddadbf24f5f6892318f97c9b9746a0
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.79581841Z"
+    digest: 0e1a9c82474658fd41b5f30724929608f1e961b1a573c760b2e71d9216fb371c
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.793869401Z"
+    digest: ce3dbfb24105b78219f8c5eadedfefd5c678f58210a3deedd3c56aabf483cbbc
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.38.tgz
+    version: 0.0.38
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.793560274Z"
+    digest: b923311073cc7d2b0f5c5ee7585315a3e9cc9688439170b338675e8778c605b5
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.37.tgz
+    version: 0.0.37
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.793206253Z"
+    digest: 750f23029d1ef9739f2a0c74858ab259aecd52e29a86408d380bc0f5a713f022
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.36.tgz
+    version: 0.0.36
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.792901574Z"
+    digest: c6d8cf8a2bfef04b195757150dde4c6b93d4b725d67282f9a714200762fa0005
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.35.tgz
+    version: 0.0.35
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.792599741Z"
+    digest: c88bc8a96f1b7d43f52293aab928610a3543d5ff90a9d4090c45450e39b09ca2
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.34.tgz
+    version: 0.0.34
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.792316211Z"
+    digest: af87fd3e382eb7372bd15f4d52dfa842e02ecf1e766be8c465c1cb46ec27f091
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.33.tgz
+    version: 0.0.33
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.792046658Z"
+    digest: 81fb427deebe3239623436766f7e238ee6dc8990bce20678e24ae140681984ad
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.32.tgz
+    version: 0.0.32
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.791777416Z"
+    digest: 464968e6032a5e109d4d60056ac986f23a11f749e2106f01facfb8ccef0f3215
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.31.tgz
+    version: 0.0.31
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.791496671Z"
+    digest: 12bbe6b67f4551a99359ebae702f0c66609e7908c0b30a2b7b387b035c559f65
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.30.tgz
+    version: 0.0.30
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.791220926Z"
+    digest: f81e981a6f05a6076632c6ccd0b1ad33dc41177574fb75b651b860e92e24d0ae
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.29.tgz
+    version: 0.0.29
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.790959739Z"
+    digest: 8d468d233eb2daeb29c8153c6eb7a8385dc609b26ab3b24da7cdcc22ca7b07b0
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.28.tgz
+    version: 0.0.28
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.790684395Z"
+    digest: 7eab8eeaf7b749f1188d4a08576903b63211bcb983607148cb0d8ed8eda9543b
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.27.tgz
+    version: 0.0.27
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.790402178Z"
+    digest: 9e49e9f3c6f59cd23c765a70d97b8644505e878fff437d838de00be16b0c9f6b
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.26.tgz
+    version: 0.0.26
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.790125832Z"
+    digest: f18dc08aeebd5090b2c2946c3a70c0a35f091565071a31de796997c9faa815a1
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.25.tgz
+    version: 0.0.25
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.789858883Z"
+    digest: 23b2c2cbd203f929d2106696d7b2cec0b9979201567001c8c27549e16f51211d
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.24.tgz
+    version: 0.0.24
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.789559695Z"
+    digest: b899b24a1fe2df666949b6759958fce6a5cb13b05d5f5707442063a48c7f9561
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.23.tgz
+    version: 0.0.23
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.789264805Z"
+    digest: 8d4b762b520d25513cbc445f14c45695da16a948bed33fbdff8d1e0ac7780398
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.22.tgz
+    version: 0.0.22
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.788929519Z"
+    digest: 9fb3e48d84ff7d8778b4a81a7c0e9fbac2a570deb7b464a1b09d380831bfbd79
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.21.tgz
+    version: 0.0.21
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.788650979Z"
+    digest: 0c408835d9f60d63631dcf4a23453ceb159b9d8252e3b53b3f994c868ba5318f
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.20.tgz
+    version: 0.0.20
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.788302718Z"
+    digest: 664b364791a4258a7a4219f29ad5b14fdf074f44bef93a62bf5a7bfe92168934
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.19.tgz
+    version: 0.0.19
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.787508623Z"
+    digest: 2dc8dec1fc3b1024a5808bae09360aa866d17bd0b2e5ea0eff6601e1a6f7a25e
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.18.tgz
+    version: 0.0.18
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.787159622Z"
+    digest: e37926f3b75a833d2e9492d27711e8943e51bd494ceab76105287fe257da7430
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.17.tgz
+    version: 0.0.17
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.786890509Z"
+    digest: 9d7a7739b51f4901869ce77960cc0fec02df9cb83ec920f7e62ea3a6db88d05a
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.16.tgz
+    version: 0.0.16
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.786609334Z"
+    digest: 934670943e6254ba9480da6f6d895c3af0705e6b7aa343cd8eac627e37d4c67a
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.15.tgz
+    version: 0.0.15
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.786353847Z"
+    digest: 94548b8d493f6276f62b70add3f2635af1d4330c3059131b41fd56a0779d0995
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.14.tgz
+    version: 0.0.14
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.786095034Z"
+    digest: 0845132961c4c59a8e5b12b0b413f165236c1151e2c76055efec389cef9fd5ef
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.13.tgz
+    version: 0.0.13
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.785851189Z"
+    digest: 41a224c3351be7d6b03bedfcdcb32f9f6d073eb6f043c7a947f284fd044dfc5f
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.12.tgz
+    version: 0.0.12
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.785617482Z"
+    digest: 250322fad49acfdb93480c5e0ca95916653760cf64c81726cfeb06872162c495
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.11.tgz
+    version: 0.0.11
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.785373186Z"
+    digest: 24272fae7b37c80e329f9248c0601f3b8b5433d170f7893d700ce7e72788c948
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.10.tgz
+    version: 0.0.10
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.79522898Z"
+    digest: f069f13f087310b03bedc7b1d14cdb9272da1c7bd47bc333390b190053c09b53
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.794994031Z"
+    digest: 0150ecd8edd2a1b68b5a2a722a5fecec2da3cfd7028397e5671185caf20a4214
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.8.tgz
+    version: 0.0.8
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.794757249Z"
+    digest: 7897834cacfbc641bb9ff52852fcc9c811017b19f4543354379a980c1ac922a4
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.7.tgz
+    version: 0.0.7
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.794526257Z"
+    digest: 1cc10b1a8eaa026cf6bf8714b1861b8c6333dd63e1a91273e6dce2555b57b1e1
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.6.tgz
+    version: 0.0.6
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.794311266Z"
+    digest: 07b402a2df3857b166ac04265094efc4acc6b68423f16b4750293a751961a20e
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.5.tgz
+    version: 0.0.5
+  - apiVersion: v1
+    created: "2023-06-14T20:48:33.79409885Z"
+    digest: 192717d7d7f2f763cd310aa05ebede6a48ada5e98352b8b06226d7d43a4cf877
+    name: pixie-operator-helm2-chart
+    type: application
+    urls:
+    - https://pixie-operator-charts.storage.googleapis.com/pixie-operator-helm2-chart-0.0.4.tgz
+    version: 0.0.4
+generated: "2023-06-14T20:48:33.691867312Z"
+
