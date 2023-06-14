@@ -11,6 +11,8 @@ data:
       methods:
         password:
           enabled: true
+          config:
+            haveibeenpwned_enabled: false
         link:
           enabled: true
       flows:
