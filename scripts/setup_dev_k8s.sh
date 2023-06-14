@@ -25,14 +25,14 @@ cpus=8
 # Support for minikube profile - for shared machines
 has_minikube_profile=false
 if [ $# -ne 0 ]; then
-    profile=$1
-    has_minikube_profile=true
+  profile=$1
+  has_minikube_profile=true
 fi
 
 profile_args_str=""
 if [ "${has_minikube_profile}" = true ]; then
-    profile_args_str="-p $profile"
-    echo "Minikube Profile: ${profile_args_str}"
+  profile_args_str="-p $profile"
+  echo "Minikube Profile: ${profile_args_str}"
 fi
 
 # On Linux we need to start minikube if not running.
@@ -53,7 +53,7 @@ else
   ret=0
   minikube status "${profile_args_str}" || ret=$?
   if [ $ret -ne 0 ]; then
-      minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver} "${profile_args_str}"
+    minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver} "${profile_args_str}"
   fi
 fi
 
