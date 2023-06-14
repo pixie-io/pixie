@@ -203,6 +203,56 @@ func TestManifest_JSONDecode(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "single artifact set with artifact mirrors",
+			json: fmt.Sprintf(`
+[
+  {"name": "vizier", "artifact": [{
+    "timestamp": "%s",
+    "commitHash": "1234",
+    "versionStr": "0.12.17",
+    "availableArtifacts": [
+      "AT_CONTAINER_SET_LINUX_AMD64",
+      "AT_CONTAINER_SET_YAMLS",
+      "AT_CONTAINER_SET_TEMPLATE_YAMLS"
+    ],
+    "availableArtifactMirrors": [
+      {
+        "artifactType": "AT_CONTAINER_SET_YAMLS",
+        "urls": [
+          "https://artifacts.px.dev/testing"
+        ]
+      },
+      {
+        "artifactType": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+        "urls": [
+          "https://artifacts.px.dev/testing_template"
+        ]
+      }
+    ],
+    "changelog": "changelog1"
+  }]}
+]
+`, time1Str),
+			expectedArtifactSets: []*versionspb.ArtifactSet{
+				{
+					Name: "vizier",
+					Artifact: []*versionspb.Artifact{
+						{
+							Timestamp:  time1Proto,
+							CommitHash: "1234",
+							VersionStr: "0.12.17",
+							AvailableArtifacts: []versionspb.ArtifactType{
+								versionspb.AT_CONTAINER_SET_LINUX_AMD64,
+								versionspb.AT_CONTAINER_SET_YAMLS,
+								versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+							},
+							Changelog: "changelog1",
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
