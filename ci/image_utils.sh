@@ -30,8 +30,8 @@ push_images_for_arch() {
   build_type="$4"
 
   bazel run --config=stamp -c opt --//k8s:image_version="${release_tag}-${arch}" \
-      --config="${arch}_sysroot" \
-      --config=stamp "${build_type}" "${image_rule}" > /dev/null
+    --config="${arch}_sysroot" \
+    --config=stamp "${build_type}" "${image_rule}" > /dev/null
 }
 
 push_multiarch_image() {

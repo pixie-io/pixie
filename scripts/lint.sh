@@ -23,8 +23,9 @@ script_dir="$(dirname "$0")"
 # Check if docker exists and works.
 if ! docker version &> /dev/null
 then
-    echo "Docker is not working. This might be because you don't have enough permissions, or the docker is not installed."
-    exit $?
+  retval="$?"
+  echo "Docker is not working. This might be because you don't have enough permissions, or the docker is not installed."
+  exit $retval
 fi
 
 "${script_dir}/run_docker.sh" arc lint

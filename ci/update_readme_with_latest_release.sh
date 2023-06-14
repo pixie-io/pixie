@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 usage() {
-    echo "Usage: $0 <artifact_type> <version> <url>"
+  echo "Usage: $0 <artifact_type> <version> <url>"
 }
 
 if [ $# -lt 3 ]; then
@@ -33,12 +33,12 @@ readme_path="README.md"
 latest_release_comment="<!--${artifact_type}-latest-release-->"
 
 pretty_artifact_name() {
-    case "${artifact_type}" in
-        cli) echo "CLI";;
-        vizier) echo "Vizier";;
-        operator) echo "Operator";;
-        cloud) echo "Cloud";;
-    esac
+  case "${artifact_type}" in
+    cli) echo "CLI";;
+    vizier) echo "Vizier";;
+    operator) echo "Operator";;
+    cloud) echo "Cloud";;
+  esac
 }
 
 latest_release_line() {

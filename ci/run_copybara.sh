@@ -22,9 +22,9 @@ git_committer_email='copybara@pixielabs.ai'
 sky_file_path=$1
 if [[ -z "$sky_file_path" ]]
 then
-    echo "Error: Missing argument."
-    echo "Usage: $0 <sky_file>"
-    exit 1
+  echo "Error: Missing argument."
+  echo "Usage: $0 <sky_file>"
+  exit 1
 fi
 
 # Copybara needs this configured, otherwise it's unhappy.
@@ -36,7 +36,7 @@ git config --global user.signingkey "${COPYBARA_GPG_KEY_ID}"
 git config --global commit.gpgsign true
 
 copybara_args="--ignore-noop --git-committer-name ${git_committer_name} \
-                             --git-committer-email ${git_committer_email}"
+  --git-committer-email ${git_committer_email}"
 
 sky_file_dir=$(dirname "$sky_file_path")
 pushd "${sky_file_dir}" || exit
@@ -44,6 +44,6 @@ copybara copy.bara.sky "${copybara_args}"
 retval=$?
 if [[ $retval -ne 0 && $retval -ne 4 ]]
 then
-    exit "$retval"
+  exit "$retval"
 fi
 popd || exit

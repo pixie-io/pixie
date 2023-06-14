@@ -19,8 +19,8 @@
 set -ex
 
 usage() {
-    echo "Usage: $0 <version> <yaml_tar>"
-    echo "Example: $0 0.1.2 /tmp/yamls.tar"
+  echo "Usage: $0 <version> <yaml_tar>"
+  echo "Example: $0 0.1.2 /tmp/yamls.tar"
 }
 
 parse_args() {
