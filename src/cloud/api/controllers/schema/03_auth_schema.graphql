@@ -7,7 +7,6 @@ extend type Query {
   cluster(id: ID!): ClusterInfo!
   clusterByName(name: String!): ClusterInfo!
   clusters: [ClusterInfo!]!
-  cliArtifact(artifactType: ArtifactType!): CLIArtifact!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
   autocompleteField(input: String, fieldType: AutocompleteEntityKind,
     requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): AutocompleteFieldResult!
@@ -287,20 +286,6 @@ type ScriptMetadata {
 type ScriptContents {
   metadata: ScriptMetadata!
   contents: String!
-}
-
-enum ArtifactType {
-    AT_UNKNOWN
-    AT_LINUX_AMD64
-    AT_DARWIN_AMD64
-    AT_CONTAINER_SET_YAMLS
-    AT_CONTAINER_SET_LINUX_AMD64
-    AT_CONTAINER_SET_TEMPLATE_YAMLS
-}
-
-type CLIArtifact {
-  url: String!
-  sha256: String!
 }
 
 input EditableUserPermissions {
