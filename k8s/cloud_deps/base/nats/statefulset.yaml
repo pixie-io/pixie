@@ -43,11 +43,11 @@ data:
       name: pl-nats
       port: 6222
       routes [
-        nats://pl-nats-0.pl-nats:6222
-        nats://pl-nats-1.pl-nats:6222
-        nats://pl-nats-2.pl-nats:6222
-        nats://pl-nats-3.pl-nats:6222
-        nats://pl-nats-4.pl-nats:6222
+        nats://pl-nats-0.pl-nats-internal:6222
+        nats://pl-nats-1.pl-nats-internal:6222
+        nats://pl-nats-2.pl-nats-internal:6222
+        nats://pl-nats-3.pl-nats-internal:6222
+        nats://pl-nats-4.pl-nats-internal:6222
       ]
 
       tls {
@@ -65,7 +65,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: pl-nats
+  name: pl-nats-internal
   labels:
     name: pl-nats
 spec:
@@ -86,6 +86,20 @@ spec:
   - name: gateways
     port: 7522
   publishNotReadyAddresses: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pl-nats
+  labels:
+    name: pl-nats
+spec:
+  selector:
+    name: pl-nats
+  clusterIP: None
+  ports:
+  - name: client
+    port: 4222
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -109,7 +123,7 @@ spec:
       name: pl-nats
   replicas: 5
   podManagementPolicy: Parallel
-  serviceName: pl-nats
+  serviceName: pl-nats-internal
   volumeClaimTemplates:
   - metadata:
       name: nats-sts-vol
@@ -190,7 +204,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: CLUSTER_ADVERTISE
-          value: $(POD_NAME).pl-nats.$(POD_NAMESPACE).svc
+          value: $(POD_NAME).pl-nats-internal.$(POD_NAMESPACE).svc
         volumeMounts:
         - name: config-volume
           mountPath: /etc/nats-config

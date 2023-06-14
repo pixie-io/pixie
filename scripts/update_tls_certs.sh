@@ -61,8 +61,9 @@ if [ -z "${dir}" ]; then
   exit 1
 fi
 
-pushd "${dir}"
 bazel run //src/pixie_cli:px -- create-cloud-certs --namespace="$namespace" > certs.yaml
+mv certs.yaml "${dir}/certs.yaml"
+pushd "${dir}"
 sops --encrypt certs.yaml > service_tls_certs.yaml
 rm certs.yaml
 popd

@@ -25,9 +25,9 @@ data:
       name: pl-nats
       port: 6222
       routes [
-        nats://pl-nats-0.pl-nats:6222
-        nats://pl-nats-1.pl-nats:6222
-        nats://pl-nats-2.pl-nats:6222
+        nats://pl-nats-0.pl-nats-internal:6222
+        nats://pl-nats-1.pl-nats-internal:6222
+        nats://pl-nats-2.pl-nats-internal:6222
       ]
 
       tls {
