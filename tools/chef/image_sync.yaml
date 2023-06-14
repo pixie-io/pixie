@@ -15,22 +15,22 @@ sync:
   type: repository
   tags:
     allow:
-    - "202306.*"
+    - ".*"
 - source: gcr.io/pixie-oss/pixie-dev-public/dev_image
   target: ghcr.io/pixie-io/dev_image
   type: repository
   tags:
     allow:
-    - "202306.*"
+    - ".*"
 - source: gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
   target: ghcr.io/pixie-io/dev_image_with_extras
   type: repository
   tags:
     allow:
-    - "202306.*"
+    - ".*"
 - source: gcr.io/pixie-oss/pixie-dev-public/linter_image
   target: ghcr.io/pixie-io/linter_image
   type: repository
   tags:
     allow:
-    - "202306.*"
+    - ".*"
