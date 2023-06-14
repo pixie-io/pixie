@@ -74,8 +74,8 @@ func (f *FakeHTTPClient) Get(url string) (*http.Response, error) {
 func TestMonitor_queryPodStatusz(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
-			"https://127.0.0.1:8080/statusz":  "",
-			"https://127.0.0.3:50100/statusz": "CloudConnectFailed",
+			"https://127-0-0-1.pl.pod.cluster.local:8080/statusz":   "",
+			"https://127-0-0-3.pl2.pod.cluster.local:50100/statusz": "CloudConnectFailed",
 		},
 	}
 
@@ -83,6 +83,7 @@ func TestMonitor_queryPodStatusz(t *testing.T) {
 		name           string
 		podPort        int32
 		podIP          string
+		podNamespace   string
 		expectedStatus string
 		expectedOK     bool
 	}{
@@ -90,6 +91,7 @@ func TestMonitor_queryPodStatusz(t *testing.T) {
 			name:           "OK",
 			podPort:        8080,
 			podIP:          "127.0.0.1",
+			podNamespace:   "pl",
 			expectedStatus: "",
 			expectedOK:     true,
 		},
@@ -104,6 +106,7 @@ func TestMonitor_queryPodStatusz(t *testing.T) {
 			name:           "unhealthy",
 			podPort:        50100,
 			podIP:          "127.0.0.3",
+			podNamespace:   "pl2",
 			expectedStatus: "CloudConnectFailed",
 			expectedOK:     false,
 		},
@@ -114,6 +117,9 @@ func TestMonitor_queryPodStatusz(t *testing.T) {
 			ok, status := queryPodStatusz(httpClient, &v1.Pod{
 				Status: v1.PodStatus{
 					PodIP: test.podIP,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: test.podNamespace,
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
@@ -169,7 +175,7 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			httpClient := &FakeHTTPClient{
 				responses: map[string]string{
-					"https://127.0.0.1:8080/statusz": test.cloudConnStatusz,
+					"https://127-0-0-1.pl.pod.cluster.local:8080/statusz": test.cloudConnStatusz,
 				},
 			}
 
@@ -182,6 +188,9 @@ func TestMonitor_getCloudConnState(t *testing.T) {
 						Status: v1.PodStatus{
 							PodIP: "127.0.0.1",
 							Phase: test.cloudConnPhase,
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: "pl",
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{
@@ -500,9 +509,7 @@ func TestMonitor_repairVizier_PVC(t *testing.T) {
 
 func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 	httpClient := &FakeHTTPClient{
-		responses: map[string]string{
-			"https://127.0.0.1:8080/statusz": "",
-		},
+		responses: map[string]string{},
 	}
 
 	pods := &concurrentPodMap{unsafeMap: make(map[string]map[string]*podWrapper)}
@@ -545,8 +552,8 @@ func TestMonitor_getCloudConnState_SeveralCloudConns(t *testing.T) {
 func TestMonitor_NATSPods(t *testing.T) {
 	httpClient := &FakeHTTPClient{
 		responses: map[string]string{
-			"http://127.0.0.1:8222": "",
-			"http://127.0.0.3:8222": "NATS Failed",
+			"http://127-0-0-1.pl.pod.cluster.local:8222": "",
+			"http://127-0-0-3.pl.pod.cluster.local:8222": "NATS Failed",
 		},
 	}
 
@@ -623,6 +630,9 @@ func TestMonitor_NATSPods(t *testing.T) {
 							Status: v1.PodStatus{
 								PodIP: test.natsIP,
 								Phase: test.natsPhase,
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Namespace: "pl",
 							},
 						},
 					},

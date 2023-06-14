@@ -23,6 +23,7 @@ go_library(
         "apply.go",
         "auth.go",
         "delete.go",
+        "dns_addr.go",
         "kubectl.go",
         "logs.go",
         "secrets.go",
@@ -64,10 +65,15 @@ go_library(
 
 pl_go_test(
     name = "k8s_test",
-    srcs = ["apply_test.go"],
+    srcs = [
+        "apply_test.go",
+        "dns_addr_test.go",
+    ],
     deps = [
         ":k8s",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
     ],
 )
