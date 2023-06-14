@@ -328,7 +328,7 @@ func getNATSState(client HTTPClient, pods *concurrentPodMap) *vizierState {
 
 	u := url.URL{
 		Scheme: "http",
-		Host:   net.JoinHostPort(natsPod.pod.Status.PodIP, "8222"),
+		Host:   net.JoinHostPort(k8s.GetPodAddr(*natsPod.pod), "8222"),
 	}
 
 	resp, err := client.Get(u.String())
@@ -780,7 +780,6 @@ func (m *VizierMonitor) runReconciler() {
 
 // queryPodStatusz returns a pod's self-reported status as served by its statusz endpoint.
 func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
-	podIP := pod.Status.PodIP
 	// Assume that the statusz endpoint is on the first port in the first container.
 	var port int32
 	if len(pod.Spec.Containers) > 0 && len(pod.Spec.Containers[0].Ports) > 0 {
@@ -789,7 +788,7 @@ func queryPodStatusz(client HTTPClient, pod *v1.Pod) (bool, string) {
 
 	u := url.URL{
 		Scheme: "https",
-		Host:   net.JoinHostPort(podIP, fmt.Sprintf("%d", port)),
+		Host:   net.JoinHostPort(k8s.GetPodAddr(*pod), fmt.Sprintf("%d", port)),
 		Path:   "statusz",
 	}
 	resp, err := client.Get(u.String())
