@@ -62,10 +62,10 @@ struct TraceRecords {
   std::vector<std::string> remote_address;
 };
 
-template <typename TServerContainer, bool TForceFptrs>
-class BaseBoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
+template <typename TServerContainer>
+class BoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
  protected:
-  BaseBoringSSLTraceTest() {
+  BoringSSLTraceTest() {
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
@@ -77,7 +77,7 @@ class BaseBoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTr
   }
 
   void SetUp() override {
-    FLAGS_openssl_force_raw_fptrs = force_fptr_;
+    FLAGS_probe_static_tls_binaries = true;
 
     SocketTraceBPFTestFixture::SetUp();
   }
@@ -101,7 +101,6 @@ class BaseBoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTr
   }
 
   TServerContainer server_;
-  bool force_fptr_ = TForceFptrs;
 };
 
 //-----------------------------------------------------------------------------
@@ -122,17 +121,9 @@ http::Record GetExpectedHTTPRecord() {
 
 typedef ::testing::Types<Bssl_ContainerWrapper> BoringSSLServerImplementations;
 
-template <typename T>
-using BoringSSLTraceDlsymTest = BaseBoringSSLTraceTest<T, false>;
+TYPED_TEST_SUITE(BoringSSLTraceTest, BoringSSLServerImplementations);
 
-#define OPENSSL_TYPED_TEST(TestCase, CodeBlock) \
-  TYPED_TEST(BoringSSLTraceDlsymTest, TestCase) \
-  CodeBlock
-
-TYPED_TEST_SUITE(BoringSSLTraceDlsymTest, BoringSSLServerImplementations);
-
-OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
-  FLAGS_stirling_conn_trace_pid = this->server_.process_pid();
+TYPED_TEST(BoringSSLTraceTest, ssl_capture_curl_client) {
   this->StartTransferDataThread();
 
   // Make an SSL request with curl.
@@ -152,9 +143,9 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
   TraceRecords records = this->GetTraceRecords(this->server_.process_pid());
   http::Record expected_record = GetExpectedHTTPRecord();
 
-  EXPECT_GT(records.http_records.size(), 0);
-  /* EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1"))); */
-})
+  EXPECT_EQ(records.http_records.size(), 1);
+  EXPECT_EQ(records.http_records[0].req.req_path, "/");
+}
 
 }  // namespace stirling
 }  // namespace px
