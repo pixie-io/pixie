@@ -29,7 +29,7 @@ bold="\e[1m"
 resetcolor="\e[0m"
 
 # Docker image information.
-docker_image_base=gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
+docker_image_base=ghcr.io/pixie-io/dev_image_with_extras
 os="$(uname)"
 version=$(grep DOCKER_IMAGE_TAG "${workspace_root}/docker.properties" | cut -d= -f2)
 digest=$(grep DEV_IMAGE_WITH_EXTRAS_DIGEST "${workspace_root}/docker.properties" | cut -d= -f2)

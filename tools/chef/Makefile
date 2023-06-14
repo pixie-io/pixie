@@ -20,6 +20,7 @@ DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
 # Commands.
 DOCKER := docker
 PACKER := packer
+REGSYNC := regsync
 
 BASE_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 BASE_IMAGE_VERSION_FILE := base_image_version.txt
@@ -48,6 +49,7 @@ build_and_push_base_image:
 		-var "generated_image_tag=$(BASE_IMAGE_VERSION)" \
 		packer_docker_base.json
 	echo $(BASE_IMAGE_VERSION) > $(BASE_IMAGE_VERSION_FILE)
+	$(MAKE) sync_images
 
 .PHONY: build_and_push_dev_images
 build_and_push_dev_images:
@@ -70,7 +72,11 @@ build_and_push_dev_images:
 		packer_docker_dev_extras.json
 
 	echo "DOCKER_IMAGE_TAG=$(DEV_IMAGE_VERSION)" > $(DOCKER_PROPERTIES_FILE)
-
 	echo "LINTER_IMAGE_DIGEST=$(LINTER_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
 	echo "DEV_IMAGE_DIGEST=$(DEV_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
 	echo "DEV_IMAGE_WITH_EXTRAS_DIGEST=$(DEV_IMAGE_WITH_EXTRAS_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
+	$(MAKE) sync_images
+
+.PHONY: sync_images
+sync_images:
+	$(REGSYNC) once --config image_sync.yaml
