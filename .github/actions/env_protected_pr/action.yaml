@@ -33,8 +33,8 @@ runs:
     shell: bash
     run: |
       echo "" > env_name
-      echo "${{ github.event.pull_request.head.sha  }}" >> ref
-      echo "${{ github.event.pull_request.head.sha  }}" >> sha
+      echo "${{ github.event.pull_request.head.sha }}" >> ref
+      echo "${{ github.event.pull_request.head.sha }}" >> sha
   - name: Require external environment authorization.
     # yamllint disable rule:indentation
     if: >-
@@ -47,8 +47,8 @@ runs:
     shell: bash
     run: |
       echo "pr-actions-approval" > env_name
-      echo "${{ github.event.pull_request.head.sha  }}" >> ref
-      echo "${{ github.event.pull_request.head.sha  }}" >> sha
+      echo "${{ github.event.pull_request.head.sha }}" >> ref
+      echo "${{ github.event.pull_request.head.sha }}" >> sha
   - name: Set Output
     id: output
     shell: bash

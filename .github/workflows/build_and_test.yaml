@@ -30,10 +30,11 @@ jobs:
     steps:
     - run: echo "Authorized"
   get-dev-image:
-    needs: authorize
+    needs: [authorize, env-protect-setup]
     uses: ./.github/workflows/get_image.yaml
     with:
       image-base-name: "dev_image_with_extras"
+      ref: ${{ needs.env-protect-setup.outputs.ref }}
   clang-tidy:
     runs-on: ubuntu-latest-16-cores
     needs: [authorize, env-protect-setup, get-dev-image]
