@@ -100,7 +100,7 @@ jobs:
           --notes $'Pixie Operator Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" operator-artifacts/*
   create-helm-chart:
-    # if: ${{ !contains(github.event.ref, '-') }}
+    if: ${{ !contains(github.event.ref, '-') }}
     name: Create Helm chart on Github
     runs-on: ubuntu-latest
     needs: build-release
