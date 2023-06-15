@@ -37,7 +37,7 @@ import {
 import { Theme, styled } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { formatDistance } from 'date-fns';
-import { useHistory, useParams } from 'react-router';
+import { useHistory } from 'react-router';
 import { Link } from 'react-router-dom';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
@@ -85,11 +85,6 @@ StyledBreadcrumbLink.displayName = 'StyledBreadcrumbLink';
 const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-    marginRight: theme.spacing(4.5),
-    marginLeft: theme.spacing(3),
-    marginBottom: theme.spacing(1),
   },
   separator: {
     display: 'flex',
@@ -99,16 +94,6 @@ const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
     width: theme.spacing(1),
   },
 }), { name: 'ClusterDetailsBreadcrumbs' });
-
-const StyledBreadcrumbs: React.FC<WithChildren> = React.memo(({ children }) => {
-  const classes = useBreadcrumbsStyles();
-  return (
-    <MaterialBreadcrumbs classes={classes}>
-      {children}
-    </MaterialBreadcrumbs>
-  );
-});
-StyledBreadcrumbs.displayName = 'StyledBreadcrumbs';
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -375,12 +360,34 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
 ExpandablePodRow.displayName = 'ExpandablePodRow';
 
 const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    position: 'relative',
+    height: '100%',
+    display: 'flex',
+    flexFlow: 'column nowrap',
+  },
+  header: {
+    flex: '0 0 auto',
+    backgroundColor: theme.palette.background.four,
+    height: theme.spacing(7),
+    padding: theme.spacing(1.5),
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'space-between',
+  },
   errorMessage: {
     ...theme.typography.body1,
     padding: theme.spacing(3),
   },
+  tabHeader: {
+    flex: '0 0 auto',
+  },
   tabContents: {
+    flex: '1 1 auto',
+    overflow: 'auto',
     margin: theme.spacing(1),
+    display: 'flex',
+    flexFlow: 'column nowrap',
   },
   tableContainer: {
     maxHeight: theme.spacing(100),
@@ -619,10 +626,9 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   });
 
   const breadcrumbs = [{
-    title: 'clusterName',
+    title: 'cluster',
     value: selectedClusterPrettyName,
     selectable: true,
-    omitKey: true,
     // eslint-disable-next-line
     getListItems: async (input) => {
       const items = clusters
@@ -757,6 +763,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
       <StyledTabs
         value={tab}
         onChange={(event, newTab) => setTab(newTab)}
+        classes={{ root: classes.tabHeader }}
       >
         <StyledTab value='details' label='Details' />
         <StyledTab value='agents' label='Agents' />
@@ -789,19 +796,22 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
 };
 ClusterDetailsTabs.displayName = 'ClusterDetailsTabs';
 
-export const ClusterDetails: React.FC = () => {
-  const { name } = useParams<{ name: string }>();
+export const ClusterDetails = React.memo<{ name: string, headerAffix?: React.ReactNode }>(({ name, headerAffix }) => {
+  const breadcrumbsClasses = useBreadcrumbsStyles();
+  const classes = useClusterDetailStyles();
+
   const clusterName = decodeURIComponent(name);
 
   return (
-    <div>
-      <StyledBreadcrumbs>
-        <StyledBreadcrumbLink to='/admin'>Admin</StyledBreadcrumbLink>
-        <StyledBreadcrumbLink to='/admin'>Clusters</StyledBreadcrumbLink>
-        <ClusterDetailsNavigationBreadcrumbs selectedClusterName={clusterName} />
-      </StyledBreadcrumbs>
+    <div className={classes.root}>
+      <div className={classes.header}>
+        <MaterialBreadcrumbs classes={breadcrumbsClasses}>
+          <ClusterDetailsNavigationBreadcrumbs selectedClusterName={clusterName} />
+        </MaterialBreadcrumbs>
+        {headerAffix || null}
+      </div>
       <ClusterDetailsTabs clusterName={clusterName} />
     </div>
   );
-};
+});
 ClusterDetails.displayName = 'ClusterDetails';

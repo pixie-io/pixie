@@ -33,7 +33,6 @@ import { Route, Switch, Redirect, useLocation } from 'react-router-dom';
 
 import { ClusterIcon, scrollbarStyles, Footer } from 'app/components';
 import { AdminOverview } from 'app/containers/admin/admin-overview';
-import { ClusterDetails } from 'app/containers/admin/cluster-details';
 import { LiveViewButton } from 'app/containers/admin/utils';
 import NavBars from 'app/containers/App/nav-bars';
 import { LinkItemProps } from 'app/containers/App/sidebar';
@@ -186,17 +185,8 @@ const AdminOverviewPage = () => (
 AdminOverviewPage.displayName = 'AdminOverviewPage';
 
 // eslint-disable-next-line react-memo/require-memo
-const ClusterDetailsPage = () => (
-  <AdminPage>
-    <ClusterDetails />
-  </AdminPage>
-);
-ClusterDetailsPage.displayName = 'ClusterDetailsPage';
-
-// eslint-disable-next-line react-memo/require-memo
 const AdminView: React.FC = () => (
   <Switch>
-    <Route exact path='/admin/clusters/:name' component={ClusterDetailsPage} />
     <Redirect exact from='/admin' to='/admin/clusters' />
     <Route path='/admin' component={AdminOverviewPage} />
   </Switch>
