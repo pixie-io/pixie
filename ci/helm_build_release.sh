@@ -62,9 +62,6 @@ cp "${tmp_dir}/charts/vizier-chart-${VERSION}.tgz" "${artifacts_dir}/vizier-char
 sha256sum "${tmp_dir}/charts/vizier-chart-${VERSION}.tgz" | awk '{print $1}' > sha
 cp sha "${artifacts_dir}/vizier-chart-${VERSION}.tgz.sha256"
 
-# Update the index file.
-helm repo index "${tmp_dir}/${helm_gcs_bucket}" --url "https://${helm_gcs_bucket}.storage.googleapis.com"
-
 # Pull index file.
 curl https://artifacts.px.dev/helm_charts/vizier/index.yaml -o old_index.yaml
 # Update the index file.
