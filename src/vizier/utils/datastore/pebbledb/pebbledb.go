@@ -217,7 +217,11 @@ func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, er
 
 // GetWithPrefix gets all keys and values with the given prefix.
 func (w *DataStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
-	return w.GetWithRange(prefix, string(keyUpperBound([]byte(prefix))))
+	ub := KeyUpperBound([]byte(prefix))
+	if ub == nil {
+		return nil, nil, fmt.Errorf("unsupported prefix: %x", prefix)
+	}
+	return w.GetWithRange(prefix, string(ub))
 }
 
 // Delete deletes the value for the given key from the datastore.
@@ -239,7 +243,11 @@ func (w *DataStore) DeleteAll(keys []string) error {
 
 // DeleteWithPrefix deletes all keys and values with the given prefix.
 func (w *DataStore) DeleteWithPrefix(prefix string) error {
-	return w.db.DeleteRange([]byte(prefix), keyUpperBound([]byte(prefix)), pebble.Sync)
+	ub := KeyUpperBound([]byte(prefix))
+	if ub == nil {
+		return fmt.Errorf("unsupported prefix: %x", prefix)
+	}
+	return w.db.DeleteRange([]byte(prefix), ub, pebble.Sync)
 }
 
 // Close stops the TTL watcher, and closes the underlying datastore.

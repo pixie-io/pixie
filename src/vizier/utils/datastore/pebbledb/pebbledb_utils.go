@@ -35,7 +35,7 @@
 
 package pebbledb
 
-func keyUpperBound(b []byte) []byte {
+func KeyUpperBound(b []byte) []byte {
 	end := make([]byte, len(b))
 	copy(end, b)
 	for i := len(end) - 1; i >= 0; i-- {
