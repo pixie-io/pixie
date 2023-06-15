@@ -16,16 +16,12 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
-PROPRIETARY_PREFIX = "gcr.io/pl-dev-infra/"
-PUBLIC_PREFIX = "gcr.io/pixie-oss/pixie-prod/"
-DEV_PREFIX = "gcr.io/pixie-oss/pixie-dev/"
-
-def image_replacements(image_map, existing_prefix, new_prefix):
+def image_replacements(image_map):
     replacements = {}
 
     for image in image_map.keys():
-        image = image.removeprefix("$(IMAGE_PREFIX)").removesuffix(":$(BUNDLE_VERSION)")
-        replacements[existing_prefix + image] = new_prefix + image + ":{BUNDLE_VERSION}"
+        image = image.removeprefix("$(IMAGE_PREFIX)/").removesuffix(":$(BUNDLE_VERSION)")
+        replacements[image] = "{IMAGE_PREFIX}/" + image + ":{BUNDLE_VERSION}"
 
     return replacements
 
@@ -46,14 +42,14 @@ bundle_version_provider = rule(
 def _image_prefix_provider_impl(ctx):
     return [
         platform_common.TemplateVariableInfo({
-            "IMAGE_PREFIX": ctx.attr.image_prefix,
+            "IMAGE_PREFIX": ctx.attr._image_prefix[BuildSettingInfo].value,
         }),
     ]
 
 image_prefix_provider = rule(
     implementation = _image_prefix_provider_impl,
     attrs = {
-        "image_prefix": attr.string(mandatory = True),
+        "_image_prefix": attr.label(default = "//k8s:image_repository"),
     },
 )
 

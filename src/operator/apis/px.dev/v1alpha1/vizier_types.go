@@ -76,8 +76,8 @@ type VizierSpec struct {
 	// LeadershipElectionParams specifies configurable values for the K8s leaderships elections which Vizier uses manage pod leadership.
 	LeadershipElectionParams *LeadershipElectionParams `json:"leadershipElectionParams,omitempty"`
 	// Registry specifies the image registry to use rather than Pixie's default registry (gcr.io). We expect any forward slashes in
-	// Pixie's image paths are replaced with a "-". For example: "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest"
-	// should be pushed to "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".
+	// Pixie's image paths are replaced with a "-". For example: "ghcr.io/pixie-io/vizier-metadata_server_image:latest"
+	// should be pushed to "$registry/ghcr.io-pixie-io-vizier-metadata_server_image:latest".
 	Registry string `json:"registry,omitempty"`
 	// Autopilot should be set if running Pixie on GKE Autopilot.
 	Autopilot bool `json:"autopilot,omitempty"`

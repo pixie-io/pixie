@@ -71,8 +71,8 @@ message VizierSpec {
   string custom_deploy_key_secret = 16;
   // Registry specifies the image registry to use rather than Pixie's default registry (gcr.io). We
   // expect any forward slashes in Pixie's image paths are replaced with a "-". For example:
-  // "gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest" should be pushed to
-  // "$registry/gcr.io-pixie-oss-pixie-dev-vizier-metadata_server_image:latest".
+  // "ghcr.io/pixie-io/vizier-metadata_server_image:latest" should be pushed to
+  // "$registry/ghcr.io-pixie-io-vizier-metadata_server_image:latest".
   string registry = 18;
   // Autopilot should be set if running Pixie on GKE Autopilot.
   bool autopilot = 19;
