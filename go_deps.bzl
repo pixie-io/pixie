@@ -2068,8 +2068,8 @@ def pl_go_dependencies():
         name = "com_github_jackc_pgx",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/jackc/pgx",
-        sum = "h1:BRJ4G3UPtvml5R1ey0biqqGuYUGayMYekm3woO75orY=",
-        version = "v3.5.0+incompatible",
+        sum = "h1:2zP5OD7kiyR3xzRYMhOcXVvkDZsImVXfj+yIyTQf3/o=",
+        version = "v3.6.2+incompatible",
     )
     go_repository(
         name = "com_github_jbenet_go_context",
@@ -3260,13 +3260,7 @@ def pl_go_dependencies():
         sum = "h1:FzWGaw2Opqyu+794ZQ9SYifWv2EIXpwP4q8dY1kDAwI=",
         version = "v0.1.0",
     )
-    go_repository(
-        name = "com_github_satori_go_uuid",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
-        importpath = "github.com/satori/go.uuid",
-        sum = "h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=",
-        version = "v1.2.0",
-    )
+
     go_repository(
         name = "com_github_scaleway_scaleway_sdk_go",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
