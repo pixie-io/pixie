@@ -107,7 +107,7 @@ jobs:
         gh release upload "${TAG_NAME}" vizier-artifacts/*
       # yamllint enable rule:indentation
   create-helm-chart:
-    # if: ${{ !contains(github.event.ref, '-') }}
+    if: ${{ !contains(github.event.ref, '-') }}
     name: Create Helm chart on Github
     runs-on: ubuntu-latest
     needs: build-release
