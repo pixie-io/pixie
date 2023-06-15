@@ -48,6 +48,7 @@ jobs:
         export TAG_NAME="${REF#*/tags/}"
         export ARTIFACTS_DIR="$(pwd)/artifacts"
         mkdir -p "${ARTIFACTS_DIR}"
+        export INDEX_FILE="$(pwd)/index.yaml"
         ./ci/save_version_info.sh
         ./ci/vizier_build_release.sh
     - name: Build & Export Docs
@@ -100,4 +101,39 @@ jobs:
         gh release create "${TAG_NAME}" --title "Vizier ${TAG_NAME#release/vizier/}" \
           --notes $'Pixie Vizier Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" vizier-artifacts/*
+      # yamllint enable rule:indentation
+  create-helm-chart:
+    # if: ${{ !contains(github.event.ref, '-') }}
+    name: Create Helm chart on Github
+    runs-on: ubuntu-latest
+    needs: build-release
+    concurrency: gh-pages
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+        ref: gh-pages
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - name: Setup git
+      shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+    - name: Push Helm YAML to gh-pages
+      shell: bash
+      env:
+        TAG_NAME: ${{ github.event.release.tag_name }}
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      # yamllint disable rule:indentation
+      run: |
+        cp index-artifacts/index.yaml helm_charts/vizier/index.yaml
+        git add helm_charts/vizier/index.yaml
+        export VERSION="$(echo "${TAG_NAME}" | cut -d'/' -f3)"
+        git commit -s -m "Release Helm chart Vizier ${VERSION}"
+        git push origin "gh-pages"
       # yamllint enable rule:indentation

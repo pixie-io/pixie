@@ -37,6 +37,7 @@ parse_args "$@"
 tmp_path="/tmp/helm-${VERSION}"
 tmp_dir="$(mktemp -d)"
 artifacts_dir="${ARTIFACTS_DIR:?}"
+index_file="${INDEX_FILE:?}"
 
 mkdir -p "${tmp_path}"
 # A Helm chart contains two main items:
