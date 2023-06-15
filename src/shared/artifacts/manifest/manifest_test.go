@@ -94,12 +94,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
     "availableArtifactMirrors": [
       {
         "artifactType": "AT_CONTAINER_SET_YAMLS",
+        "sha256": "efgh",
         "urls": [
           "https://github.io/container_yamls.tar"
         ]
       },
       {
         "artifactType": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+        "sha256": "abcd",
         "urls": [
           "https://github.io/container_template_yamls.tar"
         ]
@@ -119,12 +121,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
 							AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+									SHA256:       "efgh",
 									URLs: []string{
 										"https://github.io/container_yamls.tar",
 									},
 								},
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+									SHA256:       "abcd",
 									URLs: []string{
 										"https://github.io/container_template_yamls.tar",
 									},
@@ -209,12 +213,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
     "availableArtifactMirrors": [
       {
         "artifactType": "AT_LINUX_AMD64",
+        "sha256": "abcd",
         "urls": [
           "https://github.io/cli_linux_amd64"
         ]
       },
       {
         "artifactType": "AT_DARWIN_AMD64",
+        "sha256": "efgh",
         "urls": [
           "https://github.io/cli_darwin_amd64"
         ]
@@ -229,12 +235,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
     "availableArtifactMirrors": [
       {
         "artifactType": "AT_CONTAINER_SET_YAMLS",
+        "sha256": "1111",
         "urls": [
           "https://github.io/container_yamls.tar"
         ]
       },
       {
         "artifactType": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+        "sha256": "2222",
         "urls": [
           "https://github.io/container_template_yamls.tar"
         ]
@@ -254,12 +262,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
 							AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+									SHA256:       "1111",
 									URLs: []string{
 										"https://github.io/container_yamls.tar",
 									},
 								},
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+									SHA256:       "2222",
 									URLs: []string{
 										"https://github.io/container_template_yamls.tar",
 									},
@@ -279,12 +289,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
 							AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
 								{
 									ArtifactType: versionspb.AT_LINUX_AMD64,
+									SHA256:       "abcd",
 									URLs: []string{
 										"https://github.io/cli_linux_amd64",
 									},
 								},
 								{
 									ArtifactType: versionspb.AT_DARWIN_AMD64,
+									SHA256:       "efgh",
 									URLs: []string{
 										"https://github.io/cli_darwin_amd64",
 									},
@@ -369,12 +381,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
       "availableArtifactMirrors": [
         {
           "artifactType": "AT_CONTAINER_SET_YAMLS",
+          "sha256": "0000",
           "urls": [
             "https://github.io/0.12.10/container_yamls.tar"
           ]
         },
         {
           "artifactType": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+          "sha256": "3333",
           "urls": [
             "https://github.io/0.12.10/container_template_yamls.tar"
           ]
@@ -389,12 +403,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
       "availableArtifactMirrors": [
         {
           "artifactType": "AT_CONTAINER_SET_YAMLS",
+          "sha256": "0123",
           "urls": [
             "https://github.io/0.12.9/container_yamls.tar"
           ]
         },
         {
           "artifactType": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+          "sha256": "4567",
           "urls": [
             "https://github.io/0.12.9/container_template_yamls.tar"
           ]
@@ -415,12 +431,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
 							AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+									SHA256:       "0000",
 									URLs: []string{
 										"https://github.io/0.12.10/container_yamls.tar",
 									},
 								},
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+									SHA256:       "3333",
 									URLs: []string{
 										"https://github.io/0.12.10/container_template_yamls.tar",
 									},
@@ -435,12 +453,14 @@ func TestManifest_JSONDecodeEncode(t *testing.T) {
 							AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+									SHA256:       "0123",
 									URLs: []string{
 										"https://github.io/0.12.9/container_yamls.tar",
 									},
 								},
 								{
 									ArtifactType: versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+									SHA256:       "4567",
 									URLs: []string{
 										"https://github.io/0.12.9/container_template_yamls.tar",
 									},
