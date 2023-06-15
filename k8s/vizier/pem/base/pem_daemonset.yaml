@@ -72,7 +72,7 @@ spec:
             type: RuntimeDefault
       containers:
       - name: pem
-        image: gcr.io/pixie-oss/pixie-dev/vizier/pem_image:latest
+        image: vizier/pem_image:latest
         args: []
         env:
         - name: TCMALLOC_SAMPLE_PARAMETER

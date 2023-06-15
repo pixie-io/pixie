@@ -37,28 +37,32 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
     | grep "release/operator" | grep -v "\-")
 
-build_type="--//k8s:build_type=public"
-image_path="gcr.io/pixie-oss/pixie-prod/operator/operator_image:${release_tag}"
-deleter_image_path="gcr.io/pixie-oss/pixie-prod/operator/vizier_deleter:${release_tag}"
+image_repo="gcr.io/pixie-oss/pixie-prod"
+image_paths=$(bazel cquery //k8s/operator:image_bundle \
+  --//k8s:image_repository="${image_repo}" \
+  --//k8s:image_version="${release_tag}" \
+  --output=starlark \
+  --starlark:expr="'\n'.join(providers(target)['@io_bazel_rules_docker//container:providers.bzl%BundleInfo'].container_images.keys())")
+image_path=$(echo "${image_paths}" | grep -v deleter)
+deleter_image_path=$(echo "${image_paths}" | grep deleter)
+
+bucket="pixie-dev-public"
+
 channel="stable"
 channels="stable,dev"
-bucket="pixie-dev-public"
 # The previous version should be the 2nd item in the tags. Since this is a release build,
 # the first item in the tag is the current release.
 prev_tag=$(echo "$tags" | sed -n '2 p')
+
 if [[ $release_tag == *"-"* ]]; then
-  build_type="--//k8s:build_type=dev"
-  image_path="gcr.io/pixie-oss/pixie-dev/operator/operator_image:${release_tag}"
-  deleter_image_path="gcr.io/pixie-oss/pixie-dev/operator/vizier_deleter:${release_tag}"
   channel="dev"
   channels="dev"
-  # Use the same bucket as above.
   # The previous version should be the 1st item in the tags. Since this is a non-release build,
   # the first item in the tags is the previous release.
   prev_tag=$(echo "$tags" | sed -n '1 p')
 fi
 
-push_all_multiarch_images "//k8s/operator:operator_images_push" "//k8s/operator:list_image_bundle" "${release_tag}" "${build_type}"
+push_all_multiarch_images "//k8s/operator:operator_images_push" "//k8s/operator:list_image_bundle" "${release_tag}" "${image_repo}"
 
 # Build operator bundle for OLM.
 tmp_dir="$(mktemp -d)"

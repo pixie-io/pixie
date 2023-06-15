@@ -17,7 +17,7 @@ spec:
       containers:
       - name: cron-script-server
         imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev/cloud/cron_script_server_image
+        image: cloud/cron_script_server_image
         ports:
         - containerPort: 50700
           name: http2

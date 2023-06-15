@@ -34,16 +34,23 @@ if [[ "${release_tag}" == *"-"* ]]; then
 fi
 
 echo "The image tag is: ${release_tag}"
+image_repo="gcr.io/pixie-oss/pixie-prod"
 
-bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
-    --//k8s:build_type=public //k8s/cloud:cloud_images_push
+bazel run -c opt \
+  --config=stamp \
+  --action_env=GOOGLE_APPLICATION_CREDENTIALS \
+  --//k8s:image_repository="${image_repo}" \
+  --//k8s:image_version="${release_tag}" \
+  //k8s/cloud:cloud_images_push
 
 while read -r image;
 do
   image_digest=$(crane digest "${image}")
   cosign sign --key env://COSIGN_PRIVATE_KEY --yes -r "${image}@${image_digest}"
-done < <(bazel run --config=stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --//k8s:image_version="${release_tag}" \
-    --//k8s:build_type=public //k8s/cloud:list_image_bundle)
+done < <(bazel run -c opt \
+  --//k8s:image_repository="${image_repo}" \
+  --//k8s:image_version="${release_tag}" \
+  //k8s/cloud:list_image_bundle)
 
 all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICATION_CREDENTIALS" "--remote_download_outputs=toplevel")
 all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"

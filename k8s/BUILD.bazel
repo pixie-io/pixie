@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-load("//bazel:images.bzl", "DEV_PREFIX", "PROPRIETARY_PREFIX", "PUBLIC_PREFIX", "bundle_version_provider", "image_prefix_provider")
+load("//bazel:images.bzl", "bundle_version_provider", "image_prefix_provider")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,47 +24,15 @@ string_flag(
     build_setting_default = "latest",
 )
 
-string_flag(
-    name = "build_type",
-    build_setting_default = "dev",
-    values = [
-        "public",
-        "proprietary",
-        "dev",
-    ],
-)
-
-config_setting(
-    name = "dev",
-    flag_values = {
-        ":build_type": "dev",
-    },
-)
-
-config_setting(
-    name = "public",
-    flag_values = {
-        ":build_type": "public",
-    },
-)
-
-config_setting(
-    name = "proprietary",
-    flag_values = {
-        ":build_type": "proprietary",
-    },
-)
-
 bundle_version_provider(
     name = "bundle_version",
 )
 
+string_flag(
+    name = "image_repository",
+    build_setting_default = "localhost:5000",
+)
+
 image_prefix_provider(
     name = "image_prefix",
-    image_prefix = select({
-        ":dev": DEV_PREFIX,
-        ":proprietary": PROPRIETARY_PREFIX,
-        ":public": PUBLIC_PREFIX,
-        "//conditions:default": DEV_PREFIX,
-    }),
 )

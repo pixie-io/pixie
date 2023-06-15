@@ -4,48 +4,48 @@ kind: Kustomization
 resources:
 - base/
 images:
-- name: gcr.io/pixie-oss/pixie-dev/cloud/api_server_image
+- name: cloud/api_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/api_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/artifact_tracker_server_image
+- name: cloud/artifact_tracker_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/artifact_tracker_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/auth_server_image
+- name: cloud/auth_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/auth_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/config_manager_server_image
+- name: cloud/config_manager_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/config_manager_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/proxy_server_image
+- name: cloud/proxy_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/proxy_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/indexer_server_image
+- name: cloud/indexer_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/indexer_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/metrics_server_image
+- name: cloud/metrics_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/metrics_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/plugin_server_image
+- name: cloud/plugin_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/plugin_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/profile_server_image
+- name: cloud/profile_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/profile_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/project_manager_server_image
+- name: cloud/project_manager_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/project_manager_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/scriptmgr_server_image
+- name: cloud/scriptmgr_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/scriptmgr_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/cron_script_server_image
+- name: cloud/cron_script_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/cron_script_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/vzconn_server_image
+- name: cloud/vzconn_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/vzconn_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/vzmgr_server_image
+- name: cloud/vzmgr_server_image
   newName: gcr.io/pixie-oss/pixie-prod/cloud/vzmgr_server_image
   newTag: latest
-- name: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db
+- name: cloud/plugin/load_db
   newName: gcr.io/pixie-oss/pixie-prod/cloud/plugin/load_db
   newTag: latest

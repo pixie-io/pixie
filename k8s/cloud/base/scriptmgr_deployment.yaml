@@ -15,7 +15,7 @@ spec:
       containers:
       - name: scriptmgr-server
         imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev/cloud/scriptmgr_server_image
+        image: cloud/scriptmgr_server_image
         ports:
         - containerPort: 52000
           name: http2

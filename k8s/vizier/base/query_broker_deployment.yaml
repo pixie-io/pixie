@@ -63,7 +63,7 @@ spec:
             type: RuntimeDefault
       containers:
       - name: app
-        image: gcr.io/pixie-oss/pixie-dev/vizier/query_broker_server_image:latest
+        image: vizier/query_broker_server_image:latest
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

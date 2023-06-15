@@ -35,15 +35,15 @@ echo "The release tag is: ${release_tag}"
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
 
-build_type="--//k8s:build_type=public"
-if [[ $release_tag == *"-"* ]]; then
-  build_type="--//k8s:build_type=dev"
-fi
+image_repo="gcr.io/pixie-oss/pixie-prod"
 
-push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${build_type}"
+push_all_multiarch_images "//k8s/vizier:vizier_images_push" "//k8s/vizier:list_image_bundle" "${release_tag}" "${image_repo}"
 
-bazel build --config=stamp -c opt --//k8s:image_version="${release_tag}" \
-    --config=stamp "${build_type}" //k8s/vizier:vizier_yamls
+bazel build -c opt \
+  --config=stamp \
+  --//k8s:image_repository="${image_repo}" \
+  --//k8s:image_version="${release_tag}" \
+  //k8s/vizier:vizier_yamls
 
 yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 

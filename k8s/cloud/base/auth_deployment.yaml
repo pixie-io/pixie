@@ -17,7 +17,7 @@ spec:
       containers:
       - name: auth-server
         imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev/cloud/auth_server_image
+        image: cloud/auth_server_image
         ports:
         - containerPort: 50100
           name: http2

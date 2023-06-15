@@ -15,7 +15,7 @@ spec:
       containers:
       - name: config-manager-server
         imagePullPolicy: IfNotPresent
-        image: gcr.io/pixie-oss/pixie-dev/cloud/config_manager_server_image
+        image: cloud/config_manager_server_image
         ports:
         - containerPort: 50500
           name: http2
