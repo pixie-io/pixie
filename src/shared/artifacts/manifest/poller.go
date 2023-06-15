@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -38,26 +37,22 @@ type Poller interface {
 type CallbackFn func(*ArtifactManifest) error
 
 type pollerImpl struct {
-	client       *storage.Client
-	bucket       string
-	manifestPath string
-	period       time.Duration
-	cb           CallbackFn
+	loc    Location
+	period time.Duration
+	cb     CallbackFn
 
-	wg      sync.WaitGroup
-	stopCh  chan struct{}
-	lastMD5 []byte
+	wg           sync.WaitGroup
+	stopCh       chan struct{}
+	lastChecksum []byte
 }
 
 // NewPoller creates a new Poller to poll for manifest changes.
-func NewPoller(client *storage.Client, bucket string, manifestPath string, pollPeriod time.Duration, cb CallbackFn) Poller {
+func NewPoller(loc Location, pollPeriod time.Duration, cb CallbackFn) Poller {
 	return &pollerImpl{
-		client:       client,
-		bucket:       bucket,
-		manifestPath: manifestPath,
-		period:       pollPeriod,
-		cb:           cb,
-		stopCh:       make(chan struct{}),
+		loc:    loc,
+		period: pollPeriod,
+		cb:     cb,
+		stopCh: make(chan struct{}),
 	}
 }
 
@@ -94,20 +89,18 @@ func (p *pollerImpl) run() {
 
 func (p *pollerImpl) poll() error {
 	ctx := context.Background()
-	obj := p.client.Bucket(p.bucket).Object(p.manifestPath)
-
-	attrs, err := obj.Attrs(ctx)
+	cs, err := p.loc.Checksum(ctx)
 	if err != nil {
 		return err
 	}
 	// If the hash hasn't changed, we skip downloading the manifest.
-	if bytes.Equal(attrs.MD5, p.lastMD5) {
+	if bytes.Equal(cs, p.lastChecksum) {
 		return nil
 	}
 
-	p.lastMD5 = attrs.MD5
+	p.lastChecksum = cs
 
-	r, err := obj.NewReader(ctx)
+	r, err := p.loc.ManifestReader(ctx)
 	if err != nil {
 		return err
 	}

@@ -27,6 +27,7 @@ go_library(
         "poller.go",
         "query.go",
         "sorted.go",
+        "storage.go",
     ],
     importpath = "px.dev/pixie/src/shared/artifacts/manifest",
     visibility = ["//visibility:public"],
