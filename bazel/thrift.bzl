@@ -38,9 +38,4 @@ def thrift_deps(scala_version):
             "ch.qos.logback:logback-classic:1.2.10",
         ],
         repositories = ["https://repo1.maven.org/maven2"],
-        override_targets = {
-            "io.netty:netty-tcnative-boringssl-static": "@//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/netty_deps:io_netty_netty_tcnative_boringssl_static",
-            "io.netty:netty-tcnative-boringssl-static:linux-aarch_64": "@//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/netty_deps:io_netty_netty_tcnative_boringssl_static_linux_aarch_64",
-            "io.netty:netty-tcnative-boringssl-static:linux-x86_64": "@//src/stirling/source_connectors/socket_tracer/testing/containers/thriftmux/netty_deps:io_netty_netty_tcnative_boringssl_static_linux_x86_64",
-        },
     )
