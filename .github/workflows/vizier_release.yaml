@@ -73,6 +73,10 @@ jobs:
       with:
         name: vizier-artifacts
         path: artifacts/
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: index-artifacts
+        path: index.yaml
   create-github-release:
     if: ${{ !contains(github.event.ref, '-') }}
     name: Create Release on Github
