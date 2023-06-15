@@ -292,6 +292,7 @@ func TemplatizeK8sYAML(inputYAML string, tmplOpts []*K8sTemplateOptions) (string
 		if err != nil {
 			return nil, err
 		}
+
 		for _, opt := range tmplOpts {
 			if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredObj.Object, resourceKind) {
 				continue
@@ -375,7 +376,7 @@ func updateImageTags(unstructuredObj unstructured.Unstructured) {
 func templatizeImagePath(path string) string {
 	newImage := strings.ReplaceAll(path, "/", "-")
 
-	return fmt.Sprintf("{{ if .Values.registry }}{{ .Values.registry }}/%s{{ else }}%s{{ end }}", newImage, path)
+	return fmt.Sprintf("{{ if .Values.registry }}{{ .Values.registry }}/%s{{else}}%s{{end}}", newImage, path)
 }
 
 type resourceProcessFn func(schema.GroupVersionKind, string, unstructured.Unstructured, []byte) ([]byte, error)
