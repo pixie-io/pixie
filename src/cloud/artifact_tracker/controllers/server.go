@@ -196,6 +196,14 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		if err != nil {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
+
+		for _, am := range a.AvailableArtifactMirrors {
+			if am.ArtifactType == at && len(am.URLs) > 0 {
+				return s.getDownloadLinkForMirrors(ctx, am)
+			}
+		}
+		// Fallthrough to the legacy method.
+
 		hasAT := false
 		for _, t := range a.AvailableArtifacts {
 			if t == at {
@@ -240,6 +248,22 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		Url:        url,
 		SHA256:     strings.TrimSpace(string(sha256bytes)),
 		ValidUntil: tpb,
+	}, nil
+}
+
+func (s *Server) getDownloadLinkForMirrors(ctx context.Context, am *vpb.ArtifactMirrors) (*apb.GetDownloadLinkResponse, error) {
+	// For now we return a download link to the first mirror.
+	// In the future, the API will change to support returning multiple mirrors.
+	url := am.URLs[0]
+	sha256Bytes := am.SHA256
+	valid, err := types.TimestampProto(time.Now().Add(60 * time.Minute))
+	if err != nil {
+		return nil, err
+	}
+	return &apb.GetDownloadLinkResponse{
+		Url:        url,
+		SHA256:     strings.TrimSpace(string(sha256Bytes)),
+		ValidUntil: valid,
 	}, nil
 }
 
