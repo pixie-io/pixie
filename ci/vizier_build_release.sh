@@ -68,10 +68,10 @@ gsutil cp "${tmpl_path}" "${output_path}/vizier_template_yamls.tar"
 gsutil cp tmplSha "${output_path}/vizier_template_yamls.tar.sha256"
 
 # Update helm chart if it is a release.
-if [[ $public == "True" ]]; then
+# if [[ $VERSION != *"-"* ]]; then
   # Update Vizier YAMLS in latest.
   gsutil cp "${yamls_tar}" "${latest_output_path}/vizier_yamls.tar"
   gsutil cp sha "${latest_output_path}/vizier_yamls.tar.sha256"
 
   ./ci/helm_build_release.sh "${release_tag}" "${tmpl_path}"
-fi
+# fi
