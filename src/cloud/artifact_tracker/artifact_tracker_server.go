@@ -105,7 +105,8 @@ func main() {
 		manifestBucket := viper.GetString("artifact_manifest_bucket")
 		manifestPath := viper.GetString("artifact_manifest_path")
 		pollPeriod := viper.GetDuration("manifest_poll_period")
-		poller := manifest.NewPoller(client, manifestBucket, manifestPath, pollPeriod, svr.UpdateManifest)
+		gcsManifest := manifest.NewGCSLocation(client, manifestBucket, manifestPath)
+		poller := manifest.NewPoller(gcsManifest, pollPeriod, svr.UpdateManifest)
 		start := time.Now()
 		if err := poller.Start(); err != nil {
 			log.WithError(err).Fatal("failed to start manifest poller")
