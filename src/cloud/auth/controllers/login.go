@@ -378,7 +378,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	_, err = s.getUser(ctx, userInfo)
 	if err == nil {
-		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
+		return nil, status.Error(codes.AlreadyExists, "user already exists, please login.")
 	}
 
 	// Case 1: User was invited to join an organization.
