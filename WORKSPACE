@@ -168,17 +168,7 @@ load("@pxapi_python_doc_deps//:requirements.bzl", pxapi_py_doc_install_deps = "i
 pxapi_py_doc_install_deps()
 
 # Setup thrift: used for building Stirling tracing targets.
-load("//bazel:netty.bzl", "fetch_netty_tcnative_jars")
 load("//bazel:thrift.bzl", "thrift_deps")
-
-# TODO(ddelnano): Remove once rules_jvm_external is no longer impacted.
-# Recent netty-tcnative releases cause rules_jvm_external to fail with a
-# cyclic dependency issue due to its use of multi-classifiers. This is fixed
-# by installing the netty jars manually and then overriding maven to use them. See
-# https://github.com/bazelbuild/rules_jvm_external/issues/704 for more details.
-netty_tcnative_version = "2.0.53.Final"
-
-fetch_netty_tcnative_jars(netty_tcnative_version)
 
 thrift_deps(scala_version = scala_version)
 
