@@ -1,14 +1,3 @@
 extend type Query {
-  artifacts(artifactName: String!): ArtifactsInfo!
   verifyInviteToken(inviteToken: String!): Boolean!
-}
-
-type ArtifactsInfo {
-  items: [Artifact!]!
-}
-
-type Artifact {
-  version: String!
-  changelog: String!
-  timestampMs: Float!
 }

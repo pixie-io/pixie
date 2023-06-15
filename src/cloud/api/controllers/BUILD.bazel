@@ -22,7 +22,6 @@ go_library(
     srcs = [
         "api_key_grpc.go",
         "api_key_resolver.go",
-        "artifact_resolver.go",
         "artifact_tracker.go",
         "auth.go",
         "auth_client.go",
@@ -100,7 +99,6 @@ pl_go_test(
     srcs = [
         "api_key_resolver_test.go",
         "api_key_test.go",
-        "artifact_resolver_test.go",
         "artifact_tracker_test.go",
         "auth_grpc_test.go",
         "auth_test.go",
@@ -130,7 +128,6 @@ pl_go_test(
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controllers/schema/complete",
-        "//src/cloud/api/controllers/schema/noauth",
         "//src/cloud/api/controllers/testutils",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/authpb:auth_pl_go_proto",
