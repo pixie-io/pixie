@@ -49,9 +49,24 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 		}).
 		Return(&versionspb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*versionspb.Artifact{{
-				VersionStr: "test",
-			}},
+			Artifact: []*versionspb.Artifact{
+				{
+					VersionStr: "test",
+				},
+				{
+					VersionStr: "test2",
+					AvailableArtifactMirrors: []*versionspb.ArtifactMirrors{
+						{
+							ArtifactType: versionspb.AT_LINUX_AMD64,
+							SHA256:       "abcd",
+							URLs: []string{
+								"url1",
+								"url2",
+							},
+						},
+					},
+				},
+			},
 		}, nil)
 
 	artifactTrackerServer := &controllers.ArtifactTrackerServer{
@@ -66,7 +81,29 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "cli", resp.Name)
-	assert.Equal(t, 1, len(resp.Artifact))
+	assert.Equal(t, 2, len(resp.Artifact))
+	expectedArtifacts := []*cloudpb.Artifact{
+		{
+			VersionStr:               "test",
+			AvailableArtifacts:       []cloudpb.ArtifactType{},
+			AvailableArtifactMirrors: []*cloudpb.ArtifactMirrors{},
+		},
+		{
+			VersionStr:         "test2",
+			AvailableArtifacts: []cloudpb.ArtifactType{},
+			AvailableArtifactMirrors: []*cloudpb.ArtifactMirrors{
+				{
+					ArtifactType: cloudpb.AT_LINUX_AMD64,
+					SHA256:       "abcd",
+					URLs: []string{
+						"url1",
+						"url2",
+					},
+				},
+			},
+		},
+	}
+	assert.Equal(t, expectedArtifacts, resp.Artifact)
 }
 
 func TestArtifactTracker_GetDownloadLink(t *testing.T) {

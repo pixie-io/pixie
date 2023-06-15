@@ -101,12 +101,21 @@ func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudpb
 		for j, a := range artifact.AvailableArtifacts {
 			availableArtifacts[j] = getArtifactTypeFromVersionsProto(a)
 		}
+		availableArtifactMirrors := make([]*cloudpb.ArtifactMirrors, len(artifact.AvailableArtifactMirrors))
+		for j, am := range artifact.AvailableArtifactMirrors {
+			availableArtifactMirrors[j] = &cloudpb.ArtifactMirrors{
+				ArtifactType: getArtifactTypeFromVersionsProto(am.ArtifactType),
+				SHA256:       am.SHA256,
+				URLs:         am.URLs,
+			}
+		}
 		cloudpbArtifacts[i] = &cloudpb.Artifact{
-			Timestamp:          artifact.Timestamp,
-			CommitHash:         artifact.CommitHash,
-			VersionStr:         artifact.VersionStr,
-			Changelog:          artifact.Changelog,
-			AvailableArtifacts: availableArtifacts,
+			Timestamp:                artifact.Timestamp,
+			CommitHash:               artifact.CommitHash,
+			VersionStr:               artifact.VersionStr,
+			Changelog:                artifact.Changelog,
+			AvailableArtifacts:       availableArtifacts,
+			AvailableArtifactMirrors: availableArtifactMirrors,
 		}
 	}
 
