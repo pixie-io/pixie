@@ -487,7 +487,7 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 	}
 	// The persistent YAML should only be applied if --use_etcd_operator is false. The entire YAML should be wrapped in a template.
 	wrappedPersistent := fmt.Sprintf(
-		`{{if not .Values.useEtcdOperator}}
+		`{{if and (not .Values.autopilot) (not .Values.useEtcdOperator)}}
 %s
 {{- end}}`,
 		persistentYAML)
@@ -498,21 +498,30 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 	}
 	// The etcd version of Vizier should only be applied if --use_etcd_operator is true. The entire YAML should be wrapped in a template.
 	wrappedEtcd := fmt.Sprintf(
-		`{{if .Values.useEtcdOperator}}
+		`{{if and (not .Values.autopilot) .Values.useEtcdOperator}}
 %s
 {{- end}}`,
 		etcdYAML)
 
 	persistentAutopilotYAML, err := yamls.TemplatizeK8sYAML(yamlMap[vizierMetadataPersistAutopilotYAMLPath], tmplOptions)
-
 	if err != nil {
 		return nil, err
 	}
+	wrappedPersistentAP := fmt.Sprintf(
+		`{{if and (.Values.autopilot) (not .Values.useEtcdOperator)}}
+%s
+{{- end}}`,
+		persistentAutopilotYAML)
 
 	etcdAutopilotYAML, err := yamls.TemplatizeK8sYAML(yamlMap[vizierEtcdAutopilotYAMLPath], tmplOptions)
 	if err != nil {
 		return nil, err
 	}
+	wrappedEtcdAP := fmt.Sprintf(
+		`{{if and (.Values.autopilot) (.Values.useEtcdOperator)}}
+%s
+{{- end}}`,
+		etcdAutopilotYAML)
 
 	return []*yamls.YAMLFile{
 		{
@@ -525,11 +534,11 @@ func generateVzYAMLs(yamlMap map[string]string) ([]*yamls.YAMLFile, error) {
 		},
 		{
 			Name: "vizier_etcd_ap",
-			YAML: etcdAutopilotYAML,
+			YAML: wrappedEtcdAP,
 		},
 		{
 			Name: "vizier_persistent_ap",
-			YAML: persistentAutopilotYAML,
+			YAML: wrappedPersistentAP,
 		},
 	}, nil
 }
