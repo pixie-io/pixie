@@ -22,7 +22,7 @@ spec:
       containers:
       - name: vzmgr-server
         imagePullPolicy: IfNotPresent
-        image: cloud/vzmgr_server_image
+        image: cloud-vzmgr_server_image
         ports:
         - containerPort: 51800
           name: http2

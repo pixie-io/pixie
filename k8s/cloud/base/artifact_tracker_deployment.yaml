@@ -17,7 +17,7 @@ spec:
       containers:
       - name: artifact-tracker-server
         imagePullPolicy: IfNotPresent
-        image: cloud/artifact_tracker_server_image
+        image: cloud-artifact_tracker_server_image
         ports:
         - containerPort: 50750
           name: http2

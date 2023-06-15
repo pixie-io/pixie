@@ -16,7 +16,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: delete-job
-        image: operator/vizier_deleter:latest
+        image: operator-vizier_deleter:latest
         env:
         - name: PL_NAMESPACE
           valueFrom:

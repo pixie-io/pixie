@@ -17,7 +17,7 @@ spec:
       containers:
       - name: project-manager-server
         imagePullPolicy: IfNotPresent
-        image: cloud/project_manager_server_image
+        image: cloud-project_manager_server_image
         ports:
         - containerPort: 50300
           name: http2

@@ -59,7 +59,7 @@ spec:
             type: RuntimeDefault
       containers:
       - name: app
-        image: vizier/kelvin_image:latest
+        image: vizier-kelvin_image:latest
         envFrom:
         - configMapRef:
             name: pl-tls-config

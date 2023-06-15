@@ -15,7 +15,7 @@ spec:
       containers:
       - name: api-server
         imagePullPolicy: IfNotPresent
-        image: cloud/api_server_image
+        image: cloud-api_server_image
         ports:
         - containerPort: 51200
           name: http2

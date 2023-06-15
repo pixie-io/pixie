@@ -17,7 +17,7 @@ spec:
       containers:
       - name: plugin-server
         imagePullPolicy: IfNotPresent
-        image: cloud/plugin_server_image
+        image: cloud-plugin_server_image
         ports:
         - containerPort: 50600
           name: http2

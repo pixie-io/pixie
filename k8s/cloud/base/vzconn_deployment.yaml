@@ -20,7 +20,7 @@ spec:
       containers:
       - name: vzconn-server
         imagePullPolicy: IfNotPresent
-        image: cloud/vzconn_server_image
+        image: cloud-vzconn_server_image
         ports:
         - containerPort: 51600
           name: http2

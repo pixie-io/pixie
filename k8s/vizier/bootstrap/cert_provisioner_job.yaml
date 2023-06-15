@@ -11,7 +11,7 @@ spec:
       serviceAccountName: pl-cert-provisioner-service-account
       containers:
       - name: provisioner
-        image: vizier/cert_provisioner_image:latest
+        image: vizier-cert_provisioner_image:latest
         env:
         - name: PL_NAMESPACE
           valueFrom:

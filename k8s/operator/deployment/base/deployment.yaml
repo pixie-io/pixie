@@ -17,7 +17,7 @@ spec:
       serviceAccountName: pixie-operator-service-account
       containers:
       - name: app
-        image: operator/operator_image:latest
+        image: operator-operator_image:latest
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
