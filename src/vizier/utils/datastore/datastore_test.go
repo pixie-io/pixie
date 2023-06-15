@@ -19,6 +19,7 @@
 package datastore
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -261,4 +262,90 @@ func TestDatastore(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func Fuzz_PebbleDB_SetGetDel(f *testing.F) {
+	memFS := vfs.NewMem()
+	pbbl, err := pebble.Open("test", &pebble.Options{
+		FS: memFS,
+	})
+	if err != nil {
+		f.Fatal("failed to initialize a pebbledb")
+	}
+	db := pebbledb.New(pbbl, 5*time.Minute)
+
+	f.Add("key", "val")
+	f.Fuzz(func(t *testing.T, key string, val string) {
+		err := db.Set(key, val)
+		assert.NoError(t, err)
+
+		v, err := db.Get(key)
+		assert.NoError(t, err)
+		assert.Equal(t, val, string(v))
+
+		err = db.Delete(key)
+		assert.NoError(t, err)
+
+		v, err = db.Get(key)
+		assert.NoError(t, err)
+		assert.Nil(t, v)
+	})
+}
+
+func Fuzz_PebbleDB_SetGetDelPrefix(f *testing.F) {
+	memFS := vfs.NewMem()
+	pbbl, err := pebble.Open("test", &pebble.Options{
+		FS: memFS,
+	})
+	if err != nil {
+		f.Fatal("failed to initialize a pebbledb")
+	}
+	db := pebbledb.New(pbbl, 5*time.Minute)
+
+	f.Add("pref", "/", "key", "val")
+	f.Add(string([]byte{255}), "/", "key", "val")
+	f.Add(string([]byte{40, 255}), "", "key", "val")
+
+	f.Fuzz(func(t *testing.T, prefix string, delim string, key string, val string) {
+		ub := pebbledb.KeyUpperBound([]byte(prefix))
+		if ub == nil {
+			_, _, err := db.GetWithPrefix(prefix)
+			assert.ErrorContains(t, err, "unsupported prefix")
+
+			err = db.DeleteWithPrefix(prefix)
+			assert.ErrorContains(t, err, "unsupported prefix")
+
+			return
+		}
+
+		kvs := map[string]string{
+			fmt.Sprintf("%s%s%s", prefix, delim, key):                 val,
+			fmt.Sprintf("%s%s%s%s", prefix, delim, key, delim):        val,
+			fmt.Sprintf("%s%s%s%s%s", prefix, delim, key, delim, key): val,
+			fmt.Sprintf("%s%s%s%s%s", prefix, delim, key, delim, val): key,
+		}
+
+		for k, v := range kvs {
+			err := db.Set(k, v)
+			assert.NoError(t, err)
+		}
+
+		ks, vs, err := db.GetWithPrefix(prefix)
+		fmt.Println(len(prefix), kvs, ks, vs)
+		assert.NoError(t, err)
+		assert.Equal(t, len(ks), len(vs))
+		assert.Equal(t, len(kvs), len(vs))
+
+		for i, k := range ks {
+			assert.Equal(t, kvs[k], string(vs[i]))
+		}
+
+		err = db.DeleteWithPrefix(prefix)
+		assert.NoError(t, err)
+
+		ks, vs, err = db.GetWithPrefix(prefix)
+		assert.NoError(t, err)
+		assert.Empty(t, ks)
+		assert.Empty(t, vs)
+	})
 }
