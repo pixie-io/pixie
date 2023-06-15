@@ -17,7 +17,6 @@ issues:
 linters:
   enable:
   - asciicheck
-  - deadcode
   - errcheck
   # Although goimports includes gofmt, it doesn't support the simplify option.
   # So we include gofmt here.
@@ -31,12 +30,12 @@ linters:
   - nolintlint
   - nonamedreturns
   - predeclared
+  - revive
   - staticcheck
   # https://github.com/golangci/golangci-lint/issues/2649
   # - structcheck
   - typecheck
   - unused
-  - varcheck
   # https://github.com/golangci/golangci-lint/issues/2649
   # - wastedassign
   - whitespace
@@ -44,7 +43,6 @@ linters:
   # The following linters are run separately by arcanist at the moment.
   # This is because we have autofix hooks for these linters.
   - goimports
-  - golint
   disable-all: false
 
 linters-settings:

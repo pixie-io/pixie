@@ -142,12 +142,6 @@
         "--out-format=checkstyle"
       ]
     },
-    "golint": {
-      "type": "golint",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
     "jshint-ui": {
       "type": "jshint",
       "jshint.jshintrc": "./src/ui/.jshintrc",
