@@ -582,7 +582,8 @@ class UProbeManager {
    * data if the binary uses the OpenSSL API in a BIO native way -- where OpenSSL IO primitives
    * are used rather than just its encryption functionality.
    *
-   * @param pid The PID of the process whose binary is examined for OpenSSL symbols statically linked.
+   * @param pid The PID of the process whose binary is examined for OpenSSL symbols statically
+   * linked.
    * @return The number of uprobes deployed. It is not an error if the binary
    *         does not contain the necessary symbols to probe; instead the return value will be zero.
    */
