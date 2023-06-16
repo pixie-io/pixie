@@ -16,16 +16,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-versions_file="$(realpath "${VERSIONS_FILE:?}")"
+versions_file="${VERSIONS_FILE}"
+manifest_updates="${MANIFEST_UPDATES}"
 repo_path="$(git rev-parse --show-toplevel)"
-manifest_bucket="${ARTIFACT_MANIFEST_BUCKET:-pixie-dev}"
-manifest_path="manifest.json"
 
-manifest_updates="$(mktemp)"
-# For now we manually change the versions_file into an array of ArtifactSets instead of an individual artifact set.
-# This avoids changing versions_gen.
-jq '[.]' < "${versions_file}" > "${manifest_updates}"
+manifest_bucket="${ARTIFACT_MANIFEST_BUCKET}"
+manifest_path="${ARTIFACT_MANIFEST_PATH}"
 
-bazel run //src/utils/artifacts/manifest_updater -- --manifest_bucket="${manifest_bucket}" --manifest_path="${manifest_path}" --manifest_updates="${manifest_updates}"
+if [[ -z "${manifest_updates}" ]]; then
+  if [[ -z "${versions_file}" ]]; then
+    echo "Must specify one of VERSIONS_FILE or MANIFEST_UPDATES"
+    exit 1
+  fi
+  manifest_updates="$(mktemp)"
+  # For now we manually change the versions_file into an array of ArtifactSets instead of an individual artifact set.
+  # This avoids changing versions_gen.
+  jq '[.]' < "${versions_file}" > "${manifest_updates}"
+else
+  manifest_updates="$(realpath "${manifest_updates}")"
+fi
 
-rm "${manifest_updates}"
+updater_args=("--manifest_updates=${manifest_updates}")
+if [[ -n "${manifest_bucket}" ]]; then
+  manifest_path="manifest.json"
+  updater_args+=("--manifest_bucket=${manifest_bucket}" )
+elif [[ -n "${manifest_path}" ]]; then
+  manifest_path="$(realpath "${manifest_path}")"
+else
+  echo "Must specify one of ARTIFACT_MANIFEST_BUCKET or ARTIFACT_MANIFEST_PATH"
+  exit 1
+fi
+updater_args+=("--manifest_path=${manifest_path}")
+
+bazel run //src/utils/artifacts/manifest_updater -- "${updater_args[@]}"

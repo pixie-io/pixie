@@ -19,10 +19,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -36,7 +41,8 @@ import (
 
 func init() {
 	pflag.String("manifest_bucket", "", "GCS Bucket where manifest is stored")
-	pflag.String("manifest_path", "", "Path within bucket of manifest file")
+
+	pflag.String("manifest_path", "", "Path within bucket/local path of manifest file")
 	pflag.String("manifest_updates", "", "Path to json file with updates for manifest")
 	pflag.Int("num_retries", 10, "Number of times to retry on conflict")
 
@@ -46,32 +52,50 @@ func init() {
 	viper.BindPFlags(pflag.CommandLine)
 }
 
+type updateManifestFunc func(*manifest.ArtifactManifest) error
+
 func main() {
+	var updateManifest updateManifestFunc
+	if viper.GetString("manifest_bucket") == "" {
+		updateManifest = updateLocalManifest
+	} else {
+		updateManifest = updateGCSManifest
+	}
+	updates, err := getUpdates()
+	if err != nil {
+		log.WithError(err).Fatal("failed to read manifest updates")
+	}
 	for i := 0; i < viper.GetInt("num_retries"); i++ {
-		err := downloadAndMergeManifest()
+		err := updateManifest(updates)
 		if err == nil {
-			break
+			return
 		}
 		if errors.Is(err, errConflict) {
+			time.Sleep(5 * time.Second)
 			continue
 		}
-		log.WithError(err).Fatal("failed to download and merge manifests")
+		log.WithError(err).Error("failed to update manifest")
+		return
 	}
+	log.Error("failed to update manifest, too many conflict retries")
 }
 
-var errConflict = errors.New("manifest upload conflicted with another upload attempt")
-
-func downloadAndMergeManifest() error {
+func getUpdates() (*manifest.ArtifactManifest, error) {
 	updatesReader, err := os.Open(viper.GetString("manifest_updates"))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer updatesReader.Close()
 	updates, err := manifest.ReadArtifactManifest(updatesReader)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return updates, nil
+}
 
+var errConflict = errors.New("manifest upload conflicted with another upload attempt")
+
+func updateGCSManifest(updates *manifest.ArtifactManifest) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -83,7 +107,7 @@ func downloadAndMergeManifest() error {
 	r, err := obj.NewReader(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {
-			return writeManifest(ctx, obj, updates)
+			return writeGCSManifest(ctx, obj, updates)
 		}
 		return err
 	}
@@ -104,13 +128,13 @@ func downloadAndMergeManifest() error {
 		MetagenerationMatch: r.Attrs.Metageneration,
 	})
 
-	if err := writeManifest(ctx, obj, newManifest); err != nil {
+	if err := writeGCSManifest(ctx, obj, newManifest); err != nil {
 		return err
 	}
 	return nil
 }
 
-func writeManifest(ctx context.Context, obj *storage.ObjectHandle, m *manifest.ArtifactManifest) error {
+func writeGCSManifest(ctx context.Context, obj *storage.ObjectHandle, m *manifest.ArtifactManifest) error {
 	w := obj.NewWriter(ctx)
 	defer w.Close()
 	w.ContentType = "application/json"
@@ -128,4 +152,71 @@ func writeManifest(ctx context.Context, obj *storage.ObjectHandle, m *manifest.A
 		}
 	}
 	return nil
+}
+
+func updateLocalManifest(updates *manifest.ArtifactManifest) error {
+	path := viper.GetString("manifest_path")
+
+	if path == "" {
+		return errors.New("must specify manifest_path to update local manifest")
+	}
+
+	curManifest, err := readManifest(path)
+	if err != nil {
+		return err
+	}
+	newManifest := curManifest.Merge(updates)
+
+	manifestBuf := &bytes.Buffer{}
+	if err := newManifest.Write(manifestBuf); err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, manifestBuf.Bytes(), 0664); err != nil {
+		return err
+	}
+
+	sha256Bytes := sha256.Sum256(manifestBuf.Bytes())
+	sha256Str := fmt.Sprintf("%x", sha256Bytes)
+	shaPath := path + ".sha256"
+	if err := os.WriteFile(shaPath, []byte(sha256Str), 0664); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createEmptyManifest(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return nil, err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := f.Write([]byte("[]")); err != nil {
+		f.Close()
+		return nil, err
+	}
+	if _, err := f.Seek(0, 0); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
+}
+
+func readManifest(path string) (*manifest.ArtifactManifest, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			f, err = createEmptyManifest(path)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+	defer f.Close()
+
+	return manifest.ReadArtifactManifest(f)
 }
