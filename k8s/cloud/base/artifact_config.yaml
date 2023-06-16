@@ -4,6 +4,5 @@ kind: ConfigMap
 metadata:
   name: pl-artifact-config
 data:
-  PL_ARTIFACT_BUCKET: pixie-dev-public
-  PL_ARTIFACT_MANIFEST_BUCKET: pixie-dev-public
+  PL_ARTIFACT_MANIFEST_URL: https://artifacts.px.dev/artifacts/manifest.json
   PL_SA_KEY_PATH: /creds/service_account.json
