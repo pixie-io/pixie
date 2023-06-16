@@ -18,6 +18,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <prometheus/text_serializer.h>
 
 #include <string>
 
@@ -167,6 +168,11 @@ TYPED_TEST(NettyTLSTraceTest, mtls_thriftmux_client) {
   EXPECT_THAT(server_records, Contains(EqMuxRecord(tinit)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(pingRecord)));
   EXPECT_THAT(server_records, Contains(EqMuxRecord(dispatchRecord)));
+
+  auto& registry = GetMetricsRegistry();
+  auto metrics = registry.Collect();
+  auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
+  LOG(WARNING) << absl::Substitute("with metric text: $0", metrics_text);
 }
 
 }  // namespace stirling
