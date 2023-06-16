@@ -100,6 +100,23 @@ px.display(px.GetAgentStatus())`;
 
 const AGENTS_POLL_INTERVAL = 2500;
 
+export enum AgentState {
+  AGENT_STATE_UNKNOWN = 'AGENT_STATE_UNKNOWN',
+  AGENT_STATE_HEALTHY = 'AGENT_STATE_HEALTHY',
+  AGENT_STATE_UNRESPONSIVE = 'AGENT_STATE_UNRESPONSIVE',
+  AGENT_STATE_DISCONNECTED = 'AGENT_STATE_DISCONNECTED',
+}
+
+export interface AgentInfo {
+  agent_id: string;
+  asid: number;
+  hostname: string;
+  ip_address: string;
+  agent_state: AgentState;
+  create_time: Date;
+  last_heartbeat_ns: number;
+}
+
 interface AgentDisplay {
   id: string;
   idShort: string;
@@ -112,14 +129,11 @@ interface AgentDisplay {
 
 interface AgentDisplayState {
   error?: string;
-  data: Array<unknown>;
+  data: Array<AgentInfo>;
 }
 
-// TODO(nick,PC-1246): After MUI stuff is done, come back and fix the lint warnings here instead of suppressing.
-/* eslint-disable react-memo/require-memo,react-memo/require-usememo */
-
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function formatAgent(agentInfo): AgentDisplay {
+export function formatAgent(agentInfo: AgentInfo): AgentDisplay {
   const now = new Date();
   const agentID = agentInfo.agent_id;
   return {
@@ -133,7 +147,7 @@ export function formatAgent(agentInfo): AgentDisplay {
   };
 }
 
-const AgentsTableContent = ({ agents }) => {
+const AgentsTableContent = React.memo<{ agents: AgentInfo[] }>(({ agents }) => {
   const agentsDisplay = agents.map((agent) => formatAgent(agent));
   return (
     <Table>
@@ -165,10 +179,10 @@ const AgentsTableContent = ({ agents }) => {
       </TableBody>
     </Table>
   );
-};
+});
 AgentsTableContent.displayName = 'AgentsTableContent';
 
-const AgentsTable: React.FC = () => {
+const AgentsTable = React.memo(() => {
   const clusterConfig = useClusterConfig();
   const client = React.useContext(PixieAPIContext);
 
@@ -230,7 +244,7 @@ const AgentsTable: React.FC = () => {
     );
   }
   return <AgentsTableContent agents={state.data} />;
-};
+});
 AgentsTable.displayName = 'AgentsTable';
 
 interface GroupedPodStatus extends Omit<PodStatus, 'containers'> {
@@ -259,6 +273,7 @@ const usePodRowStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+// eslint-disable-next-line react-memo/require-memo
 const StyledSmallTableCell = styled(StyledTableCell, { name: 'SmallTableCell' })(({ theme }) => ({
   fontWeight: theme.typography.fontWeightLight,
   backgroundColor: theme.palette.foreground.grey2,
@@ -276,7 +291,7 @@ function combineReasonAndMessage(reason: string, message: string): string {
   return `${message}${reason}`;
 }
 
-const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatus }) => {
+const ExpandablePodRow = React.memo<{ podStatus: GroupedPodStatus }>(({ podStatus }) => {
   const {
     name, status, statusGroup, containers, events,
   } = podStatus;
@@ -290,6 +305,7 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
     <React.Fragment key={name}>
       <TableRow key={name}>
         <AdminTooltip title={status}>
+          {/* eslint-disable-next-line react-memo/require-usememo */}
           <StyledLeftTableCell sx={{ width: (t) => t.spacing(3) }}>
             <StatusCell statusGroup={statusGroup} />
           </StyledLeftTableCell>
@@ -298,6 +314,7 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
         <StyledTableCell>{combineReasonAndMessage(podStatus.reason, podStatus.message)}</StyledTableCell>
         <StyledTableCell>{podStatus.restartCount}</StyledTableCell>
         <StyledRightTableCell align='right'>
+          {/* eslint-disable-next-line react-memo/require-usememo */}
           <IconButton size='small' onClick={() => setOpen(!open)}>
             {open ? <UpIcon /> : <DownIcon />}
           </IconButton>
@@ -306,6 +323,7 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
       {
         open && (
           <TableRow key={`${name}-details`}>
+            {/* eslint-disable-next-line react-memo/require-usememo */}
             <TableCell style={{ border: 0 }} colSpan={6}>
               {
                 (events && events.length > 0) && (
@@ -415,7 +433,7 @@ const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   },
 }), { name: 'ClusterDetail' });
 
-const PodHeader = () => (
+const PodHeader = React.memo(() => (
   <TableHead>
     <TableRow>
       <StyledTableHeaderCell />
@@ -425,13 +443,13 @@ const PodHeader = () => (
       <StyledTableHeaderCell />
     </TableRow>
   </TableHead>
-);
+));
 PodHeader.displayName = 'PodHeader';
 
-const PixiePodsTab: React.FC<{
+const PixiePodsTab = React.memo<{
   controlPlanePods: GQLPodStatus[],
   dataPlanePods: GQLPodStatus[],
-}> = ({ controlPlanePods, dataPlanePods }) => {
+}>(({ controlPlanePods, dataPlanePods }) => {
   const classes = useClusterDetailStyles();
   const controlPlaneDisplay = controlPlanePods.map((podStatus) => formatPodStatus(podStatus));
   const dataPlaneDisplay = dataPlanePods.map((podStatus) => formatPodStatus(podStatus));
@@ -473,6 +491,7 @@ const PixiePodsTab: React.FC<{
                 <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
               )) : (
                 <TableRow>
+                  {/* eslint-disable-next-line react-memo/require-usememo */}
                   <TableCell sx={{ width: (t) => t.spacing(3) }}/>
                   <TableCell colSpan={3}>
                     Cluster has no unhealthy Pixie data plane pods.
@@ -484,12 +503,12 @@ const PixiePodsTab: React.FC<{
       </Table>
     </>
   );
-};
+});
 PixiePodsTab.displayName = 'PixiePodsTab';
 
-const AgentsTab: React.FC<{
+const AgentsTab = React.memo<{
   cluster: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'status' | 'unhealthyDataPlanePodStatuses'>
-}> = ({ cluster }) => {
+}>(({ cluster }) => {
   const classes = useClusterDetailStyles();
   const statusGroup = clusterStatusGroup(cluster.status);
 
@@ -506,10 +525,10 @@ const AgentsTab: React.FC<{
       </TableContainer>
     </>
   );
-};
+});
 AgentsTab.displayName = 'AgentsTab';
 
-const ClusterSummaryTable = ({ cluster }: {
+const ClusterSummaryTable = React.memo<{
   cluster: Pick<
   GQLClusterInfo,
   'clusterName' |
@@ -523,7 +542,7 @@ const ClusterSummaryTable = ({ cluster }: {
   'clusterVersion' |
   'lastHeartbeatMs'
   >
-}) => {
+}>(({ cluster }) => {
   const classes = useClusterDetailStyles();
   if (!cluster) {
     return (
@@ -591,10 +610,10 @@ const ClusterSummaryTable = ({ cluster }: {
       </div >
     </TableContainer>
   );
-};
+});
 ClusterSummaryTable.displayName = 'ClusterSummaryTable';
 
-const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
+const ClusterDetailsNavigationBreadcrumbs = React.memo<{ selectedClusterName: string }>(({ selectedClusterName }) => {
   const history = useHistory();
   const { data, loading, error } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'prettyClusterName' | 'status'>[],
@@ -610,41 +629,41 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   `, {});
   const clusters = data?.clusters;
 
-  if (loading || error || !clusters) {
-    return (<Breadcrumbs breadcrumbs={[]} />);
-  }
-
-  // Cluster always goes first in breadcrumbs.
-  const clusterPrettyNameToFullName = {};
-  let selectedClusterPrettyName = 'unknown cluster';
-
-  clusters.forEach(({ prettyClusterName, clusterName }) => {
-    clusterPrettyNameToFullName[prettyClusterName] = clusterName;
-    if (clusterName === selectedClusterName) {
-      selectedClusterPrettyName = prettyClusterName;
+  const selectedClusterPrettyName = React.useMemo(() => {
+    if (loading || error || !clusters) return 'unknown cluster';
+    for (const { clusterName, prettyClusterName } of clusters) {
+      if (clusterName === selectedClusterName) {
+        return prettyClusterName;
+      }
     }
-  });
+    return 'unknown cluster';
+  }, [loading, error, clusters, selectedClusterName]);
 
-  const breadcrumbs = [{
-    title: 'cluster',
-    value: selectedClusterPrettyName,
-    selectable: true,
-    // eslint-disable-next-line
-    getListItems: async (input) => {
-      const items = clusters
-        .filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.indexOf(input) >= 0)
-        .map((c) => ({ value: c.prettyClusterName }));
-      return { items, hasMoreItems: false };
+  const breadcrumbs = React.useMemo(() => (loading || error || !clusters || !selectedClusterPrettyName) ? [] : [
+    {
+      title: 'cluster',
+      value: selectedClusterPrettyName,
+      selectable: true,
+      omitKey: true,
+      // eslint-disable-next-line
+      getListItems: async (input) => {
+        const items = clusters
+          .filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.indexOf(input) >= 0)
+          .map((c) => ({ value: c.prettyClusterName }));
+        return { items, hasMoreItems: false };
+      },
+      onSelect: (/* input */) => {
+        history.push(getClusterDetailsURL(
+          clusters.find(({ prettyClusterName }) => prettyClusterName === selectedClusterName)?.clusterName));
+      },
     },
-    onSelect: (input) => {
-      history.push(getClusterDetailsURL(clusterPrettyNameToFullName[input]));
-    },
-  }];
-  return (<Breadcrumbs breadcrumbs={breadcrumbs} />);
-};
+  ], [clusters, error, history, loading, selectedClusterName, selectedClusterPrettyName]);
+
+  return <Breadcrumbs breadcrumbs={breadcrumbs} />;
+});
 ClusterDetailsNavigationBreadcrumbs.displayName = 'ClusterDetailsNavigationBreadcrumbs';
 
-const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) => {
+const ClusterDetailsTabs = React.memo<{ clusterName: string }>(({ clusterName }) => {
   const classes = useClusterDetailStyles();
   const [tab, setTab] = React.useState('details');
 
@@ -762,7 +781,9 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
     <>
       <StyledTabs
         value={tab}
+        // eslint-disable-next-line react-memo/require-usememo
         onChange={(event, newTab) => setTab(newTab)}
+        // eslint-disable-next-line react-memo/require-usememo
         classes={{ root: classes.tabHeader }}
       >
         <StyledTab value='details' label='Details' />
@@ -793,7 +814,7 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
       </div>
     </>
   );
-};
+});
 ClusterDetailsTabs.displayName = 'ClusterDetailsTabs';
 
 export const ClusterDetails = React.memo<{ name: string, headerAffix?: React.ReactNode }>(({ name, headerAffix }) => {
