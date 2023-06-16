@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
@@ -58,13 +57,4 @@ pl_go_image(
         "//k8s:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
-)
-
-container_push(
-    name = "push_cloud_connector_server_image",
-    format = "Docker",
-    image = ":cloud_connector_server_image",
-    registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/vizier/cloud_connector_server_image",
-    tag = "{STABLE_BUILD_TAG}",
 )
