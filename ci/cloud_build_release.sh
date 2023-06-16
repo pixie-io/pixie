@@ -19,7 +19,10 @@
 set -ex
 printenv
 
-artifacts_dir="${ARTIFACTS_DIR:?}"
+repo_path=$(git rev-parse --show-toplevel)
+
+# shellcheck source=ci/artifact_utils.sh
+. "${repo_path}/ci/artifact_utils.sh"
 
 repo_path=$(pwd)
 
@@ -46,8 +49,12 @@ all_licenses_opts=("//tools/licenses:all_licenses" "--action_env=GOOGLE_APPLICAT
 all_licenses_path="$(bazel cquery "${all_licenses_opts[@]}"  --output starlark --starlark:expr "target.files.to_list()[0].path" 2> /dev/null)"
 bazel build "${all_licenses_opts[@]}"
 
+upload_artifact_to_mirrors "cloud" "${release_tag}" "${all_licenses_path}" "licenses.json"
+# The licenses file uses a non-standard path (outside of the "component/version/artifact" convention)
+# so for now we'll also copy it to the legacy path.
 gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/${release_tag}.json"
 if [[ "${release}" == "true" ]]; then
+  upload_artifact_to_mirrors "cloud" "latest" "${all_licenses_path}" "licenses.json"
   gsutil cp "${all_licenses_path}" "gs://pixie-dev-public/oss-licenses/latest.json"
 fi
 
@@ -69,9 +76,11 @@ bazel run @com_github_mikefarah_yq_v4//:v4 -- '..|.image?|select(.|type == "!!st
 
 cd "${repo_path}"
 tar -czvf "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud"
-gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/${release_tag}/pixie_cloud.tar.gz"
+
+upload_artifact_to_mirrors "cloud" "${release_tag}" "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud.tar.gz"
+
 if [[ "${release}" == "true" ]]; then
-  gsutil cp "${repo_path}/pixie_cloud.tar.gz" "gs://pixie-dev-public/cloud/latest/pixie_cloud.tar.gz"
+  upload_artifact_to_mirrors "cloud" "latest" "${repo_path}/pixie_cloud.tar.gz" "pixie_cloud.tar.gz"
 fi
 
 sha256sum "${repo_path}/pixie_cloud.tar.gz" | awk '{print $1}' > sha
