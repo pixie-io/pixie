@@ -18,7 +18,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <prometheus/text_serializer.h>
 
 #include <string>
 
@@ -219,11 +218,6 @@ OPENSSL_TYPED_TEST(ssl_capture_curl_client, {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-
-  auto& registry = GetMetricsRegistry();
-  auto metrics = registry.Collect();
-  auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
-  LOG(WARNING) << absl::Substitute("with metric text: $0", metrics_text);
 })
 
 OPENSSL_TYPED_TEST(ssl_capture_ruby_client, {
