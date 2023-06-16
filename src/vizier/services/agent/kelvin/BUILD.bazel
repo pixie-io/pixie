@@ -15,7 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
@@ -55,22 +54,4 @@ cc_image(
         "//k8s:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
-)
-
-container_push(
-    name = "push_kelvin_image",
-    format = "Docker",
-    image = ":kelvin_image",
-    registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/vizier/kelvin_image",
-    tag = "{STABLE_BUILD_TAG}",
-)
-
-container_push(
-    name = "push_test_kelvin_image",
-    format = "Docker",
-    image = ":kelvin_image",
-    registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/vizier/kelvin_image",
-    tag = "{BUILD_USER}",
 )
