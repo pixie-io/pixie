@@ -21,6 +21,7 @@ package manifest
 import (
 	"context"
 	"io"
+	"net/http"
 
 	"cloud.google.com/go/storage"
 )
@@ -59,4 +60,44 @@ func (gcs *gcsManifest) Checksum(ctx context.Context) ([]byte, error) {
 func (gcs *gcsManifest) ManifestReader(ctx context.Context) (io.ReadCloser, error) {
 	obj := gcs.client.Bucket(gcs.bucket).Object(gcs.manifestPath)
 	return obj.NewReader(ctx)
+}
+
+type httpManifest struct {
+	shaURL      string
+	manifestURL string
+}
+
+// NewHTTPLocation returns a new Location for a manifest stored at an arbitrary http endpoint.
+func NewHTTPLocation(shaURL string, manifestURL string) Location {
+	return &httpManifest{
+		shaURL:      shaURL,
+		manifestURL: manifestURL,
+	}
+}
+
+func (h *httpManifest) Checksum(ctx context.Context) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", h.shaURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func (h *httpManifest) ManifestReader(ctx context.Context) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", h.manifestURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
 }
