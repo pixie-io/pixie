@@ -31,6 +31,7 @@ go_library(
         "@com_github_spf13_viper//:viper",
         "@in_gopkg_src_d_go_git_v4//:go-git_v4",
         "@in_gopkg_src_d_go_git_v4//plumbing/object",
+        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )
 
