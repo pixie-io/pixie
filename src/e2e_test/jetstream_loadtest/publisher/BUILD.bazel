@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
@@ -46,13 +45,4 @@ pl_go_image(
     name = "publisher_image",
     binary = ":publisher",
     visibility = ["//visibility:private"],
-)
-
-container_push(
-    name = "push_publisher_image",
-    format = "Docker",
-    image = ":publisher_image",
-    registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev/src/e2e_test/jetstream_loadtest/publisher_image",
-    tag = "{STABLE_BUILD_TAG}",
 )

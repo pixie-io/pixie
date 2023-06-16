@@ -3,11 +3,11 @@ apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/jetstream_loadtest/publisher_image
+  - image: jetstream_loadtest-publisher_image
     context: .
     bazel:
       target: //src/e2e_test/jetstream_loadtest/publisher:publisher_image.tar
-  - image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/jetstream_loadtest/subscriber_image
+  - image: jetstream_loadtest-subscriber_image
     context: .
     bazel:
       target: //src/e2e_test/jetstream_loadtest/subscriber:subscriber_image.tar

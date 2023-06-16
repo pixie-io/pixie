@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/jetstream_loadtest/publisher_image:latest
+        image: jetstream_loadtest-publisher_image:latest
         ports:
         - containerPort: 8080
           name: metrics

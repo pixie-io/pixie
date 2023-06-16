@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel:pl_build_system.bzl", "pl_go_binary", "pl_go_image")
 
@@ -39,14 +38,4 @@ pl_go_image(
     visibility = [
         "//src/e2e_test:__subpackages__",
     ],
-)
-
-container_push(
-    name = "push_profiler_loadtest_golang_image",
-    format = "Docker",
-    image = ":profiler_loadtest_golang_image",
-    registry = "gcr.io",
-    repository = "gcr.io/pixie-oss/pixie-dev/src/e2e_test/profiler_loadtest/profiler_loadtest_golang",
-    tag = "{STABLE_BUILD_TAG}",
-    tags = ["manual"],
 )
