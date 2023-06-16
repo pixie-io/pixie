@@ -20,8 +20,11 @@ package controllers_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -54,8 +57,16 @@ func mustSetupFakeBucket(t *testing.T) stiface.Client {
 	})
 }
 
-func loadTestManifest(s *controllers.Server) error {
-	manifestStr := `
+func startTestHTTPServer(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.True(t, strings.HasSuffix(r.URL.Path, ".sha256"), "unexpected http.Get to non-sha endpoint")
+		_, err := w.Write([]byte(r.URL.Path))
+		assert.NoError(t, err)
+	}))
+}
+
+func loadTestManifest(s *controllers.Server, ts *httptest.Server) error {
+	manifestTempl := `
   [
     {
       "name": "cli",
@@ -111,12 +122,47 @@ func loadTestManifest(s *controllers.Server) error {
             "AT_CONTAINER_SET_LINUX_AMD64"
           ],
           "changelog": "cl2 1"
+        },
+        {
+          "timestamp": "2018-06-21T19:10:25Z",
+          "commit_hash": "cda4ac2f4c979e81f5d95a2b550a08fb041e985c",
+          "version_str": "0.1.1",
+          "available_artifact_mirrors": [
+            {
+              "artifact_type": "AT_CONTAINER_SET_TEMPLATE_YAMLS",
+              "sha256": "abcd",
+              "urls": [
+                "{{ .ServerURL }}/vizier/0.1.1/container_template_yamls"
+              ]
+            },
+            {
+              "artifact_type": "AT_CONTAINER_SET_YAMLS",
+              "sha256": "efgh",
+              "urls": [
+                "{{ .ServerURL }}/vizier/0.1.1/container_yamls"
+              ]
+            }
+          ],
+          "changelog": "cl2 2"
         }
       ]
     }
   ]
   `
-	m, err := manifest.ReadArtifactManifest(strings.NewReader(manifestStr))
+	t, err := template.New("").Parse(manifestTempl)
+	if err != nil {
+		return err
+	}
+	var buf strings.Builder
+	err = t.Execute(&buf, &struct {
+		ServerURL string
+	}{
+		ServerURL: ts.URL,
+	})
+	if err != nil {
+		return err
+	}
+	m, err := manifest.ReadArtifactManifest(strings.NewReader(buf.String()))
 	if err != nil {
 		return err
 	}
@@ -129,7 +175,10 @@ func loadTestManifest(s *controllers.Server) error {
 func TestServer_GetArtifactList(t *testing.T) {
 	server := controllers.NewServer(nil, "bucket", nil)
 
-	err := loadTestManifest(server)
+	ts := startTestHTTPServer(t)
+	defer ts.Close()
+
+	err := loadTestManifest(server, ts)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -260,7 +309,10 @@ func TestServer_GetDownloadLink(t *testing.T) {
 		PrivateKey: []byte("the-key"),
 	})
 
-	err := loadTestManifest(server)
+	ts := startTestHTTPServer(t)
+	defer ts.Close()
+
+	err := loadTestManifest(server, ts)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -315,21 +367,34 @@ func TestServer_GetDownloadLink(t *testing.T) {
 			},
 			errCode: codes.OK,
 		},
+		{
+			name: "fetch vizier container yamls (AvailableArtifactMirrors)",
+			req: apb.GetDownloadLinkRequest{
+				ArtifactName: "vizier",
+				VersionStr:   "0.1.1",
+				ArtifactType: vpb.AT_CONTAINER_SET_YAMLS,
+			},
+			expectedResp: &apb.GetDownloadLinkResponse{
+				Url:    ts.URL + "/vizier/0.1.1/container_yamls",
+				SHA256: "efgh",
+			},
+			errCode: codes.OK,
+		},
 	}
 	// Only testing error cases for now because the storage API is hard to mock.
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			resp, err := server.GetDownloadLink(context.Background(), &tc.req)
 			if tc.errCode != codes.OK {
-				assert.Equal(t, status.Code(err), tc.errCode)
+				assert.Equal(t, tc.errCode, status.Code(err))
 				assert.Nil(t, resp)
 			} else {
 				require.NoError(t, err)
 				ts, err := types.TimestampFromProto(resp.ValidUntil)
 				require.NoError(t, err)
 				assert.True(t, time.Until(ts) > 0)
-				assert.Equal(t, resp.Url, tc.expectedResp.Url)
-				assert.Equal(t, resp.SHA256, tc.expectedResp.SHA256)
+				assert.Equal(t, tc.expectedResp.Url, resp.Url)
+				assert.Equal(t, tc.expectedResp.SHA256, resp.SHA256)
 			}
 		})
 	}
