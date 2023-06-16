@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { type AgentInfo, AgentState, formatAgent } from './cluster-details';
+import { type AgentInfo, AgentState, formatAgent } from './cluster-details-utils';
 
 describe('formatAgent', () => {
   it('correctly formats agent info', () => {
