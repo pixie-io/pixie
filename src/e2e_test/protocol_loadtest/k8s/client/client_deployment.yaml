@@ -33,7 +33,7 @@ spec:
           value: "8080"
       containers:
       - name: app
-        image: gcr.io/pixie-oss/pixie-dev/src/e2e_test/protocol_loadtest/client/protocol_loadtest_client_image:latest
+        image: protocol_loadtest_client_image:latest
         env:
         - name: HTTP_PORT
           value: "8080"
