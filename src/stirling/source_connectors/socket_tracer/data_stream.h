@@ -198,7 +198,7 @@ class DataStream : NotCopyMoveable {
 
   void set_conn_closed() { conn_closed_ = true; }
 
-  void set_ssl(bool ssl) { is_ssl_ = ssl; }
+  void set_ssl_source(ssl_source_t ssl_source) { ssl_source_ = ssl_source; }
 
   void set_current_time(std::chrono::time_point<std::chrono::steady_clock> time) {
     ECHECK(time >= current_time_);
@@ -304,7 +304,7 @@ class DataStream : NotCopyMoveable {
   // This is set to true when connection is closed.
   bool conn_closed_ = false;
 
-  bool is_ssl_ = false;
+  ssl_source_t ssl_source_ = kSSLNone;
 
   // Keep some stats on ParseFrames() attempts.
   int stat_valid_frames_ = 0;

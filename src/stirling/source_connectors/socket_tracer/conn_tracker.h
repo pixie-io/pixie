@@ -569,7 +569,7 @@ class ConnTracker : NotCopyMoveable {
   bool SetProtocol(traffic_protocol_t protocol, std::string_view reason);
 
   // Returns false if the protocol change is disallowed.
-  bool SetSSL(bool ssl, std::string_view reason);
+  bool SetSSL(bool ssl, ssl_source_t ssl_source, std::string_view reason);
 
   // Returns true if the state was changed.
   bool SetRole(endpoint_role_t role, std::string_view reason);
@@ -684,6 +684,7 @@ class ConnTracker : NotCopyMoveable {
   traffic_protocol_t protocol_ = kProtocolUnknown;
   endpoint_role_t role_ = kRoleUnknown;
   bool ssl_ = false;
+  ssl_source_t ssl_source_ = kSSLNone;
   SocketOpen open_info_;
   SocketClose close_info_;
   ConnStatsTracker conn_stats_;

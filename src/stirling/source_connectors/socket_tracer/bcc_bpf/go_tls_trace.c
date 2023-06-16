@@ -133,7 +133,7 @@ static __inline int probe_return_tls_conn_write_core(struct pt_regs* ctx, uint64
     return 0;
   }
 
-  set_conn_as_ssl(tgid, fd);
+  set_conn_as_ssl(tgid, fd, kGoTLSSource);
 
   struct data_args_t data_args;
   data_args.source_fn = kGoTLSConnWrite;
@@ -262,7 +262,7 @@ static __inline int probe_return_tls_conn_read_core(struct pt_regs* ctx, uint64_
     return 0;
   }
 
-  set_conn_as_ssl(tgid, fd);
+  set_conn_as_ssl(tgid, fd, kGoTLSSource);
 
   struct data_args_t data_args;
   data_args.source_fn = kGoTLSConnRead;
