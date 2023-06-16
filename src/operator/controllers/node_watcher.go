@@ -74,18 +74,18 @@ type nodeCompatTracker struct {
 
 func (n *nodeCompatTracker) addNode(node *v1.Node) {
 	n.numNodes++
-	kVersion := getNodeKernelVersion(node)
-	n.kernelVersionDist[kVersion]++
-	if !nodeIsCompatible(kVersion) {
+	kernelVersion := getNodeKernelVersion(node)
+	n.kernelVersionDist[kernelVersion]++
+	if !nodeIsCompatible(kernelVersion) {
 		n.numIncompatible++
 	}
 }
 
 func (n *nodeCompatTracker) removeNode(node *v1.Node) {
 	n.numNodes--
-	kVersion := getNodeKernelVersion(node)
-	n.kernelVersionDist[kVersion]--
-	if !nodeIsCompatible(kVersion) {
+	kernelVersion := getNodeKernelVersion(node)
+	n.kernelVersionDist[kernelVersion]--
+	if !nodeIsCompatible(kernelVersion) {
 		n.numIncompatible--
 	}
 }
