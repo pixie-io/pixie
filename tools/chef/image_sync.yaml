@@ -3,11 +3,6 @@ version: 1
 creds:
 - registry: gcr.io
 - registry: ghcr.io
-  # These env vars may be left unset if the user running
-  # the sync has credentials for ghcr.io already in their
-  # active docker config.
-  user: "{{env \"GHCR_USER\"}}"
-  pass: "{{env \"GHCR_PASS\"}}"
 defaults:
   ratelimit:
     retry: 15m
