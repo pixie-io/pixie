@@ -56,7 +56,7 @@ tmpl_path="${tmp_dir}/yamls.tar"
 upload_artifact_to_mirrors "vizier" "${release_tag}" "${tmpl_path}" "vizier_template_yamls.tar"
 
 # Update helm chart if it is a release.
-if [[ $public == "True" ]]; then
+if [[ $VERSION != *"-"* ]]; then
   # Update Vizier YAMLS in latest.
   upload_artifact_to_mirrors "vizier" "latest" "${yamls_tar}" "vizier_yamls.tar"
 
