@@ -55,18 +55,7 @@ def base_images():
         "distroless/base",
     )
 
-    _gcr_io_image(
-        "openjdk-base-glibc",
-        "sha256:d7048f5a32ca7598f583c492c960496848cc9017fdb55942370f02603c83561d",
-        "pixie-oss/pixie-dev-public/docker-deps/library/openjdk",
-    )
-
-    _gcr_io_image(
-        "openjdk-base-musl",
-        "sha256:25b910311bfe15547ecab6895d5eb3f4ec718d6d53cced7eec78e4b889962e1f",
-        "pixie-oss/pixie-dev-public/docker-deps/library/openjdk",
-    )
-
+def stirling_test_jdk_images():
     _gcr_io_image(
         # https://hub.docker.com/layers/zulu-openjdk/azul/zulu-openjdk/18/images/sha256-01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e?context=explore
         # azul/zulu-openjdk:18
@@ -129,13 +118,9 @@ def base_images():
         "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/jdk",
     )
 
-    _gcr_io_image(
-        "graal-vm-ce",
-        "sha256:f7b8643f448dd9e108cda69cd42f8c86681710a18fbc64392d8c62126a3e1651",
-        "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/graalvm-ce",
-    )
-
 def stirling_test_images():
+    stirling_test_jdk_images()
+
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     _gcr_io_image(
         "nginx_openssl_1_1_0_base_image",
@@ -257,14 +242,6 @@ def stirling_test_images():
     _gcr_io_image(
         "node_14_18_1_alpine_linux_amd64_image",
         "sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
-        "pixie-oss/pixie-dev-public/docker-deps/node",
-    )
-
-    # Tag: node:16.9
-    # Arch: linux/amd64
-    _gcr_io_image(
-        "node_16_9_linux_amd64_image",
-        "sha256:b0616a801a0f3c17c437c67c49e20c76c8735e205cdc165e56ae4fa867f32af1",
         "pixie-oss/pixie-dev-public/docker-deps/node",
     )
 
