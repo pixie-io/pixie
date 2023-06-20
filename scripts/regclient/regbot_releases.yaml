@@ -32,18 +32,10 @@ scripts:
   script: |
     images = require 'images'
     images.mirror("cloud/cron_script_server_image")
-- name: sync cloud/dnsmgr_server_image
-  script: |
-    images = require 'images'
-    images.mirror("cloud/dnsmgr_server_image")
 - name: sync cloud/indexer_server_image
   script: |
     images = require 'images'
     images.mirror("cloud/indexer_server_image")
-- name: sync cloud/job/create_admin_job_image
-  script: |
-    images = require 'images'
-    images.mirror("cloud/job/create_admin_job_image")
 - name: sync cloud/metrics_server_image
   script: |
     images = require 'images'
@@ -104,10 +96,6 @@ scripts:
   script: |
     images = require 'images'
     images.mirror("vizier/cert_provisioner_image")
-- name: sync vizier/certmgr_server_image
-  script: |
-    images = require 'images'
-    images.mirror("vizier/certmgr_server_image")
 - name: sync vizier/cloud_connector_server_image
   script: |
     images = require 'images'
