@@ -70,7 +70,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }), { name: 'InviteUserButton' });
 
 interface InviteUserButtonProps {
-  className: string;
+  className?: string;
   startOpen?: boolean;
   onClose?: () => void;
 }
