@@ -77,8 +77,8 @@ kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
-  .[0].spec.replaces = $previousName |
   .[0].metadata.name = $name |
+  .[0].metadata.annotations: [{olm.skipRange: ">=0.1.1 <0.1.4" }] |
   .[0].spec.version = $version |
   .[0].spec.install = {strategy: "deployment", spec:{
   deployments: [{name: .[1].metadata.name, spec: .[1].spec }],
@@ -90,7 +90,6 @@ faq -f yaml -o yaml --slurp '
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrole_pixie-operator-role.yaml" \
   "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-cluster-binding.yaml" \
   --kwargs version="${release_tag}" --kwargs name="pixie-operator.v${bundle_version}" \
-  --kwargs previousName="pixie-operator.v${previous_version}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
 faq -f yaml -o yaml --slurp '.[0]' "${kustomize_dir}/crd.yaml" > "${tmp_dir}/manifests/crd.yaml"
 
