@@ -35,6 +35,7 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 import { Link, Route, RouteComponentProps, Switch, useRouteMatch } from 'react-router-dom';
 
+import { Spinner } from 'app/components';
 import { ClusterDetails } from 'app/containers/admin/cluster-details';
 import { GQLClusterInfo } from 'app/types/schema';
 
@@ -73,14 +74,30 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'auto',
   },
   error: {
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    width: '100%',
     padding: theme.spacing(1),
   },
   removePadding: {
     padding: 0,
   },
-  table: {
+  root: {
+    position: 'relative',
+    width: '100%',
     maxWidth: theme.breakpoints.values.lg,
     margin: '0 auto',
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    bottom: theme.spacing(-5),
+    left: '50%',
+    transform: 'translateX(-50%)',
+  },
+  table: {
     '& td, & th': {
       padding: theme.spacing(1), // Half of the default
     },
@@ -126,54 +143,59 @@ export const ClustersTableInner = React.memo(() => {
     { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
 
-  const clusters = data?.clusters
-    .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_CLUSTER_THRESHOLD_MS)
-    .sort((clusterA, clusterB) => clusterA.prettyClusterName.localeCompare(clusterB.prettyClusterName));
+  const [clusters, setClusters] = React.useState<ClusterRowInfo[]>([]);
+  React.useEffect(() => {
+    if (data?.clusters) {
+      setClusters(data?.clusters
+        .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_CLUSTER_THRESHOLD_MS)
+        .sort((clusterA, clusterB) => clusterA.prettyClusterName.localeCompare(clusterB.prettyClusterName)));
+    }
+  }, [data?.clusters]);
 
-  if (loading) {
-    return <div className={classes.error}>Loading...</div>;
-  }
   if (error) {
-    return <div className={classes.error}>{error.toString()}</div>;
+    return <div className={classes.error}><span>{error.toString()}</span></div>;
   }
-  if (!clusters) {
-    return <div className={classes.error}>No clusters found.</div>;
+  if (!clusters.length) {
+    return <div className={classes.error}><span>{ loading ? 'Loading...' : 'No clusters found.' }</span></div>;
   }
 
   return (
-    <Table className={classes.table}>
-      <TableHead>
-        <TableRow className={classes.tableHeadRow}>
-          <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-          <StyledTableHeaderCell>ID</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Instrumented Nodes</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Vizier Version</StyledTableHeaderCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {clusters.map((cluster: ClusterRowInfo) => (
-          <TableRow key={cluster.id} className={classes.tableRow}>
-            <ClusterStatusCell status={cluster.status} />
-            <StyledTableCell>
-              <Button
-                className={classes.removePadding}
-                component={Link}
-                to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
-                color='info'
-                variant='text'
-                disabled={cluster.status === 'CS_DISCONNECTED'}
-              >
-                {cluster.prettyClusterName}
-              </Button>
-            </StyledTableCell>
-            <MonoSpaceCell data={cluster.id} />
-            <InstrumentationLevelCell cluster={cluster} />
-            <VizierVersionCell version={cluster.vizierVersion} />
+    <div className={classes.root}>
+      {loading && <div className={classes.loadingIndicator}><Spinner /></div>}
+      <Table className={classes.table}>
+        <TableHead>
+          <TableRow className={classes.tableHeadRow}>
+            <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+            <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+            <StyledTableHeaderCell>ID</StyledTableHeaderCell>
+            <StyledTableHeaderCell>Instrumented Nodes</StyledTableHeaderCell>
+            <StyledTableHeaderCell>Vizier Version</StyledTableHeaderCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHead>
+        <TableBody>
+          {clusters.map((cluster: ClusterRowInfo) => (
+            <TableRow key={cluster.id} className={classes.tableRow}>
+              <ClusterStatusCell status={cluster.status} />
+              <StyledTableCell>
+                <Button
+                  className={classes.removePadding}
+                  component={Link}
+                  to={getClusterDetailsURL(encodeURIComponent(cluster.clusterName))}
+                  color='info'
+                  variant='text'
+                  disabled={cluster.status === 'CS_DISCONNECTED'}
+                >
+                  {cluster.prettyClusterName}
+                </Button>
+              </StyledTableCell>
+              <MonoSpaceCell data={cluster.id} />
+              <InstrumentationLevelCell cluster={cluster} />
+              <VizierVersionCell version={cluster.vizierVersion} />
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 });
 ClustersTableInner.displayName = 'ClustersTableInner';
