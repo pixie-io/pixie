@@ -205,12 +205,11 @@ def stirling_test_images():
         "pixie-oss/pixie-dev-public/python_mysql_connector",
     )
 
-    # NATS server image, for testing. This isn't the official image. The difference is that this
-    # includes symbols in the executable.
+    # Custom built nats:2.9.19-scratch with dwarf info
     _gcr_io_image(
         "nats_base_image",
-        "sha256:93179975b83acaf1ff7581e9e23c59d838e780599a80f795ae90e97de08c4aae",
-        "pixie-oss/pixie-dev-public/nats/nats-server",
+        "sha256:55521ffe36911fb4edeaeecb7f9219f9d2a09bc275530212b89e41ab78a7f16d",
+        "pixie-oss/pixie-prod/vizier-deps/nats",
     )
 
     # Kafka broker image, for testing.

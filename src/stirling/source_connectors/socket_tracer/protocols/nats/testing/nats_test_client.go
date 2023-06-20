@@ -46,8 +46,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// nc, _ := nats.Connect(*address)
-
 	// Operations are wrapped into events, and are sent to an internal queue. Successive operations might be batched into
 	// one message, even if they are made through multiple API calls.
 
@@ -65,7 +63,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Print(m)
+	fmt.Printf("got msg: %s\n", string(m.Data))
 
 	err = sub.Unsubscribe()
 	if err != nil {
