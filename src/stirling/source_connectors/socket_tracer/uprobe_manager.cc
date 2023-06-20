@@ -66,7 +66,9 @@ UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>();
 }
 
-void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
+void UProbeManager::Init(bool disable_go_tls_tracing, bool enable_http2_tracing,
+                         bool disable_self_probing) {
+  cfg_disable_go_tls_tracing_ = disable_go_tls_tracing;
   cfg_enable_http2_tracing_ = enable_http2_tracing;
   cfg_disable_self_probing_ = disable_self_probing;
 
@@ -779,7 +781,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
 
     // GoTLS Probes.
-    {
+    if (!cfg_disable_go_tls_tracing_) {
       StatusOr<int> attach_status =
           AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {
@@ -793,7 +795,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
     }
 
     // Go HTTP2 Probes.
-    if (cfg_enable_http2_tracing_) {
+    if (!cfg_disable_go_tls_tracing_ && cfg_enable_http2_tracing_) {
       StatusOr<int> attach_status =
           AttachGoHTTP2UProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {

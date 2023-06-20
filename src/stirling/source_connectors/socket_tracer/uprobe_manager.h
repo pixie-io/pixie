@@ -116,10 +116,13 @@ class UProbeManager {
 
   /**
    * Mandatory initialization step before RunDeployUprobesThread can be called.
+   * @param disable_go_tls_tracing Whether to disable Go TLS tracing. Implies enable_http2_tracing
+   * is false.
    * @param enable_http2_tracing Whether to enable HTTP2 tracing.
    * @param disable_self_tracing Whether to enable uprobe deployment on Stirling itself.
    */
-  void Init(bool enable_http2_tracing, bool disable_self_tracing = true);
+  void Init(bool disable_go_tls_tracing, bool enable_http2_tracing,
+            bool disable_self_tracing = true);
 
   /**
    * Notify uprobe manager of an mmap event. An mmap may be indicative of a dlopen,
@@ -618,6 +621,10 @@ class UProbeManager {
 
   // Whether to try to uprobe ourself (e.g. for OpenSSL). Typically, we don't want to do that.
   bool cfg_disable_self_probing_;
+
+  // Whether we want to enable Go TLS tracing. When true, it implies cfg_enable_http2_tracing_ is
+  // false.
+  bool cfg_disable_go_tls_tracing_;
 
   // Whether we want to enable HTTP2 tracing. When false, we don't deploy HTTP2 uprobes.
   bool cfg_enable_http2_tracing_;
