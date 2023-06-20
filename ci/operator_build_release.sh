@@ -78,7 +78,7 @@ kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
   .[0].metadata.name = $name |
-  .[0].metadata.annotations = [{olm.skipRange: ">=0.1.1 <0.1.4" }] |
+  .[0].metadata.annotations = [{"olm.skipRange": ">=0.1.1 <0.1.4"}] |
   .[0].spec.version = $version |
   .[0].spec.install = {strategy: "deployment", spec:{
   deployments: [{name: .[1].metadata.name, spec: .[1].spec }],
