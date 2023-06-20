@@ -135,6 +135,7 @@ export const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles(
     alignItems: 'center',
     height: '100%',
     paddingLeft: theme.spacing(2),
+    flex: '0 1',
   },
   topPadding: {
     paddingTop: theme.spacing(2),

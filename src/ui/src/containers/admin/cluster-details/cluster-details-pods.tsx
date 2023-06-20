@@ -159,7 +159,7 @@ export const PixiePodsTab = React.memo<{
   const dataPlaneDisplay = dataPlanePods.map((podStatus) => formatPodStatus(podStatus));
 
   return (
-    <>
+    <div className={classes.root}>
       <div className={`${classes.podTypeHeader} ${classes.topPadding}`}> Control Plane Pods </div>
       <Table>
         <PodHeader />
@@ -205,7 +205,7 @@ export const PixiePodsTab = React.memo<{
           }
         </TableBody>
       </Table>
-    </>
+    </div>
   );
 });
 PixiePodsTab.displayName = 'PixiePodsTab';
