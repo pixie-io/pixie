@@ -25,3 +25,4 @@ include:
 - podman
 # ssh is used to run qemu tests
 - openssh-server
+- iproute2
