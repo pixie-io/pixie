@@ -104,6 +104,10 @@ LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV
 CURL_IMAGE_VERSION := 1.0
 curl_image_tag := "gcr.io/pixie-oss/pixie-dev-public/curl:$(CURL_IMAGE_VERSION)"
 
+## NATS image parameters.
+NATS_IMAGE_VERSION := 2.9.19
+nats_image_tag := "gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:$(NATS_IMAGE_VERSION)-scratch"
+
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
 copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMAGE_VERSION)"
@@ -233,6 +237,14 @@ upload_all_sysroots: build_all_sysroots
 ##############################################
 # Custom docker images.
 ##############################################
+.PHONY: build_and_upload_nats_image
+build_and_upload_nats_image:
+	$(DOCKER) buildx build nats_image \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg=NATS_VERSION="v$(NATS_IMAGE_VERSION)" \
+		-t $(nats_image_tag) \
+		--push
+
 .PHONY: build_and_upload_copybara_image
 build_and_upload_copybara_image:
 	$(DOCKER) build copybara -t $(copybara_image_tag)
