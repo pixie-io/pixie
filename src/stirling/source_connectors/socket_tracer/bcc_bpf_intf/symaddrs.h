@@ -267,6 +267,7 @@ struct openssl_symaddrs_t {
 
 struct openssl_trace_state_debug_t {
   char comm[MAX_CMD_SIZE];
+  enum ssl_source_t ssl_source;
 };
 
 // For reading file descriptor from a TLSWrap pointer.

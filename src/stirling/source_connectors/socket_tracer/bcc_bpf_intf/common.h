@@ -91,3 +91,15 @@ enum control_value_index_t {
   kStirlingTGIDIndex,
   kNumControlValues,
 };
+
+// Indicates the source of the TLS library under trace if TLS is in use.
+enum ssl_source_t {
+  kSSLNone = 0,
+  kSSLUnspecified,
+  kGoTLSSource,
+  kNodeJSSource,
+  kLibSSL_1_1_Source,
+  kLibSSL_3_Source,
+  kLibPythonSource,
+  kLibNettyTcnativeSource,
+};

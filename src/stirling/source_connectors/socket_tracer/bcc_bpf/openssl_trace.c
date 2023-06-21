@@ -131,12 +131,14 @@ static __inline int get_fd_and_eval_nested_syscall_detection(uint64_t pid_tgid) 
   bool mismatched_fds = nested_syscall_fd_ptr->mismatched_fds;
 
   if (mismatched_fds) {
-    struct openssl_trace_state_debug_t debug = {};
-    bpf_get_current_comm(&debug.comm, sizeof(debug.comm));
-
     int error_status_idx = kOpenSSLTraceStatusIdx;
     int status_code = kOpenSSLMismatchedFDsDetected;
     uint32_t tgid = pid_tgid >> 32;
+    enum ssl_source_t ssl_source = get_ssl_source(tgid);
+
+    struct openssl_trace_state_debug_t debug = {};
+    bpf_get_current_comm(&debug.comm, sizeof(debug.comm));
+    debug.ssl_source = ssl_source;
 
     openssl_trace_state.update(&error_status_idx, &status_code);
     openssl_trace_state_debug.update(&tgid, &debug);
@@ -171,7 +173,7 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   active_ssl_write_args_map.update(&id, &write_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
-  set_conn_as_ssl(tgid, write_args.fd);
+  set_conn_as_ssl(tgid, write_args.fd, get_ssl_source(tgid));
 
   return 0;
 }
@@ -211,7 +213,7 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   active_ssl_read_args_map.update(&id, &read_args);
 
   // Mark connection as SSL right away, so encrypted traffic does not get traced.
-  set_conn_as_ssl(tgid, read_args.fd);
+  set_conn_as_ssl(tgid, read_args.fd, get_ssl_source(tgid));
 
   return 0;
 }

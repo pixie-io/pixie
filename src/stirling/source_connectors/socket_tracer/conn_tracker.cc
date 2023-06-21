@@ -143,7 +143,7 @@ void ConnTracker::AddConnCloseEvent(const socket_control_event_t& event) {
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetRole(event->attr.role, "inferred from data_event");
   SetProtocol(event->attr.protocol, "inferred from data_event");
-  SetSSL(event->attr.ssl, "inferred from data_event");
+  SetSSL(event->attr.ssl, event->attr.ssl_source, "inferred from data_event");
 
   CheckTracker();
   UpdateTimestamps(event->attr.timestamp_ns);
@@ -178,8 +178,9 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
 namespace {
 void UpdateProtocolMetrics(traffic_protocol_t protocol, const conn_stats_event_t& event,
-                           const ConnTracker::ConnStatsTracker& conn_stats, bool ssl) {
-  auto& metrics = SocketTracerMetrics::GetProtocolMetrics(protocol, ssl);
+                           const ConnTracker::ConnStatsTracker& conn_stats,
+                           ssl_source_t ssl_source) {
+  auto& metrics = SocketTracerMetrics::GetProtocolMetrics(protocol, ssl_source);
   if (event.rd_bytes > conn_stats.bytes_recv()) {
     metrics.conn_stats_bytes.Increment(event.rd_bytes - conn_stats.bytes_recv());
   }
@@ -204,7 +205,7 @@ void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
     DCHECK_GE(event.rd_bytes, conn_stats_.bytes_recv());
     DCHECK_GE(event.wr_bytes, conn_stats_.bytes_sent());
 
-    UpdateProtocolMetrics(protocol_, event, conn_stats_, ssl_);
+    UpdateProtocolMetrics(protocol_, event, conn_stats_, ssl_source_);
 
     conn_stats_.set_bytes_recv(event.rd_bytes);
     conn_stats_.set_bytes_sent(event.wr_bytes);
@@ -526,7 +527,7 @@ bool ConnTracker::SetProtocol(traffic_protocol_t protocol, std::string_view reas
   return true;
 }
 
-bool ConnTracker::SetSSL(bool ssl, std::string_view reason) {
+bool ConnTracker::SetSSL(bool ssl, ssl_source_t ssl_source, std::string_view reason) {
   // No change, so we're all good.
   if (ssl_ == ssl) {
     return true;
@@ -535,15 +536,17 @@ bool ConnTracker::SetSSL(bool ssl, std::string_view reason) {
   // Changing the active SSL state of a connection tracker is not allowed.
   if (ssl_ != false) {
     CONN_TRACE(2) << absl::Substitute(
-        "Not allowed to change the SSL state of an active ConnTracker: $0->$1, reason=[$2]", ssl_,
-        ssl, reason);
+        "Not allowed to change the SSL state of an active ConnTracker: $0->$1, reason=[$2] "
+        "source=[$3]",
+        ssl_, ssl, reason, ssl_source_);
     return false;
   }
 
   bool old_ssl = ssl_;
   ssl_ = ssl;
-  send_data_.set_ssl(ssl);
-  recv_data_.set_ssl(ssl);
+  ssl_source_ = ssl_source;
+  send_data_.set_ssl_source(ssl_source);
+  recv_data_.set_ssl_source(ssl_source);
 
   CONN_TRACE(1) << absl::Substitute("SSL state changed: $0->$1, reason=[$2]", old_ssl, ssl, reason);
   return true;

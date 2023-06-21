@@ -168,7 +168,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
   ssize_t num_bytes_advanced = data_buffer_.position() - last_processed_pos_;
   if (num_bytes_advanced > 0 && static_cast<size_t>(num_bytes_advanced) > frame_bytes) {
     size_t bytes_lost = num_bytes_advanced - frame_bytes;
-    SocketTracerMetrics::GetProtocolMetrics(protocol_, is_ssl_)
+    SocketTracerMetrics::GetProtocolMetrics(protocol_, ssl_source_)
         .data_loss_bytes.Increment(bytes_lost);
   }
   last_processed_pos_ = data_buffer_.position();

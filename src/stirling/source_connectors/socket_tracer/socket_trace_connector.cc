@@ -661,9 +661,12 @@ void SocketTraceConnector::CheckTracerState() {
     auto table = openssl_trace_state_debug_->get_table_offline(true);
     for (auto& entry : table) {
       struct openssl_trace_state_debug_t debug = std::get<1>(entry);
+      auto ssl_source = std::string(magic_enum::enum_name(debug.ssl_source));
 
       openssl_trace_mismatched_fds_counter_family_
-          .Add({{"name", openssl_mismatched_fds_metric}, {"exe", debug.comm}})
+          .Add({{"name", openssl_mismatched_fds_metric},
+                {"exe", debug.comm},
+                {"ssl_source", ssl_source}})
           .Increment();
     }
   }

@@ -102,6 +102,8 @@ struct nested_syscall_fd_t {
 // Value is nested_syscall_fd struct.
 BPF_HASH(ssl_user_space_call_map, uint64_t, struct nested_syscall_fd_t);
 
+BPF_HASH(openssl_source_map, uint32_t, enum ssl_source_t);
+
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
 // Key is {tgid, pid}.
@@ -154,12 +156,21 @@ static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, int32
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
-static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
+static __inline enum ssl_source_t get_ssl_source(uint32_t tgid) {
+  const enum ssl_source_t* ssl_source = openssl_source_map.lookup(&tgid);
+  if (ssl_source == NULL) {
+    return kSSLUnspecified;
+  }
+  return *ssl_source;
+}
+
+static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd, enum ssl_source_t ssl_source) {
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
   }
   conn_info->ssl = true;
+  conn_info->ssl_source = ssl_source;
 }
 
 // Writes the syscall fd to a BPF map key created by an active tls call (the SSL_write/SSL_read
@@ -181,7 +192,7 @@ static __inline void propagate_fd_to_user_space_call(uint64_t pid_tgid, int fd) 
     }
 
     uint32_t tgid = pid_tgid >> 32;
-    set_conn_as_ssl(tgid, fd);
+    set_conn_as_ssl(tgid, fd, get_ssl_source(tgid));
   }
 }
 
@@ -196,6 +207,7 @@ static __inline struct socket_data_event_t* fill_socket_data_event(
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.source_fn = src_fn;
   event->attr.ssl = conn_info->ssl;
+  event->attr.ssl_source = conn_info->ssl_source;
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
   event->attr.protocol = conn_info->protocol;
