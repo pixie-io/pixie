@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.20-alpine@sha256:fd9d9d7194ec40a9a6ae89fcaef3e47c47de7746dd5848ab5343695dbbd09f8c AS build
 
 ARG TARGETOS TARGETARCH
 ARG NATS_VERSION
