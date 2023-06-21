@@ -5,9 +5,11 @@ on:
     types: [released]
 permissions:
   contents: read
-  packages: write
 jobs:
   sync_image:
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-latest-16-cores
     steps:
     - uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc  # v2
