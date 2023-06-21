@@ -394,7 +394,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		vz.Spec.Pod.NodeSelector = make(map[string]string)
 	}
 
-	if !vz.Spec.UseEtcdOperator {
+	if !vz.Spec.UseEtcdOperator && !update {
 		// Check if the cluster offers PVC support.
 		// If it does not, we should default to using the etcd operator, which does not
 		// require PVC support.
