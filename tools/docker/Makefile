@@ -235,13 +235,8 @@ upload_all_sysroots: build_all_sysroots
 
 
 ##############################################
-# Test docker images.
+# Custom docker images.
 ##############################################
-.PHONY: build_and_upload_curl_image
-build_and_upload_curl_image:
-	$(DOCKER) build curl_image -t $(curl_image_tag)
-	$(DOCKER) push $(curl_image_tag)
-
 .PHONY: build_and_upload_nats_image
 build_and_upload_nats_image:
 	$(DOCKER) buildx build nats_image \
