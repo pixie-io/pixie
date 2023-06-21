@@ -196,6 +196,7 @@ def _java_deps():
         ],
         sha256 = "102db28b450ff5eb8c497aacaececc5263a4e50e64b7cdc5c7baa8b216e73531",
         urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/graalvm%2Fpl1/graalvm-native-image-22.3.0-pl1.tar.gz",
             "https://storage.googleapis.com/pixie-dev-public/graalvm-native-image-22.3.0-pl1.tar.gz",
         ],
     )

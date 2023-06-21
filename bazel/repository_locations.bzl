@@ -283,79 +283,118 @@ REPOSITORY_LOCATIONS = dict(
     ),
     com_llvm_clang_15 = dict(
         sha256 = "a275cde426a790cdf6eaecc2a33bac320ee61ceb4f5e76d2c73d3c555fdcedfc",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/clang-min-15.0-pl11.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/clang-min-15.0-pl11.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/clang-min-15.0-pl11.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_x86_64_glibc_host = dict(
         sha256 = "f832e8cf5285aa7bc66d9e958cd10e14587a0d6d2376e293e6644651fe064b05",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc%2B%2B.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libstdc%2B%2B.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc%2B%2B.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc_host = dict(
         sha256 = "83d6c8f39688646e733b9341d3d8a67978ac33dc6874d730338492ccec61e40b",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc_host_asan = dict(
         sha256 = "5b0e518bc36b308d8f64a074bdce45f709f4f661f45a0c1e8c4a92ead6ef7b7d",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-asan.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx-asan.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-asan.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc_host_msan = dict(
         sha256 = "39e959d02a2ae753af64d61a3ae264fd73650e63c258738905f61f944e8a2c18",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-msan.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx-msan.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-msan.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc_host_tsan = dict(
         sha256 = "4e39d01e4719d0491b4d970bb963a8c4e90c75a1002c90e7cee5fc08fd003f83",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-tsan.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx-tsan.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-tsan.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_x86_64_glibc2_36 = dict(
         sha256 = "13a37fdba0e9bf386873509ded490177200265839a4abdbdccacb8bf2b9795ab",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-x86_64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libstdc++-x86_64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-x86_64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_x86_64_glibc2_36 = dict(
         sha256 = "6909bf0f95c2b0d798365651a8fb8e93c9b01994c5e68e76e71fb7e5100a3965",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-x86_64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx-x86_64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-x86_64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_aarch64_glibc2_36 = dict(
         sha256 = "e1d0b628a7915113e79ac0fc1dfd4bc730177d0652fb684026ecfb87694416b0",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-aarch64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libstdc++-aarch64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libstdc++-aarch64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_lib_libcpp_aarch64_glibc2_36 = dict(
         sha256 = "a0199c3a4247ea0e82a5b6914efac0cf339ad75ef64f927e353f84e2d0f8b60b",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-aarch64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/llvm-15.0-pl11-libcxx-aarch64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/llvm-15.0-pl11-libcxx-aarch64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_libcxx_x86_64_glibc_host = dict(
         sha256 = "2e123059d395daec37153fc413fe377a6a551b2919cd658fd9a302b11fea5201",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/libcxx-15.0-pl11.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_libcxx_x86_64_glibc2_36 = dict(
         sha256 = "51135b52804d3a899e58e1a7162ed065e95eb5d3822cab39edcfe9aed466eede",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-x86_64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/libcxx-15.0-pl11-x86_64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-x86_64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_llvm_libcxx_aarch64_glibc2_36 = dict(
         sha256 = "a90304bd3e6530e6228beb8fede84fc06c893cefdab4b12859d5e93661aac7ce",
         strip_prefix = "",
-        urls = ["https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-aarch64-sysroot.tar.gz"],
+        urls = [
+            "https://github.com/pixie-io/dev-artifacts/releases/download/clang%2F15.0-pl11/libcxx-15.0-pl11-aarch64-sysroot.tar.gz",
+            "https://storage.googleapis.com/pixie-dev-public/clang/15.0-pl11/libcxx-15.0-pl11-aarch64-sysroot.tar.gz",
+        ],
         manual_license_name = "llvm/llvm-project",
     ),
     com_oracle_openjdk_18 = dict(

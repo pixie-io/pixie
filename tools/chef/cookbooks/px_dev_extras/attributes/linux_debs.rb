@@ -26,6 +26,6 @@ default['clang']['deb_sha256'] =
 
 default['gperftools']['version']    = '2.10-pl1'
 default['gperftools']['deb']        =
-  "https://storage.googleapis.com/pixie-dev-public/gperftools-pixie-#{default['gperftools']['version']}.deb"
+  "https://github.com/pixie-io/dev-artifacts/releases/download/gperftools%2F#{default['gperftools']['version']}/gperftools-pixie-#{default['gperftools']['version']}.deb"
 default['gperftools']['deb_sha256'] =
   '0920a93a8a8716b714b9b316c8d7e8f2ecc242a85147f7bec5e1543d88c203dc'
