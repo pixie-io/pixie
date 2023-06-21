@@ -18,45 +18,28 @@
 
 import * as React from 'react';
 
-import { gql, useMutation } from '@apollo/client';
-import { Add } from '@mui/icons-material';
-import { Button, TableContainer } from '@mui/material';
+import { TableContainer } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
-import * as QueryString from 'query-string';
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
 } from 'react-router-dom';
 
 import { scrollbarStyles } from 'app/components';
 import { ClustersTable } from 'app/containers/admin/clusters-list';
-import { InviteUserButton } from 'app/containers/admin/invite-user-button';
 import { OrgSettings } from 'app/containers/admin/org-settings';
 import { UsersTable } from 'app/containers/admin/org-users';
 import { PluginsOverview } from 'app/containers/admin/plugins/plugins-overview';
 import { UserSettings } from 'app/containers/admin/user-settings';
 import { GetOAuthProvider } from 'app/pages/auth/utils';
-import { GQLAPIKeyMetadata, GQLDeploymentKeyMetadata } from 'app/types/schema';
 
 import { KeysOverview } from './keys-overview';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
-  createButton: {
-    margin: `${theme.spacing(1)} ${theme.spacing(4)}`,
-    padding: `${theme.spacing(0.375)} ${theme.spacing(1.875)}`, // 3px 15px
-    backgroundColor: theme.palette.background.default,
-  },
   tabRoot: {
     height: '100%',
     overflowY: 'auto',
     ...scrollbarStyles(theme),
-  },
-  tabExtras: {
-    position: 'fixed',
-    right: 0,
-    display: 'flex',
-    zIndex: 2, // Without this, inputs and icons in the table layer on top and break the illusion. Same for the tab bar.
-    justifyContent: 'right',
   },
   tabContents: {
     margin: theme.spacing(1),
@@ -70,35 +53,6 @@ export const AdminOverview = React.memo(() => {
   const history = useHistory();
   const location = useLocation();
   const { path } = useRouteMatch();
-
-  const showInviteDialog = QueryString.parse(location.search).invite === 'true';
-  const onCloseInviteDialog = React.useCallback(() => {
-    if (showInviteDialog) {
-      // So that a page refresh after closing the dialog doesn't immediately open it again
-      history.replace({ search: '' });
-    }
-  }, [history, showInviteDialog]);
-
-  const [createAPIKey] = useMutation<{ CreateAPIKey: GQLAPIKeyMetadata }, void>(gql`
-    mutation CreateAPIKeyFromAdminPage {
-      CreateAPIKey {
-        id
-        desc
-        createdAtMs
-      }
-    }
-  `);
-  const [createDeploymentKey] = useMutation<
-  { CreateDeploymentKey: GQLDeploymentKeyMetadata }, void
-  >(gql`
-    mutation CreateDeploymentKeyFromAdminPage{
-      CreateDeploymentKey {
-        id
-        desc
-        createdAtMs
-      }
-    }
-  `);
 
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const showInvitationsTab = authClient.isInvitationEnabled();
@@ -124,7 +78,6 @@ export const AdminOverview = React.memo(() => {
     const fromPath = location.pathname.slice(path.length).split('/').filter((s: string) => s)[0].trim().toLowerCase();
     return tabList.find(t => t.enabled && t.slug === fromPath)?.slug ?? '';
   }, [tabList, location.pathname, path]);
-  const subTab = location.pathname.split('/').slice(-1)[0];
 
   const [tab, setTab] = React.useState<string>(pathTab || 'clusters');
 
@@ -142,83 +95,6 @@ export const AdminOverview = React.memo(() => {
 
   return (
     <div className={classes.tabRoot}>
-      <div className={classes.tabExtras}>
-        {tab === 'keys' && subTab === 'deployment' && (
-          <Button
-            // eslint-disable-next-line react-memo/require-usememo
-            onClick={() => createDeploymentKey({
-              // This immediately adds a row to the table, so gives the user
-              // an indication that clicking "Add" did something but the data
-              // added is "wrong" and flashes with the correct data once the
-              // actual response comes in.
-              // TODO: Maybe we should assign client side IDs here.
-              // The key is hidden by default so that value changing on
-              // server response isn't that bad.
-              optimisticResponse: {
-                CreateDeploymentKey: {
-                  id: '00000000-0000-0000-0000-000000000000',
-                  desc: '',
-                  createdAtMs: Date.now(),
-                },
-              },
-              update: (cache, { data }) => {
-                cache.modify({
-                  fields: {
-                    deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
-                  },
-                });
-              },
-            })}
-            className={classes.createButton}
-            variant='outlined'
-            // eslint-disable-next-line react-memo/require-usememo
-            startIcon={<Add />}
-          >
-            New key
-          </Button>
-        )}
-        {tab === 'keys' && subTab === 'api' && (
-          <Button
-            // eslint-disable-next-line react-memo/require-usememo
-            onClick={() => createAPIKey({
-              // This immediately adds a row to the table, so gives the user
-              // an indication that clicking "Add" did something but the data
-              // added is "wrong" and flashes with the correct data once the
-              // actual response comes in.
-              // TODO: Maybe we should assign client side IDs here.
-              // The key is hidden by default so that value changing on
-              // server response isn't that bad.
-              optimisticResponse: {
-                CreateAPIKey: {
-                  id: '00000000-0000-0000-0000-000000000000',
-                  desc: '',
-                  createdAtMs: Date.now(),
-                },
-              },
-              update: (cache, { data }) => {
-                cache.modify({
-                  fields: {
-                    apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
-                  },
-                });
-              },
-            })}
-            className={classes.createButton}
-            variant='outlined'
-            // eslint-disable-next-line react-memo/require-usememo
-            startIcon={<Add />}
-          >
-            New key
-          </Button>
-        )}
-        {tab.endsWith('users') && (
-          <InviteUserButton
-            className={classes.createButton}
-            startOpen={showInviteDialog}
-            onClose={onCloseInviteDialog}
-          />
-        )}
-      </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
           <Switch>
