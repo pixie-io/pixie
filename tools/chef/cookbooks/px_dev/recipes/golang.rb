@@ -50,6 +50,7 @@ execute 'install go binaries' do
             go install github.com/sigstore/cosign/v2/cmd/cosign@v2.0.2 && \
             go install github.com/regclient/regclient/cmd/regctl@v0.4.8 && \
             go install github.com/regclient/regclient/cmd/regsync@v0.4.8 && \
+            go install github.com/regclient/regclient/cmd/regbot@v0.4.8 && \
             go clean -modcache && \
             go clean -cache)
 end
