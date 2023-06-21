@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
+	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/yaml.v3"
 
 	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
@@ -43,6 +43,7 @@ func init() {
 	pflag.String("versions_file", "VERSIONS.json", "The versions output json file")
 	pflag.String("mirrors_file", "", "Path to artifact_mirrors file to backfill availableArtifactMirrors."+
 		"If empty, versions file will use AvailableArtifacts instead of AvailableArtifactMirrors.")
+	pflag.String("gh_repo_name", "pixie-io/pixie", "Github owner/repo to use for release URLs")
 }
 
 func availableArtifacts(artifactName string) []vpb.ArtifactType {
@@ -74,7 +75,7 @@ func getSHA(url string) (string, error) {
 	return strings.TrimSpace(string(bytes)), nil
 }
 
-func availableArtifactMirrors(component string, version string, mirrors []*mirror) []*vpb.ArtifactMirrors {
+func availableArtifactMirrors(ghRepo string, component string, version string, mirrors []*mirror) []*vpb.ArtifactMirrors {
 	artifacts := make(map[string]vpb.ArtifactType)
 	switch component {
 	case "cli":
@@ -96,6 +97,7 @@ func availableArtifactMirrors(component string, version string, mirrors []*mirro
 			url := strings.ReplaceAll(m.URLFormat, "${component}", component)
 			url = strings.ReplaceAll(url, "${version}", version)
 			url = strings.ReplaceAll(url, "${artifact_name}", name)
+			url = strings.ReplaceAll(url, "${gh_repo}", ghRepo)
 			shaURL := url + ".sha256"
 
 			log.WithField("url", url).Info("Trying mirror")
@@ -130,7 +132,7 @@ func parseMirrorsFile(path string) ([]*mirror, error) {
 	return mirrors, nil
 }
 
-func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile string, mirrorsFile string) error {
+func parseTagsIntoVersionFile(ghRepoName string, repoPath string, artifactName string, outputFile string, mirrorsFile string) error {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return err
@@ -148,13 +150,25 @@ func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile s
 	as.Name = artifactName
 
 	releaseTagPrefix := fmt.Sprintf("release/%s/v", artifactName)
-	tags, err := r.TagObjects()
+
+	// TagObjects returns all annotated tag objects regardless if an actual tag ref currently points to them.
+	// Instead of getting annotated tags via TagObjects, we iterate all the actual tag references
+	// and then skip the ones that don't have an associated TagObject.
+	tags, err := r.Tags()
 	if err != nil {
 		return err
 	}
 
-	// This only gets annotated tags, which is what we use in the release process.
-	err = tags.ForEach(func(tag *object.Tag) error {
+	err = tags.ForEach(func(ref *plumbing.Reference) error {
+		tag, err := r.TagObject(ref.Hash())
+		switch err {
+		case nil:
+		case plumbing.ErrObjectNotFound:
+			return nil
+		default:
+			return err
+		}
+
 		if !strings.HasPrefix(tag.Name, releaseTagPrefix) {
 			return nil
 		}
@@ -167,14 +181,14 @@ func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile s
 
 		artifact := &vpb.Artifact{
 			Timestamp:  tpb,
-			CommitHash: tag.Hash.String(),
+			CommitHash: tag.Target.String(),
 			VersionStr: versionStr,
 			Changelog:  tag.Message,
 		}
 		if len(mirrors) == 0 {
 			artifact.AvailableArtifacts = availableArtifacts(artifactName)
 		} else {
-			artifact.AvailableArtifactMirrors = availableArtifactMirrors(artifactName, versionStr, mirrors)
+			artifact.AvailableArtifactMirrors = availableArtifactMirrors(ghRepoName, artifactName, versionStr, mirrors)
 		}
 
 		if len(artifact.AvailableArtifacts) > 0 || len(artifact.AvailableArtifactMirrors) > 0 {
@@ -211,6 +225,7 @@ func main() {
 	artifactName := viper.GetString("artifact_name")
 	versionsFile := viper.GetString("versions_file")
 	mirrorsFile := viper.GetString("mirrors_file")
+	ghRepoName := viper.GetString("gh_repo_name")
 
 	if len(path) == 0 {
 		log.Fatalln("Repo path (--repo_path) is required")
@@ -220,7 +235,7 @@ func main() {
 	log.WithField("name", artifactName).Info("Artifact")
 	log.WithField("file", versionsFile).Info("Output File")
 
-	if err := parseTagsIntoVersionFile(path, artifactName, versionsFile, mirrorsFile); err != nil {
+	if err := parseTagsIntoVersionFile(ghRepoName, path, artifactName, versionsFile, mirrorsFile); err != nil {
 		log.Fatalln(err)
 	}
 }
