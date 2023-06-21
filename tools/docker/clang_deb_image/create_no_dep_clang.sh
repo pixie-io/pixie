@@ -26,7 +26,7 @@ min_dir=$(mktemp -d)
 
 clang_exec_list=(clang-cpp clang-15 clang clang++
 		 ld.lld lld
-		 llvm-ar llvm-as llvm-cov llvm-dwp llvm-nm llvm-objcopy llvm-objdump llvm-strip)
+		 llvm-ar llvm-as llvm-cov llvm-dwp llvm-nm llvm-objcopy llvm-objdump llvm-profdata llvm-strip)
 
 mkdir -p "${min_dir}/bin"
 
