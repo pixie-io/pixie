@@ -43,9 +43,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   tabContents: {
     margin: theme.spacing(1),
+    minHeight: `calc(100% - ${theme.spacing(2)})`,
+    height: 0, // min-height doesn't calculate an inheritable height otherwise
   },
   table: {
     paddingBottom: '1px', // Prevent an incorrect height calculation that shows a second scrollbar
+    minHeight: 'calc(100% - 1px)',
+    height: 0,
   },
 }), { name: 'AdminOverview' });
 
