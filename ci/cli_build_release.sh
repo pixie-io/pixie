@@ -89,7 +89,7 @@ upload_artifacts() {
   version="$1"
   upload_artifact_to_mirrors "cli" "${version}" "${darwin_amd64_binary}" "cli_darwin_amd64_unsigned"
   upload_artifact_to_mirrors "cli" "${version}" "${darwin_arm64_binary}" "cli_darwin_arm64_unsigned"
-  upload_artifact_to_mirrors "cli" "${version}" "${linux_binary}" "cli_linux_amd64"
+  upload_artifact_to_mirrors "cli" "${version}" "${linux_binary}" "cli_linux_amd64" AT_LINUX_AMD64
 
   if [[ ! "$release_tag" == *"-"* ]]; then
     # RPM/DEB only exists for release builds.
