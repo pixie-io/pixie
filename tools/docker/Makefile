@@ -22,6 +22,8 @@ BUILD_DIR ?= .build
 TOT		       := $$(git rev-parse --show-toplevel)
 DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
 
+GH_RELEASE_UPLOAD := $(TOT)/scripts/create_release_for_dev_artifact.sh
+
 DEV_EXTRAS_TAG = $$(grep DOCKER_IMAGE_TAG $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
 DEV_EXTRAS_DIGEST = $$(grep DEV_IMAGE_WITH_EXTRAS_DIGEST $(DOCKER_PROPERTIES_FILE) | cut -d'=' -f2)
 DEV_EXTRAS_IMAGE = "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$(DEV_EXTRAS_TAG)"
@@ -36,6 +38,7 @@ clang_deb_fname := "clang-$(CLANG_TAG).deb"
 clang_linters_deb_fname := "clang-linters-$(CLANG_TAG).deb"
 clang_gs_path :=  gs://pixie-dev-public/clang/$(CLANG_TAG)
 clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_builder_image:$(CLANG_VERSION)"
+CLANG_BUILD_DIR := "$(BUILD_DIR)/clang-$(CLANG_TAG)"
 
 ## gperftools parameters
 GPERFTOOLS_DEB_IMAGE_VERSION := 2.10-pl1
@@ -100,10 +103,6 @@ LINUX_HEADERS_X86_64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merg
 LINUX_HEADERS_ARM64_MERGED_FILE := $(LINUX_HEADER_BUILD_DIR)/linux-headers-merged-arm64-$(LINUX_HEADERS_REV).tar.gz
 LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV)
 
-## Curl image parameters.
-CURL_IMAGE_VERSION := 1.0
-curl_image_tag := "gcr.io/pixie-oss/pixie-dev-public/curl:$(CURL_IMAGE_VERSION)"
-
 ## NATS image parameters.
 NATS_IMAGE_VERSION := 2.9.19
 nats_image_tag := "gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:$(NATS_IMAGE_VERSION)-scratch"
@@ -143,13 +142,14 @@ build_clang_deb_image:
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
-	mkdir -p $(BUILD_DIR)
-	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(BUILD_DIR):/image $(clang_deb_image_tag)
+	@mkdir -p $(CLANG_BUILD_DIR)
+	$(DOCKER) run --rm -e CLANG_SUFFIX=$(CLANG_SUFFIX) -e CLANG_VERSION=$(CLANG_VERSION) -v $(PWD)/$(CLANG_BUILD_DIR):/image $(clang_deb_image_tag)
 
-	sha256sum $(BUILD_DIR)/* > $(BUILD_DIR)/sha256sums
-	gsutil cp $(BUILD_DIR)/* $(clang_gs_path)/
+	sha256sum $(CLANG_BUILD_DIR)/* > $(CLANG_BUILD_DIR)/sha256sums
+	gsutil cp $(CLANG_BUILD_DIR)/* $(clang_gs_path)/
+	$(GH_RELEASE_UPLOAD) clang $(CLANG_TAG) $(CLANG_BUILD_DIR)/*
 
-	cat $(BUILD_DIR)/sha256sums
+	cat $(CLANG_BUILD_DIR)/sha256sums
 
 
 ##############################################
@@ -164,6 +164,7 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 	mkdir -p $(BUILD_DIR)
 	$(DOCKER) run --rm -e DEB_NAME=$(gperftools_deb_fname) -e DEB_VERSION=$(GPERFTOOLS_DEB_IMAGE_VERSION) -v $(PWD)/$(BUILD_DIR):/image $(gperftools_deb_image_tag)
 	gsutil cp $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname) $(gperftools_deb_gs_path)
+	$(GH_RELEASE_UPLOAD) gperftools $(GPERFTOOLS_DEB_IMAGE_VERSION) $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname)
 	@echo "SHA: "
 	sha256sum $(PWD)/$(BUILD_DIR)/$(gperftools_deb_fname)
 
@@ -180,6 +181,7 @@ upload_graalvm_archive: build_graalvm_archive_image
 	mkdir -p $(BUILD_DIR)
 	$(DOCKER) run --rm -v $(PWD)/$(BUILD_DIR):/archive $(GRAALVM_ARCHIVE_IMAGE_TAG)
 	gsutil cp $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME) $(GRAALVM_ARCHIVE_GS_PATH)
+	$(GH_RELEASE_UPLOAD) graalvm $(GRAALVM_IMAGE_VERSION) $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME)
 	@echo "SHA: "
 	sha256sum $(PWD)/$(BUILD_DIR)/$(GRAALVM_ARCHIVE_FNAME)
 
@@ -217,6 +219,7 @@ $(LINUX_HEADERS_ARM64_MERGED_FILE): $(LINUX_HEADER_ARM64_TARGETS)
 .PHONY: upload_linux_headers
 upload_linux_headers:  $(LINUX_HEADERS_X86_64_MERGED_FILE) $(LINUX_HEADERS_ARM64_MERGED_FILE) ## Target to build and upload linux headers image
 	gsutil cp $^ $(LINUX_HEADERS_GS_PATH)
+	$(GH_RELEASE_UPLOAD) linux-headers $(LINUX_HEADERS_REV) $^
 	sha256sum $^
 
 ##############################################
@@ -231,8 +234,8 @@ build_all_sysroots: sysroot_creator/Dockerfile sysroot_creator/build_all_sysroot
 .PHONY: upload_all_sysroots
 upload_all_sysroots: build_all_sysroots
 	gsutil cp $(SYSROOT_BUILD_DIR)/* $(SYSROOT_GS_PATH)
+	$(GH_RELEASE_UPLOAD) sysroots $(SYSROOT_REV) $(SYSROOT_BUILD_DIR)/*
 	sha256sum $(SYSROOT_BUILD_DIR)/*
-
 
 ##############################################
 # Custom docker images.
@@ -268,6 +271,7 @@ $(KERNEL_BUILD_DIR)/linux-build-%.tar.gz: kernel_builder/Dockerfile kernel_build
 .PHONY: upload_kernel_build
 upload_kernel_build:  $(KERNEL_BUILD_TARGETS)
 	gsutil cp $^ $(KERNEL_BUILD_GS_PATH)
+	$(GH_RELEASE_UPLOAD) kernel-build $(KERNEL_BUILD_TS) $^
 	@echo "Add this to the qemu bzl file:"
 	@echo "============================="
 	@echo "kernel_build_date = ${KERNEL_BUILD_TS}"
