@@ -38,12 +38,13 @@ ARTIFACT_BASE_PATH="https://github.com/${GITHUB_REPO}/releases/download/release%
 
 # Fetch latest version.
 LATEST_VERSION=""
-regex='\[CLI v(([0-9]+)\.([0-9]+)\.([0-9]+))\]'
+regex='v(([0-9]+)\.([0-9]+)\.([0-9]+))\)<!--cli-latest-release-->'
 if [[ "$(curl -fsSL https://raw.githubusercontent.com/pixie-io/pixie/main/README.md)" =~ $regex ]]; then
     LATEST_VERSION=${BASH_REMATCH[1]}
 fi
 
-USE_VERSION=${PX_CLI_VERSION:=${LATEST_VERSION}}
+USE_VERSION=${PL_CLI_VERSION:-${LATEST_VERSION}}
+USE_VERSION=${PX_CLI_VERSION:-${USE_VERSION}}
 
 # Check if the OS is Linux.
 if [[ "$(uname)" = "Linux" ]]; then
