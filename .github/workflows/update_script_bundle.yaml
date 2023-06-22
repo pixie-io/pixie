@@ -1,0 +1,87 @@
+---
+name: update-script-bundle
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-script-bundle:
+    name: Build Script Bundle
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+    - name: Add pwd to git safe dir
+      run: git config --global --add safe.directory `pwd`
+    - name: Install Pixie CLI
+      # yamllint disable rule:indentation
+      run: |
+        jq_script=(
+          '.[] | '
+          'select(.name == "cli") | '
+          '.artifact | '
+          'map(select(.versionStr | contains("-") | not))[0] | '
+          '.availableArtifactMirrors[] | '
+          'select(.artifactType == "AT_LINUX_AMD64") | '
+          '.urls[0]'
+        )
+        download_link=$(curl -fssL "https://artifacts.px.dev/artifacts/manifest.json" | jq "${jq_script[*]}" -r )
+        curl -fssL "${download_link}" -o px
+        chmod +x px
+      # yamllint enable rule:indentation
+    - name: Build bundle
+      shell: bash
+      run: |
+        export PATH="$PATH:$(pwd)"
+        cd src/pxl_scripts
+        make bundle-oss.json
+    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
+      with:
+        name: bundle
+        path: src/pxl_scripts/bundle-oss.json
+  update-gh-pages-bundle:
+    name: Update bundle in gh-pages
+    runs-on: ubuntu-latest
+    needs: build-script-bundle
+    concurrency: gh-pages
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
+      with:
+        fetch-depth: 0
+        ref: gh-pages
+    - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
+    - name: Import GPG key
+      env:
+        BUILDBOT_GPG_KEY_B64: ${{ secrets.BUILDBOT_GPG_KEY_B64 }}
+      run: |
+        echo "${BUILDBOT_GPG_KEY_B64}" | base64 --decode | gpg --no-tty --batch --import
+    - name: Setup git
+      shell: bash
+      env:
+        BUILDBOT_GPG_KEY_ID: ${{ secrets.BUILDBOT_GPG_KEY_ID }}
+      run: |
+        git config --global user.name 'pixie-io-buildbot'
+        git config --global user.email 'build@pixielabs.ai'
+        git config --global user.signingkey "${BUILDBOT_GPG_KEY_ID}"
+        git config --global commit.gpgsign true
+    - name: Push to gh-pages
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.BUILDBOT_GH_API_TOKEN }}
+        GIT_SSH_COMMAND: "ssh -i /tmp/ssh.key"
+      # yamllint disable rule:indentation
+      run: |
+        mkdir -p pxl_scripts
+        cp bundle/bundle-oss.json pxl_scripts/bundle.json
+
+        git add pxl_scripts/bundle.json
+        if [[ $(git status --porcelain=v1 --untracked-files=no | wc -l) -eq 0 ]]; then
+          echo "No updates to script bundle, exiting."
+          exit 0
+        fi
+        git commit -s -m "Update PxL script bundle"
+        git push origin "gh-pages"
+      # yamllint enable rule:indentation
