@@ -16,18 +16,27 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# This version is identical to the Python gRPC module version for easier recognition.
-# This is because the produced docker image is mainly used for testing tracing Python gRPC app,
-# which depends on the version of the module.
-version=1.2
-tag="gcr.io/pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:$version"
+repo="pixie-io/dev-artifacts"
 
-docker build . -t $tag
-docker push $tag
+if [[ $# -lt 3 ]]; then
+  echo "Usage: $0 <release-name> <version> [<artifact>...]"
+  exit 1
+fi
 
+release_name="$1"
+version="$2"
+artifacts=( "${@:3}" )
 
-sha=$(docker inspect --format='{{index .RepoDigests 0}}' $tag | cut -f2 -d'@')
+tag_name="${release_name}/${version}"
 
-echo ""
-echo "Image pushed!"
-echo "IMPORTANT: Now update //bazel/container_images.bzl with the following digest: $sha"
+repo_dir="$(mktemp -d)"
+git clone git@github.com:pixie-io/dev-artifacts.git "${repo_dir}"
+
+pushd "${repo_dir}" &> /dev/null
+git tag "${tag_name}"
+git push origin "${tag_name}"
+popd &> /dev/null
+rm -rf "${repo_dir}"
+
+gh release create --repo="${repo}" "${tag_name}" --title "${release_name} ${version}" --notes ""
+gh release upload --repo="${repo}" "${tag_name}" "${artifacts[@]}"

@@ -203,6 +203,8 @@ class PixieModule : public QLObject {
 
   inline static constexpr char kFormatDurationOpID[] = "format_duration";
   inline static constexpr char kFormatDurationDocstring[] = R"doc(
+  Convert a duration in nanoseconds to a duration string.
+
   Convert an integer in nanoseconds (-3,000,000,000) to a duration string ("-5m") while
   preserving the sign. This function converts to whole milliseconds, seconds, minutes,
   hours or days. This means it will round down to the nearest whole number time unit.

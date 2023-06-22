@@ -18,7 +18,7 @@
 
 # Increment this number on every upload.
 version=1.3
-tag="gcr.io/pixie-oss/pixie-dev-public/python_mysql_connector:$version"
+tag="ghcr.io/pixie-io/python_mysql_connector:$version"
 
 docker build . -t $tag
 docker push $tag

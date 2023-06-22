@@ -49,8 +49,9 @@ func init() {
 	pflag.String("vizier_version", "", "If specified, the db will not be queried. The only vizier version is assumed to be the one specified.")
 	pflag.String("cli_version", "", "If specified, the db will not be queried. The only CLI version is assumed to be the one specified.")
 	pflag.String("operator_version", "", "If specified, the db will not be queried. The only operator version is assumed to be the one specified.")
-	pflag.String("artifact_manifest_bucket", "pixie-dev-public", "The name of the bucket containing the artifact manifest")
-	pflag.String("artifact_manifest_path", "manifest.json", "Path within the artifact bucket to the manifest.json")
+	pflag.String("artifact_manifest_url", "", "The url to the artifact manifest")
+	pflag.String("artifact_manifest_sha_url", "", "The url to the sha of the artifact manifest, "+
+		"if not set the server will use the manifest url with '.sha256' appended.")
 	pflag.Duration("manifest_poll_period", 1*time.Minute, "Specify how often to poll for manifest changes")
 }
 
@@ -102,11 +103,14 @@ func main() {
 
 	// If any versions are not hardcoded, then we need to poll for the artifact manifest.
 	if (viper.GetString("vizier_version") == "") || (viper.GetString("cli_version") == "") || (viper.GetString("operator_version") == "") {
-		manifestBucket := viper.GetString("artifact_manifest_bucket")
-		manifestPath := viper.GetString("artifact_manifest_path")
+		manifestURL := viper.GetString("artifact_manifest_url")
+		shaURL := viper.GetString("artifact_manifest_sha_url")
+		if shaURL == "" {
+			shaURL = manifestURL + ".sha256"
+		}
 		pollPeriod := viper.GetDuration("manifest_poll_period")
-		gcsManifest := manifest.NewGCSLocation(client, manifestBucket, manifestPath)
-		poller := manifest.NewPoller(gcsManifest, pollPeriod, svr.UpdateManifest)
+		httpManifest := manifest.NewHTTPLocation(shaURL, manifestURL)
+		poller := manifest.NewPoller(httpManifest, pollPeriod, svr.UpdateManifest)
 		start := time.Now()
 		if err := poller.Start(); err != nil {
 			log.WithError(err).Fatal("failed to start manifest poller")

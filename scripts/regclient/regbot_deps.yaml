@@ -1,0 +1,15 @@
+---
+version: 1
+creds:
+- registry: gcr.io
+- registry: docker.io
+- registry: ghcr.io
+- registry: quay.io
+defaults:
+  interval: 60m
+  timeout: 10m
+scripts:
+- name: sync container_images.bzl
+  script: |
+    local deps = require 'deps'
+    deps.mirrorImgs()

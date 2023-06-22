@@ -1,0 +1,122 @@
+---
+version: 1
+creds:
+- registry: gcr.io
+- registry: docker.io
+- registry: ghcr.io
+- registry: quay.io
+defaults:
+  parallel: 16
+  interval: 60m
+  timeout: 10m
+scripts:
+# It would be cleaner to just loop through these in a single script
+# but then we don't get any parallelism. This is much faster.
+- name: sync cloud/api_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/api_server_image")
+- name: sync cloud/artifact_tracker_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/artifact_tracker_server_image")
+- name: sync cloud/auth_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/auth_server_image")
+- name: sync cloud/config_manager_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/config_manager_server_image")
+- name: sync cloud/cron_script_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/cron_script_server_image")
+- name: sync cloud/indexer_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/indexer_server_image")
+- name: sync cloud/metrics_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/metrics_server_image")
+- name: sync cloud/plugin/load_db
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/plugin/load_db")
+- name: sync cloud/plugin_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/plugin_server_image")
+- name: sync cloud/profile_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/profile_server_image")
+- name: sync cloud/project_manager_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/project_manager_server_image")
+- name: sync cloud/proxy_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/proxy_server_image")
+- name: sync cloud/scriptmgr_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/scriptmgr_server_image")
+- name: sync cloud/vzconn_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/vzconn_server_image")
+- name: sync cloud/vzmgr_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("cloud/vzmgr_server_image")
+- name: sync operator/bundle
+  script: |
+    releases = require 'releases'
+    releases.mirror("operator/bundle")
+- name: sync operator/bundle_index
+  script: |
+    releases = require 'releases'
+    releases.mirror("operator/bundle_index")
+- name: sync operator/operator_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("operator/operator_image")
+- name: sync operator/vizier_deleter
+  script: |
+    releases = require 'releases'
+    releases.mirror("operator/vizier_deleter")
+- name: sync px
+  script: |
+    releases = require 'releases'
+    releases.mirror("px")
+- name: sync vizier/cert_provisioner_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/cert_provisioner_image")
+- name: sync vizier/cloud_connector_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/cloud_connector_server_image")
+- name: sync vizier/kelvin_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/kelvin_image")
+- name: sync vizier/metadata_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/metadata_server_image")
+- name: sync vizier/pem_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/pem_image")
+- name: sync vizier/query_broker_server_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/query_broker_server_image")
+- name: sync vizier/vizier_updater_image
+  script: |
+    releases = require 'releases'
+    releases.mirror("vizier/vizier_updater_image")

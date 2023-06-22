@@ -159,7 +159,8 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: pl-nats
-        image: nats:2.9.17-scratch@sha256:8371b3bfc468a2294efb247531c2252c592398a98b574c2e81268d8c7f865d35
+        # yamllint disable-line rule:line-length
+        image: gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:2.9.19-scratch@sha256:5de59286eb54ead4d4a9279846098d4097b9c17a3c0588182398a7250cde1af9
         ports:
         - containerPort: 4222
           name: client

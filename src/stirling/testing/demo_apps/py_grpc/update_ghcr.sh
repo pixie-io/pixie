@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -16,10 +16,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-git clone https://github.com/nats-io/nats-server.git
-cd nats-server || exit
-# https://github.com/nats-io/nats-server/blob/main/.goreleaser-nightly.yml#L11
-CGO_ENABLED=0 go build -o nats-server
-gcr_tag="gcr.io/pixie-oss/pixie-dev-public/nats/nats-server"
-docker build . -f docker/Dockerfile.nightly -t ${gcr_tag}
-docker push ${gcr_tag}
+# This version is identical to the Python gRPC module version for easier recognition.
+# This is because the produced docker image is mainly used for testing tracing Python gRPC app,
+# which depends on the version of the module.
+version=1.2
+tag="ghcr.io/pixie-io/python_grpc_1_19_0_helloworld:$version"
+
+docker build . -t $tag
+docker push $tag
+
+
+sha=$(docker inspect --format='{{index .RepoDigests 0}}' $tag | cut -f2 -d'@')
+
+echo ""
+echo "Image pushed!"
+echo "IMPORTANT: Now update //bazel/container_images.bzl with the following digest: $sha"

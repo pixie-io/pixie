@@ -16,260 +16,264 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 
-# IMPORTANT: NEVER use docker hub images directly.
-# Docker now has a rate limit on image pulls that can prevent builds from running.
-# Instead pull the image you need from docker hub and push it to
-# gcr.io/pixie-oss/pixie-dev-public/docker-deps/<your-image-name-here>
+# When adding an image here, first add it to scripts/regclient/regbot_deps.yaml
+# Once that is in, trigger the github workflow that mirrors the required image
+# to the various registries we use.
+# Finally the image may be added here and used subsequently.
 
-# Although, ghcr doesn't currently have rate limits to avoid potential future issues
-# and to standardize, we also do the same for ghcr images.
-# Pull any image you need from ghcr and push it to
-# gcr.io/pixie-oss/pixie-dev-public/ghcr-deps/<your-image-name-here>
+# Switch this to another mirror if the selected registry is down or inaccessible
+selected_registry = "ghcr.io"
 
-def _gcr_io_image(name, digest, repo):
+namespaced_mirrors = {
+    "docker.io": "docker.io/pixie-io",
+    "ghcr.io": "ghcr.io/pixie-io",
+    "quay.io": "quay.io/pixie",
+}
+
+def _container_image(name, digest, repository):
+    namespace = namespaced_mirrors[selected_registry].removeprefix(selected_registry + "/")
+    image_repo = namespace + "/" + repository.replace("/", "-")
+
     container_pull(
         name = name,
         digest = digest,
-        registry = "gcr.io",
-        repository = repo,
+        registry = selected_registry,
+        repository = image_repo,
     )
 
 def base_images():
-    _gcr_io_image(
-        # Based on alpine 3.15.9, using OpenResty 1.21.4.1
-        # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce?context=explore
-        "openresty",
-        "sha256:2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce",
-        "pixie-oss/pixie-dev-public/docker-deps/openresty/openresty",
+    # Based on alpine 3.15.9, using OpenResty 1.21.4.1
+    # https://hub.docker.com/layers/openresty/openresty/alpine-apk-amd64/images/sha256-2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce?context=explore
+    _container_image(
+        name = "openresty",
+        repository = "openresty/openresty",
+        digest = "sha256:2259f28de01f85c22e32b6964254a4551c54a1d554cd4b5f1615d7497e1a09ce",
     )
 
-    _gcr_io_image(
-        "base_image",
-        "sha256:8267a5d9fa15a538227a8850e81cf6c548a78de73458e99a67e8799bbffb1ba0",
-        "distroless/base",
+    _container_image(
+        name = "base_image",
+        repository = "distroless/base",
+        digest = "sha256:8267a5d9fa15a538227a8850e81cf6c548a78de73458e99a67e8799bbffb1ba0",
     )
 
-    _gcr_io_image(
-        "base_image_debug",
-        "sha256:c59a1e5509d1b2586e28b899667774e599b79d7289a6bb893766a0cbbce7384b",
-        "distroless/base",
+    _container_image(
+        name = "base_image_debug",
+        repository = "distroless/base",
+        digest = "sha256:c59a1e5509d1b2586e28b899667774e599b79d7289a6bb893766a0cbbce7384b",
     )
 
 def stirling_test_jdk_images():
-    _gcr_io_image(
-        # https://hub.docker.com/layers/zulu-openjdk/azul/zulu-openjdk/18/images/sha256-01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e?context=explore
-        # azul/zulu-openjdk:18
-        "azul-zulu",
-        "sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
-        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk",
+    # https://hub.docker.com/layers/zulu-openjdk/azul/zulu-openjdk/18/images/sha256-01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e?context=explore
+    # azul/zulu-openjdk:18
+    _container_image(
+        name = "azul-zulu",
+        repository = "azul/zulu-openjdk",
+        digest = "sha256:01a1519ff66c3038e4c66f36e5dcf4dbc68278058d83133c0bc942518fcbef6e",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/zulu-openjdk-debian/azul/zulu-openjdk-debian/15.0.6/images/sha256-d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a?context=explore
-        # azul/zulu-openjdk-debian:15.0.6
-        "azul-zulu-debian",
-        "sha256:d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a",
-        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk-debian",
+    # https://hub.docker.com/layers/zulu-openjdk-debian/azul/zulu-openjdk-debian/15.0.6/images/sha256-d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a?context=explore
+    # azul/zulu-openjdk-debian:15.0.6
+    _container_image(
+        name = "azul-zulu-debian",
+        repository = "azul/zulu-openjdk-debian",
+        digest = "sha256:d9df673eae28bd1c8e23fabcbd6c76d20285ea7e5c589975bd26866cab189c2a",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/zulu-openjdk-alpine/azul/zulu-openjdk-alpine/17-jre/images/sha256-eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878?context=explore
-        # azul/zulu-openjdk-alpine:17-jre
-        "azul-zulu-alpine",
-        "sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
-        "pixie-oss/pixie-dev-public/docker-deps/azul/zulu-openjdk-alpine",
+    # https://hub.docker.com/layers/zulu-openjdk-alpine/azul/zulu-openjdk-alpine/17-jre/images/sha256-eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878?context=explore
+    # azul/zulu-openjdk-alpine:17-jre
+    _container_image(
+        name = "azul-zulu-alpine",
+        repository = "azul/zulu-openjdk-alpine",
+        digest = "sha256:eef2da2a134370717e40b1cc570efba08896520af6b31744eabf64481a986878",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/amazoncorretto/library/amazoncorretto/18-alpine-jdk/images/sha256-52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50?context=explore
-        # amazoncorretto:18-alpine-jdk
-        "amazon-corretto",
-        "sha256:52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50",
-        "pixie-oss/pixie-dev-public/docker-deps/library/amazoncorretto",
+    # https://hub.docker.com/layers/amazoncorretto/library/amazoncorretto/18-alpine-jdk/images/sha256-52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50?context=explore
+    # amazoncorretto:18-alpine-jdk
+    _container_image(
+        name = "amazon-corretto",
+        repository = "amazoncorretto",
+        digest = "sha256:52679264dee28c1cbe2ff8455efc86cc44cbceb6f94d9971abd7cd7e4c8bdc50",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/adoptopenjdk/library/adoptopenjdk/openj9/images/sha256-2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e?context=explore
-        # adoptopenjdk:openj9
-        "adopt-j9",
-        "sha256:2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e",
-        "pixie-oss/pixie-dev-public/docker-deps/amd64/adoptopenjdk",
+    # https://hub.docker.com/layers/adoptopenjdk/library/adoptopenjdk/openj9/images/sha256-2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e?context=explore
+    # adoptopenjdk:openj9
+    _container_image(
+        name = "adopt-j9",
+        repository = "adoptopenjdk",
+        digest = "sha256:2b739b781a601a9d1e5a98fb3d47fe9dcdbd989e92c4e4eb4743364da67ca05e",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/ibmjava/library/ibmjava/8-jre/images/sha256-78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc?context=explore
-        # ibmjava:8-jre
-        "ibm",
-        "sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
-        "pixie-oss/pixie-dev-public/docker-deps/library/ibmjava",
+    # https://hub.docker.com/layers/ibmjava/library/ibmjava/8-jre/images/sha256-78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc?context=explore
+    # ibmjava:8-jre
+    _container_image(
+        name = "ibm",
+        repository = "ibmjava",
+        digest = "sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
     )
 
-    _gcr_io_image(
-        # https://hub.docker.com/layers/sapmachine/library/sapmachine/18.0.1/images/sha256-53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6?context=explore
-        # sapmachine:18.0.1
-        "sap",
-        "sha256:53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6",
-        "pixie-oss/pixie-dev-public/docker-deps/library/sapmachine",
+    # https://hub.docker.com/layers/sapmachine/library/sapmachine/18.0.1/images/sha256-53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6?context=explore
+    # sapmachine:18.0.1
+    _container_image(
+        name = "sap",
+        repository = "sapmachine",
+        digest = "sha256:53a036f4d787126777c010437ee4802de11b193e8aca556170301ab2c2359bc6",
     )
 
-    _gcr_io_image(
-        "graal-vm",
-        "sha256:2a1aa528041342d76074a82ea72ad962d661eba68a6eceb100dc2e66e7377d55",
-        "pixie-oss/pixie-dev-public/ghcr-deps/graalvm/jdk",
+    _container_image(
+        name = "graal-vm",
+        repository = "graalvm/jdk",
+        digest = "sha256:ffb117a5fd76d8c47120e1b4186053c306ae850483b59f24a5979d7154d35685",
     )
 
 def stirling_test_images():
     stirling_test_jdk_images()
 
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
-    _gcr_io_image(
-        "nginx_openssl_1_1_0_base_image",
-        "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
-        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    _container_image(
+        name = "nginx_openssl_1_1_0_base_image",
+        repository = "nginx",
+        digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
     )
 
     # NGINX with OpenSSL 1.1.1, for OpenSSL tracing tests.
-    _gcr_io_image(
-        "nginx_openssl_1_1_1_base_image",
-        "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
-        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    _container_image(
+        name = "nginx_openssl_1_1_1_base_image",
+        repository = "nginx",
+        digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
     )
 
     # NGINX with OpenSSL 3.0.8, for OpenSSL tracing tests.
     # nginx:1.23.3-alpine-slim
-    _gcr_io_image(
-        "nginx_alpine_openssl_3_0_8_base_image",
-        "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
-        "pixie-oss/pixie-dev-public/docker-deps/library/nginx",
+    _container_image(
+        name = "nginx_alpine_openssl_3_0_8_base_image",
+        repository = "nginx",
+        digest = "sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
     )
 
     # DNS server image for DNS tests.
-    _gcr_io_image(
-        "alpine_dns_base_image",
-        "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
-        "pixie-oss/pixie-dev-public/docker-deps/resystit/bind9",
+    _container_image(
+        name = "alpine_dns_base_image",
+        repository = "resystit/bind9",
+        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
     )
 
     # Curl container, for OpenSSL tracing tests.
     # curlimages/curl:7.74.0
-    _gcr_io_image(
-        "curl_base_image",
-        "sha256:c50aa334d3dc674cb87bbd6ab3dd42c92ff1cfac47df9d65bb78efc8f990d716",
-        "pixie-oss/pixie-dev-public/docker-deps/curlimages/curl",
+    _container_image(
+        name = "curl_base_image",
+        repository = "curlimages/curl",
+        digest = "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
     )
 
     # Ruby container, for OpenSSL tracing tests.
     # ruby:3.0.0-slim-buster
-    _gcr_io_image(
-        "ruby_base_image",
-        "sha256:47eeeb05f545b5a7d18a84c16d585ed572d38379ebb7106061f800f5d9abeb38",
-        "pixie-oss/pixie-dev-public/docker-deps/library/ruby",
+    _container_image(
+        name = "ruby_base_image",
+        repository = "ruby",
+        digest = "sha256:47eeeb05f545b5a7d18a84c16d585ed572d38379ebb7106061f800f5d9abeb38",
     )
 
     # Datastax DSE server, for CQL tracing tests.
     # datastax/dse-server:6.7.7
-    _gcr_io_image(
-        "datastax_base_image",
-        "sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
-        "pixie-oss/pixie-dev-public/docker-deps/datastax/dse-server",
+    _container_image(
+        name = "datastax_base_image",
+        repository = "datastax/dse-server",
+        digest = "sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
     )
 
     # Postgres server, for PGSQL tracing tests.
     # postgres:13.2-alpine
-    _gcr_io_image(
-        "postgres_base_image",
-        "sha256:3335d0494b62ae52f0c18a1e4176a83991c9d3727fe67d8b1907b569de2f6175",
-        "pixie-oss/pixie-dev-public/docker-deps/library/postgres",
+    _container_image(
+        name = "postgres_base_image",
+        repository = "postgres",
+        digest = "sha256:3335d0494b62ae52f0c18a1e4176a83991c9d3727fe67d8b1907b569de2f6175",
     )
 
     # Redis server, for Redis tracing tests.
     # redis:6.2.1
-    _gcr_io_image(
-        "redis_base_image",
-        "sha256:fd68bec9c2cdb05d74882a7eb44f39e1c6a59b479617e49df245239bba4649f9",
-        "pixie-oss/pixie-dev-public/docker-deps/library/redis",
+    _container_image(
+        name = "redis_base_image",
+        repository = "redis",
+        digest = "sha256:fd68bec9c2cdb05d74882a7eb44f39e1c6a59b479617e49df245239bba4649f9",
     )
 
     # MySQL server, for MySQL tracing tests.
     # mysql/mysql-server:8.0.13
-    _gcr_io_image(
-        "mysql_base_image",
-        "sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
-        "pixie-oss/pixie-dev-public/docker-deps/mysql/mysql-server",
+    _container_image(
+        name = "mysql_base_image",
+        repository = "mysql/mysql-server",
+        digest = "sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
     )
 
     # Custom-built container with python MySQL client, for MySQL tests.
-    _gcr_io_image(
-        "python_mysql_connector_image",
-        "sha256:ae7fb76afe1ab7c34e2d31c351579ee340c019670559716fd671126e85894452",
-        "pixie-oss/pixie-dev-public/python_mysql_connector",
+    _container_image(
+        name = "python_mysql_connector_image",
+        repository = "python_mysql_connector",
+        digest = "sha256:ae7fb76afe1ab7c34e2d31c351579ee340c019670559716fd671126e85894452",
     )
 
-    # NATS server image, for testing. This isn't the official image. The difference is that this
-    # includes symbols in the executable.
-    _gcr_io_image(
-        "nats_base_image",
-        "sha256:93179975b83acaf1ff7581e9e23c59d838e780599a80f795ae90e97de08c4aae",
-        "pixie-oss/pixie-dev-public/nats/nats-server",
+    # Custom built nats:2.9.19-scratch with dwarf info
+    _container_image(
+        name = "nats_base_image",
+        repository = "nats",
+        digest = "sha256:55521ffe36911fb4edeaeecb7f9219f9d2a09bc275530212b89e41ab78a7f16d",
     )
 
     # Kafka broker image, for testing.
-    _gcr_io_image(
-        "kafka_base_image",
-        "sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
-        "pixie-oss/pixie-dev-public/docker-deps/confluentinc/cp-kafka",
+    _container_image(
+        name = "kafka_base_image",
+        repository = "confluentinc/cp-kafka",
+        digest = "sha256:ee6e42ce4f79623c69cf758848de6761c74bf9712697fe68d96291a2b655ce7f",
     )
 
     # Zookeeper image for Kafka.
-    _gcr_io_image(
-        "zookeeper_base_image",
-        "sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
-        "pixie-oss/pixie-dev-public/docker-deps/confluentinc/cp-zookeeper",
+    _container_image(
+        name = "zookeeper_base_image",
+        repository = "confluentinc/cp-zookeeper",
+        digest = "sha256:87314e87320abf190f0407bf1689f4827661fbb4d671a41cba62673b45b66bfa",
     )
 
     # Tag: node:12.3.1-stretch-slim
     # Arch: linux/amd64
-    # This is the oldest tag on docker hub that can be pulled. Older tags cannot be pulled because
-    # of server error on docker hub, which presumably is because of they are too old.
-    _gcr_io_image(
-        "node_12_3_1_linux_amd64_image",
-        "sha256:86acb148010d15bc63200493000bb8fc70ea052f7da2a80d34d7741110378eb3",
-        "pixie-oss/pixie-dev-public/docker-deps/node",
+    _container_image(
+        name = "node_12_3_1_linux_amd64_image",
+        repository = "node",
+        digest = "sha256:86acb148010d15bc63200493000bb8fc70ea052f7da2a80d34d7741110378eb3",
     )
 
     # Tag: node:14.18.1-alpine
     # Arch: linux/amd64
-    _gcr_io_image(
-        "node_14_18_1_alpine_linux_amd64_image",
-        "sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
-        "pixie-oss/pixie-dev-public/docker-deps/node",
+    _container_image(
+        name = "node_14_18_1_alpine_linux_amd64_image",
+        repository = "node",
+        digest = "sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
     )
 
     # Tag: rabbitmq:3-management
     # Arch: linux/amd64
-    _gcr_io_image(
-        "rabbitmq_3_management",
-        "sha256:650c7e0093842739ddfaadec0d45946c052dba42941bd5c0a082cbe914451c25",
-        "pixie-oss/demo-apps/rabbitmq/rabbitmq:3-management",
+    _container_image(
+        name = "rabbitmq_3_management",
+        repository = "rabbitmq",
+        digest = "sha256:650c7e0093842739ddfaadec0d45946c052dba42941bd5c0a082cbe914451c25",
     )
 
     # Tag: productcatalogservice:v0.2.0
     # Arch: linux/amd64
-    _gcr_io_image(
-        "productcatalogservice_v0_2_0",
-        "sha256:1726e4dd813190ad1eae7f3c42483a3a83dd1676832bb7b04256455c8968d82a",
-        "google-samples/microservices-demo/productcatalogservice:v0.2.0",
+    _container_image(
+        name = "productcatalogservice_v0_2_0",
+        repository = "google-samples/microservices-demo/productcatalogservice",
+        digest = "sha256:1726e4dd813190ad1eae7f3c42483a3a83dd1676832bb7b04256455c8968d82a",
     )
 
     # Built and pushed by src/stirling/testing/demo_apps/py_grpc/update_gcr.sh
-    _gcr_io_image(
-        "py_grpc_helloworld_image",
-        "sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
-        "pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:1.2",
+    _container_image(
+        name = "py_grpc_helloworld_image",
+        repository = "python_grpc_1_19_0_helloworld",
+        digest = "sha256:e04fc4e9b10508eed74c4154cb1f96d047dc0195b6ef0c9d4a38d6e24238778e",
     )
 
-    _gcr_io_image(
-        "emailservice_image",
-        "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
-        "google-samples/microservices-demo/emailservice:v0.1.3",
+    _container_image(
+        name = "emailservice_image",
+        repository = "google-samples/microservices-demo/emailservice",
+        digest = "sha256:d42ee712cbb4806a8b922e303a5e6734f342dfb6c92c81284a289912165b7314",
     )
