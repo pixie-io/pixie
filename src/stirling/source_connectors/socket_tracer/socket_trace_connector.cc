@@ -102,7 +102,7 @@ DEFINE_int32(stirling_enable_amqp_tracing, px::stirling::TraceMode::On,
              "If true, stirling will trace and process AMQP messages.");
 
 DEFINE_bool(stirling_disable_golang_tls_tracing,
-            gflags::BoolFromEnv("STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
+            gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
             "If true, stirling will not trace TLS traffic for Go applications. This implies "
             "stirling_enable_http2_tracing=false.");
 
