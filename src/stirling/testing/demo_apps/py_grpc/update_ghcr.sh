@@ -20,7 +20,7 @@
 # This is because the produced docker image is mainly used for testing tracing Python gRPC app,
 # which depends on the version of the module.
 version=1.2
-tag="gcr.io/pixie-oss/pixie-dev-public/python_grpc_1_19_0_helloworld:$version"
+tag="ghcr.io/pixie-io/python_grpc_1_19_0_helloworld:$version"
 
 docker build . -t $tag
 docker push $tag

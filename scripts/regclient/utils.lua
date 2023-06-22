@@ -2,14 +2,31 @@ local utils = {}
 
 local gcr = "gcr.io"
 
+function utils.hasPrefix(s, prefix)
+  return string.sub(s, 1, #prefix) == prefix
+end
+
 function utils.parseVersion(v)
   return string.match(v, "^(%d+)%.(%d+)%.(%d+)(.-)$")
+end
+
+function utils.parseImage(img)
+  local i = string.find(img, "@", 1, true)
+
+  local path = string.sub(img, 1, i-1)
+  local digest = string.sub(img, i+1)
+
+  i = string.find(path, "/", 1, true)
+  local registry = string.sub(path, 1, i-1)
+  local repo = string.sub(path, i+1)
+
+  return registry, repo, digest
 end
 
 function utils.combine(a, b)
   -- create a path that looks like a directory, this is supported by gcr
   local dirPath = a .. "/" .. b
-  if string.sub(dirPath, 1, #gcr) == gcr then
+  if utils.hasPrefix(dirPath, gcr) then
     return dirPath
   end
 

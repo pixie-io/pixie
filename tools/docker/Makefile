@@ -105,7 +105,7 @@ LINUX_HEADERS_GS_PATH := gs://pixie-dev-public/linux-headers/$(LINUX_HEADERS_REV
 
 ## NATS image parameters.
 NATS_IMAGE_VERSION := 2.9.19
-nats_image_tag := "gcr.io/pixie-oss/pixie-prod/vizier-deps/nats:$(NATS_IMAGE_VERSION)-scratch"
+nats_image_tag := "ghcr.io/pixie-io/nats:$(NATS_IMAGE_VERSION)-scratch"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420

@@ -8,7 +8,7 @@ Due to implementation limitations, the test app uses gRPC version 1.19.0, which 
 The newer version of gRPC modules were stripped of symbols. Without symbols, Pixie cannot find the
 correct addresses to attach eBPF probes.
 
-Run `update_gcr.sh` in this directory to push image to the gcr.io repo.
+Run `update_ghcr.sh` in this directory to push image to the ghcr.io repo.
 
 The produced docker image's entrypoint is Python REPL environment. To run the client and server:
 
