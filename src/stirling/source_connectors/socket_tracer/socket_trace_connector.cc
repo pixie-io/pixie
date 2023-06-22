@@ -147,13 +147,6 @@ DEFINE_uint32(datastream_buffer_retention_size,
 DEFINE_uint64(max_body_bytes, gflags::Uint64FromEnv("PL_STIRLING_MAX_BODY_BYTES", 512),
               "The maximum number of bytes in the body of protocols like HTTP");
 
-DEFINE_bool(
-    access_tls_socket_fd_via_syscall,
-    gflags::BoolFromEnv("PL_ACCESS_TLS_SOCKET_FD_VIA_SYSCALL", true),
-    "If true, stirling will identify a socket's fd based on the underlying syscall (read, write, "
-    "etc) while a user space tls function call occurs. When false, stirling attempts to access the "
-    "socket fd by walking user space data structures which may be brittle.");
-
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace px {
@@ -418,8 +411,6 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
-      absl::StrCat("-DACCESS_TLS_SK_FD_VIA_ACTIVE_SYSCALL=",
-                   FLAGS_access_tls_socket_fd_via_syscall),
   };
   PX_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
 

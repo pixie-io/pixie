@@ -276,6 +276,15 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
                                 HostPathForPIDPathSearchType::kSearchTypeEndsWith);
 }
 
+enum class SSLSocketFDAccess {
+  // Specifies that a connection's socket fd will be identified by accessing struct members
+  // of the SSL struct exposed by OpenSSL's API when the SSL_write/SSL_read functions are called.
+  kUserSpaceOffsets,
+  // Specifies that a connection's socket fd will be identified based on the underlying syscall
+  // (read, write, etc) while a user space tls function is on the stack.
+  kNestedSyscall,
+};
+
 // SSLLibMatcher allows customizing the search of shared object files
 // that need to be traced with the SSL_write and SSL_read uprobes.
 // In dynamically linked cases, it's likely that there are two
@@ -285,6 +294,7 @@ struct SSLLibMatcher {
   std::string_view libssl;
   std::string_view libcrypto;
   HostPathForPIDPathSearchType search_type;
+  SSLSocketFDAccess socket_fd_access;
 };
 
 constexpr char kLibSSL_1_1[] = "libssl.so.1.1";
@@ -296,11 +306,13 @@ static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
         .libssl = kLibSSL_1_1,
         .libcrypto = "libcrypto.so.1.1",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
+        .socket_fd_access = SSLSocketFDAccess::kNestedSyscall,
     },
     SSLLibMatcher{
         .libssl = kLibSSL_3,
         .libcrypto = "libcrypto.so.3",
         .search_type = HostPathForPIDPathSearchType::kSearchTypeEndsWith,
+        .socket_fd_access = SSLSocketFDAccess::kNestedSyscall,
     },
     SSLLibMatcher{
         // This must match independent of python version and INSTSONAME suffix
@@ -308,11 +320,15 @@ static constexpr const auto kLibSSLMatchers = MakeArray<SSLLibMatcher>({
         .libssl = kLibPython,
         .libcrypto = kLibPython,
         .search_type = HostPathForPIDPathSearchType::kSearchTypeContains,
+        .socket_fd_access = SSLSocketFDAccess::kNestedSyscall,
     },
+    // non BIO native TLS applications cannot be probed by accessing the socket fd
+    // within the underlying syscall.
     SSLLibMatcher{
         .libssl = kLibNettyTcnativePrefix,
         .libcrypto = kLibNettyTcnativePrefix,
         .search_type = HostPathForPIDPathSearchType::kSearchTypeContains,
+        .socket_fd_access = SSLSocketFDAccess::kUserSpaceOffsets,
     },
 });
 
@@ -332,18 +348,25 @@ ssl_source_t SSLSourceFromLib(std::string_view libssl) {
   return kSSLUnspecified;
 }
 
+std::string ProbeFuncForSocketAccessMethod(std::string_view probe_fn,
+                                           SSLSocketFDAccess socket_fd_access) {
+  std::string probe_suffix = "";
+  switch (socket_fd_access) {
+    case SSLSocketFDAccess::kUserSpaceOffsets:
+      break;
+    case SSLSocketFDAccess::kNestedSyscall:
+      probe_suffix = "_syscall_fd_access";
+  }
+
+  return absl::StrCat(probe_fn, probe_suffix);
+}
+
 // Return error if something unexpected occurs.
 // Return 0 if nothing unexpected, but there is nothing to deploy (e.g. no OpenSSL detected).
 StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
   for (auto ssl_library_match : kLibSSLMatchers) {
     const auto libssl = ssl_library_match.libssl;
     const auto libcrypto = ssl_library_match.libcrypto;
-
-    // TODO(ddelnano): The legacy tls tracing implementation does not support OpenSSL v3.
-    // Remove this once that implementation is removed in addition to the feature toggle.
-    if (!FLAGS_access_tls_socket_fd_via_syscall && absl::EndsWith(libssl, "so.3")) {
-      continue;
-    }
 
     const std::vector<std::string_view> lib_names = {libssl, libcrypto};
     const auto search_type = ssl_library_match.search_type;
@@ -373,7 +396,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
       return error::Internal("libcrypto not found [path = $0]", container_libcrypto.string());
     }
 
-    if (!FLAGS_access_tls_socket_fd_via_syscall || libssl == kLibNettyTcnativePrefix) {
+    if (libssl == kLibNettyTcnativePrefix) {
       auto fptr_manager = std::make_unique<obj_tools::RawFptrManager>(container_libcrypto);
 
       PX_RETURN_IF_ERROR(UpdateOpenSSLSymAddrs(fptr_manager.get(), container_libcrypto, pid));
@@ -393,12 +416,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     openssl_source_map_->UpdateValue(pid, ssl_source);
     for (auto spec : kOpenSSLUProbes) {
       spec.binary_path = container_libssl.string();
-
-      // TODO(ddelnano): Remove this conditional logic once the new tls tracing
-      // implementation is the default.
-      if (FLAGS_access_tls_socket_fd_via_syscall && libssl != kLibNettyTcnativePrefix) {
-        spec.probe_fn = absl::Substitute("$0_syscall_fd_access", spec.probe_fn);
-      }
+      spec.probe_fn =
+          ProbeFuncForSocketAccessMethod(spec.probe_fn, ssl_library_match.socket_fd_access);
 
       PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
     }

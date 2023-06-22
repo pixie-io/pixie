@@ -42,11 +42,6 @@ var availableFeatureFlags = []*featureFlag{
 		VizierFlagName:  "PL_PROFILER_JAVA_SYMBOLS",
 		DefaultValue:    true,
 	},
-	{
-		FeatureFlagName: "access-tls-socket-fd-via-syscall",
-		VizierFlagName:  "PL_ACCESS_TLS_SOCKET_FD_VIA_SYSCALL",
-		DefaultValue:    false,
-	},
 }
 
 // NewVizierFeatureFlagClient creates a LaunchDarkly feature flag client if the SDK key is provided,
