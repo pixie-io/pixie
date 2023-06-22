@@ -45,7 +45,7 @@
 DECLARE_bool(stirling_rescan_for_dlopen);
 DECLARE_bool(stirling_enable_grpc_c_tracing);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
-DECLARE_bool(probe_static_tls_binaries);
+DECLARE_bool(stirling_trace_static_tls_binaries);
 
 namespace px {
 namespace stirling {

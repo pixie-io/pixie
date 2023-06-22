@@ -44,7 +44,7 @@ var availableFeatureFlags = []*featureFlag{
 	},
 	{
 		FeatureFlagName: "probe-static-tls-binaries",
-		VizierFlagName:  "PL_PROBE_STATIC_TLS_BINARIES",
+		VizierFlagName:  "PL_TRACE_STATIC_TLS_BINARIES",
 		DefaultValue:    false,
 	},
 }

@@ -69,7 +69,7 @@ class BoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracin
   }
 
   void SetUp() override {
-    FLAGS_probe_static_tls_binaries = true;
+    FLAGS_stirling_trace_static_tls_binaries = true;
 
     SocketTraceBPFTestFixture::SetUp();
   }
