@@ -113,12 +113,12 @@ const ClusterDetailsNavigationBreadcrumbs = React.memo<{ selectedClusterName: st
           .map((c) => ({ value: c.prettyClusterName }));
         return { items, hasMoreItems: false };
       },
-      onSelect: (/* input */) => {
+      onSelect: (input) => {
         history.push(getClusterDetailsURL(
-          clusters.find(({ prettyClusterName }) => prettyClusterName === selectedClusterName)?.clusterName));
+          clusters.find(({ prettyClusterName }) => prettyClusterName === input)?.clusterName));
       },
     },
-  ], [clusters, error, history, loading, selectedClusterName, selectedClusterPrettyName]);
+  ], [clusters, error, history, loading, selectedClusterPrettyName]);
 
   return <Breadcrumbs breadcrumbs={breadcrumbs} />;
 });
