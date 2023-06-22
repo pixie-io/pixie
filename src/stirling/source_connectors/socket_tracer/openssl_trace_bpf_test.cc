@@ -280,7 +280,6 @@ OPENSSL_TYPED_TEST(ssl_capture_node_client, {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-  LOG(INFO) << "Trigger tests to see if it reduces flakiness";
 })
 
 }  // namespace stirling
