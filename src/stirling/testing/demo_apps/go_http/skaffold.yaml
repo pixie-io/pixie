@@ -3,14 +3,14 @@ apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  - image: go_grpc_tls_pl-server
+  - image: go_http_client
     context: .
     bazel:
-      target: //src/stirling/testing/demo_apps/go_grpc_tls_pl/server:golang_1_20_grpc_tls_server.tar
-  - image: go_grpc_tls_pl-client
+      target: //src/stirling/testing/demo_apps/go_http/go_http_client:image.tar
+  - image: go_http_server
     context: .
     bazel:
-      target: //src/stirling/testing/demo_apps/go_grpc_tls_pl/client:golang_1_20_grpc_tls_client.tar
+      target: //src/stirling/testing/demo_apps/go_http/go_http_server:image.tar
   tagPolicy:
     dateTime: {}
   local:
@@ -18,7 +18,7 @@ build:
 manifests:
   kustomize:
     paths:
-    - src/stirling/testing/demo_apps/go_grpc_tls_pl/k8s
+    - src/stirling/testing/demo_apps/go_http/k8s
 profiles:
 - name: aarch64_sysroot
   patches:

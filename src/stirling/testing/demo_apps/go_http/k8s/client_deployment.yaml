@@ -17,10 +17,9 @@ spec:
     spec:
       containers:
       - name: go-http-client
-        # Replace with your own username.
-        image: gcr.io/pl-dev-infra/demos/go_http_client:{{USER}}
+        image: go_http_client
         args:
-        - --address=fe:50051
+        - --address=http-server:50051
         - --count=0
         - --sleep=1000
         - --reqSize=16384
