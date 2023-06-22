@@ -110,6 +110,10 @@ artifact_url() {
   echo "${ARTIFACT_BASE_PATH}${USE_VERSION}/${ARTIFACT_NAME}"
 }
 
+artifact_sha_url() {
+  echo "${ARTIFACT_BASE_PATH}${USE_VERSION}/${ARTIFACT_NAME}.sha256"
+}
+
 have_sudo_access() {
   if [[ -z "${HAVE_SUDO_ACCESS-}" ]]; then
     /usr/bin/sudo -l mkdir &>/dev/null
@@ -220,9 +224,13 @@ if [[ ! -e "${INSTALL_PATH}" ]]; then
 fi
 
 # TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually Pixie.
-# TODO(zasgar): Check the sha256.
 # Note: we need this download, mv step to make sure macos does not mark this binary as bad.
+artifact_sha=$(curl -fsSL "$(artifact_sha_url)")
 execute curl -fsSL "$(artifact_url)" -o "${INSTALL_PATH}"/px_new
+actual_sha=$(shasum -a 256 "${INSTALL_PATH}"/px_new | head -c 64)
+if [[ "$artifact_sha" != "$actual_sha" ]]; then
+    abort "SHA for downloaded CLI does not match expected SHA"
+fi
 execute chmod +x "${INSTALL_PATH}"/px_new
 execute mv "${INSTALL_PATH}"/px_new "${INSTALL_PATH}"/px
 
