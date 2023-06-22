@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grpc-server
-  namespace: px-grpc-test
 spec:
   replicas: 1
   selector:
@@ -16,7 +15,7 @@ spec:
     spec:
       containers:
       - name: grpc-server
-        image: gcr.io/pixie-oss/pixie-dev/src/stirling/testing/demo_apps/go_grpc_tls_pl/server:latest
+        image: go_grpc_tls_pl-server
         ports:
         - containerPort: 50400
         imagePullPolicy: Always
