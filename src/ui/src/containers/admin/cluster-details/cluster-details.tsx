@@ -43,6 +43,66 @@ import { ClusterSummaryTable } from './cluster-details-details';
 import { PixiePodsTab } from './cluster-details-pods';
 import { useClusterDetailStyles } from './cluster-details-utils';
 
+export const CLUSTER_NAV_GQL = gql`
+  query clusterNavigationData{
+    clusters {
+      id
+      clusterName
+      prettyClusterName
+      status
+    }
+  }
+`;
+
+export const CLUSTER_BY_NAME_GQL = gql`
+  query GetClusterByName($name: String!) {
+    clusterByName(name: $name) {
+      id
+      clusterName
+      prettyClusterName
+      status
+      statusMessage
+      clusterVersion
+      operatorVersion
+      vizierVersion
+      lastHeartbeatMs
+      numNodes
+      numInstrumentedNodes
+      controlPlanePodStatuses {
+        name
+        status
+        message
+        reason
+        restartCount
+        containers {
+          name
+          state
+          reason
+          message
+        }
+        events {
+          message
+        }
+      }
+      unhealthyDataPlanePodStatuses {
+        name
+        status
+        message
+        reason
+        restartCount
+        containers {
+          name
+          state
+          reason
+          message
+        }
+        events {
+          message
+        }
+      }
+    }
+  }
+`;
 
 const useLinkStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -78,16 +138,7 @@ const ClusterDetailsNavigationBreadcrumbs = React.memo<{ selectedClusterName: st
   const history = useHistory();
   const { data, loading, error } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'prettyClusterName' | 'status'>[],
-  }>(gql`
-    query clusterNavigationData{
-      clusters {
-        id
-        clusterName
-        prettyClusterName
-        status
-      }
-    }
-  `, {});
+  }>(CLUSTER_NAV_GQL, {});
   const clusters = data?.clusters;
 
   const selectedClusterPrettyName = React.useMemo(() => {
@@ -147,54 +198,7 @@ const ClusterDetailsTabs = React.memo<{ clusterName: string }>(({ clusterName })
     'numInstrumentedNodes'
     >
   }>(
-    gql`
-      query GetClusterByName($name: String!) {
-        clusterByName(name: $name) {
-          id
-          clusterName
-          prettyClusterName
-          status
-          statusMessage
-          clusterVersion
-          operatorVersion
-          vizierVersion
-          lastHeartbeatMs
-          numNodes
-          numInstrumentedNodes
-          controlPlanePodStatuses {
-            name
-            status
-            message
-            reason
-            restartCount
-            containers {
-              name
-              state
-              reason
-              message
-            }
-            events {
-              message
-            }
-          }
-          unhealthyDataPlanePodStatuses {
-            name
-            status
-            message
-            reason
-            restartCount
-            containers {
-              name
-              state
-              reason
-              message
-            }
-            events {
-              message
-            }
-          }
-        }
-      }`,
+    CLUSTER_BY_NAME_GQL,
     // Ignore cache on first fetch, to avoid blinking stale heartbeats.
     {
       variables: { name: clusterName },
