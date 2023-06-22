@@ -40,19 +40,10 @@ namespace stirling {
 
 namespace http = protocols::http;
 
-using ::px::stirling::testing::EqHTTPRecord;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::stirling::testing::GetTargetRecords;
 using ::px::stirling::testing::SocketTraceBPFTestFixture;
 using ::px::stirling::testing::ToRecordVector;
-
-using ::testing::StrEq;
-using ::testing::UnorderedElementsAre;
-
-bool Init() {
-  FLAGS_stirling_enable_mux_tracing = false;
-  return true;
-}
 
 class Bssl_ContainerWrapper : public ::px::stirling::testing::BsslContainer {};
 
@@ -108,18 +99,6 @@ class BoringSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracin
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
-http::Record GetExpectedHTTPRecord() {
-  http::Record expected_record;
-  /* expected_record.req.minor_version = 1; */
-  expected_record.req.req_method = "GET";
-  expected_record.req.req_path = "/";
-  /* expected_record.req.body = ""; */
-  expected_record.resp.resp_status = 200;
-  expected_record.resp.resp_message = "OK";
-  /* expected_record.resp.body = kNginxRespBody; */
-  return expected_record;
-}
-
 typedef ::testing::Types<Bssl_ContainerWrapper> BoringSSLServerImplementations;
 
 TYPED_TEST_SUITE(BoringSSLTraceTest, BoringSSLServerImplementations);
@@ -142,7 +121,6 @@ TYPED_TEST(BoringSSLTraceTest, ssl_capture_curl_client) {
   this->StopTransferDataThread();
 
   TraceRecords records = this->GetTraceRecords(this->server_.process_pid());
-  http::Record expected_record = GetExpectedHTTPRecord();
 
   EXPECT_EQ(records.http_records.size(), 1);
   EXPECT_EQ(records.http_records[0].req.req_path, "/");
