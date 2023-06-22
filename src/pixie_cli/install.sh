@@ -22,17 +22,10 @@
 ################################################################
 set -u
 
-CLOUD_ADDR=${PL_CLOUD_ADDR:-"work.withpixie.ai"}
 DEFAULT_INSTALL_PATH=/usr/local/bin
 ARTIFACT_NAME=cli_darwin_universal
-USE_VERSION=${PL_CLI_VERSION:-latest}
 USER_INSTALL_PATH="$HOME/bin"
-ARTIFACT_BUCKET="pixie-dev-public"
-if [[ $USE_VERSION == *"-"* ]]; then
-  ARTIFACT_BUCKET="pixie-prod-artifacts"
-fi
-ARTIFACT_BASE_PATH="https://storage.googleapis.com/${ARTIFACT_BUCKET}/cli"
-
+GITHUB_REPO="pixie-io/pixie"
 
 PIXIE_BANNER="
   ___  _       _
@@ -40,6 +33,18 @@ PIXIE_BANNER="
  |  _/| |\ \ /| |/ -_)
  |_|  |_|/_\_\|_|\___|
 "
+
+ARTIFACT_BASE_PATH="https://github.com/${GITHUB_REPO}/releases/download/release%2Fcli%2Fv"
+
+# Fetch latest version.
+LATEST_VERSION=""
+regex='v(([0-9]+)\.([0-9]+)\.([0-9]+))\)<!--cli-latest-release-->'
+if [[ "$(curl -fsSL https://raw.githubusercontent.com/pixie-io/pixie/main/README.md)" =~ $regex ]]; then
+    LATEST_VERSION=${BASH_REMATCH[1]}
+fi
+
+USE_VERSION=${PL_CLI_VERSION:-${LATEST_VERSION}}
+USE_VERSION=${PX_CLI_VERSION:-${USE_VERSION}}
 
 # Check if the OS is Linux.
 if [[ "$(uname)" = "Linux" ]]; then
@@ -97,12 +102,16 @@ print_dev_message() {
   if [[ -n "${PL_TESTING_ENV:-}" ]]; then
     emph_red "${tty_red}IN DEVELOPMENT MODE: PL_TESTING_ENV=${PL_TESTING_ENV},"\
               "PL_CLI_VERSION=${PL_CLI_VERSION:-}, PL_VIZIER_VERSION=${PL_VIZIER_VERSION:-}"\
-              "PL_CLOUD_ADDR=${PL_CLOUD_ADDR:-}${tty_reset}"
+              "${tty_reset}"
   fi
 }
 
 artifact_url() {
-  echo "${ARTIFACT_BASE_PATH}/${USE_VERSION}/${ARTIFACT_NAME}"
+  echo "${ARTIFACT_BASE_PATH}${USE_VERSION}/${ARTIFACT_NAME}"
+}
+
+artifact_sha_url() {
+  echo "${ARTIFACT_BASE_PATH}${USE_VERSION}/${ARTIFACT_NAME}.sha256"
 }
 
 have_sudo_access() {
@@ -170,21 +179,23 @@ emph "Info:"
 cat << EOS
 Pixie gives engineers access to no-instrumentation, streaming &
 unsampled auto-telemetry to debug performance issues in real-time,
-More information at: ${tty_underline}https://www.pixielabs.ai${tty_reset}.
+More information at: ${tty_underline}https://www.px.dev${tty_reset}.
 
 This command will install the Pixie CLI (px) in a location selected
-by you, and performs authentication with Pixie's cloud hosted control
-plane. After installation of the CLI you can easily manage Pixie
+by you, and performs authentication with Pixie's control plane.
+After installation of the CLI you can easily manage Pixie
 installations on your K8s clusters and execute scripts to collect
 telemetry from your clusters using Pixie.
 
 Docs:
-  ${tty_underline}https://${CLOUD_ADDR}/docs${tty_reset}
+  ${tty_underline}https://docs.px.dev${tty_reset}
+Github:
+  ${tty_underline}https://github.com/pixie-io/pixie${tty_reset}
 EOS
 
 
 printf "\n\n"
-emph "Terms and Conditions ${tty_underline}https://www.pixielabs.ai/terms${tty_reset}"
+emph "Terms and Conditions ${tty_underline}https://www.px.dev/terms${tty_reset}"
 read -r -p "I have read and accepted the Terms & Conditions [y/n]: " READ_TERMS
 printf "\n\n"
 
@@ -213,32 +224,23 @@ if [[ ! -e "${INSTALL_PATH}" ]]; then
 fi
 
 # TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually Pixie.
-# TODO(zasgar): Check the sha256.
 # Note: we need this download, mv step to make sure macos does not mark this binary as bad.
+artifact_sha=$(curl -fsSL "$(artifact_sha_url)")
 execute curl -fsSL "$(artifact_url)" -o "${INSTALL_PATH}"/px_new
+actual_sha=$(shasum -a 256 "${INSTALL_PATH}"/px_new | head -c 64)
+if [[ "$artifact_sha" != "$actual_sha" ]]; then
+    abort "SHA for downloaded CLI does not match expected SHA"
+fi
 execute chmod +x "${INSTALL_PATH}"/px_new
 execute mv "${INSTALL_PATH}"/px_new "${INSTALL_PATH}"/px
-
-echo
-emph "Authenticating with Pixie Cloud:"
-
-
-if ! "${INSTALL_PATH}"/px auth login -q; then
-cat << EOS
-
-${tty_red}FAILED to authenticate with Pixie cloud. ${tty_reset}
-  You can try this step yourself by running ${tty_green}px auth login${tty_reset}.
-  For help, please contact support@pixielabs.ai or join our community slack/github"
-
-EOS
-fi
 
 echo
 emph "Next steps:"
 cat << EOS
 - PX CLI has been installed to: ${INSTALL_PATH}. Make sure this directory is in your PATH.
+- First run ${tty_green}px auth login${tty_reset} with \`PX_CLOUD_ADDR\` set to authenticate.
 - Run ${tty_green}px deploy${tty_reset} to deploy Pixie on K8s.
-- Run ${tty_green}px help${tty_reset} to get started, or visit our UI: ${tty_underline}https://${CLOUD_ADDR}${tty_reset}
+- Run ${tty_green}px help${tty_reset} for more commands.
 - Further documentation:
-    ${tty_underline}https://${CLOUD_ADDR}/docs${tty_reset}
+    ${tty_underline}docs.px.dev${tty_reset}
 EOS
