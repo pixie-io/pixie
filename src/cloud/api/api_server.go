@@ -51,7 +51,7 @@ import (
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
-const ossBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
+const ossBundleFile = "https://artifacts.px.dev/pxl_scripts/bundle.json"
 
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")

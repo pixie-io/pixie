@@ -14,8 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-BUNDLE := gs://pixie-prod-artifacts/script-bundles/bundle-oss.json
-
 # Update dir name here if you want to add a new directory.
 dirs := bpftrace px pxbeta sotw
 script_files := $(foreach dir,$(dirs),$(wildcard $(dir)/**/*))
@@ -31,16 +29,6 @@ bundle-oss.json: $(script_files)
 
 bundle-oss.json.gz: bundle-oss.json
 	gzip -c $< > $@
-
-.PHONY: update_bundle
-update_bundle: bundle-oss.json.gz
-# Requires prod access to update, or needs to run in CI deploy.
-	gsutil -h "Cache-Control:no-cache,max-age=0" \
-	       -h "Content-Type:application/json" \
-	       -h "Content-Encoding: gzip" \
-	       cp $< $(BUNDLE)
-# Readable by everyone
-	gsutil acl ch -u allUsers:READER $(BUNDLE)
 
 update_readme:
 	./update_readme.py . https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts

@@ -49,7 +49,7 @@ var allowedOutputFmts = map[string]bool{
 	"json":  true,
 }
 
-const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
+const defaultBundleFile = "https://artifacts.px.dev/pxl_scripts/bundle.json"
 
 const (
 	execTimeExternalLabel = "Exec Time: External"
