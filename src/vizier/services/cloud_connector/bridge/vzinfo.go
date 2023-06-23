@@ -512,12 +512,9 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 			imgPath := imgTag[0]
 
 			tagVers := semver.MustParse(val)
-
-			repoPath := publicImageRepo
-			if len(tagVers.Pre) > 0 {
-				repoPath = privateImageRepo
+			if len(tagVers.Pre) > 0 && strings.HasPrefix(imgPath, publicImageRepo) {
+				imgPath = strings.Replace(imgPath, publicImageRepo, privateImageRepo, 1)
 			}
-			imgPath = repoPath + imgPath[strings.Index(imgPath, "/vizier/"):]
 
 			job.Spec.Template.Spec.Containers[i].Image = imgPath + ":" + val
 		}
