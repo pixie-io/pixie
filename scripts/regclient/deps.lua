@@ -23,7 +23,7 @@ local images = {
   "docker.io/datastax/dse-server@sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
   "docker.io/ibmjava@sha256:78e2dd462373b3c5631183cc927a54aef1b114c56fe2fb3e31c4b39ba2d919dc",
   "docker.io/mysql/mysql-server@sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
-  "docker.io/nginx@sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
+  "docker.io/nginx@sha256:0f2ab24c6aba5d96fcf6e7a736333f26dca1acf5fa8def4c276f6efc7d56251f",
   "docker.io/nginx@sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
   "docker.io/nginx@sha256:3eb380b81387e9f2a49cb6e5e18db016e33d62c37ea0e9be2339e9f0b3e26170",
   "docker.io/node@sha256:1b50792b5ed9f78fe08f24fbf57334cc810410af3861c5c748de055186bf082c",
