@@ -118,7 +118,7 @@ describe('<ClusterDetails />', () => {
       ));
     });
     await waitFor(() => {});
-    const el = within(container).getByText('foo:name');
+    const el = await within(container).findByText('foo:name');
     expect(el.tagName).toBe('TD');
   });
 
@@ -130,7 +130,7 @@ describe('<ClusterDetails />', () => {
       ));
     });
     await waitFor(() => {});
-    const opener = within(container).getByText('foo:prettyName');
+    const opener = await within(container).findByText('foo:prettyName');
     expect(opener).toBeDefined();
     await act(async () => {
       fireEvent.click(opener);
@@ -150,7 +150,7 @@ describe('<ClusterDetails />', () => {
       ));
     });
     await waitFor(() => {});
-    const opener = within(container).getByText('foo:prettyName');
+    const opener = await within(container).findByText('foo:prettyName');
     expect(opener).toBeDefined();
     await act(async () => {
       fireEvent.click(opener);
