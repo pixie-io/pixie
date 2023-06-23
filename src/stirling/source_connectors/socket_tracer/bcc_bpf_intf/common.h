@@ -102,4 +102,5 @@ enum ssl_source_t {
   kLibSSL_3_Source,
   kLibPythonSource,
   kLibNettyTcnativeSource,
+  kStaticallyLinkedSource,
 };

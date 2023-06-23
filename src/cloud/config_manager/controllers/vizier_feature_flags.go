@@ -42,6 +42,11 @@ var availableFeatureFlags = []*featureFlag{
 		VizierFlagName:  "PL_PROFILER_JAVA_SYMBOLS",
 		DefaultValue:    true,
 	},
+	{
+		FeatureFlagName: "probe-static-tls-binaries",
+		VizierFlagName:  "PL_TRACE_STATIC_TLS_BINARIES",
+		DefaultValue:    false,
+	},
 }
 
 // NewVizierFeatureFlagClient creates a LaunchDarkly feature flag client if the SDK key is provided,

@@ -45,6 +45,7 @@
 DECLARE_bool(stirling_rescan_for_dlopen);
 DECLARE_bool(stirling_enable_grpc_c_tracing);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
+DECLARE_bool(stirling_trace_static_tls_binaries);
 
 namespace px {
 namespace stirling {
@@ -574,6 +575,19 @@ class UProbeManager {
    * does not use OpenSSL; instead the return value will be zero.
    */
   StatusOr<int> AttachNodeJsOpenSSLUprobes(uint32_t pid);
+
+  /**
+   * Attaches the required probes for TLS tracing to the specified PID if the binary is
+   * statically linked with the necessary OpenSSL compatible symbols. This will only capture
+   * data if the binary uses the OpenSSL API in a BIO native way -- where OpenSSL IO primitives
+   * are used rather than just its encryption functionality.
+   *
+   * @param pid The PID of the process whose binary is examined for OpenSSL symbols statically
+   * linked.
+   * @return The number of uprobes deployed. It is not an error if the binary
+   *         does not contain the necessary symbols to probe; instead the return value will be zero.
+   */
+  StatusOr<int> AttachOpenSSLUProbesOnStaticBinary(uint32_t pid);
 
   /**
    * Calls BCCWrapper.AttachUProbe() with a probe template and log any errors to the probe status

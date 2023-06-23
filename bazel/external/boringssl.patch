@@ -1,0 +1,11 @@
+--- src/tool/server.cc	2023-01-20 13:31:06.619119943 -0800
++++ src/tool/server.cc	2023-01-20 13:30:59.707052958 -0800
+@@ -206,7 +206,7 @@
+   BIO_puts(bio.get(), "HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+   PrintConnectionInfo(bio.get(), ssl);
+
+-  char request[4];
++  char request[74];
+   size_t request_len = 0;
+   while (request_len < sizeof(request)) {
+     int ssl_ret =
