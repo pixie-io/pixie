@@ -46,6 +46,7 @@ module.exports = {
       ...a,
       [`^.+\\.${ext}$`]: ['esbuild-jest', {
         loader: ext,
+        sourcemap: true,
         target: 'node16',
       }]
     }), {}),

@@ -157,6 +157,7 @@ lcov -r ${COVERAGE_FILE} '**/*_test.go' -o ${COVERAGE_FILE}
 lcov -r ${COVERAGE_FILE} '**/*.gen.go' -o ${COVERAGE_FILE}
 lcov -r ${COVERAGE_FILE} '**/*-mock.tsx' -o ${COVERAGE_FILE}
 lcov -r ${COVERAGE_FILE} '**/*-mock.ts' -o ${COVERAGE_FILE}
+lcov -r ${COVERAGE_FILE} 'src/ui/src/types/generated/**' -o ${COVERAGE_FILE}
 
 # Print out the final summary.
 lcov --summary ${COVERAGE_FILE}
