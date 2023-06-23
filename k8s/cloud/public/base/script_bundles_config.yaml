@@ -6,6 +6,6 @@ metadata:
 data:
   SCRIPT_BUNDLE_URLS: >-
     [
-    "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json"
+    "https://artifacts.px.dev/pxl_scripts/bundle.json"
     ]
   SCRIPT_BUNDLE_DEV: "false"
