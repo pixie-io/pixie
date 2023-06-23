@@ -101,6 +101,11 @@ DEFINE_int32(stirling_enable_mux_tracing, px::stirling::TraceMode::OnForNewerKer
 DEFINE_int32(stirling_enable_amqp_tracing, px::stirling::TraceMode::On,
              "If true, stirling will trace and process AMQP messages.");
 
+DEFINE_bool(stirling_disable_golang_tls_tracing,
+            gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
+            "If true, stirling will not trace TLS traffic for Go applications. This implies "
+            "stirling_enable_http2_tracing=false.");
+
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
 
@@ -484,7 +489,8 @@ Status SocketTraceConnector::InitImpl() {
   conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(this);
   ConnTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
-  uprobe_mgr_.Init(protocol_transfer_specs_[kProtocolHTTP2].enabled,
+  uprobe_mgr_.Init(FLAGS_stirling_disable_golang_tls_tracing,
+                   protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
 
   openssl_trace_state_ =
