@@ -18,7 +18,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <prometheus/text_serializer.h>
 
 #include <string>
 
