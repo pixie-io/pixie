@@ -163,7 +163,7 @@
   },
   "resolutions": {
     "@types/react": "^18.0.9",
-    "multicast-dns": "7.2.3"
+    "semver": "^7.5.3"
   },
   "packageManager": "yarn@3.6.0"
 }
