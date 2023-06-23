@@ -406,7 +406,7 @@ TEST_F(ConnStatsBPFTest, SSLConnections) {
     //               bytes_sent/bytes_rcvd should be 2730 and 1029 respectively
     //               once we perform our accounting on encrypted data.
     // The TLS handshake has 4 less bytes when using 127.0.0.1 instead of localhost.
-    EXPECT_THAT(bytes_sent, 2493);
+    EXPECT_THAT(bytes_sent, 2486);
     EXPECT_THAT(bytes_rcvd, 698);
     EXPECT_THAT(addr_family, static_cast<int>(SockAddrFamily::kIPv4));
     EXPECT_THAT(protocol, kProtocolHTTP);

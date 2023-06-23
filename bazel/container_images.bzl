@@ -136,10 +136,11 @@ def stirling_test_images():
     )
 
     # NGINX with OpenSSL 1.1.1, for OpenSSL tracing tests.
+    # nginx:1.23.2-alpine
     _container_image(
         name = "nginx_openssl_1_1_1_base_image",
         repository = "nginx",
-        digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
+        digest = "sha256:0f2ab24c6aba5d96fcf6e7a736333f26dca1acf5fa8def4c276f6efc7d56251f",
     )
 
     # NGINX with OpenSSL 3.0.8, for OpenSSL tracing tests.

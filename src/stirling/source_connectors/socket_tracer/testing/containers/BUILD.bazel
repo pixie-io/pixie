@@ -79,6 +79,7 @@ container_image(
     base = "@nginx_openssl_1_1_1_base_image//image",
     layers = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_conf",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_html",
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
     ],
 )
