@@ -1,6 +1,6 @@
 ---
 name: Use github bazel config
-description: Uses ci/github/bazelrc, and adds BES config from ci/bes-oss-k8s.bazelrc. Must be run on self-hosted runner.
+description: Uses ci/github/bazelrc, and adds BES config from ci/bes.bazelrc
 inputs:
   download_toplevel:
     description: 'whether to download cached toplevel files during bazel builds'
@@ -8,12 +8,9 @@ inputs:
   dev:
     description: 'Whether to use DEV or CI settings for the bazelrc. defaults to dev'
     default: 'true'
-  use_remote_exec:
-    description: 'Use buildbuddy remote execution'
-    default: 'false'
   BB_API_KEY:
-    description: 'API key to use for buildbuddy if `use_remote_exec`'
-    default: ''
+    description: 'API key to use for buildbuddy'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -22,8 +19,11 @@ runs:
       cp ci/github/bazelrc github.bazelrc
     shell: bash
   - name: Copy BES bazel config
+    env:
+      BB_API_KEY: ${{ inputs.BB_API_KEY }}
     run: |
-      cp ci/bes-oss-k8s.bazelrc bes.bazelrc
+      cp ci/bes.bazelrc bes.bazelrc
+      echo "build --remote_header=x-buildbuddy-api-key=$BB_API_KEY" >> bes.bazelrc
     shell: bash
   - name: Add remote_download_outputs=toplevel
     if: inputs.download_toplevel == 'true'
@@ -40,12 +40,4 @@ runs:
     if: inputs.dev != 'true'
     run: |
       echo "build --build_metadata=ROLE=CI" >> github.bazelrc
-    shell: bash
-  - name: Add remote execution
-    if: inputs.use_remote_exec == 'true'
-    env:
-      BB_API_KEY: ${{ inputs.BB_API_KEY }}
-    run: |
-      echo "build:remote --remote_header=x-buildbuddy-api-key=$BB_API_KEY" >> github.bazelrc
-      echo "build --config=remote" >> github.bazelrc
     shell: bash

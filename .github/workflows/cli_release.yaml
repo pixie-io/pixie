@@ -30,9 +30,8 @@ jobs:
     - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
         download_toplevel: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Setup podman
       run: |
         # With some kernel configs (eg. COS), podman only works with legacy iptables.

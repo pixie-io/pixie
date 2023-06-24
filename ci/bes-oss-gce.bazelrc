@@ -1,3 +1,0 @@
-build --bes_backend=grpcs://bb-grpc.px.dev
-build --bes_results_url=https://bb.px.dev/invocation/
-build --remote_cache=grpcs://bb-grpc.px.dev

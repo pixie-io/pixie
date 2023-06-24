@@ -50,7 +50,6 @@ jobs:
     - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Save Diff Info
       run: ./ci/save_diff_info.sh
@@ -81,7 +80,6 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         dev: 'false'
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Collect and upload coverage
       env:
@@ -107,7 +105,6 @@ jobs:
     - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Set matrix
       id: set-matrix
@@ -140,19 +137,10 @@ jobs:
     - name: Add pwd to git safe dir
       run: git config --global --add safe.directory `pwd`
     - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
-    - name: get dev bazel config
-      if: github.event_name != 'push'
+    - name: get bazel config
       uses: ./.github/actions/bazelrc
       with:
-        dev: 'true'
-        use_remote_exec: 'true'
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
-    - name: get ci bazel config
-      if: github.event_name == 'push'
-      uses: ./.github/actions/bazelrc
-      with:
-        dev: 'false'
-        use_remote_exec: 'true'
+        dev: ${{ github.event_name == 'push' && 'false' || 'true' }}
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Build ${{ matrix.name }}
       shell: bash

@@ -34,7 +34,6 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         download_toplevel: 'true'
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Build images
       run: |
