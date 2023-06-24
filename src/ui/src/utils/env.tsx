@@ -28,8 +28,7 @@ const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
 /* eslint-enable prefer-destructuring */
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
-const date = Number.isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
-const dateStr = format(date, 'yyyy.MM.dd.hh.mm');
+const dateStr = Number.isNaN(timestampSec) ? 'time unknown' : format(timestampSec * 1000, 'yyyy.MM.dd.hh.mm');
 
 export const PIXIE_CLOUD_VERSION = {
   date: dateStr,

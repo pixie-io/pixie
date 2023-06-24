@@ -16,10 +16,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const path = require('path');
+import * as React from 'react';
 
-module.exports = {
-  process(_, filename) {
-    return `module.exports = ${JSON.stringify(path.basename(filename))};`;
-  }
+import OrgContext, { Org } from 'app/common/org-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
+
+export const ORG_CONTEXT_DEFAULTS: { org: Org } = {
+  org: {
+    id: '',
+    name: '',
+    domainName: '',
+    idePaths: null,
+  },
 };
+
+// eslint-disable-next-line react-memo/require-memo
+export const MockOrgContextProvider: React.FC<WithChildren> = ({ children }) => (
+  <OrgContext.Provider value={ORG_CONTEXT_DEFAULTS}>
+    {children}
+  </OrgContext.Provider>
+);
