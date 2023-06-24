@@ -24,7 +24,6 @@ jobs:
       uses: ./.github/actions/bazelrc
       with:
         dev: 'true'
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Generate documentation files
       shell: bash

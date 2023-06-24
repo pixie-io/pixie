@@ -48,7 +48,6 @@ jobs:
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Set matrix
       id: set-matrix
@@ -78,9 +77,8 @@ jobs:
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
         download_toplevel: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - name: Install Pixie CLI
       run: |
         bazel build -c opt //src/pixie_cli:px

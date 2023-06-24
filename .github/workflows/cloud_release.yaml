@@ -28,9 +28,8 @@ jobs:
     - name: Use github bazel config
       uses: ./.github/actions/bazelrc
       with:
-        use_remote_exec: 'true'
-        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
         download_toplevel: 'true'
+        BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
     - id: gcloud-creds
       uses: ./.github/actions/gcloud_creds
       with:
