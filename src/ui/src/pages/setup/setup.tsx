@@ -153,6 +153,12 @@ const SetupPage = React.memo<WithChildren>(({ children }) => {
 });
 SetupPage.displayName = 'SetupPage';
 
+export const CREATE_ORG_GQL = gql`
+  mutation CreateOrgFromSetupOrgPage($orgName: String!) {
+    CreateOrg(orgName: $orgName)
+  }
+`;
+
 const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) => {
   const classes = useStyles();
 
@@ -180,11 +186,7 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) 
   }, [inputValue]);
 
   const [createOrgMutation] = useMutation<{ CreateOrg: string }, { orgName: string }>(
-    gql`
-      mutation CreateOrgFromSetupOrgPage($orgName: String!) {
-        CreateOrg(orgName: $orgName)
-      }
-    `,
+    CREATE_ORG_GQL,
   );
 
   const [creating, setCreating] = React.useState(false);
@@ -218,7 +220,7 @@ const SetupOrganization = React.memo<{ redirectUri: string }>(({ redirectUri }) 
 
   return (
     <Paper elevation={1} className={classes.paper}>
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} aria-label='Create Your Organization'>
         <h1>Create Your Organization</h1>
         <figure>
           <img src={pixienautSetup} alt='Setup' />
