@@ -110,23 +110,17 @@ describe('setup page', () => {
     const el = await within(container).getByRole('textbox');
 
     fireEvent.change(el, { target: { value: 'a' } });
-    await waitFor(() => {});
-    let errorMsg = screen.queryByText('Name is too short');
-    expect(errorMsg).not.toBeNull();
+    await screen.findByText('Name is too short');
 
     fireEvent.change(el, { target: { value: 'a'.repeat(51) } });
-    await waitFor(() => {});
-    errorMsg = screen.queryByText('Name is too long');
-    expect(errorMsg).not.toBeNull();
+    await screen.findByText('Name is too long');
 
     fireEvent.change(el, { target: { value: 'testingorg.com' } });
-    await waitFor(() => {});
-    errorMsg = screen.queryByText('Name must not contain special characters (ex. ./\\$@)');
-    expect(errorMsg).not.toBeNull();
+    await screen.findByText('Name must not contain special characters (ex. ./\\$@)');
 
     fireEvent.change(el, { target: { value: 'validorg' } });
     await waitFor(() => {});
-    errorMsg = screen.queryByText('Name is too short');
+    let errorMsg = screen.queryByText('Name is too short');
     expect(errorMsg).toBeNull();
     errorMsg = screen.queryByText('Name is too long');
     expect(errorMsg).toBeNull();
@@ -161,6 +155,7 @@ describe('setup page', () => {
     });
 
     await expect(hrefSpyFn).toBeCalledWith('/next/page');
+    delete window.location.href;
   });
 
   it('renders error on conflicting org name', async () => {
