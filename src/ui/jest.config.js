@@ -36,6 +36,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',
+    'typeface-walter-turncoat': '<rootDir>/src/testing/style-mock.js',
     'monaco-editor': require.resolve('react-monaco-editor'),
     '^configurable/(.*)': '<rootDir>/src/configurables/base/$1',
     '^app/(.*)': '<rootDir>/src/$1',

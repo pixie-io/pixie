@@ -16,10 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const path = require('path');
+import * as React from 'react';
 
-module.exports = {
-  process(_, filename) {
-    return `module.exports = ${JSON.stringify(path.basename(filename))};`;
-  }
+import UserContext, { User } from 'app/common/user-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
+
+export const USER_CONTEXT_DEFAULTS: { user: User } = {
+  user: {
+    email: '',
+    orgName: '',
+  },
 };
+
+export const MockUserContextProvider: React.FC<WithChildren> = ({ children }) => (
+  <UserContext.Provider value={USER_CONTEXT_DEFAULTS}>
+    {children}
+  </UserContext.Provider>
+);

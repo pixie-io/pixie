@@ -16,10 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const path = require('path');
+import * as React from 'react';
 
-module.exports = {
-  process(_, filename) {
-    return `module.exports = ${JSON.stringify(path.basename(filename))};`;
-  }
+import { SidebarContext, SidebarContextProps } from 'app/context/sidebar-context';
+import { WithChildren } from 'app/utils/react-boilerplate';
+
+export const SIDEBAR_CONTEXT_DEFAULTS: SidebarContextProps = {
+  showLiveOptions: true,
+  showAdmin: true,
 };
+
+export const MockSidebarContextProvider: React.FC<WithChildren> = ({ children }) => (
+  <SidebarContext.Provider value={SIDEBAR_CONTEXT_DEFAULTS}>
+    {children}
+  </SidebarContext.Provider>
+);

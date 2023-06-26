@@ -1,0 +1,382 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`setup page renders 1`] = `
+<div>
+  <div
+    class="SetupView-root-1"
+  >
+    <header
+      class="MuiPaper-root MuiPaper-elevation MuiPaper-elevation4 MuiAppBar-root MuiAppBar-colorPrimary MuiAppBar-positionStatic TopBar-container-12 css-slaqq1-MuiPaper-root-MuiAppBar-root"
+    >
+      <div
+        class="MuiToolbar-root MuiToolbar-gutters MuiToolbar-regular css-1t29gy6-MuiToolbar-root"
+      >
+        <button
+          aria-label="menu"
+          class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeLarge css-170a28i-MuiButtonBase-root-MuiIconButton-root"
+          tabindex="0"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium TopBar-menu-14 css-i4bv87-MuiSvgIcon-root"
+            data-testid="ChevronRightIcon"
+            focusable="false"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"
+            />
+          </svg>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </button>
+        <div
+          class="TopBar-logoContainer-17"
+        >
+          <a
+            href="/"
+          >
+            <div
+              class="Logo-logoContainer-28"
+            >
+              <img
+                class="Logo-logo-27"
+                src="[object Object]"
+              />
+            </div>
+          </a>
+        </div>
+        <div
+          class="TopBar-contents-13"
+        >
+          <div
+            class="SetupView-title-2"
+          >
+            <div
+              class="SetupView-titleText-3"
+            >
+              Setup
+            </div>
+          </div>
+        </div>
+        <div
+          class="TopBar-profileIcon-26"
+        >
+          <div
+            class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault TopBar-avatarSm-23 TopBar-clickable-16 css-1fhxy4v-MuiAvatar-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium MuiAvatar-fallback css-10mi8st-MuiSvgIcon-root-MuiAvatar-fallback"
+              data-testid="PersonIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div
+      class="MuiDrawer-root MuiDrawer-docked SideBar-drawerClose-44 css-7ik032-MuiDrawer-docked"
+    >
+      <div
+        class="MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 SideBar-drawerClose-44 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-1yu5t60-MuiPaper-root-MuiDrawer-paper"
+      >
+        <ul
+          class="MuiList-root MuiList-padding css-h4y409-MuiList-root"
+        >
+          <div
+            class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-clippedItem-50 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+            role="button"
+            tabindex="0"
+          >
+            <span
+              class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+            />
+          </div>
+        </ul>
+        <ul
+          class="MuiList-root MuiList-padding css-h4y409-MuiList-root"
+        >
+          <a
+            aria-label="Data Retention"
+            class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+            data-mui-internal-clone-element="true"
+            href="/configure-data-export"
+            tabindex="0"
+          >
+            <div
+              class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+            >
+              <svg
+                aria-hidden="true"
+                class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+                focusable="false"
+                viewBox="0 0 15 18"
+              >
+                <path
+                  d="
+      M7.49919 6.59251C11.6409 6.59251 14.9984 5.11673 14.9984 3.29625C14.9984 1.47578 11.6409 0 7.49919 0C3.3575 0 0
+      1.47578 0 3.29625C0 5.11673 3.3575 6.59251 7.49919 6.59251Z
+    "
+                />
+                <path
+                  d="
+      M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766 10.4538
+      7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105
+      6.78389 10.7469 7.62846 7.49935 7.62846Z
+    "
+                />
+                <path
+                  d="
+      M7.50041 15.1746C4.25285 15.1746 1.38931 14.3301 0.00122562 12.9571L0.00123276 14.7037C0.00123276 16.5242
+      3.35873 18 7.50041 18C11.6421 18 14.9996 16.5242 14.9996 14.7037L14.9996 12.9571C13.6115 14.3301 10.748
+      15.1746 7.50041 15.1746Z
+    "
+                />
+                <path
+                  d="
+      M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766 10.4538
+      7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105 6.78389 10.7469 7.62846
+      7.49935 7.62846Z
+    "
+                />
+                <path
+                  d="
+      M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766
+      10.4538 7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105 6.78389 10.7469
+      7.62846 7.49935 7.62846Z
+    "
+                />
+                <path
+                  d="
+      M7.49937 11.353C4.25168 11.353 1.38805 10.5083 2.16292e-05 9.13524L0.00017571 10.8821C0.00017571 12.7025
+      3.35768 14.1783 7.49937 14.1783C11.6411 14.1783 14.9986 12.7025 14.9986 10.8821L14.9985 9.13543C13.6104
+      10.5084 10.7469 11.353 7.49937 11.353Z
+    "
+                />
+              </svg>
+            </div>
+            <div
+              class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+            >
+              <span
+                class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+              >
+                Data Retention
+              </span>
+            </div>
+            <span
+              class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+            />
+          </a>
+        </ul>
+        <div
+          class="SideBar-spacer-54"
+        />
+        <ul
+          class="MuiList-root MuiList-padding css-h4y409-MuiList-root"
+        >
+          <a
+            aria-label="Docs"
+            class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+            data-mui-internal-clone-element="true"
+            href="https://docs."
+            tabindex="0"
+            target="_blank"
+          >
+            <div
+              class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+            >
+              <svg
+                aria-hidden="true"
+                class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+                focusable="false"
+                viewBox="0 0 32 32"
+              >
+                <path
+                  clip-rule="evenodd"
+                  d="M6.8 5H24.4C25.3941 5 26.2 5.80589 26.2 6.8V26C26.2 26.9941 25.3941 27.8 24.4
+        27.8H6.8C5.80589 27.8 5 26.9941 5 26V6.8C5 5.80589 5.80589 5 6.8 5ZM24.2 25.8V7H7V25.8H24.2Z
+       "
+                  fill-rule="evenodd"
+                />
+                <path
+                  clip-rule="evenodd"
+                  d="M16.5082 12.5797C16.2594 12.8258 15.96 12.9488 15.61 12.9488C15.26 12.9488 14.9619 12.8258
+        14.7158 12.5797C14.4697 12.3336 14.3467 12.0355 14.3467 11.6855C14.3467 11.3355 14.4697 11.0361
+        14.7158 10.7873C14.9619 10.5385 15.26 10.4141 15.61 10.4141C15.9654 10.4141 16.2662 10.5385
+        16.5123 10.7873C16.7584 11.0361 16.8815 11.3355 16.8815 11.6855C16.8815 12.0355 16.757 12.3336
+        16.5082 12.5797ZM17.6854 21.5047V21.8H13.5428V21.5047C13.8818 21.4938 14.1334 21.3953 14.2975
+        21.2094C14.4068 21.0836 14.4615 20.75 14.4615 20.2086V15.7297C14.4615 15.1883 14.3986 14.8424
+        14.2729 14.692C14.1471 14.5416 13.9037 14.4555 13.5428 14.4336V14.1301H16.7584V20.2086C16.7584
+        20.75 16.8213 21.0959 16.9471 21.2463C17.0729 21.3967 17.319 21.4828 17.6854 21.5047Z
+       "
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </div>
+            <div
+              class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+            >
+              <span
+                class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+              >
+                Docs
+              </span>
+            </div>
+            <span
+              class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+            />
+          </a>
+        </ul>
+      </div>
+    </div>
+    <div
+      class="SetupView-main-4"
+    >
+      <div
+        class="SetupView-mainBlock-5"
+      >
+        <div
+          class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 SetupView-paper-7 css-zsf01h-MuiPaper-root"
+        >
+          <form
+            aria-label="Create Your Organization"
+          >
+            <h1>
+              Create Your Organization
+            </h1>
+            <figure>
+              <img
+                alt="Setup"
+                src="[object Object]"
+              />
+            </figure>
+            <p>
+              Organizations allow you to collaborate with others by sharing clusters, PxL scripts, and more.
+            </p>
+            <p>
+              <strong>
+                Give your organization a name to get started.
+              </strong>
+            </p>
+            <div
+              class="SetupView-inputContainer-8"
+            >
+              <div
+                class="MuiFormControl-root MuiTextField-root css-1u3bzj6-MuiFormControl-root-MuiTextField-root"
+              >
+                <label
+                  class="MuiInputLabel-root MuiInputLabel-formControl MuiInputLabel-animated MuiInputLabel-outlined MuiFormLabel-root MuiFormLabel-colorPrimary css-1noh6np-MuiFormLabel-root-MuiInputLabel-root"
+                  data-shrink="false"
+                >
+                  Organization Name
+                </label>
+                <div
+                  class="MuiOutlinedInput-root MuiInputBase-root MuiInputBase-colorPrimary MuiInputBase-formControl css-42ycng-MuiInputBase-root-MuiOutlinedInput-root"
+                >
+                  <input
+                    aria-invalid="false"
+                    class="MuiOutlinedInput-input MuiInputBase-input css-1v4it1l-MuiInputBase-input-MuiOutlinedInput-input"
+                    type="text"
+                    value=""
+                  />
+                  <fieldset
+                    aria-hidden="true"
+                    class="MuiOutlinedInput-notchedOutline css-9425fu-MuiOutlinedInput-notchedOutline"
+                  >
+                    <legend
+                      class="css-173wfxe"
+                    >
+                      <span>
+                        Organization Name
+                      </span>
+                    </legend>
+                  </fieldset>
+                </div>
+              </div>
+            </div>
+            <p
+              class="SetupView-muted-11"
+            >
+              Trying to join an organization? Please ask the organization admin for an invite, and check your email.
+            </p>
+            <div
+              class="SetupView-buttons-10"
+            >
+              <button
+                class="MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButton-sizeMedium MuiButton-containedSizeMedium MuiButtonBase-root Mui-disabled  css-3c88qm-MuiButtonBase-root-MuiButton-root"
+                disabled=""
+                tabindex="-1"
+                type="button"
+              >
+                Create
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div
+        class="SetupView-mainFooter-6"
+      >
+        <div
+          class="Footer-root-55"
+        >
+          <div
+            class="Footer-left-56"
+          >
+            <a
+              class="Footer-text-58"
+              href="https://www.linuxfoundation.org/terms"
+            >
+              Terms & Conditions
+            </a>
+            <a
+              class="Footer-text-58"
+              href="https://www.linuxfoundation.org/privacy"
+            >
+              Privacy Policy
+            </a>
+            <div
+              class="Footer-text-58"
+            >
+              <span
+                aria-label=""
+                class=""
+                data-mui-internal-clone-element="true"
+              >
+                Built 
+                time unknown
+              </span>
+            </div>
+          </div>
+          <div
+            class="Footer-right-57"
+          >
+            <a
+              class="Footer-text-58"
+              href="/credits"
+            >
+              Credits
+            </a>
+            <h6
+              class="MuiTypography-root MuiTypography-subtitle2 Footer-text-58 css-1m30lgi-MuiTypography-root"
+            >
+              <span>
+                © 2018- The Pixie Authors
+              </span>
+            </h6>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
