@@ -57,6 +57,9 @@ user.bazelrc
 # A cache directory to be use by Bazel.
 .bazel-cache
 
+# Coverage output file
+coverage.info
+
 # Arc liberate cache
 .phutil_module_cache
 
