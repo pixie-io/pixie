@@ -226,6 +226,7 @@ coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
 coverage --copt -DPL_COVERAGE
 coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled,-no_gcc
+coverage --action_env=COVERAGE_GCOV_OPTIONS=-b
 
 
 try-import %workspace%/bes.bazelrc
