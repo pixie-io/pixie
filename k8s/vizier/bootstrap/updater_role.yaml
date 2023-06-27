@@ -68,6 +68,7 @@ rules:
   - leases
   resourceNames:
   - cloud-conn-election
+  - metadata-election
   verbs:
   - get
   - update
