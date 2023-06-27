@@ -129,38 +129,7 @@ export const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles(
   tableContainer: {
     maxHeight: theme.spacing(100),
   },
-  podTypeHeader: {
-    ...theme.typography.h6,
-    color: theme.palette.foreground.grey5,
-    alignItems: 'center',
-    height: '100%',
-    paddingLeft: theme.spacing(2),
-    flex: '0 1',
-  },
-  topPadding: {
-    paddingTop: theme.spacing(2),
-    paddingBottom: theme.spacing(2),
-  },
-  titleContainer: {
-    display: 'flex',
-  },
-  helpIcon: {
-    display: 'flex',
-    paddingLeft: theme.spacing(1),
-  },
   detailsTable: {
     maxWidth: theme.breakpoints.values.md,
   },
 }), { name: 'ClusterDetails' });
-
-export const usePodRowStyles = makeStyles((theme: Theme) => createStyles({
-  messageAndReason: {
-    ...theme.typography.body2,
-  },
-  eventList: {
-    marginTop: 0,
-  },
-  smallTable: {
-    backgroundColor: theme.palette.foreground.grey3,
-  },
-}));
