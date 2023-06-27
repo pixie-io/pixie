@@ -52,6 +52,18 @@ interface UserRowProps {
 }
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    width: '100%',
+    maxWidth: theme.breakpoints.values.lg,
+    margin: '0 auto',
+  },
+  tableHeadRow: {
+    '& > th': {
+      fontWeight: 'normal',
+      textTransform: 'uppercase',
+      color: theme.palette.foreground.grey4,
+    },
+  },
   buttonContainer: {
     display: 'flex',
     justifyContent: 'flex-end',
@@ -281,7 +293,7 @@ export const UsersTable = React.memo(() => {
   }
 
   return (
-    <>
+    <div className={classes.root}>
       <div className={classes.inviteButtonWrapper}>
         <InviteUserButton startOpen={showInviteDialog} onClose={onCloseInviteDialog} />
       </div>
@@ -309,7 +321,7 @@ export const UsersTable = React.memo(() => {
       )}
       <Table>
         <TableHead>
-          <TableRow>
+          <TableRow className={classes.tableHeadRow}>
             <StyledTableHeaderCell>Name</StyledTableHeaderCell>
             <StyledTableHeaderCell>Email</StyledTableHeaderCell>
             <StyledTableHeaderCell />
@@ -321,7 +333,7 @@ export const UsersTable = React.memo(() => {
           ))}
         </TableBody>
       </Table>
-    </>
+    </div>
   );
 });
 UsersTable.displayName = 'UsersTable';

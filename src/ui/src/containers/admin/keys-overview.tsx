@@ -51,8 +51,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingTop: theme.spacing(2),
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2),
-    backgroundColor: theme.palette.background.default,
     zIndex: 1,
+  },
+  tabsRoot: {
+    backgroundColor: theme.palette.background.default,
+    width: '100%',
+    maxWidth: theme.breakpoints.values.lg,
+    margin: '0 auto',
   },
   tabExtras: {
     position: 'absolute',
@@ -160,23 +165,27 @@ export const KeysOverview = React.memo(() => {
   return (
     <>
       <div className={classes.barContainer}>
-        {/* eslint-disable-next-line react-memo/require-usememo */}
-        <StyledTabs value={tab === 'keys' ? 'api' : tab} onChange={(_, newTab) => navTab(newTab)}>
+        <StyledTabs
+          className={classes.tabsRoot}
+          value={tab === 'keys' ? 'api' : tab}
+          // eslint-disable-next-line react-memo/require-usememo
+          onChange={(_, newTab) => navTab(newTab)}
+        >
           <StyledTab value='api' label='API Keys' />
           <StyledTab value='deployment' label='Deployment Keys' />
+          {onAddClick != null && (
+            <div className={classes.tabExtras}>
+              <Button
+                onClick={onAddClick}
+                variant='outlined'
+                // eslint-disable-next-line react-memo/require-usememo
+                startIcon={<AddIcon />}
+              >
+                New key
+              </Button>
+            </div>
+          )}
         </StyledTabs>
-        {onAddClick != null && (
-          <div className={classes.tabExtras}>
-            <Button
-              onClick={onAddClick}
-              variant='outlined'
-              // eslint-disable-next-line react-memo/require-usememo
-              startIcon={<AddIcon />}
-            >
-              New key
-            </Button>
-          </div>
-        )}
       </div>
       <div className={classes.content}>
         <Switch>

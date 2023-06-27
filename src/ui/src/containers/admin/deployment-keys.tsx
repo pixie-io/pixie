@@ -125,7 +125,8 @@ export const DeploymentKeyRow = React.memo<{
       <StyledTableCell>{deploymentKey.createdAt}</StyledTableCell>
       <StyledTableCell>{deploymentKey.desc}</StyledTableCell>
       <MonoSpaceCell data={'••••••••••••'} />
-      <StyledTableCell>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <StyledTableCell sx={{ textAlign: 'right' }}>
         <KeyActionButtons
           copyOnClick={copyAction}
           deleteOnClick={deleteAction} />
@@ -158,9 +159,9 @@ export const DeploymentKeysTable = React.memo(() => {
   const deploymentKeys = (data?.deploymentKeys ?? []).map((key) => formatDeploymentKey(key));
   return (
     <>
-      <Table>
+      <Table className={classes.table}>
         <TableHead>
-          <TableRow>
+          <TableRow className={classes.tableHeadRow}>
             <StyledTableHeaderCell>ID</StyledTableHeaderCell>
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>

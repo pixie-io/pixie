@@ -27,6 +27,18 @@ import { Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
 export const useKeyListStyles = makeStyles((theme: Theme) => createStyles({
+  table: {
+    width: '100%',
+    maxWidth: theme.breakpoints.values.lg,
+    margin: '0 auto',
+  },
+  tableHeadRow: {
+    '& > th': {
+      fontWeight: 'normal',
+      textTransform: 'uppercase',
+      color: theme.palette.foreground.grey4,
+    },
+  },
   keyValue: {
     padding: 0,
     fontWeight: theme.typography.fontWeightLight,

@@ -38,6 +38,18 @@ import {
 } from './utils';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    width: '100%',
+    maxWidth: theme.breakpoints.values.lg,
+    margin: '0 auto',
+  },
+  tableHeadRow: {
+    '& > th': {
+      fontWeight: 'normal',
+      textTransform: 'uppercase',
+      color: theme.palette.foreground.grey4,
+    },
+  },
   error: {
     padding: theme.spacing(1),
   },
@@ -89,10 +101,10 @@ export const OrgSettings = React.memo(() => {
   }
 
   return (
-    <>
+    <div className={classes.root}>
       <Table>
         <TableHead>
-          <TableRow>
+          <TableRow className={classes.tableHeadRow}>
             <StyledTableHeaderCell>Setting</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
             <StyledTableHeaderCell>Action</StyledTableHeaderCell>
@@ -134,7 +146,7 @@ export const OrgSettings = React.memo(() => {
         </TableBody>
       </Table>
       {!domainName && <InviteLinkReset orgID={org?.id} />}
-    </>
+    </div>
   );
 });
 OrgSettings.displayName = 'OrgSettings';

@@ -122,7 +122,8 @@ export const APIKeyRow = React.memo<{ apiKey: APIKeyDisplay }>(({ apiKey }) => {
       <StyledTableCell>{apiKey.createdAt}</StyledTableCell>
       <StyledTableCell>{apiKey.desc}</StyledTableCell>
       <MonoSpaceCell data={'••••••••••••'} />
-      <StyledTableCell>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <StyledTableCell sx={{ textAlign: 'right' }}>
         <KeyActionButtons
           copyOnClick={copyAction}
           deleteOnClick={deleteAction} />
@@ -156,9 +157,9 @@ export const APIKeysTable = React.memo(() => {
   const apiKeys = (data?.apiKeys ?? []).map((key) => formatAPIKey(key));
   return (
     <>
-      <Table>
+      <Table className={classes.table}>
         <TableHead>
-          <TableRow>
+          <TableRow className={classes.tableHeadRow}>
             <StyledTableHeaderCell>ID</StyledTableHeaderCell>
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
