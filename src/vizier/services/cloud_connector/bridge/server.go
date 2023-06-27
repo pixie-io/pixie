@@ -120,6 +120,7 @@ spec:
         secret:
           secretName: service-tls-certs
       restartPolicy: "Never"
+  ttlSecondsAfterFinished: 600
   backoffLimit: 1
   parallelism: 1
   completions: 1`
@@ -273,10 +274,6 @@ func (s *Bridge) WaitForUpdater() {
 		return
 	}
 	s.updateFailed = !ok
-	err = s.vzInfo.DeleteJob(upgradeJobName)
-	if err != nil {
-		log.WithError(err).Error("Error deleting upgrade job")
-	}
 }
 
 // RegisterDeployment registers the vizier cluster using the deployment key.
