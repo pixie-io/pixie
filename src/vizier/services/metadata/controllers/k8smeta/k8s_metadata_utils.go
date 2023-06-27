@@ -51,7 +51,7 @@ func (i *informerWatcher) send(msg *K8sResourceMessage, et watch.EventType) {
 
 // StartWatcher starts a watcher.
 func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
-	i.inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, _ = i.inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			msg := i.convert(obj)
 			if msg != nil {
@@ -74,7 +74,7 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 	i.inf.Run(quitCh)
 }
 
-func podWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func podWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	iw := &informerWatcher{
 		convert: podConverter,
@@ -101,7 +101,7 @@ func podWatcher(resource string, ch chan *K8sResourceMessage, clientset *kuberne
 	return iw
 }
 
-func serviceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func serviceWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	return &informerWatcher{
 		convert: serviceConverter,
@@ -111,7 +111,7 @@ func serviceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kub
 	}
 }
 
-func namespaceWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func namespaceWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	return &informerWatcher{
 		convert: namespaceConverter,
@@ -121,7 +121,7 @@ func namespaceWatcher(resource string, ch chan *K8sResourceMessage, clientset *k
 	}
 }
 
-func endpointsWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func endpointsWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	return &informerWatcher{
 		convert: endpointsConverter,
@@ -131,7 +131,7 @@ func endpointsWatcher(resource string, ch chan *K8sResourceMessage, clientset *k
 	}
 }
 
-func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	iw := &informerWatcher{
 		convert: nodeConverter,
@@ -158,7 +158,7 @@ func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubern
 	return iw
 }
 
-func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	return &informerWatcher{
 		convert: replicaSetConverter,
@@ -168,7 +168,7 @@ func replicaSetWatcher(resource string, ch chan *K8sResourceMessage, clientset *
 	}
 }
 
-func deploymentWatcher(resource string, ch chan *K8sResourceMessage, clientset *kubernetes.Clientset) *informerWatcher {
+func deploymentWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
 	return &informerWatcher{
 		convert: deploymentConverter,

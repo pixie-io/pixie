@@ -56,6 +56,7 @@ go_library(
 pl_go_test(
     name = "k8smeta_test",
     srcs = [
+        "k8s_metadata_controller_test.go",
         "k8s_metadata_handler_test.go",
         "k8s_metadata_store_test.go",
         "metadata_topic_listener_test.go",
@@ -74,5 +75,13 @@ pl_go_test(
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@io_k8s_api//apps/v1:apps",
+        "@io_k8s_api//core/v1:core",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_apimachinery//pkg/util/intstr",
+        "@io_k8s_apimachinery//pkg/watch",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//kubernetes/fake",
+        "@io_k8s_client_go//testing",
     ],
 )
