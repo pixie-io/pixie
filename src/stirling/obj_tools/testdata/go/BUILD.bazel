@@ -52,6 +52,15 @@ filegroup(
     testonly = True,
     srcs = [
         "sockshop_payments_service",
+        # This binary was built with go 1.13 for GOARCH=386. This ensures that the 32 bit little
+        # endian case buildinfo logic is tested
+        # (https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L192-L208).
+        # Newer versions of go generate the endian agnostic buildinfo header
+        # (https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L189-L190)
+        # and so it cannot be tested without compiling against an older Go version.
+        # These older 32 bit binaries have been the source of bugs, so this test case verifies we don't
+        # introduce a regression (https://github.com/pixie-io/pixie/issues/1300).
+        "test_go1_13_i386_binary",
         ":test_go_1_17_binary",
         ":test_go_1_18_binary",
         ":test_go_1_19_binary",
