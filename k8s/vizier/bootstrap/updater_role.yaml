@@ -27,6 +27,15 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - events
+  - pods/log
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
   - apps
   resources:
   - deployments
@@ -52,6 +61,41 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  resourceNames:
+  - cloud-conn-election
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+- apiGroups:
+  - px.dev
+  resources:
+  - viziers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - px.dev
+  resources:
+  - viziers/status
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - rbac.authorization.k8s.io
