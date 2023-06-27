@@ -108,11 +108,11 @@ jobs:
         # actions/checkout doesn't get the tag annotation properly.
         git fetch origin tag "${TAG_NAME}" -f
         export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
-        prerelease=""
+        prerelease=()
         if [[ "${REF}" == *"-"* ]]; then
-          prerelease="--prerelease"
+          prerelease=("--prerelease")
         fi
-        gh release create "${TAG_NAME}" "${prerelease}" \
+        gh release create "${TAG_NAME}" "${prerelease[@]}" \
           --title "Vizier ${TAG_NAME#release/vizier/}" \
           --notes $'Pixie Vizier Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" vizier-artifacts/*

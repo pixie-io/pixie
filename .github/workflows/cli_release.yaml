@@ -177,11 +177,11 @@ jobs:
         # actions/checkout doesn't get the tag annotation properly.
         git fetch origin tag "${TAG_NAME}" -f
         export changelog="$(git tag -l --format='%(contents)' "${TAG_NAME}")"
-        prerelease=""
+        prerelease=()
         if [[ "${REF}" == *"-"* ]]; then
-          prerelease="--prerelease"
+          prerelease=("--prerelease")
         fi
-        gh release create "${TAG_NAME}" "${prerelease}" \
+        gh release create "${TAG_NAME}" "${prerelease[@]}" \
           --title "CLI ${TAG_NAME#release/cli/}" \
           --notes $'Pixie CLI Release:\n'"${changelog}"
         gh release upload "${TAG_NAME}" linux-artifacts/* macos-artifacts/*
