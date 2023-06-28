@@ -85,7 +85,10 @@ class BinaryDecoder {
       bits += 7;
       i++;
     }
-    return error::ResourceUnavailable("Insufficient number of bytes.");
+    if (i == kMaxVarintLen64) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    return 0;
   }
 
   template <typename TCharType = char>
