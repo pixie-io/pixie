@@ -53,6 +53,48 @@ T ReverseBytes(const T* x) {
   return y;
 }
 
+template <typename T, typename TCharType = char, size_t N = sizeof(T),
+          typename = std::enable_if_t<std::is_unsigned<T>::value>>
+T LEndianBytesToUintInternal(std::basic_string_view<TCharType> buf) {
+  // Doesn't make sense to process more bytes than the destination type.
+  // Less bytes is okay, on the other hand, since the value will still fit.
+  static_assert(N <= sizeof(T));
+
+  // If source buffer doesn't have enough bytes, cap end of buffer and
+  // allow data type promotion to occur (i.e. encode uint32_t into uint64_t).
+  size_t max = N;
+  if (buf.size() < max) {
+    max = buf.size();
+  }
+
+  T result = 0;
+  for (size_t i = 0; i < max; i++) {
+    result = static_cast<uint8_t>(buf[max - 1 - i]) | (result << 8);
+  }
+  return result;
+}
+
+/**
+ * Convert a little-endian string of bytes to an unsigned integer. When byte string
+ * is smaller than the destination type, the integer value is converted to the larger
+ * integer type (uint32_t byte string will read into uint64_t if requested).
+ *
+ * @tparam T The receiver int type.
+ * @tparam N Number of bytes to process from the source buffer. N must be <= sizeof(T).
+ * If N < sizeof(T), the remaining bytes (MSBs) are assumed to be zero.
+ * @param buf The sequence of bytes.
+ * @return The decoded int value.
+ */
+template <typename T, size_t N = sizeof(T)>
+T LEndianBytesToUint(std::string_view buf) {
+  return LEndianBytesToUintInternal<T, char, N>(buf);
+}
+
+template <typename T, typename TCharType = char, size_t N = sizeof(T)>
+T LEndianBytesToUint(std::basic_string_view<TCharType> buf) {
+  return LEndianBytesToUintInternal<T, TCharType, N>(buf);
+}
+
 /**
  * Convert a little-endian string of bytes to an integer.
  *

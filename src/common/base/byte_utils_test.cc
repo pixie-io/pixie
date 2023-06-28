@@ -111,6 +111,26 @@ TEST(UtilsTest, TestLEndianBytesToInt) {
       -0xdcba98765432110);
 }
 
+TEST(UtilsTest, TestLEndianBytesToUint) {
+  // uint32_t cases.
+  EXPECT_EQ(LEndianBytesToUint<uint32_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
+  EXPECT_EQ((LEndianBytesToUint<uint32_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
+  EXPECT_EQ(LEndianBytesToUint<uint32_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
+
+  // uint32_t cases when promoted
+  EXPECT_EQ(LEndianBytesToUint<uint64_t>(ConstString("\x78\x56\x34\x12")), 0x12345678);
+  EXPECT_EQ((LEndianBytesToUint<uint64_t, 3>(ConstString("\xc6\x00\x00"))), 0x0000c6);
+  EXPECT_EQ(LEndianBytesToUint<uint64_t>(ConstString("\x33\x77\xbb\xff")), 0xffbb7733);
+
+  // 64-bit cases.
+  EXPECT_EQ(LEndianBytesToUint<uint64_t>(
+                std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\x12"))),
+            0x123456789abcdef0);
+  EXPECT_EQ(LEndianBytesToUint<uint64_t>(
+                std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\xf2"))),
+            0xf23456789abcdef0);
+}
+
 TEST(UtilsTest, TestLEndianBytesToFloat) {
   std::string float_bytes = ConstString("\x33\x33\x23\x41");
   std::string double_bytes = ConstString("\x66\x66\x66\x66\x66\x66\x24\x40");
