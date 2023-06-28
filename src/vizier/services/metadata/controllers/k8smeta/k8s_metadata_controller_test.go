@@ -832,7 +832,6 @@ func TestController(t *testing.T) {
 			})
 
 			updateCh := make(chan *k8smeta.K8sResourceMessage, 2*len(tc.expectedUpdates))
-			defer close(updateCh)
 
 			for _, u := range tc.inits {
 				err := u.Apply(context.Background(), client)
