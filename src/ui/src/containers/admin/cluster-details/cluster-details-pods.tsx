@@ -19,12 +19,11 @@
 import * as React from 'react';
 
 import {
-  Close as CloseIcon,
   Help as HelpIcon,
   KeyboardArrowRight as RightIcon,
 
 } from '@mui/icons-material';
-import { TableHead, TableRow, IconButton, Table, TableBody } from '@mui/material';
+import { TableHead, TableRow, Table, TableBody } from '@mui/material';
 import { styled, Theme } from '@mui/material/styles';
 import { createStyles, makeStyles } from '@mui/styles';
 
@@ -94,6 +93,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       alignItems: 'center',
     },
   },
+  podTypeSecondHeader: {
+    marginTop: theme.spacing(8),
+  },
   podRow: {
     cursor: 'pointer',
     '&:hover': {
@@ -138,11 +140,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-
-      '& > button': {
-        marginTop: theme.spacing(-1),
-        marginRight: theme.spacing(-2),
-      },
     },
 
     '& td': {
@@ -229,7 +226,7 @@ const PodRow = React.memo<{ podStatus: GroupedPodStatus, isSelected: boolean, to
 });
 PodRow.displayName = 'PodRow';
 
-const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null, closeAction: () => void }>(({ pod, closeAction }) => {
+const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null }>(({ pod }) => {
   const classes = useStyles();
 
   return !pod ? (
@@ -240,11 +237,6 @@ const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null, closeAction: (
     <div className={classes.sidebar}>
       <h1>
         <span>{pod.name}</span>
-        <AdminTooltip title='Close Pod Details'>
-          <IconButton onClick={closeAction}>
-            <CloseIcon />
-          </IconButton>
-        </AdminTooltip>
       </h1>
       <div className={classes.podTypeHeader}>Events</div>
       {pod.events?.length > 0 ? (
@@ -318,9 +310,6 @@ export const PixiePodsTab = React.memo<{
   const numUnhealthyControlPlanePods = React.useMemo(() => controlPlaneDisplay.filter(
     (stat) => stat.statusGroup !== 'healthy' as const,
   ).length, [controlPlaneDisplay]);
-  const numHealthyDataPlanePods = React.useMemo(() => dataPlaneDisplay.filter(
-    (stat) => stat.statusGroup === 'healthy' as const,
-  ).length, [dataPlaneDisplay]);
   const numUnhealthyDataPlanePods = React.useMemo(() => dataPlaneDisplay.filter(
     (stat) => stat.statusGroup !== 'healthy' as const,
   ).length, [dataPlaneDisplay]);
@@ -359,17 +348,12 @@ export const PixiePodsTab = React.memo<{
             ))}
           </TableBody>
         </Table>
-        <div className={classes.podTypeHeader}>
+        <div className={`${classes.podTypeHeader} ${classes.podTypeSecondHeader}`}>
           <AdminTooltip title={'To see a list of all agents, click the Agents tab.'}>
             <span>Sample of Unhealthy Data Plane Pods <HelpIcon className={classes.helpIcon} /></span>
           </AdminTooltip>
           <span className={classes.statusSummaries}>
-            <AdminTooltip title='Healthy pods'>
-              <span>
-                <span>{numHealthyDataPlanePods}</span>
-                <StatusCell statusGroup='healthy' />
-              </span>
-            </AdminTooltip>
+            {/* No healthy mark here, as this list is already only unhealthy pods */}
             <AdminTooltip title='Unhealthy pods'>
               <span>
                 <span>{numUnhealthyDataPlanePods}</span>
@@ -399,7 +383,7 @@ export const PixiePodsTab = React.memo<{
       </div>
       <div className={classes.rightContent}>
         {/* eslint-disable-next-line react-memo/require-usememo */}
-        <DetailsSidebar pod={selectedPod} closeAction={() => setSelectedPod(null)} />
+        <DetailsSidebar pod={selectedPod} />
       </div>
     </div>
   );

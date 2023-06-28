@@ -118,6 +118,20 @@ export const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles(
   },
   tabHeader: {
     flex: '0 0 auto',
+    position: 'relative',
+
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      zIndex: -1,
+      bottom: 0,
+      width: '100%',
+      borderBottom: `1px solid ${theme.palette.background.five}`,
+    },
+
+    '& .MuiTabs-indicator': {
+      height: '1px',
+    },
   },
   tabContents: {
     flex: '1 1 auto',
