@@ -838,7 +838,7 @@ func TestController(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			controller, err := k8smeta.NewControllerWithClientSet(updateCh, client)
+			controller, err := k8smeta.NewControllerWithClientSet([]string{v1.NamespaceAll}, updateCh, client)
 			require.NoError(t, err)
 			defer controller.Stop()
 
@@ -891,7 +891,7 @@ func TestController(t *testing.T) {
 
 func TestController_InClusterConfig(t *testing.T) {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
-	controller, err := k8smeta.NewController(updateCh)
+	controller, err := k8smeta.NewController([]string{v1.NamespaceAll}, updateCh)
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "unable to load in-cluster configuration")
 	assert.Nil(t, controller)

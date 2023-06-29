@@ -60,11 +60,11 @@ func NewController(namespaces []string, updateCh chan *K8sResourceMessage) (*Con
 	if err != nil {
 		return nil, err
 	}
-	return NewControllerWithClientSet(updateCh, clientset)
+	return NewControllerWithClientSet(namespaces, updateCh, clientset)
 }
 
 // NewControllerWithClientSet creates a new Controller using the given Clientset.
-func NewControllerWithClientSet(updateCh chan *K8sResourceMessage, clientset kubernetes.Interface) (*Controller, error) {
+func NewControllerWithClientSet(namespaces []string, updateCh chan *K8sResourceMessage, clientset kubernetes.Interface) (*Controller, error) {
 	quitCh := make(chan struct{})
 
 	// Create a watcher for each resource.
