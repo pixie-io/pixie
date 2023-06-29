@@ -74,6 +74,7 @@ func init() {
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.Bool("use_etcd_operator", false, "Whether the etcd operator should be used instead of the persistent version.")
+	pflag.StringSlice("metadata_namespaces", []string{v1.NamespaceAll}, "The list of namespaces to watch for metadata.")
 
 	// Metadata flags are set using the env vars in pl-cluster-config.
 	// We historically set PL_ETCD_OPERATOR_ENABLED but not PL_USE_ETCD_OPERATOR in the configmap.
@@ -81,6 +82,7 @@ func init() {
 	// So instead just map PL_ETCD_OPERATOR_ENABLED to use_etcd_operator to make it work.
 	// TODO: We should clean this up in the future and make these flags consistent.
 	viper.BindEnv("use_etcd_operator", "PL_ETCD_OPERATOR_ENABLED")
+	viper.BindEnv("metadata_namespaces")
 }
 
 func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
@@ -236,10 +238,7 @@ func main() {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
 
-	namespaces := []string{v1.NamespaceAll}
-	if viper.IsSet("METADATA_NAMESPACES") {
-		namespaces = strings.Split(viper.GetString("METADATA_NAMESPACES"), ",")
-	}
+	namespaces := viper.GetStringSlice("metadata_namespaces")
 	k8sMc, err := k8smeta.NewController(namespaces, updateCh)
 	defer k8sMc.Stop()
 
