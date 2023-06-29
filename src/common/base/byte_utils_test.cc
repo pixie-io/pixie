@@ -23,6 +23,7 @@
 
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/types.h"
+#include "src/common/base/utils.h"
 
 namespace px {
 namespace utils {
@@ -109,6 +110,11 @@ TEST(UtilsTest, TestLEndianBytesToInt) {
   EXPECT_EQ(
       LEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf0\xde\xbc\x9a\x78\x56\x34\xf2"))),
       -0xdcba98765432110);
+
+  // Verify other std::basic_string_view types are supported
+  EXPECT_EQ(LEndianBytesToInt<int64_t>(
+                CreateStringView<u8string_view::value_type>("\xf0\xde\xbc\x9a\x78\x56\x34\x12")),
+            0x123456789abcdef0);
 }
 
 TEST(UtilsTest, TestLEndianBytesToFloat) {
@@ -238,6 +244,11 @@ TEST(UtilsTest, TestBEndianBytesToInt) {
   EXPECT_EQ(
       BEndianBytesToInt<int64_t>(std::string(ConstStringView("\xf2\x34\x56\x78\x9a\xbc\xde\xf0"))),
       -0xdcba98765432110);
+
+  // Verify other std::basic_string_view types are supported
+  EXPECT_EQ(BEndianBytesToInt<int64_t>(
+                CreateStringView<u8string_view::value_type>("\x12\x34\x56\x78\x9a\xbc\xde\xf0")),
+            0x123456789abcdef0);
 }
 
 TEST(UtilsTest, TestBEndianBytesToFloat) {

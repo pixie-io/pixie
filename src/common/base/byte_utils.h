@@ -62,8 +62,8 @@ T ReverseBytes(const T* x) {
  * @param buf The sequence of bytes.
  * @return The decoded int value.
  */
-template <typename T, size_t N = sizeof(T)>
-T LEndianBytesToInt(std::string_view buf) {
+template <typename T, typename TCharType = char, size_t N = sizeof(T)>
+T LEndianBytesToIntInternal(std::basic_string_view<TCharType> buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
   static_assert(N <= sizeof(T));
@@ -76,6 +76,16 @@ T LEndianBytesToInt(std::string_view buf) {
     result = static_cast<uint8_t>(buf[N - 1 - i]) | (result << 8);
   }
   return result;
+}
+
+template <typename T, size_t N = sizeof(T)>
+T LEndianBytesToInt(std::string_view buf) {
+  return LEndianBytesToIntInternal<T, char, N>(buf);
+}
+
+template <typename T, size_t N = sizeof(T), typename TCharType = char>
+T LEndianBytesToInt(std::basic_string_view<TCharType> buf) {
+  return LEndianBytesToIntInternal<T, TCharType, N>(buf);
 }
 
 /**
@@ -134,8 +144,8 @@ void IntToBEndianBytes(int64_t num, TCharType (&result)[N]) {
  * @param buf The sequence of bytes.
  * @return The decoded int value.
  */
-template <typename T, size_t N = sizeof(T)>
-T BEndianBytesToInt(std::string_view buf) {
+template <typename T, typename TCharType, size_t N = sizeof(T)>
+T BEndianBytesToIntInternal(std::basic_string_view<TCharType> buf) {
   // Doesn't make sense to process more bytes than the destination type.
   // Less bytes is okay, on the other hand, since the value will still fit.
   static_assert(N <= sizeof(T));
@@ -148,6 +158,16 @@ T BEndianBytesToInt(std::string_view buf) {
     result = static_cast<uint8_t>(buf[i]) | (result << 8);
   }
   return result;
+}
+
+template <typename T, size_t N = sizeof(T)>
+T BEndianBytesToInt(std::string_view buf) {
+  return BEndianBytesToIntInternal<T, char, N>(buf);
+}
+
+template <typename T, size_t N = sizeof(T), typename TCharType = char>
+T BEndianBytesToInt(std::basic_string_view<TCharType> buf) {
+  return BEndianBytesToIntInternal<T, TCharType, N>(buf);
 }
 
 /**
