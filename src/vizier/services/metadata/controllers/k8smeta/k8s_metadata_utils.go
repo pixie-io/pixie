@@ -22,6 +22,7 @@ import (
 	"context"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,13 +100,18 @@ func podWatcher(resource string, namespaces []string, ch chan *K8sResourceMessag
 	}
 
 	init := func() error {
-		// We initialize ch with the current pods to handle cold start race conditions.
-		list, err := clientset.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
-		if err != nil {
-			return err
+		var podList []v1.Pod
+		// We initialize ch with the current Pods to handle cold start race conditions.
+		for _, ns := range namespaces {
+			list, err := clientset.CoreV1().Pods(ns).List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				log.WithError(err).Errorf("Failed to init %s in %s namespace.", resource, ns)
+				return err
+			}
+			podList = append(podList, list.Items...)
 		}
 
-		for _, obj := range list.Items {
+		for _, obj := range podList {
 			item := obj
 			msg := iw.convert(&item)
 			if msg != nil {

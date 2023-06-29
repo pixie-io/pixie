@@ -82,7 +82,6 @@ func init() {
 	// So instead just map PL_ETCD_OPERATOR_ENABLED to use_etcd_operator to make it work.
 	// TODO: We should clean this up in the future and make these flags consistent.
 	viper.BindEnv("use_etcd_operator", "PL_ETCD_OPERATOR_ENABLED")
-	viper.BindEnv("metadata_namespaces")
 }
 
 func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
