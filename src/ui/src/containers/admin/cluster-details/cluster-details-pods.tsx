@@ -209,7 +209,7 @@ const PodRow = React.memo<{ podStatus: GroupedPodStatus, isSelected: boolean, to
         {/* eslint-disable-next-line react-memo/require-usememo */}
         <StyledLeftTableCell sx={{ width: (t) => t.spacing(3), p: 0 }}>
           {/* eslint-disable-next-line react-memo/require-usememo */}
-          <RightIcon sx={{ opacity: +isSelected }} />
+          <RightIcon sx={{ opacity: isSelected ? 1 : 0.25, transition: 'opacity 0.125s linear' }} />
         </StyledLeftTableCell>
         <AdminTooltip title={status}>
           {/* eslint-disable-next-line react-memo/require-usememo */}
