@@ -47,6 +47,7 @@ go_library(
         "@com_github_spf13_viper//:viper",
         "@io_etcd_go_etcd_client_pkg_v3//transport",
         "@io_etcd_go_etcd_client_v3//:client",
+        "@io_k8s_api//core/v1:core",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )
