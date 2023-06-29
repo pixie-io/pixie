@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -38,13 +38,6 @@ type Controller struct {
 	quitCh   chan struct{}
 	updateCh chan *K8sResourceMessage
 	once     sync.Once
-	watchers []watcher
-}
-
-// watcher watches a k8s resource type and forwards the updates to the given update channel.
-type watcher interface {
-	StartWatcher(chan struct{})
-	InitWatcher() error
 }
 
 // NewController creates a new Controller.
@@ -65,36 +58,32 @@ func NewController(namespaces []string, updateCh chan *K8sResourceMessage) (*Con
 
 // NewControllerWithClientSet creates a new Controller using the given Clientset.
 func NewControllerWithClientSet(namespaces []string, updateCh chan *K8sResourceMessage, clientset kubernetes.Interface) (*Controller, error) {
-	quitCh := make(chan struct{})
-
-	// Create a watcher for each resource.
-	// The resource types we watch the K8s API for. These types are in a specific order:
-	// for example, nodes and namespaces must be synced before pods, since nodes/namespaces
-	// contain pods.
-	watchers := []watcher{
-		nodeWatcher(namespaces, updateCh, clientset),
-		namespaceWatcher(namespaces, updateCh, clientset),
-		podWatcher(namespaces, updateCh, clientset),
-		endpointsWatcher(namespaces, updateCh, clientset),
-		serviceWatcher(namespaces, updateCh, clientset),
-		replicaSetWatcher(namespaces, updateCh, clientset),
-		deploymentWatcher(namespaces, updateCh, clientset),
-	}
-
-	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
-
-	go func() {
-		for _, w := range mc.watchers {
-			err := w.InitWatcher()
-			if err != nil {
-				// Still return the informer because the rest of the system can recover from this.
-				log.WithError(err).Error("Failed to run watcher init")
-			}
-			go w.StartWatcher(quitCh)
-		}
-	}()
+	mc := &Controller{quitCh: make(chan struct{}), updateCh: updateCh}
+	go mc.startWithClientSet(namespaces, clientset)
 
 	return mc, nil
+}
+
+// startWithClientSet starts the controller
+func (mc *Controller) startWithClientSet(namespaces []string, clientset kubernetes.Interface) {
+	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+
+	// Create a watcher for each resource.
+	// The resource types we watch the K8s API for.
+	startNodeWatcher(mc.updateCh, mc.quitCh, factory)
+	startNamespaceWatcher(mc.updateCh, mc.quitCh, factory)
+
+	var namespacedFactories []informers.SharedInformerFactory
+	for _, ns := range namespaces {
+		factory := informers.NewSharedInformerFactoryWithOptions(clientset, 12*time.Hour, informers.WithNamespace(ns))
+		namespacedFactories = append(namespacedFactories, factory)
+	}
+
+	startPodWatcher(mc.updateCh, mc.quitCh, namespacedFactories)
+	startEndpointsWatcher(mc.updateCh, mc.quitCh, namespacedFactories)
+	startServiceWatcher(mc.updateCh, mc.quitCh, namespacedFactories)
+	startReplicaSetWatcher(mc.updateCh, mc.quitCh, namespacedFactories)
+	startDeploymentWatcher(mc.updateCh, mc.quitCh, namespacedFactories)
 }
 
 // Stop stops all K8s watchers.
