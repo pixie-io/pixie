@@ -63,6 +63,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: '1 1 40%',
     overflow: 'auto',
   },
+  muted: {
+    opacity: 0.8,
+  },
   topPadding: {
     paddingTop: theme.spacing(2),
     paddingBottom: theme.spacing(2),
@@ -177,11 +180,12 @@ const StyledTableHeadRow = styled(TableRow, { name: 'StyledTableRow' })(({ theme
 const PodHeader = React.memo(() => (
   <TableHead>
     <StyledTableHeadRow>
-      <StyledTableHeaderCell /> {/* Expanded icon when active */}
       <StyledTableHeaderCell /> {/* Status icon */}
       <StyledTableHeaderCell>Name</StyledTableHeaderCell>
       <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-      <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <StyledTableHeaderCell sx={{ textAlign: 'right' }}>Restart Count</StyledTableHeaderCell>
+      <StyledTableHeaderCell /> {/* Expanded icon when active */}
     </StyledTableHeadRow>
   </TableHead>
 ));
@@ -206,11 +210,6 @@ const PodRow = React.memo<{ podStatus: GroupedPodStatus, isSelected: boolean, to
         className={buildClass(classes.podRow, isSelected && classes.selectedPodRow)}
         onClick={toggleSelected}
       >
-        {/* eslint-disable-next-line react-memo/require-usememo */}
-        <StyledLeftTableCell sx={{ width: (t) => t.spacing(3), p: 0 }}>
-          {/* eslint-disable-next-line react-memo/require-usememo */}
-          <RightIcon sx={{ opacity: isSelected ? 1 : 0.25, transition: 'opacity 0.125s linear' }} />
-        </StyledLeftTableCell>
         <AdminTooltip title={status}>
           {/* eslint-disable-next-line react-memo/require-usememo */}
           <StyledLeftTableCell sx={{ width: (t) => t.spacing(3) }}>
@@ -218,8 +217,16 @@ const PodRow = React.memo<{ podStatus: GroupedPodStatus, isSelected: boolean, to
           </StyledLeftTableCell>
         </AdminTooltip>
         <StyledTableCell>{name}</StyledTableCell>
-        <StyledTableCell>{combineReasonAndMessage(podStatus.reason, podStatus.message)}</StyledTableCell>
-        <StyledRightTableCell>{podStatus.restartCount}</StyledRightTableCell>
+        <StyledTableCell>
+          {combineReasonAndMessage(podStatus.reason, podStatus.message) || <span className={classes.muted}>None</span>}
+        </StyledTableCell>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <StyledTableCell sx={{ textAlign: 'right' }}>{podStatus.restartCount}</StyledTableCell>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <StyledRightTableCell sx={{ width: (t) => t.spacing(3), p: 0 }}>
+          {/* eslint-disable-next-line react-memo/require-usememo */}
+          <RightIcon sx={{ mt: 0.5, opacity: isSelected ? 1 : 0.25, transition: 'opacity 0.125s linear' }} />
+        </StyledRightTableCell>
       </TableRow>
     </React.Fragment>
   );
