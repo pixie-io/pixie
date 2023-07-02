@@ -889,6 +889,142 @@ func TestController(t *testing.T) {
 	}
 }
 
+func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
+	testCases := []struct {
+		name            string
+		updates         []resourceUpdate
+		inits           []resourceUpdate
+		expectedUpdates []*k8smeta.K8sResourceMessage
+	}{
+		{
+			name: "simple pod",
+			updates: []resourceUpdate{
+				&pod{
+					p: &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mypod",
+						},
+						Spec: v1.PodSpec{
+							Hostname: "hostname",
+						},
+					},
+					ns: "test",
+					t:  create,
+				},
+				&pod{
+					p: &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "myunwatchedpod",
+						},
+						Spec: v1.PodSpec{
+							Hostname: "hostname",
+						},
+					},
+					ns: "dontwatchme",
+					t:  create,
+				},
+			},
+			expectedUpdates: []*k8smeta.K8sResourceMessage{
+				{
+					ObjectType: "pods",
+					Object: &storepb.K8SResource{
+						Resource: &storepb.K8SResource_Pod{
+							Pod: &metadatapb.Pod{
+								Metadata: &metadatapb.ObjectMetadata{
+									Name:            "mypod",
+									Namespace:       "test",
+									OwnerReferences: []*metadatapb.OwnerReference{},
+								},
+								Spec: &metadatapb.PodSpec{
+									Hostname: "hostname",
+								},
+								Status: &metadatapb.PodStatus{
+									Conditions:        []*metadatapb.PodCondition{},
+									ContainerStatuses: []*metadatapb.ContainerStatus{},
+								},
+							},
+						},
+					},
+					EventType: watch.Added,
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := fake.NewSimpleClientset()
+
+			watchStart := make(chan string)
+			defer close(watchStart)
+
+			client.PrependWatchReactor("*", func(action clienttesting.Action) (bool, watch.Interface, error) {
+				gvr := action.GetResource()
+				ns := action.GetNamespace()
+				watch, err := client.Tracker().Watch(gvr, ns)
+				if err != nil {
+					return false, nil, err
+				}
+				watchStart <- gvr.Resource
+				return true, watch, nil
+			})
+
+			updateCh := make(chan *k8smeta.K8sResourceMessage, 2*len(tc.expectedUpdates))
+
+			for _, u := range tc.inits {
+				err := u.Apply(context.Background(), client)
+				require.NoError(t, err)
+			}
+
+			namespaces := []string{"test"}
+			controller, err := k8smeta.NewControllerWithClientSet(namespaces, updateCh, client)
+			require.NoError(t, err)
+			defer controller.Stop()
+
+			watchersStarted := map[string]bool{
+				// This list needs to be kept up-to-date with the list of watchers started in k8s_metadata_controller.go
+				"nodes":       false,
+				"namespaces":  false,
+				"pods":        false,
+				"endpoints":   false,
+				"services":    false,
+				"replicasets": false,
+				"deployments": false,
+			}
+			allStarted := func() bool {
+				for _, started := range watchersStarted {
+					if !started {
+						return false
+					}
+				}
+				return true
+			}
+			for resource := range watchStart {
+				watchersStarted[resource] = true
+				if allStarted() {
+					break
+				}
+			}
+
+			for _, u := range tc.updates {
+				err := u.Apply(context.Background(), client)
+				require.NoError(t, err)
+			}
+
+			updates := []*k8smeta.K8sResourceMessage{}
+			for u := range updateCh {
+				updates = append(updates, u)
+				if len(updates) >= len(tc.expectedUpdates) {
+					break
+				}
+			}
+
+			assert.Equal(t, 1, len(updates))
+			ns := updates[0].Object.GetPod().GetMetadata().GetNamespace()
+			assert.Equal(t, "test", ns)
+		})
+	}
+}
+
 func TestController_InClusterConfig(t *testing.T) {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	controller, err := k8smeta.NewController([]string{v1.NamespaceAll}, updateCh)
