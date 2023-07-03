@@ -914,7 +914,7 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 				&pod{
 					p: &v1.Pod{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "myunwatchedpod",
+							Name: "mynotwatchedpod",
 						},
 						Spec: v1.PodSpec{
 							Hostname: "hostname",
@@ -922,6 +922,15 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 					},
 					ns: "dontwatchme",
 					t:  create,
+				},
+				&pod{
+					p: &v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mynotwatchedpod",
+						},
+					},
+					ns: "dontwatchme",
+					t:  del,
 				},
 			},
 			expectedUpdates: []*k8smeta.K8sResourceMessage{
@@ -942,6 +951,399 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 									Conditions:        []*metadatapb.PodCondition{},
 									ContainerStatuses: []*metadatapb.ContainerStatus{},
 								},
+							},
+						},
+					},
+					EventType: watch.Added,
+				},
+			},
+		},
+		{
+			name: "simple endpoint",
+			updates: []resourceUpdate{
+				&endpoints{
+					e: &v1.Endpoints{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mynotwatchedendpoint",
+						},
+						Subsets: []v1.EndpointSubset{
+							{
+								Addresses: []v1.EndpointAddress{
+									{
+										IP:       "127.0.0.1",
+										Hostname: "hostname",
+									},
+								},
+								NotReadyAddresses: []v1.EndpointAddress{
+									{
+										IP:       "127.0.0.2",
+										Hostname: "notready",
+									},
+								},
+								Ports: []v1.EndpointPort{
+									{
+										Name:     "endpointport",
+										Protocol: v1.ProtocolTCP,
+										Port:     8081,
+									},
+								},
+							},
+						},
+					},
+					ns: "dontwatchme",
+					t:  create,
+				},
+				&endpoints{
+					e: &v1.Endpoints{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "myendpoint",
+						},
+						Subsets: []v1.EndpointSubset{
+							{
+								Addresses: []v1.EndpointAddress{
+									{
+										IP:       "127.0.0.1",
+										Hostname: "hostname",
+									},
+								},
+								NotReadyAddresses: []v1.EndpointAddress{
+									{
+										IP:       "127.0.0.2",
+										Hostname: "notready",
+									},
+								},
+								Ports: []v1.EndpointPort{
+									{
+										Name:     "endpointport",
+										Protocol: v1.ProtocolTCP,
+										Port:     8081,
+									},
+								},
+							},
+						},
+					},
+					ns: "test",
+					t:  create,
+				},
+			},
+			expectedUpdates: []*k8smeta.K8sResourceMessage{
+				{
+					ObjectType: "endpoints",
+					Object: &storepb.K8SResource{
+						Resource: &storepb.K8SResource_Endpoints{
+							Endpoints: &metadatapb.Endpoints{
+								Metadata: &metadatapb.ObjectMetadata{
+									Name:            "myendpoint",
+									Namespace:       "test",
+									OwnerReferences: []*metadatapb.OwnerReference{},
+								},
+								Subsets: []*metadatapb.EndpointSubset{
+									{
+										Addresses: []*metadatapb.EndpointAddress{
+											{
+												IP:       "127.0.0.1",
+												Hostname: "hostname",
+											},
+										},
+										NotReadyAddresses: []*metadatapb.EndpointAddress{
+											{
+												IP:       "127.0.0.2",
+												Hostname: "notready",
+											},
+										},
+										Ports: []*metadatapb.EndpointPort{
+											{
+												Name:     "endpointport",
+												Port:     8081,
+												Protocol: metadatapb.TCP,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					EventType: watch.Added,
+				},
+			},
+		},
+		{
+			name: "simple service",
+			updates: []resourceUpdate{
+				&service{
+					s: &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mynotwatchedservice",
+						},
+						Spec: v1.ServiceSpec{
+							Ports: []v1.ServicePort{
+								{
+									Name:     "myport",
+									Protocol: v1.ProtocolTCP,
+									Port:     8080,
+								},
+							},
+						},
+					},
+					ns: "dontwatchme",
+					t:  create,
+				},
+				&service{
+					s: &v1.Service{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "myservice",
+						},
+						Spec: v1.ServiceSpec{
+							Ports: []v1.ServicePort{
+								{
+									Name:     "myport",
+									Protocol: v1.ProtocolTCP,
+									Port:     8080,
+								},
+							},
+						},
+					},
+					ns: "test",
+					t:  create,
+				},
+			},
+			expectedUpdates: []*k8smeta.K8sResourceMessage{
+				{
+					ObjectType: "services",
+					Object: &storepb.K8SResource{
+						Resource: &storepb.K8SResource_Service{
+							Service: &metadatapb.Service{
+								Metadata: &metadatapb.ObjectMetadata{
+									Name:            "myservice",
+									Namespace:       "test",
+									OwnerReferences: []*metadatapb.OwnerReference{},
+								},
+								Spec: &metadatapb.ServiceSpec{
+									Ports: []*metadatapb.ServicePort{
+										{
+											Name:     "myport",
+											Protocol: metadatapb.TCP,
+											Port:     8080,
+										},
+									},
+								},
+							},
+						},
+					},
+					EventType: watch.Added,
+				},
+			},
+		},
+		{
+			name: "simple replicaset",
+			updates: []resourceUpdate{
+				&replicaSet{
+					rs: &appsv1.ReplicaSet{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mynotwatchedrs",
+						},
+						Spec: appsv1.ReplicaSetSpec{
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mypod",
+								},
+								Spec: v1.PodSpec{
+									Hostname: "hostname",
+								},
+							},
+							Selector: &metav1.LabelSelector{
+								MatchExpressions: []metav1.LabelSelectorRequirement{
+									{
+										Key:      "test",
+										Operator: metav1.LabelSelectorOpIn,
+										Values:   []string{"test2"},
+									},
+								},
+							},
+						},
+					},
+					ns: "dontwatchme",
+					t:  create,
+				},
+				&replicaSet{
+					rs: &appsv1.ReplicaSet{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "myrs",
+						},
+						Spec: appsv1.ReplicaSetSpec{
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mypod",
+								},
+								Spec: v1.PodSpec{
+									Hostname: "hostname",
+								},
+							},
+							Selector: &metav1.LabelSelector{
+								MatchExpressions: []metav1.LabelSelectorRequirement{
+									{
+										Key:      "test",
+										Operator: metav1.LabelSelectorOpIn,
+										Values:   []string{"test2"},
+									},
+								},
+							},
+						},
+					},
+					ns: "test",
+					t:  create,
+				},
+			},
+			expectedUpdates: []*k8smeta.K8sResourceMessage{
+				{
+					ObjectType: "replicasets",
+					Object: &storepb.K8SResource{
+						Resource: &storepb.K8SResource_ReplicaSet{
+							ReplicaSet: &metadatapb.ReplicaSet{
+								Metadata: &metadatapb.ObjectMetadata{
+									Name:            "myrs",
+									Namespace:       "test",
+									OwnerReferences: []*metadatapb.OwnerReference{},
+								},
+								Spec: &metadatapb.ReplicaSetSpec{
+									Replicas: 1,
+									Template: &metadatapb.PodTemplateSpec{
+										Metadata: &metadatapb.ObjectMetadata{
+											Name:            "mypod",
+											OwnerReferences: []*metadatapb.OwnerReference{},
+										},
+										Spec: &metadatapb.PodSpec{
+											Hostname: "hostname",
+										},
+									},
+									Selector: &metadatapb.LabelSelector{
+										MatchExpressions: []*metadatapb.LabelSelectorRequirement{
+											{
+												Key:      "test",
+												Operator: "In",
+												Values:   []string{"test2"},
+											},
+										},
+									},
+								},
+								Status: &metadatapb.ReplicaSetStatus{
+									Conditions: []*metadatapb.ReplicaSetCondition{},
+								},
+							},
+						},
+					},
+					EventType: watch.Added,
+				},
+			},
+		},
+		{
+			name: "simple deployment",
+			updates: []resourceUpdate{
+				&deployment{
+					d: &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mynotwatcheddeployment",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mypod",
+								},
+								Spec: v1.PodSpec{
+									Hostname: "hostname",
+								},
+							},
+							Selector: &metav1.LabelSelector{
+								MatchExpressions: []metav1.LabelSelectorRequirement{
+									{
+										Key:      "test",
+										Operator: metav1.LabelSelectorOpIn,
+										Values:   []string{"test2"},
+									},
+								},
+							},
+							Strategy: appsv1.DeploymentStrategy{
+								Type: appsv1.RecreateDeploymentStrategyType,
+							},
+							RevisionHistoryLimit:    int32ptr(1),
+							ProgressDeadlineSeconds: int32ptr(1),
+						},
+					},
+					ns: "dontwatchme",
+					t:  create,
+				},
+				&deployment{
+					d: &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "mydeployment",
+						},
+						Spec: appsv1.DeploymentSpec{
+							Template: v1.PodTemplateSpec{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "mypod",
+								},
+								Spec: v1.PodSpec{
+									Hostname: "hostname",
+								},
+							},
+							Selector: &metav1.LabelSelector{
+								MatchExpressions: []metav1.LabelSelectorRequirement{
+									{
+										Key:      "test",
+										Operator: metav1.LabelSelectorOpIn,
+										Values:   []string{"test2"},
+									},
+								},
+							},
+							Strategy: appsv1.DeploymentStrategy{
+								Type: appsv1.RecreateDeploymentStrategyType,
+							},
+							RevisionHistoryLimit:    int32ptr(1),
+							ProgressDeadlineSeconds: int32ptr(1),
+						},
+					},
+					ns: "test",
+					t:  create,
+				},
+			},
+			expectedUpdates: []*k8smeta.K8sResourceMessage{
+				{
+					ObjectType: "deployments",
+					Object: &storepb.K8SResource{
+						Resource: &storepb.K8SResource_Deployment{
+							Deployment: &metadatapb.Deployment{
+								Metadata: &metadatapb.ObjectMetadata{
+									Name:            "mydeployment",
+									Namespace:       "test",
+									OwnerReferences: []*metadatapb.OwnerReference{},
+								},
+								Spec: &metadatapb.DeploymentSpec{
+									Replicas: 0,
+									Template: &metadatapb.PodTemplateSpec{
+										Metadata: &metadatapb.ObjectMetadata{
+											Name:            "mypod",
+											OwnerReferences: []*metadatapb.OwnerReference{},
+										},
+										Spec: &metadatapb.PodSpec{
+											Hostname: "hostname",
+										},
+									},
+									Selector: &metadatapb.LabelSelector{
+										MatchExpressions: []*metadatapb.LabelSelectorRequirement{
+											{
+												Key:      "test",
+												Operator: "In",
+												Values:   []string{"test2"},
+											},
+										},
+									},
+									Strategy: &metadatapb.DeploymentStrategy{
+										Type: metadatapb.DEPLOYMENT_STRATEGY_RECREATE,
+									},
+									RevisionHistoryLimit:    1,
+									ProgressDeadlineSeconds: 1,
+								},
+								Status: &metadatapb.DeploymentStatus{},
 							},
 						},
 					},
@@ -1019,7 +1421,7 @@ func TestControllerWithNotWatchedNameSpaces(t *testing.T) {
 			}
 
 			assert.Equal(t, 1, len(updates))
-			ns := updates[0].Object.GetPod().GetMetadata().GetNamespace()
+			ns := getNameSpaceFromResourceMessage(updates[0], tc.expectedUpdates[0].ObjectType)
 			assert.Equal(t, "test", ns)
 		})
 	}
@@ -1031,6 +1433,23 @@ func TestController_InClusterConfig(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "unable to load in-cluster configuration")
 	assert.Nil(t, controller)
+}
+
+func getNameSpaceFromResourceMessage(rm *k8smeta.K8sResourceMessage, resourceType string) string {
+	switch resourceType {
+	case "pods":
+		return rm.Object.GetPod().GetMetadata().GetNamespace()
+	case "deployments":
+		return rm.Object.GetDeployment().GetMetadata().GetNamespace()
+	case "endpoints":
+		return rm.Object.GetEndpoints().GetMetadata().GetNamespace()
+	case "services":
+		return rm.Object.GetService().GetMetadata().GetNamespace()
+	case "replicasets":
+		return rm.Object.GetReplicaSet().GetMetadata().GetNamespace()
+	default:
+		return ""
+	}
 }
 
 func zeroTimestamps(updates []*k8smeta.K8sResourceMessage) []*k8smeta.K8sResourceMessage {
