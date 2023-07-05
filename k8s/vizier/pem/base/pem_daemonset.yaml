@@ -47,12 +47,10 @@ spec:
         # yamllint disable-line rule:line-length
         image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
         # yamllint disable rule:indentation
-        command: ['sh', '-c',
-          '
-          set -x;
+        command: ['sh', '-c', 'set -x;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
-            echo "waiting for ${URL}"
+            echo "waiting for ${URL}";
             sleep 2;
           done;
           '

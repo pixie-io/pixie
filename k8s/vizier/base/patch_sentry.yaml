@@ -14,7 +14,7 @@ spec:
         command: ['sh', '-c', 'set -x;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/readyz";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
-            echo "waiting for ${URL}"
+            echo "waiting for ${URL}";
             sleep 2;
           done;
         ']
