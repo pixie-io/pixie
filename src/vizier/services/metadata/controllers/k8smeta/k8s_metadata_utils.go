@@ -75,7 +75,6 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 		})
 		inf.Run(quitCh)
 	}
-
 }
 
 // InitWatcher initializes a watcher, for example to perform a list.
