@@ -21,8 +21,10 @@ package esutils
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -246,7 +248,18 @@ func (i *Index) updateSettings(ctx context.Context) (bool, error) {
 			WithField("cause", err.(*elastic.Error).Details.CausedBy).Error("failed to get index settings")
 		return false, err
 	}
-	currentSettings := settingsResp[i.indexName].Settings
+	var indexResp *elastic.IndicesGetSettingsResponse
+	for indexName, resp := range settingsResp {
+		// If `i.indexName` is an alias, then the response can be the full index name instead of the alias name.
+		if strings.HasPrefix(indexName, i.indexName) {
+			indexResp = resp
+			break
+		}
+	}
+	if indexResp == nil {
+		return false, errors.New("could not get index settings")
+	}
+	currentSettings := indexResp.Settings
 	diff := updates(i.index.Settings, currentSettings)
 	if diff == nil {
 		return false, nil

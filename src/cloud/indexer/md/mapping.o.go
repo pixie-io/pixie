@@ -207,17 +207,33 @@ const IndexMapping = `
 `
 
 // InitializeMapping creates the index in elastic.
-func InitializeMapping(es *elastic.Client, indexName string, replicas int, maxAge string, deleteAfter string) error {
-	err := esutils.NewManagedIndex(es, indexName).
-		IndexFromJSONString(IndexMapping).
-		MaxIndexAge(maxAge).
-		TimeBeforeDelete(deleteAfter).
-		Migrate(context.Background())
-	if err != nil {
-		return err
+func InitializeMapping(es *elastic.Client, indexName string, replicas int, maxAge string, deleteAfter string, manualIndex bool) error {
+	ctx := context.Background()
+	if manualIndex {
+		exists, err := es.IndexExists(indexName).Do(ctx)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("elastic index %s does not exist, but manual index management specified", indexName)
+		}
+		// Update the index mappings if necessary.
+		err = esutils.NewIndex(es).Name(indexName).FromJSONString(IndexMapping).Migrate(ctx)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := esutils.NewManagedIndex(es, indexName).
+			IndexFromJSONString(IndexMapping).
+			MaxIndexAge(maxAge).
+			TimeBeforeDelete(deleteAfter).
+			Migrate(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	replicaSetting := fmt.Sprintf("{\"index\": {\"number_of_replicas\": %d}}", replicas)
-	_, err = es.IndexPutSettings(indexName).BodyString(replicaSetting).Do(context.Background())
+	_, err := es.IndexPutSettings(indexName).BodyString(replicaSetting).Do(context.Background())
 	return err
 }
