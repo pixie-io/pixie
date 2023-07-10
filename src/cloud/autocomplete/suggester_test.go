@@ -166,7 +166,7 @@ func TestMain(m *testing.M) {
 	elasticClient = es
 
 	// Set up elastic indexes.
-	err = md.InitializeMapping(es, indexName, 1, "30d", "30d")
+	err = md.InitializeMapping(es, indexName, 1, "30d", "30d", false)
 	if err != nil {
 		cleanup()
 		log.Fatal(err)

@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 	vzID = uuid.Must(uuid.NewV4())
 	orgID = uuid.Must(uuid.NewV4())
 
-	err = md.InitializeMapping(es, indexName, 1, "30d", "30d")
+	err = md.InitializeMapping(es, indexName, 1, "30d", "30d", false)
 	if err != nil {
 		cleanup()
 		log.WithError(err).Fatal("Could not initialize indexes in elastic")

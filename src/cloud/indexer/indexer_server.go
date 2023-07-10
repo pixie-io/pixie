@@ -53,6 +53,7 @@ func init() {
 	pflag.String("md_index_max_age", "", "The amount of time before rolling over the elastic index as a string, eg '30d'")
 	pflag.String("md_index_delete_after", "", "The amount of time after rollover to delete old elastic indices, as a string, eg '30d'")
 	pflag.Int("md_index_replicas", 4, "The number of replicas to setup for the metadata index.")
+	pflag.Bool("md_manual_index_management", false, "Skip creation of managed elastic indices. Requires manually deploying an elastic index with md_index_name")
 }
 
 func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
@@ -132,7 +133,7 @@ func main() {
 		log.Fatal("Must specify a delete after time for the rolled over elastic indices.")
 	}
 
-	err = md.InitializeMapping(es, indexName, replicas, maxAge, deleteAfter)
+	err = md.InitializeMapping(es, indexName, replicas, maxAge, deleteAfter, viper.GetBool("md_manual_index_management"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}
