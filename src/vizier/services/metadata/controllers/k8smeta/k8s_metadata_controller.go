@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -43,6 +44,7 @@ type Controller struct {
 // watcher watches a k8s resource type and forwards the updates to the given update channel.
 type watcher interface {
 	StartWatcher(chan struct{})
+	InitWatcher() error
 }
 
 // NewController creates a new Controller.
@@ -81,9 +83,16 @@ func NewControllerWithClientSet(updateCh chan *K8sResourceMessage, clientset kub
 
 	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
 
-	for _, w := range mc.watchers {
-		go w.StartWatcher(quitCh)
-	}
+	go func() {
+		for _, w := range mc.watchers {
+			err := w.InitWatcher()
+			if err != nil {
+				// Still return the informer because the rest of the system can recover from this.
+				log.WithError(err).Error("Failed to run watcher init")
+			}
+			go w.StartWatcher(quitCh)
+		}
+	}()
 
 	return mc, nil
 }

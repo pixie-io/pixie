@@ -22,7 +22,6 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,12 +51,6 @@ func (i *informerWatcher) send(msg *K8sResourceMessage, et watch.EventType) {
 
 // StartWatcher starts a watcher.
 func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
-	err := i.init()
-	if err != nil {
-		// Still return the informer because the rest of the system can recover from this.
-		log.WithError(err).Error("Failed to run watcher init")
-	}
-
 	_, _ = i.inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			msg := i.convert(obj)
@@ -79,6 +72,14 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 		},
 	})
 	i.inf.Run(quitCh)
+}
+
+// InitWatcher initializes a watcher, for example to perform a list.
+func (i *informerWatcher) InitWatcher() error {
+	if i.init != nil {
+		return i.init()
+	}
+	return nil
 }
 
 func podWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
