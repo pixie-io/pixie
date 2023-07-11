@@ -71,5 +71,6 @@ module.exports = {
     'src/*.tsx',
     'src/*.js',
     'src/*.jsx',
+    '!src/types/generated/**/*',
   ],
 };
