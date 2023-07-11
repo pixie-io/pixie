@@ -63,7 +63,7 @@ export function formatPodStatus(podStatus: PodStatus): GroupedPodStatus {
   return {
     ...podStatus,
     statusGroup: podStatusGroup(podStatus.status),
-    containers: podStatus.containers.map((container) => ({
+    containers: (podStatus.containers ?? []).map((container) => ({
       ...container,
       statusGroup: containerStatusGroup(container.state),
     })),

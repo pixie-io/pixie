@@ -180,12 +180,12 @@ const StyledTableHeadRow = styled(TableRow, { name: 'StyledTableRow' })(({ theme
 const PodHeader = React.memo(() => (
   <TableHead>
     <StyledTableHeadRow>
-      <StyledTableHeaderCell /> {/* Status icon */}
+      <StyledTableHeaderCell />{/* Status icon */}
       <StyledTableHeaderCell>Name</StyledTableHeaderCell>
       <StyledTableHeaderCell>Status</StyledTableHeaderCell>
       {/* eslint-disable-next-line react-memo/require-usememo */}
       <StyledTableHeaderCell sx={{ textAlign: 'right' }}>Restart Count</StyledTableHeaderCell>
-      <StyledTableHeaderCell /> {/* Expanded icon when active */}
+      <StyledTableHeaderCell />{/* Expanded icon when active */}
     </StyledTableHeadRow>
   </TableHead>
 ));
@@ -237,15 +237,23 @@ const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null }>(({ pod }) =>
   const classes = useStyles();
 
   return !pod ? (
-    <div className={buildClass(classes.sidebar, classes.sidebarHidden)}>
+    <section
+      className={buildClass(classes.sidebar, classes.sidebarHidden)}
+      data-testid='cluster-details-pods-sidebar-hidden'
+      aria-label='Click a pod row to read details about it here'
+    >
       <span className={classes.emptySidebarMessage}>Select a pod on the left</span>
-    </div>
+    </section>
   ) : (
-    <div className={classes.sidebar}>
+    <section
+      className={classes.sidebar}
+      data-testid='cluster-details-pods-sidebar'
+      aria-label={`Details for pod "${pod.name}". Click another pod's row to read its details here instead.`}
+    >
       <h1>
         <span>{pod.name}</span>
       </h1>
-      <div className={classes.podTypeHeader}>Events</div>
+      <h2 className={classes.podTypeHeader}>Events</h2>
       {pod.events?.length > 0 ? (
         <Table>
           <TableHead>
@@ -260,7 +268,7 @@ const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null }>(({ pod }) =>
       ) : (
         <div className={classes.noResults}>No events to report.</div>
       )}
-      <div className={classes.podTypeHeader}>Containers</div>
+      <h2 className={classes.podTypeHeader}>Containers</h2>
       {pod.containers?.length > 0 ? (
         <Table>
           <TableHead>
@@ -292,7 +300,7 @@ const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null }>(({ pod }) =>
       ) : (
         <div className={classes.noResults}>No containers in this pod.</div>
       )}
-    </div>
+    </section>
   );
 });
 DetailsSidebar.displayName = 'DetailsSidebar';
@@ -303,10 +311,10 @@ export const PixiePodsTab = React.memo<{
 }>(({ controlPlanePods, dataPlanePods }) => {
   const classes = useStyles();
   const controlPlaneDisplay = React.useMemo(
-    () => controlPlanePods.map((podStatus) => formatPodStatus(podStatus)),
+    () => (controlPlanePods ?? []).map((podStatus) => formatPodStatus(podStatus)),
     [controlPlanePods]);
   const dataPlaneDisplay = React.useMemo(
-    () => dataPlanePods.map((podStatus) => formatPodStatus(podStatus)),
+    () => (dataPlanePods ?? []).map((podStatus) => formatPodStatus(podStatus)),
     [dataPlanePods]);
 
   const [selectedPod, setSelectedPod] = React.useState<GroupedPodStatus>(null);
@@ -341,20 +349,25 @@ export const PixiePodsTab = React.memo<{
             </AdminTooltip>
           </span>
         </div>
-        <Table>
-          <PodHeader />
-          <TableBody>
-            {controlPlaneDisplay.map((podStatus) => (
-              <PodRow
-                key={podStatus.name}
-                podStatus={podStatus}
-                isSelected={selectedPod?.name === podStatus?.name}
-                // eslint-disable-next-line react-memo/require-usememo
-                toggleSelected={() => setSelectedPod((prev) => prev?.name === podStatus.name ? null : podStatus)}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        {controlPlaneDisplay.length > 0 ? (
+          <Table>
+            <PodHeader />
+            <TableBody>
+              {controlPlaneDisplay.map((podStatus) => (
+                <PodRow
+                  key={podStatus.name}
+                  podStatus={podStatus}
+                  isSelected={selectedPod?.name === podStatus.name}
+                  // eslint-disable-next-line react-memo/require-usememo
+                  toggleSelected={() => setSelectedPod((prev) => prev?.name === podStatus.name ? null : podStatus)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className={classes.noResults}>Cluster has no Pixie control plane pods.</div>
+        )}
+
         <div className={`${classes.podTypeHeader} ${classes.podTypeSecondHeader}`}>
           <AdminTooltip title={'To see a list of all agents, click the Agents tab.'}>
             <span>Sample of Unhealthy Data Plane Pods <HelpIcon className={classes.helpIcon} /></span>
@@ -369,7 +382,7 @@ export const PixiePodsTab = React.memo<{
             </AdminTooltip>
           </span>
         </div>
-        {dataPlanePods?.length > 0 ? (
+        {dataPlaneDisplay.length > 0 ? (
           <Table>
             <PodHeader />
             <TableBody>
