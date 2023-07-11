@@ -58,6 +58,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexFlow: 'column nowrap',
     justifyContent: 'flex-start',
     alignItems: 'stretch',
+    paddingTop: theme.spacing(1),
   },
   rightContent: {
     flex: '1 1 40%',
@@ -139,7 +140,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '& > h1': {
       ...theme.typography.h2,
       margin: theme.spacing(2),
-      marginTop: theme.spacing(1),
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
@@ -182,9 +182,11 @@ const PodHeader = React.memo(() => (
     <StyledTableHeadRow>
       <StyledTableHeaderCell />{/* Status icon */}
       <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-      <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+      <StyledTableHeaderCell>Status Message</StyledTableHeaderCell>
       {/* eslint-disable-next-line react-memo/require-usememo */}
-      <StyledTableHeaderCell sx={{ textAlign: 'right' }}>Restart Count</StyledTableHeaderCell>
+      <StyledTableHeaderCell sx={{ textAlign: 'right', minWidth: (t) => t.spacing(18) }}>
+        Restart Count
+      </StyledTableHeaderCell>
       <StyledTableHeaderCell />{/* Expanded icon when active */}
     </StyledTableHeadRow>
   </TableHead>
