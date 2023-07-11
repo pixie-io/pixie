@@ -5,7 +5,7 @@ metadata:
   name: cloud-ingress
   annotations:
     networking.gke.io/v1beta1.FrontendConfig: "frontend-config"
-    networking.gke.io/managed-certificates: cloud-ingress-managed-cert
+    networking.gke.io/managed-certificates: cloud-ingress-managed-cert,cloud-ingress-managed-cert-noslackin
 spec:
   rules:
   - http:

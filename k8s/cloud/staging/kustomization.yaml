@@ -20,6 +20,7 @@ replicas:
 resources:
 - frontend_config.yaml
 - cloud_ingress_managed_cert.yaml
+- cloud_ingress_managed_cert_noslackin.yaml
 - cloud_proxy_backend_config.yaml
 - vzconn_backend_config.yaml
 - ../base
