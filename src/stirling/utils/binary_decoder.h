@@ -25,6 +25,8 @@
 namespace px {
 namespace stirling {
 
+constexpr int kMaxVarintLen64 = 10;
+
 /**
  * Provides functions to extract bytes from a bytes buffer.
  */
@@ -58,6 +60,35 @@ class BinaryDecoder {
     TIntType val = ::px::utils::BEndianBytesToInt<TIntType>(buf_);
     buf_.remove_prefix(sizeof(TIntType));
     return val;
+  }
+
+  // Extract UVarInt encoded value and return result as uint64_t. The details of this encoding's
+  // specification can be see in the following link:
+  // https://cs.opensource.google/go/go/+/refs/tags/go1.20.5:src/encoding/binary/varint.go;l=7-25
+  StatusOr<uint64_t> ExtractUVarInt() {
+    uint64_t x = 0;
+    uint bits = 0;
+    int i = 0;
+
+    while (buf_.size() >= 1 && i < kMaxVarintLen64) {
+      uint8_t b = buf_[0];
+      buf_.remove_prefix(1);
+
+      if (b < 0x80) {
+        if (i == kMaxVarintLen64 - 1 && b > 1) {
+          return error::ResourceUnavailable("Insufficient number of bytes.");
+        }
+        return x | uint64_t(b) << bits;
+      }
+
+      x |= uint64_t(b & 0x7f) << bits;
+      bits += 7;
+      i++;
+    }
+    if (i == kMaxVarintLen64) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    return 0;
   }
 
   template <typename TCharType = char>
