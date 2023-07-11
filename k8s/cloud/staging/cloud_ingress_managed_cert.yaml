@@ -8,4 +8,5 @@ spec:
   - staging.withpixie.dev
   - work.staging.withpixie.dev
   - docs.staging.withpixie.dev
+  - slackin.staging.withpixie.dev
   - segment.staging.withpixie.dev
