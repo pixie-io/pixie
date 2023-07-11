@@ -275,7 +275,8 @@ export const SideBar: React.FC<{ open: boolean, buttons?: LinkItemProps[] }> = R
     ];
   }, [defaultEmbedState, embedState, scriptId, selectedClusterName]);
 
-  const adminItems: LinkItemProps[] = React.useMemo(() => [
+  const allowAdmin = React.useMemo(() => !pathname.includes('/live'), [pathname]);
+  const adminItems: LinkItemProps[] = React.useMemo(() => allowAdmin ? [
     {
       icon: <ClusterIcon />,
       link: '/admin/clusters',
@@ -318,7 +319,7 @@ export const SideBar: React.FC<{ open: boolean, buttons?: LinkItemProps[] }> = R
       text: 'Invitations',
       active: pathname.endsWith('/admin/invite'),
     }] : []),
-  ], [pathname, showInvitations]);
+  ] : [], [pathname, allowAdmin, showInvitations]);
 
   const pluginItems = React.useMemo(() => [
     {
