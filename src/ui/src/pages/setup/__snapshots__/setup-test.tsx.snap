@@ -101,82 +101,450 @@ exports[`setup page renders 1`] = `
             />
           </div>
         </ul>
-        <ul
-          class="MuiList-root MuiList-padding css-h4y409-MuiList-root"
+        <a
+          aria-label="Clusters"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/clusters"
+          tabindex="0"
         >
-          <a
-            aria-label="Data Retention"
-            class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
-            data-mui-internal-clone-element="true"
-            href="/configure-data-export"
-            tabindex="0"
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
           >
-            <div
-              class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              focusable="false"
+              viewBox="0 0 24 24"
             >
-              <svg
-                aria-hidden="true"
-                class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
-                focusable="false"
-                viewBox="0 0 15 18"
-              >
-                <path
-                  d="
+              <path
+                d="M23.3468 14.6178C23.3243 14.6178 23.3243 14.6178 23.3468
+        14.6178H23.3243C23.3017 14.6178 23.2793 14.6178 23.2793
+        14.5945C23.2341 14.5945 23.1891 14.5715 23.144 14.5715C22.9864
+        14.5483 22.8512 14.525 22.7161 14.525C22.6485 14.525 22.581
+        14.525 22.4908 14.502H22.4683C21.9952 14.4556 21.6123 14.4092
+        21.2519 14.2934C21.0943 14.224 21.0493 14.1312 21.0041 14.0387C21.0041
+        14.0154 20.9817 14.0154 20.9817 13.9922L20.6889 13.8997C20.824 12.8339
+        20.7789 11.722 20.5312 10.6332C20.2834 9.54444 19.8555 8.5251 19.2698
+        7.59845L19.495 7.38997V7.34358C19.495 7.2278 19.5175 7.11202 19.6077
+        6.99613C19.878 6.74128 20.2158 6.53281 20.6212 6.27799C20.6889 6.23166
+        20.7565 6.2085 20.824 6.16217C20.9591 6.09266 21.0718 6.02317 21.207
+        5.9305C21.2294 5.90734 21.2745 5.88416 21.3195 5.83784C21.3421 5.81468
+        21.3646 5.81468 21.3646 5.79151C21.68 5.51352 21.7475 5.0502 21.5223
+        4.74904C21.4096 4.58688 21.207 4.49422 21.0041 4.49422C20.824 4.49422
+        20.6663 4.56371 20.5086 4.67954C20.4861 4.7027 20.4861 4.7027 20.4637
+        4.72586C20.4185 4.74904 20.396 4.79537 20.351 4.81853C20.2384 4.93436
+        20.1483 5.02703 20.0582 5.14286C20.0132 5.1892 19.968 5.2587 19.9005
+        5.30502C19.5851 5.65252 19.2923 5.9305 18.9995 6.139C18.9319 6.18533
+        18.8644 6.2085 18.7967 6.2085C18.7517 6.2085 18.7067 6.2085 18.6616
+        6.18533H18.6166L18.3462 6.37067C18.0534 6.04633 17.738 5.76834 17.4228
+        5.49035C16.0712 4.40155 14.4269 3.72973 12.7151 3.56756L12.6925
+        3.26641C12.67 3.24325 12.67 3.24325 12.6474 3.22008C12.5799 3.15058
+        12.4897 3.08108 12.4673 2.91892C12.4448 2.54826 12.4897 2.13128
+        12.5349 1.66796V1.64479C12.5349 1.5753 12.5574 1.48262 12.5799
+        1.41313C12.6024 1.27414 12.6249 1.13514 12.6474
+        0.972984V0.833976V0.764484C12.6474 0.347496 12.332 0 11.9492 0C11.769
+        0 11.5887 0.0926639 11.4536 0.23166C11.3185 0.370668 11.251 0.555984
+        11.251 0.764484V0.810816V0.949812C11.251 1.11198 11.2735 1.25096
+        11.3185 1.38996C11.3411 1.45946 11.3411 1.52897 11.3635
+        1.62163V1.64479C11.4087 2.10811 11.4762 2.5251 11.4312 2.89576C11.4086
+        3.05791 11.3185 3.12742 11.251 3.19692C11.2284 3.22008 11.2284 3.22008
+        11.206 3.24325L11.1834 3.5444C10.7779 3.59074 10.3724 3.63707 9.96697
+        3.72973C8.23265 4.12355 6.7009 5.02703 5.50711 6.32432L5.28186
+        6.16217H5.23681C5.19177 6.16217 5.14672 6.18533 5.10167
+        6.18533C5.03409 6.18533 4.96652 6.16217 4.89895 6.11584C4.60612
+        5.90734 4.3133 5.60618 3.99795 5.25869C3.9529 5.21236 3.90785
+        5.14286 3.84028 5.09653C3.75018 4.9807 3.66008 4.88803 3.54744
+        4.7722C3.52492 4.74904 3.47989 4.72586 3.43483 4.67954C3.4123
+        4.65638 3.38978 4.65637 3.38978 4.63321C3.25463 4.51738 3.07443
+        4.44788 2.89424 4.44788C2.69151 4.44788 2.48878 4.54055 2.37616
+        4.7027C2.15091 5.00387 2.21849 5.46719 2.53383 5.74518C2.55636
+        5.74518 2.55636 5.76834 2.57888 5.76834C2.62393 5.79151 2.64646
+        5.83784 2.69151 5.86102C2.82667 5.95367 2.93927 6.02317 3.07443
+        6.09266C3.142 6.11584 3.20958 6.16217 3.27715 6.2085C3.6826 6.46332
+        4.02047 6.67178 4.29077 6.92664C4.4034 7.04243 4.4034 7.15831 4.4034
+        7.2741V7.32048L4.62864 7.52896C4.5836 7.59845 4.53855 7.64483 4.51602
+        7.71432C3.38978 9.54444 2.96181 11.6988 3.25463 13.8301L2.96181
+        13.9228C2.96181 13.9459 2.93929 13.9459 2.93929 13.9692C2.89424
+        14.0617 2.82667 14.1545 2.69151 14.224C2.35364 14.3398 1.94819 14.3861
+        1.47516 14.4325H1.45264C1.38506 14.4325 1.29497 14.4325 1.2274
+        14.4556C1.09225 14.4556 0.957097 14.4787 0.799425 14.502C0.754374
+        14.502 0.709323 14.525 0.664272 14.525C0.64174 14.525 0.619234 14.525
+        0.596702 14.5483C0.191256 14.641 -0.0565178 15.0348 0.0110647
+        15.4055C0.0786226 15.7297 0.371447 15.9383 0.731842 15.9383C0.799425
+        15.9383 0.844476 15.9383 0.912046 15.915C0.934577 15.915 0.957097
+        15.915 0.957097 15.8918C1.00215 15.8918 1.0472 15.8688 1.09225
+        15.8688C1.24992 15.8224 1.36254 15.776 1.4977 15.7066C1.56527 15.6834
+        1.63285 15.6371 1.70042 15.6139H1.72295C2.15091 15.4517 2.53383
+        15.3127 2.89424 15.2664H2.93929C3.07443 15.2664 3.16453 15.336 3.2321
+        15.3822C3.25463 15.3822 3.25463 15.4055 3.27715 15.4055L3.59249
+        15.359C4.13309 17.0734 5.16924 18.6023 6.54325 19.7143C6.85858 19.9691
+        7.17396 20.1776 7.51179 20.3861L7.37666 20.6872C7.37666 20.7104
+        7.3992 20.7104 7.3992 20.7336C7.44422 20.8262 7.48933 20.942 7.44422
+        21.1043C7.30909 21.4517 7.10639 21.7992 6.85858 22.193V22.2162C6.81357
+        22.2857 6.76847 22.332 6.72345 22.4016C6.63334 22.5173 6.56578
+        22.6332 6.47568 22.7722C6.45315 22.7954 6.43063 22.8416 6.4081
+        22.8881C6.4081 22.9111 6.38558 22.9344 6.38558 22.9344C6.20539
+        23.3282 6.34054 23.7683 6.67844 23.9305C6.76847 23.9768 6.85858
+        24 6.94871 24C7.21898 24 7.48933 23.8146 7.62446 23.5598C7.62446
+        23.5367 7.64701 23.5135 7.64701 23.5135C7.66947 23.4672 7.69203
+        23.4209 7.71459 23.3977C7.78214 23.2355 7.80461 23.1197 7.84971
+        22.9807C7.87217 22.9111 7.89473 22.8416 7.91728 22.7722C8.07497
+        22.3088 8.18754 21.9383 8.39034 21.6139C8.48036 21.4748 8.59303
+        21.4517 8.68315 21.4054C8.70562 21.4054 8.70562 21.4054 8.72816
+        21.3822L8.88585 21.081C9.87689 21.4748 10.9582 21.6834 12.0392
+        21.6834C12.6925 21.6834 13.3682 21.6139 13.999 21.4517C14.4044
+        21.3592 14.7873 21.2432 15.1702 21.1043L15.3053 21.3592C15.3279
+        21.3592 15.3279 21.3592 15.3505 21.3822C15.463 21.4054 15.5532
+        21.4517 15.6433 21.5908C15.8235 21.915 15.9586 22.3088 16.1163
+        22.749V22.7722C16.1389 22.8416 16.1614 22.9111 16.1839 22.9807C16.2289
+        23.1197 16.2514 23.2588 16.319 23.3977C16.3415 23.444 16.364 23.4672
+        16.3866 23.5135C16.3866 23.5367 16.4091 23.5598 16.4091
+        23.5598C16.5442 23.8379 16.8146 24 17.0848 24C17.175 24 17.2651
+        23.9768 17.3553 23.9305C17.5128 23.8379 17.6481 23.6988 17.693
+        23.5135C17.738 23.3282 17.738 23.1197 17.6481 22.9344C17.6481
+        22.9111 17.6255 22.9111 17.6255 22.8881C17.6029 22.8416 17.5805
+        22.7954 17.5579 22.7722C17.4904 22.6332 17.4002 22.5173 17.3101
+        22.4016C17.2651 22.332 17.22 22.2857 17.175 22.2162V22.193C16.9272
+        21.7992 16.7019 21.4517 16.5894 21.1043C16.5442 20.942 16.5894
+        20.8494 16.6119 20.7336C16.6119 20.7104 16.6344 20.7104 16.6344
+        20.6872L16.5217 20.4092C17.7156 19.691 18.7291 18.6719 19.495
+        17.4209C19.9005 16.7722 20.2158 16.0541 20.4411 15.336L20.7113
+        15.3822C20.7339 15.3822 20.7339 15.359 20.7565 15.359C20.8464
+        15.3127 20.9142 15.2432 21.0493 15.2432H21.0943C21.4546 15.2896
+        21.8377 15.4285 22.2656 15.5908H22.2882C22.3557 15.6139 22.4233
+        15.6602 22.4908 15.6834C22.6259 15.7529 22.7385 15.7993 22.8962
+        15.8455C22.9413 15.8455 22.9864 15.8688 23.0315 15.8688C23.0539
+        15.8688 23.0764 15.8688 23.099 15.8918C23.1666 15.915 23.2116
+        15.915 23.2793 15.915C23.6171 15.915 23.9099 15.6834 24 15.3822C24
+        15.1043 23.7522 14.7336 23.3468 14.6178ZM12.9178 13.4826L11.9267
+        13.9692L10.9356 13.4826L10.6878 12.3938L11.3635 11.5135H12.4673L13.143
+        12.3938L12.9178 13.4826ZM18.7967 11.0734C18.977 11.861 19.0219
+        12.6486 18.9544 13.4131L15.5081 12.3938C15.1928 12.3011 15.0125
+        11.9768 15.0801 11.6525C15.1027 11.5598 15.1478 11.4672 15.2153
+        11.3976L17.9409 8.87255C18.3237 9.52124 18.6166 10.2625 18.7967
+        11.0734ZM16.8596 7.48266L13.9089 9.63708C13.6611 9.7992 13.3233
+        9.75288 13.1205 9.49805C13.0529 9.42856 13.0305 9.33588 13.0079
+        9.24329L12.8051 5.46719C14.3594 5.65252 15.7784 6.37067 16.8596
+        7.48266ZM10.3274 5.58301C10.5752 5.53668 10.8005 5.49035 11.0483
+        5.44402L10.8454 9.1506C10.8229 9.47495 10.5752 9.75288 10.2373
+        9.75288C10.1472 9.75288 10.0346 9.72972 9.96697 9.6834L6.97126
+        7.48266C7.89473 6.53281 9.04353 5.88418 10.3274 5.58301ZM5.89003
+        8.87255L8.57048 11.3281C8.81829 11.5367 8.84075 11.9305 8.63805
+        12.1853C8.57048 12.278 8.48036 12.3475 8.36778 12.3707L4.87641
+        13.4131C4.74126 11.8379 5.07914 10.2395 5.89003 8.87255ZM5.28186
+        15.1506L8.8633 14.525C9.15611 14.502 9.42647 14.7104 9.49404
+        15.0116C9.5165 15.1506 9.5165 15.2664 9.47148 15.3822L8.09743
+        18.7876C6.83604 17.9537 5.82246 16.6795 5.28186 15.1506ZM13.5034
+        19.7606C12.9854 19.8764 12.4673 19.9459 11.9267 19.9459C11.1382
+        19.9459 10.3724 19.807 9.65164 19.5752L11.4312 16.2626C11.6113
+        16.0541 11.9041 15.9613 12.152 16.1004C12.2646 16.1699 12.3546
+        16.2626 12.4222 16.3552L14.1567 19.5752C13.9539 19.6447 13.7286
+        19.691 13.5034 19.7606ZM17.8957 16.5406C17.3327 17.4672 16.5894
+        18.2084 15.7334 18.7876L14.3144 15.2896C14.2467 15.0116 14.3594
+        14.7104 14.6296 14.5715C14.7197 14.525 14.8324 14.502 14.945
+        14.502L18.549 15.1273C18.4139 15.6371 18.1885 16.1004 17.8957 16.5406Z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Clusters
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="Keys"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/keys/api"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="VpnKeyIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Keys
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="Plugins"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/plugins"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="ExtensionIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Plugins
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="Users"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/users"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="GroupIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Users
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="Org Settings"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/org"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="AccountTreeIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Org Settings
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="User Settings"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/user"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="PersonIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              User Settings
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <a
+          aria-label="Invitations"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/admin/invite"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              data-testid="SendIcon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
+            <span
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Invitations
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
+        <hr
+          class="MuiDivider-root MuiDivider-middle SideBar-divider-51 css-qvxbj1-MuiDivider-root"
+        />
+        <a
+          aria-label="Data Retention"
+          class="MuiButtonBase-root MuiListItem-root MuiListItem-gutters MuiListItem-padding MuiListItem-button SideBar-listIcon-48 css-1eeu83b-MuiButtonBase-root-MuiListItem-root"
+          data-mui-internal-clone-element="true"
+          href="/configure-data-export"
+          tabindex="0"
+        >
+          <div
+            class="MuiListItemIcon-root css-1k4i193-MuiListItemIcon-root"
+          >
+            <svg
+              aria-hidden="true"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+              focusable="false"
+              viewBox="0 0 15 18"
+            >
+              <path
+                d="
       M7.49919 6.59251C11.6409 6.59251 14.9984 5.11673 14.9984 3.29625C14.9984 1.47578 11.6409 0 7.49919 0C3.3575 0 0
       1.47578 0 3.29625C0 5.11673 3.3575 6.59251 7.49919 6.59251Z
     "
-                />
-                <path
-                  d="
+              />
+              <path
+                d="
       M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766 10.4538
       7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105
       6.78389 10.7469 7.62846 7.49935 7.62846Z
     "
-                />
-                <path
-                  d="
+              />
+              <path
+                d="
       M7.50041 15.1746C4.25285 15.1746 1.38931 14.3301 0.00122562 12.9571L0.00123276 14.7037C0.00123276 16.5242
       3.35873 18 7.50041 18C11.6421 18 14.9996 16.5242 14.9996 14.7037L14.9996 12.9571C13.6115 14.3301 10.748
       15.1746 7.50041 15.1746Z
     "
-                />
-                <path
-                  d="
+              />
+              <path
+                d="
       M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766 10.4538
       7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105 6.78389 10.7469 7.62846
       7.49935 7.62846Z
     "
-                />
-                <path
-                  d="
+              />
+              <path
+                d="
       M7.49935 7.62846C4.25179 7.62846 1.38825 6.78389 0.000161662 5.41089V7.15756C0.000161662 8.97803 3.35766
       10.4538 7.49935 10.4538C11.641 10.4538 14.9985 8.97803 14.9985 7.15756V5.41089C13.6105 6.78389 10.7469
       7.62846 7.49935 7.62846Z
     "
-                />
-                <path
-                  d="
+              />
+              <path
+                d="
       M7.49937 11.353C4.25168 11.353 1.38805 10.5083 2.16292e-05 9.13524L0.00017571 10.8821C0.00017571 12.7025
       3.35768 14.1783 7.49937 14.1783C11.6411 14.1783 14.9986 12.7025 14.9986 10.8821L14.9985 9.13543C13.6104
       10.5084 10.7469 11.353 7.49937 11.353Z
     "
-                />
-              </svg>
-            </div>
-            <div
-              class="MuiListItemText-root css-tlelie-MuiListItemText-root"
-            >
-              <span
-                class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
-              >
-                Data Retention
-              </span>
-            </div>
+              />
+            </svg>
+          </div>
+          <div
+            class="MuiListItemText-root css-tlelie-MuiListItemText-root"
+          >
             <span
-              class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
-            />
-          </a>
-        </ul>
+              class="MuiTypography-root MuiTypography-body1 MuiListItemText-primary css-10hburv-MuiTypography-root"
+            >
+              Data Retention
+            </span>
+          </div>
+          <span
+            class="MuiTouchRipple-root css-8je8zh-MuiTouchRipple-root"
+          />
+        </a>
         <div
           class="SideBar-spacer-54"
         />
