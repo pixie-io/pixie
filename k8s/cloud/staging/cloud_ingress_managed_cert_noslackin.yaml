@@ -2,11 +2,10 @@
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:
-  name: cloud-ingress-managed-cert
+  name: cloud-ingress-managed-cert-noslackin
 spec:
   domains:
   - staging.withpixie.dev
   - work.staging.withpixie.dev
   - docs.staging.withpixie.dev
-  - slackin.staging.withpixie.dev
   - segment.staging.withpixie.dev
