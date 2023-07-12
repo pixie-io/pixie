@@ -191,7 +191,7 @@ metrics {
 
   auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
       *plan_node, output_rd, {input_rd}, exec_state_.get());
-  char non_utf_8_bytes[] = {static_cast<char>(0xC0)};
+  std::string non_utf_8_bytes(1, 0xC0);
   auto rb1 = RowBatchBuilder(input_rd, 1, /*eow*/ false, /*eos*/ false)
                  .AddColumn<types::Time64NSValue>({10})
                  .AddColumn<types::Float64Value>({1.0})
