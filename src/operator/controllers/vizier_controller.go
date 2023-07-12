@@ -35,6 +35,7 @@ import (
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -127,6 +128,71 @@ func getLatestVizierVersion(ctx context.Context, client cloudpb.ArtifactTrackerC
 	return resp.Artifact[0].VersionStr, nil
 }
 
+// Kubernetes used to have in-tree plugins for a variety of vendor CSI drivers.
+// These provisioners had "kubernetes.io/" prefixes. Often times these provisioner names
+// are still used in the storageclass but the calls are redirected to CSIDrivers under new names.
+// This map maintains that list of redirects.
+// See https://kubernetes.io/docs/concepts/storage/volumes and
+// https://kubernetes.io/docs/concepts/storage/storage-classes/#provisioner.
+var migratedCSIDrivers = map[string]string{
+	"kubernetes.io/aws-ebs":         "ebs.csi.aws.com",
+	"kubernetes.io/azure-disk":      "disk.csi.azure.com",
+	"kubernetes.io/azure-file":      "file.csi.azure.com",
+	"kubernetes.io/cinder":          "cinder.csi.openstack.org",
+	"kubernetes.io/gce-pd":          "pd.csi.storage.gke.io",
+	"kubernetes.io/portworx-volume": "pxd.portworx.com",
+	"kubernetes.io/vsphere-volume":  "csi.vsphere.vmware.com",
+}
+
+func hasCSIDriver(clientset *kubernetes.Clientset, name string) (bool, error) {
+	_, err := clientset.StorageV1().CSIDrivers().Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return false, err
+	} else if k8serrors.IsNotFound(err) {
+		return false, nil
+	}
+	return true, nil
+}
+
+func defaultStorageClassHasCSIDriver(clientset *kubernetes.Clientset) (bool, error) {
+	storageClasses, err := clientset.StorageV1().StorageClasses().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	var defaultStorageClass *storagev1.StorageClass
+	// Check annotations map on each storage class to see if default is set to "true".
+	for _, storageClass := range storageClasses.Items {
+		annotationsMap := storageClass.GetAnnotations()
+		for _, key := range defaultClassAnnotationKeys {
+			if annotationsMap[key] == "true" {
+				defaultStorageClass = &storageClass
+				break
+			}
+		}
+	}
+	if defaultStorageClass == nil {
+		return false, errors.New("no default storage class")
+	}
+	csi := defaultStorageClass.Provisioner
+	if migrated, ok := migratedCSIDrivers[csi]; ok {
+		csi = migrated
+	}
+
+	// For all non-migrated kubernetes provisioners, kubernetes itself will have an internal provisioner,
+	// so no need to check for a CSIDriver.
+	if strings.HasPrefix(csi, "kubernetes.io/") {
+		return true, nil
+	}
+	// If the provisioner contains a "/" then we assume it is a custom provisioner that doesn't use the CSI pattern,
+	// so we skip checking for a CSIDriver and hope the provisioner works.
+	if strings.Contains(csi, "/") {
+		return true, nil
+	}
+
+	return hasCSIDriver(clientset, csi)
+}
+
 // missingNecessaryCSIDriver checks if the user is running an EKS cluster, and if so, whether they are
 // missing the CSIDriver. Without the CSI driver, persistent volumes may not be able to be deployed.
 func missingNecessaryCSIDriver(clientset *kubernetes.Clientset, k8sVersion string) bool {
@@ -145,14 +211,12 @@ func missingNecessaryCSIDriver(clientset *kubernetes.Clientset, k8sVersion strin
 		return false
 	}
 
-	_, err = clientset.AppsV1().Deployments("kube-system").Get(context.Background(), "ebs-csi-controller", metav1.GetOptions{})
-	if err != nil && !k8serrors.IsNotFound(err) {
-		log.WithError(err).Error("Error trying to check for ebs-csi-controller")
+	hasDriver, err := defaultStorageClassHasCSIDriver(clientset)
+	if err != nil {
+		log.WithError(err).Warn("failed to determine if the default storage class has a valid CSI driver")
 		return false
-	} else if k8serrors.IsNotFound(err) {
-		return true
 	}
-	return false
+	return !hasDriver
 }
 
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
