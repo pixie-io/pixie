@@ -22,7 +22,6 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +39,7 @@ type informerWatcher struct {
 	objType string
 	ch      chan *K8sResourceMessage
 	inf     cache.SharedIndexInformer
+	init    func() error
 }
 
 func (i *informerWatcher) send(msg *K8sResourceMessage, et watch.EventType) {
@@ -74,29 +74,42 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 	i.inf.Run(quitCh)
 }
 
+// InitWatcher initializes a watcher, for example to perform a list.
+func (i *informerWatcher) InitWatcher() error {
+	if i.init != nil {
+		return i.init()
+	}
+	return nil
+}
+
 func podWatcher(resource string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	factory := informers.NewSharedInformerFactory(clientset, 12*time.Hour)
+
 	iw := &informerWatcher{
 		convert: podConverter,
 		objType: resource,
 		ch:      ch,
 		inf:     factory.Core().V1().Pods().Informer(),
 	}
-	// We initialize ch with the current nodes to handle cold start race conditions.
-	list, err := clientset.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Errorf("Failed to init %s", resource)
-		// Still return the informer because the rest of the system can recover from this.
-		return iw
+
+	init := func() error {
+		// We initialize ch with the current pods to handle cold start race conditions.
+		list, err := clientset.CoreV1().Pods(v1.NamespaceAll).List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
+		for _, obj := range list.Items {
+			item := obj
+			msg := iw.convert(&item)
+			if msg != nil {
+				iw.send(msg, watch.Added)
+			}
+		}
+		return nil
 	}
 
-	for _, obj := range list.Items {
-		item := obj
-		msg := iw.convert(&item)
-		if msg != nil {
-			iw.send(msg, watch.Added)
-		}
-	}
+	iw.init = init
 
 	return iw
 }
@@ -140,21 +153,25 @@ func nodeWatcher(resource string, ch chan *K8sResourceMessage, clientset kuberne
 		inf:     factory.Core().V1().Nodes().Informer(),
 	}
 
-	// We initialize ch with the current nodes to handle cold start race conditions.
-	list, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Errorf("Failed to init %s", resource)
-		// Still return the informer because the rest of the system can recover from this.
-		return iw
+	init := func() error {
+		// We initialize ch with the current nodes to handle cold start race conditions.
+		list, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
+		for _, obj := range list.Items {
+			item := obj
+			msg := iw.convert(&item)
+			if msg != nil {
+				iw.send(msg, watch.Added)
+			}
+		}
+		return nil
 	}
 
-	for _, obj := range list.Items {
-		item := obj
-		msg := iw.convert(&item)
-		if msg != nil {
-			iw.send(msg, watch.Added)
-		}
-	}
+	iw.init = init
+
 	return iw
 }
 
