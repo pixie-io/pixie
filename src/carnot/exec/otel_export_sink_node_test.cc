@@ -146,6 +146,69 @@ metrics {
   EXPECT_EQ(url_, "otlp.px.dev");
 }
 
+TEST_F(OTelExportSinkNodeTest, non_utf_8) {
+  std::string operator_pb_txt = R"(
+endpoint_config {
+  url: "otlp.px.dev"
+    headers {
+      key: "api_key"
+      value: "abcd"
+    }
+}
+metrics {
+  name: "http.resp.latency"
+  time_column_index: 0
+  gauge { int_column_index: 1 }
+  attributes {
+    name: "test"
+    column {
+      column_type: STRING
+      column_index: 2
+    }
+  }
+})";
+  planpb::OTelExportSinkOperator otel_sink_op;
+
+  EXPECT_TRUE(google::protobuf::TextFormat::ParseFromString(operator_pb_txt, &otel_sink_op));
+  auto plan_node = std::make_unique<plan::OTelExportSinkOperator>(1);
+  auto s = plan_node->Init(otel_sink_op);
+  RowDescriptor input_rd({types::TIME64NS, types::FLOAT64, types::STRING});
+  RowDescriptor output_rd({});
+
+  std::shared_ptr<const grpc::AuthContext> auth_context;
+
+  std::vector<otelmetricscollector::ExportMetricsServiceRequest> actual_protos(1);
+  size_t i = 0;
+  EXPECT_CALL(*metrics_mock_, Export(_, _, _))
+      .Times(1)
+      .WillRepeatedly(Invoke(
+          [&i, &actual_protos, &auth_context](const auto& ctx, const auto& proto, const auto&) {
+            auth_context = ctx->auth_context();
+            actual_protos[i] = proto;
+            ++i;
+            return grpc::Status::OK;
+          }));
+
+  auto tester = exec::ExecNodeTester<OTelExportSinkNode, plan::OTelExportSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  char non_utf_8_bytes[] = {static_cast<char>(0xC0)};
+  auto rb1 = RowBatchBuilder(input_rd, 1, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Time64NSValue>({10})
+                 .AddColumn<types::Float64Value>({1.0})
+                 .AddColumn<types::StringValue>({non_utf_8_bytes})
+                 .get();
+  tester.ConsumeNext(rb1, 1, 0);
+  EXPECT_EQ(non_utf_8_bytes, actual_protos[0]
+                                 .resource_metrics(0)
+                                 .instrumentation_library_metrics(0)
+                                 .metrics(0)
+                                 .gauge()
+                                 .data_points(0)
+                                 .attributes(0)
+                                 .value()
+                                 .bytes_value());
+}
+
 struct TestCase {
   std::string name;
   std::string operator_proto;
@@ -978,6 +1041,7 @@ TEST_P(OTelSpanTest, process_data) {
     EXPECT_THAT(actual_protos[i], EqualsProto(tc.expected_otel_protos[i]));
   }
 }
+
 INSTANTIATE_TEST_SUITE_P(OTelSpan, OTelSpanTest,
                          ::testing::ValuesIn(std::vector<TestCase>{
                              {"name_as_a_string",

@@ -19,6 +19,7 @@
 #include "src/carnot/exec/otel_export_sink_node.h"
 
 #include <rapidjson/document.h>
+#include <simdutf.h>
 #include <chrono>
 #include <memory>
 #include <queue>
@@ -90,6 +91,14 @@ Status OTelExportSinkNode::CloseImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
+void SetStringOrBytes(std::string str, ::opentelemetry::proto::common::v1::KeyValue* otel_attr) {
+  if (!simdutf::validate_utf8(str.data(), str.length())) {
+    otel_attr->mutable_value()->set_bytes_value(str);
+  } else {
+    otel_attr->mutable_value()->set_string_value(str);
+  }
+}
+
 template <typename C>
 void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::common::v1::KeyValue>*
                        mutable_attributes,
@@ -98,14 +107,14 @@ void AddAttributes(google::protobuf::RepeatedPtrField<::opentelemetry::proto::co
     auto otel_attr = mutable_attributes->Add();
     otel_attr->set_key(px_attr.name());
     if (px_attr.has_string_value()) {
-      otel_attr->mutable_value()->set_string_value(px_attr.string_value());
+      SetStringOrBytes(px_attr.string_value(), otel_attr);
       continue;
     }
     auto attribute_col = rb.ColumnAt(px_attr.column().column_index()).get();
     switch (px_attr.column().column_type()) {
       case types::STRING: {
-        otel_attr->mutable_value()->set_string_value(
-            types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx));
+        SetStringOrBytes(types::GetValueFromArrowArray<types::STRING>(attribute_col, row_idx),
+                         otel_attr);
         break;
       }
       case types::INT64: {
@@ -193,7 +202,7 @@ void ReplicateData(const std::vector<planpb::OTelAttribute>& attributes_spec,
     for (const auto& [attribute_idx, value_idx] : Enumerate(permutation)) {
       auto attribute = data.mutable_resource()->add_attributes();
       attribute->set_key(attributes_spec[attribute_idx].name());
-      attribute->mutable_value()->set_string_value(values[attribute_idx][value_idx]);
+      SetStringOrBytes(values[attribute_idx][value_idx], attribute);
     }
     add_data(std::move(data));
   }

@@ -50,6 +50,7 @@ pl_cc_library(
         "@com_github_opentelemetry_proto//:metrics_service_grpc_cc",
         "@com_github_opentelemetry_proto//:trace_service_grpc_cc",
         "@com_github_rlyeh_sole//:sole",
+        "@com_github_simdutf_simdutf//:libsimdutf",
         "@com_google_absl//absl/container:node_hash_map",
     ],
 )
