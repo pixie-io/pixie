@@ -56,11 +56,12 @@ rules:
   - viziers/status
   - podsecuritypolicies
   verbs: ["*"]
-# Allow read-only access to storage class.
+# Allow read-only access to storage class / csi drivers.
 - apiGroups:
   - storage.k8s.io
   - ""
   resources:
   - storageclasses
   - namespaces
+  - csidrivers
   verbs: ["get", "list"]
