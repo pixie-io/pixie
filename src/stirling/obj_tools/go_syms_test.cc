@@ -41,24 +41,24 @@ constexpr std::string_view kTestGoBinaryPath =
 // The "endian agnostic" case refers to where the Go version data is varint encoded
 // directly within the buildinfo header. See the following reference for more details.
 // https://github.com/golang/go/blob/1dbbafc70fd3e2c284469ab3e0936c1bb56129f6/src/debug/buildinfo/buildinfo.go#L184C16-L184C16
-TEST(ReadBuildVersionTest, BuildinfoEndianAgnostic) {
+TEST(ReadGoBuildVersionTest, BuildinfoEndianAgnostic) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
-  ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
+  ASSERT_OK_AND_ASSIGN(std::string version, ReadGoBuildVersion(elf_reader.get()));
   EXPECT_THAT(version, StrEq("go1.19.10"));
 }
 
-TEST(ReadBuildVersionTest, BuildinfoLittleEndian) {
+TEST(ReadGoBuildVersionTest, BuildinfoLittleEndian) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoLittleEndianBinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
-  ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
+  ASSERT_OK_AND_ASSIGN(std::string version, ReadGoBuildVersion(elf_reader.get()));
   EXPECT_THAT(version, StrEq("go1.17.13"));
 }
 
-TEST(ReadBuildVersionTest, BuildinfoLittleEndiani386) {
+TEST(ReadGoBuildVersionTest, BuildinfoLittleEndiani386) {
   const std::string kPath = px::testing::BazelRunfilePath(kTestGoLittleEndiani386BinaryPath);
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
-  ASSERT_OK_AND_ASSIGN(std::string version, ReadBuildVersion(elf_reader.get()));
+  ASSERT_OK_AND_ASSIGN(std::string version, ReadGoBuildVersion(elf_reader.get()));
   EXPECT_THAT(version, StrEq("go1.13.15"));
 }
 

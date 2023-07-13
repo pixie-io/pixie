@@ -74,7 +74,7 @@ StatusOr<std::string> ReadGoString(ElfReader* elf_reader, uint64_t ptr_size, uin
 // Reads the buildinfo header embedded in the .go.buildinfo ELF section in order to determine the go
 // toolchain version. This function emulates what the go version cli performs as seen
 // https://github.com/golang/go/blob/cb7a091d729eab75ccfdaeba5a0605f05addf422/src/debug/buildinfo/buildinfo.go#L151-L221
-StatusOr<std::string> ReadBuildVersion(ElfReader* elf_reader) {
+StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
   PX_ASSIGN_OR_RETURN(ELFIO::section * section, elf_reader->SectionWithName(kGoBuildInfoSection));
   int offset = section->get_offset();
   PX_ASSIGN_OR_RETURN(std::string_view buildInfoByteCode,

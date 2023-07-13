@@ -466,7 +466,7 @@ Status PopulateHTTP2DebugSymbols(DwarfReader* dwarf_reader, std::string_view ven
 
 Status PopulateGoTLSDebugSymbols(ElfReader* elf_reader, DwarfReader* dwarf_reader,
                                  struct go_tls_symaddrs_t* symaddrs) {
-  PX_ASSIGN_OR_RETURN(std::string build_version, ReadBuildVersion(elf_reader));
+  PX_ASSIGN_OR_RETURN(std::string build_version, ReadGoBuildVersion(elf_reader));
   PX_ASSIGN_OR_RETURN(SemVer go_version, GetSemVer(build_version, false));
   std::string retval0_arg = "~r1";
   std::string retval1_arg = "~r2";
