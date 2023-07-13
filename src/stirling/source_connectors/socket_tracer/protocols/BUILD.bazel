@@ -45,5 +45,6 @@ pl_cc_library(
         "//src/stirling/source_connectors/socket_tracer/protocols/nats:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/pgsql:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/redis:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/protocols/sink:cc_library",
     ],
 )

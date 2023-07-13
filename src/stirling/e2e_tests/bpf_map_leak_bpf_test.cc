@@ -40,6 +40,8 @@ using ::testing::Contains;
 using ::testing::Key;
 using ::testing::Not;
 
+using ConnInfoMapT = bpf_tools::WrappedBCCMap<uint64_t, struct conn_info_t>;
+
 class BPFMapLeakTest : public testing::SocketTraceBPFTestFixture<>,
                        public ::testing::WithParamInterface<std::string_view> {};
 
@@ -121,15 +123,11 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
 
   DataTables data_tables(SocketTraceConnector::kTables);
 
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
-  ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map =
-      socket_trace_connector->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map");
-  std::vector<std::pair<uint64_t, struct conn_info_t>> entries;
+  auto conn_info_map = ConnInfoMapT::Create(source_.get(), "conn_info_map");
 
   // Confirm that the leaked BPF map entry exists.
   source_->TransferData(ctx_.get());
-  entries = conn_info_map.get_table_offline();
-  EXPECT_THAT(entries, Contains(Key(server_bpf_map_key)));
+  EXPECT_THAT(conn_info_map->GetTableOffline(), Contains(Key(server_bpf_map_key)));
 
   std::this_thread::sleep_for(kInactivityPeriod);
 
@@ -143,8 +141,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   source_->TransferData(ctx_.get());
 
   // Check that the leaked BPF map entry is removed.
-  entries = conn_info_map.get_table_offline();
-  EXPECT_THAT(entries, Not(Contains(Key(server_bpf_map_key))));
+  EXPECT_THAT(conn_info_map->GetTableOffline(), Not(Contains(Key(server_bpf_map_key))));
 }
 
 constexpr std::string_view kTCPServerPath =

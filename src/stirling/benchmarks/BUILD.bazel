@@ -32,25 +32,25 @@ pl_cc_binary(
     ],
 )
 
-pl_cc_binary(
-    name = "bpf_map_ops_benchmark",
-    srcs = ["bpf_map_ops_benchmark.cc"],
-    deps = [
-        "//src/stirling/bpf_tools:cc_library",
-        "//src/stirling/utils:cc_library",
-        "@com_google_benchmark//:benchmark_main",
-    ],
-)
+# pl_cc_binary(
+#     name = "bpf_map_ops_benchmark",
+#     srcs = ["bpf_map_ops_benchmark.cc"],
+#     deps = [
+#         "//src/stirling/bpf_tools:cc_library",
+#         "//src/stirling/utils:cc_library",
+#         "@com_google_benchmark//:benchmark_main",
+#     ],
+# )
 
-pl_cc_binary(
-    name = "symbolization_benchmark",
-    srcs = ["symbolization_benchmark.cc"],
-    deps = [
-        "//src/stirling/bpf_tools:cc_library",
-        "//src/stirling/utils:cc_library",
-        "@com_google_benchmark//:benchmark_main",
-    ],
-)
+# pl_cc_binary(
+#     name = "symbolization_benchmark",
+#     srcs = ["symbolization_benchmark.cc"],
+#     deps = [
+#         "//src/stirling/bpf_tools:cc_library",
+#         "//src/stirling/utils:cc_library",
+#         "@com_google_benchmark//:benchmark_main",
+#     ],
+# )
 
 pl_cc_binary(
     name = "maps_and_vectors_iteration_benchmark",

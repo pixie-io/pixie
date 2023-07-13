@@ -100,7 +100,7 @@ class StringifierTest : public ::testing::Test {
   using StringVec = std::vector<std::string>;
   using AddrVec = std::vector<uintptr_t>;
   using Key = stack_trace_key_t;
-  using Histogram = ebpf::BPFHashTable<Key, uint64_t>;
+  using Histogram = bpf_tools::WrappedBCCMap<Key, uint64_t>;
   using StackTraces = ebpf::BPFStackTable;
 
   StringifierTest() {}
@@ -112,8 +112,7 @@ class StringifierTest : public ::testing::Test {
 
     // Bind the BCC API to the shared BPF maps created by our BPF program.
     stack_traces_ = std::make_unique<StackTraces>(bcc_wrapper_.GetStackTable("stack_traces"));
-    histogram_ = std::make_unique<Histogram>(
-        bcc_wrapper_.GetHashTable<stack_trace_key_t, uint64_t>("histogram"));
+    histogram_ = Histogram::Create(&bcc_wrapper_, "histogram");
 
     // Create a symbolizer (needed for the stringifer).
     ASSERT_OK_AND_ASSIGN(symbolizer_, BCCSymbolizer::Create());
@@ -230,7 +229,7 @@ TEST_F(StringifierTest, MemoizationTest) {
   constexpr bool kNoClearStackId = false;
 
   // Move the stack trace histogram out of the BPF shared map into our local map.
-  const auto histo = histogram_->get_table_offline(kClearTable);
+  const auto histo = histogram_->GetTableOffline(kClearTable);
 
   // Use the stringifier to populate folded_strings_map_ (used for memoization check, later).
   // Inside of PopulatedFoldedStringsMap(), we check the following invariants:

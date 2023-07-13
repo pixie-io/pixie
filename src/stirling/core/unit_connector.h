@@ -37,7 +37,11 @@ class UnitConnector {
   using time_point = std::chrono::steady_clock::time_point;
 
  public:
-  UnitConnector() : data_tables_(T::kTables) {}
+  UnitConnector() : data_tables_(T::kTables) {
+    auto f = [](uint64_t, px::types::TabletID,
+                std::unique_ptr<px::types::ColumnWrapperRecordBatch>) { return Status::OK(); };
+    data_push_callback_ = f;
+  }
 
   ~UnitConnector() {
     if (started_ && !stopped_) {
@@ -49,6 +53,11 @@ class UnitConnector {
 
     // Invokes dtor of the underlying source connector.
     source_ = nullptr;
+  }
+
+  Status RegisterDataPushCallback(DataPushCallback f) {
+    data_push_callback_ = f;
+    return Status::OK();
   }
 
   Status Stop() {
@@ -108,6 +117,11 @@ class UnitConnector {
     // Restart.
     PX_RETURN_IF_ERROR(StartTransferDataThread());
 
+    return Status::OK();
+  }
+
+  Status SetSamplingPeriod(std::chrono::milliseconds period) {
+    source_->sampling_freq_mgr().set_period(period);
     return Status::OK();
   }
 
@@ -260,9 +274,12 @@ class UnitConnector {
       const auto t0 = std::chrono::steady_clock::now();
       ctx_->RefreshUPIDList();
       source_->TransferData(ctx_.get());
+      source_->PushData(data_push_callback_);
       const auto t1 = std::chrono::steady_clock::now();
       const auto t_elapsed = t1 - t0;
-      std::this_thread::sleep_for(source_->sampling_freq_mgr().period() - t_elapsed);
+      if (source_->sampling_freq_mgr().period() > t_elapsed) {
+        std::this_thread::sleep_for(source_->sampling_freq_mgr().period() - t_elapsed);
+      }
     }
     transfer_exited_ = true;
 
@@ -333,6 +350,8 @@ class UnitConnector {
   // the invoking program will call ConsumeRecords() and data will be aggregated into the
   // data table schema(s) and this vector of tablets will be populated.
   std::vector<TaggedRecordBatch> tablets_;
+
+  DataPushCallback data_push_callback_;
 };
 
 }  // namespace stirling

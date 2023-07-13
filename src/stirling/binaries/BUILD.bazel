@@ -101,6 +101,23 @@ pl_cc_binary(
     ],
 )
 
+pl_cc_binary(
+    name = "stirling_socket_trace_recorder",
+    srcs = ["stirling_socket_trace_recorder.cc"],
+    deps = [
+        "//src/stirling/source_connectors/socket_tracer:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "stirling_socket_trace_replayer",
+    srcs = ["stirling_socket_trace_replayer.cc"],
+    deps = [
+        "//src/stirling/proto:stirling_pl_cc_proto",
+        "//src/stirling/source_connectors/socket_tracer:cc_library",
+    ],
+)
+
 cc_image(
     name = "stirling_profiler_image",
     base = ":stirling_binary_base_image",

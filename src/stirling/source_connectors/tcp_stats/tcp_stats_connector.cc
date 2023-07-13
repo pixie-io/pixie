@@ -60,17 +60,17 @@ void HandleTcpEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
   // TODO(RagalahariP): Add stats counter.
 }
 
-const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
-    {"tcp_events", HandleTcpEvent, HandleTcpEventLoss, kPerfBufferPerCPUSizeBytes,
-     bpf_tools::PerfBufferSizeCategory::kData},
-});
-
 Status TCPStatsConnector::InitImpl() {
+  auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
+      {"tcp_events", HandleTcpEvent, HandleTcpEventLoss, this, kPerfBufferPerCPUSizeBytes,
+       bpf_tools::PerfBufferSizeCategory::kData},
+  });
+
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(InitBPFProgram(tcpstats_bcc_script));
   PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
   return Status::OK();
 }

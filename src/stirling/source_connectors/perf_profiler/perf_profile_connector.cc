@@ -138,12 +138,12 @@ Status PerfProfileConnector::InitImpl() {
       {"sample_call_stack", static_cast<uint64_t>(stack_trace_sampling_period_.count())});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
-       {"histogram_b", HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
+      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size},
+       {"histogram_b", HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size}});
 
   PX_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PX_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
 
   stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
   stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
@@ -151,8 +151,7 @@ Status PerfProfileConnector::InitImpl() {
   histogram_a_perf_buffer_ = GetPerfBuffer("histogram_a");
   histogram_b_perf_buffer_ = GetPerfBuffer("histogram_b");
 
-  profiler_state_ =
-      std::make_unique<ebpf::BPFArrayTable<uint64_t>>(GetArrayTable<uint64_t>("profiler_state"));
+  profiler_state_ = bpf_tools::WrappedBCCArrayTable<uint64_t>::Create(this, "profiler_state");
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
@@ -354,23 +353,21 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   ++transfer_count_;
 
   // First, tell BPF to switch the maps it writes to.
-  const ebpf::StatusTuple s = profiler_state_->update_value(kTransferCountIdx, transfer_count_);
+  const auto s = profiler_state_->SetValue(kTransferCountIdx, transfer_count_);
   LOG_IF(ERROR, !s.ok()) << "Error writing transfer_count_";
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(stack_traces.get(), ctx, data_table);
 
-  uint64_t num_stack_traces_sampled;
-  profiler_state_->get_value(sample_count_idx, num_stack_traces_sampled);
+  const uint64_t num_stack_traces_sampled = profiler_state_->GetValue(sample_count_idx).ValueOr(0);
   CheckProfilerState(num_stack_traces_sampled);
 
   // Now that we've consumed the data, reset the sample count in BPF.
-  profiler_state_->update_value(sample_count_idx, 0);
+  PX_UNUSED(profiler_state_->SetValue(sample_count_idx, 0));
 }
 
 void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
-  uint64_t error_code;
-  profiler_state_->get_value(kErrorStatusIdx, error_code);
+  const uint64_t error_code = profiler_state_->GetValue(kErrorStatusIdx).ValueOr(0);
 
   DCHECK_EQ(error_code, kPerfProfilerStatusOk);
 
@@ -402,7 +399,7 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
   // Reset the BPF map to its default value so that each occurrence
   // can be detected.
   if (error_code != kPerfProfilerStatusOk) {
-    profiler_state_->update_value(kErrorStatusIdx, 0);
+    PX_UNUSED(profiler_state_->SetValue(kErrorStatusIdx, 0));
   }
 }
 

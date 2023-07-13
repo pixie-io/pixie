@@ -18,6 +18,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+#include <utility>
+#endif
+
 #include "src/stirling/upid/upid.h"
 
 // TODO(jps): add a macro that wraps bpf_trace_printk for debug & no-ops for prod builds.
@@ -48,6 +52,23 @@ struct stack_trace_key_t {
 
   // kernel_stack_id, an index into the stack-traces map.
   int kernel_stack_id;
+
+#ifdef __cplusplus
+  template <typename H>
+  friend H AbslHashValue(H h, const stack_trace_key_t& s) {
+    return H::combine(std::move(h), s.upid, s.user_stack_id, s.kernel_stack_id);
+  }
+
+  friend bool operator==(const stack_trace_key_t& lhs, const stack_trace_key_t& rhs) {
+    if (lhs.upid != rhs.upid) {
+      return false;
+    }
+    if (lhs.user_stack_id != rhs.user_stack_id) {
+      return false;
+    }
+    return lhs.kernel_stack_id == rhs.kernel_stack_id;
+  }
+#endif
 };
 
 // Bit positions in the error status bitfield:

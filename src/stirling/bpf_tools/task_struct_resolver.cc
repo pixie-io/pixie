@@ -52,6 +52,7 @@ namespace utils {
 
 using ::px::stirling::bpf_tools::BPFProbeAttachType;
 using ::px::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::bpf_tools::WrappedBCCArrayTable;
 
 namespace {
 
@@ -244,24 +245,13 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   StirlingProbeTrigger();
 
   // Retrieve the task struct address from BPF map.
-  uint64_t task_struct_addr;
-  {
-    ebpf::StatusTuple bpf_status =
-        bcc->GetArrayTable<uint64_t>("task_struct_address_map").get_value(0, task_struct_addr);
-    if (!bpf_status.ok()) {
-      return error::Internal("Failed to read task_struct_address_map");
-    }
-  }
+  auto task_struct_addrs =
+      WrappedBCCArrayTable<uint64_t>::Create(bcc.get(), "task_struct_address_map");
+  PX_ASSIGN_OR_RETURN(const uint64_t task_struct_addr, task_struct_addrs->GetValue(0));
 
   // Retrieve the raw memory buffer of the task struct.
-  struct buf buf;
-  {
-    ebpf::StatusTuple bpf_status =
-        bcc->GetArrayTable<struct buf>("task_struct_buf").get_value(0, buf);
-    if (!bpf_status.ok()) {
-      return error::Internal("Failed to read task_struct_buf");
-    }
-  }
+  auto task_struct_bufs = WrappedBCCArrayTable<struct buf>::Create(bcc.get(), "task_struct_buf");
+  PX_ASSIGN_OR_RETURN(const struct buf buf, task_struct_bufs->GetValue(0));
 
   // Analyze the raw data buffer for the patterns we are looking for.
   return ScanBufferForFields(buf, proc_pid_start_time, task_struct_addr);
@@ -370,14 +360,11 @@ StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
                                             std::string("tracepoint__sched__sched_process_exit")}));
 
   const std::string kProcExitTargetPIDTableName = "proc_exit_target_pid";
-  ebpf::BPFArrayTable proc_exit_target_pid_table =
-      bcc->GetArrayTable<uint32_t>(kProcExitTargetPIDTableName);
+  auto proc_exit_target_pid_table =
+      WrappedBCCArrayTable<uint32_t>::Create(bcc.get(), kProcExitTargetPIDTableName);
+
   // Set target PID in BPF map, which only report event triggered by the launched subprocess.
-  ebpf::StatusTuple ebpf_st =
-      proc_exit_target_pid_table.update_value(/*index*/ 0, proc.child_pid());
-  if (!ebpf_st.ok()) {
-    return error::Internal("Failed to update target PID map, message: $0", ebpf_st.msg());
-  }
+  PX_RETURN_IF_ERROR(proc_exit_target_pid_table->SetValue(0, proc.child_pid()));
 
   // Resume the child process, allow it to exit and trigger the tracepoint probe.
   proc.Signal(SIGCONT);
@@ -399,11 +386,8 @@ StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
   }
 
   // Retrieve the raw memory buffer of the task struct.
-  struct buf buf;
-  ebpf_st = bcc->GetArrayTable<struct buf>("task_struct_buf").get_value(/*index*/ 0, buf);
-  if (!ebpf_st.ok()) {
-    return error::Internal("Failed to read task_struct_buf, message: $0", ebpf_st.msg());
-  }
+  auto task_struct_bufs = WrappedBCCArrayTable<struct buf>::Create(bcc.get(), "task_struct_buf");
+  PX_ASSIGN_OR_RETURN(const struct buf buf, task_struct_bufs->GetValue(0));
 
   for (const auto& [idx, val] : Enumerate(buf.u32words)) {
     int current_offset = idx * sizeof(uint32_t);

@@ -83,6 +83,8 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsetsWithRetry() {
   return offsets_status;
 }
 
+BCCWrapper::BCCWrapper() : rr_(RRSingleton::GetInstance()) {}
+
 StatusOr<utils::TaskStructOffsets> BCCWrapper::ComputeTaskStructOffsets() {
   if (task_struct_offsets_opt_.has_value()) {
     LOG(INFO) << "Returning the previously resolved TaskStructOffsets object";
@@ -101,6 +103,10 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
                                   bool requires_linux_headers,
                                   bool always_infer_task_struct_offsets) {
   using utils::TaskStructOffsets;
+
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
 
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
@@ -178,6 +184,10 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
 }
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
 
@@ -198,6 +208,10 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::AttachTracepoint(const TracepointSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Deploying tracepoint: " << probe.ToString();
 
   PX_RETURN_IF_ERROR(bpf_.attach_tracepoint(probe.tracepoint, probe.probe_fn));
@@ -207,6 +221,10 @@ Status BCCWrapper::AttachTracepoint(const TracepointSpec& probe) {
 }
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Deploying uprobe: " << probe.ToString();
   // TODO(oazizi): Natively support this attach type in BCCWrapper.
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
@@ -228,6 +246,10 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
 }
 
 Status BCCWrapper::AttachSamplingProbe(const SamplingProbeSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   constexpr uint64_t kNanosPerMilli = 1000 * 1000;
   const uint64_t sample_period = probe.period_millis * kNanosPerMilli;
   // A sampling probe is just a PerfEventProbe, where the perf event is a clock counter.
@@ -274,6 +296,10 @@ Status BCCWrapper::AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& prob
 // Newer kernel allows attaching multiple XDP programs on the same device:
 // https://lwn.net/Articles/801478/
 Status BCCWrapper::AttachXDP(const std::string& dev_name, const std::string& fn_name) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   int fn_fd = -1;
   ebpf::StatusTuple load_status = bpf_.load_func(fn_name, BPF_PROG_TYPE_XDP, fn_fd);
 
@@ -294,6 +320,10 @@ Status BCCWrapper::AttachXDP(const std::string& dev_name, const std::string& fn_
 
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Detaching kprobe: " << probe.ToString();
   PX_RETURN_IF_ERROR(bpf_.detach_kprobe(GetKProbeTargetName(probe),
                                         static_cast<bpf_probe_attach_type>(probe.attach_type)));
@@ -302,6 +332,10 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Detaching uprobe " << probe.ToString();
 
   if (fs::Exists(probe.binary_path)) {
@@ -314,6 +348,10 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachTracepoint(const TracepointSpec& probe) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << "Detaching tracepoint " << probe.ToString();
 
   PX_RETURN_IF_ERROR(bpf_.detach_tracepoint(probe.tracepoint));
@@ -346,32 +384,52 @@ void BCCWrapper::DetachTracepoints() {
   tracepoints_.clear();
 }
 
-Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
+Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {
   const int kPageSizeBytes = system::Config::GetInstance().PageSizeBytes();
-  int num_pages = IntRoundUpDivide(perf_buffer.size_bytes, kPageSizeBytes);
+  int num_pages = IntRoundUpDivide(perf_buffer_spec.size_bytes, kPageSizeBytes);
 
   // Perf buffers must be sized to a power of 2.
   num_pages = IntRoundUpToPow2(num_pages);
 
   VLOG(1) << absl::Substitute(
       "Opening perf buffer: [$0] [allocated_num_pages=$1 allocated_size_bytes=$2] (per cpu)",
-      perf_buffer.ToString(), num_pages, num_pages * kPageSizeBytes);
-  PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
-                                           perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
-                                           cb_cookie, num_pages));
-  perf_buffers_.push_back(perf_buffer);
-  ++num_open_perf_buffers_;
+      perf_buffer_spec.ToString(), num_pages, num_pages * kPageSizeBytes);
+
+  perf_buffers_.push_back(std::make_unique<PerfBufferSpec>(perf_buffer_spec));
+
+  void* cb_cookie =
+      rr_.recording() ? perf_buffers_[num_open_perf_buffers_].get() : perf_buffer_spec.cb_cookie;
+  auto probe_callback_fn =
+      rr_.recording() ? &RecordPerfBufferEvent : perf_buffer_spec.probe_output_fn;
+  auto probe_dataloss_fn = rr_.recording() ? &RecordPerfBufferLoss : perf_buffer_spec.probe_loss_fn;
+
+  replay_data_cb_fns_[perf_buffer_spec.name] = perf_buffer_spec.probe_output_fn;
+  replay_loss_cb_fns_[perf_buffer_spec.name] = perf_buffer_spec.probe_loss_fn;
+
+  LOG(WARNING) << absl::StrFormat(
+      "Opening perf buffer %d with name: %s, cb_cookie: 0x%016llx, probe_output_fn: 0x%016llx.",
+      num_open_perf_buffers_, perf_buffer_spec.name, uint64_t(cb_cookie),
+      uint64_t(perf_buffer_spec.probe_output_fn));
+
+  if (!rr_.replaying()) {
+    PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer_spec.name), probe_callback_fn,
+                                             probe_dataloss_fn, cb_cookie, num_pages));
+    ++num_open_perf_buffers_;
+  }
   return Status::OK();
 }
 
-Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie) {
-  for (const PerfBufferSpec& p : perf_buffers) {
-    PX_RETURN_IF_ERROR(OpenPerfBuffer(p, cb_cookie));
+Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffer_specs) {
+  for (const auto& perf_buffer_spec : perf_buffer_specs) {
+    PX_RETURN_IF_ERROR(OpenPerfBuffer(perf_buffer_spec));
   }
   return Status::OK();
 }
 
 Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
   VLOG(1) << "Closing perf buffer: " << perf_buffer.name;
   PX_RETURN_IF_ERROR(bpf_.close_perf_buffer(std::string(perf_buffer.name)));
   --num_open_perf_buffers_;
@@ -379,14 +437,18 @@ Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
 }
 
 void BCCWrapper::ClosePerfBuffers() {
-  for (const PerfBufferSpec& p : perf_buffers_) {
-    auto res = ClosePerfBuffer(p);
+  for (const auto& p : perf_buffers_) {
+    auto res = ClosePerfBuffer(*p.get());
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
   perf_buffers_.clear();
 }
 
 Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
                               magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
   PX_RETURN_IF_ERROR(bpf_.attach_perf_event(perf_event.type, perf_event.config,
@@ -405,6 +467,10 @@ Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events)
 }
 
 Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
+  if (rr_.replaying()) {
+    return Status::OK();
+  }
+
   VLOG(1) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
                               magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
   PX_RETURN_IF_ERROR(bpf_.detach_perf_event(perf_event.type, perf_event.config));
@@ -428,8 +494,13 @@ std::string BCCWrapper::GetKProbeTargetName(const KProbeSpec& probe) {
   return target;
 }
 
-void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) {
-  auto perf_buffer = bpf_.get_perf_buffer(std::string(perf_buffer_name));
+void BCCWrapper::PollPerfBuffer(const PerfBufferSpec& perf_buffer_spec, const int timeout_ms) {
+  if (rr_.replaying()) {
+    rr_.ReplayPerfBufferEvents(perf_buffer_spec);
+    return;
+  }
+
+  auto perf_buffer = bpf_.get_perf_buffer(std::string(perf_buffer_spec.name));
   if (perf_buffer != nullptr) {
     perf_buffer->poll(timeout_ms);
   }
@@ -437,7 +508,7 @@ void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_m
 
 void BCCWrapper::PollPerfBuffers(int timeout_ms) {
   for (const auto& spec : perf_buffers_) {
-    PollPerfBuffer(spec.name, timeout_ms);
+    PollPerfBuffer(*spec, timeout_ms);
   }
 }
 

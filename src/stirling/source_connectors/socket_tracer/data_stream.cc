@@ -204,6 +204,8 @@ template void DataStream::ProcessBytesToFrames<protocols::nats::Message, protoco
     message_type_t type, protocols::NoState* state);
 template void DataStream::ProcessBytesToFrames<protocols::amqp::Frame, protocols::NoState>(
     message_type_t type, protocols::NoState* state);
+template void DataStream::ProcessBytesToFrames<protocols::sink::Message, protocols::NoState>(
+    message_type_t type, protocols::NoState* state);
 void DataStream::Reset() {
   data_buffer_.Reset();
   has_new_events_ = false;

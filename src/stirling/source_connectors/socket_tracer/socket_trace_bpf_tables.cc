@@ -44,11 +44,12 @@ NO_OPT_ATTR void ConnInfoMapCleanupTrigger(int n, struct conn_id_t* conn_id_vec)
 namespace px {
 namespace stirling {
 
+using px::stirling::bpf_tools::WrappedBCCMap;
 using px::system::ProcPidPath;
 
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
-    : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
-      conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {
+    : conn_info_map_(WrappedBCCMap<uint64_t, struct conn_info_t>::Create(bcc, "conn_info_map")),
+      conn_disabled_map_(WrappedBCCMap<uint64_t, uint64_t>::Create(bcc, "conn_disabled_map")) {
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
   auto elf_reader_or_s = obj_tools::ElfReader::Create(self_path.string());
   if (!elf_reader_or_s.ok()) {
@@ -89,13 +90,13 @@ void ConnInfoMapManager::ReleaseResources(struct conn_id_t conn_id) {
 void ConnInfoMapManager::Disable(struct conn_id_t conn_id) {
   uint64_t key = id(conn_id);
 
-  if (!conn_disabled_map_.update_value(key, conn_id.tsid).ok()) {
+  if (!conn_disabled_map_->SetValue(key, conn_id.tsid).ok()) {
     VLOG(1) << absl::Substitute("$0 Updating conn_disable_map entry failed.", ToString(conn_id));
   }
 }
 
 void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_mgr) {
-  for (const auto& [pid_fd, conn_info] : conn_info_map_.get_table_offline()) {
+  for (const auto& [pid_fd, conn_info] : conn_info_map_->GetTableOffline()) {
     uint32_t pid = pid_fd >> 32;
     int32_t fd = pid_fd;
 
