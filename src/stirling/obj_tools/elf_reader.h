@@ -31,6 +31,8 @@
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/utils.h"
 
+using ::px::utils::u8string;
+
 namespace px {
 namespace stirling {
 namespace obj_tools {
@@ -156,7 +158,7 @@ class ElfReader {
   /**
    * Returns the byte code for the symbol at the specified section.
    */
-  StatusOr<px::utils::u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
+  StatusOr<u8string> SymbolByteCode(std::string_view section, const SymbolInfo& symbol);
 
   /**
    * Returns the virtual address in the ELF file of offset 0x0. Calculated by finding the first
@@ -165,19 +167,37 @@ class ElfReader {
   StatusOr<uint64_t> GetVirtualAddrAtOffsetZero();
 
   /**
+   * Returns the ELF section with the corresponding name
+   */
+  StatusOr<ELFIO::section*> SectionWithName(std::string_view section_name);
+
+  /**
    * Returns the ELF type of this binary. (eg. ELFIO::ET_EXEC or ELFIO::ET_DYN).
    */
   ELFIO::Elf_Half ELFType();
+
+  /**
+   * Returns the byte code of the data within the binary at the specified offset
+   */
+  template <typename TCharType = u8string::value_type>
+  StatusOr<std::basic_string<TCharType>> BinaryByteCode(size_t offset, size_t length) {
+    std::ifstream ifs(binary_path_, std::ios::binary);
+    if (!ifs.seekg(offset)) {
+      return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
+    }
+    std::basic_string<TCharType> byte_code(length, '\0');
+    auto* buf = reinterpret_cast<char*>(byte_code.data());
+    if (!ifs.read(buf, length)) {
+      return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2", length,
+                             offset, binary_path_);
+    }
+    return byte_code;
+  }
 
  private:
   ElfReader() = default;
 
   StatusOr<ELFIO::section*> SymtabSection();
-
-  /**
-   * Returns the ELF section with the corresponding name
-   */
-  StatusOr<ELFIO::section*> SectionWithName(std::string_view section_name);
 
   /**
    * Locates the debug symbols for the currently loaded ELF object.
