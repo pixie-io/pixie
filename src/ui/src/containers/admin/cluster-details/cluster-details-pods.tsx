@@ -20,13 +20,14 @@ import * as React from 'react';
 
 import {
   Help as HelpIcon,
-  KeyboardArrowDown as DownIcon,
-  KeyboardArrowUp as UpIcon,
-} from '@mui/icons-material';
-import { TableHead, TableRow, IconButton, TableCell, Table, TableBody } from '@mui/material';
-import { styled } from '@mui/material/styles';
+  KeyboardArrowRight as RightIcon,
 
-import { StatusCell } from 'app/components';
+} from '@mui/icons-material';
+import { TableHead, TableRow, Table, TableBody } from '@mui/material';
+import { styled, Theme } from '@mui/material/styles';
+import { createStyles, makeStyles } from '@mui/styles';
+
+import { StatusCell, buildClass } from 'app/components';
 import {
   StyledTableCell,
   StyledTableHeaderCell,
@@ -38,11 +39,127 @@ import { GQLPodStatus } from 'app/types/schema';
 
 import {
   GroupedPodStatus,
-  usePodRowStyles,
   combineReasonAndMessage,
-  useClusterDetailStyles,
   formatPodStatus,
 } from './cluster-details-utils';
+
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    position: 'relative',
+    height: '100%',
+    display: 'flex',
+    flexFlow: 'row nowrap',
+    alignItems: 'stretch',
+  },
+  leftContent: {
+    flex: '1 1 60%',
+    overflow: 'auto',
+    display: 'flex',
+    flexFlow: 'column nowrap',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    paddingTop: theme.spacing(1),
+  },
+  rightContent: {
+    flex: '1 1 40%',
+    overflow: 'auto',
+  },
+  muted: {
+    opacity: 0.8,
+  },
+  topPadding: {
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
+  },
+  titleContainer: {
+    display: 'flex',
+  },
+  helpIcon: {
+    display: 'flex',
+    paddingLeft: theme.spacing(1),
+  },
+  podTypeHeader: {
+    ...theme.typography.h6,
+    color: theme.palette.foreground.grey5,
+    height: '100%',
+    margin: `0 ${theme.spacing(2)}`,
+    padding: `${theme.spacing(1)} 0`,
+    flex: '0 1',
+    borderBottom: theme.palette.border.unFocused,
+
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+
+    '& > span:first-child': {
+      display: 'flex',
+      justifyContent: 'flex-start',
+      alignItems: 'center',
+    },
+  },
+  podTypeSecondHeader: {
+    marginTop: theme.spacing(8),
+  },
+  podRow: {
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: theme.palette.background.four,
+    },
+  },
+  selectedPodRow: {
+    backgroundColor: theme.palette.background.five,
+    '&:hover': {
+      backgroundColor: theme.palette.background.six,
+    },
+  },
+  statusSummaries: {
+    flex: '0 0 auto',
+    display: 'flex',
+    gap: theme.spacing(3),
+    '& > span': {
+      display: 'flex',
+      alignItems: 'center',
+      gap: theme.spacing(0.75),
+    },
+  },
+  noResults: {
+    lineHeight: 3,
+    color: theme.palette.text.disabled,
+    fontStyle: 'italic',
+    paddingLeft: theme.spacing(3),
+  },
+  sidebar: {
+    border: theme.palette.border.unFocused,
+    borderRadius: theme.shape.borderRadius,
+    backgroundColor: theme.palette.background.default,
+    display: 'flex',
+    flexFlow: 'column nowrap',
+    justifyContent: 'flex-start',
+    height: '100%',
+
+    '& > h1': {
+      ...theme.typography.h2,
+      margin: theme.spacing(2),
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+
+    '& td': {
+      backgroundColor: 'transparent',
+    },
+  },
+  sidebarHidden: {
+    opacity: 0,
+  },
+  emptySidebarMessage: {
+    width: '100%',
+    margin: 'auto 0',
+    textAlign: 'center',
+    color: theme.palette.text.disabled,
+    fontStyle: 'italic',
+  },
+}), { name: 'ClusterDetailsPods' });
 
 // eslint-disable-next-line react-memo/require-memo
 const StyledSmallTableCell = styled(StyledTableCell, { name: 'SmallTableCell' })(({ theme }) => ({
@@ -51,32 +168,50 @@ const StyledSmallTableCell = styled(StyledTableCell, { name: 'SmallTableCell' })
   borderWidth: 0,
 }));
 
+// eslint-disable-next-line react-memo/require-memo
+const StyledTableHeadRow = styled(TableRow, { name: 'StyledTableRow' })(({ theme }) => ({
+  '& > th': {
+    fontWeight: 'normal',
+    textTransform: 'uppercase',
+    color: theme.palette.foreground.grey4,
+  },
+}));
+
 const PodHeader = React.memo(() => (
   <TableHead>
-    <TableRow>
-      <StyledTableHeaderCell />
+    <StyledTableHeadRow>
+      <StyledTableHeaderCell />{/* Status icon */}
       <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-      <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-      <StyledTableHeaderCell>Restart Count</StyledTableHeaderCell>
-      <StyledTableHeaderCell />
-    </TableRow>
+      <StyledTableHeaderCell>Status Message</StyledTableHeaderCell>
+      {/* eslint-disable-next-line react-memo/require-usememo */}
+      <StyledTableHeaderCell sx={{ textAlign: 'right', minWidth: (t) => t.spacing(18) }}>
+        Restart Count
+      </StyledTableHeaderCell>
+      <StyledTableHeaderCell />{/* Expanded icon when active */}
+    </StyledTableHeadRow>
   </TableHead>
 ));
 PodHeader.displayName = 'PodHeader';
 
-const ExpandablePodRow = React.memo<{ podStatus: GroupedPodStatus }>(({ podStatus }) => {
-  const {
-    name, status, statusGroup, containers, events,
-  } = podStatus;
-  const [open, setOpen] = React.useState(false);
-  const classes = usePodRowStyles();
+const PodRow = React.memo<{ podStatus: GroupedPodStatus, isSelected: boolean, toggleSelected: () => void }>(({
+  podStatus,
+  isSelected,
+  toggleSelected,
+}) => {
+  const classes = useStyles();
+
+  const { name, status, statusGroup } = podStatus;
 
   return (
     // Fragment shorthand syntax does not support key, which is needed to prevent
     // the console error where a key is not present in a list element.
     // eslint-disable-next-line react/jsx-fragments
     <React.Fragment key={name}>
-      <TableRow key={name}>
+      <TableRow
+        key={name}
+        className={buildClass(classes.podRow, isSelected && classes.selectedPodRow)}
+        onClick={toggleSelected}
+      >
         <AdminTooltip title={status}>
           {/* eslint-disable-next-line react-memo/require-usememo */}
           <StyledLeftTableCell sx={{ width: (t) => t.spacing(3) }}>
@@ -84,127 +219,194 @@ const ExpandablePodRow = React.memo<{ podStatus: GroupedPodStatus }>(({ podStatu
           </StyledLeftTableCell>
         </AdminTooltip>
         <StyledTableCell>{name}</StyledTableCell>
-        <StyledTableCell>{combineReasonAndMessage(podStatus.reason, podStatus.message)}</StyledTableCell>
-        <StyledTableCell>{podStatus.restartCount}</StyledTableCell>
-        <StyledRightTableCell align='right'>
+        <StyledTableCell>
+          {combineReasonAndMessage(podStatus.reason, podStatus.message) || <span className={classes.muted}>None</span>}
+        </StyledTableCell>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <StyledTableCell sx={{ textAlign: 'right' }}>{podStatus.restartCount}</StyledTableCell>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <StyledRightTableCell sx={{ width: (t) => t.spacing(3), p: 0 }}>
           {/* eslint-disable-next-line react-memo/require-usememo */}
-          <IconButton size='small' onClick={() => setOpen(!open)}>
-            {open ? <UpIcon /> : <DownIcon />}
-          </IconButton>
+          <RightIcon sx={{ mt: 0.5, opacity: isSelected ? 1 : 0.25, transition: 'opacity 0.125s linear' }} />
         </StyledRightTableCell>
       </TableRow>
-      {
-        open && (
-          <TableRow key={`${name}-details`}>
-            {/* eslint-disable-next-line react-memo/require-usememo */}
-            <TableCell style={{ border: 0 }} colSpan={6}>
-              {
-                (events && events.length > 0) && (
-                  <div>
-                    Events:
-                    <ul className={classes.eventList}>
-                      {events.map((event, i) => (
-                        <li key={`${name}-${i}`}>
-                          {event.message}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )
-              }
-              <Table size='small' className={classes.smallTable}>
-                <TableHead>
-                  <TableRow key={name}>
-                    <StyledTableHeaderCell />
-                    <StyledTableHeaderCell>Container</StyledTableHeaderCell>
-                    <StyledTableHeaderCell>Status</StyledTableHeaderCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {containers.map((container) => (
-                    // Fragment shorthand syntax does not support key, which is needed to prevent
-                    // the console error where a key is not present in a list element.
-                    // eslint-disable-next-line react/jsx-fragments
-                    <React.Fragment key={container.name}>
-                      <TableRow key={`${name}-info`}>
-                        <AdminTooltip title={container.state}>
-                          <StyledSmallTableCell>
-                            <StatusCell statusGroup={container.statusGroup} />
-                          </StyledSmallTableCell>
-                        </AdminTooltip>
-                        <StyledSmallTableCell>{container.name}</StyledSmallTableCell>
-                        <StyledSmallTableCell>
-                          {combineReasonAndMessage(container.reason, container.message)}
-                        </StyledSmallTableCell>
-                      </TableRow>
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableCell>
-          </TableRow>
-        )
-      }
     </React.Fragment>
   );
 });
-ExpandablePodRow.displayName = 'ExpandablePodRow';
+PodRow.displayName = 'PodRow';
+
+const DetailsSidebar = React.memo<{ pod: GroupedPodStatus | null }>(({ pod }) => {
+  const classes = useStyles();
+
+  return !pod ? (
+    <section
+      className={buildClass(classes.sidebar, classes.sidebarHidden)}
+      data-testid='cluster-details-pods-sidebar-hidden'
+      aria-label='Click a pod row to read details about it here'
+    >
+      <span className={classes.emptySidebarMessage}>Select a pod on the left</span>
+    </section>
+  ) : (
+    <section
+      className={classes.sidebar}
+      data-testid='cluster-details-pods-sidebar'
+      aria-label={`Details for pod "${pod.name}". Click another pod's row to read its details here instead.`}
+    >
+      <h1>
+        <span>{pod.name}</span>
+      </h1>
+      <h2 className={classes.podTypeHeader}>Events</h2>
+      {pod.events?.length > 0 ? (
+        <Table>
+          <TableHead>
+            <StyledTableHeadRow><StyledTableHeaderCell>Event</StyledTableHeaderCell></StyledTableHeadRow>
+          </TableHead>
+          <TableBody>
+            {pod.events.map((event, i) => (
+              <TableRow key={i}><StyledSmallTableCell>{event.message}</StyledSmallTableCell></TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <div className={classes.noResults}>No events to report.</div>
+      )}
+      <h2 className={classes.podTypeHeader}>Containers</h2>
+      {pod.containers?.length > 0 ? (
+        <Table>
+          <TableHead>
+            <StyledTableHeadRow>
+              <StyledTableHeaderCell />
+              <StyledTableHeaderCell>Container</StyledTableHeaderCell>
+              <StyledTableHeaderCell>Status</StyledTableHeaderCell>
+            </StyledTableHeadRow>
+          </TableHead>
+          <TableBody>
+            {pod.containers.map((container, i) => (
+              <TableRow key={i}>
+                <AdminTooltip title={container.state}>
+                  {/* eslint-disable-next-line react-memo/require-usememo */}
+                  <StyledSmallTableCell sx={{ width: (t) => t.spacing(3) }}>
+                    <StatusCell statusGroup={container.statusGroup} />
+                  </StyledSmallTableCell>
+                </AdminTooltip>
+                <StyledSmallTableCell>
+                  {container.name}
+                </StyledSmallTableCell>
+                <StyledSmallTableCell>
+                  {combineReasonAndMessage(container.reason, container.message)}
+                </StyledSmallTableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <div className={classes.noResults}>No containers in this pod.</div>
+      )}
+    </section>
+  );
+});
+DetailsSidebar.displayName = 'DetailsSidebar';
 
 export const PixiePodsTab = React.memo<{
   controlPlanePods: GQLPodStatus[],
   dataPlanePods: GQLPodStatus[],
 }>(({ controlPlanePods, dataPlanePods }) => {
-  const classes = useClusterDetailStyles();
-  const controlPlaneDisplay = controlPlanePods.map((podStatus) => formatPodStatus(podStatus));
-  const dataPlaneDisplay = dataPlanePods.map((podStatus) => formatPodStatus(podStatus));
+  const classes = useStyles();
+  const controlPlaneDisplay = React.useMemo(
+    () => (controlPlanePods ?? []).map((podStatus) => formatPodStatus(podStatus)),
+    [controlPlanePods]);
+  const dataPlaneDisplay = React.useMemo(
+    () => (dataPlanePods ?? []).map((podStatus) => formatPodStatus(podStatus)),
+    [dataPlanePods]);
+
+  const [selectedPod, setSelectedPod] = React.useState<GroupedPodStatus>(null);
+
+  const numHealthyControlPlanePods = React.useMemo(() => controlPlaneDisplay.filter(
+    (stat) => stat.statusGroup === 'healthy' as const,
+  ).length, [controlPlaneDisplay]);
+  const numUnhealthyControlPlanePods = React.useMemo(() => controlPlaneDisplay.filter(
+    (stat) => stat.statusGroup !== 'healthy' as const,
+  ).length, [controlPlaneDisplay]);
+  const numUnhealthyDataPlanePods = React.useMemo(() => dataPlaneDisplay.filter(
+    (stat) => stat.statusGroup !== 'healthy' as const,
+  ).length, [dataPlaneDisplay]);
 
   return (
     <div className={classes.root}>
-      <div className={`${classes.podTypeHeader} ${classes.topPadding}`}> Control Plane Pods </div>
-      <Table>
-        <PodHeader />
-        <TableBody>
-          {controlPlaneDisplay.map((podStatus) => (
-            <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
-          ))}
-        </TableBody>
-        {/* We place this header as a row so our data plane pods are aligned with the control plane pods.
-        We also make the column span 3 so it sizes with the State, Name, and Status column. Without
-        this specification, the cell would default to colspan="1" which would cause the state column
-        to be extremely wide. If you ever reduce the number of columns in the table you'll want to reduce
-        this value.
-        */}
-        <TableRow>
-          <TableCell className={classes.podTypeHeader} colSpan={3}>
-            <div className={classes.titleContainer}>
-              <div className={classes.titleContainer}>
-                Sample of Unhealthy Data Plane Pods
-            </div>
-              <AdminTooltip title={'Sample of unhealthy Pixie data plane pods. '
-                + 'To see a list of all agents, click the Agents tab.'}>
-                <HelpIcon className={classes.helpIcon} />
-              </AdminTooltip>
-            </div>
-          </TableCell>
-        </TableRow>
-        <PodHeader />
-        <TableBody>
-          {
-            dataPlanePods?.length > 0
-              ? dataPlaneDisplay.map((podStatus) => (
-                <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
-              )) : (
-                <TableRow>
-                  {/* eslint-disable-next-line react-memo/require-usememo */}
-                  <TableCell sx={{ width: (t) => t.spacing(3) }}/>
-                  <TableCell colSpan={3}>
-                    Cluster has no unhealthy Pixie data plane pods.
-                  </TableCell>
-                </TableRow>
-              )
-          }
-        </TableBody>
-      </Table>
+      <div className={classes.leftContent}>
+        <div className={classes.podTypeHeader}>
+          <span>Control Plane Pods</span>
+          <span className={classes.statusSummaries}>
+            <AdminTooltip title='Healthy pods'>
+              <span>
+                <span>{numHealthyControlPlanePods}</span>
+                <StatusCell statusGroup='healthy' />
+              </span>
+            </AdminTooltip>
+            <AdminTooltip title='Unhealthy pods'>
+              <span>
+                <span>{numUnhealthyControlPlanePods}</span>
+                <StatusCell statusGroup='unhealthy' />
+              </span>
+            </AdminTooltip>
+          </span>
+        </div>
+        {controlPlaneDisplay.length > 0 ? (
+          <Table>
+            <PodHeader />
+            <TableBody>
+              {controlPlaneDisplay.map((podStatus) => (
+                <PodRow
+                  key={podStatus.name}
+                  podStatus={podStatus}
+                  isSelected={selectedPod?.name === podStatus.name}
+                  // eslint-disable-next-line react-memo/require-usememo
+                  toggleSelected={() => setSelectedPod((prev) => prev?.name === podStatus.name ? null : podStatus)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className={classes.noResults}>Cluster has no Pixie control plane pods.</div>
+        )}
+
+        <div className={`${classes.podTypeHeader} ${classes.podTypeSecondHeader}`}>
+          <AdminTooltip title={'To see a list of all agents, click the Agents tab.'}>
+            <span>Sample of Unhealthy Data Plane Pods <HelpIcon className={classes.helpIcon} /></span>
+          </AdminTooltip>
+          <span className={classes.statusSummaries}>
+            {/* No healthy mark here, as this list is already only unhealthy pods */}
+            <AdminTooltip title='Unhealthy pods'>
+              <span>
+                <span>{numUnhealthyDataPlanePods}</span>
+                <StatusCell statusGroup='unhealthy' />
+              </span>
+            </AdminTooltip>
+          </span>
+        </div>
+        {dataPlaneDisplay.length > 0 ? (
+          <Table>
+            <PodHeader />
+            <TableBody>
+              {dataPlaneDisplay.map((podStatus) => (
+                <PodRow
+                  key={podStatus.name}
+                  podStatus={podStatus}
+                  isSelected={selectedPod?.name === podStatus.name}
+                  // eslint-disable-next-line react-memo/require-usememo
+                  toggleSelected={() => setSelectedPod((prev) => prev?.name === podStatus.name ? null : podStatus)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className={classes.noResults}>Cluster has no unhealthy Pixie data plane pods.</div>
+        )}
+      </div>
+      <div className={classes.rightContent}>
+        {/* eslint-disable-next-line react-memo/require-usememo */}
+        <DetailsSidebar pod={selectedPod} />
+      </div>
     </div>
   );
 });
