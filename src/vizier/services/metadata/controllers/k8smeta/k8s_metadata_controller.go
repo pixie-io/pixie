@@ -48,7 +48,7 @@ type watcher interface {
 }
 
 // NewController creates a new Controller.
-func NewController(updateCh chan *K8sResourceMessage) (*Controller, error) {
+func NewController(namespaces []string, updateCh chan *K8sResourceMessage) (*Controller, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -60,11 +60,11 @@ func NewController(updateCh chan *K8sResourceMessage) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewControllerWithClientSet(updateCh, clientset)
+	return NewControllerWithClientSet(namespaces, updateCh, clientset)
 }
 
 // NewControllerWithClientSet creates a new Controller using the given Clientset.
-func NewControllerWithClientSet(updateCh chan *K8sResourceMessage, clientset kubernetes.Interface) (*Controller, error) {
+func NewControllerWithClientSet(namespaces []string, updateCh chan *K8sResourceMessage, clientset kubernetes.Interface) (*Controller, error) {
 	quitCh := make(chan struct{})
 
 	// Create a watcher for each resource.
@@ -72,13 +72,13 @@ func NewControllerWithClientSet(updateCh chan *K8sResourceMessage, clientset kub
 	// for example, nodes and namespaces must be synced before pods, since nodes/namespaces
 	// contain pods.
 	watchers := []watcher{
-		nodeWatcher("nodes", updateCh, clientset),
-		namespaceWatcher("namespaces", updateCh, clientset),
-		podWatcher("pods", updateCh, clientset),
-		endpointsWatcher("endpoints", updateCh, clientset),
-		serviceWatcher("services", updateCh, clientset),
-		replicaSetWatcher("replicasets", updateCh, clientset),
-		deploymentWatcher("deployments", updateCh, clientset),
+		nodeWatcher("nodes", namespaces, updateCh, clientset),
+		namespaceWatcher("namespaces", namespaces, updateCh, clientset),
+		podWatcher("pods", namespaces, updateCh, clientset),
+		endpointsWatcher("endpoints", namespaces, updateCh, clientset),
+		serviceWatcher("services", namespaces, updateCh, clientset),
+		replicaSetWatcher("replicasets", namespaces, updateCh, clientset),
+		deploymentWatcher("deployments", namespaces, updateCh, clientset),
 	}
 
 	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}

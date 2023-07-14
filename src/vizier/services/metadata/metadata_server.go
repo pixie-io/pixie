@@ -36,6 +36,7 @@ import (
 	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	v1 "k8s.io/api/core/v1"
 
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
@@ -73,6 +74,7 @@ func init() {
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.Bool("use_etcd_operator", false, "Whether the etcd operator should be used instead of the persistent version.")
+	pflag.StringSlice("metadata_namespaces", []string{v1.NamespaceAll}, "The list of namespaces to watch for metadata.")
 
 	// Metadata flags are set using the env vars in pl-cluster-config.
 	// We historically set PL_ETCD_OPERATOR_ENABLED but not PL_USE_ETCD_OPERATOR in the configmap.
@@ -235,7 +237,8 @@ func main() {
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
 
-	k8sMc, err := k8smeta.NewController(updateCh)
+	namespaces := viper.GetStringSlice("metadata_namespaces")
+	k8sMc, err := k8smeta.NewController(namespaces, updateCh)
 	defer k8sMc.Stop()
 
 	ads := agent.NewDatastore(dataStore, 24*time.Hour)
