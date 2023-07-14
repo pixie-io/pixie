@@ -138,21 +138,17 @@ Status PerfProfileConnector::InitImpl() {
       {"sample_call_stack", static_cast<uint64_t>(stack_trace_sampling_period_.count())});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
-       {"histogram_b", HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
+      {{std::string(kHistogramAName), HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
+       {std::string(kHistogramBName), HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
 
   PX_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PX_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
   PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
 
-  stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
-  stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
+  stack_traces_a_ = WrappedBCCStackTable::Create(this, "stack_traces_a");
+  stack_traces_b_ = WrappedBCCStackTable::Create(this, "stack_traces_b");
 
-  histogram_a_perf_buffer_ = GetPerfBuffer("histogram_a");
-  histogram_b_perf_buffer_ = GetPerfBuffer("histogram_b");
-
-  profiler_state_ =
-      std::make_unique<ebpf::BPFArrayTable<uint64_t>>(GetArrayTable<uint64_t>("profiler_state"));
+  profiler_state_ = WrappedBCCArrayTable<uint64_t>::Create(this, "profiler_state");
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
@@ -232,7 +228,7 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
 }
 
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
-    ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces) {
+    ConnectorContext* ctx, WrappedBCCStackTable* stack_traces) {
   // TODO(jps): switch from using get_table_offline() to directly stepping through
   // the histogram data structure. Inline populating our own data structures with this.
   // Avoid an unnecessary copy of the information in local stack_trace_keys_and_counts.
@@ -269,7 +265,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
       // in the stack-traces table in case it gets used by a stack trace that we
       // have not yet encountered on this iteration, but will need to symbolize.
       if (stack_trace_key.user_stack_id >= 0) {
-        stack_traces->clear_stack_id(stack_trace_key.user_stack_id);
+        stack_traces->ClearStackID(stack_trace_key.user_stack_id);
       }
       if (stack_trace_key.kernel_stack_id >= 0) {
         k_stack_ids_to_remove.insert(stack_trace_key.kernel_stack_id);
@@ -297,7 +293,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   // Clear any kernel stack-ids, that were potentially not already cleared,
   // out of the stack traces table.
   for (const int k_stack_id : k_stack_ids_to_remove) {
-    stack_traces->clear_stack_id(k_stack_id);
+    stack_traces->ClearStackID(k_stack_id);
   }
 
   raw_histo_data_.clear();
@@ -307,7 +303,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   return symbolic_histogram;
 }
 
-void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces, ConnectorContext* ctx,
+void PerfProfileConnector::CreateRecords(WrappedBCCStackTable* stack_traces, ConnectorContext* ctx,
                                          DataTable* data_table) {
   constexpr size_t kMaxSymbolSize = 512;
   constexpr size_t kMaxStackDepth = 64;
@@ -343,34 +339,32 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   // Choose the maps to consume.
   const bool using_map_set_a = transfer_count_ % 2 == 0;
   auto& stack_traces = using_map_set_a ? stack_traces_a_ : stack_traces_b_;
-  auto& histo_perf_buf = using_map_set_a ? histogram_a_perf_buffer_ : histogram_b_perf_buffer_;
+  auto& perfbuf_name = using_map_set_a ? kHistogramAName : kHistogramBName;
   const uint32_t sample_count_idx = using_map_set_a ? kSampleCountAIdx : kSampleCountBIdx;
 
   // Read out the perf buffer that contains the histogram for this iteration.
   // TODO(jps): change PollPerfBuffer() to use std::chrono.
   constexpr int kPollTimeoutMS = 0;
-  histo_perf_buf->poll(kPollTimeoutMS);
+  PollPerfBuffer(perfbuf_name, kPollTimeoutMS);
 
   ++transfer_count_;
 
   // First, tell BPF to switch the maps it writes to.
-  const ebpf::StatusTuple s = profiler_state_->update_value(kTransferCountIdx, transfer_count_);
+  const auto s = profiler_state_->SetValue(kTransferCountIdx, transfer_count_);
   LOG_IF(ERROR, !s.ok()) << "Error writing transfer_count_";
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(stack_traces.get(), ctx, data_table);
 
-  uint64_t num_stack_traces_sampled;
-  profiler_state_->get_value(sample_count_idx, num_stack_traces_sampled);
+  const uint64_t num_stack_traces_sampled = profiler_state_->GetValue(sample_count_idx).ValueOr(0);
   CheckProfilerState(num_stack_traces_sampled);
 
   // Now that we've consumed the data, reset the sample count in BPF.
-  profiler_state_->update_value(sample_count_idx, 0);
+  PX_UNUSED(profiler_state_->SetValue(sample_count_idx, 0));
 }
 
 void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
-  uint64_t error_code;
-  profiler_state_->get_value(kErrorStatusIdx, error_code);
+  const uint64_t error_code = profiler_state_->GetValue(kErrorStatusIdx).ValueOr(0);
 
   DCHECK_EQ(error_code, kPerfProfilerStatusOk);
 
@@ -402,7 +396,7 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
   // Reset the BPF map to its default value so that each occurrence
   // can be detected.
   if (error_code != kPerfProfilerStatusOk) {
-    profiler_state_->update_value(kErrorStatusIdx, 0);
+    PX_UNUSED(profiler_state_->SetValue(kErrorStatusIdx, 0));
   }
 }
 

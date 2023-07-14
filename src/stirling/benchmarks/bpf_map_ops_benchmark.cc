@@ -30,6 +30,7 @@ using ::px::stirling::GetSelfPath;
 using ::px::stirling::bpf_tools::BCCWrapper;
 using ::px::stirling::bpf_tools::BPFProbeAttachType;
 using ::px::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::bpf_tools::WrappedBCCMap;
 
 constexpr int kNumKeys = 100;
 
@@ -104,21 +105,20 @@ static void BM_userspace_update_remove(benchmark::State& state) {
   BCCWrapper bcc_wrapper;
   std::string_view kProgram = "BPF_HASH(map, int, int);";
   PX_CHECK_OK(bcc_wrapper.InitBPFProgram(kProgram));
-  ebpf::BPFHashTable bpf_map = bcc_wrapper.GetHashTable<int, int>("map");
+  auto bpf_map = WrappedBCCMap<int, int>::Create(&bcc_wrapper, "map");
 
   for (auto _ : state) {
     for (int i = 0; i < kNumKeys; ++i) {
-      bpf_map.update_value(i, 2 * i + 1);
+      PX_UNUSED(bpf_map->SetValue(i, 2 * i + 1));
     }
 
     for (int i = 0; i < kNumKeys; ++i) {
-      bpf_map.remove_value(i);
+      PX_UNUSED(bpf_map->RemoveValue(i));
     }
   }
 
   for (int i = 0; i < kNumKeys; ++i) {
-    int val;
-    CHECK(!bpf_map.get_value(i, val).ok());
+    CHECK(!bpf_map->GetValue(i).ok());
   }
 }
 
@@ -170,7 +170,7 @@ int map_populate_uprobe(struct pt_regs* ctx) {
   // kNumKeys)}));
   PX_CHECK_OK(bcc_wrapper.InitBPFProgram(
       absl::StrReplaceAll(kProgram, {{"kNumKeys", std::to_string(kNumKeys)}})));
-  ebpf::BPFHashTable bpf_map = bcc_wrapper.GetHashTable<int, int>("map");
+  auto bpf_map = WrappedBCCMap<int, int>::Create(&bcc_wrapper, "map");
 
   SetupCleanupProbe(&bcc_wrapper);
   SetupPopulateProbe(&bcc_wrapper);
@@ -186,8 +186,7 @@ int map_populate_uprobe(struct pt_regs* ctx) {
   }
 
   for (int i = 0; i < kNumKeys; ++i) {
-    int val;
-    CHECK(!bpf_map.get_value(i, val).ok());
+    CHECK(!bpf_map->GetValue(i).ok());
   }
 }
 
@@ -196,25 +195,23 @@ static void BM_userspace_update_get_remove(benchmark::State& state) {
   BCCWrapper bcc_wrapper;
   std::string_view kProgram = "BPF_HASH(map, int, int);";
   PX_CHECK_OK(bcc_wrapper.InitBPFProgram(kProgram));
-  ebpf::BPFHashTable bpf_map = bcc_wrapper.GetHashTable<int, int>("map");
+  auto bpf_map = WrappedBCCMap<int, int>::Create(&bcc_wrapper, "map");
 
   for (auto _ : state) {
     for (int i = 0; i < kNumKeys; ++i) {
-      bpf_map.update_value(i, 2 * i + 1);
+      PX_UNUSED(bpf_map->SetValue(i, 2 * i + 1));
     }
 
     for (int i = 0; i < kNumKeys; ++i) {
-      int val;
-      auto status = bpf_map.get_value(i, val);
-      if (status.ok() && val != 0) {
-        bpf_map.remove_value(i);
+      auto status = bpf_map->GetValue(i);
+      if (status.ok() && status.ValueOrDie() != 0) {
+        PX_UNUSED(bpf_map->RemoveValue(i));
       }
     }
   }
 
   for (int i = 0; i < kNumKeys; ++i) {
-    int val;
-    CHECK(!bpf_map.get_value(i, val).ok());
+    CHECK(!bpf_map->GetValue(i).ok());
   }
 }
 
@@ -261,7 +258,7 @@ int map_populate_uprobe(struct pt_regs* ctx) {
 }
 )";
   PX_CHECK_OK(bcc_wrapper.InitBPFProgram(kProgram, {absl::Substitute("-DkNumKeys=$0", kNumKeys)}));
-  ebpf::BPFHashTable bpf_map = bcc_wrapper.GetHashTable<int, int>("map");
+  auto bpf_map = WrappedBCCMap<int, int>::Create(&bcc_wrapper, "map");
 
   SetupCleanupProbe(&bcc_wrapper);
   SetupPopulateProbe(&bcc_wrapper);
@@ -277,8 +274,7 @@ int map_populate_uprobe(struct pt_regs* ctx) {
   }
 
   for (int i = 0; i < kNumKeys; ++i) {
-    int val;
-    CHECK(!bpf_map.get_value(i, val).ok());
+    CHECK(!bpf_map->GetValue(i).ok());
   }
 }
 

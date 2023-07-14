@@ -165,6 +165,7 @@ OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 namespace px {
 namespace stirling {
 
+using px::stirling::bpf_tools::WrappedBCCPerCPUArrayTable;
 using px::system::ProcPath;
 using px::system::ProcPidPath;
 using px::utils::ToJSONString;
@@ -507,11 +508,9 @@ Status SocketTraceConnector::InitImpl() {
                    protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
 
-  openssl_trace_state_ =
-      std::make_unique<ebpf::BPFArrayTable<int>>(GetArrayTable<int>("openssl_trace_state"));
-  openssl_trace_state_debug_ =
-      std::make_unique<ebpf::BPFHashTable<uint32_t, struct openssl_trace_state_debug_t>>(
-          GetHashTable<uint32_t, openssl_trace_state_debug_t>("openssl_trace_state_debug"));
+  openssl_trace_state_ = WrappedBCCArrayTable<int>::Create(this, "openssl_trace_state");
+  openssl_trace_state_debug_ = WrappedBCCMap<uint32_t, struct openssl_trace_state_debug_t>::Create(
+      this, "openssl_trace_state_debug");
 
   return Status::OK();
 }
@@ -571,13 +570,15 @@ std::string DumpContext(ConnectorContext* ctx) {
 
 template <typename TBPFTableKey, typename TBPFTableVal>
 std::string BPFMapInfo(bpf_tools::BCCWrapper* bcc, std::string_view name) {
-  auto map = bcc->GetHashTable<TBPFTableKey, TBPFTableVal>(name.data());
-  size_t map_size = map.get_table_offline().size();
-  if (1.0 * map_size / map.capacity() > 0.9) {
+  auto map = WrappedBCCMap<TBPFTableKey, TBPFTableVal>::Create(bcc, name.data());
+
+  size_t map_size = map->GetTableOffline().size();
+  if (1.0 * map_size / map->capacity() > 0.9) {
     LOG(WARNING) << absl::Substitute("BPF Table $0 is nearly at capacity [size=$0 capacity=$1]",
-                                     map_size, map.capacity());
+                                     map_size, map->capacity());
   }
-  return absl::Substitute("\nBPFTable=$0 occupancy=$1 capacity=$2", name, map_size, map.capacity());
+  return absl::Substitute("\nBPFTable=$0 occupancy=$1 capacity=$2", name, map_size,
+                          map->capacity());
 }
 
 std::string BPFMapsInfo(bpf_tools::BCCWrapper* bcc) {
@@ -661,9 +662,8 @@ void SocketTraceConnector::CheckTracerState() {
     return;
   }
 
-  int error_code;
-  openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
-  bool mismatched_fds = error_code == kOpenSSLMismatchedFDsDetected;
+  const int error_code = openssl_trace_state_->GetValue(kOpenSSLTraceStatusIdx).ConsumeValueOr(0);
+  const bool mismatched_fds = error_code == kOpenSSLMismatchedFDsDetected;
 
   if (FLAGS_stirling_debug_tls_sources || mismatched_fds) {
     if (mismatched_fds) {
@@ -672,7 +672,7 @@ void SocketTraceConnector::CheckTracerState() {
     }
 
     // Record the offending applications and clear the BPF hash in the process.
-    auto table = openssl_trace_state_debug_->get_table_offline(true);
+    auto table = openssl_trace_state_debug_->GetTableOffline(true);
     for (auto& entry : table) {
       struct openssl_trace_state_debug_t debug = std::get<1>(entry);
       auto ssl_source = std::string(magic_enum::enum_name(debug.ssl_source));
@@ -704,7 +704,7 @@ void SocketTraceConnector::CheckTracerState() {
   // Reset the BPF map to its default value so that each occurrence
   // can be detected.
   if (error_code != kOpenSSLTraceOk) {
-    openssl_trace_state_->update_value(kOpenSSLTraceStatusIdx, kOpenSSLTraceOk);
+    PX_UNUSED(openssl_trace_state_->SetValue(kOpenSSLTraceStatusIdx, kOpenSSLTraceOk));
   }
 }
 
@@ -789,9 +789,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
 
 Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t protocol,
                                                         uint64_t role_mask) {
-  auto control_map_handle = GetPerCPUArrayTable<uint64_t>(kControlMapName);
-  return bpf_tools::UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask,
-                                           &control_map_handle);
+  auto control_map = WrappedBCCPerCPUArrayTable<uint64_t>::Create(this, kControlMapName);
+  return control_map->SetValues(static_cast<int>(protocol), role_mask);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID() {
@@ -805,14 +804,14 @@ Status SocketTraceConnector::TestOnlySetTargetPID() {
         "Enable CONN_TRACE for pid=$0 following --test_only_socket_trace_target_pid", pid);
     FLAGS_stirling_conn_trace_pid = pid;
   }
-  auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
-  return bpf_tools::UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
+  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(this, kControlValuesArrayName);
+  return control_map->SetValues(kTargetTGIDIndex, pid);
 }
 
 Status SocketTraceConnector::DisableSelfTracing() {
-  auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
-  int64_t self_pid = getpid();
-  return bpf_tools::UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
+  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(this, kControlValuesArrayName);
+  const int64_t self_pid = getpid();
+  return control_map->SetValues(kStirlingTGIDIndex, self_pid);
 }
 
 //-----------------------------------------------------------------------------

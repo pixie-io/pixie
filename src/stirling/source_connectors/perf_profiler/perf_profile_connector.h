@@ -42,6 +42,9 @@
 namespace px {
 namespace stirling {
 
+using bpf_tools::WrappedBCCArrayTable;
+using bpf_tools::WrappedBCCStackTable;
+
 namespace profiler {
 static constexpr std::string_view kNotSymbolizedMessage = "<not symbolized>";
 }  // namespace profiler
@@ -94,10 +97,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
-  void CreateRecords(ebpf::BPFStackTable* stack_traces, ConnectorContext* ctx,
+  void CreateRecords(WrappedBCCStackTable* stack_traces, ConnectorContext* ctx,
                      DataTable* data_table);
 
-  StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces);
+  StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, WrappedBCCStackTable* stack_traces);
 
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
@@ -105,10 +108,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void CheckProfilerState(const uint64_t num_stack_traces);
 
   // data structures shared with BPF:
-  std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
-  std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
+  std::unique_ptr<WrappedBCCStackTable> stack_traces_a_;
+  std::unique_ptr<WrappedBCCStackTable> stack_traces_b_;
 
-  std::unique_ptr<ebpf::BPFArrayTable<uint64_t>> profiler_state_;
+  std::unique_ptr<WrappedBCCArrayTable<uint64_t>> profiler_state_;
   prometheus::Gauge& profiler_state_overflow_gauge_;
   prometheus::Counter& profiler_transfer_data_counter_;
   prometheus::Counter& profiler_state_overflow_counter_;
@@ -140,9 +143,9 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Called by HandleHistoEvent() to add the stack-trace-key to raw_histo_data_.
   void AcceptStackTraceKey(stack_trace_key_t* data);
 
-  ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
-  ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
-
+  // -- TODO -- remove -- ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
+  // -- TODO -- remove -- ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
+  // -- TODO -- remove --
   const uint32_t stats_log_interval_;
   utils::StatCounter<StatKey> stats_;
 };

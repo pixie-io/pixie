@@ -18,6 +18,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+#include <utility>
+#endif
+
 #include "src/stirling/upid/upid.h"
 
 // TODO(jps): add a macro that wraps bpf_trace_printk for debug & no-ops for prod builds.
@@ -48,6 +52,23 @@ struct stack_trace_key_t {
 
   // kernel_stack_id, an index into the stack-traces map.
   int kernel_stack_id;
+
+#ifdef __cplusplus
+  template <typename H>
+  friend H AbslHashValue(H h, const stack_trace_key_t& s) {
+    return H::combine(std::move(h), s.upid, s.user_stack_id, s.kernel_stack_id);
+  }
+
+  friend bool operator==(const stack_trace_key_t& lhs, const stack_trace_key_t& rhs) {
+    if (lhs.upid != rhs.upid) {
+      return false;
+    }
+    if (lhs.user_stack_id != rhs.user_stack_id) {
+      return false;
+    }
+    return lhs.kernel_stack_id == rhs.kernel_stack_id;
+  }
+#endif
 };
 
 // Bit positions in the error status bitfield:
@@ -58,3 +79,8 @@ static const uint32_t kMapReadFailureBitPos = 1;
 static const uint64_t kPerfProfilerStatusOk = 0ULL;
 static const uint64_t kOverflowError = 1ULL << kOverflowBitPos;
 static const uint64_t kMapReadFailureError = 1ULL << kMapReadFailureBitPos;
+
+#ifdef __cplusplus
+static constexpr std::string_view kHistogramAName = "histogram_a";
+static constexpr std::string_view kHistogramBName = "histogram_b";
+#endif

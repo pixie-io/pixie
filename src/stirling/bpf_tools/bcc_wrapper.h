@@ -32,6 +32,7 @@
 
 #include <linux/perf_event.h>
 
+#include <absl/container/flat_hash_set.h>
 #include <gtest/gtest_prod.h>
 
 #include <filesystem>
@@ -92,6 +93,8 @@ class BCCWrapper {
     // But we do it anyways out of paranoia.
     Close();
   }
+
+  ebpf::BPF& BPF() { return bpf_; }
 
   /**
    * Compiles the BPF code.
@@ -227,39 +230,40 @@ class BCCWrapper {
    *                   and catch new events in the next iteration.
    */
   void PollPerfBuffers(int timeout_ms = 0);
+  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms);
 
   /**
    * Detaches all probes, and closes all perf buffers that are open.
    */
   void Close();
 
-  template <typename TKeyType, typename TValueType>
-  ebpf::BPFHashTable<TKeyType, TValueType> GetHashTable(const std::string& table_name) {
-    return bpf_.get_hash_table<TKeyType, TValueType>(table_name);
-  }
-
-  template <typename TValueType>
-  ebpf::BPFArrayTable<TValueType> GetArrayTable(const std::string& table_name) {
-    return bpf_.get_array_table<TValueType>(table_name);
-  }
-
-  ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
-    return bpf_.get_stack_table(table_name);
-  }
-
-  template <typename TKeyType>
-  ebpf::BPFMapInMapTable<TKeyType> GetMapInMapTable(const std::string& table_name) {
-    return bpf_.get_map_in_map_table<TKeyType>(table_name);
-  }
-
-  ebpf::BPFPerfBuffer* GetPerfBuffer(const std::string& perf_buffer_name) {
-    return bpf_.get_perf_buffer(perf_buffer_name);
-  }
-
-  template <typename TValueType>
-  ebpf::BPFPercpuArrayTable<TValueType> GetPerCPUArrayTable(const std::string& table_name) {
-    return bpf_.get_percpu_array_table<TValueType>(table_name);
-  }
+  // template <typename TKeyType, typename TValueType>
+  // ebpf::BPFHashTable<TKeyType, TValueType> GetHashTable(const std::string& table_name) {
+  //   return bpf_.get_hash_table<TKeyType, TValueType>(table_name);
+  // }
+  //
+  // template <typename TValueType>
+  // ebpf::BPFArrayTable<TValueType> GetArrayTable(const std::string& table_name) {
+  //   return bpf_.get_array_table<TValueType>(table_name);
+  // }
+  //
+  // ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
+  //   return bpf_.get_stack_table(table_name);
+  // }
+  //
+  // template <typename TKeyType>
+  // ebpf::BPFMapInMapTable<TKeyType> GetMapInMapTable(const std::string& table_name) {
+  //   return bpf_.get_map_in_map_table<TKeyType>(table_name);
+  // }
+  //
+  // ebpf::BPFPerfBuffer* GetPerfBuffer(const std::string& perf_buffer_name) {
+  //   return bpf_.get_perf_buffer(perf_buffer_name);
+  // }
+  //
+  // template <typename TValueType>
+  // ebpf::BPFPercpuArrayTable<TValueType> GetPerCPUArrayTable(const std::string& table_name) {
+  //   return bpf_.get_percpu_array_table<TValueType>(table_name);
+  // }
 
   // These are static counters of attached/open probes across all instances.
   // It is meant for verification that we have cleaned-up all resources in tests.
@@ -275,7 +279,6 @@ class BCCWrapper {
   Status DetachTracepoint(const TracepointSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
-  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms);
 
   // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.
   // If any fails to detach, an error is logged, and the function continues.
@@ -322,6 +325,176 @@ class BCCWrapper {
   // This is shared by all source connectors that uses BCCWrapper.
   inline static std::optional<utils::TaskStructOffsets> task_struct_offsets_opt_;
 };
+
+template <typename T>
+class WrappedBCCArrayTable {
+ public:
+  using U = ebpf::BPFArrayTable<T>;
+
+  WrappedBCCArrayTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+    underlying_ = std::make_unique<U>(bcc->BPF().get_array_table<T>(name_));
+  }
+
+  static std::unique_ptr<WrappedBCCArrayTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                      const std::string& name) {
+    return std::unique_ptr<WrappedBCCArrayTable>(new WrappedBCCArrayTable(bcc, name));
+  }
+
+  StatusOr<T> GetValue(const uint32_t idx) {
+    T value;
+    ebpf::StatusTuple s = underlying_->get_value(idx, value);
+    if (!s.ok()) {
+      char const* const msg = "BCC failed to get value for array table: $0, idx: $1.";
+      return error::Internal(absl::Substitute(msg, name_, idx));
+    }
+    return value;
+  }
+
+  Status SetValue(const uint32_t idx, const T& value) {
+    ebpf::StatusTuple s = underlying_->update_value(idx, value);
+    if (!s.ok()) {
+      return error::Internal(
+          absl::Substitute("BCC failed to set value for array table: $0, idx: $1.", name_, idx));
+    }
+    return Status::OK();
+  }
+
+ private:
+  const std::string name_;
+  std::unique_ptr<U> underlying_;
+};
+
+template <typename K, typename V>
+class WrappedBCCMap {
+ public:
+  using U = ebpf::BPFHashTable<K, V>;
+
+  WrappedBCCMap(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+    underlying_ = std::make_unique<U>(bcc->BPF().get_hash_table<K, V>(name_));
+  }
+
+  static std::unique_ptr<WrappedBCCMap> Create(bpf_tools::BCCWrapper* bcc,
+                                               const std::string& name) {
+    return std::unique_ptr<WrappedBCCMap>(new WrappedBCCMap(bcc, name));
+  }
+
+  size_t capacity() const { return underlying_->capacity(); }
+
+  StatusOr<V> GetValue(const K& key) const {
+    V value;
+    ebpf::StatusTuple s = underlying_->get_value(key, value);
+    if (!s.ok()) {
+      return error::Internal(absl::Substitute("BCC failed to get value for map: $0.", name_));
+    }
+    return value;
+  }
+
+  Status SetValue(const K& key, const V& value) {
+    ebpf::StatusTuple s = underlying_->update_value(key, value);
+    if (!s.ok()) {
+      return error::Internal(
+          absl::Substitute("BCC failed to set value for array table: $0, key: $1.", name_, key));
+    }
+    shadow_keys_.insert(key);
+    return Status::OK();
+  }
+
+  Status RemoveValue(const K& key) {
+    if (shadow_keys_.contains(key)) {
+      const auto s = underlying_->remove_value(key);
+      if (!s.ok()) {
+        return error::Internal(absl::Substitute("BPF failed to remove value for key: $0.", key));
+      }
+      shadow_keys_.erase(key);
+    }
+    return Status::OK();
+  }
+
+  absl::flat_hash_map<K, V> GetTableOffline(const bool clear_table = false) {
+    absl::flat_hash_map<K, V> r;
+
+    for (const auto& k : shadow_keys_) {
+      auto s = GetValue(k);
+      const auto v = s.ConsumeValueOrDie();
+      r[k] = v;
+      if (clear_table) {
+        PX_UNUSED(underlying_->remove_value(k));
+      }
+    }
+    if (clear_table) {
+      shadow_keys_.clear();
+    }
+    return r;
+  }
+
+ private:
+  const std::string name_;
+  std::unique_ptr<U> underlying_;
+  absl::flat_hash_set<K> shadow_keys_;
+};
+
+template <typename T>
+class WrappedBCCPerCPUArrayTable {
+ public:
+  using U = ebpf::BPFPercpuArrayTable<T>;
+
+  WrappedBCCPerCPUArrayTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+    underlying_ = std::make_unique<U>(bcc->BPF().get_percpu_array_table<T>(name_));
+  }
+
+  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                            const std::string& name) {
+    return std::unique_ptr<WrappedBCCPerCPUArrayTable>(new WrappedBCCPerCPUArrayTable(bcc, name));
+  }
+
+  Status SetValues(const int idx, const T& value) {
+    std::vector<T> values(bpf_tools::BCCWrapper::kCPUCount, value);
+    auto update_res = underlying_->update_value(idx, values);
+    if (!update_res.ok()) {
+      return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
+                                              idx, update_res.msg()));
+    }
+    return Status::OK();
+  }
+
+ private:
+  const std::string name_;
+  std::unique_ptr<U> underlying_;
+};
+
+class WrappedBCCStackTable {
+ public:
+  using U = ebpf::BPFStackTable;
+
+  WrappedBCCStackTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+    underlying_ = std::make_unique<U>(bcc->BPF().get_stack_table(name_));
+  }
+
+  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                      const std::string& name) {
+    return std::unique_ptr<WrappedBCCStackTable>(new WrappedBCCStackTable(bcc, name));
+  }
+
+  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) {
+    return underlying_->get_stack_addr(stack_id, clear_stack_id);
+  }
+
+  std::string GetAddrSymbol(const uintptr_t addr, const int pid) {
+    return underlying_->get_addr_symbol(addr, pid);
+  }
+
+  void ClearStackID(const int stack_id) { underlying_->clear_stack_id(stack_id); }
+
+  U* RawPtr() { return underlying_.get(); }
+
+ private:
+  const std::string name_;
+  std::unique_ptr<U> underlying_;
+};
+
+// ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
+//   return bpf_.get_stack_table(table_name);
+// }
 
 }  // namespace bpf_tools
 }  // namespace stirling

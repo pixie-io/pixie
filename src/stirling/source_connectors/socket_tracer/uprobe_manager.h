@@ -61,46 +61,7 @@ struct UProbeTmpl {
   bpf_tools::BPFProbeAttachType attach_type = bpf_tools::BPFProbeAttachType::kEntry;
 };
 
-// A wrapper around BPF maps that are exclusively written by user-space.
-// Provides an optimized RemoveValue() interface that avoids the BPF access
-// if the key doesn't exist.
-template <typename TKeyType, typename TValueType,
-          typename TMapType = ebpf::BPFHashTable<TKeyType, TValueType>>
-class UserSpaceManagedBPFMap {
- public:
-  static std::unique_ptr<UserSpaceManagedBPFMap> Create(bpf_tools::BCCWrapper* bcc,
-                                                        const std::string& map_name) {
-    return std::unique_ptr<UserSpaceManagedBPFMap>(new UserSpaceManagedBPFMap(bcc, map_name));
-  }
-
-  void UpdateValue(TKeyType key, TValueType value) {
-    ebpf::StatusTuple s = map_->update_value(key, value);
-    if (s.ok()) {
-      shadow_keys_.insert(key);
-    } else {
-      LOG(WARNING) << absl::StrCat("Could not update BPF map. Message=", s.msg());
-    }
-  }
-
-  void RemoveValue(TKeyType key) {
-    if (shadow_keys_.contains(key)) {
-      map_->remove_value(key);
-      shadow_keys_.erase(key);
-    }
-  }
-
- private:
-  UserSpaceManagedBPFMap(bpf_tools::BCCWrapper* bcc, const std::string& map_name) {
-    if constexpr (std::is_same_v<TMapType, ebpf::BPFMapInMapTable<TKeyType>>) {
-      map_ = std::make_unique<TMapType>(bcc->GetMapInMapTable<TKeyType>(map_name));
-    } else {
-      map_ = std::make_unique<TMapType>(bcc->GetHashTable<TKeyType, TValueType>(map_name));
-    }
-  }
-
-  std::unique_ptr<TMapType> map_;
-  absl::flat_hash_set<TKeyType> shadow_keys_;
-};
+using px::stirling::bpf_tools::WrappedBCCMap;
 
 /**
  * UProbeManager manages the deploying of all uprobes on behalf of the SocketTracer.
@@ -670,20 +631,16 @@ class UProbeManager {
   absl::flat_hash_set<std::string> nodejs_binaries_;
   absl::flat_hash_set<std::string> grpc_c_probed_binaries_;
 
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, ssl_source_t>> openssl_source_map_;
-
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>>
-      openssl_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>>
-      go_common_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t>>
-      go_http2_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, struct node_tlswrap_symaddrs_t>>
+  std::unique_ptr<WrappedBCCMap<uint32_t, ssl_source_t>> openssl_source_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, struct openssl_symaddrs_t>> openssl_symaddrs_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_common_symaddrs_t>> go_common_symaddrs_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_http2_symaddrs_t>> go_http2_symaddrs_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, struct node_tlswrap_symaddrs_t>>
       node_tlswrap_symaddrs_map_;
   // Key is python gRPC module's md5 hash, value is the corresponding version enum's numeric value.
-  std::unique_ptr<UserSpaceManagedBPFMap<uint32_t, uint64_t>> grpc_c_versions_map_;
+  std::unique_ptr<WrappedBCCMap<uint32_t, uint64_t>> grpc_c_versions_map_;
 
   const system::Config& syscfg_ = system::Config::GetInstance();
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();
