@@ -172,6 +172,29 @@ constexpr char kReplicaSetUpdatePbTxt[] = R"(
   }
 )";
 
+constexpr char kReplicaSetUpdatePbTxt00[] = R"(
+  uid: "rs0_uid"
+  name: "rs0"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 1
+  namespace: "ns0"
+  replicas: 5
+  fully_labeled_replicas: 5
+  ready_replicas: 3
+  available_replicas: 3
+  observed_generation: 5
+  requested_replicas: 5
+  conditions: {
+    type: "ready"
+    status: CONDITION_STATUS_TRUE
+  }
+  owner_references: {
+    kind: "Deployment"
+    name: "deployment1"
+    uid: "deployment_uid"
+  }
+)";
+
 constexpr char kDeploymentUpdatePbTxt00[] = R"(
   uid: "deployment_uid"
   name: "deployment1"
@@ -246,6 +269,29 @@ constexpr char kDeploymentUpdatePbTxt02[] = R"(
   }
   conditions: {
     type: 3
+    status: CONDITION_STATUS_TRUE
+  }
+)";
+
+constexpr char kDeploymentUpdatePbTxt03[] = R"(
+  uid: "deployment_uid"
+  name: "deployment1"
+  start_timestamp_ns: 101
+  stop_timestamp_ns: 1
+  namespace: "ns0"
+  replicas: 5
+  updated_replicas: 5
+  ready_replicas: 3
+  available_replicas: 3
+  unavailable_replicas: 2
+  observed_generation: 5
+  requested_replicas: 5
+  conditions: {
+    type: 1
+    status: CONDITION_STATUS_TRUE
+  }
+  conditions: {
+    type: 2
     status: CONDITION_STATUS_TRUE
   }
 )";
@@ -591,12 +637,20 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
   K8sMetadataState::ServiceUpdate service_update;
   ASSERT_TRUE(TextFormat::MergeFromString(kRunningServiceUpdatePbTxt, &service_update));
 
+  K8sMetadataState::ReplicaSetUpdate replica_set_update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kReplicaSetUpdatePbTxt00, &replica_set_update));
+
+  K8sMetadataState::DeploymentUpdate deployment_update;
+  ASSERT_TRUE(TextFormat::MergeFromString(kDeploymentUpdatePbTxt03, &deployment_update));
+
   EXPECT_OK(state.HandleNamespaceUpdate(ns_update));
   EXPECT_OK(state.HandleContainerUpdate(container_update));
   EXPECT_OK(state.HandlePodUpdate(pod_update));
   EXPECT_OK(state.HandlePodUpdate(terminated_ip_pod_update));
   EXPECT_OK(state.HandlePodUpdate(running_ip_pod_update));
   EXPECT_OK(state.HandleServiceUpdate(service_update));
+  EXPECT_OK(state.HandleReplicaSetUpdate(replica_set_update));
+  EXPECT_OK(state.HandleDeploymentUpdate(deployment_update));
 
   int64_t current_time = 150ULL;
 
@@ -625,6 +679,12 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
 
     const ContainerInfo* container_info = state.ContainerInfoByID("container0_uid");
     ASSERT_NE(container_info, nullptr);
+
+    const ReplicaSetInfo* replica_set_info = state.ReplicaSetInfoByID("rs0_uid");
+    ASSERT_NE(replica_set_info, nullptr);
+
+    const DeploymentInfo* deployment_info = state.DeploymentInfoByID("deployment_uid");
+    ASSERT_NE(deployment_info, nullptr);
   }
 
   // Now we give them an expiry time that is short
@@ -652,6 +712,12 @@ TEST(K8sMetadataStateTest, CleanupExpiredMetadata) {
 
     const ContainerInfo* container_info = state.ContainerInfoByID("container0_uid");
     ASSERT_EQ(container_info, nullptr);
+
+    const ReplicaSetInfo* replica_set_info = state.ReplicaSetInfoByID("rs0_uid");
+    ASSERT_EQ(replica_set_info, nullptr);
+
+    const DeploymentInfo* deployment_info = state.DeploymentInfoByID("deployment_uid");
+    ASSERT_EQ(deployment_info, nullptr);
   }
 }
 

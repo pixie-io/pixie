@@ -532,6 +532,18 @@ Status K8sMetadataState::CleanupExpiredMetadata(int64_t now, int64_t retention_t
           services_by_name_.erase({k8s_object->ns(), k8s_object->name()});
         }
         break;
+      case K8sObjectType::kReplicaSet:
+        if (ReplicaSetIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
+            k8s_object->uid()) {
+          replica_sets_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        }
+        break;
+      case K8sObjectType::kDeployment:
+        if (DeploymentIDByName(std::make_pair(k8s_object->ns(), k8s_object->name())) ==
+            k8s_object->uid()) {
+          deployments_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        }
+        break;
       default:
         LOG(DFATAL) << absl::Substitute("Unexpected object type: $0",
                                         static_cast<int>(k8s_object->type()));
