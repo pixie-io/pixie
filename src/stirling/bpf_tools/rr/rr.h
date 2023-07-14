@@ -44,7 +44,7 @@ class RRSingleton {
 
   bool recording() const { return recording_; }
   bool replaying() const { return replaying_; }
-  bool playback_complete() const { return playback_event_idx_ >= events_proto_.event_size(); }
+  bool PlabackComplete() const { return playback_event_idx_ >= events_proto_.event_size(); }
 
   void SetRecording();
   void SetReplaying(const std::string& proto_buf_file_path);

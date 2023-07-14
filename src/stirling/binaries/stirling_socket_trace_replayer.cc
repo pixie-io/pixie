@@ -112,7 +112,7 @@ Status RunSocketTracer() {
 
   PX_RETURN_IF_ERROR(g_socket_tracer->Start());
 
-  while (!px::stirling::bpf_tools::RRSingleton::GetInstance().playback_complete()) {
+  while (!px::stirling::bpf_tools::RRSingleton::GetInstance().PlabackComplete()) {
     sleep(1);
   }
 

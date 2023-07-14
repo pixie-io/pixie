@@ -25,7 +25,7 @@ namespace stirling {
 namespace bpf_tools {
 
 void RRSingleton::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec) {
-  if (playback_complete_) {
+  if (PlabackComplete()) {
     return;
   }
 
@@ -82,7 +82,7 @@ void RRSingleton::WriteProto(const std::string& proto_buf_file_path) {
 
 Status RRSingleton::ReplayArrayGetValue(const std::string& name, const int32_t idx, void* value,
                                         const uint32_t data_size) {
-  if (playback_complete_) {
+  if (PlabackComplete()) {
     return error::Internal("Playback complete.");
   }
 
