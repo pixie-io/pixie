@@ -70,6 +70,16 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "address_converter_test",
+    srcs = ["address_converter_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/obj_tools/testdata/containers:vaddr_convert_self_func_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "dwarf_reader_test",
     srcs = ["dwarf_reader_test.cc"],
     data = [

@@ -67,6 +67,11 @@ class ContainerRunner {
   void Wait(bool close_pipe = true);
 
   /**
+   * Returns the exit status of the container.
+   */
+  int GetStatus() { return podman_.GetStatus(); }
+
+  /**
    * Returns the stdout of the container. Needs to be combined with the full output from Run
    * to ensure the entire result is present.
    */

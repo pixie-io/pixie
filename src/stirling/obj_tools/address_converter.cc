@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/obj_tools/address_converter.h"
 
@@ -45,11 +46,10 @@ uint64_t ElfAddressConverter::BinaryAddrToVirtualAddr(uint64_t binary_addr) cons
  * For non-PIE executables, this conversion is trivial as the virtual addresses in the ELF file are
  * used directly when loading.
  *
- * However, for PIE, the loaded virtual address can be whatever. So to calculate the offset we look
- * at the first loadable segment in the ELF file and compare it to the first entry in the
- *  /proc/PID/maps file to see how the loader changed the virtual address. This works because the
- * loader guarantees that the relative offsets of the different segments remain the same, regardless
- * of where in virtual address space it ends up putting the segment.
+ * However, for PIE, the loaded virtual address can be whatever. To calculate the offset we must
+ * find the /proc/PID/maps entry that corresponds to the given process's executable (entry that
+ * matches /proc/PID/cmdline) and use that entry's virtual memory offset to find the binary
+ * address.
  *
  **/
 StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfReader* elf_reader,
@@ -64,16 +64,29 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
   }
   system::ProcParser parser;
   std::vector<system::ProcParser::ProcessSMaps> map_entries;
-  // This is a little inefficient as we only need the first entry.
+  auto proc_path = elf_reader->GetBinaryPath();
+  DCHECK(fs::Canonical(proc_path).ok());
   PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
   if (map_entries.size() < 1) {
     return Status(
         statuspb::INTERNAL,
         absl::Substitute("ElfAddressConverter::Create: Failed to parse /proc/$0/maps", pid));
   }
-  const auto mapped_virt_addr = map_entries[0].vmem_start;
+  system::ProcParser::ProcessSMaps map_entry;
+  for (auto& entry : map_entries) {
+    if (entry.pathname == proc_path) {
+      map_entry = entry;
+      break;
+    }
+  }
+  if (map_entry.pathname == "") {
+    LOG(WARNING) << absl::Substitute(
+        "Failed to find match for $0 in /proc/$1/maps. Defaulting to first entry", proc_path, pid);
+    map_entry = map_entries[0];
+  }
+  const auto mapped_virt_addr = map_entry.vmem_start;
   uint64_t mapped_offset;
-  if (!absl::SimpleHexAtoi(map_entries[0].offset, &mapped_offset)) {
+  if (!absl::SimpleHexAtoi(map_entry.offset, &mapped_offset)) {
     return Status(statuspb::INTERNAL,
                   absl::Substitute(
                       "ElfAddressConverter::Create: Failed to parse offset in /proc/$0/maps", pid));
