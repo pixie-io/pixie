@@ -237,34 +237,6 @@ class BCCWrapper {
    */
   void Close();
 
-  // template <typename TKeyType, typename TValueType>
-  // ebpf::BPFHashTable<TKeyType, TValueType> GetHashTable(const std::string& table_name) {
-  //   return bpf_.get_hash_table<TKeyType, TValueType>(table_name);
-  // }
-  //
-  // template <typename TValueType>
-  // ebpf::BPFArrayTable<TValueType> GetArrayTable(const std::string& table_name) {
-  //   return bpf_.get_array_table<TValueType>(table_name);
-  // }
-  //
-  // ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
-  //   return bpf_.get_stack_table(table_name);
-  // }
-  //
-  // template <typename TKeyType>
-  // ebpf::BPFMapInMapTable<TKeyType> GetMapInMapTable(const std::string& table_name) {
-  //   return bpf_.get_map_in_map_table<TKeyType>(table_name);
-  // }
-  //
-  // ebpf::BPFPerfBuffer* GetPerfBuffer(const std::string& perf_buffer_name) {
-  //   return bpf_.get_perf_buffer(perf_buffer_name);
-  // }
-  //
-  // template <typename TValueType>
-  // ebpf::BPFPercpuArrayTable<TValueType> GetPerCPUArrayTable(const std::string& table_name) {
-  //   return bpf_.get_percpu_array_table<TValueType>(table_name);
-  // }
-
   // These are static counters of attached/open probes across all instances.
   // It is meant for verification that we have cleaned-up all resources in tests.
   static size_t num_attached_probes() { return num_attached_kprobes_ + num_attached_uprobes_; }
