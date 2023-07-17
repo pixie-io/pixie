@@ -312,8 +312,7 @@ class WrappedBCCArrayTable {
     T value;
     ebpf::StatusTuple s = underlying_->get_value(idx, value);
     if (!s.ok()) {
-      char const* const msg = "BCC failed to get value for array table: $0, idx: $1.";
-      return error::Internal(absl::Substitute(msg, name_, idx));
+      return error::Internal(absl::Substitute(err_msg_, "get", name_, idx, s.msg()));
     }
     return value;
   }
@@ -321,8 +320,7 @@ class WrappedBCCArrayTable {
   Status SetValue(const uint32_t idx, const T& value) {
     ebpf::StatusTuple s = underlying_->update_value(idx, value);
     if (!s.ok()) {
-      return error::Internal(
-          absl::Substitute("BCC failed to set value for array table: $0, idx: $1.", name_, idx));
+      return error::Internal(absl::Substitute(err_msg_, "set", name_, idx, s.msg()));
     }
     return Status::OK();
   }
@@ -333,6 +331,7 @@ class WrappedBCCArrayTable {
   }
 
   const std::string name_;
+  char const * const err_msg_ = "BPF failed to $0 value for array table: $1, index: $2. $3.";
   std::unique_ptr<U> underlying_;
 };
 
@@ -352,7 +351,7 @@ class WrappedBCCMap {
     V value;
     ebpf::StatusTuple s = underlying_->get_value(key, value);
     if (!s.ok()) {
-      return error::Internal(absl::Substitute("BCC failed to get value for map: $0.", name_));
+      return error::Internal(absl::Substitute(err_msg_, "get", name_, s.msg()));
     }
     return value;
   }
@@ -360,8 +359,7 @@ class WrappedBCCMap {
   Status SetValue(const K& key, const V& value) {
     ebpf::StatusTuple s = underlying_->update_value(key, value);
     if (!s.ok()) {
-      return error::Internal(
-          absl::Substitute("BCC failed to set value for array table: $0, key: $1.", name_, key));
+      return error::Internal(absl::Substitute(err_msg_, "set", name_, s.msg()));
     }
     if (user_space_managed_) {
       shadow_keys_.insert(key);
@@ -375,7 +373,7 @@ class WrappedBCCMap {
     }
     const auto s = underlying_->remove_value(key);
     if (!s.ok()) {
-      return error::Internal(absl::Substitute("BPF failed to remove value for key: $0.", key));
+      return error::Internal(absl::Substitute(err_msg_, "remove", name_, s.msg()));
     }
     if (user_space_managed_) {
       shadow_keys_.erase(key);
@@ -414,6 +412,7 @@ class WrappedBCCMap {
 
   const std::string name_;
   const bool user_space_managed_;
+  char const * const err_msg_ = "BPF failed to $0 value for map: $1. $2.";
   std::unique_ptr<U> underlying_;
   absl::flat_hash_set<K> shadow_keys_;
 };
@@ -430,10 +429,10 @@ class WrappedBCCPerCPUArrayTable {
 
   Status SetValues(const int idx, const T& value) {
     std::vector<T> values(bpf_tools::BCCWrapper::kCPUCount, value);
-    auto update_res = underlying_->update_value(idx, values);
-    if (!update_res.ok()) {
-      return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
-                                              idx, update_res.msg()));
+    ebpf::StatusTuple s = underlying_->update_value(idx, values);
+    if (!s.ok()) {
+      char const * const err_msg_ = "BPF failed to $0 value for per cpu array: $1, index: $2. $3.";
+      return error::Internal(absl::Substitute(err_msg_, "set", name_, idx, s.msg()));
     }
     return Status::OK();
   }

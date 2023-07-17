@@ -55,8 +55,8 @@ struct stack_trace_key_t {
 
 #ifdef __cplusplus
   template <typename H>
-  friend H AbslHashValue(H h, const stack_trace_key_t& s) {
-    return H::combine(std::move(h), s.upid, s.user_stack_id, s.kernel_stack_id);
+  friend H AbslHashValue(H h, const stack_trace_key_t& k) {
+    return H::combine(std::move(h), k.upid, k.user_stack_id, k.kernel_stack_id);
   }
 
   friend bool operator==(const stack_trace_key_t& lhs, const stack_trace_key_t& rhs) {
