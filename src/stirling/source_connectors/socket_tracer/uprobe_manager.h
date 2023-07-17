@@ -68,6 +68,9 @@ using px::stirling::bpf_tools::WrappedBCCMap;
  * This includes: OpenSSL uprobes, GoTLS uprobes and Go HTTP2 uprobes.
  */
 class UProbeManager {
+  template <typename V>
+  using MapT = WrappedBCCMap<uint32_t, V, /* user space managed */ true>;
+
  public:
   /**
    * Construct a UProbeManager.
@@ -632,15 +635,14 @@ class UProbeManager {
   absl::flat_hash_set<std::string> grpc_c_probed_binaries_;
 
   // BPF maps through which the addresses of symbols for a given pid are communicated to uprobes.
-  std::unique_ptr<WrappedBCCMap<uint32_t, ssl_source_t>> openssl_source_map_;
-  std::unique_ptr<WrappedBCCMap<uint32_t, struct openssl_symaddrs_t>> openssl_symaddrs_map_;
-  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_common_symaddrs_t>> go_common_symaddrs_map_;
-  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_http2_symaddrs_t>> go_http2_symaddrs_map_;
-  std::unique_ptr<WrappedBCCMap<uint32_t, struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
-  std::unique_ptr<WrappedBCCMap<uint32_t, struct node_tlswrap_symaddrs_t>>
-      node_tlswrap_symaddrs_map_;
+  std::unique_ptr<MapT<ssl_source_t>> openssl_source_map_;
+  std::unique_ptr<MapT<struct openssl_symaddrs_t>> openssl_symaddrs_map_;
+  std::unique_ptr<MapT<struct go_common_symaddrs_t>> go_common_symaddrs_map_;
+  std::unique_ptr<MapT<struct go_http2_symaddrs_t>> go_http2_symaddrs_map_;
+  std::unique_ptr<MapT<struct go_tls_symaddrs_t>> go_tls_symaddrs_map_;
+  std::unique_ptr<MapT<struct node_tlswrap_symaddrs_t>> node_tlswrap_symaddrs_map_;
   // Key is python gRPC module's md5 hash, value is the corresponding version enum's numeric value.
-  std::unique_ptr<WrappedBCCMap<uint32_t, uint64_t>> grpc_c_versions_map_;
+  std::unique_ptr<MapT<uint64_t>> grpc_c_versions_map_;
 
   const system::Config& syscfg_ = system::Config::GetInstance();
   StirlingMonitor& monitor_ = *StirlingMonitor::GetInstance();

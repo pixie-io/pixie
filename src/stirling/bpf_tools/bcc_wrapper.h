@@ -331,18 +331,18 @@ class WrappedBCCArrayTable {
   }
 
   const std::string name_;
-  char const * const err_msg_ = "BPF failed to $0 value for array table: $1, index: $2. $3.";
+  char const* const err_msg_ = "BPF failed to $0 value for array table: $1, index: $2. $3.";
   std::unique_ptr<U> underlying_;
 };
 
-template <typename K, typename V>
+template <typename K, typename V, bool kUserSpaceManaged = false>
 class WrappedBCCMap {
  public:
   using U = ebpf::BPFHashTable<K, V>;
 
-  static std::unique_ptr<WrappedBCCMap> Create(bpf_tools::BCCWrapper* bcc, const std::string& name,
-                                               const bool user_space_managed = false) {
-    return std::unique_ptr<WrappedBCCMap>(new WrappedBCCMap(bcc, name, user_space_managed));
+  static std::unique_ptr<WrappedBCCMap> Create(bpf_tools::BCCWrapper* bcc,
+                                               const std::string& name) {
+    return std::unique_ptr<WrappedBCCMap>(new WrappedBCCMap(bcc, name));
   }
 
   size_t capacity() const { return underlying_->capacity(); }
@@ -361,28 +361,31 @@ class WrappedBCCMap {
     if (!s.ok()) {
       return error::Internal(absl::Substitute(err_msg_, "set", name_, s.msg()));
     }
-    if (user_space_managed_) {
+    if constexpr (kUserSpaceManaged) {
       shadow_keys_.insert(key);
     }
     return Status::OK();
   }
 
   Status RemoveValue(const K& key) {
-    if (user_space_managed_ && !shadow_keys_.contains(key)) {
-      return Status::OK();
+    if constexpr (kUserSpaceManaged) {
+      if (!shadow_keys_.contains(key)) {
+        return Status::OK();
+      }
     }
+
     const auto s = underlying_->remove_value(key);
     if (!s.ok()) {
       return error::Internal(absl::Substitute(err_msg_, "remove", name_, s.msg()));
     }
-    if (user_space_managed_) {
+    if constexpr (kUserSpaceManaged) {
       shadow_keys_.erase(key);
     }
     return Status::OK();
   }
 
   std::vector<std::pair<K, V>> GetTableOffline(const bool clear_table = false) {
-    if (!user_space_managed_) {
+    if constexpr (!kUserSpaceManaged) {
       return underlying_->get_table_offline(clear_table);
     }
 
@@ -405,14 +408,12 @@ class WrappedBCCMap {
   }
 
  private:
-  WrappedBCCMap(bpf_tools::BCCWrapper* bcc, const std::string& name, const bool user_space_managed)
-      : name_(name), user_space_managed_(user_space_managed) {
+  WrappedBCCMap(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_hash_table<K, V>(name_));
   }
 
   const std::string name_;
-  const bool user_space_managed_;
-  char const * const err_msg_ = "BPF failed to $0 value for map: $1. $2.";
+  char const* const err_msg_ = "BPF failed to $0 value for map: $1. $2.";
   std::unique_ptr<U> underlying_;
   absl::flat_hash_set<K> shadow_keys_;
 };
@@ -431,7 +432,7 @@ class WrappedBCCPerCPUArrayTable {
     std::vector<T> values(bpf_tools::BCCWrapper::kCPUCount, value);
     ebpf::StatusTuple s = underlying_->update_value(idx, values);
     if (!s.ok()) {
-      char const * const err_msg_ = "BPF failed to $0 value for per cpu array: $1, index: $2. $3.";
+      char const* const err_msg_ = "BPF failed to $0 value for per cpu array: $1, index: $2. $3.";
       return error::Internal(absl::Substitute(err_msg_, "set", name_, idx, s.msg()));
     }
     return Status::OK();
