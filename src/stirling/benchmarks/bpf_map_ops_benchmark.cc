@@ -205,7 +205,7 @@ static void BM_userspace_update_get_remove(benchmark::State& state) {
     for (int i = 0; i < kNumKeys; ++i) {
       auto status = bpf_map->GetValue(i);
       if (status.ok() && status.ValueOrDie() != 0) {
-        PX_UNUSED(bpf_map->RemoveValue(i));
+        PX_CHECK_OK(bpf_map->RemoveValue(i));
       }
     }
   }
