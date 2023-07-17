@@ -153,7 +153,7 @@ DEFINE_uint64(max_body_bytes, gflags::Uint64FromEnv("PL_STIRLING_MAX_BODY_BYTES"
               "The maximum number of bytes in the body of protocols like HTTP");
 
 DEFINE_bool(
-    stirling_trace_static_tls_binaries, gflags::BoolFromEnv("PX_TRACE_STATIC_TLS_BINARIES", false),
+    stirling_trace_static_tls_binaries, gflags::BoolFromEnv("PX_TRACE_STATIC_TLS_BINARIES", true),
     "If true, stirling will tls trace binaries statically linked with OpenSSL or BoringSSL");
 
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
