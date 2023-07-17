@@ -143,9 +143,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Called by HandleHistoEvent() to add the stack-trace-key to raw_histo_data_.
   void AcceptStackTraceKey(stack_trace_key_t* data);
 
-  // -- TODO -- remove -- ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
-  // -- TODO -- remove -- ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
-  // -- TODO -- remove --
   const uint32_t stats_log_interval_;
   utils::StatCounter<StatKey> stats_;
 };
