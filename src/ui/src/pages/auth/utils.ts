@@ -22,7 +22,6 @@ import { OAUTH_PROVIDER } from 'app/containers/constants';
 
 import { Auth0Client } from './auth0-oauth-provider';
 import { HydraClient } from './hydra-oauth-provider';
-import { MockOAuthClient } from './mock-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
 import { OIDCClient } from './oidc-oauth-provider';
 
@@ -39,12 +38,6 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
       return HydraClient;
     case 'oidc':
       return OIDCClient;
-    case undefined:
-      if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
-        return MockOAuthClient;
-      } else {
-        throw new Error('OAUTH_PROVIDER is not set. Expected hydra, oidc, or auth0.');
-      }
     default:
       throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra, oidc or auth0.`);
   }
