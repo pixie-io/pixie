@@ -53,6 +53,7 @@ import (
 	"px.dev/pixie/src/shared/status"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
+	"px.dev/pixie/src/utils"
 )
 
 const (
@@ -490,7 +491,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
-	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, r.K8sVersion, vz, cloudClient)
+	configForVizierResp, err := generateVizierYAMLsConfig(ctx, r.Clientset, req.Namespace, r.K8sVersion, vz, cloudClient)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate configs for Vizier YAMLs")
 		return err
@@ -802,7 +803,7 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
-func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
+func generateVizierYAMLsConfig(ctx context.Context, clientset kubernetes.Interface, ns string, k8sVersion string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
 	error) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
@@ -847,6 +848,16 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string
 	if vz.Spec.LeadershipElectionParams != nil {
 		req.VzSpec.LeadershipElectionParams = &vizierconfigpb.LeadershipElectionParams{
 			ElectionPeriodMs: vz.Spec.LeadershipElectionParams.ElectionPeriodMs,
+		}
+	}
+
+	// Fetch cluster ID, if any.
+	s := k8s.GetSecret(clientset, ns, "pl-cluster-secrets")
+	if s != nil {
+		if clusterID, ok := s.Data["cluster-id"]; ok {
+			req.ClusterID = utils.ProtoFromUUIDStrOrNil(string(clusterID))
+			log.Info("Got cluster ID secret!")
+			log.Info(string(clusterID))
 		}
 	}
 
