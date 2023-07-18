@@ -662,7 +662,7 @@ void SocketTraceConnector::CheckTracerState() {
     return;
   }
 
-  const int error_code = openssl_trace_state_->GetValue(kOpenSSLTraceStatusIdx).ConsumeValueOr(0);
+  const int error_code = openssl_trace_state_->GetValue(kOpenSSLTraceStatusIdx).ConsumeValueOr(kOpenSSLTraceOk);
   const bool mismatched_fds = error_code == kOpenSSLMismatchedFDsDetected;
 
   if (FLAGS_stirling_debug_tls_sources || mismatched_fds) {
