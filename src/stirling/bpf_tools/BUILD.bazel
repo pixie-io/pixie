@@ -36,6 +36,7 @@ pl_cc_library(
         "//:llvm",
         "//src/common/json:cc_library",
         "//src/common/system:cc_library",
+        "//src/stirling/bpf_tools/probe_specs:cc_library",
         "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "//src/stirling/obj_tools:cc_library",
