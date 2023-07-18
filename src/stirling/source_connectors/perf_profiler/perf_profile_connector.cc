@@ -364,7 +364,8 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
 }
 
 void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
-  const uint64_t error_code = profiler_state_->GetValue(kErrorStatusIdx).ValueOr(0);
+  const uint64_t error_code =
+      profiler_state_->GetValue(kErrorStatusIdx).ValueOr(kPerfProfilerStatusOk);
 
   DCHECK_EQ(error_code, kPerfProfilerStatusOk);
 
@@ -396,7 +397,7 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
   // Reset the BPF map to its default value so that each occurrence
   // can be detected.
   if (error_code != kPerfProfilerStatusOk) {
-    PX_UNUSED(profiler_state_->SetValue(kErrorStatusIdx, 0));
+    PX_UNUSED(profiler_state_->SetValue(kErrorStatusIdx, kPerfProfilerStatusOk));
   }
 }
 
