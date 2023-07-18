@@ -409,7 +409,7 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     // before the BPF map is updated. This value is cleaned up when the upid is
     // terminated, so if attachment fails it will be deleted prior to the pid being
     // reused.
-    PX_RETURN_IF_ERROR(openssl_source_map_->SetValue(pid, ssl_source));
+    PX_UNUSED(openssl_source_map_->SetValue(pid, ssl_source));
     for (auto spec : kOpenSSLUProbes) {
       spec.binary_path = container_libssl.string();
       spec.probe_fn =
@@ -493,7 +493,7 @@ StatusOr<int> UProbeManager::AttachNodeJsOpenSSLUprobes(const uint32_t pid) {
   // before the BPF map is updated. This value is cleaned up when the upid is
   // terminated, so if attachment fails it will be deleted prior to the pid being
   // reused.
-  PX_RETURN_IF_ERROR(openssl_source_map_->SetValue(pid, kNodeJSSource));
+  PX_UNUSED(openssl_source_map_->SetValue(pid, kNodeJSSource));
 
   // These probes are attached on OpenSSL dynamic library (if present) as well.
   // Here they are attached on statically linked OpenSSL library (eg. for node).
