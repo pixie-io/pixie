@@ -335,9 +335,8 @@ class WrappedBCCArrayTable {
   std::unique_ptr<U> underlying_;
 };
 
-// WrappedBCCMap includes templates parameter kUserSpaceManaged which enables the "shadow keys"
-// optimization. Files uprobe_manager.h|cc in socket tracer use this feature to speed up maps
-// that are only modified from user space.
+// Template parameter kUserSpaceManaged enables the "shadow keys" optimization.
+// Set to true iff the map is modified/updated from user space only.
 template <typename K, typename V, bool kUserSpaceManaged = false>
 class WrappedBCCMap {
  public:
