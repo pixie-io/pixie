@@ -346,7 +346,7 @@ void BCCWrapper::DetachTracepoints() {
   tracepoints_.clear();
 }
 
-Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
+Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer) {
   const int kPageSizeBytes = system::Config::GetInstance().PageSizeBytes();
   int num_pages = IntRoundUpDivide(perf_buffer.size_bytes, kPageSizeBytes);
 
@@ -358,15 +358,15 @@ Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_co
       perf_buffer.ToString(), num_pages, num_pages * kPageSizeBytes);
   PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
                                            perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
-                                           cb_cookie, num_pages));
+                                           perf_buffer.cb_cookie, num_pages));
   perf_buffers_.push_back(perf_buffer);
   ++num_open_perf_buffers_;
   return Status::OK();
 }
 
-Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie) {
+Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers) {
   for (const PerfBufferSpec& p : perf_buffers) {
-    PX_RETURN_IF_ERROR(OpenPerfBuffer(p, cb_cookie));
+    PX_RETURN_IF_ERROR(OpenPerfBuffer(p));
   }
   return Status::OK();
 }

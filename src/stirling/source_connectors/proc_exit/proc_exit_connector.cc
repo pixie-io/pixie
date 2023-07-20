@@ -94,12 +94,12 @@ Status ProcExitConnector::InitImpl() {
   }
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
-      {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, kPerfBufferPerCPUSizeBytes,
-       bpf_tools::PerfBufferSizeCategory::kControl},
+      {"proc_exit_events", HandleProcExitEvent, HandleProcExitEventLoss, this,
+       kPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
   });
 
   PX_RETURN_IF_ERROR(AttachTracepoints(kTracepointSpecs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
 
   return Status::OK();
 }

@@ -138,12 +138,12 @@ Status PerfProfileConnector::InitImpl() {
       {"sample_call_stack", static_cast<uint64_t>(stack_trace_sampling_period_.count())});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{std::string(kHistogramAName), HandleHistoEvent, HandleHistoLoss, perf_buffer_size},
-       {std::string(kHistogramBName), HandleHistoEvent, HandleHistoLoss, perf_buffer_size}});
+      {{std::string(kHistogramAName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size},
+       {std::string(kHistogramBName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size}});
 
   PX_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PX_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs, this));
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
 
   stack_traces_a_ = WrappedBCCStackTable::Create(this, "stack_traces_a");
   stack_traces_b_ = WrappedBCCStackTable::Create(this, "stack_traces_b");
