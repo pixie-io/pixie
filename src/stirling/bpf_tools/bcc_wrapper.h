@@ -479,10 +479,6 @@ class WrappedBCCStackTable {
   std::unique_ptr<U> underlying_;
 };
 
-// ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
-//   return bpf_.get_stack_table(table_name);
-// }
-
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
