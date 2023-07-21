@@ -238,6 +238,9 @@ func main() {
 	mdh := k8smeta.NewHandler(updateCh, k8sMds, k8sMds, nc)
 
 	namespaces := viper.GetStringSlice("metadata_namespaces")
+	if len(namespaces) == 0 {
+		namespaces = []string{v1.NamespaceAll}
+	}
 	k8sMc, err := k8smeta.NewController(namespaces, updateCh)
 	defer k8sMc.Stop()
 
