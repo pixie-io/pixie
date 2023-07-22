@@ -39,12 +39,12 @@ py_wheel(
     requires = [
         "Authlib==1.0.1",
         "gogo-python==0.0.1",
-        "grpcio==1.47.0",
+        "grpcio==1.53.0",
         "grpcio-tools==1.47.0",
         "protobuf==3.20.1",
     ],
     strip_path_prefixes = ["src/api/python/"],
-    version = "0.8.0",
+    version = "0.8.1",
     deps = [
         "//src/api/python/pxapi:pxapi_library",
         "//src/api/python/pxapi/proto:pxapi_py_proto_library",
