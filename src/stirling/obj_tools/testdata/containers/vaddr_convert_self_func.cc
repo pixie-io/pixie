@@ -39,6 +39,8 @@ using px::stirling::obj_tools::SymbolMatchType;
 int main() {
   LOG(INFO) << "Running";
 
+  sleep(5);
+
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
   PX_ASSIGN_OR(auto elf_reader, ElfReader::Create(self_path.string()), return -1);
   PX_ASSIGN_OR(std::vector<ElfReader::SymbolInfo> syms,
