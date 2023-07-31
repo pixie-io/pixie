@@ -37,17 +37,9 @@ import (
 
 type informerWatcher struct {
 	convert   func(obj interface{}) *K8sResourceMessage
-	objType   string
 	ch        chan *K8sResourceMessage
 	init      func() error
 	informers []cache.SharedIndexInformer
-}
-
-func (i *informerWatcher) send(msg *K8sResourceMessage, et watch.EventType) {
-	msg.ObjectType = i.objType
-	msg.EventType = et
-
-	i.ch <- msg
 }
 
 // StartWatcher starts a watcher.
@@ -57,19 +49,22 @@ func (i *informerWatcher) StartWatcher(quitCh chan struct{}) {
 			AddFunc: func(obj interface{}) {
 				msg := i.convert(obj)
 				if msg != nil {
-					i.send(msg, watch.Added)
+					msg.EventType = watch.Added
+					i.ch <- msg
 				}
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				msg := i.convert(newObj)
 				if msg != nil {
-					i.send(msg, watch.Modified)
+					msg.EventType = watch.Modified
+					i.ch <- msg
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
 				msg := i.convert(obj)
 				if msg != nil {
-					i.send(msg, watch.Deleted)
+					msg.EventType = watch.Deleted
+					i.ch <- msg
 				}
 			},
 		})
@@ -85,10 +80,9 @@ func (i *informerWatcher) InitWatcher() error {
 	return nil
 }
 
-func podWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func podWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: podConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -104,7 +98,7 @@ func podWatcher(resource string, namespaces []string, ch chan *K8sResourceMessag
 		for _, ns := range namespaces {
 			list, err := clientset.CoreV1().Pods(ns).List(context.Background(), metav1.ListOptions{})
 			if err != nil {
-				log.WithError(err).Errorf("Failed to init %s in %s namespace.", resource, ns)
+				log.WithError(err).Errorf("Failed to init pods in %s namespace.", ns)
 				return err
 			}
 			podList = append(podList, list.Items...)
@@ -114,7 +108,8 @@ func podWatcher(resource string, namespaces []string, ch chan *K8sResourceMessag
 			item := obj
 			msg := iw.convert(&item)
 			if msg != nil {
-				iw.send(msg, watch.Added)
+				msg.EventType = watch.Added
+				iw.ch <- msg
 			}
 		}
 		return nil
@@ -125,10 +120,9 @@ func podWatcher(resource string, namespaces []string, ch chan *K8sResourceMessag
 	return iw
 }
 
-func serviceWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func serviceWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: serviceConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -141,10 +135,9 @@ func serviceWatcher(resource string, namespaces []string, ch chan *K8sResourceMe
 	return iw
 }
 
-func namespaceWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func namespaceWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: namespaceConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -157,10 +150,9 @@ func namespaceWatcher(resource string, namespaces []string, ch chan *K8sResource
 	return iw
 }
 
-func endpointsWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func endpointsWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: endpointsConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -173,10 +165,9 @@ func endpointsWatcher(resource string, namespaces []string, ch chan *K8sResource
 	return iw
 }
 
-func nodeWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func nodeWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: nodeConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -197,7 +188,8 @@ func nodeWatcher(resource string, namespaces []string, ch chan *K8sResourceMessa
 			item := obj
 			msg := iw.convert(&item)
 			if msg != nil {
-				iw.send(msg, watch.Added)
+				msg.EventType = watch.Added
+				iw.ch <- msg
 			}
 		}
 		return nil
@@ -208,10 +200,9 @@ func nodeWatcher(resource string, namespaces []string, ch chan *K8sResourceMessa
 	return iw
 }
 
-func replicaSetWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func replicaSetWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: replicaSetConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -224,10 +215,9 @@ func replicaSetWatcher(resource string, namespaces []string, ch chan *K8sResourc
 	return iw
 }
 
-func deploymentWatcher(resource string, namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
+func deploymentWatcher(namespaces []string, ch chan *K8sResourceMessage, clientset kubernetes.Interface) *informerWatcher {
 	iw := &informerWatcher{
 		convert: deploymentConverter,
-		objType: resource,
 		ch:      ch,
 	}
 
@@ -241,105 +231,77 @@ func deploymentWatcher(resource string, namespaces []string, ch chan *K8sResourc
 }
 
 func podConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*v1.Pod)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "pods",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Pod{
-				Pod: k8s.PodToProto(o),
+				Pod: k8s.PodToProto(obj.(*v1.Pod)),
 			},
 		},
 	}
 }
 
 func serviceConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*v1.Service)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "services",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Service{
-				Service: k8s.ServiceToProto(o),
+				Service: k8s.ServiceToProto(obj.(*v1.Service)),
 			},
 		},
 	}
 }
 
 func namespaceConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*v1.Namespace)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "namespaces",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Namespace{
-				Namespace: k8s.NamespaceToProto(o),
+				Namespace: k8s.NamespaceToProto(obj.(*v1.Namespace)),
 			},
 		},
 	}
 }
 
 func endpointsConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*v1.Endpoints)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "endpoints",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Endpoints{
-				Endpoints: k8s.EndpointsToProto(o),
+				Endpoints: k8s.EndpointsToProto(obj.(*v1.Endpoints)),
 			},
 		},
 	}
 }
 
 func nodeConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*v1.Node)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "nodes",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Node{
-				Node: k8s.NodeToProto(o),
+				Node: k8s.NodeToProto(obj.(*v1.Node)),
 			},
 		},
 	}
 }
 
 func replicaSetConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*apps.ReplicaSet)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "replicasets",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_ReplicaSet{
-				ReplicaSet: k8s.ReplicaSetToProto(o),
+				ReplicaSet: k8s.ReplicaSetToProto(obj.(*apps.ReplicaSet)),
 			},
 		},
 	}
 }
 
 func deploymentConverter(obj interface{}) *K8sResourceMessage {
-	o, ok := obj.(*apps.Deployment)
-	if !ok {
-		return nil
-	}
-
 	return &K8sResourceMessage{
+		ObjectType: "deployments",
 		Object: &storepb.K8SResource{
 			Resource: &storepb.K8SResource_Deployment{
-				Deployment: k8s.DeploymentToProto(o),
+				Deployment: k8s.DeploymentToProto(obj.(*apps.Deployment)),
 			},
 		},
 	}

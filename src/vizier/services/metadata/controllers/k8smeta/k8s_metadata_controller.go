@@ -72,13 +72,13 @@ func NewControllerWithClientSet(namespaces []string, updateCh chan *K8sResourceM
 	// for example, nodes and namespaces must be synced before pods, since nodes/namespaces
 	// contain pods.
 	watchers := []watcher{
-		nodeWatcher("nodes", namespaces, updateCh, clientset),
-		namespaceWatcher("namespaces", namespaces, updateCh, clientset),
-		podWatcher("pods", namespaces, updateCh, clientset),
-		endpointsWatcher("endpoints", namespaces, updateCh, clientset),
-		serviceWatcher("services", namespaces, updateCh, clientset),
-		replicaSetWatcher("replicasets", namespaces, updateCh, clientset),
-		deploymentWatcher("deployments", namespaces, updateCh, clientset),
+		nodeWatcher(namespaces, updateCh, clientset),
+		namespaceWatcher(namespaces, updateCh, clientset),
+		podWatcher(namespaces, updateCh, clientset),
+		endpointsWatcher(namespaces, updateCh, clientset),
+		serviceWatcher(namespaces, updateCh, clientset),
+		replicaSetWatcher(namespaces, updateCh, clientset),
+		deploymentWatcher(namespaces, updateCh, clientset),
 	}
 
 	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
