@@ -24,13 +24,13 @@ describe('Live View navbars', () => {
   before(() => {
     cy.loginGoogle();
     stubExecuteScript();
-    cy.visit('/');
   });
 
   beforeEach(() => {
     // Re-apply one-time intercepts each run.
     cy.loginGoogle();
     stubExecuteScript();
+    cy.visit('/');
     cy.get('.MuiToolbar-root').as('topbar');
   });
 
@@ -42,7 +42,7 @@ describe('Live View navbars', () => {
     it('Has the right contents', () => {
       cy.get('@topbar').should('exist').within(() => {
         cy.get('a[href="/"]').should('exist');
-        cy.contains('Cluster:').find('+span').should(($span) => expect($span.text()).not.to.be.empty);
+        cy.contains('cluster:').find('+span').should(($span) => expect($span.text()).not.to.be.empty);
         // Items that have tooltips: the share/edit/move/run buttons.
         // The sidebar expander also has an aria-label but isn't a Material tooltip.
         // The trigger for the Command Palette sets aria-label in the same way.

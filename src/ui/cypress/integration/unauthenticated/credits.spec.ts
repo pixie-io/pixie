@@ -17,8 +17,7 @@
  */
 
 describe('Credits view', () => {
-  // Only need to load the page once for this test suite.
-  before(() => {
+  beforeEach(() => {
     cy.visit('/credits');
   });
 

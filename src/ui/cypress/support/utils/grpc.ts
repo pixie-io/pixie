@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Interception, RouteHandler } from 'cypress/types/net-stubbing';
+import type { Interception, RouteHandler } from 'cypress/types/net-stubbing';
 
 import { deserializeExecuteScriptRequest, deserializeExecuteScriptResponse } from 'app/testing/utils/grpc';
 import { ExecuteScriptRequest, ExecuteScriptResponse } from 'app/types/generated/vizierapi_pb';

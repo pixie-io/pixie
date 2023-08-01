@@ -19,17 +19,13 @@
 import { stubExecuteScript, waitExecuteScript } from 'support/utils/grpc';
 
 describe('Sidebar script shortcuts', () => {
-  before(() => {
-    cy.loginGoogle();
-    stubExecuteScript().as('exec-auto');
-    cy.visit('/');
-  });
-
   beforeEach(() => {
-    // Once in before all for the auto exec;
+    // Once for the auto exec;
     // Once each for the manual clicks that fire more requests.
     // Remember, Cypress intercepts only trigger once each by default.
     cy.loginGoogle();
+    stubExecuteScript().as('exec-auto');
+    cy.visit('/');
   });
 
   it('Auto-runs cluster script before anything is pressed', () => {

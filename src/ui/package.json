@@ -38,7 +38,7 @@
     "compression-webpack-plugin": "^4.0.0",
     "concurrently": "^6.2.0",
     "css-loader": "^5.2.6",
-    "cypress": "^9.3.0",
+    "cypress": "^12.17.2",
     "esbuild": "^0.18.2",
     "esbuild-jest": "^0.5.0",
     "esbuild-loader": "^3.0.1",
@@ -46,7 +46,7 @@
     "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-import-resolver-node": "^0.3.7",
     "eslint-import-resolver-typescript": "^3.5.5",
-    "eslint-plugin-cypress": "^2.12.1",
+    "eslint-plugin-cypress": "^2.13.3",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-jest": "^27.2.1",
     "eslint-plugin-react": "^7.32.2",
@@ -158,8 +158,10 @@
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "yarn pnpify license-checker --relativeLicensePath",
     "lint": "yarn typecheck && eslint -c .eslintrc.json .",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:open:chrome": "cypress open --e2e --browser chrome",
+    "cypress:open:firefox": "cypress open --e2e --browser firefox",
+    "cypress:run:chrome": "cypress run --e2e --browser chrome",
+    "cypress:run:firefox": "cypress run --e2e --browser firefox"
   },
   "resolutions": {
     "@types/react": "^18.0.9",

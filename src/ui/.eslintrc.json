@@ -101,7 +101,8 @@
         "src/testing/**/*"
       ],
       "excludedFiles": [
-        "cypress/**/*"
+        "cypress/**/*",
+        "cypress.config.mjs"
       ],
       "env": {
         "node": true,
@@ -137,7 +138,8 @@
         "*.tsx"
       ],
       "excludedFiles": [
-        "cypress/**/*"
+        "cypress/**/*",
+        "cypress.config.mjs"
       ],
       "extends": [
         "airbnb-typescript/base",
