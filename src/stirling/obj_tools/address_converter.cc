@@ -21,11 +21,14 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/stirling/obj_tools/address_converter.h"
 
 namespace px {
 namespace stirling {
 namespace obj_tools {
+
+using ProcSMaps = system::ProcParser::ProcessSMaps;
 
 uint64_t ElfAddressConverter::VirtualAddrToBinaryAddr(uint64_t virtual_addr) const {
   return virtual_addr + virtual_to_binary_addr_offset_;
@@ -35,20 +38,38 @@ uint64_t ElfAddressConverter::BinaryAddrToVirtualAddr(uint64_t binary_addr) cons
   return binary_addr - virtual_to_binary_addr_offset_;
 }
 
+StatusOr<ProcSMaps> GetProcMapsForBinary(const std::string& binary_path, uint64_t pid) {
+  system::ProcParser parser;
+  std::vector<system::ProcParser::ProcessSMaps> map_entries;
+  PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
+  if (map_entries.size() < 1) {
+    return Status(
+        statuspb::INTERNAL,
+        absl::Substitute("ElfAddressConverter::Create: Failed to parse /proc/$0/maps", pid));
+  }
+  for (const auto& [idx, entry] : Enumerate(map_entries)) {
+    if (absl::EndsWith(binary_path, entry.pathname)) {
+      return entry;
+    }
+  }
+  LOG(WARNING) << absl::Substitute("Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry", binary_path, pid);
+  return map_entries[0];
+}
+
 /**
  * The calculated offset is used to convert between virtual addresses (eg. the address you
  * would get from a function pointer) and "binary" addresses (i.e. the address that `nm` would
  * display for a given function).
  *
  * This conversion is non-trivial and requires information from both the ELF file of the binary in
- * question, as well as the /proc/PID/maps file for the PID of the process in question.
+ * question, as well as the /proc/$PID/maps file for the PID of the process in question.
  *
  * For non-PIE executables, this conversion is trivial as the virtual addresses in the ELF file are
  * used directly when loading.
  *
  * However, for PIE, the loaded virtual address can be whatever. To calculate the offset we must
- * find the /proc/PID/maps entry that corresponds to the given process's executable (entry that
- * matches /proc/PID/cmdline) and use that entry's virtual memory offset to find the binary
+ * find the /proc/$PID/maps entry that corresponds to the given process's executable (entry that
+ * matches /proc/$PID/cmdline) and use that entry's virtual memory offset to find the binary
  * address.
  *
  **/
@@ -62,28 +83,15 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
     return Status(statuspb::INVALID_ARGUMENT,
                   absl::Substitute("ElfAddressConverter::Create: Invalid pid=$0", pid));
   }
-  system::ProcParser parser;
-  std::vector<system::ProcParser::ProcessSMaps> map_entries;
   auto proc_path = elf_reader->GetBinaryPath();
-  DCHECK(fs::Canonical(proc_path).ok());
-  PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
-  if (map_entries.size() < 1) {
-    return Status(
-        statuspb::INTERNAL,
-        absl::Substitute("ElfAddressConverter::Create: Failed to parse /proc/$0/maps", pid));
+  // Attempt to canonicalize the filepath to increase the likelihood that the filepath will
+  // match the path that exists within /proc/$PID/maps. These filepaths are namespace aware
+  // and so they are from the perspective of the mount namespace that a process exists in.
+  auto canonical = fs::Canonical(proc_path);
+  if (canonical.ok()) {
+      proc_path = canonical.ConsumeValueOrDie();
   }
-  system::ProcParser::ProcessSMaps map_entry;
-  for (auto& entry : map_entries) {
-    if (entry.pathname == proc_path) {
-      map_entry = entry;
-      break;
-    }
-  }
-  if (map_entry.pathname == "") {
-    LOG(WARNING) << absl::Substitute(
-        "Failed to find match for $0 in /proc/$1/maps. Defaulting to first entry", proc_path, pid);
-    map_entry = map_entries[0];
-  }
+  PX_ASSIGN_OR_RETURN(const auto map_entry, GetProcMapsForBinary(proc_path, pid));
   const auto mapped_virt_addr = map_entry.vmem_start;
   uint64_t mapped_offset;
   if (!absl::SimpleHexAtoi(map_entry.offset, &mapped_offset)) {
