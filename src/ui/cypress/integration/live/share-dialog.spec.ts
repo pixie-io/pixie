@@ -48,7 +48,7 @@ describe('Share dialog', () => {
       ]);
     });
 
-    // TODO(nick,PC-1450): This only tests for a Google org; need to test email/password too.
+    // TODO(NickLanam): This only tests for a Google org; need to test email/password too.
     cy.location('href').then((href) => {
       cy.get('@copy-to-clipboard').should('be.calledOnceWithExactly', href);
     });

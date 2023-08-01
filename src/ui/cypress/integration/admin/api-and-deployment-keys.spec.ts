@@ -129,5 +129,5 @@ function keyTests(prefix: string, url: string) {
   });
 }
 
-keyTests('API', '/admin/api-keys');
-keyTests('Deployment', '/admin/deployment-keys');
+keyTests('API', '/admin/keys/api');
+keyTests('Deployment', '/admin/keys/deployment');

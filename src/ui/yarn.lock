@@ -1451,7 +1451,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cypress/request@npm:^2.88.10":
+"@cypress/request@npm:^2.88.11":
   version: 2.88.12
   resolution: "@cypress/request@npm:2.88.12"
   dependencies:
@@ -2646,7 +2646,7 @@ __metadata:
     concurrently: ^6.2.0
     cross-fetch: ^3.1.5
     css-loader: ^5.2.6
-    cypress: ^9.3.0
+    cypress: ^12.17.2
     date-fns: ^2.29.3
     esbuild: ^0.18.2
     esbuild-jest: ^0.5.0
@@ -2655,7 +2655,7 @@ __metadata:
     eslint-config-airbnb-typescript: ^17.0.0
     eslint-import-resolver-node: ^0.3.7
     eslint-import-resolver-typescript: ^3.5.5
-    eslint-plugin-cypress: ^2.12.1
+    eslint-plugin-cypress: ^2.13.3
     eslint-plugin-import: ^2.27.5
     eslint-plugin-jest: ^27.2.1
     eslint-plugin-react: ^7.32.2
@@ -5496,10 +5496,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:^5.1.0":
-  version: 5.1.0
-  resolution: "commander@npm:5.1.0"
-  checksum: 0b7fec1712fbcc6230fcb161d8d73b4730fa91a21dc089515489402ad78810547683f058e2a9835929c212fead1d6a6ade70db28bbb03edbc2829a9ab7d69447
+"commander@npm:^6.2.1":
+  version: 6.2.1
+  resolution: "commander@npm:6.2.1"
+  checksum: d7090410c0de6bc5c67d3ca41c41760d6d268f3c799e530aafb73b7437d1826bbf0d2a3edac33f8b57cc9887b4a986dce307fa5557e109be40eadb7c43b21742
   languageName: node
   linkType: hard
 
@@ -5877,11 +5877,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cypress@npm:^9.3.0":
-  version: 9.3.0
-  resolution: "cypress@npm:9.3.0"
+"cypress@npm:^12.17.2":
+  version: 12.17.2
+  resolution: "cypress@npm:12.17.2"
   dependencies:
-    "@cypress/request": ^2.88.10
+    "@cypress/request": ^2.88.11
     "@cypress/xvfb": ^1.2.4
     "@types/node": ^14.14.31
     "@types/sinonjs__fake-timers": 8.1.1
@@ -5895,12 +5895,12 @@ __metadata:
     check-more-types: ^2.24.0
     cli-cursor: ^3.1.0
     cli-table3: ~0.6.1
-    commander: ^5.1.0
+    commander: ^6.2.1
     common-tags: ^1.8.0
     dayjs: ^1.10.4
-    debug: ^4.3.2
+    debug: ^4.3.4
     enquirer: ^2.3.6
-    eventemitter2: ^6.4.3
+    eventemitter2: 6.4.7
     execa: 4.1.0
     executable: ^4.1.1
     extract-zip: 2.0.1
@@ -5913,19 +5913,19 @@ __metadata:
     listr2: ^3.8.3
     lodash: ^4.17.21
     log-symbols: ^4.0.0
-    minimist: ^1.2.5
+    minimist: ^1.2.8
     ospath: ^1.2.2
     pretty-bytes: ^5.6.0
     proxy-from-env: 1.0.0
     request-progress: ^3.0.0
+    semver: ^7.5.3
     supports-color: ^8.1.1
     tmp: ~0.2.1
     untildify: ^4.0.0
-    url: ^0.11.0
     yauzl: ^2.10.0
   bin:
     cypress: bin/cypress
-  checksum: a40009b3dcb4c269f7d935b6c5a9c77feab1bb96e79d59684f153a3a53a1c059af60f5ca117438afb3812006c8914b8890d05541621dce494dfae141217a99ce
+  checksum: 19144db1fe02d92270de71f69ece324affd2f60bafa2f7018440c00907f837b1f8556926206df8b6e7b1c9890d250435730656ccb4a5a31e7872b24dd79c0af8
   languageName: node
   linkType: hard
 
@@ -7115,14 +7115,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-cypress@npm:^2.12.1":
-  version: 2.12.1
-  resolution: "eslint-plugin-cypress@npm:2.12.1"
+"eslint-plugin-cypress@npm:^2.13.3":
+  version: 2.13.3
+  resolution: "eslint-plugin-cypress@npm:2.13.3"
   dependencies:
     globals: ^11.12.0
   peerDependencies:
     eslint: ">= 3.2.1"
-  checksum: 1f1c36e149304e9a6f58e2292a761abad58274da33b3a48b24ad55ad20cbce3ac7467321f2b6fcb052f9563c89f67004de4766eba2e2bdbcb010a6a0666989cf
+  checksum: 9affbcee29e030a4251c4794f7533e8e8c0e3b98ab3470a2c730ed059f733c5857a04c7ac214cc0ca7aeef1b11242e72595de7fc1f6b8b4d4578d9eca10af203
   languageName: node
   linkType: hard
 
@@ -7359,10 +7359,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter2@npm:^6.4.3":
-  version: 6.4.5
-  resolution: "eventemitter2@npm:6.4.5"
-  checksum: 84504f9cf0cc30205cdd46783fe9df3733435e5097f13070b678023110b5ef07847651808ae280cd94c42cd5976880211c7a40321a8ff8fa56f7c5f9c5c11960
+"eventemitter2@npm:6.4.7":
+  version: 6.4.7
+  resolution: "eventemitter2@npm:6.4.7"
+  checksum: 1b36a77e139d6965ebf3a36c01fa00c089ae6b80faa1911e52888f40b3a7057b36a2cc45dcd1ad87cda3798fe7b97a0aabcbb8175a8b96092a23bb7d0f039e66
   languageName: node
   linkType: hard
 
@@ -11049,7 +11049,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimist@npm:^1.1.1, minimist@npm:^1.2.0, minimist@npm:^1.2.3, minimist@npm:^1.2.5, minimist@npm:^1.2.6":
+"minimist@npm:^1.1.1, minimist@npm:^1.2.0, minimist@npm:^1.2.3, minimist@npm:^1.2.5, minimist@npm:^1.2.6, minimist@npm:^1.2.8":
   version: 1.2.8
   resolution: "minimist@npm:1.2.8"
   checksum: 75a6d645fb122dad29c06a7597bddea977258957ed88d7a6df59b5cd3fe4a527e253e9bbf2e783e4b73657f9098b96a5fe96ab8a113655d4109108577ecf85b0
@@ -12419,13 +12419,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"punycode@npm:1.3.2":
-  version: 1.3.2
-  resolution: "punycode@npm:1.3.2"
-  checksum: b8807fd594b1db33335692d1f03e8beeddde6fda7fbb4a2e32925d88d20a3aa4cd8dcc0c109ccaccbd2ba761c208dfaaada83007087ea8bfb0129c9ef1b99ed6
-  languageName: node
-  linkType: hard
-
 "punycode@npm:^2.1.0, punycode@npm:^2.1.1":
   version: 2.1.1
   resolution: "punycode@npm:2.1.1"
@@ -12460,13 +12453,6 @@ __metadata:
     split-on-first: ^1.0.0
     strict-uri-encode: ^2.0.0
   checksum: f2c7347578fa0f3fd4eaace506470cb4e9dc52d409a7ddbd613f614b9a594d750877e193b5d5e843c7477b3b295b857ec328903c943957adc41a3efb6c929449
-  languageName: node
-  linkType: hard
-
-"querystring@npm:0.2.0":
-  version: 0.2.0
-  resolution: "querystring@npm:0.2.0"
-  checksum: 8258d6734f19be27e93f601758858c299bdebe71147909e367101ba459b95446fbe5b975bf9beb76390156a592b6f4ac3a68b6087cea165c259705b8b4e56a69
   languageName: node
   linkType: hard
 
@@ -15069,16 +15055,6 @@ __metadata:
     querystringify: ^2.1.1
     requires-port: ^1.0.0
   checksum: fbdba6b1d83336aca2216bbdc38ba658d9cfb8fc7f665eb8b17852de638ff7d1a162c198a8e4ed66001ddbf6c9888d41e4798912c62b4fd777a31657989f7bdf
-  languageName: node
-  linkType: hard
-
-"url@npm:^0.11.0":
-  version: 0.11.0
-  resolution: "url@npm:0.11.0"
-  dependencies:
-    punycode: 1.3.2
-    querystring: 0.2.0
-  checksum: 50d100d3dd2d98b9fe3ada48cadb0b08aa6be6d3ac64112b867b56b19be4bfcba03c2a9a0d7922bfd7ac17d4834e88537749fe182430dfd9b68e520175900d90
   languageName: node
   linkType: hard
 

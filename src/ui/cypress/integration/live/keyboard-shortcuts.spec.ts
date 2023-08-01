@@ -24,9 +24,7 @@ describe('Live view keyboard shortcuts', () => {
 
   const modalTitle = 'Available Shortcuts';
 
-  // Note: this is a before, not a beforeEach.
-  // Each test needs to close whatever its shortcut opened to reset properly and test that.
-  before(() => {
+  beforeEach(() => {
     cy.loginGoogle();
     cy.visit('/');
 
@@ -34,10 +32,6 @@ describe('Live view keyboard shortcuts', () => {
     stubExecuteScript().as('exec-auto');
     cy.url().should('contain', '/live/clusters/');
     cy.wait('@exec-auto');
-  });
-
-  beforeEach(() => {
-    cy.loginGoogle();
   });
 
   it('Opens shortcut help from profile menu', () => {
@@ -62,13 +56,11 @@ describe('Live view keyboard shortcuts', () => {
     // Note: the way :nth-child works is weird; n+2 means "everything after the first child"
     cy.contains(modalTitle).parent().find('> div:nth-child(n+2)').as('rows');
     cy.get('@rows').should('have.length', 5);
-    cy.get('@rows').within(() => {
-      cy.contains('Show/hide script editor').should('exist');
-      cy.contains('Show/hide data drawer').should('exist');
-      cy.contains('Show/hide command palette').should('exist');
-      cy.contains('Execute current Live View script').should('exist');
-      cy.contains('Show all keyboard shortcuts').should('exist');
-    });
+    cy.get('@rows').contains('Show/hide script editor').should('exist');
+    cy.get('@rows').contains('Show/hide data drawer').should('exist');
+    cy.get('@rows').contains('Show/hide command palette').should('exist');
+    cy.get('@rows').contains('Execute current Live View script').should('exist');
+    cy.get('@rows').contains('Show all keyboard shortcuts').should('exist');
     cy.get('body').type('{esc}');
     cy.contains(modalTitle).should('not.exist');
   });
