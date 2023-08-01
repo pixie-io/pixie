@@ -418,6 +418,14 @@ dill==0.3.6 \
 emoji==2.5.0 \
     --hash=sha256:0e048dd540a0644bd30790b540466492f1487a3788528422fe196a939a7a3ac0
     # via stanza
+exceptiongroup==1.1.2 \
+    --hash=sha256:12c3e887d6485d16943a309616de20ae5582633e0a2eda17f4e10fd61c1e8af5 \
+    --hash=sha256:e346e69d186172ca7cf029c8c1d16235aa0e04035e5750b4b95039e65204328f
+    # via
+    #   -r requirements.in
+    #   anyio
+    #   hypothesis
+    #   pytest
 faker==18.10.1 \
     --hash=sha256:633b278caa3ec239463f9139c74da2607c8da5710e56d5d7d30fc8a7440104c4 \
     --hash=sha256:d9f363720c4a6cf9884c6c3e26e2ce26266ffe5d741a9bc7cb9256779bc62190
@@ -2136,7 +2144,9 @@ tokenizers==0.12.1 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via schemathesis
+    # via
+    #   pytest
+    #   schemathesis
 tomli-w==1.0.0 \
     --hash=sha256:9f2a07e8be30a0729e533ec968016807069991ae2fd921a78d42f429ae5f4463 \
     --hash=sha256:f463434305e0336248cac9c2dc8076b707d8a12d019dd349f5c1e382dd1ae1b9
