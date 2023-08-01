@@ -194,8 +194,6 @@ class ElfReader {
     return byte_code;
   }
 
-  std::string GetBinaryPath() { return binary_path_; }
-
  private:
   ElfReader() = default;
 

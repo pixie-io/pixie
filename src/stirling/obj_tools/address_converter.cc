@@ -38,22 +38,13 @@ uint64_t ElfAddressConverter::BinaryAddrToVirtualAddr(uint64_t binary_addr) cons
   return binary_addr - virtual_to_binary_addr_offset_;
 }
 
-StatusOr<ProcSMaps> GetProcMapsForBinary(const std::string& binary_path, uint64_t pid) {
-  system::ProcParser parser;
-  std::vector<system::ProcParser::ProcessSMaps> map_entries;
-  PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
-  if (map_entries.size() < 1) {
-    return Status(
-        statuspb::INTERNAL,
-        absl::Substitute("ElfAddressConverter::Create: Failed to parse /proc/$0/maps", pid));
-  }
+StatusOr<uint32_t> GetProcMapsIndexForBinary(const std::string& binary_path, std::vector<ProcSMaps>& map_entries) {
   for (const auto& [idx, entry] : Enumerate(map_entries)) {
     if (absl::EndsWith(binary_path, entry.pathname)) {
-      return entry;
+      return idx;
     }
   }
-  LOG(WARNING) << absl::Substitute("Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry", binary_path, pid);
-  return map_entries[0];
+  return error::NotFound("");
 }
 
 /**
@@ -83,15 +74,24 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
     return Status(statuspb::INVALID_ARGUMENT,
                   absl::Substitute("ElfAddressConverter::Create: Invalid pid=$0", pid));
   }
-  auto proc_path = elf_reader->GetBinaryPath();
-  // Attempt to canonicalize the filepath to increase the likelihood that the filepath will
-  // match the path that exists within /proc/$PID/maps. These filepaths are namespace aware
-  // and so they are from the perspective of the mount namespace that a process exists in.
-  auto canonical = fs::Canonical(proc_path);
-  if (canonical.ok()) {
-      proc_path = canonical.ConsumeValueOrDie();
+  system::ProcParser parser;
+  std::vector<system::ProcParser::ProcessSMaps> map_entries;
+  PX_RETURN_IF_ERROR(parser.ParseProcPIDMaps(pid, &map_entries));
+  if (map_entries.size() < 1) {
+    return Status(
+        statuspb::INTERNAL,
+        absl::Substitute("ElfAddressConverter::Create: Failed to parse /proc/$0/maps", pid));
   }
-  PX_ASSIGN_OR_RETURN(const auto map_entry, GetProcMapsForBinary(proc_path, pid));
+
+  PX_ASSIGN_OR_RETURN(const auto proc_exe, parser.GetExePath(pid));
+  // Prior to pixie#1630, we believed that a process's VMA space would always have its executable
+  // at the first (lowest) virtual memory address. This isn't always the case, however, if we fail
+  // to match against a /proc/$PID/maps entry, default to the first one.
+  const auto idx = GetProcMapsIndexForBinary(proc_exe, map_entries).ConsumeValueOr(0);
+  if (idx == 0) {
+    LOG(WARNING) << absl::Substitute("Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry", proc_exe.string(), pid);
+  }
+  const auto map_entry = map_entries[idx];
   const auto mapped_virt_addr = map_entry.vmem_start;
   uint64_t mapped_offset;
   if (!absl::SimpleHexAtoi(map_entry.offset, &mapped_offset)) {
