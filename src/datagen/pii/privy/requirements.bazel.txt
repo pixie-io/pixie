@@ -422,7 +422,6 @@ exceptiongroup==1.1.2 \
     --hash=sha256:12c3e887d6485d16943a309616de20ae5582633e0a2eda17f4e10fd61c1e8af5 \
     --hash=sha256:e346e69d186172ca7cf029c8c1d16235aa0e04035e5750b4b95039e65204328f
     # via
-    #   -r requirements.in
     #   anyio
     #   hypothesis
     #   pytest
