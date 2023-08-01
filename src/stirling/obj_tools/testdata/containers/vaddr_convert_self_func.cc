@@ -39,6 +39,8 @@ using px::stirling::obj_tools::SymbolMatchType;
 int main() {
   LOG(INFO) << "Running";
 
+  // This sleep is required otherwise when it is run inside a container (via ContainerRunner) we will 
+  // fail to detect the child process's pid during the test case that uses this.
   sleep(5);
 
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
