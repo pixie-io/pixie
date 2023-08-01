@@ -17,6 +17,7 @@
  */
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "src/common/fs/fs_wrapper.h"
@@ -38,7 +39,8 @@ uint64_t ElfAddressConverter::BinaryAddrToVirtualAddr(uint64_t binary_addr) cons
   return binary_addr - virtual_to_binary_addr_offset_;
 }
 
-StatusOr<uint32_t> GetProcMapsIndexForBinary(const std::string& binary_path, std::vector<ProcSMaps>& map_entries) {
+StatusOr<uint32_t> GetProcMapsIndexForBinary(const std::string& binary_path,
+                                             const std::vector<ProcSMaps>& map_entries) {
   for (const auto& [idx, entry] : Enumerate(map_entries)) {
     if (absl::EndsWith(binary_path, entry.pathname)) {
       return idx;
@@ -60,7 +62,7 @@ StatusOr<uint32_t> GetProcMapsIndexForBinary(const std::string& binary_path, std
  *
  * However, for PIE, the loaded virtual address can be whatever. To calculate the offset we must
  * find the /proc/$PID/maps entry that corresponds to the given process's executable (entry that
- * matches /proc/$PID/cmdline) and use that entry's virtual memory offset to find the binary
+ * matches /proc/$PID/exe) and use that entry's virtual memory offset to find the binary
  * address.
  *
  **/
@@ -92,7 +94,9 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
   if (idx_status.ok()) {
     map_entry = map_entries[idx_status.ConsumeValueOrDie()];
   } else {
-    LOG(WARNING) << absl::Substitute("Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry", proc_exe.string(), pid);
+    LOG(WARNING) << absl::Substitute(
+        "Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry",
+        proc_exe.string(), pid);
   }
   const auto mapped_virt_addr = map_entry.vmem_start;
   uint64_t mapped_offset;
