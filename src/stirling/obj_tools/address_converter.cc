@@ -87,11 +87,13 @@ StatusOr<std::unique_ptr<ElfAddressConverter>> ElfAddressConverter::Create(ElfRe
   // Prior to pixie#1630, we believed that a process's VMA space would always have its executable
   // at the first (lowest) virtual memory address. This isn't always the case, however, if we fail
   // to match against a /proc/$PID/maps entry, default to the first one.
-  const auto idx = GetProcMapsIndexForBinary(proc_exe, map_entries).ConsumeValueOr(0);
-  if (idx == 0) {
+  auto map_entry = map_entries[0];
+  auto idx_status = GetProcMapsIndexForBinary(proc_exe, map_entries);
+  if (idx_status.ok()) {
+    map_entry = map_entries[idx_status.ConsumeValueOrDie()];
+  } else {
     LOG(WARNING) << absl::Substitute("Failed to find match for $0 in /proc/$1/maps. Defaulting to the first entry", proc_exe.string(), pid);
   }
-  const auto map_entry = map_entries[idx];
   const auto mapped_virt_addr = map_entry.vmem_start;
   uint64_t mapped_offset;
   if (!absl::SimpleHexAtoi(map_entry.offset, &mapped_offset)) {
