@@ -68,8 +68,8 @@ describe('Live View navbars', () => {
   describe('Sidebar', () => {
     beforeEach(() => {
       cy.get('.MuiToolbar-root [aria-label="menu"]').as('sidebar-toggle');
-      cy.get('header + .MuiDrawer-root').as('sidebar').within(() => {
-        cy.get('ul:nth-child(2)').as('sidebar-scripts');
+      cy.get('header + .MuiDrawer-root > .MuiPaper-root').as('sidebar').within(() => {
+        cy.get('> a').as('sidebar-scripts');
         cy.get('ul:last-child').as('sidebar-footer');
       });
     });

@@ -96,6 +96,8 @@ describe('Live view keyboard shortcuts', () => {
   });
 
   it('Re-runs the current script', () => {
+    // Give the page a moment to stabilize, so the run button can be enabled again (hard to find, so just wait on time).
+    cy.wait(500);
     stubExecuteScript().as('repeat-exec'); // Not the original run (already waited on)
     const hotkey = `${useCmdKey ? '{cmd}' : '{ctrl}'}{enter}`;
     cy.get('body').type(hotkey);
