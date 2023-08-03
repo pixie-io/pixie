@@ -883,6 +883,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     // GoTLS Probes.
     if (!cfg_disable_go_tls_tracing_) {
+      VLOG(1) << absl::Substitute("Attempting to attach Go TLS uprobes to binary $0", binary);
       StatusOr<int> attach_status =
           AttachGoTLSUProbes(binary, elf_reader.get(), dwarf_reader.get(), pid_vec);
       if (!attach_status.ok()) {
