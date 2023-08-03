@@ -67,6 +67,7 @@ pod:
   #   cpu: 100m
   #   memory: 5Gi
   nodeSelector: {}
+  tolerations: []
 # A set of custom patches to apply to the deployed Vizier resources.
 # The key should be the name of the resource to apply the patch to, and the value is the patch to apply.
 # Currently, only a JSON format is accepted, such as:

@@ -63,7 +63,7 @@ spec:
     electionPeriodMs: {{ .Values.leadershipElectionParams.electionPeriodMs }}
     {{- end }}
   {{- end }}
-  {{- if or .Values.pod.securityContext (or .Values.pod.nodeSelector (or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources))) }}
+  {{- if or .Values.pod.securityContext (or .Values.pod.nodeSelector (or .Values.pod.tolerations (or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources)))) }}
   pod:
     {{- if .Values.pod.annotations }}
     annotations: {{ .Values.pod.annotations | toYaml | nindent 6 }}
@@ -76,6 +76,9 @@ spec:
     {{- end }}
     {{- if .Values.pod.nodeSelector }}
     nodeSelector: {{ .Values.pod.nodeSelector | toYaml | nindent 6 }}
+    {{- end }}
+    {{- if .Values.pod.tolerations }}
+    tolerations: {{ .Values.pod.tolerations | toYaml | nindent 4 }}
     {{- end }}
     {{- if .Values.pod.securityContext }}
     securityContext:
