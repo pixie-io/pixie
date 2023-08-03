@@ -52,6 +52,7 @@ type Server struct {
 	atClient            atpb.ArtifactTrackerClient
 	deployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
 	vzFeatureFlagClient VizierFeatureFlagClient
+	vzmgrClient         vzmgrpb.VZMgrServiceClient
 }
 
 // NewServer creates GRPC handlers.
@@ -218,7 +219,19 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	AddDefaultTableStoreSize(tmplValues.PEMMemoryRequest, tmplValues.CustomPEMFlags)
 
 	// Next we inject any feature flags that we want to set for this org.
-	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)
+	var orgID uuid.UUID
+	// Attempt to get the org from Vizier, otherwise from the DeployKey.
+	if in.VizierID != "" {
+		resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(in.VizierID))
+		if err != nil {
+			log.WithError(err).Error("Failed to get the org from Vizier")
+		} else {
+			orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
+		}
+	} else {
+		orgID, err = s.getOrgIDForDeployKey(tmplValues.DeployKey)
+	}
+
 	if err != nil || orgID == uuid.Nil {
 		log.WithError(err).Error("Error getting org ID from deploy key, skipping feature flag logic")
 	} else {
