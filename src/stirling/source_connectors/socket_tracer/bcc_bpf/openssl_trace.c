@@ -130,15 +130,19 @@ static __inline int get_fd_and_eval_nested_syscall_detection(uint64_t pid_tgid) 
 
   bool mismatched_fds = nested_syscall_fd_ptr->mismatched_fds;
 
-  if (mismatched_fds) {
+  if (ENABLE_TLS_DEBUG_SOURCES || mismatched_fds) {
     int error_status_idx = kOpenSSLTraceStatusIdx;
-    int status_code = kOpenSSLMismatchedFDsDetected;
+    int status_code = mismatched_fds ? kOpenSSLMismatchedFDsDetected : kOpenSSLTraceOk;
     uint32_t tgid = pid_tgid >> 32;
     enum ssl_source_t ssl_source = get_ssl_source(tgid);
 
     struct openssl_trace_state_debug_t debug = {};
     bpf_get_current_comm(&debug.comm, sizeof(debug.comm));
     debug.ssl_source = ssl_source;
+    debug.mismatched_fd = mismatched_fds;
+
+    struct conn_info_t* conn_info = get_or_create_conn_info(tgid, nested_syscall_fd_ptr->fd);
+    debug.protocol = conn_info != NULL ? conn_info->protocol : kProtocolUnknown;
 
     openssl_trace_state.update(&error_status_idx, &status_code);
     openssl_trace_state_debug.update(&tgid, &debug);
