@@ -41,8 +41,6 @@
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 #include "src/stirling/testing/common.h"
 
-#include <prometheus/text_serializer.h>
-
 namespace px {
 namespace stirling {
 
@@ -200,11 +198,6 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
-
-  auto& registry = GetMetricsRegistry();
-  auto metrics = registry.Collect();
-  auto metrics_text = prometheus::TextSerializer().Serialize(metrics);
-  LOG(WARNING) << absl::Substitute("with metric text: $0", metrics_text);
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {

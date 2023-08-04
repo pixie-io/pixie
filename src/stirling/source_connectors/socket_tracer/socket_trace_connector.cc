@@ -157,7 +157,7 @@ DEFINE_bool(
     "If true, stirling will tls trace binaries statically linked with OpenSSL or BoringSSL");
 
 DEFINE_bool(
-    stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", true),
+    stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
     "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
 
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);

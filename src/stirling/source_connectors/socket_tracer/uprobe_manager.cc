@@ -654,10 +654,10 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
       // before the BPF map is updated. This value is cleaned up when the upid is
       // terminated, so if attachment fails it will be deleted prior to the pid being
       // reused.
+      openssl_source_map_->UpdateValue(pid.pid(), kStaticallyLinkedSource);
       count_or = AttachOpenSSLUProbesOnStaticBinary(pid.pid());
 
-      if (count_or.ok() && count_or.ValueOrDie() > 0) {
-        openssl_source_map_->UpdateValue(pid.pid(), kStaticallyLinkedSource);
+      if (count_or.ok()) {
         uprobe_count += count_or.ValueOrDie();
 
         VLOG(1) << absl::Substitute(
