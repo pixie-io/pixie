@@ -19,6 +19,7 @@
     "(^private\/credentials\/.*\\.sh)",
     "(^private\/credentials\/.*\\.yaml)",
     "(^src/operator/client/versioned/)",
+    "(^src/operator/apis/px.dev/v1alpha1/zz_generated.deepcopy.go)",
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/stirling/obj_tools/testdata/go/test_go_binary.go)",

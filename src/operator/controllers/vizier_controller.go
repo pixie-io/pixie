@@ -31,6 +31,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	appsv1 "k8s.io/api/apps/v1"
@@ -784,7 +785,7 @@ func updateResourceConfiguration(resource *k8s.Resource, vz *v1alpha1.Vizier) er
 	addKeyValueMapToResource("labels", vz.Spec.Pod.Labels, resource.Object.Object)
 	addKeyValueMapToResource("annotations", vz.Spec.Pod.Annotations, resource.Object.Object)
 	updateResourceRequirements(vz.Spec.Pod.Resources, resource.Object.Object)
-	updatePodSpec(vz.Spec.Pod.NodeSelector, vz.Spec.Pod.SecurityContext, resource.Object.Object)
+	updatePodSpec(vz.Spec.Pod.NodeSelector, vz.Spec.Pod.Tolerations, vz.Spec.Pod.SecurityContext, resource.Object.Object)
 	return nil
 }
 
@@ -830,6 +831,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string
 					Requests: convertResourceType(vz.Spec.Pod.Resources.Requests),
 				},
 				NodeSelector: vz.Spec.Pod.NodeSelector,
+				Tolerations:  convertTolerations(vz.Spec.Pod.Tolerations),
 			},
 			Patches:  vz.Spec.Patches,
 			Registry: vz.Spec.Registry,
@@ -956,7 +958,25 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 		castedContainer["resources"] = resources
 	}
 }
-func updatePodSpec(nodeSelector map[string]string, securityCtx *v1alpha1.PodSecurityContext, res map[string]interface{}) {
+
+func convertTolerations(tolerations []v1.Toleration) []*vizierconfigpb.Toleration {
+	var castedTolerations []*vizierconfigpb.Toleration
+	for _, toleration := range tolerations {
+		castedToleration := &vizierconfigpb.Toleration{
+			Key:      toleration.Key,
+			Operator: string(toleration.Operator),
+			Value:    toleration.Value,
+			Effect:   string(toleration.Effect),
+		}
+		if toleration.TolerationSeconds != nil {
+			castedToleration.TolerationSeconds = &types.Int64Value{Value: *toleration.TolerationSeconds}
+		}
+		castedTolerations = append(castedTolerations, castedToleration)
+	}
+	return castedTolerations
+}
+
+func updatePodSpec(nodeSelector map[string]string, tolerations []v1.Toleration, securityCtx *v1alpha1.PodSecurityContext, res map[string]interface{}) {
 	podSpec := make(map[string]interface{})
 	md, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec")
 	if ok && err == nil {
@@ -977,6 +997,7 @@ func updatePodSpec(nodeSelector map[string]string, securityCtx *v1alpha1.PodSecu
 		castedNodeSelector[k] = v
 	}
 	podSpec["nodeSelector"] = castedNodeSelector
+	podSpec["tolerations"] = tolerations
 
 	// Add securityContext only if enabled.
 	if securityCtx == nil || !securityCtx.Enabled {

@@ -23,6 +23,7 @@ package px.vizierconfigpb;
 option go_package = "vizierconfigpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
 
 // Note: Any changes to this file should be in sync with operatpro/api/v1alpha1/vizier_types.go.
 // VizierSpec defines the desired state of Vizier
@@ -90,6 +91,9 @@ message PodPolicyReq {
   // NodeSelector is a selector which must be true for the pod to fit on a node.
   // This field cannot be updated once the cluster is created.
   map<string, string> nodeSelector = 4;
+  // NodeSelector allows scheduling pods on nodes with matching taints.
+  // This field cannot be updated once the cluster is created.
+  repeated Toleration tolerations = 5;
 }
 
 // ResourceReqs is copied from the k8s api:
@@ -98,6 +102,16 @@ message ResourceReqs {
   ResourceList limits = 1;
 
   ResourceList requests = 2;
+}
+
+// Toleration is copied from the k8s api:
+// https://pkg.go.dev/k8s.io/api/core/v1#Toleration
+message Toleration {
+  string key = 1;
+  string operator = 2;
+  string value = 3;
+  string effect = 4;
+  google.protobuf.Int64Value toleration_seconds = 5;
 }
 
 // ResourceList is copied from the k8s api: https://pkg.go.dev/k8s.io/api/core/v1#ResourceList
