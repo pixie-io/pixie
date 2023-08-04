@@ -689,11 +689,12 @@ void SocketTraceConnector::CheckTracerState() {
       if (FLAGS_stirling_debug_tls_sources) {
         auto protocol = std::string(magic_enum::enum_name(debug.protocol));
         openssl_trace_tls_source_counter_family_
-            .Add({{"name", openssl_tls_source_metric},
-                  {"exe", debug.comm},
-                  {"ssl_source", ssl_source},
-                  {"protocol", protocol},
-                  })
+            .Add({
+                {"name", openssl_tls_source_metric},
+                {"exe", debug.comm},
+                {"ssl_source", ssl_source},
+                {"protocol", protocol},
+            })
             .Increment();
       }
     }
