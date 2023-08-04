@@ -33,6 +33,8 @@ Status PIDRuntimeConnector::InitImpl() {
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
   PX_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbes));
+
+  bpf_data_ = BPFMapDataT::Create(this, "pid_cpu_time");
   return Status::OK();
 }
 
@@ -49,10 +51,7 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */) {
     return;
   }
 
-  std::vector<std::pair<uint16_t, pidruntime_val_t>> items =
-      GetHashTable<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
-
-  for (auto& item : items) {
+  for (auto& item : bpf_data_->GetTableOffline()) {
     // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through
     // a map for the previously recorded run-time. Alternatively, calculate delta in the bpf code
     // if that is more efficient.

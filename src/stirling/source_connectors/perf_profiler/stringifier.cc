@@ -30,7 +30,7 @@ namespace px {
 namespace stirling {
 
 Stringifier::Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
-                         ebpf::BPFStackTable* stack_traces)
+                         WrappedBCCStackTable* stack_traces)
     : u_symbolizer_(u_symbolizer), k_symbolizer_(k_symbolizer), stack_traces_(stack_traces) {}
 
 std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& addrs,
@@ -93,7 +93,7 @@ std::string Stringifier::FindOrBuildStackTraceString(const int stack_id,
     constexpr bool kClearStackId = true;
 
     // Get the stack trace (as a vector of addresses) from the shared BPF stack trace table.
-    const std::vector<uintptr_t> addrs = stack_traces_->get_stack_addr(stack_id, kClearStackId);
+    const std::vector<uintptr_t> addrs = stack_traces_->GetStackAddr(stack_id, kClearStackId);
     VLOG_IF(1, addrs.empty()) << absl::Substitute("[empty_stack_trace] stack_id: $0", stack_id);
 
     iter->second = BuildStackTraceString(addrs, symbolize_fn, prefix);

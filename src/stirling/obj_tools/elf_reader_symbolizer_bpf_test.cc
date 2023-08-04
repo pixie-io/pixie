@@ -36,6 +36,9 @@ NO_OPT_ATTR uint32_t Trigger() { return 5; }
 namespace px {
 namespace stirling {
 
+using StackTraceArrayTableT = bpf_tools::WrappedBCCArrayTable<struct stack_trace_key_t>;
+using bpf_tools::WrappedBCCStackTable;
+
 struct stack_trace_key_t {
   int32_t pid;
   int stack_trace_id;
@@ -83,13 +86,12 @@ StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
   Trigger();
 
   // Get the stack trace ID from the BPF map.
-  struct stack_trace_key_t val;
-  auto stack_trace_table = bcc_wrapper.GetArrayTable<struct stack_trace_key_t>("stack_trace_map");
-  stack_trace_table.get_value(0, val);
+  auto stack_trace_table = StackTraceArrayTableT::Create(&bcc_wrapper, "stack_trace_map");
+  PX_ASSIGN_OR_RETURN(const struct stack_trace_key_t val, stack_trace_table->GetValue(0));
 
   // Get the list of addresses in the stack trace.
-  auto stack_traces_table = bcc_wrapper.GetStackTable("stack_traces");
-  return stack_traces_table.get_stack_addr(val.stack_trace_id);
+  auto stack_traces_table = WrappedBCCStackTable::Create(&bcc_wrapper, "stack_traces");
+  return stack_traces_table->GetStackAddr(val.stack_trace_id, /*clear_stack_id*/ false);
 }
 
 TEST(SymbolizerTest, InstrAddrToSymbol) {

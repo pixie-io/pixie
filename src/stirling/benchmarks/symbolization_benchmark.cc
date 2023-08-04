@@ -25,6 +25,8 @@
 #include "src/stirling/obj_tools/elf_reader.h"
 
 using ::px::stirling::bpf_tools::BCCWrapper;
+using ::px::stirling::bpf_tools::WrappedBCCArrayTable;
+using ::px::stirling::bpf_tools::WrappedBCCStackTable;
 using ::px::stirling::obj_tools::ElfReader;
 
 extern "C" {
@@ -77,13 +79,13 @@ std::vector<uintptr_t> CollectStackTrace(BCCWrapper* bcc_wrapper,
   Trigger();
 
   // Get the stack trace ID from the BPF map.
-  struct stack_trace_key_t val;
-  auto stack_trace_table = bcc_wrapper->GetArrayTable<struct stack_trace_key_t>("stack_trace_map");
-  stack_trace_table.get_value(0, val);
+  auto stack_trace_table =
+      WrappedBCCArrayTable<struct stack_trace_key_t>::Create(bcc_wrapper, "stack_trace_map");
+  const struct stack_trace_key_t val = stack_trace_table->GetValue(0).ConsumeValueOrDie();
 
   // Get the list of addresses in the stack trace.
-  auto stack_traces_table = bcc_wrapper->GetStackTable("stack_traces");
-  return stack_traces_table.get_stack_addr(val.stack_trace_id);
+  auto stack_traces_table = WrappedBCCStackTable::Create(bcc_wrapper, "stack_traces");
+  return stack_traces_table->GetStackAddr(val.stack_trace_id, /* clear_stack_id */ false);
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -135,13 +137,13 @@ static void BM_bcc_symbolization(benchmark::State& state) {
   BCCWrapper bcc_wrapper;
   PX_ASSIGN_OR_EXIT(std::filesystem::path self_path, ::px::fs::ReadSymlink("/proc/self/exe"));
   std::vector<uintptr_t> addrs = CollectStackTrace(&bcc_wrapper, self_path);
-  ebpf::BPFStackTable bcc_symbolizer = bcc_wrapper.GetStackTable("stack_traces");
+  auto bcc_symbolizer = WrappedBCCStackTable::Create(&bcc_wrapper, "stack_traces");
   const int32_t pid = getpid();
 
   for (auto _ : state) {
     std::vector<std::string> symbols;
     for (const auto addr : addrs) {
-      auto sym = bcc_symbolizer.get_addr_symbol(addr, pid);
+      auto sym = bcc_symbolizer->GetAddrSymbol(addr, pid);
       symbols.push_back(sym);
     }
     benchmark::DoNotOptimize(symbols);

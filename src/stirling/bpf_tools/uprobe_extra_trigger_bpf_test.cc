@@ -83,8 +83,8 @@ TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   client1.Wait();
 
   // We expect the probe to be triggered once, and it is.
-  int trigger_count1;
-  bcc_wrapper.GetArrayTable<int>("count").get_value(0, trigger_count1);
+  auto counts = WrappedBCCArrayTable<int>::Create(&bcc_wrapper, "count");
+  ASSERT_OK_AND_ASSIGN(const int trigger_count1, counts->GetValue(0));
   ASSERT_EQ(trigger_count1, 1);
 
   // Now spawn a second server in a separate container, and attach a uprobe to it.
@@ -99,8 +99,7 @@ TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
   client2.Wait();
 
   // We expect the probe to be triggered one additional time, but it's actually triggered twice.
-  int trigger_count2;
-  bcc_wrapper.GetArrayTable<int>("count").get_value(0, trigger_count2);
+  ASSERT_OK_AND_ASSIGN(const int trigger_count2, counts->GetValue(0));
   ASSERT_EQ(trigger_count2, 3);
 
   // Why does this happen?

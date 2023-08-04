@@ -21,12 +21,15 @@
 #include <string>
 #include <vector>
 
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizers/symbolizer.h"
 #include "src/stirling/upid/upid.h"
 
 namespace px {
 namespace stirling {
+
+using bpf_tools::WrappedBCCStackTable;
 
 // Stringifier serves two purposes:
 // 1. constructs a "folded stack trace string" based on the stack frame addresses.
@@ -59,7 +62,7 @@ class Stringifier {
    * @param stack_traces Pointer to the BCC collected stack traces.
    */
   Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
-              ebpf::BPFStackTable* stack_traces);
+              WrappedBCCStackTable* stack_traces);
 
   // Returns a folded stack trace string based on the stack trace histogram key.
   // The key contains both a user & kernel stack-trace-id, which are subsequently
@@ -86,7 +89,7 @@ class Stringifier {
   // a destructive read, i.e. such that the BPF stack trace table does not need
   // to be explicitly cleared (by re-iterating the histogram) after an iteration
   // of the continuous perf. profiler is completed.
-  ebpf::BPFStackTable* const stack_traces_;
+  WrappedBCCStackTable* const stack_traces_;
 };
 
 }  // namespace stirling
