@@ -187,6 +187,10 @@ type PodPolicy struct {
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 	// This field cannot be updated once the cluster is created.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// Tolerations allows scheduling pods on nodes with matching taints.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/:
+	// This field cannot be updated once the cluster is created.
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 	// The securityContext which should be set on non-privileged pods. All pods which require privileged permissions
 	// will still require a privileged securityContext.
 	SecurityContext *PodSecurityContext `json:"securityContext,omitempty"`

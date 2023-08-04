@@ -38,6 +38,7 @@ go_library(
         "//src/utils/shared/k8s",
         "@com_github_blang_semver//:semver",
         "@com_github_cenkalti_backoff_v4//:backoff",
+        "@com_github_gogo_protobuf//types",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_api//apps/v1:apps",
         "@io_k8s_api//core/v1:core",
