@@ -156,6 +156,10 @@ DEFINE_bool(
     stirling_trace_static_tls_binaries, gflags::BoolFromEnv("PX_TRACE_STATIC_TLS_BINARIES", true),
     "If true, stirling will tls trace binaries statically linked with OpenSSL or BoringSSL");
 
+DEFINE_bool(
+    stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
+    "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
+
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace px {
@@ -176,12 +180,17 @@ constexpr char openssl_mismatched_fds_metric[] = "openssl_trace_mismatched_fds";
 constexpr char openssl_mismatched_fds_help[] =
     "Count of the times a syscall's fd was mismatched when detecting fds from an active user space "
     "call";
+constexpr char openssl_tls_source_metric[] = "openssl_tls_source_debug";
+constexpr char openssl_tls_source_help[] =
+    "Records the number of times a protocol was traced along with additional debugging information";
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
       openssl_trace_mismatched_fds_counter_family_(
           BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
+      openssl_trace_tls_source_counter_family_(
+          BuildCounterFamily(openssl_tls_source_metric, openssl_tls_source_help)),
       uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
@@ -409,6 +418,7 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 Status SocketTraceConnector::InitBPF() {
   // PROTOCOL_LIST: Requires update on new protocols.
   std::vector<std::string> defines = {
+      absl::StrCat("-DENABLE_TLS_DEBUG_SOURCES=", FLAGS_stirling_debug_tls_sources),
       absl::StrCat("-DENABLE_HTTP_TRACING=", protocol_transfer_specs_[kProtocolHTTP].enabled),
       absl::StrCat("-DENABLE_CQL_TRACING=", protocol_transfer_specs_[kProtocolCQL].enabled),
       absl::StrCat("-DENABLE_MUX_TRACING=", protocol_transfer_specs_[kProtocolMux].enabled),
@@ -653,22 +663,40 @@ void SocketTraceConnector::CheckTracerState() {
 
   int error_code;
   openssl_trace_state_->get_value(kOpenSSLTraceStatusIdx, error_code);
+  bool mismatched_fds = error_code == kOpenSSLMismatchedFDsDetected;
 
-  if (error_code == kOpenSSLMismatchedFDsDetected) {
-    openssl_trace_mismatched_fds_counter_family_.Add({{"name", openssl_mismatched_fds_metric}})
-        .Increment();
+  if (FLAGS_stirling_debug_tls_sources || mismatched_fds) {
+    if (mismatched_fds) {
+      openssl_trace_mismatched_fds_counter_family_.Add({{"name", openssl_mismatched_fds_metric}})
+          .Increment();
+    }
 
     // Record the offending applications and clear the BPF hash in the process.
     auto table = openssl_trace_state_debug_->get_table_offline(true);
     for (auto& entry : table) {
       struct openssl_trace_state_debug_t debug = std::get<1>(entry);
       auto ssl_source = std::string(magic_enum::enum_name(debug.ssl_source));
+      auto is_mismatched_entry = debug.mismatched_fd;
 
-      openssl_trace_mismatched_fds_counter_family_
-          .Add({{"name", openssl_mismatched_fds_metric},
+      if (is_mismatched_entry) {
+        openssl_trace_mismatched_fds_counter_family_
+            .Add({{"name", openssl_mismatched_fds_metric},
+                  {"exe", debug.comm},
+                  {"ssl_source", ssl_source}})
+            .Increment();
+      }
+
+      if (FLAGS_stirling_debug_tls_sources) {
+        auto protocol = std::string(magic_enum::enum_name(debug.protocol));
+        openssl_trace_tls_source_counter_family_
+            .Add({
+                {"name", openssl_tls_source_metric},
                 {"exe", debug.comm},
-                {"ssl_source", ssl_source}})
-          .Increment();
+                {"ssl_source", ssl_source},
+                {"protocol", protocol},
+            })
+            .Increment();
+      }
     }
   }
   DCHECK_EQ(error_code, kOpenSSLTraceOk);

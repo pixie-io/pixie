@@ -47,6 +47,11 @@ var availableFeatureFlags = []*featureFlag{
 		VizierFlagName:  "PX_TRACE_STATIC_TLS_BINARIES",
 		DefaultValue:    false,
 	},
+	{
+		FeatureFlagName: "debug-tls-sources",
+		VizierFlagName:  "PX_DEBUG_TLS_SOURCES",
+		DefaultValue:    false,
+	},
 }
 
 // NewVizierFeatureFlagClient creates a LaunchDarkly feature flag client if the SDK key is provided,
