@@ -54,12 +54,13 @@ type TableMuxer interface {
 	AcceptTable(ctx context.Context, metadata types.TableMetadata) (TableRecordHandler, error)
 }
 
-// Client is the base client to use pixie cloud + vizier.
+// Client is the base client to use either pixie cloud + vizier or standalone pem + vizier.
 type Client struct {
 	apiKey     string
 	bearerAuth string
 
 	cloudAddr string
+	directAddr string
 
 	useEncryption          bool
 	disableTLSVerification bool
@@ -80,8 +81,8 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		opt(c)
 	}
 
-	if (strings.Contains(c.cloudAddr, "0.0.0.0") == true) {
-		if err := c.initLocalClient(ctx); err != nil {
+	if (strings.Contains(c.directAddr, "0.0.0.0") == true) {
+		if err := c.initDirectClient(ctx); err != nil {
 			return nil, err
 		}
 		return c, nil
@@ -94,9 +95,9 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 }
 
 
-// initLocalClient is for establishing gRPC connection to standalonePEM
-func (c *Client) initLocalClient(ctx context.Context) error {
-        conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+// initDirectClient is for establishing gRPC connection to standalonePEM
+func (c *Client) initDirectClient(ctx context.Context) error {
+        conn, err := grpc.Dial(c.directAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
         if err != nil {
                 return err
         }

@@ -69,3 +69,10 @@ func WithE2EEncryption(enabled bool) ClientOption {
 		c.useEncryption = enabled
 	}
 }
+
+// WithDirectAddr is the option to specify direct address to use for data from standalone pem.
+func WithDirectAddr(directAddr string) ClientOption {
+	return func(c *Client) {
+		c.directAddr = directAddr
+	}
+}
