@@ -28,7 +28,7 @@ func main() {
 
 	// Create a Pixie client with local standalonePEM listening address
 	ctx := context.Background()
-	client, err := pxapi.NewClient(ctx, pxapi.WithCloudAddr("0.0.0.0:12345"))
+	client, err := pxapi.NewClient(ctx, pxapi.WithDirectAddr("0.0.0.0:12345"))
 	if err != nil {
 		panic(err)
 	}
