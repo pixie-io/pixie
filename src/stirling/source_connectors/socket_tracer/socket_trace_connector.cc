@@ -394,22 +394,22 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 
   auto specs = MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, kTargetDataBufferSize,
+      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, this, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", HandleControlEvent, HandleControlEventLoss,
+      {"socket_control_events", HandleControlEvent, HandleControlEventLoss, this,
        kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
-      {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
+      {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss, this,
        kTargetControlBufferSize, PerfBufferSizeCategory::kControl},
-      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize / 10,
+      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, this, kTargetControlBufferSize / 10,
        PerfBufferSizeCategory::kControl},
-      {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, kTargetDataBufferSize,
+      {"go_grpc_events", HandleHTTP2Event, HandleHTTP2EventLoss, this, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
-      {"grpc_c_events", HandleGrpcCEvent, HandleGrpcCDataLoss, kTargetDataBufferSize,
+      {"grpc_c_events", HandleGrpcCEvent, HandleGrpcCDataLoss, this, kTargetDataBufferSize,
        PerfBufferSizeCategory::kData},
-      {"grpc_c_header_events", HandleGrpcCHeaderEvent, HandleGrpcCHeaderDataLoss,
+      {"grpc_c_header_events", HandleGrpcCHeaderEvent, HandleGrpcCHeaderDataLoss, this,
        kTargetDataBufferSize, PerfBufferSizeCategory::kData},
-      {"grpc_c_close_events", HandleGrpcCCloseEvent, HandleGrpcCCloseDataLoss,
+      {"grpc_c_close_events", HandleGrpcCCloseEvent, HandleGrpcCCloseDataLoss, this,
        kTargetDataBufferSize, PerfBufferSizeCategory::kData},
   });
   ResizePerfBufferSpecs(&specs, category_maximums);
@@ -438,9 +438,9 @@ Status SocketTraceConnector::InitBPF() {
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";
 
-  const auto kPerfBufferSpecs = InitPerfBufferSpecs();
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
+  const auto perf_buffer_specs = InitPerfBufferSpecs();
+  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
+  LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", perf_buffer_specs.size());
 
   // Set trace role to BPF probes.
   for (const auto& p : magic_enum::enum_values<traffic_protocol_t>()) {

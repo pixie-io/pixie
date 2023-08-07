@@ -142,11 +142,10 @@ class BCCWrapper {
   /**
    * Open a perf buffer for reading events.
    * @param perf_buff Specifications of the perf buffer (name, callback function, etc.).
-   * @param cb_cookie A pointer that is sent to the callback function when triggered by
    * PollPerfBuffer().
    * @return Error if perf buffer cannot be opened (e.g. perf buffer does not exist).
    */
-  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie = nullptr);
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer);
 
   /**
    * Attach a perf event, which runs a probe every time a perf counter reaches a threshold
@@ -192,10 +191,9 @@ class BCCWrapper {
   /**
    * Convenience function that opens multiple perf buffers.
    * @param probes Vector of perf buffer descriptors.
-   * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
    * @return Error of first failure (remaining perf buffer opens are not attempted).
    */
-  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
+  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers);
 
   /**
    * Convenience function that opens multiple perf events.
