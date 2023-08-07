@@ -644,10 +644,6 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 
     // Attach uprobes to statically linked applications only if no other probes have been attached.
     if (FLAGS_stirling_trace_static_tls_binaries && count_or.ok() && count_or.ValueOrDie() == 0) {
-      // Optimisitcally update the SSL lib source since the probes can trigger
-      // before the BPF map is updated. This value is cleaned up when the upid is
-      // terminated, so if attachment fails it will be deleted prior to the pid being
-      // reused.
       count_or = AttachOpenSSLUProbesOnStaticBinary(pid.pid());
 
       if (count_or.ok() && count_or.ValueOrDie() > 0) {
