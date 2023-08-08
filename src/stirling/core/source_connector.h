@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -179,10 +180,9 @@ class BCCSourceConnector : public SourceConnector {
   bpf_tools::BCCWrapper& BCC() { return *bcc_; }
 
  protected:
-  explicit BCCSourceConnector(std::string_view source_name, const ArrayView<DataTableSchema>& table_schemas) :
-    SourceConnector(source_name, table_schemas),
-    bcc_(bpf_tools::CreateBCC()) {
-  }
+  explicit BCCSourceConnector(std::string_view source_name,
+                              const ArrayView<DataTableSchema>& table_schemas)
+      : SourceConnector(source_name, table_schemas), bcc_(bpf_tools::CreateBCC()) {}
   std::unique_ptr<bpf_tools::BCCWrapper> bcc_;
 };
 
