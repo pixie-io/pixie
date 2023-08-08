@@ -76,7 +76,7 @@ class UProbeManager {
    * Construct a UProbeManager.
    * @param bcc A pointer to a BCCWrapper instance that is used to deploy uprobes.
    */
-  explicit UProbeManager(bpf_tools::BCCWrapper* bcc);
+  explicit UProbeManager(bpf_tools::BCCWrapper& bcc);
 
   /**
    * Mandatory initialization step before RunDeployUprobesThread can be called.
@@ -594,7 +594,7 @@ class UProbeManager {
   // Note that BPF maps can fill up if this is not done.
   void CleanupPIDMaps(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
-  bpf_tools::BCCWrapper* bcc_;
+  bpf_tools::BCCWrapper& bcc_;
 
   // Whether to try to uprobe ourself (e.g. for OpenSSL). Typically, we don't want to do that.
   bool cfg_disable_self_probing_;

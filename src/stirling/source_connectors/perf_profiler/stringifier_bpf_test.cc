@@ -108,12 +108,14 @@ class StringifierTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
+    bcc_wrapper_ = bpf_tools::CreateBCC();
+
     // Register our BPF program in the kernel.
-    ASSERT_OK(bcc_wrapper_.InitBPFProgram(stringifer_test_bcc_script));
+    ASSERT_OK(bcc_wrapper_->InitBPFProgram(stringifer_test_bcc_script));
 
     // Bind the BCC API to the shared BPF maps created by our BPF program.
-    stack_traces_ = WrappedBCCStackTable::Create(&bcc_wrapper_, "stack_traces");
-    histogram_ = Histogram::Create(&bcc_wrapper_, "histogram");
+    stack_traces_ = WrappedBCCStackTable::Create(bcc_wrapper_.get(), "stack_traces");
+    histogram_ = Histogram::Create(bcc_wrapper_.get(), "histogram");
 
     // Create a symbolizer (needed for the stringifer).
     ASSERT_OK_AND_ASSIGN(symbolizer_, BCCSymbolizer::Create());
@@ -163,7 +165,7 @@ class StringifierTest : public ::testing::Test {
 
   uint64_t num_stack_ids_reused_ = 0;
 
-  bpf_tools::BCCWrapper bcc_wrapper_;
+  std::unique_ptr<bpf_tools::BCCWrapper> bcc_wrapper_;
   std::unique_ptr<WrappedBCCStackTable> stack_traces_;
   std::unique_ptr<Histogram> histogram_;
 
@@ -210,9 +212,9 @@ TEST_F(StringifierTest, MemoizationTest) {
                                              "stack_trace_sampler"};
 
   // Attach uprobes & kprobes for this test case:
-  ASSERT_OK(bcc_wrapper_.AttachKProbe(kPidKprobe));
-  ASSERT_OK(bcc_wrapper_.AttachUProbe(kFooUprobe));
-  ASSERT_OK(bcc_wrapper_.AttachUProbe(kBarUprobe));
+  ASSERT_OK(bcc_wrapper_->AttachKProbe(kPidKprobe));
+  ASSERT_OK(bcc_wrapper_->AttachUProbe(kFooUprobe));
+  ASSERT_OK(bcc_wrapper_->AttachUProbe(kBarUprobe));
 
   // Foo() & Bar() tickle our uprobes and kprobe. Both simply return the pid.
   uint32_t pid;
@@ -223,7 +225,7 @@ TEST_F(StringifierTest, MemoizationTest) {
   // ... later, we will verify that the stringifier cleared the stack traces map,
   // as it is required to do. And for this verification to work, we need to
   // stop collecting data now.
-  bcc_wrapper_.Close();
+  bcc_wrapper_->Close();
 
   // Used below, in calls into BCC APIs.
   constexpr bool kClearTable = true;

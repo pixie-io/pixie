@@ -32,7 +32,7 @@
 namespace px {
 namespace stirling {
 
-class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
+class DynamicTraceConnector : public SourceConnector {
  public:
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
@@ -64,6 +64,8 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
  private:
   Status AppendRecord(const ::px::stirling::dynamic_tracing::ir::physical::Struct& st,
                       uint32_t asid, std::string_view buf, DataTable* data_table);
+
+  std::unique_ptr<bpf_tools::BCCWrapper> bcc_;
 
   // Describes the output table column types.
   std::unique_ptr<DynamicDataTableSchema> table_schema_;

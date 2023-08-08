@@ -233,7 +233,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
                     .probe_fn = "task_struct_probe"};
 
   // Deploy the BPF program.
-  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapper>();
+  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapperImpl>();
   std::vector<std::string> cflags;
   // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
   // enter an infinite loop if BCCWrapper tries to run the TaskStructResolver again.
@@ -353,7 +353,7 @@ StatusOr<uint64_t> ResolveTaskStructExitCodeOffset() {
   SubProcess proc;
   PX_RETURN_IF_ERROR(proc.Start([]() -> int { return exit_code; }, {.stop_before_exec = true}));
 
-  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapper>();
+  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapperImpl>();
   PX_RETURN_IF_ERROR(
       bcc->InitBPFProgram(bcc_script, /*cflags*/ {}, /*requires_linux_headers*/ false));
   PX_RETURN_IF_ERROR(bcc->AttachTracepoint({std::string("sched:sched_process_exit"),

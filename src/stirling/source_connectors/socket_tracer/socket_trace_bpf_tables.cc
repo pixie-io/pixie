@@ -47,9 +47,9 @@ namespace stirling {
 using px::stirling::bpf_tools::WrappedBCCMap;
 using px::system::ProcPidPath;
 
-ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
-    : conn_info_map_(WrappedBCCMap<uint64_t, struct conn_info_t>::Create(bcc, "conn_info_map")),
-      conn_disabled_map_(WrappedBCCMap<uint64_t, uint64_t>::Create(bcc, "conn_disabled_map")) {
+ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper& bcc)
+    : conn_info_map_(WrappedBCCMap<uint64_t, struct conn_info_t>::Create(&bcc, "conn_info_map")),
+      conn_disabled_map_(WrappedBCCMap<uint64_t, uint64_t>::Create(&bcc, "conn_disabled_map")) {
   std::filesystem::path self_path = GetSelfPath().ValueOrDie();
   auto elf_reader_or_s = obj_tools::ElfReader::Create(self_path.string());
   if (!elf_reader_or_s.ok()) {
@@ -75,7 +75,7 @@ ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
                                .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
                                .probe_fn = "conn_cleanup_uprobe"};
 
-  PX_CHECK_OK(bcc->AttachUProbe(uprobe));
+  PX_CHECK_OK(bcc.AttachUProbe(uprobe));
 }
 
 void ConnInfoMapManager::ReleaseResources(struct conn_id_t conn_id) {

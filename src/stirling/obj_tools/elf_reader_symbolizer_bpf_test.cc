@@ -70,7 +70,7 @@ int sample_stack_trace(struct pt_regs* ctx) {
 StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
   PX_ASSIGN_OR_RETURN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
-  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::BCCWrapperImpl bcc_wrapper;
 
   bpf_tools::UProbeSpec spec = {
       .binary_path = self_path.string(),

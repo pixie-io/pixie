@@ -71,7 +71,7 @@ TEST(BCCWrapperTest, InitDefault) {
   // but since packaged headers are not included and PL_HOST_ENV is not defined,
   // it essentially boils down to a local headers search.
   // If the test host doesn't have Linux headers, we expect this test to fail.
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 }
 
@@ -82,13 +82,13 @@ TEST(BCCWrapperTest, InitWithTaskStructResolver) {
   //   BCCWrapper::InitBPFProgram
   //   TaskStructResolver
   //   BCCWrapper::InitBPFProgram
-  //   <end> (The second instance of BCCWrapper shouldn't call TaskStructResolver again.)
+  //   <end> (The second instance of BCCWrapperImpl shouldn't call TaskStructResolver again.)
 
   std::vector<std::string> cflags = {};
   bool requires_linux_headers = true;
   bool always_infer_task_struct_offsets = true;
 
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram, cflags, requires_linux_headers,
                                        always_infer_task_struct_offsets));
 }
@@ -96,7 +96,7 @@ TEST(BCCWrapperTest, InitWithTaskStructResolver) {
 TEST(BCCWrapperTest, DetachUProbe) {
   TestExeWrapper test_exe;
 
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
   UProbeSpec spec = {
@@ -131,7 +131,7 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   bool requires_linux_headers = true;
   bool always_infer_task_struct_offsets = true;
 
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script, cflags,
                                        requires_linux_headers, always_infer_task_struct_offsets));
 
@@ -171,7 +171,7 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
 
 TEST(BCCWrapperTest, TestMapClearingAPIs) {
   // Test to show that get_table_offline() with clear_table=true actually clears the table.
-  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::BCCWrapperImpl bcc_wrapper;
   std::string_view kProgram = "BPF_HASH(alphabet, char const * const, uint64_t, 26);";
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kProgram));
   auto alphabet = WrappedBCCMap<const char*, uint64_t>::Create(&bcc_wrapper, "alphabet");
@@ -201,9 +201,9 @@ TEST(BCCWrapperTest, TestMapClearingAPIs) {
   ASSERT_THAT(alphabet->GetTableOffline(), IsEmpty());
 }
 
-// Tests that BCCWrapper can load and attach UPD filter defined in the XDP program.
+// Tests that BCCWrapperImpl can load and attach UPD filter defined in the XDP program.
 TEST(BCCWrapperTest, LoadUPDFilterWithXDP) {
-  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::BCCWrapperImpl bcc_wrapper;
 
   std::string_view xdp_program = R"bcc(
       #include <linux/bpf.h>
@@ -239,7 +239,7 @@ TEST(BCCWrapperTest, LoadUPDFilterWithXDP) {
 }
 
 TEST(BCCWrapper, Tracepoint) {
-  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::BCCWrapperImpl bcc_wrapper;
 
   // Including sched.h is a workaround of a test failure on 5.18.4 kernel.
   // See https://github.com/iovisor/bcc/issues/4092.

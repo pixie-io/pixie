@@ -123,7 +123,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
 
   DataTables data_tables(SocketTraceConnector::kTables);
 
-  auto conn_info_map = ConnInfoMapT::Create(source_.get(), "conn_info_map");
+  auto conn_info_map = ConnInfoMapT::Create(&source_->BCC(), "conn_info_map");
 
   // Confirm that the leaked BPF map entry exists.
   source_->TransferData(ctx_.get());

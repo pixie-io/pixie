@@ -81,6 +81,8 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
 }
 
 Status PerfProfileConnector::InitImpl() {
+  bcc_ = bpf_tools::CreateBCC();
+
   sampling_freq_mgr_.set_period(sampling_period_);
   push_freq_mgr_.set_period(push_period_);
 
@@ -141,14 +143,14 @@ Status PerfProfileConnector::InitImpl() {
       {{std::string(kHistogramAName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size},
        {std::string(kHistogramBName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size}});
 
-  PX_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
-  PX_RETURN_IF_ERROR(AttachSamplingProbes(probe_specs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
+  PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(profiler_bcc_script, defines));
+  PX_RETURN_IF_ERROR(bcc_->AttachSamplingProbes(probe_specs));
+  PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
 
-  stack_traces_a_ = WrappedBCCStackTable::Create(this, "stack_traces_a");
-  stack_traces_b_ = WrappedBCCStackTable::Create(this, "stack_traces_b");
+  stack_traces_a_ = WrappedBCCStackTable::Create(bcc_.get(), "stack_traces_a");
+  stack_traces_b_ = WrappedBCCStackTable::Create(bcc_.get(), "stack_traces_b");
 
-  profiler_state_ = WrappedBCCArrayTable<uint64_t>::Create(this, "profiler_state");
+  profiler_state_ = WrappedBCCArrayTable<uint64_t>::Create(bcc_.get(), "profiler_state");
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
@@ -185,7 +187,7 @@ Status PerfProfileConnector::StopImpl() {
   // Must call Close() after attach_uprobes_thread_ has joined,
   // otherwise the two threads will cause concurrent accesses to BCC,
   // that will cause races and undefined behavior.
-  Close();
+  bcc_->Close();
   return Status::OK();
 }
 
@@ -345,7 +347,7 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   // Read out the perf buffer that contains the histogram for this iteration.
   // TODO(jps): change PollPerfBuffer() to use std::chrono.
   constexpr int kPollTimeoutMS = 0;
-  PollPerfBuffer(perfbuf_name, kPollTimeoutMS);
+  bcc_->PollPerfBuffer(perfbuf_name, kPollTimeoutMS);
 
   ++transfer_count_;
 
