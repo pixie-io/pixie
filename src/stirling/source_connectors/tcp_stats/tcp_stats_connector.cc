@@ -61,8 +61,6 @@ void HandleTcpEventLoss(void* /*cb_cookie*/, uint64_t /*lost*/) {
 }
 
 Status TCPStatsConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>({
       {"tcp_events", HandleTcpEvent, HandleTcpEventLoss, this, kPerfBufferPerCPUSizeBytes,
        bpf_tools::PerfBufferSizeCategory::kData},

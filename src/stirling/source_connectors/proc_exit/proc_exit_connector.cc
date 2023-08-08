@@ -74,8 +74,6 @@ void ProcExitConnector::AcceptProcExitEvent(const struct proc_exit_event_t& even
 }
 
 Status ProcExitConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 

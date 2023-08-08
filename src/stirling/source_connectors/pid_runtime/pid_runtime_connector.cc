@@ -29,8 +29,6 @@ namespace px {
 namespace stirling {
 
 Status PIDRuntimeConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(pidruntime_bcc_script));
