@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         artifact: [cloud, operator, vizier]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     needs: get-dev-image
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
