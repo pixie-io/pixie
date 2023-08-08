@@ -328,17 +328,6 @@ class BCCWrapperImpl : public BCCWrapper {
   //   DEBUG_BPF_REGISTER_STATE = 0x10,
   //   DEBUG_BTF = 0x20,
   ebpf::BPF bpf_;
-
-  // These are static counters across all instances, because:
-  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
-  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
-  // here.
- protected:
-  inline static size_t num_attached_kprobes_;
-  inline static size_t num_attached_uprobes_;
-  inline static size_t num_attached_tracepoints_;
-  inline static size_t num_open_perf_buffers_;
-  inline static size_t num_attached_perf_events_;
 };
 
 std::unique_ptr<BCCWrapper> CreateBCC();
