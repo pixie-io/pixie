@@ -730,8 +730,6 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % (kDebugDumpPeriod / kSamplingPeriod) == 0) {
     if (debug_level_ >= 1) {
       LOG(INFO) << "Context: " << DumpContext(ctx);
-      // -- TODO -- remove -- LOG(INFO) << "BPF map info: " <<
-      // BPFMapsInfo(static_cast<BCCWrapper*>(bcc_.get()));
       LOG(INFO) << "BPF map info: " << BPFMapsInfo(bcc_.get());
     }
   }
