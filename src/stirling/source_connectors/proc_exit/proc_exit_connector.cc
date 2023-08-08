@@ -59,7 +59,7 @@ constexpr char kJavaProcCrashedWithProfilerCounter[] = "java_proc_crashed_with_p
 constexpr char kJavaProcCrashedWithoutProfilerCounter[] = "java_proc_crashed_without_profiler";
 
 ProcExitConnector::ProcExitConnector(std::string_view name)
-    : SourceConnector(name, kTables),
+    : BCCSourceConnector(name, kTables),
       java_proc_crashed_counter_(
           BuildCounter(kJavaProcCrashedCounter, "Count of the crashed Java processes")),
       java_proc_crashed_with_profiler_counter_(BuildCounter(

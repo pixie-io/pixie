@@ -53,6 +53,7 @@ pl_cc_library(
         "//src/shared/upid:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",
         "//src/stirling/utils:cc_library",
+        "//src/stirling/bpf_tools:cc_library",
     ],
 )
 

@@ -25,6 +25,7 @@
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/shared/types/types.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/frequency_manager.h"
@@ -171,6 +172,18 @@ class SourceConnector : public NotCopyable {
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
+};
+
+class BCCSourceConnector : public SourceConnector {
+ public:
+  bpf_tools::BCCWrapper& BCC() { return *bcc_; }
+
+ protected:
+  explicit BCCSourceConnector(std::string_view source_name, const ArrayView<DataTableSchema>& table_schemas) :
+    SourceConnector(source_name, table_schemas),
+    bcc_(bpf_tools::CreateBCC()) {
+  }
+  std::unique_ptr<bpf_tools::BCCWrapper> bcc_;
 };
 
 }  // namespace stirling

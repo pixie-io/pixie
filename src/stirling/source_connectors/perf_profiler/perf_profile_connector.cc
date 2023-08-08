@@ -55,7 +55,7 @@ namespace px {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables),
+    : BCCSourceConnector(source_name, kTables),
       stack_trace_sampling_period_(
           std::chrono::milliseconds{FLAGS_stirling_profiler_stack_trace_sample_period_ms}),
       sampling_period_(

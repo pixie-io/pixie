@@ -186,7 +186,7 @@ constexpr char openssl_tls_source_help[] =
     "Records the number of times a protocol was traced along with additional debugging information";
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables),
+    : BCCSourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
       openssl_trace_mismatched_fds_counter_family_(
           BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
@@ -479,8 +479,6 @@ void CheckDebugFlags() {
 }  // namespace
 
 Status SocketTraceConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   CheckDebugFlags();
 
   sampling_freq_mgr_.set_period(kSamplingPeriod);

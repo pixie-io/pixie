@@ -35,7 +35,7 @@ namespace stirling {
 namespace proc_exit_tracer {
 
 // This connector is not registered yet, so it has no effect.
-class ProcExitConnector : public SourceConnector {
+class ProcExitConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "proc_exit_tracer";
 
@@ -61,7 +61,6 @@ class ProcExitConnector : public SourceConnector {
   Status StopImpl() override { return Status::OK(); }
 
  private:
-  std::unique_ptr<bpf_tools::BCCWrapper> bcc_;
   std::vector<struct proc_exit_event_t> events_;
 
  private:
