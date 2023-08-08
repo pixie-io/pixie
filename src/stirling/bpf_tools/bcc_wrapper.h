@@ -332,8 +332,22 @@ class BCCWrapperImpl : public BCCWrapper {
 
 std::unique_ptr<BCCWrapper> CreateBCC();
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Wrapped maps & arrays.
+
 template <typename T>
 class WrappedBCCArrayTable {
+ public:
+  virtual ~WrappedBCCArrayTable() {}
+  static std::unique_ptr<WrappedBCCArrayTable> Create(BCCWrapper* bcc, const std::string& name);
+
+  virtual StatusOr<T> GetValue(const uint32_t idx) = 0;
+  virtual Status SetValue(const uint32_t idx, const T& value) = 0;
+};
+
+template <typename T>
+class WrappedBCCArrayTableImpl {
  public:
   using U = ebpf::BPFArrayTable<T>;
 
@@ -512,6 +526,21 @@ class WrappedBCCStackTable {
   const std::string name_;
   std::unique_ptr<U> underlying_;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Creators:
+// template <typename BaseT, typename ImplT, typename RecordingT, typename ReplayingT>
+// std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
+//   if (bcc->IsRecording()) { return std::make_unique<RecordingT>(bcc, name); }
+//   if (bcc->IsReplaying()) { return std::make_unique<ReplayingT>(bcc, name); }
+//   return std::make_unique<ImplT>(bcc, name);
+// }
+
+template <typename T>
+std::unique_ptr<WrappedBCCArrayTable<T>> WrappedBCCArrayTable<T>::Create(BCCWrapper* bcc, const std::string& name) {
+  return std::make_unique<WrappedBCCArrayTableImpl<T>>(bcc, name);
+}
 
 }  // namespace bpf_tools
 }  // namespace stirling
