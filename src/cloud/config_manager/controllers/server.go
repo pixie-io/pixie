@@ -220,25 +220,21 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	AddDefaultTableStoreSize(tmplValues.PEMMemoryRequest, tmplValues.CustomPEMFlags)
 
 	// Attempt to get the org ID from DeployKey, otherwise from the Vizier.
-	getOrgID := true
 	var orgID uuid.UUID
 	orgID, err = s.getOrgIDForDeployKey(tmplValues.DeployKey)
 	if err != nil || orgID == uuid.Nil {
 		log.WithError(err).Error("Error getting org ID from deploy key")
-		getOrgID = false
 	}
-	if !getOrgID && in.VizierID != "" {
+	if orgID == uuid.Nil && in.VizierID != "" {
 		resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(in.VizierID))
 		orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
 		if err != nil || orgID == uuid.Nil {
 			log.WithError(err).Error("Error getting org ID from Vizier")
-		} else {
-			getOrgID = true
 		}
 	}
 
 	// Next we inject any feature flags that we want to set for this org.
-	if getOrgID {
+	if orgID != uuid.Nil {
 		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
 	} else {
 		log.Error("Skipping feature flag logic")
