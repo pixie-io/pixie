@@ -68,8 +68,7 @@ class PIDRuntimeConnector : public SourceConnector {
   void TransferDataImpl(ConnectorContext* ctx) override;
 
  protected:
-  explicit PIDRuntimeConnector(std::string_view name)
-      : SourceConnector(name, kTables) {}
+  explicit PIDRuntimeConnector(std::string_view name) : SourceConnector(name, kTables) {}
 
  private:
   std::unique_ptr<bpf_tools::BCCWrapper> bcc_;

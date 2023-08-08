@@ -62,7 +62,7 @@ using ::px::stirling::utils::KernelVersion;
 using ::px::stirling::utils::KernelVersionOrder;
 using ::px::system::ProcPidRootPath;
 
-UProbeManager::UProbeManager(bpf_tools::BCCWrapper& bcc) : bcc_(bcc) {
+UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>();
 }
 
@@ -72,15 +72,15 @@ void UProbeManager::Init(bool disable_go_tls_tracing, bool enable_http2_tracing,
   cfg_enable_http2_tracing_ = enable_http2_tracing;
   cfg_disable_self_probing_ = disable_self_probing;
 
-  openssl_source_map_ = MapT<ssl_source_t>::Create(&bcc_, "openssl_source_map");
-  openssl_symaddrs_map_ = MapT<struct openssl_symaddrs_t>::Create(&bcc_, "openssl_symaddrs_map");
+  openssl_source_map_ = MapT<ssl_source_t>::Create(bcc_, "openssl_source_map");
+  openssl_symaddrs_map_ = MapT<struct openssl_symaddrs_t>::Create(bcc_, "openssl_symaddrs_map");
   go_common_symaddrs_map_ =
-      MapT<struct go_common_symaddrs_t>::Create(&bcc_, "go_common_symaddrs_map");
-  go_http2_symaddrs_map_ = MapT<struct go_http2_symaddrs_t>::Create(&bcc_, "http2_symaddrs_map");
-  go_tls_symaddrs_map_ = MapT<struct go_tls_symaddrs_t>::Create(&bcc_, "go_tls_symaddrs_map");
+      MapT<struct go_common_symaddrs_t>::Create(bcc_, "go_common_symaddrs_map");
+  go_http2_symaddrs_map_ = MapT<struct go_http2_symaddrs_t>::Create(bcc_, "http2_symaddrs_map");
+  go_tls_symaddrs_map_ = MapT<struct go_tls_symaddrs_t>::Create(bcc_, "go_tls_symaddrs_map");
   node_tlswrap_symaddrs_map_ =
-      MapT<struct node_tlswrap_symaddrs_t>::Create(&bcc_, "node_tlswrap_symaddrs_map");
-  grpc_c_versions_map_ = MapT<uint64_t>::Create(&bcc_, "grpc_c_versions");
+      MapT<struct node_tlswrap_symaddrs_t>::Create(bcc_, "node_tlswrap_symaddrs_map");
+  grpc_c_versions_map_ = MapT<uint64_t>::Create(bcc_, "grpc_c_versions");
 }
 
 void UProbeManager::NotifyMMapEvent(upid_t upid) {
@@ -90,7 +90,7 @@ void UProbeManager::NotifyMMapEvent(upid_t upid) {
 }
 
 Status UProbeManager::LogAndAttachUProbe(const bpf_tools::UProbeSpec& spec) {
-  auto s = bcc_.AttachUProbe(spec);
+  auto s = bcc_->AttachUProbe(spec);
   if (!s.ok()) {
     monitor_.AppendProbeStatusRecord("socket_tracer", spec.probe_fn, s, spec.ToJSON());
   }
@@ -767,7 +767,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
                               container_libgrpcc.string(), pid);
   for (auto spec : kGrpcCUProbes) {
     spec.binary_path = container_libgrpcc.string();
-    auto return_value = bcc_.AttachUProbe(spec);
+    auto return_value = bcc_->AttachUProbe(spec);
     if (!return_value.ok()) {
       LOG(WARNING) << absl::Substitute("Failed to attach gRPC-C probe $0 to pid $1 and file $2",
                                        spec.symbol, pid, container_libgrpcc.string());
@@ -777,7 +777,7 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
   bool attached_data_parser_parse_probe = false;
   for (auto spec : kGrpcCDataParserParseUProbes) {
     spec.binary_path = container_libgrpcc.string();
-    auto return_value = bcc_.AttachUProbe(spec);
+    auto return_value = bcc_->AttachUProbe(spec);
     if (return_value.ok()) {
       attached_data_parser_parse_probe = true;
       break;

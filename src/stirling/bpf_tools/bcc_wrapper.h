@@ -70,7 +70,7 @@ namespace bpf_tools {
  * Wrapper around BCC, as a convenience.
  */
 class BCCWrapper {
-  public:
+ public:
   virtual ~BCCWrapper() {}
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
@@ -103,8 +103,8 @@ class BCCWrapper {
    *               available.
    */
   virtual Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
-                        bool requires_linux_headers = true,
-                        bool always_infer_task_struct_offsets = false) = 0;
+                                bool requires_linux_headers = true,
+                                bool always_infer_task_struct_offsets = false) = 0;
 
   /**
    * Attach a single kprobe.
@@ -207,7 +207,8 @@ class BCCWrapper {
    * @param config PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, etc...
    * @return Error status.
    */
-  virtual Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type, const uint64_t config) = 0;
+  virtual Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
+                                      const uint64_t config) = 0;
 
   /**
    * Drains all of the opened perf buffers, calling the handle function that was
@@ -252,7 +253,7 @@ class BCCWrapper {
 };
 
 class BCCWrapperImpl : public BCCWrapper {
-  public:
+ public:
   virtual ~BCCWrapperImpl() {
     // Not really required, because BPF destructor handles these.
     // But we do it anyways out of paranoia.

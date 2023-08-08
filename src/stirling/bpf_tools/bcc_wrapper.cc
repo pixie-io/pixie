@@ -98,8 +98,8 @@ StatusOr<utils::TaskStructOffsets> BCCWrapper::ComputeTaskStructOffsets() {
 }
 
 Status BCCWrapperImpl::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
-                                  bool requires_linux_headers,
-                                  bool always_infer_task_struct_offsets) {
+                                      bool requires_linux_headers,
+                                      bool always_infer_task_struct_offsets) {
   using utils::TaskStructOffsets;
 
   if (!IsRoot()) {
@@ -449,10 +449,7 @@ void BCCWrapperImpl::Close() {
   DetachTracepoints();
 }
 
-std::unique_ptr<BCCWrapper> CreateBCC() {
-  return std::make_unique<BCCWrapperImpl>();
-}
-
+std::unique_ptr<BCCWrapper> CreateBCC() { return std::make_unique<BCCWrapperImpl>(); }
 
 }  // namespace bpf_tools
 }  // namespace stirling

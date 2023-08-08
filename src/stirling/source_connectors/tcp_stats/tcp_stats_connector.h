@@ -56,8 +56,7 @@ class TCPStatsConnector : public SourceConnector {
   bpf_tools::BCCWrapper& BCC() { return *bcc_; }
 
  protected:
-  explicit TCPStatsConnector(std::string_view name)
-      : SourceConnector(name, kTables) {}
+  explicit TCPStatsConnector(std::string_view name) : SourceConnector(name, kTables) {}
 
  private:
   std::unique_ptr<bpf_tools::BCCWrapper> bcc_;

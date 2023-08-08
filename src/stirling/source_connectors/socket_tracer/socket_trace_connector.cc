@@ -192,7 +192,7 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
           BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
       openssl_trace_tls_source_counter_family_(
           BuildCounterFamily(openssl_tls_source_metric, openssl_tls_source_help)),
-      uprobe_mgr_(this->BCC()) {
+      uprobe_mgr_(&this->BCC()) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
 }
@@ -503,7 +503,7 @@ Status SocketTraceConnector::InitImpl() {
     socket_info_mgr_ = s.ConsumeValueOrDie();
   }
 
-  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(*bcc_);
+  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(bcc_.get());
   ConnTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
   uprobe_mgr_.Init(FLAGS_stirling_disable_golang_tls_tracing,
@@ -732,7 +732,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % (kDebugDumpPeriod / kSamplingPeriod) == 0) {
     if (debug_level_ >= 1) {
       LOG(INFO) << "Context: " << DumpContext(ctx);
-      // -- TODO -- remove -- LOG(INFO) << "BPF map info: " << BPFMapsInfo(static_cast<BCCWrapper*>(bcc_.get()));
+      // -- TODO -- remove -- LOG(INFO) << "BPF map info: " <<
+      // BPFMapsInfo(static_cast<BCCWrapper*>(bcc_.get()));
       LOG(INFO) << "BPF map info: " << BPFMapsInfo(bcc_.get());
     }
   }
@@ -808,12 +809,14 @@ Status SocketTraceConnector::TestOnlySetTargetPID() {
         "Enable CONN_TRACE for pid=$0 following --test_only_socket_trace_target_pid", pid);
     FLAGS_stirling_conn_trace_pid = pid;
   }
-  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
+  auto control_map =
+      WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
   return control_map->SetValues(kTargetTGIDIndex, pid);
 }
 
 Status SocketTraceConnector::DisableSelfTracing() {
-  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
+  auto control_map =
+      WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
   const int64_t self_pid = getpid();
   return control_map->SetValues(kStirlingTGIDIndex, self_pid);
 }
