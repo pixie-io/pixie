@@ -170,8 +170,6 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
 }
 
 Status DynamicTraceConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
