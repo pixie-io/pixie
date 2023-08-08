@@ -451,6 +451,10 @@ void BCCWrapperImpl::Close() {
 
 std::unique_ptr<BCCWrapper> CreateBCC() { return std::make_unique<BCCWrapperImpl>(); }
 
+std::unique_ptr<WrappedBCCStackTable> WrappedBCCStackTable::Create(bpf_tools::BCCWrapper* bcc, const std::string& name) {
+  return std::make_unique<WrappedBCCStackTableImpl>(bcc, name);
+}
+
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px

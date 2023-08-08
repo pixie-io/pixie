@@ -474,14 +474,18 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
 template <typename T>
 class WrappedBCCPerCPUArrayTable {
  public:
+  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc, const std::string& name);
+  virtual ~WrappedBCCPerCPUArrayTable() {}
+
+  virtual Status SetValues(const int idx, const T& value) = 0;
+};
+
+template <typename T>
+class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
+ public:
   using U = ebpf::BPFPercpuArrayTable<T>;
 
-  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc,
-                                                            const std::string& name) {
-    return std::unique_ptr<WrappedBCCPerCPUArrayTable>(new WrappedBCCPerCPUArrayTable(bcc, name));
-  }
-
-  Status SetValues(const int idx, const T& value) {
+  Status SetValues(const int idx, const T& value) override {
     std::vector<T> values(bpf_tools::BCCWrapper::kCPUCount, value);
     ebpf::StatusTuple s = underlying_->update_value(idx, values);
     if (!s.ok()) {
@@ -491,41 +495,48 @@ class WrappedBCCPerCPUArrayTable {
     return Status::OK();
   }
 
- private:
-  WrappedBCCPerCPUArrayTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_percpu_array_table<T>(name_));
   }
 
+ private:
   const std::string name_;
   std::unique_ptr<U> underlying_;
 };
 
 class WrappedBCCStackTable {
  public:
+  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc, const std::string& name);
+  virtual ~WrappedBCCStackTable() {}
+
+  virtual std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) = 0;
+  virtual std::string GetAddrSymbol(const uintptr_t addr, const int pid) = 0;
+  virtual void ClearStackID(const int stack_id) = 0;
+
+  // U* RawPtr() { return underlying_.get(); }
+};
+
+class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
+ public:
   using U = ebpf::BPFStackTable;
 
-  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
-                                                      const std::string& name) {
-    return std::unique_ptr<WrappedBCCStackTable>(new WrappedBCCStackTable(bcc, name));
-  }
-
-  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) {
+  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) override {
     return underlying_->get_stack_addr(stack_id, clear_stack_id);
   }
 
-  std::string GetAddrSymbol(const uintptr_t addr, const int pid) {
+  std::string GetAddrSymbol(const uintptr_t addr, const int pid) override {
     return underlying_->get_addr_symbol(addr, pid);
   }
 
-  void ClearStackID(const int stack_id) { underlying_->clear_stack_id(stack_id); }
+  void ClearStackID(const int stack_id) override { underlying_->clear_stack_id(stack_id); }
 
-  U* RawPtr() { return underlying_.get(); }
+  // U* RawPtr() { return underlying_.get(); }
 
- private:
-  WrappedBCCStackTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_stack_table(name_));
   }
 
+ private:
   const std::string name_;
   std::unique_ptr<U> underlying_;
 };
@@ -549,6 +560,13 @@ template <typename K, typename V, bool U>
 std::unique_ptr<WrappedBCCMap<K, V, U>> WrappedBCCMap<K, V, U>::Create(BCCWrapper* bcc, const std::string& name) {
   using BaseT = WrappedBCCMap<K, V, U>;
   using ImplT = WrappedBCCMapImpl<K, V, U>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+}
+
+template <typename T>
+std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Create(BCCWrapper* bcc, const std::string& name) {
+  using BaseT = WrappedBCCPerCPUArrayTable<T>;
+  using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
   return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
 }
 
