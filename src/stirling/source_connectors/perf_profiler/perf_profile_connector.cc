@@ -81,8 +81,6 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
 }
 
 Status PerfProfileConnector::InitImpl() {
-  bcc_ = bpf_tools::CreateBCC();
-
   sampling_freq_mgr_.set_period(sampling_period_);
   push_freq_mgr_.set_period(push_period_);
 
