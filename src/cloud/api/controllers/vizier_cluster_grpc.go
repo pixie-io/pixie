@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
+	"golang.org/x/net/idna"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -181,6 +182,11 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		s := vzStatusToClusterStatus(vzInfo.Status)
 		prevS := vzStatusToClusterStatus(vzInfo.PreviousStatus)
 		prettyName := PrettifyClusterName(vzInfo.ClusterName, false)
+		// Convert to punycode (if non-latin) to help detect homoglyphs.
+		prettyName, err = idna.Punycode.ToASCII(prettyName)
+		if err != nil {
+			return nil, err
+		}
 
 		if val, ok := cNames[prettyName]; ok {
 			cNames[prettyName] = val + 1

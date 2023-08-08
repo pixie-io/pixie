@@ -294,6 +294,83 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 	}
 }
 
+func TestVizierClusterInfo_GetClusterInfo_Homoglyphs(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			assert.NotNil(t, clusterID)
+			clusterID2 := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			mockClients.MockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), orgID).Return(&vzmgrpb.GetViziersByOrgResponse{
+				VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
+			}, nil)
+
+			mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
+				VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
+			}).Return(&vzmgrpb.GetVizierInfosResponse{
+				VizierInfos: []*cvmsgspb.VizierInfo{{
+					VizierID:             clusterID,
+					Status:               cvmsgspb.VZ_ST_HEALTHY,
+					LastHeartbeatNs:      int64(1305646598000000000),
+					Config:               &cvmsgspb.VizierConfig{},
+					VizierVersion:        "1.2.3",
+					ClusterUID:           "a UID",
+					ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar",
+					ClusterVersion:       "5.6.7",
+					NumNodes:             5,
+					NumInstrumentedNodes: 3,
+				},
+					{
+						VizierID:             clusterID,
+						Status:               cvmsgspb.VZ_ST_HEALTHY,
+						LastHeartbeatNs:      int64(1305646598000000000),
+						Config:               &cvmsgspb.VizierConfig{},
+						VizierVersion:        "1.2.3",
+						ClusterUID:           "a UID2",
+						ClusterName:          "gke_pl-dev-infra_us-west1-a_dev-cluster-zаsɡar",
+						ClusterVersion:       "5.6.7",
+						NumNodes:             5,
+						NumInstrumentedNodes: 3,
+					},
+				},
+			}, nil)
+
+			vzClusterInfoServer := &controllers.VizierClusterInfo{
+				VzMgr: mockClients.MockVzMgr,
+			}
+
+			resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
+
+			require.NoError(t, err)
+			assert.Equal(t, 2, len(resp.Clusters))
+			assert.Equal(t, "gke:dev-cluster-zasgar", resp.Clusters[0].PrettyClusterName)
+			assert.Equal(t, "xn--gke:dev-cluster-zsar-eji892h", resp.Clusters[1].PrettyClusterName)
+		})
+	}
+}
+
 func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	tests := []struct {
 		name string
