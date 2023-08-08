@@ -474,7 +474,8 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
 template <typename T>
 class WrappedBCCPerCPUArrayTable {
  public:
-  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc, const std::string& name);
+  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                            const std::string& name);
   virtual ~WrappedBCCPerCPUArrayTable() {}
 
   virtual Status SetValues(const int idx, const T& value) = 0;
@@ -495,7 +496,8 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
     return Status::OK();
   }
 
-  WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_percpu_array_table<T>(name_));
   }
 
@@ -506,7 +508,8 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
 
 class WrappedBCCStackTable {
  public:
-  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc, const std::string& name);
+  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                      const std::string& name);
   virtual ~WrappedBCCStackTable() {}
 
   virtual std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) = 0;
@@ -546,25 +549,28 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
 // Creators:
 template <typename BaseT, typename ImplT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
- return std::make_unique<ImplT>(bcc, name);
+  return std::make_unique<ImplT>(bcc, name);
 }
 
 template <typename T>
-std::unique_ptr<WrappedBCCArrayTable<T>> WrappedBCCArrayTable<T>::Create(BCCWrapper* bcc, const std::string& name) {
+std::unique_ptr<WrappedBCCArrayTable<T>> WrappedBCCArrayTable<T>::Create(BCCWrapper* bcc,
+                                                                         const std::string& name) {
   using BaseT = WrappedBCCArrayTable<T>;
   using ImplT = WrappedBCCArrayTableImpl<T>;
   return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
 }
 
 template <typename K, typename V, bool U>
-std::unique_ptr<WrappedBCCMap<K, V, U>> WrappedBCCMap<K, V, U>::Create(BCCWrapper* bcc, const std::string& name) {
+std::unique_ptr<WrappedBCCMap<K, V, U>> WrappedBCCMap<K, V, U>::Create(BCCWrapper* bcc,
+                                                                       const std::string& name) {
   using BaseT = WrappedBCCMap<K, V, U>;
   using ImplT = WrappedBCCMapImpl<K, V, U>;
   return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
 }
 
 template <typename T>
-std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Create(BCCWrapper* bcc, const std::string& name) {
+std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Create(
+    BCCWrapper* bcc, const std::string& name) {
   using BaseT = WrappedBCCPerCPUArrayTable<T>;
   using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
   return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
