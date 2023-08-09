@@ -248,7 +248,7 @@ class UnitConnector {
   Status TransferDataThread() {
     // Drain the perf buffers before starting the thread.
     // Otherwise, perf buffers may already be full, causing lost events and flaky test results.
-    source_->PollPerfBuffers();
+    source_->BCC().PollPerfBuffers();
 
     // Check to ensure that the transfer data thread will run within a human time frame.
     // If this is triggered, please find a new upper bound or implement a special case.

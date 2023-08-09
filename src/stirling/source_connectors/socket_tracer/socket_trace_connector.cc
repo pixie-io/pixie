@@ -186,13 +186,13 @@ constexpr char openssl_tls_source_help[] =
     "Records the number of times a protocol was traced along with additional debugging information";
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables),
+    : BCCSourceConnector(source_name, kTables),
       conn_stats_(&conn_trackers_mgr_),
       openssl_trace_mismatched_fds_counter_family_(
           BuildCounterFamily(openssl_mismatched_fds_metric, openssl_mismatched_fds_help)),
       openssl_trace_tls_source_counter_family_(
           BuildCounterFamily(openssl_tls_source_metric, openssl_tls_source_help)),
-      uprobe_mgr_(this) {
+      uprobe_mgr_(&this->BCC()) {
   proc_parser_ = std::make_unique<system::ProcParser>();
   InitProtocolTransferSpecs();
 }
@@ -432,14 +432,14 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
   };
-  PX_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, defines));
+  PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(socket_trace_bcc_script, defines));
 
-  PX_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
+  PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";
 
   const auto perf_buffer_specs = InitPerfBufferSpecs();
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
+  PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", perf_buffer_specs.size());
 
   // Set trace role to BPF probes.
@@ -501,16 +501,16 @@ Status SocketTraceConnector::InitImpl() {
     socket_info_mgr_ = s.ConsumeValueOrDie();
   }
 
-  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(this);
+  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(bcc_.get());
   ConnTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
   uprobe_mgr_.Init(FLAGS_stirling_disable_golang_tls_tracing,
                    protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
 
-  openssl_trace_state_ = WrappedBCCArrayTable<int>::Create(this, "openssl_trace_state");
+  openssl_trace_state_ = WrappedBCCArrayTable<int>::Create(bcc_.get(), "openssl_trace_state");
   openssl_trace_state_debug_ = WrappedBCCMap<uint32_t, struct openssl_trace_state_debug_t>::Create(
-      this, "openssl_trace_state_debug");
+      bcc_.get(), "openssl_trace_state_debug");
 
   return Status::OK();
 }
@@ -536,7 +536,7 @@ Status SocketTraceConnector::StopImpl() {
   // Must call Close() after attach_uprobes_thread_ has joined,
   // otherwise the two threads will cause concurrent accesses to BCC,
   // that will cause races and undefined behavior.
-  Close();
+  bcc_->Close();
   return Status::OK();
 }
 
@@ -616,7 +616,7 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   // so raw data will be pushed to connection trackers more aggressively.
   // No data is lost, but this is a side-effect of sorts that affects timing of transfers.
   // It may be worth noting during debug.
-  PollPerfBuffers();
+  bcc_->PollPerfBuffers();
 
   // Set-up current state for connection inference purposes.
   if (socket_info_mgr_ != nullptr) {
@@ -730,7 +730,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   if (sampling_freq_mgr_.count() % (kDebugDumpPeriod / kSamplingPeriod) == 0) {
     if (debug_level_ >= 1) {
       LOG(INFO) << "Context: " << DumpContext(ctx);
-      LOG(INFO) << "BPF map info: " << BPFMapsInfo(static_cast<BCCWrapper*>(this));
+      LOG(INFO) << "BPF map info: " << BPFMapsInfo(bcc_.get());
     }
   }
 
@@ -790,7 +790,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
 
 Status SocketTraceConnector::UpdateBPFProtocolTraceRole(traffic_protocol_t protocol,
                                                         uint64_t role_mask) {
-  auto control_map = WrappedBCCPerCPUArrayTable<uint64_t>::Create(this, kControlMapName);
+  auto control_map = WrappedBCCPerCPUArrayTable<uint64_t>::Create(bcc_.get(), kControlMapName);
   return control_map->SetValues(static_cast<int>(protocol), role_mask);
 }
 
@@ -805,12 +805,14 @@ Status SocketTraceConnector::TestOnlySetTargetPID() {
         "Enable CONN_TRACE for pid=$0 following --test_only_socket_trace_target_pid", pid);
     FLAGS_stirling_conn_trace_pid = pid;
   }
-  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(this, kControlValuesArrayName);
+  auto control_map =
+      WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
   return control_map->SetValues(kTargetTGIDIndex, pid);
 }
 
 Status SocketTraceConnector::DisableSelfTracing() {
-  auto control_map = WrappedBCCPerCPUArrayTable<int64_t>::Create(this, kControlValuesArrayName);
+  auto control_map =
+      WrappedBCCPerCPUArrayTable<int64_t>::Create(bcc_.get(), kControlValuesArrayName);
   const int64_t self_pid = getpid();
   return control_map->SetValues(kStirlingTGIDIndex, self_pid);
 }

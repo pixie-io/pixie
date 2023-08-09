@@ -68,16 +68,16 @@ TEST_F(StirlingBPFTest, CleanupTest) {
   // Wait for thread to initialize.
   ASSERT_OK(stirling_->WaitUntilRunning(/* timeout */ std::chrono::seconds(5)));
 
-  EXPECT_GT(SocketTraceConnector::num_attached_probes(), 0);
-  EXPECT_GT(SocketTraceConnector::num_open_perf_buffers(), 0);
+  EXPECT_GT(bpf_tools::BCCWrapper::num_attached_probes(), 0);
+  EXPECT_GT(bpf_tools::BCCWrapper::num_open_perf_buffers(), 0);
 
   std::thread killer_thread = std::thread(&AsyncKill, stirling_.get());
 
   ASSERT_TRUE(killer_thread.joinable());
   killer_thread.join();
 
-  EXPECT_EQ(SocketTraceConnector::num_attached_probes(), 0);
-  EXPECT_EQ(SocketTraceConnector::num_open_perf_buffers(), 0);
+  EXPECT_EQ(bpf_tools::BCCWrapper::num_attached_probes(), 0);
+  EXPECT_EQ(bpf_tools::BCCWrapper::num_open_perf_buffers(), 0);
 }
 
 }  // namespace stirling

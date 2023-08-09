@@ -52,7 +52,7 @@ constexpr char kBCCProgram[] = R"(
 // but which have share the same file inode behind the scenes.
 // Disabling this test since this bug doesn't seem to reproduce with podman.
 TEST(BCCWrapper, DISABLED_UnexpectedExtraTrigger) {
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
   ::px::stirling::testing::Go1_19_GRPCServerContainer server1;

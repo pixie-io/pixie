@@ -89,7 +89,7 @@ enum TraceMode : int32_t {
   OnForNewerKernel = 2,
 };
 
-class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
+class SocketTraceConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "socket_tracer";
   static constexpr auto kTables =

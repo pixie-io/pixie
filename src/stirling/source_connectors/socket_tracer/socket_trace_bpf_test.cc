@@ -306,7 +306,7 @@ TEST_F(SocketTraceBPFTest, FileIONotTraced) {
   close(fd1);
 
   // Finally drain all BPF events.
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   // Those to file I/O FDs should not have been reported.
   ASSERT_NOT_OK(GetConnTracker(getpid(), fd1));
@@ -359,7 +359,7 @@ TEST_F(SocketTraceBPFTest, NonInetTrafficNotTraced) {
   server_thread.join();
 
   // Finally drain all BPF events.
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   // Those to file I/O FDs should not have been reported.
   ASSERT_NOT_OK(GetConnTracker(getpid(), client_fd));
@@ -379,7 +379,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   // We expect to see a ConnTracker allocated for ConnStats, but the data buffers should be empty
   // for unknown or unsupported protocols.
@@ -501,7 +501,7 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* client_tracker,
                        GetMutableConnTracker(system.ClientPID(), system.ClientFD()));
@@ -749,7 +749,7 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
 
     // Drain the perf buffers before beginning the test to make sure perf buffers are empty.
     // Otherwise, the test may flake due to events not being received in user-space.
-    source_->PollPerfBuffers();
+    source_->BCC().PollPerfBuffers();
 
     // Uncomment to enable tracing:
     // FLAGS_stirling_conn_trace_pid = pid_;
@@ -776,7 +776,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -803,7 +803,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -830,7 +830,7 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(client_recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
@@ -865,7 +865,7 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
   ASSERT_EQ(client_remote.sin_port, server_.port());
   EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
-  source_->PollPerfBuffers();
+  source_->BCC().PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(auto* tracker, GetMutableConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);

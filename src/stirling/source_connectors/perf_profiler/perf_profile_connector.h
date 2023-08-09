@@ -49,7 +49,7 @@ namespace profiler {
 static constexpr std::string_view kNotSymbolizedMessage = "<not symbolized>";
 }  // namespace profiler
 
-class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrapper {
+class PerfProfileConnector : public BCCSourceConnector {
  public:
   static constexpr std::string_view kName = "perf_profiler";
   static constexpr auto kTables = MakeArray(kStackTraceTable);

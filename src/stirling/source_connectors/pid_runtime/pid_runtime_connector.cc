@@ -31,15 +31,15 @@ namespace stirling {
 Status PIDRuntimeConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
-  PX_RETURN_IF_ERROR(InitBPFProgram(pidruntime_bcc_script));
-  PX_RETURN_IF_ERROR(AttachSamplingProbes(kSamplingProbes));
+  PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(pidruntime_bcc_script));
+  PX_RETURN_IF_ERROR(bcc_->AttachSamplingProbes(kSamplingProbes));
 
-  bpf_data_ = BPFMapDataT::Create(this, "pid_cpu_time");
+  bpf_data_ = BPFMapDataT::Create(bcc_.get(), "pid_cpu_time");
   return Status::OK();
 }
 
 Status PIDRuntimeConnector::StopImpl() {
-  Close();
+  bcc_->Close();
   return Status::OK();
 }
 

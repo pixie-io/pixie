@@ -59,7 +59,7 @@ constexpr char kJavaProcCrashedWithProfilerCounter[] = "java_proc_crashed_with_p
 constexpr char kJavaProcCrashedWithoutProfilerCounter[] = "java_proc_crashed_without_profiler";
 
 ProcExitConnector::ProcExitConnector(std::string_view name)
-    : SourceConnector(name, kTables),
+    : BCCSourceConnector(name, kTables),
       java_proc_crashed_counter_(
           BuildCounter(kJavaProcCrashedCounter, "Count of the crashed Java processes")),
       java_proc_crashed_with_profiler_counter_(BuildCounter(
@@ -77,18 +77,18 @@ Status ProcExitConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PX_RETURN_IF_ERROR(InitBPFProgram(proc_exit_trace_bcc_script));
+  PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(proc_exit_trace_bcc_script));
 
   // Writes exit_code_offset to BPF array. Note that the other offsets are injected into BCC code
   // through macros.
-  const auto& offset_opt = BCCWrapper::task_struct_offsets_opt();
+  const auto& offset_opt = bpf_tools::BCCWrapper::task_struct_offsets_opt();
   if (offset_opt.has_value()) {
     LOG(INFO) << absl::Substitute(
         "Writing exit_code's offset to BPF array: offset=$0 bpf_array=$1 index=$2",
         offset_opt.value().exit_code_offset, kProcExitControlValuesArrayName,
         TASK_STRUCT_EXIT_CODE_OFFSET_INDEX);
     auto control_table = bpf_tools::WrappedBCCPerCPUArrayTable<uint64_t>::Create(
-        this, kProcExitControlValuesArrayName);
+        bcc_.get(), kProcExitControlValuesArrayName);
     PX_RETURN_IF_ERROR(control_table->SetValues(TASK_STRUCT_EXIT_CODE_OFFSET_INDEX,
                                                 offset_opt.value().exit_code_offset));
   }
@@ -98,8 +98,8 @@ Status ProcExitConnector::InitImpl() {
        kPerfBufferPerCPUSizeBytes, bpf_tools::PerfBufferSizeCategory::kControl},
   });
 
-  PX_RETURN_IF_ERROR(AttachTracepoints(kTracepointSpecs));
-  PX_RETURN_IF_ERROR(OpenPerfBuffers(perf_buffer_specs));
+  PX_RETURN_IF_ERROR(bcc_->AttachTracepoints(kTracepointSpecs));
+  PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
 
   return Status::OK();
 }
@@ -113,7 +113,7 @@ uint8_t GetExitSignal(uint32_t exit_code) { return exit_code & 0x7F; }
 void ProcExitConnector::TransferDataImpl(ConnectorContext* ctx) {
   DCHECK(data_tables_.size() == 1) << "Expect only one data table for proc_exit tracer";
 
-  PollPerfBuffers();
+  bcc_->PollPerfBuffers();
 
   DataTable* data_table = data_tables_[0];
   for (auto& event : events_) {

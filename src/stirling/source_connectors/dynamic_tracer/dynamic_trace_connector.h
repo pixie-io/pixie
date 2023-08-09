@@ -32,7 +32,7 @@
 namespace px {
 namespace stirling {
 
-class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
+class DynamicTraceConnector : public BCCSourceConnector {
  public:
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
@@ -51,7 +51,7 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   //               Consider how to expand to multiple tables if/when needed.
   DynamicTraceConnector(std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema,
                         dynamic_tracing::BCCProgram bcc_program)
-      : SourceConnector(name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
+      : BCCSourceConnector(name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
         table_schema_(std::move(table_schema)),
         bcc_program_(std::move(bcc_program)) {}
 

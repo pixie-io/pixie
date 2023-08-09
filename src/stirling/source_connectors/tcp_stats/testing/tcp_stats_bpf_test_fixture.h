@@ -52,7 +52,7 @@ class TcpTraceBPFTestFixture : public ::testing::Test {
     // Otherwise, perf buffers may already be full, causing lost events and flaky test results.
     ASSERT_TRUE(source_ != nullptr);
 
-    source_->PollPerfBuffers();
+    source_->BCC().PollPerfBuffers();
 
     transfer_data_thread_ = std::thread([this]() {
       transfer_enable_ = true;

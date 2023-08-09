@@ -71,6 +71,7 @@ namespace bpf_tools {
  */
 class BCCWrapper {
  public:
+  virtual ~BCCWrapper() {}
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
   /**
@@ -88,13 +89,7 @@ class BCCWrapper {
     return task_struct_offsets_opt_;
   }
 
-  ~BCCWrapper() {
-    // Not really required, because BPF destructor handles these.
-    // But we do it anyways out of paranoia.
-    Close();
-  }
-
-  ebpf::BPF& BPF() { return bpf_; }
+  virtual ebpf::BPF& BPF() = 0;
 
   /**
    * Compiles the BPF code.
@@ -107,37 +102,37 @@ class BCCWrapper {
    * @return error if no root access, code could not be compiled, or required linux headers are not
    *               available.
    */
-  Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
-                        bool requires_linux_headers = true,
-                        bool always_infer_task_struct_offsets = false);
+  virtual Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
+                                bool requires_linux_headers = true,
+                                bool always_infer_task_struct_offsets = false) = 0;
 
   /**
    * Attach a single kprobe.
    * @param probe Specifications of the kprobe (attach point, trace function, etc.).
    * @return Error if probe fails to attach.
    */
-  Status AttachKProbe(const KProbeSpec& probe);
+  virtual Status AttachKProbe(const KProbeSpec& probe) = 0;
 
   /**
    * Attach a single uprobe.
    * @param probe Specifications of the uprobe (attach point, trace function, etc.).
    * @return Error if probe fails to attach.
    */
-  Status AttachUProbe(const UProbeSpec& probe);
+  virtual Status AttachUProbe(const UProbeSpec& probe) = 0;
 
   /**
    * Attach a single tracepoint
    * @param probe Specifications of the tracepoint (attach point, trace function, etc.).
    * @return Error if probe fails to attach.
    */
-  Status AttachTracepoint(const TracepointSpec& probe);
+  virtual Status AttachTracepoint(const TracepointSpec& probe) = 0;
 
   /**
    * Attach a single sampling probe.
    * @param probe Specifications of the probe (bpf function and sampling frequency).
    * @return Error if probe fails to attach.
    */
-  Status AttachSamplingProbe(const SamplingProbeSpec& probe);
+  virtual Status AttachSamplingProbe(const SamplingProbeSpec& probe) = 0;
 
   /**
    * Open a perf buffer for reading events.
@@ -145,7 +140,7 @@ class BCCWrapper {
    * PollPerfBuffer().
    * @return Error if perf buffer cannot be opened (e.g. perf buffer does not exist).
    */
-  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer);
+  virtual Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer) = 0;
 
   /**
    * Attach a perf event, which runs a probe every time a perf counter reaches a threshold
@@ -153,54 +148,54 @@ class BCCWrapper {
    * @param perf_event Specification of the perf event and its sampling frequency.
    * @return Error if the perf event could not be attached.
    */
-  Status AttachPerfEvent(const PerfEventSpec& perf_event);
+  virtual Status AttachPerfEvent(const PerfEventSpec& perf_event) = 0;
 
   /**
    * Convenience function that attaches multiple kprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachKProbes(const ArrayView<KProbeSpec>& probes);
+  virtual Status AttachKProbes(const ArrayView<KProbeSpec>& probes) = 0;
 
   /**
    * Convenience function that attaches multiple tracepoints.
    * @param probes Vector of TracepointSpec.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachTracepoints(const ArrayView<TracepointSpec>& probes);
+  virtual Status AttachTracepoints(const ArrayView<TracepointSpec>& probes) = 0;
 
   /**
    * Convenience function that attaches multiple uprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes);
+  virtual Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes) = 0;
 
   /**
    * Convenience function that attaches multiple uprobes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes);
+  virtual Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes) = 0;
 
   /**
    * Convenience function that attaches a XDP program.
    */
-  Status AttachXDP(const std::string& dev_name, const std::string& fn_name);
+  virtual Status AttachXDP(const std::string& dev_name, const std::string& fn_name) = 0;
 
   /**
    * Convenience function that opens multiple perf buffers.
    * @param probes Vector of perf buffer descriptors.
    * @return Error of first failure (remaining perf buffer opens are not attempted).
    */
-  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers);
+  virtual Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers) = 0;
 
   /**
    * Convenience function that opens multiple perf events.
    * @param probes Vector of perf event descriptors.
    * @return Error of first failure (remaining perf event attaches are not attempted).
    */
-  Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
+  virtual Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events) = 0;
 
   /**
    * Convenience function that populates a BPFPerfEventArray (aka BPF_PERF_ARRAY), used to directly
@@ -212,11 +207,8 @@ class BCCWrapper {
    * @param config PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, etc...
    * @return Error status.
    */
-  Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
-                              const uint64_t config) {
-    PX_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
-    return Status::OK();
-  }
+  virtual Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
+                                      const uint64_t config) = 0;
 
   /**
    * Drains all of the opened perf buffers, calling the handle function that was
@@ -227,13 +219,13 @@ class BCCWrapper {
    *                   Default is 0, because if nothing is ready, then we want to go back to sleep
    *                   and catch new events in the next iteration.
    */
-  void PollPerfBuffers(int timeout_ms = 0);
-  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms);
+  virtual void PollPerfBuffers(int timeout_ms = 0) = 0;
+  virtual void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) = 0;
 
   /**
    * Detaches all probes, and closes all perf buffers that are open.
    */
-  void Close();
+  virtual void Close() = 0;
 
   // These are static counters of attached/open probes across all instances.
   // It is meant for verification that we have cleaned-up all resources in tests.
@@ -241,13 +233,70 @@ class BCCWrapper {
   static size_t num_open_perf_buffers() { return num_open_perf_buffers_; }
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
+ protected:
+  FRIEND_TEST(BCCWrapperTest, DetachUProbe);
+  virtual Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer) = 0;
+
+  // These are static counters across all instances, because:
+  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
+  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
+  // here.
+  inline static size_t num_attached_kprobes_;
+  inline static size_t num_attached_uprobes_;
+  inline static size_t num_attached_tracepoints_;
+  inline static size_t num_open_perf_buffers_;
+  inline static size_t num_attached_perf_events_;
+
+ private:
+  // This is shared by all source connectors that uses BCCWrapper.
+  inline static std::optional<utils::TaskStructOffsets> task_struct_offsets_opt_;
+};
+
+class BCCWrapperImpl : public BCCWrapper {
+ public:
+  virtual ~BCCWrapperImpl() {
+    // Not really required, because BPF destructor handles these.
+    // But we do it anyways out of paranoia.
+    Close();
+  }
+
+  ebpf::BPF& BPF() override { return bpf_; }
+
+  Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
+                        bool requires_linux_headers = true,
+                        bool always_infer_task_struct_offsets = false) override;
+  Status AttachKProbe(const KProbeSpec& probe) override;
+  Status AttachUProbe(const UProbeSpec& probe) override;
+  Status AttachTracepoint(const TracepointSpec& probe) override;
+  Status AttachSamplingProbe(const SamplingProbeSpec& probe) override;
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer) override;
+  Status AttachPerfEvent(const PerfEventSpec& perf_event) override;
+  Status AttachKProbes(const ArrayView<KProbeSpec>& probes) override;
+  Status AttachTracepoints(const ArrayView<TracepointSpec>& probes) override;
+  Status AttachUProbes(const ArrayView<UProbeSpec>& uprobes) override;
+  Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes) override;
+  Status AttachXDP(const std::string& dev_name, const std::string& fn_name) override;
+  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers) override;
+  Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events) override;
+  Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
+                              const uint64_t config) override {
+    PX_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
+    return Status::OK();
+  }
+  void PollPerfBuffers(int timeout_ms = 0) override;
+  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) override;
+  void Close() override;
+
+ protected:
+  Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer) override;
+  std::vector<PerfBufferSpec> perf_buffers_;
+
  private:
   FRIEND_TEST(BCCWrapperTest, DetachUProbe);
 
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);
   Status DetachTracepoint(const TracepointSpec& probe);
-  Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
 
   // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.
@@ -264,7 +313,6 @@ class BCCWrapper {
   std::vector<KProbeSpec> kprobes_;
   std::vector<UProbeSpec> uprobes_;
   std::vector<TracepointSpec> tracepoints_;
-  std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
 
   std::string system_headers_include_dir_;
@@ -280,21 +328,9 @@ class BCCWrapper {
   //   DEBUG_BPF_REGISTER_STATE = 0x10,
   //   DEBUG_BTF = 0x20,
   ebpf::BPF bpf_;
-
-  // These are static counters across all instances, because:
-  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
-  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
-  // here.
-  inline static size_t num_attached_kprobes_;
-  inline static size_t num_attached_uprobes_;
-  inline static size_t num_attached_tracepoints_;
-  inline static size_t num_open_perf_buffers_;
-  inline static size_t num_attached_perf_events_;
-
- private:
-  // This is shared by all source connectors that uses BCCWrapper.
-  inline static std::optional<utils::TaskStructOffsets> task_struct_offsets_opt_;
 };
+
+std::unique_ptr<BCCWrapper> CreateBCC();
 
 template <typename T>
 class WrappedBCCArrayTable {

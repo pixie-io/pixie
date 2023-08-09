@@ -173,10 +173,10 @@ Status DynamicTraceConnector::InitImpl() {
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
 
-  PX_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
+  PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(bcc_program_.code));
 
   for (const auto& uprobe_spec : bcc_program_.uprobe_specs) {
-    PX_RETURN_IF_ERROR(AttachUProbe(uprobe_spec));
+    PX_RETURN_IF_ERROR(bcc_->AttachUProbe(uprobe_spec));
   }
 
   // TODO(yzhao/oazizi): Might need to change this if we need to support multiple perf buffers.
@@ -187,7 +187,7 @@ Status DynamicTraceConnector::InitImpl() {
       .cb_cookie = this,
   };
 
-  PX_RETURN_IF_ERROR(OpenPerfBuffer(spec));
+  PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffer(spec));
 
   return Status::OK();
 }
@@ -495,7 +495,7 @@ void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
     return;
   }
 
-  PollPerfBuffers();
+  bcc_->PollPerfBuffers();
 
   for (const auto& item : data_items_) {
     // TODO(yzhao): Right now only support scalar types. We should replace type with ScalarType

@@ -423,7 +423,7 @@ TEST_F(StirlingErrorTest, UProbeDeploymentError) {
   ASSERT_OK(stirling_->RunAsThread());
   ASSERT_OK(stirling_->WaitUntilRunning(std::chrono::seconds(5)));
 
-  bpf_tools::BCCWrapper bcc_wrapper;
+  bpf_tools::BCCWrapperImpl bcc_wrapper;
   bpf_tools::UProbeSpec spec{
       .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
       .symbol = "foo",

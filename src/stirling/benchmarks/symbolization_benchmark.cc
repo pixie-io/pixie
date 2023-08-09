@@ -24,7 +24,7 @@
 #include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
-using ::px::stirling::bpf_tools::BCCWrapper;
+using ::px::stirling::bpf_tools::BCCWrapperImpl;
 using ::px::stirling::bpf_tools::WrappedBCCArrayTable;
 using ::px::stirling::bpf_tools::WrappedBCCStackTable;
 using ::px::stirling::obj_tools::ElfReader;
@@ -64,7 +64,7 @@ const std::string_view kProgram = R"(
   }
 )";
 
-std::vector<uintptr_t> CollectStackTrace(BCCWrapper* bcc_wrapper,
+std::vector<uintptr_t> CollectStackTrace(BCCWrapperImpl* bcc_wrapper,
                                          const std::filesystem::path& self_path) {
   ::px::stirling::bpf_tools::UProbeSpec spec = {
       .binary_path = self_path.string(),
@@ -90,7 +90,7 @@ std::vector<uintptr_t> CollectStackTrace(BCCWrapper* bcc_wrapper,
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_elf_reader_symbolization(benchmark::State& state) {
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   PX_ASSIGN_OR_EXIT(std::filesystem::path self_path, ::px::fs::ReadSymlink("/proc/self/exe"));
   std::vector<uintptr_t> addrs = CollectStackTrace(&bcc_wrapper, self_path);
   PX_ASSIGN_OR_EXIT(auto elf_reader,
@@ -112,7 +112,7 @@ static void BM_elf_reader_symbolization(benchmark::State& state) {
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_elf_reader_symbolization_indexed(benchmark::State& state) {
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   PX_ASSIGN_OR_EXIT(std::filesystem::path self_path, ::px::fs::ReadSymlink("/proc/self/exe"));
   std::vector<uintptr_t> addrs = CollectStackTrace(&bcc_wrapper, self_path);
   PX_ASSIGN_OR_EXIT(auto elf_reader, ElfReader::Create(self_path.string()));
@@ -134,7 +134,7 @@ static void BM_elf_reader_symbolization_indexed(benchmark::State& state) {
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_bcc_symbolization(benchmark::State& state) {
-  BCCWrapper bcc_wrapper;
+  BCCWrapperImpl bcc_wrapper;
   PX_ASSIGN_OR_EXIT(std::filesystem::path self_path, ::px::fs::ReadSymlink("/proc/self/exe"));
   std::vector<uintptr_t> addrs = CollectStackTrace(&bcc_wrapper, self_path);
   auto bcc_symbolizer = WrappedBCCStackTable::Create(&bcc_wrapper, "stack_traces");
