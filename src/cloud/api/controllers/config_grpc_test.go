@@ -77,7 +77,6 @@ func TestConfigForVizier(t *testing.T) {
 				Namespace:  "test-namespace",
 				VzSpec:     vzSpec,
 				K8sVersion: "1.24.1",
-				VizierID:   "test-id",
 			}
 
 			nameToYamlContent := make(map[string]string)
@@ -93,7 +92,6 @@ func TestConfigForVizier(t *testing.T) {
 				Namespace:  "test-namespace",
 				VzSpec:     vzSpec,
 				K8sVersion: "1.24.1",
-				VizierID:   "test-id",
 			})
 			require.NoError(t, err)
 			assert.Equal(t, resp.NameToYamlContent["fileAName"], "fileAContent")
