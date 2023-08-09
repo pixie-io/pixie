@@ -332,10 +332,7 @@ class BCCWrapperImpl : public BCCWrapper {
 
 std::unique_ptr<BCCWrapper> CreateBCC();
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
 // Wrapped maps & arrays.
-
 template <typename T>
 class WrappedBCCArrayTable {
  public:
@@ -540,11 +537,11 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   std::unique_ptr<U> underlying_;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Creators:
+// Creators fns for wrapped maps & arrays:
 template <typename BaseT, typename ImplT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
+  // The decision logic for "normal" vs. "recording" vs. "replaying" impl. will be inserted
+  // here in a future PR.
   return std::make_unique<ImplT>(bcc, name);
 }
 
