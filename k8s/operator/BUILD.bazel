@@ -23,8 +23,8 @@ load("//bazel:kustomize.bzl", "kustomize_build")
 package(default_visibility = ["//visibility:public"])
 
 OPERATOR_IMAGE_TO_LABEL = {
-    "$(IMAGE_PREFIX)operator/operator_image:$(BUNDLE_VERSION)": "//src/operator:operator_image",
-    "$(IMAGE_PREFIX)operator/vizier_deleter:$(BUNDLE_VERSION)": "//src/utils/pixie_deleter:vizier_deleter_image",
+    "$(IMAGE_PREFIX)/operator/operator_image:$(BUNDLE_VERSION)": "//src/operator:operator_image",
+    "$(IMAGE_PREFIX)/operator/vizier_deleter:$(BUNDLE_VERSION)": "//src/utils/pixie_deleter:vizier_deleter_image",
 }
 
 container_bundle(

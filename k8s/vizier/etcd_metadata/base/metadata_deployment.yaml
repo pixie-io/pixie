@@ -83,7 +83,7 @@ spec:
           name: certs
       containers:
       - name: app
-        image: gcr.io/pixie-oss/pixie-dev/vizier/metadata_server_image:latest
+        image: vizier/metadata_server_image:latest
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

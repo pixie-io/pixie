@@ -17,19 +17,19 @@
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
-load("//bazel:images.bzl", "DEV_PREFIX", "image_replacements", "list_image_bundle")
+load("//bazel:images.bzl", "image_replacements", "list_image_bundle")
 load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
 VIZIER_IMAGE_TO_LABEL = {
-    "$(IMAGE_PREFIX)vizier/cert_provisioner_image:$(BUNDLE_VERSION)": "//src/utils/cert_provisioner:cert_provisioner_image",
-    "$(IMAGE_PREFIX)vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
-    "$(IMAGE_PREFIX)vizier/kelvin_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/kelvin:kelvin_image",
-    "$(IMAGE_PREFIX)vizier/metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
-    "$(IMAGE_PREFIX)vizier/pem_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/pem:pem_image",
-    "$(IMAGE_PREFIX)vizier/query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
-    "$(IMAGE_PREFIX)vizier/vizier_updater_image:$(BUNDLE_VERSION)": "//src/utils/pixie_updater:vizier_updater_image",
+    "$(IMAGE_PREFIX)/vizier/cert_provisioner_image:$(BUNDLE_VERSION)": "//src/utils/cert_provisioner:cert_provisioner_image",
+    "$(IMAGE_PREFIX)/vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
+    "$(IMAGE_PREFIX)/vizier/kelvin_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/kelvin:kelvin_image",
+    "$(IMAGE_PREFIX)/vizier/metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
+    "$(IMAGE_PREFIX)/vizier/pem_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/pem:pem_image",
+    "$(IMAGE_PREFIX)/vizier/query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
+    "$(IMAGE_PREFIX)/vizier/vizier_updater_image:$(BUNDLE_VERSION)": "//src/utils/pixie_updater:vizier_updater_image",
 }
 
 kustomize_build(
@@ -49,9 +49,7 @@ kustomize_build(
     ),
     kustomization = "etcd_metadata/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = VIZIER_IMAGE_TO_LABEL,
-        new_prefix = "{IMAGE_PREFIX}",
     ),
     toolchains = [
         "//k8s:bundle_version",
@@ -75,9 +73,7 @@ kustomize_build(
     ),
     kustomization = "etcd_metadata/autopilot/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = VIZIER_IMAGE_TO_LABEL,
-        new_prefix = "{IMAGE_PREFIX}",
     ),
     toolchains = [
         "//k8s:bundle_version",
@@ -102,9 +98,7 @@ kustomize_build(
     ),
     kustomization = "persistent_metadata/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = VIZIER_IMAGE_TO_LABEL,
-        new_prefix = "{IMAGE_PREFIX}",
     ),
     toolchains = [
         "//k8s:bundle_version",
@@ -128,9 +122,7 @@ kustomize_build(
     ),
     kustomization = "persistent_metadata/autopilot/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = VIZIER_IMAGE_TO_LABEL,
-        new_prefix = "{IMAGE_PREFIX}",
     ),
     toolchains = [
         "//k8s:bundle_version",

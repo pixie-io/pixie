@@ -16,27 +16,27 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("//bazel:images.bzl", "DEV_PREFIX", "PROPRIETARY_PREFIX", "image_replacements", "list_image_bundle")
+load("//bazel:images.bzl", "image_replacements", "list_image_bundle")
 load("//bazel:kustomize.bzl", "kustomize_build")
 
 package(default_visibility = ["//visibility:public"])
 
 CLOUD_IMAGE_TO_LABEL = {
-    "$(IMAGE_PREFIX)cloud/api_server_image:$(BUNDLE_VERSION)": "//src/cloud/api:api_server_image",
-    "$(IMAGE_PREFIX)cloud/artifact_tracker_server_image:$(BUNDLE_VERSION)": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
-    "$(IMAGE_PREFIX)cloud/auth_server_image:$(BUNDLE_VERSION)": "//src/cloud/auth:auth_server_image",
-    "$(IMAGE_PREFIX)cloud/config_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/config_manager:config_manager_server_image",
-    "$(IMAGE_PREFIX)cloud/cron_script_server_image:$(BUNDLE_VERSION)": "//src/cloud/cron_script:cron_script_server_image",
-    "$(IMAGE_PREFIX)cloud/indexer_server_image:$(BUNDLE_VERSION)": "//src/cloud/indexer:indexer_server_image",
-    "$(IMAGE_PREFIX)cloud/metrics_server_image:$(BUNDLE_VERSION)": "//src/cloud/metrics:metrics_server_image",
-    "$(IMAGE_PREFIX)cloud/plugin/load_db:$(BUNDLE_VERSION)": "//src/cloud/plugin/load_db:plugin_db_updater_image",
-    "$(IMAGE_PREFIX)cloud/plugin_server_image:$(BUNDLE_VERSION)": "//src/cloud/plugin:plugin_server_image",
-    "$(IMAGE_PREFIX)cloud/profile_server_image:$(BUNDLE_VERSION)": "//src/cloud/profile:profile_server_image",
-    "$(IMAGE_PREFIX)cloud/project_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/project_manager:project_manager_server_image",
-    "$(IMAGE_PREFIX)cloud/proxy_server_image:$(BUNDLE_VERSION)": "//src/cloud/proxy:proxy_server_image",
-    "$(IMAGE_PREFIX)cloud/scriptmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/scriptmgr:scriptmgr_server_image",
-    "$(IMAGE_PREFIX)cloud/vzconn_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzconn:vzconn_server_image",
-    "$(IMAGE_PREFIX)cloud/vzmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzmgr:vzmgr_server_image",
+    "$(IMAGE_PREFIX)/cloud/api_server_image:$(BUNDLE_VERSION)": "//src/cloud/api:api_server_image",
+    "$(IMAGE_PREFIX)/cloud/artifact_tracker_server_image:$(BUNDLE_VERSION)": "//src/cloud/artifact_tracker:artifact_tracker_server_image",
+    "$(IMAGE_PREFIX)/cloud/auth_server_image:$(BUNDLE_VERSION)": "//src/cloud/auth:auth_server_image",
+    "$(IMAGE_PREFIX)/cloud/config_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/config_manager:config_manager_server_image",
+    "$(IMAGE_PREFIX)/cloud/cron_script_server_image:$(BUNDLE_VERSION)": "//src/cloud/cron_script:cron_script_server_image",
+    "$(IMAGE_PREFIX)/cloud/indexer_server_image:$(BUNDLE_VERSION)": "//src/cloud/indexer:indexer_server_image",
+    "$(IMAGE_PREFIX)/cloud/metrics_server_image:$(BUNDLE_VERSION)": "//src/cloud/metrics:metrics_server_image",
+    "$(IMAGE_PREFIX)/cloud/plugin/load_db:$(BUNDLE_VERSION)": "//src/cloud/plugin/load_db:plugin_db_updater_image",
+    "$(IMAGE_PREFIX)/cloud/plugin_server_image:$(BUNDLE_VERSION)": "//src/cloud/plugin:plugin_server_image",
+    "$(IMAGE_PREFIX)/cloud/profile_server_image:$(BUNDLE_VERSION)": "//src/cloud/profile:profile_server_image",
+    "$(IMAGE_PREFIX)/cloud/project_manager_server_image:$(BUNDLE_VERSION)": "//src/cloud/project_manager:project_manager_server_image",
+    "$(IMAGE_PREFIX)/cloud/proxy_server_image:$(BUNDLE_VERSION)": "//src/cloud/proxy:proxy_server_image",
+    "$(IMAGE_PREFIX)/cloud/scriptmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/scriptmgr:scriptmgr_server_image",
+    "$(IMAGE_PREFIX)/cloud/vzconn_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzconn:vzconn_server_image",
+    "$(IMAGE_PREFIX)/cloud/vzmgr_server_image:$(BUNDLE_VERSION)": "//src/cloud/vzmgr:vzmgr_server_image",
 }
 
 kustomize_build(
@@ -51,11 +51,10 @@ kustomize_build(
     ),
     kustomization = "staging/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = CLOUD_IMAGE_TO_LABEL,
-        new_prefix = PROPRIETARY_PREFIX,
     ),
     toolchains = [
+        "//k8s:image_prefix",
         "//k8s:bundle_version",
     ],
 )
@@ -72,11 +71,10 @@ kustomize_build(
     ),
     kustomization = "prod/kustomization.yaml",
     replacements = image_replacements(
-        existing_prefix = DEV_PREFIX,
         image_map = CLOUD_IMAGE_TO_LABEL,
-        new_prefix = PROPRIETARY_PREFIX,
     ),
     toolchains = [
+        "//k8s:image_prefix",
         "//k8s:bundle_version",
     ],
 )

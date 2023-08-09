@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: updater
-        image: gcr.io/pixie-oss/pixie-dev/cloud/plugin/load_db:latest
+        image: cloud/plugin/load_db:latest
         command: ["/busybox/sh", "-c"]
         args:
         - |
