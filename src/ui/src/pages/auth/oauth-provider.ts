@@ -46,8 +46,8 @@ export interface OAuthProviderClient {
   getInvitationComponent(): React.FC | undefined;
 
   /** Gets the login buttons for this OAuthProvider. */
-  getLoginButtons(): React.ReactElement;
+  getLoginButtons(): React.ReactNode;
 
   /** Gets the signup buttons for this OAuthProvider. */
-  getSignupButtons(): React.ReactElement;
+  getSignupButtons(): React.ReactNode;
 }

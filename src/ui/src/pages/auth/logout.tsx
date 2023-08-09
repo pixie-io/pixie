@@ -20,11 +20,11 @@ import * as React from 'react';
 
 import Axios from 'axios';
 
+import { GetCSRFCookie } from 'app/pages/auth/utils';
 import pixieAnalytics from 'app/utils/analytics';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 
 import { BasePage } from './base';
-import { GetCSRFCookie } from './utils';
 
 // eslint-disable-next-line react-memo/require-memo
 export const LogoutPage: React.FC = () => {

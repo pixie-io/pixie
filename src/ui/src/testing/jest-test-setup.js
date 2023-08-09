@@ -16,8 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import 'regenerator-runtime/runtime';
 import { TextDecoder, TextEncoder } from 'util';
+
+import { MockOAuthClient } from 'app/pages/auth/mock-oauth-provider';
+
+import 'regenerator-runtime/runtime';
 
 global.TextDecoder = TextDecoder;
 global.TextEncoder = TextEncoder;
@@ -55,4 +58,10 @@ Object.defineProperty(window, '__PIXIE_FLAGS__', { value: mockPixieFlags });
 jest.mock('react', () => ({
   ...jest.requireActual('react'),
   useLayoutEffect: jest.requireActual('react').useEffect,
+}));
+
+// The sidebar checks this, and many page tests include the sidebar. So, we mock auth.
+jest.mock('app/pages/auth/utils', () => ({
+  GetCSRFCookie: () => '',
+  GetOAuthProvider: () => MockOAuthClient,
 }));

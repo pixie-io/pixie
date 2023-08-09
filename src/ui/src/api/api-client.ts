@@ -22,6 +22,7 @@ import fetch from 'cross-fetch';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
+import { GetCSRFCookie } from 'app/pages/auth/utils';
 import { Status } from 'app/types/generated/vizierapi_pb';
 import { containsMutation } from 'app/utils/pxl';
 
@@ -34,7 +35,6 @@ import {
   VizierQueryFunc,
   ExecuteScriptOptions,
 } from './vizier-grpc-client';
-import { GetCSRFCookie } from '../pages/auth/utils';
 
 /**
  * When calling `PixieAPIClient.create`, this specifies which clusters to connect to, and any special configuration for
