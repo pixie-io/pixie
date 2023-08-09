@@ -73,6 +73,20 @@ func newDeploymentKeyClient() (vzmgrpb.VZDeploymentKeyServiceClient, error) {
 	return vzmgrpb.NewVZDeploymentKeyServiceClient(deployKeyChannel), nil
 }
 
+func newVizierManagerClient() (vzmgrpb.VZMgrServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	vizierManagerChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return vzmgrpb.NewVZMgrServiceClient(vizierManagerChannel), nil
+}
+
 func main() {
 	services.SetupService("config-manager-service", 50500)
 	services.PostFlagSetupAndParse()
@@ -93,7 +107,13 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-	svr := controllers.NewServer(atClient, deployKeyClient, viper.GetString("ld_sdk_key"))
+
+	vzmgrClient, err := newVizierManagerClient()
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect with VizierManager Service.")
+	}
+
+	svr := controllers.NewServer(atClient, deployKeyClient, viper.GetString("ld_sdk_key"), vzmgrClient)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{
 			"/px.services.ConfigManagerService/GetConfigForVizier":   true,
