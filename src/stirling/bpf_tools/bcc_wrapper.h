@@ -515,8 +515,6 @@ class WrappedBCCStackTable {
   virtual std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) = 0;
   virtual std::string GetAddrSymbol(const uintptr_t addr, const int pid) = 0;
   virtual void ClearStackID(const int stack_id) = 0;
-
-  // U* RawPtr() { return underlying_.get(); }
 };
 
 class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
@@ -532,8 +530,6 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   }
 
   void ClearStackID(const int stack_id) override { underlying_->clear_stack_id(stack_id); }
-
-  // U* RawPtr() { return underlying_.get(); }
 
   WrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_stack_table(name_));
