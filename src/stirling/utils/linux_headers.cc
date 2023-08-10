@@ -638,13 +638,12 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   PX_RETURN_IF_ERROR(
       ExtractPackagedHeaders(&packaged_headers, staging_directory, expected_directory));
   // Modify version.h to the specific kernel version in the staged headers.
-  PX_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
+  PX_RETURN_IF_ERROR(ModifyKernelVersion(staging_directory, kernel_version.code()));
   // Find valid kernel config and patch the staged headers to match.
-  PX_RETURN_IF_ERROR(ApplyConfigPatches(packaged_headers.path));
+  PX_RETURN_IF_ERROR(ApplyConfigPatches(staging_directory));
   // Move the staged headers to the expected, target directory.
-  std::filesystem::rename(packaged_headers.path, expected_directory);
-  packaged_headers.path = expected_directory;
-  PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
+  std::filesystem::rename(staging_directory, expected_directory);
+  PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(expected_directory, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());
   g_packaged_headers_installed = true;
