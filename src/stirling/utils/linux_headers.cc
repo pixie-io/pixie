@@ -498,12 +498,12 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
-Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec* headers_package,
+Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec& headers_package,
                               const std::string& staging_directory,
                               const std::string& expected_directory) {
   std::filesystem::create_directories(staging_directory);
   // Instantiate a minitar object with the path to the tarball.
-  ::px::tools::Minitar minitar(headers_package->path.string());
+  ::px::tools::Minitar minitar(headers_package.path.string());
   // Extract the files from the tarball, stripping the leading prefix
   // "usr/src/linux-headers-$0.$1.$2-pl" to avoid unnecessary nesting in the staging directory.
   std::string_view expected_directory_view = expected_directory;
@@ -635,7 +635,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   // Extract the packaged headers to a staging directory, stripping the expected target directory
   // prefix.
   PX_RETURN_IF_ERROR(
-      ExtractPackagedHeaders(&packaged_headers, staging_directory, expected_directory));
+      ExtractPackagedHeaders(packaged_headers, staging_directory, expected_directory));
   // Modify version.h to the specific kernel version in the staged headers.
   PX_RETURN_IF_ERROR(ModifyKernelVersion(staging_directory, kernel_version.code()));
   // Find valid kernel config and patch the staged headers to match.
