@@ -98,11 +98,11 @@ Status Minitar::Extract(std::string_view dest_dir, std::string_view prefix_to_st
     PX_RETURN_IF_NOT_ARCHIVE_OK(r, a);
 
     // Get the original entry pathname.
-    std::string pathname(archive_entry_pathname(entry));
+    std::string_view pathname(archive_entry_pathname(entry));
 
     // Check if the pathname starts with the prefix to strip, and if so, remove it.
     if (!prefix_to_strip.empty() && absl::StartsWith(pathname, prefix_to_strip)) {
-      pathname.erase(0, prefix_to_strip.length());
+      pathname.remove_prefix(prefix_to_strip.length());
     }
 
     // if a destination directory is provided...

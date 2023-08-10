@@ -499,13 +499,15 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
 }
 
 Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec* headers_package,
-                              const std::string staging_directory,
-                              const std::string expected_directory) {
+                              const std::string& staging_directory,
+                              const std::string& expected_directory) {
   std::filesystem::create_directories(staging_directory);
+  // Instantiate a minitar object with the path to the tarball.
+  ::px::tools::Minitar minitar(headers_package->path.string());
   // Extract the files from the tarball, stripping the leading prefix
   // "usr/src/linux-headers-$0.$1.$2-pl" to avoid unnecessary nesting in the staging directory.
-  ::px::tools::Minitar minitar(headers_package->path.string());
-  const std::string prefix_to_strip = expected_directory.substr(1);
+  std::string_view expected_directory_view = expected_directory;
+  std::string_view prefix_to_strip = expected_directory_view.substr(1);
   PX_RETURN_IF_ERROR(minitar.Extract(staging_directory, prefix_to_strip));
   // Check that the staging path was created.
   if (!fs::Exists(staging_directory)) {
@@ -621,7 +623,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
       absl::Substitute("$0.$1.$2-pl", packaged_headers.version.version,
                        packaged_headers.version.major_rev, packaged_headers.version.minor_rev);
   const std::string staging_directory = absl::StrCat("/usr/src/staging/linux-headers-", version);
-  const std::string expected_directory = absl::StrCat("/usr/src/linux-headers-" + version);
+  const std::string expected_directory = absl::StrCat("/usr/src/linux-headers-", version);
   // Verify that the target directory doesn't already exist.
   // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
   if (fs::Exists(expected_directory)) {
