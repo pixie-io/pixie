@@ -332,17 +332,23 @@ class BCCWrapperImpl : public BCCWrapper {
 
 std::unique_ptr<BCCWrapper> CreateBCC();
 
+// Wrapped maps & arrays.
 template <typename T>
 class WrappedBCCArrayTable {
  public:
+  virtual ~WrappedBCCArrayTable() {}
+  static std::unique_ptr<WrappedBCCArrayTable> Create(BCCWrapper* bcc, const std::string& name);
+
+  virtual StatusOr<T> GetValue(const uint32_t idx) = 0;
+  virtual Status SetValue(const uint32_t idx, const T& value) = 0;
+};
+
+template <typename T>
+class WrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
+ public:
   using U = ebpf::BPFArrayTable<T>;
 
-  static std::unique_ptr<WrappedBCCArrayTable> Create(bpf_tools::BCCWrapper* bcc,
-                                                      const std::string& name) {
-    return std::unique_ptr<WrappedBCCArrayTable>(new WrappedBCCArrayTable(bcc, name));
-  }
-
-  StatusOr<T> GetValue(const uint32_t idx) {
+  StatusOr<T> GetValue(const uint32_t idx) override {
     T value;
     ebpf::StatusTuple s = underlying_->get_value(idx, value);
     if (!s.ok()) {
@@ -351,7 +357,7 @@ class WrappedBCCArrayTable {
     return value;
   }
 
-  Status SetValue(const uint32_t idx, const T& value) {
+  Status SetValue(const uint32_t idx, const T& value) override {
     ebpf::StatusTuple s = underlying_->update_value(idx, value);
     if (!s.ok()) {
       return error::Internal(absl::Substitute(err_msg_, "set", name_, idx, s.msg()));
@@ -359,31 +365,39 @@ class WrappedBCCArrayTable {
     return Status::OK();
   }
 
- private:
-  WrappedBCCArrayTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_array_table<T>(name_));
   }
 
+ private:
   const std::string name_;
   char const* const err_msg_ = "BPF failed to $0 value for array table: $1, index: $2. $3.";
   std::unique_ptr<U> underlying_;
 };
 
-// Template parameter kUserSpaceManaged enables the "shadow keys" optimization.
-// Set to true iff the map is modified/updated from user space only.
 template <typename K, typename V, bool kUserSpaceManaged = false>
 class WrappedBCCMap {
  public:
+  static std::unique_ptr<WrappedBCCMap> Create(bpf_tools::BCCWrapper* bcc, const std::string& name);
+  virtual ~WrappedBCCMap() {}
+
+  virtual size_t capacity() const = 0;
+  virtual StatusOr<V> GetValue(const K& key) const = 0;
+  virtual Status SetValue(const K& key, const V& value) = 0;
+  virtual Status RemoveValue(const K& key) = 0;
+  virtual std::vector<std::pair<K, V>> GetTableOffline(const bool clear_table = false) = 0;
+};
+
+// Template parameter kUserSpaceManaged enables the "shadow keys" optimization.
+// Set to true iff the map is modified/updated from user space only.
+template <typename K, typename V, bool kUserSpaceManaged = false>
+class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
+ public:
   using U = ebpf::BPFHashTable<K, V>;
 
-  static std::unique_ptr<WrappedBCCMap> Create(bpf_tools::BCCWrapper* bcc,
-                                               const std::string& name) {
-    return std::unique_ptr<WrappedBCCMap>(new WrappedBCCMap(bcc, name));
-  }
+  size_t capacity() const override { return underlying_->capacity(); }
 
-  size_t capacity() const { return underlying_->capacity(); }
-
-  StatusOr<V> GetValue(const K& key) const {
+  StatusOr<V> GetValue(const K& key) const override {
     V value;
     ebpf::StatusTuple s = underlying_->get_value(key, value);
     if (!s.ok()) {
@@ -392,7 +406,7 @@ class WrappedBCCMap {
     return value;
   }
 
-  Status SetValue(const K& key, const V& value) {
+  Status SetValue(const K& key, const V& value) override {
     ebpf::StatusTuple s = underlying_->update_value(key, value);
     if (!s.ok()) {
       return error::Internal(absl::Substitute(err_msg_, "set", name_, s.msg()));
@@ -403,7 +417,7 @@ class WrappedBCCMap {
     return Status::OK();
   }
 
-  Status RemoveValue(const K& key) {
+  Status RemoveValue(const K& key) override {
     if constexpr (kUserSpaceManaged) {
       if (!shadow_keys_.contains(key)) {
         return Status::OK();
@@ -420,7 +434,7 @@ class WrappedBCCMap {
     return Status::OK();
   }
 
-  std::vector<std::pair<K, V>> GetTableOffline(const bool clear_table = false) {
+  std::vector<std::pair<K, V>> GetTableOffline(const bool clear_table = false) override {
     if constexpr (!kUserSpaceManaged) {
       return underlying_->get_table_offline(clear_table);
     }
@@ -443,11 +457,11 @@ class WrappedBCCMap {
     return r;
   }
 
- private:
-  WrappedBCCMap(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCMapImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_hash_table<K, V>(name_));
   }
 
+ private:
   const std::string name_;
   char const* const err_msg_ = "BPF failed to $0 value for map: $1. $2.";
   std::unique_ptr<U> underlying_;
@@ -457,14 +471,19 @@ class WrappedBCCMap {
 template <typename T>
 class WrappedBCCPerCPUArrayTable {
  public:
+  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                            const std::string& name);
+  virtual ~WrappedBCCPerCPUArrayTable() {}
+
+  virtual Status SetValues(const int idx, const T& value) = 0;
+};
+
+template <typename T>
+class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
+ public:
   using U = ebpf::BPFPercpuArrayTable<T>;
 
-  static std::unique_ptr<WrappedBCCPerCPUArrayTable> Create(bpf_tools::BCCWrapper* bcc,
-                                                            const std::string& name) {
-    return std::unique_ptr<WrappedBCCPerCPUArrayTable>(new WrappedBCCPerCPUArrayTable(bcc, name));
-  }
-
-  Status SetValues(const int idx, const T& value) {
+  Status SetValues(const int idx, const T& value) override {
     std::vector<T> values(bpf_tools::BCCWrapper::kCPUCount, value);
     ebpf::StatusTuple s = underlying_->update_value(idx, values);
     if (!s.ok()) {
@@ -474,44 +493,81 @@ class WrappedBCCPerCPUArrayTable {
     return Status::OK();
   }
 
- private:
-  WrappedBCCPerCPUArrayTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_percpu_array_table<T>(name_));
   }
 
+ private:
   const std::string name_;
   std::unique_ptr<U> underlying_;
 };
 
 class WrappedBCCStackTable {
  public:
+  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
+                                                      const std::string& name);
+  virtual ~WrappedBCCStackTable() {}
+
+  virtual std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) = 0;
+  virtual std::string GetAddrSymbol(const uintptr_t addr, const int pid) = 0;
+  virtual void ClearStackID(const int stack_id) = 0;
+};
+
+class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
+ public:
   using U = ebpf::BPFStackTable;
 
-  static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
-                                                      const std::string& name) {
-    return std::unique_ptr<WrappedBCCStackTable>(new WrappedBCCStackTable(bcc, name));
-  }
-
-  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) {
+  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) override {
     return underlying_->get_stack_addr(stack_id, clear_stack_id);
   }
 
-  std::string GetAddrSymbol(const uintptr_t addr, const int pid) {
+  std::string GetAddrSymbol(const uintptr_t addr, const int pid) override {
     return underlying_->get_addr_symbol(addr, pid);
   }
 
-  void ClearStackID(const int stack_id) { underlying_->clear_stack_id(stack_id); }
+  void ClearStackID(const int stack_id) override { underlying_->clear_stack_id(stack_id); }
 
-  U* RawPtr() { return underlying_.get(); }
-
- private:
-  WrappedBCCStackTable(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
+  WrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
     underlying_ = std::make_unique<U>(bcc->BPF().get_stack_table(name_));
   }
 
+ private:
   const std::string name_;
   std::unique_ptr<U> underlying_;
 };
+
+// Creators fns for wrapped maps & arrays:
+template <typename BaseT, typename ImplT>
+std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
+  // The decision logic for "normal" vs. "recording" vs. "replaying" impl. will be inserted
+  // here in a future PR.
+  return std::make_unique<ImplT>(bcc, name);
+}
+
+template <typename T>
+std::unique_ptr<WrappedBCCArrayTable<T>> WrappedBCCArrayTable<T>::Create(BCCWrapper* bcc,
+                                                                         const std::string& name) {
+  using BaseT = WrappedBCCArrayTable<T>;
+  using ImplT = WrappedBCCArrayTableImpl<T>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+}
+
+template <typename K, typename V, bool U>
+std::unique_ptr<WrappedBCCMap<K, V, U>> WrappedBCCMap<K, V, U>::Create(BCCWrapper* bcc,
+                                                                       const std::string& name) {
+  using BaseT = WrappedBCCMap<K, V, U>;
+  using ImplT = WrappedBCCMapImpl<K, V, U>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+}
+
+template <typename T>
+std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Create(
+    BCCWrapper* bcc, const std::string& name) {
+  using BaseT = WrappedBCCPerCPUArrayTable<T>;
+  using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+}
 
 }  // namespace bpf_tools
 }  // namespace stirling
