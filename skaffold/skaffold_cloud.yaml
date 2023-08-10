@@ -3,63 +3,63 @@ apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  - image: cloud/api_server_image
+  - image: cloud-api_server_image
     context: .
     bazel:
       target: //src/cloud/api:api_server_image.tar
-  - image: cloud/auth_server_image
+  - image: cloud-auth_server_image
     context: .
     bazel:
       target: //src/cloud/auth:auth_server_image.tar
-  - image: cloud/profile_server_image
+  - image: cloud-profile_server_image
     context: .
     bazel:
       target: //src/cloud/profile:profile_server_image.tar
-  - image: cloud/proxy_server_image
+  - image: cloud-proxy_server_image
     context: .
     bazel:
       target: //src/cloud/proxy:proxy_server_image.tar
-  - image: cloud/plugin_server_image
+  - image: cloud-plugin_server_image
     context: .
     bazel:
       target: //src/cloud/plugin:plugin_server_image.tar
-  - image: cloud/project_manager_server_image
+  - image: cloud-project_manager_server_image
     context: .
     bazel:
       target: //src/cloud/project_manager:project_manager_server_image.tar
-  - image: cloud/config_manager_server_image
+  - image: cloud-config_manager_server_image
     context: .
     bazel:
       target: //src/cloud/config_manager:config_manager_server_image.tar
-  - image: cloud/vzconn_server_image
+  - image: cloud-vzconn_server_image
     context: .
     bazel:
       target: //src/cloud/vzconn:vzconn_server_image.tar
-  - image: cloud/vzmgr_server_image
+  - image: cloud-vzmgr_server_image
     context: .
     bazel:
       target: //src/cloud/vzmgr:vzmgr_server_image.tar
-  - image: cloud/indexer_server_image
+  - image: cloud-indexer_server_image
     context: .
     bazel:
       target: //src/cloud/indexer:indexer_server_image.tar
-  - image: cloud/artifact_tracker_server_image
+  - image: cloud-artifact_tracker_server_image
     context: .
     bazel:
       target: //src/cloud/artifact_tracker:artifact_tracker_server_image.tar
-  - image: cloud/scriptmgr_server_image
+  - image: cloud-scriptmgr_server_image
     context: .
     bazel:
       target: //src/cloud/scriptmgr:scriptmgr_server_image.tar
-  - image: cloud/cron_script_server_image
+  - image: cloud-cron_script_server_image
     context: .
     bazel:
       target: //src/cloud/cron_script:cron_script_server_image.tar
-  - image: cloud/plugin/load_db
+  - image: cloud-plugin-load_db
     context: .
     bazel:
       target: //src/cloud/plugin/load_db:plugin_db_updater_image.tar
-  - image: cloud/metrics_server_image
+  - image: cloud-metrics_server_image
     context: .
     bazel:
       target: //src/cloud/metrics:metrics_server_image.tar

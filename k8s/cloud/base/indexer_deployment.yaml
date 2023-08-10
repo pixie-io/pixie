@@ -22,7 +22,7 @@ spec:
       containers:
       - name: indexer-server
         imagePullPolicy: IfNotPresent
-        image: cloud/indexer_server_image
+        image: cloud-indexer_server_image
         ports:
         - containerPort: 51800
           name: http2

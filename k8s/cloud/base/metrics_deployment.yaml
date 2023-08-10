@@ -20,7 +20,7 @@ spec:
       containers:
       - name: metrics-server
         imagePullPolicy: IfNotPresent
-        image: cloud/metrics_server_image
+        image: cloud-metrics_server_image
         ports:
         - containerPort: 50800
           name: http2

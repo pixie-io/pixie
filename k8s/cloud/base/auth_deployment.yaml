@@ -17,7 +17,7 @@ spec:
       containers:
       - name: auth-server
         imagePullPolicy: IfNotPresent
-        image: cloud/auth_server_image
+        image: cloud-auth_server_image
         ports:
         - containerPort: 50100
           name: http2

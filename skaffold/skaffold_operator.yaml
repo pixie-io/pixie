@@ -3,7 +3,7 @@ apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
-  - image: operator/operator_image
+  - image: operator-operator_image
     context: .
     bazel:
       target: //src/operator:operator_image.tar

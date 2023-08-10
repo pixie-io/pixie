@@ -17,7 +17,7 @@ spec:
       containers:
       - name: profile-server
         imagePullPolicy: IfNotPresent
-        image: cloud/profile_server_image
+        image: cloud-profile_server_image
         ports:
         - containerPort: 51500
           name: http2

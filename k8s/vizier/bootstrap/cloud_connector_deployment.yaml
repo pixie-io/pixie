@@ -63,7 +63,7 @@ spec:
             type: RuntimeDefault
       containers:
       - name: app
-        image: vizier/cloud_connector_server_image:latest
+        image: vizier-cloud_connector_server_image:latest
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

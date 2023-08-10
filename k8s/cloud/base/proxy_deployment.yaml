@@ -15,7 +15,7 @@ spec:
       containers:
       - name: cloud-proxy-server
         imagePullPolicy: IfNotPresent
-        image: cloud/proxy_server_image
+        image: cloud-proxy_server_image
         ports:
         - containerPort: 56000
           name: http2

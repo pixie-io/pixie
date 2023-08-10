@@ -23,13 +23,13 @@ load("//bazel:kustomize.bzl", "kustomize_build")
 package(default_visibility = ["//visibility:public"])
 
 VIZIER_IMAGE_TO_LABEL = {
-    "$(IMAGE_PREFIX)/vizier/cert_provisioner_image:$(BUNDLE_VERSION)": "//src/utils/cert_provisioner:cert_provisioner_image",
-    "$(IMAGE_PREFIX)/vizier/cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
-    "$(IMAGE_PREFIX)/vizier/kelvin_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/kelvin:kelvin_image",
-    "$(IMAGE_PREFIX)/vizier/metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
-    "$(IMAGE_PREFIX)/vizier/pem_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/pem:pem_image",
-    "$(IMAGE_PREFIX)/vizier/query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
-    "$(IMAGE_PREFIX)/vizier/vizier_updater_image:$(BUNDLE_VERSION)": "//src/utils/pixie_updater:vizier_updater_image",
+    "$(IMAGE_PREFIX)/vizier-cert_provisioner_image:$(BUNDLE_VERSION)": "//src/utils/cert_provisioner:cert_provisioner_image",
+    "$(IMAGE_PREFIX)/vizier-cloud_connector_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
+    "$(IMAGE_PREFIX)/vizier-kelvin_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/kelvin:kelvin_image",
+    "$(IMAGE_PREFIX)/vizier-metadata_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:metadata_server_image",
+    "$(IMAGE_PREFIX)/vizier-pem_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent/pem:pem_image",
+    "$(IMAGE_PREFIX)/vizier-query_broker_server_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:query_broker_server_image",
+    "$(IMAGE_PREFIX)/vizier-vizier_updater_image:$(BUNDLE_VERSION)": "//src/utils/pixie_updater:vizier_updater_image",
 }
 
 kustomize_build(

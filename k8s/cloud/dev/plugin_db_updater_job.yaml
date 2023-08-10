@@ -28,7 +28,7 @@ spec:
             name: pl-db-config
       containers:
       - name: updater
-        image: cloud/plugin/load_db:latest
+        image: cloud-plugin-load_db:latest
         envFrom:
         - configMapRef:
             name: pl-db-config
