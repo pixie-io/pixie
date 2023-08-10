@@ -498,7 +498,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
-Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package,
+Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec* headers_package,
                               const std::string staging_directory,
                               const std::string expected_directory) {
   std::filesystem::create_directories(staging_directory);
@@ -513,9 +513,6 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package,
         "Package extraction did not result in the expected headers directory: $0.",
         expected_directory);
   }
-  // Update the path to the extracted copy.
-  headers_package->path = staging_directory;
-
   return Status::OK();
 }
 
