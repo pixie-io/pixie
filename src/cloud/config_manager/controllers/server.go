@@ -226,7 +226,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		log.WithError(err).Error("Error getting org ID from deploy key")
 	}
 	if orgID == uuid.Nil && in.VizierID != "" {
-		log.Info("Attempting to get orgID from Vizier")
+		// Generate token to use to get the org information from Vizier.
 		claims := srvutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
 		token, err := srvutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
 		if err != nil {
@@ -240,9 +240,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		if err != nil {
 			log.WithError(err).Error("Error getting the org ID from Vizier")
 		} else {
-			log.Info("Received the response: ", resp)
 			orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
-			log.Info("orgID after making it UUID: ", orgID)
 		}
 	}
 
