@@ -491,8 +491,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
-	log.Info("Starting to get the vizier ID")
-	// Get the Vizier's ID from the cluster's secrets
+	// Get the Vizier's ID from the cluster's secrets.
 	vizierID, err := getVizierID(r.Clientset, req.Namespace)
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve the Vizier ID from the cluster's secrets")
@@ -814,7 +813,6 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string
 	error) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
-	log.Info("VizierID: ", vizierID)
 	req := &cloudpb.ConfigForVizierRequest{
 		Namespace:  ns,
 		K8sVersion: k8sVersion,
@@ -1150,7 +1148,6 @@ func getVizierID(clientset *kubernetes.Clientset, namespace string) (string, err
 				return "", errors.New("Missing cluster secrets")
 			}
 			if id, ok := s.Data["cluster-id"]; ok {
-				log.Info("Successfully received the Vizier ID")
 				vizierID = string(id)
 			}
 		}
