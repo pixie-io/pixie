@@ -226,16 +226,30 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		log.WithError(err).Error("Error getting org ID from deploy key")
 	}
 	if orgID == uuid.Nil && in.VizierID != "" {
+		log.Info("Attempting to get orgID from Vizier")
+		claims := srvutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
+		token, err := srvutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
+		if err != nil {
+			return nil, err
+		}
+
+		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
+			fmt.Sprintf("bearer %s", token))
+
 		resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(in.VizierID))
-		orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
-		if err != nil || orgID == uuid.Nil {
-			log.WithError(err).Error("Error getting org ID from Vizier")
+		if err != nil {
+			log.WithError(err).Error("Error getting the org ID from Vizier")
+		} else {
+			log.Info("Received the response: ", resp)
+			orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
+			log.Info("orgID after making it UUID: ", orgID)
 		}
 	}
 
 	// Next we inject any feature flags that we want to set for this org.
 	if orgID != uuid.Nil {
 		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
+		log.Info("Added feature flags to template")
 	} else {
 		log.Error("Skipping feature flag logic")
 	}
