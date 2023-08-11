@@ -491,7 +491,14 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
-	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, r.K8sVersion, vz, cloudClient)
+	log.Info("Starting to get the vizier ID")
+	// Get the Vizier's ID from the cluster's secrets
+	vizierID, err := getVizierID(r.Clientset, req.Namespace)
+	if err != nil {
+		log.WithError(err).Error("Failed to retrieve the Vizier ID from the cluster's secrets")
+	}
+
+	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, r.K8sVersion, vizierID, vz, cloudClient)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate configs for Vizier YAMLs")
 		return err
@@ -803,13 +810,15 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
-func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
+func generateVizierYAMLsConfig(ctx context.Context, ns string, k8sVersion string, vizierID string, vz *v1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
 	error) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
+	log.Info("VizierID: ", vizierID)
 	req := &cloudpb.ConfigForVizierRequest{
 		Namespace:  ns,
 		K8sVersion: k8sVersion,
+		VizierID:   vizierID,
 		VzSpec: &vizierconfigpb.VizierSpec{
 			Version:               vz.Spec.Version,
 			DeployKey:             vz.Spec.DeployKey,
@@ -1121,6 +1130,33 @@ func getClusterUID(clientset *kubernetes.Clientset) (string, error) {
 		return "", err
 	}
 	return string(ksNS.UID), nil
+}
+
+// getVizierID gets the ID of the cluster the Vizier is in.
+func getVizierID(clientset *kubernetes.Clientset, namespace string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+
+	vizierID := ""
+	for vizierID == "" { // Wait for secret to be updated with the VizierID
+		select {
+		case <-ctx.Done():
+			return "", errors.New("Timed out waiting for the Vizier ID")
+		case <-t.C:
+			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+			if s == nil {
+				return "", errors.New("Missing cluster secrets")
+			}
+			if id, ok := s.Data["cluster-id"]; ok {
+				log.Info("Successfully received the Vizier ID")
+				vizierID = string(id)
+			}
+		}
+	}
+
+	return vizierID, nil
 }
 
 // getConfigForOperator is responsible retrieving the Operator config from from Pixie Cloud.
