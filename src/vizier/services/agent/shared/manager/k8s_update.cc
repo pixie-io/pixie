@@ -46,7 +46,6 @@ K8sUpdateHandler::K8sUpdateHandler(Dispatcher* d, px::md::AgentMetadataStateMana
 
 Status K8sUpdateHandler::AddK8sUpdate(const ResourceUpdate& update) {
   current_update_version_ = update.update_version();
-  LOG(INFO) << current_update_version_;
   return mds_manager_->AddK8sUpdate(std::make_unique<ResourceUpdate>(update));
 }
 
