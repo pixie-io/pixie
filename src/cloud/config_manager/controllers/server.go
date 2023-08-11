@@ -52,16 +52,14 @@ type Server struct {
 	atClient            atpb.ArtifactTrackerClient
 	deployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
 	vzFeatureFlagClient VizierFeatureFlagClient
-	vzmgrClient         vzmgrpb.VZMgrServiceClient
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string, vzmgrClient vzmgrpb.VZMgrServiceClient) *Server {
+func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string) *Server {
 	return &Server{
 		atClient:            atClient,
 		deployKeyClient:     deployKeyClient,
 		vzFeatureFlagClient: NewVizierFeatureFlagClient(ldSDKKey),
-		vzmgrClient:         vzmgrClient,
 	}
 }
 
@@ -219,25 +217,12 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	}
 	AddDefaultTableStoreSize(tmplValues.PEMMemoryRequest, tmplValues.CustomPEMFlags)
 
-	// Attempt to get the org ID from DeployKey, otherwise from the Vizier.
-	var orgID uuid.UUID
-	orgID, err = s.getOrgIDForDeployKey(tmplValues.DeployKey)
-	if err != nil || orgID == uuid.Nil {
-		log.WithError(err).Error("Error getting org ID from deploy key")
-	}
-	if orgID == uuid.Nil && in.VizierID != "" {
-		resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(in.VizierID))
-		orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
-		if err != nil || orgID == uuid.Nil {
-			log.WithError(err).Error("Error getting org ID from Vizier")
-		}
-	}
-
 	// Next we inject any feature flags that we want to set for this org.
-	if orgID != uuid.Nil {
-		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
+	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)
+	if err != nil || orgID == uuid.Nil {
+		log.WithError(err).Error("Error getting org ID from deploy key, skipping feature flag logic")
 	} else {
-		log.Error("Skipping feature flag logic")
+		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
 	}
 
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
