@@ -47,7 +47,8 @@ class Minitar {
    * See libarchive for flag defintitions and other possible flags.
    * @return error if the tarball could not be extracted.
    */
-  Status Extract(std::string_view dest_dir = {}, int flags = kDefaultFlags);
+  Status Extract(std::string_view dest_dir = {}, std::string_view prefix_to_strip = {},
+                 int flags = kDefaultFlags);
 
  private:
   static constexpr int kDefaultFlags = ARCHIVE_EXTRACT_TIME;

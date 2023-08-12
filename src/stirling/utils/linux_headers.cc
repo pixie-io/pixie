@@ -498,31 +498,23 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
-Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
-  std::string expected_directory =
-      absl::Substitute("/usr/src/linux-headers-$0.$1.$2-pl", headers_package->version.version,
-                       headers_package->version.major_rev, headers_package->version.minor_rev);
-
-  // This is a loose check that we don't clobber what we *think* should the output directory.
-  // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
-  if (fs::Exists(expected_directory)) {
-    return error::Internal("Refusing to clobber existing directory: $0.", expected_directory);
-  }
-
-  // Extract the files.
-  ::px::tools::Minitar minitar(headers_package->path.string());
-  PX_RETURN_IF_ERROR(minitar.Extract("/"));
-
-  // Check that the expected path was created.
-  if (!fs::Exists(expected_directory)) {
+Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec& headers_package,
+                              const std::string& staging_directory,
+                              const std::string& expected_directory) {
+  std::filesystem::create_directories(staging_directory);
+  // Instantiate a minitar object with the path to the tarball.
+  ::px::tools::Minitar minitar(headers_package.path.string());
+  // Extract the files from the tarball, stripping the leading prefix
+  // "usr/src/linux-headers-$0.$1.$2-pl" to avoid unnecessary nesting in the staging directory.
+  std::string_view expected_directory_view = expected_directory;
+  std::string_view prefix_to_strip = expected_directory_view.substr(1);
+  PX_RETURN_IF_ERROR(minitar.Extract(staging_directory, prefix_to_strip));
+  // Check that the staging path was created.
+  if (!fs::Exists(staging_directory)) {
     return error::Internal(
         "Package extraction did not result in the expected headers directory: $0.",
         expected_directory);
   }
-
-  // Update the path to the extracted copy.
-  headers_package->path = expected_directory;
-
   return Status::OK();
 }
 
@@ -627,10 +619,30 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   PX_ASSIGN_OR_RETURN(PackagedLinuxHeadersSpec packaged_headers,
                       FindClosestPackagedLinuxHeaders(kPackagedHeadersRoot, kernel_version));
   LOG(INFO) << absl::Substitute("Using packaged header: $0", packaged_headers.path.string());
-  PX_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
-  PX_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
-  PX_RETURN_IF_ERROR(ApplyConfigPatches(packaged_headers.path));
-  PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
+  const std::string version =
+      absl::Substitute("$0.$1.$2-pl", packaged_headers.version.version,
+                       packaged_headers.version.major_rev, packaged_headers.version.minor_rev);
+  const std::string staging_directory = absl::StrCat("/usr/src/staging/linux-headers-", version);
+  const std::string expected_directory = absl::StrCat("/usr/src/linux-headers-", version);
+  // Verify that the target directory doesn't already exist.
+  // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
+  if (fs::Exists(expected_directory)) {
+    return error::Internal(
+        "Not attempting to install packaged headers because the target directory already exists: "
+        "$0",
+        expected_directory);
+  }
+  // Extract the packaged headers to a staging directory, stripping the expected target directory
+  // prefix.
+  PX_RETURN_IF_ERROR(
+      ExtractPackagedHeaders(packaged_headers, staging_directory, expected_directory));
+  // Modify version.h to the specific kernel version in the staged headers.
+  PX_RETURN_IF_ERROR(ModifyKernelVersion(staging_directory, kernel_version.code()));
+  // Find valid kernel config and patch the staged headers to match.
+  PX_RETURN_IF_ERROR(ApplyConfigPatches(staging_directory));
+  // Move the staged headers to the expected, target directory.
+  std::filesystem::rename(staging_directory, expected_directory);
+  PX_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(expected_directory, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());
   g_packaged_headers_installed = true;
