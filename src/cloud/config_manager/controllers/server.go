@@ -100,6 +100,25 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 	return orgID, err
 }
 
+// Helper function that looks up the org ID based on the VizierID so we can use it to set feature flags.
+func (s *Server) getOrgIDForVizier(vizierID string) (uuid.UUID, error) {
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(vizierID))
+	if err != nil || resp == nil || resp.OrgID == nil {
+		return uuid.Nil, fmt.Errorf("Error fetching Vizier org ID: %s", err.Error())
+	}
+	orgID := utils.UUIDFromProtoOrNil(resp.OrgID)
+
+	return orgID, nil
+}
+
 const (
 	bytesPerMiB                 = 1024 * 1024
 	defaultTableStorePercentage = 0.6
@@ -226,21 +245,9 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		log.WithError(err).Error("Error getting org ID from deploy key")
 	}
 	if orgID == uuid.Nil && in.VizierID != "" {
-		// Generate token to use to get the org information from Vizier.
-		claims := srvutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
-		token, err := srvutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
-		if err != nil {
-			return nil, err
-		}
-
-		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
-			fmt.Sprintf("bearer %s", token))
-
-		resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(in.VizierID))
-		if err != nil {
+		orgID, err = s.getOrgIDForVizier(in.VizierID)
+		if err != nil || orgID == uuid.Nil {
 			log.WithError(err).Error("Error getting the org ID from Vizier")
-		} else {
-			orgID = utils.UUIDFromProtoOrNil(resp.OrgID)
 		}
 	}
 
