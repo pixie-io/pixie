@@ -19,6 +19,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "cmd",
     srcs = [
+        "datastudio.go",
         "github_matrix.go",
         "root.go",
         "run.go",
@@ -27,6 +28,7 @@ go_library(
     importpath = "px.dev/pixie/src/e2e_test/perf_tool/cmd",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/e2e_test/perf_tool/datastudio",
         "//src/e2e_test/perf_tool/experimentpb:experiment_pl_go_proto",
         "//src/e2e_test/perf_tool/pkg/cluster",
         "//src/e2e_test/perf_tool/pkg/cluster/gke",

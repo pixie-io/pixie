@@ -1,0 +1,133 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "title": "{{.ChartTitle}}",
+  "data": [
+    {
+      "name": "default",
+      "transform": [
+        {
+          "type": "project",
+          "fields": [
+            "$dimension0",
+            "$dimension1",
+            "$dimension2",
+            "$dimension3",
+            "$dimension4",
+            "$dimension5",
+            "$dimension6",
+            "$metric0"
+          ],
+          "as": [
+            "suite",
+            "workload",
+            "parameters",
+            "commit_sha",
+            "pod",
+            "topo_order",
+            "experiment_link",
+            "median_byte_value"
+          ]
+        },
+        {
+          "type": "formula",
+          "expr": "datum.median_byte_value/1024/1024",
+          "as": "value_mb"
+        },
+        {
+          "type": "formula",
+          "expr": "(datum.pod)?datum.pod:\"\"",
+          "as": "pod"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.suite+datum.workload+datum.parameters",
+          "as": "color_key"
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "commits",
+      "type": "band",
+      "domain": {
+        "data": "default",
+        "field": "commit_sha",
+        "sort": {"op": "mean", "field": "topo_order", "order": "ascending"}
+      },
+      "padding": 1,
+      "range": "width",
+      "round": true
+    },
+    {
+      "name": "bytes",
+      "range": "height",
+      "nice": true,
+      "padding": 1,
+      "domain": {"data": "default", "field": "value_mb"}
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": "category",
+      "domain": {
+        "data": "default",
+        "field": "color_key",
+        "sort": true
+      }
+    }
+  ],
+  "axes": [
+    {
+      "orient": "left",
+      "scale": "bytes",
+      "title": "MiB"
+    },
+    {
+      "orient": "bottom",
+      "scale": "commits",
+      "labelAngle": 90,
+      "labelAlign": "left",
+      "title": "Commits",
+      "encode": {
+        "labels": {
+          "interactive": true,
+          "update": {
+            "href": {
+              "signal": "\"https://github.com/pixie-io/pixie/commit/\" + datum.value"
+            },
+            "text": {"signal": "slice(datum.value, 0, 6)"}
+          }
+        }
+      }
+    }
+  ],
+
+  "marks": [
+    {
+      "type": "symbol",
+      "from": {"data": "default"},
+      "encode": {
+        "enter": {
+          "x": {"scale": "commits", "field": "commit_sha"},
+          "y": {
+            "scale": "bytes",
+            "field": "value_mb"
+          },
+          "fill": {
+            "scale": "color",
+            "field": "color_key"
+          },
+          "tooltip": {
+            "signal": "{\"Suite\": datum.suite, \"Workload\": datum.workload, \"Parameters\": datum.parameters, \"Pod\": datum.pod, \"Commit\": datum.commit_sha, \"Value\": datum.value_mb}"
+          }
+        },
+        "update": {
+          "href": {
+            "field": "experiment_link"
+          }
+        }
+      }
+    }
+  ]
+}

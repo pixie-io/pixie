@@ -1,0 +1,199 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "title": "{{.ChartTitle}}",
+  "data": [
+    {
+      "name": "default",
+      "transform": [
+        {
+          "type": "project",
+          "fields": [
+            "$dimension0",
+            "$dimension1",
+            "$dimension2",
+            "$dimension3",
+            "$dimension4",
+            "$dimension5",
+            "$dimension6",
+            "$metric0"
+          ],
+          "as": [
+            "experiment_id",
+            "pod",
+            "ts",
+            "action_name",
+            "action_type",
+            "action_begin",
+            "action_ts",
+            "percent_value"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "data",
+      "source": "default",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum.experiment_id) && isValid(datum.ts) && isValid(datum.percent_value)"
+        },
+        {
+          "type": "collect",
+          "sort": {"field": "ts"}
+        },
+        {
+          "type": "formula",
+          "expr": "(datum.pod)?datum.pod:\"\"",
+          "as": "pod"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.experiment_id + datum.pod",
+          "as": "experiment_id_pod"
+        }
+      ]
+    },
+    {
+      "name": "actions",
+      "source": "default",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum.action_type) && isValid(datum.action_ts)"
+        },
+        {
+          "type": "filter",
+          "expr": "datum.action_type == 'run'"
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "seconds",
+      "type": "linear",
+      "range": "width",
+      "domain": {
+        "fields": [
+          {"data": "data", "field": "ts"},
+          {"data": "actions", "field": "action_ts"}
+        ]
+      }
+    },
+    {
+      "name": "percent",
+      "type": "linear",
+      "range": "height",
+      "nice": true,
+      "domain": {"data": "data", "field": "percent_value"}
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": "category",
+      "domain": {
+        "data": "data",
+        "field": "experiment_id_pod",
+        "sort": true
+      }
+    }
+  ],
+  "axes": [
+    {
+      "orient": "bottom",
+      "scale": "seconds",
+      "title": "Time Elapsed (s)"
+    },
+    {
+      "orient": "left",
+      "scale": "percent",
+      "format": "%"
+    }
+  ],
+  "marks": [
+    {
+      "type": "group",
+      "from": {
+        "facet": {
+          "name": "series",
+          "data": "data",
+          "groupby": "experiment_id_pod"
+        }
+      },
+      "marks": [
+        {
+          "type": "line",
+          "from": {"data": "series"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "seconds", "field": "ts"},
+              "y": {"scale": "percent", "field": "percent_value"},
+              "stroke": {"scale": "color", "field": "experiment_id_pod"},
+              "strokeWidth": {"value": 2}
+            }
+          }
+        },
+        {
+          "type": "line",
+          "from": {"data": "series"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "seconds", "field": "ts"},
+              "y": {"scale": "percent", "field": "percent_value"},
+              "strokeWidth": {"value": 10},
+              "strokeOpacity": {"value": 0},
+              "zindex": {"value": 99},
+              "tooltip": {"signal": "{\"Pod\":datum.pod, \"Value\":format(datum.percent_value, \".4f\"), \"Experiment ID\": slice(datum.experiment_id, 0, 8)+\"...\"}"}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "from": {
+        "facet": {
+          "name": "actions_series",
+          "data": "actions",
+          "groupby": "experiment_id"
+        }
+      },
+      "marks": [
+        {
+          "type": "rule",
+          "from": {"data": "actions_series"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "seconds", "field": "action_ts"},
+              "x2": {"scale": "seconds", "field": "action_ts"},
+              "y": {"value": 0},
+              "y2": {"signal": "height"},
+              "strokeWidth": {"value": 1},
+              "stroke": [
+                {"test": "datum.action_begin", "value": "green"},
+                {"value": "red"}
+              ]
+            }
+          }
+        },
+        {
+          "type": "rule",
+          "from": {"data": "actions_series"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "seconds", "field": "action_ts"},
+              "x2": {"scale": "seconds", "field": "action_ts"},
+              "y": {"value": 0},
+              "y2": {"signal": "height"},
+              "stroke": {"value": "transparent"},
+              "strokeWidth": {"value": 10},
+              "tooltip": {"signal": "{\"Experiment\": slice(datum.experiment_id, 0, 6) + \"...\", \"Action\": datum.action_type, \"Name\": datum.action_name, \"Time\": datum.action_ts}"},
+              "zindex": {"value": 100}
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
