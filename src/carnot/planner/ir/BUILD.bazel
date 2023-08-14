@@ -30,8 +30,8 @@ pl_cc_library(
             "**/*_test_utils.h",
         ],
     ) + [
-        "ir_nodes.inl",
         "expressions.inl",
+        "ir_nodes.inl",
         "operators.inl",
     ],
     hdrs = glob(

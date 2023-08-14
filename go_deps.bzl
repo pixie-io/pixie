@@ -1662,6 +1662,7 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_googleapis_gax_go_v2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        build_file_proto_mode = "disable",
         importpath = "github.com/googleapis/gax-go/v2",
         sum = "h1:IcsPKeInNvYi7eqSaDjiZqDDKu5rsmunY0Y1YupQSSQ=",
         version = "v2.7.0",
@@ -1763,8 +1764,14 @@ def pl_go_dependencies():
     )
     go_repository(
         name = "com_github_grpc_ecosystem_grpc_gateway",
-        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        build_directives = [
+            "gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl",
+            "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl",
+            "gazelle:exclude third_party",
+        ],
         build_naming_convention = "go_default_library",
+        # Force generation of new build files for this package, required due to changes in how gazelle handles @go_googleapis.
+        build_file_generation = "on",
         importpath = "github.com/grpc-ecosystem/grpc-gateway",
         sum = "h1:gmcG1KaJ57LophUzW0Hy8NmPhnMZb4M0+kPpLofRdBo=",
         version = "v1.16.0",
@@ -1773,6 +1780,8 @@ def pl_go_dependencies():
         name = "com_github_grpc_ecosystem_grpc_gateway_v2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/grpc-ecosystem/grpc-gateway/v2",
+        # Force generation of new build files for this package, required due to changes in how gazelle handles @go_googleapis.
+        build_file_generation = "on",
         sum = "h1:gDLXvp5S9izjldquuoAhDzccbskOL6tDC5jMSyx3zxE=",
         version = "v2.15.2",
     )
