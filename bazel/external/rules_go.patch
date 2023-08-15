@@ -1,14 +1,13 @@
 diff --git a/go/private/actions/stdlib.bzl b/go/private/actions/stdlib.bzl
-index 11a8278f..7346aecd 100644
+index abacbc80..09b2c9bf 100644
 --- a/go/private/actions/stdlib.bzl
 +++ b/go/private/actions/stdlib.bzl
-@@ -92,7 +92,8 @@ def _build_stdlib(go):
-         ldflags = [
-             option
-             for option in extldflags_from_cc_toolchain(go)
--            if option not in ("-lstdc++", "-lc++")
-+            if option not in ("-lstdc++", "-lc++", "-l:libstdc++.a", "-l:libc++.a", "-l:libc++abi.a") and
-+                not (option.startswith("-fsanitize") or option.startswith("-fno-sanitize"))
-         ]
-         env.update({
-             "CGO_ENABLED": "1",
+@@ -100,7 +100,7 @@ def _build_env(go):
+     ldflags = [
+         option
+         for option in extldflags_from_cc_toolchain(go)
+-        if option not in ("-lstdc++", "-lc++", "-static") and option not in COVERAGE_OPTIONS_DENYLIST
++        if option not in ("-lstdc++", "-lc++", "-static", "-l:libstdc++.a", "-l:libc++.a", "-l:libc++abi.a") and option not in COVERAGE_OPTIONS_DENYLIST
+     ]
+     env.update({
+         "CGO_ENABLED": "1",

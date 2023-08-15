@@ -24,7 +24,7 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("//bazel:toolchain_transitions.bzl", "qemu_interactive_runner")
 
 pl_boringcrypto_go_sdk = ["1.20.4"]
-pl_supported_go_sdk_versions = ["1.16", "1.17", "1.18", "1.19", "1.20"]
+pl_supported_go_sdk_versions = ["1.16", "1.17", "1.18", "1.19", "1.20", "1.21"]
 
 # The last version in this list corresponds to the boringcrypto go sdk version.
 pl_all_supported_go_sdk_versions = pl_supported_go_sdk_versions + pl_boringcrypto_go_sdk
@@ -148,7 +148,6 @@ def pl_cc_library_internal(
         copts = [],
         includes = [],
         visibility = None,
-        external_deps = [],
         tcmalloc_dep = False,
         repository = "",
         linkstamp = None,
@@ -196,7 +195,6 @@ def pl_cc_binary(
         args = [],
         testonly = 0,
         visibility = None,
-        external_deps = [],
         repository = "",
         stamp = 0,
         tags = [],
@@ -318,7 +316,6 @@ def pl_cc_test_library(
         srcs = [],
         hdrs = [],
         data = [],
-        external_deps = [],
         deps = [],
         visibility = None,
         repository = "",

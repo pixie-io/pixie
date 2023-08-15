@@ -52,8 +52,8 @@ pl_cc_test(
         "--java_image_name $(location %s)" % java_image_tar,
     ],
     data = [
+        "//src/stirling/source_connectors/perf_profiler/testing/java",
         "//src/stirling/source_connectors/perf_profiler/testing/java:profiler_test",
-        "//src/stirling/source_connectors/perf_profiler/testing/java:java",
     ] + [java_image_tar] + agent_libs + [px_jattach],
     tags = [
         "requires_root",
