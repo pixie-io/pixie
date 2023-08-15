@@ -78,27 +78,39 @@ DEFINE_string(socket_trace_data_events_output_path, "",
 // Due to BPF instruction limits (< 4096 instructions) on kernels older than
 // 5.2, we can't simultaneously enable all protocols. Thus, some protocols
 // are only enabled on newer kernels.
-DEFINE_int32(stirling_enable_http_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_http_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_HTTP_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process HTTP messages");
-DEFINE_int32(stirling_enable_http2_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_http2_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_HTTP2_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process gRPC RPCs.");
-DEFINE_int32(stirling_enable_mysql_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_mysql_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_MYSQL_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process MySQL messages.");
-DEFINE_int32(stirling_enable_pgsql_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_pgsql_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_PGSQL_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process PostgreSQL messages.");
-DEFINE_int32(stirling_enable_cass_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_cass_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_CASS_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process Cassandra messages.");
-DEFINE_int32(stirling_enable_dns_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_dns_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_DNS_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process DNS messages.");
-DEFINE_int32(stirling_enable_redis_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_redis_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_REDIS_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process Redis messages.");
-DEFINE_int32(stirling_enable_nats_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_nats_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_NATS_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process NATS messages.");
-DEFINE_int32(stirling_enable_kafka_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_kafka_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_KAFKA_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process Kafka messages.");
-DEFINE_int32(stirling_enable_mux_tracing, px::stirling::TraceMode::OnForNewerKernel,
+DEFINE_int32(stirling_enable_mux_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_MUX_TRACING",
+                                  px::stirling::TraceMode::OnForNewerKernel),
              "If true, stirling will trace and process Mux messages.");
-DEFINE_int32(stirling_enable_amqp_tracing, px::stirling::TraceMode::On,
+DEFINE_int32(stirling_enable_amqp_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_AMQP_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process AMQP messages.");
 
 DEFINE_bool(stirling_disable_golang_tls_tracing,
