@@ -84,7 +84,7 @@ spec:
         - name: PL_DISABLE_SSL
           value: "false"
         - name: PL_HOST_PATH
-          value: "/host"
+          value: "/proc/1/root"
         - name: PL_POD_NAME
           valueFrom:
             fieldRef:

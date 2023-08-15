@@ -426,24 +426,24 @@ StatusOr<std::filesystem::path> FindLinuxHeadersDirectory(
   //   /lib/modules/<uname>/source
   //   /lib/modules/<uname>/build
 
-  std::filesystem::path lib_modules_source_dir = lib_modules_dir / "source";
-  std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
+  const std::filesystem::path lib_modules_source_dir = lib_modules_dir / "source";
+  const std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
   if (fs::Exists(lib_modules_source_dir)) {
+    LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_source_dir.string());
     return lib_modules_source_dir;
   } else if (fs::Exists(lib_modules_build_dir)) {
+    LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_build_dir.string());
     return lib_modules_build_dir;
   }
   return error::NotFound("Could not found 'source' or 'build' under $0", lib_modules_dir.string());
 }
 
 Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
-  // Host dir is where we must mount host directories into the container.
-  const std::filesystem::path kHostDir = "/host";
-
+  return error::NotFound("TEST TEST TEST");
   // Careful. Must use operator+ instead of operator/ here.
   // operator/ will replace the path if the second argument appears to be an absolute path.
-  std::filesystem::path host_lib_modules_dir = kHostDir;
+  std::filesystem::path host_lib_modules_dir = system::Config::GetInstance().ToHostPath("/");
   host_lib_modules_dir += lib_modules_dir;
   LOG(INFO) << absl::Substitute("Looking for host mounted headers at $0",
                                 host_lib_modules_dir.string());
@@ -462,7 +462,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
 
     // Careful. Must use operator+ instead of operator/ here.
     // operator/ will replace the path if the second argument appears to be an absolute path.
-    host_lib_modules_source_dir = kHostDir;
+    host_lib_modules_source_dir = system::Config::GetInstance().ToHostPath("/");
     host_lib_modules_source_dir += target;
     ECHECK(!ec);
   }
@@ -471,7 +471,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
 
     // Careful. Must use operator+ instead of operator/ here.
     // operator/ will replace the path if the second argument appears to be an absolute path.
-    host_lib_modules_build_dir = kHostDir;
+    host_lib_modules_build_dir = system::Config::GetInstance().ToHostPath("/");
     host_lib_modules_build_dir += target;
     ECHECK(!ec);
   }
@@ -649,49 +649,28 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   return Status::OK();
 }
 
-StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders() {
+Status FindOrInstallLinuxHeaders() {
   PX_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
 
-  std::filesystem::path lib_modules_dir = "/lib/modules/" + uname;
-  std::filesystem::path headers_dir;
+  // BCC expects to find linux headers in one of the two following locations:
+  // 1. /lib/modules/<uname>/source
+  // 2. /lib/modules/<uname>/build
+  // NOTE: this is inside of the mount namespace of the pem (or calling) process,
+  const std::filesystem::path pem_ns_lib_modules_dir = "/lib/modules/" + uname;
 
-  // Some strategies require the base directory to be present.
-  // This does nothing if the directory already exists.
-  PX_RETURN_IF_ERROR(fs::CreateDirectories(lib_modules_dir));
+  // Create (or verify existence); does nothing if the directory already exists.
+  PX_RETURN_IF_ERROR(fs::CreateDirectories(pem_ns_lib_modules_dir));
 
-  auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
-  // TODO(yzhao): Consider add a PX_RETURN_IF_OK() macro to return the held value of StatusOr.
-  // A problem, when implementing PX_RETURN_IF_OK() in similar manner as PX_RETURN_IF_ERROR(),
-  // is that the return value of the input expression to PX_RETURN_IF_OK() cannot be bound to
-  // a non-const reference. Therefore, the following code will invoke StatusOr's copy constructor:
-  // auto status_or = ...;
-  // PX_RETURN_IF_OK(status_or);
-  if (status_or.ok()) {
-    return status_or.ConsumeValueOrDie();
-  }
+  PX_RETURN_STATUS_OK_IF_OK(find_err, FindLinuxHeadersDirectory(pem_ns_lib_modules_dir));
 
-  auto status = LinkHostLinuxHeaders(lib_modules_dir);
-  LOG_IF(INFO, !status.ok()) << absl::Substitute(
-      "Failed to link host's Linux headers to $0, error: $1", lib_modules_dir.string(),
-      status.ToString());
-  if (status.ok()) {
-    auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
-    if (status_or.ok()) {
-      return status_or.ConsumeValueOrDie();
-    }
-  }
+  PX_RETURN_STATUS_OK_IF_OK(link_err, LinkHostLinuxHeaders(pem_ns_lib_modules_dir));
+  LOG(INFO) << absl::Substitute("Failed to link host's Linux headers to $0, error: $1.",
+                                pem_ns_lib_modules_dir.string(), link_err.ToString());
 
-  status = InstallPackagedLinuxHeaders(lib_modules_dir);
-  LOG_IF(INFO, !status.ok()) << absl::Substitute(
-      "Failed to install packaged Linux headers to $0, error: $1", lib_modules_dir.string(),
-      status.ToString());
-  if (status.ok()) {
-    auto status_or = FindLinuxHeadersDirectory(lib_modules_dir);
-    if (status_or.ok()) {
-      return status_or.ConsumeValueOrDie();
-    }
-  }
+  PX_RETURN_STATUS_OK_IF_OK(install_err, InstallPackagedLinuxHeaders(pem_ns_lib_modules_dir));
+  LOG(INFO) << absl::Substitute("Failed to install packaged Linux headers to $0, error: $1.",
+                                pem_ns_lib_modules_dir.string(), install_err.ToString());
 
   return error::Internal("Could not find any linux headers to use.");
 }

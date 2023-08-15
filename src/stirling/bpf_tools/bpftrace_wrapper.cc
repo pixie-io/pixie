@@ -162,9 +162,7 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   std::string err_msg;
 
   // This ensures system headers be installed correctly inside a container.
-  PX_ASSIGN_OR_RETURN(std::filesystem::path sys_headers_dir, utils::FindOrInstallLinuxHeaders());
-  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BPFtrace runtime.",
-                                sys_headers_dir.string());
+  PX_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
   // Reset some BPFTrace global state, which may be dirty because of a previous compile.
   bpftrace::TracepointFormatParser::clear_struct_list();

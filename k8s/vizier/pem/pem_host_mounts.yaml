@@ -12,11 +12,11 @@ spec:
       containers:
       - name: pem
         volumeMounts:
-        - mountPath: /host
-          name: host-root
+        - name: host-qux
+          mountPath: /xhost/qux
           readOnly: true
       volumes:
-      - hostPath:
-          path: /
+      - name: host-qux
+        hostPath:
+          path: /qux
           type: Directory
-        name: host-root

@@ -109,17 +109,11 @@ Status BCCWrapperImpl::InitBPFProgram(std::string_view bpf_program, std::vector<
   if (requires_linux_headers) {
     auto kernel_version = utils::GetCachedKernelVersion();
 
-    // This function will setup linux headers for BPF code deployment.
-    // If another BCCWrapper has already run this function, it will just return the same location
-    // as the previous one.
-    // Note: Could also put this in Stirling Init() function, but then some tests which use
-    //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
-    //       Thus, it is deemed to be better here.
-    PX_ASSIGN_OR_RETURN(const std::filesystem::path sys_headers_dir,
-                        utils::FindOrInstallLinuxHeaders());
-
-    LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
-                                  sys_headers_dir.string());
+    // This function will setup linux headers for BPF code deployment. If another BCCWrapper has
+    // already run this function, it will find the same headers as found or installed previously.
+    // NOTE: Considered calling from  Stirling Init(), but this requires test cases to explicitly
+    // call FindOrInstallLinuxHeaders(), thus it is deemed to be better here.
+    PX_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
     // When Linux headers are requested, the BPF code requires various defines to compile:
     //  - START_BOOTTIME_VARNAME: The name of the task_struct variable containing the boottime.
