@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - main
+  pull_request:
   schedule:
   - cron: "7 21 * * 1"
 permissions:
@@ -20,11 +21,11 @@ jobs:
     - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9  # v4.0.0
       with:
         go-version-file: 'go.mod'
-    - uses: github/codeql-action/init@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+    - uses: github/codeql-action/init@f9a7c6738f28efb36e31d49c53a201a9c5d6a476  # v2.14.2
       with:
         languages: go
-    - uses: github/codeql-action/autobuild@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
-    - uses: github/codeql-action/analyze@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+    - uses: github/codeql-action/autobuild@f9a7c6738f28efb36e31d49c53a201a9c5d6a476  # v2.14.2
+    - uses: github/codeql-action/analyze@f9a7c6738f28efb36e31d49c53a201a9c5d6a476  # v2.14.2
       with:
         category: "/language:go"
   analyze:
@@ -39,9 +40,9 @@ jobs:
         language: [python, javascript]
     steps:
     - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3  # v3.5.0
-    - uses: github/codeql-action/init@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+    - uses: github/codeql-action/init@f9a7c6738f28efb36e31d49c53a201a9c5d6a476  # v2.14.2
       with:
         languages: ${{ matrix.language }}
-    - uses: github/codeql-action/analyze@04df1262e6247151b5ac09cd2c303ac36ad3f62b  # v2.2.9
+    - uses: github/codeql-action/analyze@f9a7c6738f28efb36e31d49c53a201a9c5d6a476  # v2.14.2
       with:
         category: "/language:${{matrix.language}}"
