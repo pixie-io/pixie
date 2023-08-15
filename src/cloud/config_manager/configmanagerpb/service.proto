@@ -42,6 +42,8 @@ message ConfigForVizierRequest {
   vizierconfigpb.VizierSpec vz_spec = 2;
   // Kubernetes version of the cluster Vizier is running on.
   string k8s_version = 3 [ (gogoproto.customname) = "K8sVersion" ];
+  // ID of the Vizier (Cluster ID).
+  string vizier_id = 4 [ (gogoproto.customname) = "VizierID" ];
 }
 
 // ConfigForVizierResponse is the response to a ConfigForVizierRequest.

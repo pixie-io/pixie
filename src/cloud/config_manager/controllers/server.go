@@ -52,14 +52,16 @@ type Server struct {
 	atClient            atpb.ArtifactTrackerClient
 	deployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
 	vzFeatureFlagClient VizierFeatureFlagClient
+	vzmgrClient         vzmgrpb.VZMgrServiceClient
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string) *Server {
+func NewServer(atClient atpb.ArtifactTrackerClient, deployKeyClient vzmgrpb.VZDeploymentKeyServiceClient, ldSDKKey string, vzmgrClient vzmgrpb.VZMgrServiceClient) *Server {
 	return &Server{
 		atClient:            atClient,
 		deployKeyClient:     deployKeyClient,
 		vzFeatureFlagClient: NewVizierFeatureFlagClient(ldSDKKey),
+		vzmgrClient:         vzmgrClient,
 	}
 }
 
@@ -96,6 +98,25 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("Error parsing org ID as proto: %s", err.Error())
 	}
 	return orgID, err
+}
+
+// Helper function that looks up the org ID based on the VizierID so we can use it to set feature flags.
+func (s *Server) getOrgIDForVizier(vizierID string) (uuid.UUID, error) {
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(vizierID))
+	if err != nil || resp == nil || resp.OrgID == nil {
+		return uuid.Nil, fmt.Errorf("Error fetching Vizier org ID: %s", err.Error())
+	}
+	orgID := utils.UUIDFromProtoOrNil(resp.OrgID)
+
+	return orgID, nil
 }
 
 const (
@@ -217,12 +238,25 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	}
 	AddDefaultTableStoreSize(tmplValues.PEMMemoryRequest, tmplValues.CustomPEMFlags)
 
-	// Next we inject any feature flags that we want to set for this org.
-	orgID, err := s.getOrgIDForDeployKey(tmplValues.DeployKey)
+	// Attempt to get the org ID from DeployKey, otherwise from the Vizier.
+	var orgID uuid.UUID
+	orgID, err = s.getOrgIDForDeployKey(tmplValues.DeployKey)
 	if err != nil || orgID == uuid.Nil {
-		log.WithError(err).Error("Error getting org ID from deploy key, skipping feature flag logic")
-	} else {
+		log.WithError(err).Error("Error getting org ID from deploy key")
+	}
+	if orgID == uuid.Nil && in.VizierID != "" {
+		orgID, err = s.getOrgIDForVizier(in.VizierID)
+		if err != nil || orgID == uuid.Nil {
+			log.WithError(err).Error("Error getting the org ID from Vizier")
+		}
+	}
+
+	// Next we inject any feature flags that we want to set for this org.
+	if orgID != uuid.Nil {
 		AddFeatureFlagsToTemplate(s.vzFeatureFlagClient, orgID, tmplValues)
+		log.Info("Added feature flags to template")
+	} else {
+		log.Error("Skipping feature flag logic")
 	}
 
 	vzYamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
