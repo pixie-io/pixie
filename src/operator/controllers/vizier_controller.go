@@ -1132,25 +1132,27 @@ func getClusterUID(clientset *kubernetes.Clientset) (string, error) {
 
 // getVizierID gets the ID of the cluster the Vizier is in.
 func getVizierID(clientset *kubernetes.Clientset, namespace string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	t := time.NewTicker(2 * time.Second)
-	defer t.Stop()
-
-	vizierID := ""
-	for vizierID == "" { // Wait for secret to be updated with the VizierID
-		select {
-		case <-ctx.Done():
-			return "", errors.New("Timed out waiting for the Vizier ID")
-		case <-t.C:
-			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
-			if s == nil {
-				return "", errors.New("Missing cluster secrets")
-			}
-			if id, ok := s.Data["cluster-id"]; ok {
-				vizierID = string(id)
-			}
+	op := func() (string, error) {
+		vizierID := ""
+		s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+		if s == nil {
+			return "", errors.New("Missing cluster secrets, retrying again")
 		}
+		if id, ok := s.Data["cluster-id"]; ok {
+			vizierID = string(id)
+		}
+
+		return vizierID, nil
+	}
+
+	expBackoff := backoff.NewExponentialBackOff()
+	expBackoff.InitialInterval = 10 * time.Second
+	expBackoff.Multiplier = 2
+	expBackoff.MaxElapsedTime = 10 * time.Minute
+
+	vizierID, err := backoff.RetryWithData(op, expBackoff)
+	if err != nil {
+		return "", errors.New("Timed out waiting for the Vizier ID")
 	}
 
 	return vizierID, nil
