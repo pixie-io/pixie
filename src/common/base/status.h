@@ -150,10 +150,10 @@ inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s)
 // Other possible variations:
 // PX_RETURN_VALUE_IF_OK
 // PX_RETURN_STATUS_OR_IF_OK
-#define PX_RETURN_STATUS_OK_IF_OK(__err_msg_name, __status) \
-  const auto& __err_msg_name = __status;                    \
-  if (__status.ok()) {                                      \
-    return Status::OK();                                    \
+#define PX_RETURN_STATUS_OK_IF_OK(__materialized_status, __status_gen) \
+  const auto& __materialized_status = __status_gen;                    \
+  if (__materialized_status.ok()) {                                    \
+    return Status::OK();                                               \
   }
 
 #define PX_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
