@@ -470,7 +470,7 @@ StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::file
     return error::NotFound(absl::Substitute("Did not find host headers at resolved path: $0.",
                                             resolved_host_path.string()));
   }
-  return r;
+  return resolved_host_path;
 }
 
 Status LinkHostLinuxHeadersKernel(const std::filesystem::path& lib_modules_dir) {
