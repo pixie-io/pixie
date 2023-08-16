@@ -420,23 +420,20 @@ Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base) {
   return Status::OK();
 }
 
-StatusOr<std::filesystem::path> FindLinuxHeadersDirectory(
-    const std::filesystem::path& lib_modules_dir) {
-  // bcc/loader.cc looks for Linux headers in the following order:
-  //   /lib/modules/<uname>/source
-  //   /lib/modules/<uname>/build
-
+Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
   const std::filesystem::path lib_modules_source_dir = lib_modules_dir / "source";
   const std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
-  if (fs::Exists(lib_modules_source_dir)) {
-    LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_source_dir.string());
-    return lib_modules_source_dir;
-  } else if (fs::Exists(lib_modules_build_dir)) {
+  const bool build_path_exists = fs::Exists(lib_modules_source_dir);
+  const bool source_path_exists = fs::Exists(lib_modules_build_dir);
+  if (build_path_exists && source_path_exists) {
+    LOG(INFO) << absl::Substitute("Using Linux headers from: $0 and $1.", lib_modules_build_dir.string(), lib_modules_source_dir.string());
+    return Status::OK();
+  } else if (build_path_exists) {
     LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_build_dir.string());
-    return lib_modules_build_dir;
+    return Status::OK();
   }
-  return error::NotFound("Could not found 'source' or 'build' under $0", lib_modules_dir.string());
+  return error::NotFound("Could not found 'source' or 'build' under $0.", lib_modules_dir.string());
 }
 
 StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::filesystem::path p) {
@@ -485,17 +482,13 @@ Status LinkHostLinuxHeadersKernel(const std::filesystem::path& lib_modules_dir) 
 }
 
 Status LinkHostLinuxHeaders(const std::filesystem::path& target_lib_modules_dir) {
-  static constexpr std::array<std::string_view, 2> kSubPaths = {"source", "build"};
-
-  for (const auto& sub_path : kSubPaths) {
-    // A path, in process namespace, where BCC might expects to find Linux headers.
-    const auto lib_moules_sub_path = target_lib_modules_dir / sub_path;
-
-    // If LinkHostLinuxHeadersKernel() succeeds, we return immediately.
-    PX_RETURN_STATUS_OK_IF_OK(err, LinkHostLinuxHeadersKernel(lib_moules_sub_path));
-    LOG(INFO) << err.ToString();
-  }
-  return error::NotFound("Failed to link host linux headers into pem namespace.");
+  // BCC checks for two different locations for Linux headers:
+  // 1. /lib/modules/<uname -r>/build
+  // 2. /lib/modules/<uname -r>/source
+  // "build" is required and "source" is optional.
+  PX_RETURN_IF_ERROR(LinkHostLinuxHeadersKernel(target_lib_modules_dir / "build"));
+  PX_UNUSED(LinkHostLinuxHeadersKernel(target_lib_modules_dir / "source"));
+  return Status::OK();
 }
 
 Status ExtractPackagedHeaders(const PackagedLinuxHeadersSpec& headers_package,
@@ -653,16 +646,20 @@ Status FindOrInstallLinuxHeaders() {
   PX_ASSIGN_OR_RETURN(std::string uname, GetUname());
   LOG(INFO) << absl::Substitute("Detected kernel release (uname -r): $0", uname);
 
-  // BCC expects to find linux headers in one of the two following locations:
-  // 1. /lib/modules/<uname>/source
-  // 2. /lib/modules/<uname>/build
-  // NOTE: this is inside of the mount namespace of the pem (or calling) process,
+  // BCC checks for Linux headers in both of the two following locations:
+  // 1. /lib/modules/<uname>/build
+  // 2. /lib/modules/<uname>/source
+  // "build" is required and "source" is optional.
+  // However we find Linux headers (below) we link them into the mount namespace of this
+  // process using one (or both) of the above paths.
+
   const std::filesystem::path pem_ns_lib_modules_dir = "/lib/modules/" + uname;
 
   // Create (or verify existence); does nothing if the directory already exists.
   PX_RETURN_IF_ERROR(fs::CreateDirectories(pem_ns_lib_modules_dir));
 
   PX_RETURN_STATUS_OK_IF_OK(find_err, FindLinuxHeadersDirectory(pem_ns_lib_modules_dir));
+  LOG(INFO) << absl::Substitute(find_err.ToString());
 
   PX_RETURN_STATUS_OK_IF_OK(link_err, LinkHostLinuxHeaders(pem_ns_lib_modules_dir));
   LOG(INFO) << absl::Substitute("Failed to link host's Linux headers to $0, error: $1.",
