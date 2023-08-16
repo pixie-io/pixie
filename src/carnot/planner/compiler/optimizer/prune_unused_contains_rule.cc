@@ -28,7 +28,6 @@ namespace compiler {
 
 StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
   auto ir_graph = ir_node->graph();
-  VLOG(2) << "Graph before optimization! " << ir_graph->DebugString();
   auto node_id = ir_node->id();
   if (!Match(ir_node, Filter())) return false;
 
@@ -42,10 +41,13 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
   auto contains_substr = args[1];
 
   if (Match(contains_substr, String(""))) {
+    DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1);
+    auto parent_id = ir_graph->dag().ParentsOf(node_id)[0];
+    auto parent_node = ir_graph->Get(parent_id);
+
+    DCHECK(ir_graph->Get(parent_id) != nullptr) << "parent id was nullptr!";
+
     // Delete the filter's contains function and its arguments
-    if (ir_graph->Get(args[0]->id()) != nullptr) {
-      PX_RETURN_IF_ERROR(ir_graph->DeleteNode(args[0]->id()));
-    }
     if (ir_graph->Get(args[1]->id()) != nullptr) {
       PX_RETURN_IF_ERROR(ir_graph->DeleteNode(args[1]->id()));
     }
@@ -53,22 +55,23 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
 
     // Reparent any child nodes of the filter
     for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
-       /* VLOG(2) << "IR graph dependent node: " << ir_graph->Get(child_id); */
        auto child_node = ir_graph->Get(child_id);
 
        // Operator nodes are guaranteed to have a single parent but DCHECK as well.
-       if (!Match(child_node, Operator())) continue;
-       DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1);
+       if (!Match(child_node, Operator())) {
+         auto child_deps = ir_graph->dag().DependenciesOf(child_id);
+         if (child_deps.size() == 0) {
+           PX_RETURN_IF_ERROR(ir_graph->DeleteNode(child_id));
+         }
+       } else {
+         DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1);
 
-       auto child_op_node = static_cast<OperatorIR*>(child_node);
-       auto parent_id = ir_graph->dag().ParentsOf(node_id)[0];
-       auto parent_node = ir_graph->Get(parent_id);
-       /* VLOG(2) << "IR graph parent: " << parent_node; */
+         auto child_op_node = static_cast<OperatorIR*>(child_node);
 
-       PX_RETURN_IF_ERROR(child_op_node->ReplaceParent(static_cast<OperatorIR*>(ir_node), static_cast<OperatorIR*>(parent_node)));
+         PX_RETURN_IF_ERROR(child_op_node->ReplaceParent(static_cast<OperatorIR*>(ir_node), static_cast<OperatorIR*>(parent_node)));
+       }
     }
     PX_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
-    LOG(WARNING) << "Graph after optimization " << ir_graph->DebugString();
     return true;
   }
   return false;
