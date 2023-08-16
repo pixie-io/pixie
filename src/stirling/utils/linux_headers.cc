@@ -427,8 +427,7 @@ Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
   const bool build_path_exists = fs::Exists(lib_modules_source_dir);
   const bool source_path_exists = fs::Exists(lib_modules_build_dir);
   if (build_path_exists && source_path_exists) {
-    LOG(INFO) << absl::Substitute("Using Linux headers from: $0 and $1.",
-                                  lib_modules_build_dir.string(), lib_modules_source_dir.string());
+    LOG(INFO) << absl::Substitute("Using Linux headers from: $0 and $1.", lib_modules_build_dir.string(), lib_modules_source_dir.string());
     return Status::OK();
   } else if (build_path_exists) {
     LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_build_dir.string());
@@ -663,12 +662,10 @@ Status FindOrInstallLinuxHeaders() {
   LOG(INFO) << absl::Substitute(find_err.ToString());
 
   PX_RETURN_STATUS_OK_IF_OK(link_err, LinkHostLinuxHeaders(pem_ns_lib_modules_dir));
-  LOG(INFO) << absl::Substitute("Failed to link host's Linux headers to $0, error: $1.",
-                                pem_ns_lib_modules_dir.string(), link_err.ToString());
+  LOG(INFO) << absl::Substitute(link_err.ToString());
 
   PX_RETURN_STATUS_OK_IF_OK(install_err, InstallPackagedLinuxHeaders(pem_ns_lib_modules_dir));
-  LOG(INFO) << absl::Substitute("Failed to install packaged Linux headers to $0, error: $1.",
-                                pem_ns_lib_modules_dir.string(), install_err.ToString());
+  LOG(INFO) << absl::Substitute(install_err.ToString());
 
   return error::Internal("Could not find any linux headers to use.");
 }
