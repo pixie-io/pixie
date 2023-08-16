@@ -53,19 +53,10 @@ TEST_F(PruneUnusedContainsRuleTest, Basic) {
                                std::vector<ExpressionIR*>{constant2, empty_str})
           .ValueOrDie();
 
-  /* ColumnExpression empty_contains_1{"empty_contains_1", filter_func_1}; */
-  /* ColumnExpression contains{"contains", MakeFilter()}; */
-  /* ColumnExpression empty_contains_2{"empty_contains_2", filter_func_2}; */
-
   auto filter_ir_1 = graph->CreateNode<FilterIR>(ast, mem_src, filter_func_1).ValueOrDie();
   auto filter_ir_2 = graph->CreateNode<FilterIR>(ast, filter_ir_1, filter_func_2).ValueOrDie();
 
   auto limit = MakeLimit(static_cast<OperatorIR*>(filter_ir_2), 1000);
-
-  /* auto map1 = MakeMap(mem_src, {}, false); */
-  /* ASSERT_OK(filter_ir_1->AddParent(map1)); */
-  /* auto map1_id = map1->id(); */
-
 
   ResolveTypesRule type_rule(compiler_state_.get());
   ASSERT_OK(type_rule.Execute(graph.get()));
