@@ -427,7 +427,8 @@ Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
   const bool build_path_exists = fs::Exists(lib_modules_source_dir);
   const bool source_path_exists = fs::Exists(lib_modules_build_dir);
   if (build_path_exists && source_path_exists) {
-    LOG(INFO) << absl::Substitute("Using Linux headers from: $0 and $1.", lib_modules_build_dir.string(), lib_modules_source_dir.string());
+    LOG(INFO) << absl::Substitute("Using Linux headers from: $0 and $1.",
+                                  lib_modules_build_dir.string(), lib_modules_source_dir.string());
     return Status::OK();
   } else if (build_path_exists) {
     LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_build_dir.string());
