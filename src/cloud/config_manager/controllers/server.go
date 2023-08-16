@@ -36,6 +36,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"px.dev/pixie/src/api/proto/uuidpb"
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	cpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
@@ -101,7 +102,7 @@ func (s *Server) getOrgIDForDeployKey(deployKey string) (uuid.UUID, error) {
 }
 
 // Helper function that looks up the org ID based on the VizierID so we can use it to set feature flags.
-func (s *Server) getOrgIDForVizier(vizierID string) (uuid.UUID, error) {
+func (s *Server) getOrgIDForVizier(vizierID *uuidpb.UUID) (uuid.UUID, error) {
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return uuid.Nil, err
@@ -110,7 +111,7 @@ func (s *Server) getOrgIDForVizier(vizierID string) (uuid.UUID, error) {
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
-	resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, utils.ProtoFromUUIDStrOrNil(vizierID))
+	resp, err := s.vzmgrClient.GetOrgFromVizier(ctx, vizierID)
 	if err != nil || resp == nil || resp.OrgID == nil {
 		return uuid.Nil, fmt.Errorf("Error fetching Vizier org ID: %s", err.Error())
 	}
@@ -244,7 +245,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	if err != nil || orgID == uuid.Nil {
 		log.WithError(err).Error("Error getting org ID from deploy key")
 	}
-	if orgID == uuid.Nil && in.VizierID != "" {
+	if orgID == uuid.Nil && in.VizierID != nil {
 		orgID, err = s.getOrgIDForVizier(in.VizierID)
 		if err != nil || orgID == uuid.Nil {
 			log.WithError(err).Error("Error getting the org ID from Vizier")

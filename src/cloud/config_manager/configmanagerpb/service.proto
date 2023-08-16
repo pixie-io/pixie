@@ -23,6 +23,7 @@ package px.services;
 option go_package = "configmanagerpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vizierconfigpb/vizier_types.proto";
 
 // ConfigManagerService provides configuration specs from the Cloud.
@@ -43,7 +44,7 @@ message ConfigForVizierRequest {
   // Kubernetes version of the cluster Vizier is running on.
   string k8s_version = 3 [ (gogoproto.customname) = "K8sVersion" ];
   // ID of the Vizier (Cluster ID).
-  string vizier_id = 4 [ (gogoproto.customname) = "VizierID" ];
+  uuidpb.UUID vizier_id = 4 [ (gogoproto.customname) = "VizierID" ];
 }
 
 // ConfigForVizierResponse is the response to a ConfigForVizierRequest.

@@ -26,6 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/config_manager/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
