@@ -21,6 +21,7 @@ pl_proto_library(
     srcs = ["service.proto"],
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/api/proto/uuidpb:uuid_pl_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
@@ -32,6 +33,7 @@ pl_go_proto_library(
     proto = ":service_pl_proto",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
     ],
 )
