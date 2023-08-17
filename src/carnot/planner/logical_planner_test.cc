@@ -280,7 +280,7 @@ import px
 ###############################################################
 # Pods/services are formatted as <namespace>/<name>.
 # If you want to match a namespace, only keep the namespace portion
-match_name = ''
+match_name = 'sock-shop/order'
 k8s_object = 'service'
 requestor_filter = ''  # 'front-end'
 # Visualization Variables - Dont change unless you know what you are doing
@@ -699,7 +699,7 @@ def http_data(start_time: str, source_filter: str, destination_filter: str, num_
     return df
 )pxl";
 
-TEST_F(LogicalPlannerTest, SegFaultTest) {
+TEST_F(LogicalPlannerTest, VerifyEmptyContainsCallsDoNotSegFaultTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   plannerpb::QueryRequest req;
   req.set_query_str(kHttpDataScript);
