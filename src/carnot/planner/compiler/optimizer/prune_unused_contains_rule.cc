@@ -65,7 +65,6 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
   for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
     auto child_node = ir_graph->Get(child_id);
 
-    // Operator nodes are guaranteed to have a single parent but DCHECK as well.
     if (!Match(child_node, Operator())) {
       continue;
     }
