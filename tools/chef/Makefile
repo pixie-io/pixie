@@ -29,7 +29,7 @@ LATEST_BASE_IMAGE 	    := $(shell cat $(BASE_IMAGE_VERSION_FILE))
 DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 
 ## The repository where the images are stored.
-REPOSITORY := gcr.io/pixie-oss/pixie-dev-public
+REPOSITORY := ghcr.io/pixie-io
 
 LINTER_IMAGE_DIGEST := $$($(DOCKER) inspect --format='{{index .RepoDigests 0}}' \
 											 $(REPOSITORY)/linter_image:$(DEV_IMAGE_VERSION) | \
@@ -49,7 +49,6 @@ build_and_push_base_image:
 		-var "generated_image_tag=$(BASE_IMAGE_VERSION)" \
 		packer_docker_base.json
 	echo $(BASE_IMAGE_VERSION) > $(BASE_IMAGE_VERSION_FILE)
-	$(MAKE) sync_images
 
 .PHONY: build_and_push_dev_images
 build_and_push_dev_images:
@@ -75,8 +74,3 @@ build_and_push_dev_images:
 	echo "LINTER_IMAGE_DIGEST=$(LINTER_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
 	echo "DEV_IMAGE_DIGEST=$(DEV_IMAGE_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
 	echo "DEV_IMAGE_WITH_EXTRAS_DIGEST=$(DEV_IMAGE_WITH_EXTRAS_DIGEST)" >> $(DOCKER_PROPERTIES_FILE)
-	$(MAKE) sync_images
-
-.PHONY: sync_images
-sync_images:
-	$(REGSYNC) once --config image_sync.yaml
