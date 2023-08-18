@@ -35,6 +35,7 @@ static const std::map<int64_t, std::string_view> kKafkaAPIKeyDecoder =
 static constexpr DataElement kKafkaElements[] = {
       canonical_data_elements::kTime,
       canonical_data_elements::kUPID,
+      canonical_data_elements::kCGID,
       canonical_data_elements::kRemoteAddr,
       canonical_data_elements::kRemotePort,
       canonical_data_elements::kTraceRole,
@@ -68,6 +69,7 @@ DEFINE_PRINT_TABLE(Kafka)
 
 constexpr int kKafkaTimeIdx = kKafkaTable.ColIndex("time_");
 constexpr int kKafkaUPIDIdx = kKafkaTable.ColIndex("upid");
+constexpr int kKafkaCGIDIdx = kKafkaTable.ColIndex("cgid");
 constexpr int kKafkaReqCmdIdx = kKafkaTable.ColIndex("req_cmd");
 constexpr int kKafkaClientIDIdx = kKafkaTable.ColIndex("client_id");
 constexpr int kKafkaReqBodyIdx = kKafkaTable.ColIndex("req_body");

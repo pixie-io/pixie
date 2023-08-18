@@ -45,6 +45,14 @@ constexpr DataElement kUPID = {
     types::SemanticType::ST_UPID,
     types::PatternType::GENERAL};
 
+constexpr std::string_view kCGIDColName = "cgid";
+constexpr DataElement kCGID = {
+    kCGIDColName,
+    "An opaque numeric ID that globally identify a running process inside the cluster.",
+    types::DataType::INT64,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL};
+
 // clang-format on
 
 }  // namespace canonical_data_elements

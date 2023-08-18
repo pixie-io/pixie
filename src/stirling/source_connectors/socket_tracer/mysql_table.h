@@ -37,6 +37,7 @@ static const std::map<int64_t, std::string_view> kMySQLRespStatusDecoder =
 static constexpr DataElement kMySQLElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -71,6 +72,7 @@ DEFINE_PRINT_TABLE(MySQL)
 
 constexpr int kMySQLTimeIdx = kMySQLTable.ColIndex("time_");
 constexpr int kMySQLUPIDIdx = kMySQLTable.ColIndex("upid");
+constexpr int kMySQLCGIDIdx = kMySQLTable.ColIndex("cgid");
 constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
 constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
 constexpr int kMySQLRespStatusIdx = kMySQLTable.ColIndex("resp_status");

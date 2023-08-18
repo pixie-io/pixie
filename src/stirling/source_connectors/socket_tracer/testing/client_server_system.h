@@ -28,6 +28,8 @@
 
 #include "src/common/system/tcp_socket.h"
 
+static uint64_t getcgid() { return px::md::FindCgroupIDFromPID(getpid()).ValueOrDie(); }
+
 namespace px {
 namespace stirling {
 namespace testing {
@@ -93,6 +95,7 @@ class ClientServerSystem {
 
   // PID of server, if spawned. Otherwise -1.
   uint32_t ServerPID() { return server_pid_; }
+  uint64_t ServerCGID() { return server_cgid_; }
   uint32_t ServerFD() { return server_fd_; }
 
  private:
@@ -298,6 +301,7 @@ class ClientServerSystem {
   server_pid_ = getpid();                                  \
   LOG(INFO) << "Server PID: " << server_pid_;              \
   server_thread_ = std::thread([this, script]() {          \
+    this->server_cgid_ = getcgid();                        \
     std::this_thread::sleep_for(server_response_latency_); \
     std::unique_ptr<TCPSocket> conn = server_.Accept();    \
     server_fd_ = conn->sockfd();                           \
@@ -339,6 +343,8 @@ class ClientServerSystem {
 
   uint32_t client_pid_ = -1;
   uint32_t server_pid_ = -1;
+
+  uint64_t server_cgid_ = UINT64_MAX;
 
   int client_fd_ = -1;
   int server_fd_ = -1;
