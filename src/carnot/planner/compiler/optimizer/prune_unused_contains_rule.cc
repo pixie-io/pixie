@@ -49,17 +49,18 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
   auto parent_id = ir_graph->dag().ParentsOf(node_id)[0];
   auto parent_node = ir_graph->Get(parent_id);
 
-  // If the first argument (string) to contains is not referenced anywhere,
-  // it should be deleted from the graph.
-  if (ir_graph->dag().ParentsOf(str->id()).size() <= 1) {
+  PX_RETURN_IF_ERROR(ir_graph->DeleteNode(func->id()));
+
+  // str and substr may be connected to other nodes in the
+  // IR graph. We should only delete those nodes once their
+  // last parent is removed. This should happen with the
+  // preceding FuncIR deletion.
+  if (ir_graph->dag().ParentsOf(str->id()).size() == 0) {
     PX_RETURN_IF_ERROR(ir_graph->DeleteNode(str->id()));
   }
-
-  // Delete the filter's contains function and the empty string argument
-  if (ir_graph->dag().ParentsOf(substr->id()).size() <= 1) {
+  if (ir_graph->dag().ParentsOf(substr->id()).size() == 0) {
     PX_RETURN_IF_ERROR(ir_graph->DeleteNode(substr->id()));
   }
-  PX_RETURN_IF_ERROR(ir_graph->DeleteNode(func->id()));
 
   // Reparent any child nodes of the filter
   for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
