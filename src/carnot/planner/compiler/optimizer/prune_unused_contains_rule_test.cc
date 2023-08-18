@@ -56,6 +56,11 @@ TEST_F(PruneUnusedContainsRuleTest, Basic) {
   auto filter_ir_1 = graph->CreateNode<FilterIR>(ast, mem_src, filter_func_1).ValueOrDie();
   auto filter_ir_2 = graph->CreateNode<FilterIR>(ast, filter_ir_1, filter_func_2).ValueOrDie();
 
+  auto filter_ir_1_id = filter_ir_1->id();
+  auto filter_ir_2_id = filter_ir_2->id();
+  auto filter_func_ir_1_id = filter_func_1->id();
+  auto filter_func_ir_2_id = filter_func_2->id();
+
   auto limit = MakeLimit(static_cast<OperatorIR*>(filter_ir_2), 1000);
 
   ResolveTypesRule type_rule(compiler_state_.get());
@@ -66,10 +71,10 @@ TEST_F(PruneUnusedContainsRuleTest, Basic) {
   ASSERT_OK(result);
   ASSERT_TRUE(result.ConsumeValueOrDie());
 
-  EXPECT_FALSE(graph->HasNode(filter_ir_1->id()));
-  EXPECT_FALSE(graph->HasNode(filter_ir_2->id()));
-  EXPECT_FALSE(graph->HasNode(filter_func_1->id()));
-  EXPECT_FALSE(graph->HasNode(filter_func_2->id()));
+  EXPECT_FALSE(graph->HasNode(filter_ir_1_id));
+  EXPECT_FALSE(graph->HasNode(filter_ir_2_id));
+  EXPECT_FALSE(graph->HasNode(filter_func_ir_1_id));
+  EXPECT_FALSE(graph->HasNode(filter_func_ir_2_id));
   EXPECT_TRUE(graph->HasNode(limit->id()));
 }
 

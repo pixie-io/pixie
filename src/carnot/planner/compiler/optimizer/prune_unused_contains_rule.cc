@@ -45,18 +45,18 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
     return false;
   }
 
-  DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1);
+  DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1UL);
   auto parent_id = ir_graph->dag().ParentsOf(node_id)[0];
   auto parent_node = ir_graph->Get(parent_id);
 
   // If the first argument (string) to contains is not referenced anywhere,
   // it should be deleted from the graph.
-  if (ir_graph->dag().DependenciesOf(str->id()).size() == 0) {
+  if (ir_graph->dag().ParentsOf(str->id()).size() <= 1) {
     PX_RETURN_IF_ERROR(ir_graph->DeleteNode(str->id()));
   }
 
   // Delete the filter's contains function and the empty string argument
-  if (ir_graph->Get(substr->id()) != nullptr) {
+  if (ir_graph->dag().ParentsOf(substr->id()).size() <= 1) {
     PX_RETURN_IF_ERROR(ir_graph->DeleteNode(substr->id()));
   }
   PX_RETURN_IF_ERROR(ir_graph->DeleteNode(func->id()));
@@ -68,7 +68,6 @@ StatusOr<bool> PruneUnusedContainsRule::RemoveMatchingFilter(IRNode* ir_node) {
     if (!Match(child_node, Operator())) {
       continue;
     }
-    DCHECK_EQ(ir_graph->dag().ParentsOf(node_id).size(), 1);
     auto child_op_node = static_cast<OperatorIR*>(child_node);
 
     PX_RETURN_IF_ERROR(child_op_node->ReplaceParent(static_cast<OperatorIR*>(ir_node),
