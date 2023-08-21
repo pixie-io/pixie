@@ -24,7 +24,6 @@
 
 #include <absl/strings/str_replace.h>
 
-#include <stdio.h>
 #include <fstream>
 #include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
