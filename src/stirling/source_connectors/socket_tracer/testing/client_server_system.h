@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "src/common/system/tcp_socket.h"
+#include "src/shared/metadata/cgroup_path_resolver.h"
 
 static uint64_t getcgid() { return px::md::FindCgroupIDFromPID(getpid()).ValueOrDie(); }
 
