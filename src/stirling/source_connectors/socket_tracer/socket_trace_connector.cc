@@ -1339,8 +1339,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::mysql::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   DataTable::RecordBuilder<&kMySQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
@@ -1362,12 +1362,13 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::cass::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   DataTable::RecordBuilder<&kCQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
@@ -1385,12 +1386,13 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::dns::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   DataTable::RecordBuilder<&kDNSTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
@@ -1408,12 +1410,13 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::pgsql::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   DataTable::RecordBuilder<&kPGSQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
@@ -1430,12 +1433,13 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::mux::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   DataTable::RecordBuilder<&kMuxTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
@@ -1450,13 +1454,15 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::amqp::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
+
   int64_t timestamp_ns = std::max(entry.req.timestamp_ns, entry.resp.timestamp_ns);
   DataTable::RecordBuilder<&kAMQPTable> r(data_table, timestamp_ns);
 
   r.Append<r.ColIndex("time_")>(timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
@@ -1497,8 +1503,8 @@ endpoint_role_t Swapendpoint_role_t(endpoint_role_t role) {
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::redis::Record entry, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   endpoint_role_t role = conn_tracker.role();
   if (entry.role_swapped) {
@@ -1508,6 +1514,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   DataTable::RecordBuilder<&kRedisTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(role);
@@ -1524,13 +1531,14 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::nats::Record record, DataTable* data_table) {
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   endpoint_role_t role = conn_tracker.role();
   DataTable::RecordBuilder<&kNATSTable> r(data_table, record.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(role);
@@ -1547,13 +1555,14 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
                                          protocols::kafka::Record record, DataTable* data_table) {
   constexpr size_t kMaxKafkaBodyBytes = 65536;
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   endpoint_role_t role = conn_tracker.role();
   DataTable::RecordBuilder<&kKafkaTable> r(data_table, record.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(role);
@@ -1586,6 +1595,7 @@ namespace {
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
   pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
   pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.upid.pid);
+  pb->mutable_attr()->mutable_conn_id()->set_cgid(event.attr.conn_id.cgid);
   pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
       event.attr.conn_id.upid.start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
@@ -1688,6 +1698,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 
       r.Append<idx::kTime>(time);
       r.Append<idx::kUPID>(upid.value());
+      r.Append<idx::kCGID>(UINT64_MAX);
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
       r.Append<idx::kAddrFamily>(static_cast<int>(stats.addr_family));
