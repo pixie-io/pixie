@@ -47,7 +47,7 @@ class ConnTrackerHTTP2Test : public ::testing::Test {
   }
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21, .cgid = 33};
 
   ConnTracker tracker_;
   testing::MockClock mock_clock_;
@@ -193,7 +193,7 @@ TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
 TEST_F(ConnTrackerHTTP2Test, ZeroFD) {
   ConnTracker tracker;
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 21};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 21, .cgid=33};
   tracker.SetConnID(kConnID);
 
   const int kStreamID = 7;

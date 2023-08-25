@@ -84,7 +84,7 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
       int32_t fd = 1;
       uint64_t tsid = tsid_dist(rng_);
 
-      struct conn_id_t conn_id = {{{pid}, 0}, fd, tsid};
+      struct conn_id_t conn_id = {{{pid}, 0}, fd, tsid, UINT64_MAX};
       TrackerEvent(conn_id, protocol.value());
     } else if (x < 0.95) {
       int death_countdown = death_countdown_dist(rng_);
