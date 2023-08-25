@@ -78,30 +78,28 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
 }
 
 StatusOr<uint64_t> FindCgroupIDFromPID(pid_t pid) {
-  std::ostringstream cgroup_name;
-  cgroup_name << "/proc/" << pid << "/cgroup";
-  std::ifstream proc_cgroup(cgroup_name.str());
+  std::string cgroup_name = absl::StrCat("/proc/", pid, "/cgroup");
+  std::ifstream proc_cgroup(cgroup_name);
 
   // get rid of the id at the front
   uint64_t blank;
   proc_cgroup >> blank;
   std::string line;
   std::getline(proc_cgroup, line);
+
   if (proc_cgroup.fail() || proc_cgroup.bad()) {
-    std::ostringstream failure_string;
-    failure_string << "procfs cgroup file getline failed with"
-                   << "fail: " << proc_cgroup.fail() << "bad : " << proc_cgroup.bad()
-                   << "eof: " << proc_cgroup.eof();
-    return error::NotFound(failure_string.str());
+    std::string failure_string =
+        absl::StrCat("procfs cgroup file getline failed with", "fail: ", proc_cgroup.fail(),
+                     "bad : ", proc_cgroup.bad(), "eof: ", proc_cgroup.eof());
+    return error::NotFound(failure_string);
   }
-  std::ostringstream oss;
-  oss << "/sys/fs/cgroup/" << line.substr(2, line.size());
+
+  std::string cgroup_path_name = absl::StrCat("/sys/fs/cgroup/", line.substr(2, line.size()));
 
   // lstat what we are pointing to
   struct stat stat_buf;
-  if (stat(oss.str().c_str(), &stat_buf)) {
-    oss << " sysfs cgroup stat failed";
-    return error::NotFound(oss.str());
+  if (stat(cgroup_path_name.c_str(), &stat_buf)) {
+    return error::NotFound(absl::StrCat(cgroup_path_name, " sysfs cgroup stat failed."));
   }
   return stat_buf.st_ino;
 }
