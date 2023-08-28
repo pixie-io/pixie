@@ -20,7 +20,7 @@ import pxtrace
 import px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpdrop.bt
-program = """
+pre_519_program = pxtrace.TraceProgram("""
 // tcpdrop.bt   Trace TCP kernel-dropped packets/segments.
 //              For Linux, uses bpftrace and eBPF.
 //
@@ -83,14 +83,84 @@ kprobe:tcp_drop
       $statestr);
   }
 }
+""",
+max_kernel='5.18'
+)
+
+post_519_program = pxtrace.TraceProgram(
 """
+// tcpdrop.bt   Trace TCP kernel-dropped packets/segments.
+//              For Linux, uses bpftrace and eBPF.
+//
+// Copyright (c) 2018 Dale Hamel.
+// Licensed under the Apache License, Version 2.0 (the "License")
+
+#include <linux/socket.h>
+#include <net/sock.h>
+
+BEGIN
+{
+  // See https://github.com/torvalds/linux/blob/master/include/net/tcp_states.h
+  @tcp_states[1] = "ESTABLISHED";
+  @tcp_states[2] = "SYN_SENT";
+  @tcp_states[3] = "SYN_RECV";
+  @tcp_states[4] = "FIN_WAIT1";
+  @tcp_states[5] = "FIN_WAIT2";
+  @tcp_states[6] = "TIME_WAIT";
+  @tcp_states[7] = "CLOSE";
+  @tcp_states[8] = "CLOSE_WAIT";
+  @tcp_states[9] = "LAST_ACK";
+  @tcp_states[10] = "LISTEN";
+  @tcp_states[11] = "CLOSING";
+  @tcp_states[12] = "NEW_SYN_RECV";
+}
+
+tracepoint:skb:kfree_skb
+{
+  $reason = args->reason;
+  $skb = (struct sk_buff *)args->skbaddr;
+  $sk = ((struct sock *) $skb->sk);
+  $inet_family = $sk->__sk_common.skc_family;
+
+  if ($reason > SKB_DROP_REASON_NOT_SPECIFIED &&
+      ($inet_family == AF_INET || $inet_family == AF_INET6)) {
+    if ($inet_family == AF_INET) {
+      $daddr = ntop($sk->__sk_common.skc_daddr);
+      $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
+    } else {
+      $daddr = ntop($sk->__sk_common.skc_v6_daddr.in6_u.u6_addr8);
+      $saddr = ntop($sk->__sk_common.skc_v6_rcv_saddr.in6_u.u6_addr8);
+    }
+    $lport = $sk->__sk_common.skc_num;
+    $dport = $sk->__sk_common.skc_dport;
+
+    // Destination port is big endian, it must be flipped
+    $dport = bswap($dport);
+
+    $state = $sk->__sk_common.skc_state;
+    $statestr = @tcp_states[$state];
+
+    printf(\"time_:%llu pid:%u pid_start_time:%llu src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
+      nsecs,
+      pid,
+      ((struct task_struct*)curtask)->group_leader->start_time / 10000000,
+      $saddr,
+      $lport,
+      $daddr,
+      $dport,
+      $statestr);
+  }
+}
+""",
+min_kernel='5.19'
+)
 
 
 def tcp_drops_func():
     table_name = 'tcp_drop_table'
     pxtrace.UpsertTracepoint('tcp_drop_tracer',
                              table_name,
-                             program,
+                             [pre_519_program, post_519_program],
                              pxtrace.kprobe(),
                              "10m")
 
