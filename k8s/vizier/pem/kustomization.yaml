@@ -7,3 +7,8 @@ kind: Kustomization
 namespace: pl
 resources:
 - base
+patches:
+- path: pem_host_mounts.yaml
+  target:
+    kind: DaemonSet
+    name: vizier-pem
