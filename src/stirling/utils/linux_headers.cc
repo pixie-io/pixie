@@ -653,6 +653,7 @@ Status FindOrInstallLinuxHeaders() {
   // "build" is required and "source" is optional.
   // However we find Linux headers (below) we link them into the mount namespace of this
   // process using one (or both) of the above paths.
+
   const std::filesystem::path pem_ns_lib_modules_dir = "/lib/modules/" + uname;
 
   // Create (or verify existence); does nothing if the directory already exists.
