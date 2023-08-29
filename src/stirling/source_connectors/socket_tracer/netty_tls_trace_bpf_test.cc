@@ -58,15 +58,15 @@ template <typename TServerContainer>
 class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture<kClientSideTracing> {
  protected:
   void SetUp() override {
-    FLAGS_stirling_enable_mux_tracing = true;
+    PX_SET_FOR_SCOPE(FLAGS_stirling_enable_mux_tracing, true);
 
     // We turn off CQL and NATS tracing to give some BPF instructions back for Mux.
     // This is required for older kernels with only 4096 BPF instructions.
-    FLAGS_stirling_enable_cass_tracing = false;
-    FLAGS_stirling_enable_nats_tracing = false;
+    PX_SET_FOR_SCOPE(FLAGS_stirling_enable_cass_tracing, false);
+    PX_SET_FOR_SCOPE(FLAGS_stirling_enable_nats_tracing, false);
 
     // Enable the raw fptr fallback for determining ssl lib version.
-    FLAGS_openssl_raw_fptrs_enabled = true;
+    PX_SET_FOR_SCOPE(FLAGS_openssl_raw_fptrs_enabled, true);
 
     SocketTraceBPFTestFixture<kClientSideTracing>::SetUp();
   }
