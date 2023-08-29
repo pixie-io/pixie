@@ -50,8 +50,12 @@ using ::testing::UnorderedElementsAre;
 
 class ThriftMuxServerContainerWrapper : public ::px::stirling::testing::ThriftMuxServerContainer {};
 
+namespace {
+constexpr bool kClientSideTracing = false;
+}
+
 template <typename TServerContainer>
-class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ false> {
+class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture<kClientSideTracing> {
  protected:
   void SetUp() override {
     FLAGS_stirling_enable_mux_tracing = true;
@@ -64,7 +68,7 @@ class BaseOpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTrac
     // Enable the raw fptr fallback for determining ssl lib version.
     FLAGS_openssl_raw_fptrs_enabled = true;
 
-    SocketTraceBPFTestFixture<true>::SetUp();
+    SocketTraceBPFTestFixture<kClientSideTracing>::SetUp();
   }
 
   BaseOpenSSLTraceTest() {
