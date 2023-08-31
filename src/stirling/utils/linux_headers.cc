@@ -41,12 +41,10 @@
 #include "src/common/zlib/zlib_wrapper.h"
 
 #define PX_RETURN_STATUS_OK_IF_OK(__materialized_status, __status_gen) \
-  do {                                                                 \
-    const auto& __materialized_status = __status_gen;                  \
-    if (__materialized_status.ok()) {                                  \
-      return Status::OK();                                             \
-    }                                                                  \
-  } while (false)
+  const auto& __materialized_status = __status_gen;                    \
+  if (__materialized_status.ok()) {                                    \
+    return Status::OK();                                               \
+  }                                                                    \
 
 namespace px {
 namespace stirling {
