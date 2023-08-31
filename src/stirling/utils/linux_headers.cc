@@ -40,6 +40,14 @@
 #include "src/common/system/proc_pid_path.h"
 #include "src/common/zlib/zlib_wrapper.h"
 
+#define PX_RETURN_STATUS_OK_IF_OK(__materialized_status, __status_gen) \
+  do {                                                                 \
+    const auto& __materialized_status = __status_gen;                  \
+    if (__materialized_status.ok()) {                                  \
+      return Status::OK();                                             \
+    }                                                                  \
+  } while (false)
+
 namespace px {
 namespace stirling {
 namespace utils {
@@ -435,7 +443,7 @@ Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
     LOG(INFO) << absl::Substitute("Using Linux headers from: $0.", lib_modules_build_dir.string());
     return Status::OK();
   }
-  return error::NotFound("Could not found 'source' or 'build' under $0.", lib_modules_dir.string());
+  return error::NotFound("Could not find 'source' or 'build' under $0.", lib_modules_dir.string());
 }
 
 StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::filesystem::path p) {

@@ -147,12 +147,6 @@ inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s)
 
 }  // namespace px
 
-#define PX_RETURN_STATUS_OK_IF_OK(__materialized_status, __status_gen) \
-  const auto& __materialized_status = __status_gen;                    \
-  if (__materialized_status.ok()) {                                    \
-    return Status::OK();                                               \
-  }
-
 #define PX_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
   do {                                                     \
     const auto& __status_name__ = (__status);              \
