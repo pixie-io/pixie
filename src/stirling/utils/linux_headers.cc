@@ -44,7 +44,7 @@
   const auto& __materialized_status = __status_gen;                    \
   if (__materialized_status.ok()) {                                    \
     return Status::OK();                                               \
-  }                                                                    \
+  }
 
 namespace px {
 namespace stirling {
