@@ -207,10 +207,9 @@ inline bool g_packaged_headers_installed = false;
  * In a containerized environment, the container should have the packaged headers in the image for
  * this to work.
  *
- * @return Status error if no headers (either host headers or installed packaged headers) are
- * available in the end state.
+ * @return Status error if no headers.
  */
-StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders();
+Status FindOrInstallLinuxHeaders();
 
 }  // namespace utils
 }  // namespace stirling
