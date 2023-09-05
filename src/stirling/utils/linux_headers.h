@@ -25,103 +25,11 @@
 #include <absl/container/flat_hash_set.h>
 
 #include "src/common/base/base.h"
+#include "src/common/system/kernel_version.h"
 
 namespace px {
 namespace stirling {
 namespace utils {
-
-struct KernelVersion {
-  uint8_t version = 0;
-  uint8_t major_rev = 0;
-  uint8_t minor_rev = 0;
-
-  uint32_t code() const { return (version << 16) | (major_rev << 8) | (minor_rev); }
-  std::string ToString() const {
-    return absl::Substitute("$0.$1.$2", version, major_rev, minor_rev);
-  }
-};
-
-enum class KernelVersionSource {
-  // Get the Linux version from VDSO .note section.
-  // Most reliable if available.
-  kVDSONoteSection,
-
-  // Get the Linux version from /proc/version_signature.
-  kProcVersionSignature,
-
-  // Get the Linux version from /proc/sys/kernel/version.
-  kProcSysKernelVersion,
-
-  // Get the Linux version from `uname -r`.
-  kUname,
-};
-
-// Order matters.
-// Uname should always be last because it does not report the correct minor version on
-// Ubuntu/Debian version
-const std::vector<KernelVersionSource> kDefaultKernelVersionSources = {
-    KernelVersionSource::kVDSONoteSection, KernelVersionSource::kProcVersionSignature,
-    KernelVersionSource::kProcSysKernelVersion, KernelVersionSource::kUname};
-
-uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
-
-enum class KernelVersionOrder {
-  kOlder,
-  kSame,
-  kNewer,
-};
-
-// Compares two kernel versions and detect their relationship.
-KernelVersionOrder CompareKernelVersions(KernelVersion a, KernelVersion b);
-
-/**
- * Parses a the Linux version code from a string.
- *
- * @param linux_release the kernel version string (e.g. 4.15.8-foobar).
- * @return Linux version as {version, major, minor}.
- */
-StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release);
-
-/**
- * Returns the kernel version from vDSO .note section.
- */
-StatusOr<KernelVersion> GetLinuxVersionFromNoteSection();
-
-/**
- * Returns the kernel version from /proc/version_signature.
- * This is required for Ubuntu, which does not report the correct minor version through uname.
- * Other distributions do not have /proc/version signature.
- *
- * @return Kernel release version (e.g. 4.15.4)
- */
-StatusOr<std::string> GetProcVersionSignature();
-
-/**
- * Determines the linux kernel version.
- * It returns the cached value if the value is present, otherwise performs the search in the same
- * way as FindKernelVersion().
- */
-StatusOr<KernelVersion> GetKernelVersion(
-    std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
-
-/**
- * Determines the linux kernel version.
- * It first searches /proc/version_signature (for Ubuntu distros).
- * If /proc/version_signature does not exist, it uses uname.
- *
- * Note that the version number reported by uname on Ubuntu distros does not include the minor
- * version, and thus cannot be used to get an accurate version.
- *
- * @return The kernel version, or error if it could not be determined.
- */
-StatusOr<KernelVersion> FindKernelVersion(
-    std::vector<KernelVersionSource> sources = kDefaultKernelVersionSources);
-
-/**
- * Returns the cached linux kernel version.
- * @return The pre-computed kernel version, or {0, 0, 0} if not found.
- */
-KernelVersion GetCachedKernelVersion();
 
 /**
  * Modifies the version.h on the filesystem to the specified version.
@@ -179,14 +87,14 @@ Status GenTimeconst(const std::filesystem::path& linux_headers_base, int hz);
 Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base);
 
 struct PackagedLinuxHeadersSpec {
-  KernelVersion version;
+  system::KernelVersion version;
   // This path stores either (1) the path to the tarball (before it has been extracted),
   // or (2) the path the extracted headers (after it has been extracted).
   std::filesystem::path path;
 };
 
 StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
-    const std::filesystem::path& packaged_headers_root, KernelVersion kernel_version);
+    const std::filesystem::path& packaged_headers_root, system::KernelVersion kernel_version);
 
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir);
 

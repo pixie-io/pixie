@@ -32,6 +32,7 @@
 
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/metrics/metrics.h"
+#include "src/common/system/kernel_version.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/dwarf_reader.h"
@@ -259,7 +260,7 @@ class SocketTraceConnector : public BCCSourceConnector {
     constexpr uint32_t kLinux5p2VersionCode = 328192;
     spec->enabled = (spec->trace_mode == TraceMode::On) ||
                     (spec->trace_mode == TraceMode::OnForNewerKernel &&
-                     utils::GetCachedKernelVersion().code() >= kLinux5p2VersionCode);
+                     system::GetCachedKernelVersion().code() >= kLinux5p2VersionCode);
   }
 
   // This map controls how each protocol is processed and transferred.

@@ -26,6 +26,7 @@
 #include <thread>
 
 #include "src/common/exec/subprocess.h"
+#include "src/common/system/kernel_version.h"
 #include "src/common/system/proc_pid_path.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
@@ -210,10 +211,10 @@ class PyGRPCTraceTest : public testing::SocketTraceBPFTestFixture</* TClientSide
 
 // Test that socket tracker can trace Python gRPC server's message.
 TEST_F(PyGRPCTraceTest, VerifyTraceRecords) {
-  ASSERT_OK_AND_ASSIGN(const utils::KernelVersion kernel_version, utils::GetKernelVersion());
-  const utils::KernelVersion kKernelVersion5_3 = {5, 3, 0};
-  if (utils::CompareKernelVersions(kernel_version, kKernelVersion5_3) ==
-      utils::KernelVersionOrder::kOlder) {
+  ASSERT_OK_AND_ASSIGN(const system::KernelVersion kernel_version, system::GetKernelVersion());
+  const system::KernelVersion kKernelVersion5_3 = {5, 3, 0};
+  if (system::CompareKernelVersions(kernel_version, kKernelVersion5_3) ==
+      system::KernelVersionOrder::kOlder) {
     LOG(WARNING) << absl::Substitute(
         "Skipping because host kernel version $0 is older than $1, "
         "old kernel versions do not support bounded loops, which is required by grpc_c_trace.c",

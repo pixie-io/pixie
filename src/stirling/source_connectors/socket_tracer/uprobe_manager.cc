@@ -57,9 +57,9 @@ namespace stirling {
 
 using ::px::stirling::obj_tools::DwarfReader;
 using ::px::stirling::obj_tools::ElfReader;
-using ::px::stirling::utils::GetKernelVersion;
-using ::px::stirling::utils::KernelVersion;
-using ::px::stirling::utils::KernelVersionOrder;
+using ::px::system::GetKernelVersion;
+using ::px::system::KernelVersion;
+using ::px::system::KernelVersionOrder;
 using ::px::system::ProcPidRootPath;
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
