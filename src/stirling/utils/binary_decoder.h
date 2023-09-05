@@ -62,6 +62,16 @@ class BinaryDecoder {
     return val;
   }
 
+  template <typename TIntType>
+  StatusOr<TIntType> ExtractIntFromLEndianBytes() {
+    if (buf_.size() < sizeof(TIntType)) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    TIntType val = ::px::utils::LEndianBytesToInt<TIntType>(buf_);
+    buf_.remove_prefix(sizeof(TIntType));
+    return val;
+  }
+
   // Extract UVarInt encoded value and return result as uint64_t. The details of this encoding's
   // specification can be see in the following link:
   // https://cs.opensource.google/go/go/+/refs/tags/go1.20.5:src/encoding/binary/varint.go;l=7-25
