@@ -34,11 +34,6 @@ pl_cc_test_library(
 )
 
 filegroup(
-    name = "tcpdrop_bpftrace_script",
-    srcs = ["tcpdrop.bpftrace.pxl"],
-)
-
-filegroup(
     name = "exec_snoop_bpftrace_script",
     srcs = ["exec_snoop.bpftrace.pxl"],
 )
