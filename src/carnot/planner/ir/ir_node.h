@@ -126,8 +126,7 @@ class IRNode {
   template <typename... Args>
   Status CreateIRNodeError(Args... args) const {
     auto msg = absl::Substitute(args...);
-    compilerpb::CompilerErrorGroup context =
-        LineColErrorPb(line(), col(), msg);
+    compilerpb::CompilerErrorGroup context = LineColErrorPb(line(), col(), msg);
     return Status(statuspb::INVALID_ARGUMENT, msg,
                   std::make_unique<compilerpb::CompilerErrorGroup>(context));
   }
