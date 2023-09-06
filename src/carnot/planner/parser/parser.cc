@@ -59,7 +59,7 @@ class PypaErrorHandler {
       CreateLineColError(lc_err_pb, err);
       absl::StrAppend(&msg, err.message);
     }
-    return Status(statuspb::INVALID_ARGUMENT, "",
+    return Status(statuspb::INVALID_ARGUMENT, msg,
                   std::make_unique<compilerpb::CompilerErrorGroup>(error_group));
   }
 
