@@ -126,7 +126,10 @@ class VizierServer final : public api::vizierpb::VizierService::Service {
     auto s_or_plan = px::carnot::planner::compiler::Compiler().Compile(reader->query_str(),
                                                                        compiler_state.get());
     if (!s_or_plan.ok()) {
-      return ::grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, "Failed to compile script");
+      auto error_msg =
+          absl::Substitute("Failed to compile script with error='$0'", s_or_plan.msg());
+      LOG(WARNING) << error_msg;
+      return ::grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, error_msg);
     }
     auto plan = s_or_plan.ConsumeValueOrDie();
     for (auto f : plan.nodes()) {

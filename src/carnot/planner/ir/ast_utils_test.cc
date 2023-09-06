@@ -68,6 +68,17 @@ INSTANTIATE_TEST_SUITE_P(AstToStringTestSuite, AstToStringTest,
                            return info.param.name;
                          });
 
+class CreateAstErrorTest : public ::testing::Test {};
+
+TEST(CreateAstErrorTest, CreateAstErrorBasic) {
+  Parser parser;
+  ASSERT_OK_AND_ASSIGN(auto ast, parser.Parse("5 + 2", /* parse_doc_strings */ false));
+  auto error_msg = "This is a test";
+  auto ast_error = CreateAstError(ast, error_msg);
+  ASSERT_NOT_OK(ast_error);
+  ASSERT_EQ(ast_error.msg(), error_msg);
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px
