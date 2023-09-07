@@ -89,7 +89,7 @@ class BCCWrapper {
     return task_struct_offsets_opt_;
   }
 
-  virtual ebpf::BPF& BPF() = 0;
+  virtual ebpf::BPF* BPF() = 0;
 
   /**
    * Compiles the BPF code.
@@ -137,7 +137,6 @@ class BCCWrapper {
   /**
    * Open a perf buffer for reading events.
    * @param perf_buff Specifications of the perf buffer (name, callback function, etc.).
-   * PollPerfBuffer().
    * @return Error if perf buffer cannot be opened (e.g. perf buffer does not exist).
    */
   virtual Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer) = 0;
@@ -211,16 +210,25 @@ class BCCWrapper {
                                       const uint64_t config) = 0;
 
   /**
-   * Drains all of the opened perf buffers, calling the handle function that was
-   * specified in the PerfBufferSpec when OpenPerfBuffer was called.
+   * Drains a specific perf buffer.
    *
+   * @param name The name of the perf buffer to drain.
    * @param timeout_ms If there's no event in the perf buffer, then timeout_ms specifies the
    *                   amount of time to wait for an event to arrive before returning.
    *                   Default is 0, because if nothing is ready, then we want to go back to sleep
    *                   and catch new events in the next iteration.
+   * @return Error status. This is useful for callers directly using this method, but not for
+   *                       PollPerfBuffers() which directly uses the list of open perf buffers.
    */
-  virtual void PollPerfBuffers(int timeout_ms = 0) = 0;
-  virtual void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) = 0;
+  virtual Status PollPerfBuffer(const std::string& name, const int timeout_ms = 0) = 0;
+
+  /**
+   * Drains all of the opened perf buffers, calling the handle function that was
+   * specified in the PerfBufferSpec when OpenPerfBuffer was called.
+   *
+   * @param timeout_ms Pass through to PollPerfBuffer()
+   */
+  virtual void PollPerfBuffers(const int timeout_ms = 0) = 0;
 
   /**
    * Detaches all probes, and closes all perf buffers that are open.
@@ -233,9 +241,10 @@ class BCCWrapper {
   static size_t num_open_perf_buffers() { return num_open_perf_buffers_; }
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
+  virtual Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer) = 0;
+
  protected:
   FRIEND_TEST(BCCWrapperTest, DetachUProbe);
-  virtual Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer) = 0;
 
   // These are static counters across all instances, because:
   // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
@@ -254,13 +263,15 @@ class BCCWrapper {
 
 class BCCWrapperImpl : public BCCWrapper {
  public:
+  int CommonPerfBufferSetup(const PerfBufferSpec& perf_buffer_spec);
+
   virtual ~BCCWrapperImpl() {
     // Not really required, because BPF destructor handles these.
     // But we do it anyways out of paranoia.
     Close();
   }
 
-  ebpf::BPF& BPF() override { return bpf_; }
+  ebpf::BPF* BPF() override { return &bpf_; }
 
   Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
                         bool requires_linux_headers = true,
@@ -283,13 +294,11 @@ class BCCWrapperImpl : public BCCWrapper {
     PX_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
     return Status::OK();
   }
-  void PollPerfBuffers(int timeout_ms = 0) override;
-  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) override;
+  void PollPerfBuffers(const int timeout_ms = 0) override;
+  Status PollPerfBuffer(const std::string& name, const int timeout_ms = 0) override;
   void Close() override;
 
- protected:
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer) override;
-  std::vector<PerfBufferSpec> perf_buffers_;
 
  private:
   FRIEND_TEST(BCCWrapperTest, DetachUProbe);
@@ -315,6 +324,10 @@ class BCCWrapperImpl : public BCCWrapper {
   std::vector<TracepointSpec> tracepoints_;
   std::vector<PerfEventSpec> perf_events_;
 
+ protected:
+  std::vector<PerfBufferSpec> perf_buffer_specs_;
+
+ private:
   std::string system_headers_include_dir_;
 
   // Initialize this with one of the below bitmask flags to turn on different debug output.
@@ -332,7 +345,6 @@ class BCCWrapperImpl : public BCCWrapper {
 
 std::unique_ptr<BCCWrapper> CreateBCC();
 
-// Wrapped maps & arrays.
 template <typename T>
 class WrappedBCCArrayTable {
  public:
@@ -366,11 +378,13 @@ class WrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
   }
 
   WrappedBCCArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF().get_array_table<T>(name_));
+    underlying_ = std::make_unique<U>(bcc->BPF()->get_array_table<T>(name_));
   }
 
- private:
+ protected:
   const std::string name_;
+
+ private:
   char const* const err_msg_ = "BPF failed to $0 value for array table: $1, index: $2. $3.";
   std::unique_ptr<U> underlying_;
 };
@@ -458,11 +472,13 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
   }
 
   WrappedBCCMapImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF().get_hash_table<K, V>(name_));
+    underlying_ = std::make_unique<U>(bcc->BPF()->get_hash_table<K, V>(name_));
   }
 
- private:
+ protected:
   const std::string name_;
+
+ private:
   char const* const err_msg_ = "BPF failed to $0 value for map: $1. $2.";
   std::unique_ptr<U> underlying_;
   absl::flat_hash_set<K> shadow_keys_;
@@ -495,7 +511,7 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
 
   WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
       : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF().get_percpu_array_table<T>(name_));
+    underlying_ = std::make_unique<U>(bcc->BPF()->get_percpu_array_table<T>(name_));
   }
 
  private:
@@ -529,19 +545,22 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   void ClearStackID(const int stack_id) override { underlying_->clear_stack_id(stack_id); }
 
   WrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF().get_stack_table(name_));
+    underlying_ = std::make_unique<U>(bcc->BPF()->get_stack_table(name_));
   }
 
- private:
+ protected:
   const std::string name_;
+
+ private:
   std::unique_ptr<U> underlying_;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Creators fns for wrapped maps & arrays:
+
 template <typename BaseT, typename ImplT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
-  // The decision logic for "normal" vs. "recording" vs. "replaying" impl. will be inserted
-  // here in a future PR.
   return std::make_unique<ImplT>(bcc, name);
 }
 

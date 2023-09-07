@@ -19,7 +19,7 @@
 #pragma once
 
 #ifdef __cplusplus
-#include <utility>
+#include <string>
 #endif
 
 #include "src/stirling/upid/upid.h"
@@ -81,6 +81,8 @@ static const uint64_t kOverflowError = 1ULL << kOverflowBitPos;
 static const uint64_t kMapReadFailureError = 1ULL << kMapReadFailureBitPos;
 
 #ifdef __cplusplus
-static constexpr std::string_view kHistogramAName = "histogram_a";
-static constexpr std::string_view kHistogramBName = "histogram_b";
+// NOLINTNEXTLINE : runtime/string
+static const std::string kHistogramAName = "histogram_a";
+// NOLINTNEXTLINE : runtime/string
+static const std::string kHistogramBName = "histogram_b";
 #endif

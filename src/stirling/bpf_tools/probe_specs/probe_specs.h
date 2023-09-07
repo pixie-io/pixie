@@ -44,6 +44,8 @@ namespace px {
 namespace stirling {
 namespace bpf_tools {
 
+class BPFRecorder;
+
 enum class BPFProbeAttachType {
   // Attach to function entry.
   kEntry = BPF_PROBE_ENTRY,
