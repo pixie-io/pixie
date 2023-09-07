@@ -61,7 +61,8 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
   APIKey request_api_key;
   int16_t request_api_version;
   if (type == message_type_t::kRequest) {
-    PX_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int, binary_decoder.ExtractBEInt<int16_t>());
+    PX_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int,
+                                binary_decoder.ExtractBEInt<int16_t>());
     if (!IsValidAPIKey(request_api_key_int)) {
       return ParseState::kInvalid;
     }

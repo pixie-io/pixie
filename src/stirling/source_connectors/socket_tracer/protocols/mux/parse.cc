@@ -53,7 +53,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   }
 
   if (frame_type == Type::kRdispatch) {
-    PX_ASSIGN_OR(frame->reply_status, decoder->ExtractBEInt<uint8_t>(), return ParseState::kInvalid);
+    PX_ASSIGN_OR(frame->reply_status, decoder->ExtractBEInt<uint8_t>(),
+                 return ParseState::kInvalid);
   }
 
   PX_ASSIGN_OR(int16_t num_ctx, decoder->ExtractBEInt<int16_t>(), return ParseState::kInvalid);
@@ -68,11 +69,13 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
     PX_ASSIGN_OR(std::string_view ctx_key, decoder->ExtractString(ctx_key_len),
                  return ParseState::kInvalid);
 
-    PX_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractBEInt<int16_t>(), return ParseState::kInvalid);
+    PX_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractBEInt<int16_t>(),
+                 return ParseState::kInvalid);
 
     absl::flat_hash_map<std::string, std::string> unpacked_value;
     if (ctx_key == "com.twitter.finagle.Deadline") {
-      PX_ASSIGN_OR(int64_t timestamp, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t timestamp, decoder->ExtractBEInt<int64_t>(),
+                   return ParseState::kInvalid);
       PX_ASSIGN_OR(int64_t deadline, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
 
       unpacked_value["timestamp"] = std::to_string(timestamp / 1000);
@@ -80,7 +83,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
 
     } else if (ctx_key == "com.twitter.finagle.tracing.TraceContext") {
       PX_ASSIGN_OR(int64_t span_id, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
-      PX_ASSIGN_OR(int64_t parent_id, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t parent_id, decoder->ExtractBEInt<int64_t>(),
+                   return ParseState::kInvalid);
       PX_ASSIGN_OR(int64_t trace_id, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
       PX_ASSIGN_OR(int64_t flags, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
 
