@@ -30,7 +30,6 @@
 #include "src/common/event/event.h"
 #include "src/common/event/nats.h"
 #include "src/common/metrics/memory_metrics.h"
-#include "src/common/system/kernel_version.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
@@ -109,7 +108,7 @@ class Manager : public BaseManager {
   Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
           int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
           services::shared::agent::AgentParameters parameters, std::string_view nats_url,
-          std::string_view mds_url, px::system::KernelVersion kernel_version);
+          std::string_view mds_url);
   Status Init();
 
   Status RegisterMessageHandler(MsgCase c, std::shared_ptr<MessageHandler> handler,

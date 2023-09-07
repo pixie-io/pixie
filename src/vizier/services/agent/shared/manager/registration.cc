@@ -23,7 +23,6 @@
 #include "src/vizier/services/agent/shared/base/info.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
 #include "src/vizier/services/agent/shared/manager/registration.h"
-#include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace px {
 namespace vizier {

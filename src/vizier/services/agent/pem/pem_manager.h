@@ -64,7 +64,7 @@ class PEMManager : public Manager {
              px::system::KernelVersion kernel_version)
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
                 PEMManager::Parameters(), nats_url,
-                /*mds_url*/ "", kernel_version),
+                /*mds_url*/ ""),
         stirling_(std::move(stirling)),
         node_available_memory_(prometheus::BuildGauge()
                                    .Name("node_available_memory")
@@ -77,7 +77,9 @@ class PEMManager : public Manager {
                                .Help("Total amount of memory on the node (includes inuse and free "
                                      "memory). Corresponds to /proc/meminfo MemTotal.")
                                .Register(GetMetricsRegistry())
-                               .Add({})) {}
+                               .Add({})) {
+    info()->kernel_version = kernel_version;
+  }
 
   std::string k8s_update_selector() const override { return info()->host_ip; }
 

@@ -89,11 +89,8 @@ int main(int argc, char** argv) {
   std::string mds_addr =
       absl::Substitute("$0.$1.svc:$2", FLAGS_mds_addr, FLAGS_namespace, FLAGS_mds_port);
 
-  px::system::KernelVersion kernel_version = px::system::GetCachedKernelVersion();
-  LOG(INFO) << absl::Substitute("Pixie Kelvin. Kernel version: $0", kernel_version.ToString());
-
   auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
-                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_version)
+                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr)
                      .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());
