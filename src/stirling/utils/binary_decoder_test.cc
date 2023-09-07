@@ -42,14 +42,14 @@ TEST(BinaryDecoderTest, ExtractChar) {
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
 
-TEST(BinaryDecoderTest, ExtractInt) {
+TEST(BinaryDecoderTest, ExtractBEInt) {
   std::string_view data("\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01");
   BinaryDecoder bin_decoder(data);
 
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int8_t>(), 1);
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int16_t>(), 257);
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int24_t>(), 65793);
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int32_t>(), 16843009);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractBEInt<int8_t>(), 1);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractBEInt<int16_t>(), 257);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractBEInt<int24_t>(), 65793);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractBEInt<int32_t>(), 16843009);
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
 

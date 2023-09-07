@@ -61,7 +61,7 @@ class TestAMQPField(BaseTestCase):
         sample_field = Field("sample_field", FieldType.short)
         self.assertEqual(
             sample_field.gen_buffer_extract(),
-            "PX_ASSIGN_OR_RETURN(r.sample_field, decoder->ExtractInt<uint16_t>());",
+            "PX_ASSIGN_OR_RETURN(r.sample_field, decoder->ExtractBEInt<uint16_t>());",
         )
 
     def test_gen_buffer_extract_bit(self):
@@ -149,8 +149,8 @@ class TestAMQPMethod(BaseTestCase):
             """
             Status ExtractAMQPSampleClassSampleMethod(BinaryDecoder* decoder, Frame* frame) {
                 AMQPSampleClassSampleMethod r;
-                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
                 r.property_flags = property_flags;
 
                 frame->msg = ToString(r);
@@ -548,8 +548,8 @@ class TestAMQPCodeGeneratorGen(BaseTestCase):
             }
             Status ExtractAMQPConnectionContentHeader(BinaryDecoder* decoder, Frame* frame) {
                 AMQPConnectionContentHeader r;
-                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
                 r.property_flags = property_flags;
                 frame->msg = ToString(r);
                 frame->synchronous = 0;
@@ -579,8 +579,8 @@ class TestAMQPCodeGeneratorGen(BaseTestCase):
             self.code_generator_single_class.gen_class_select(),
             """
             Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {
-                PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-                PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractBEInt<uint16_t>());
 
                 req->class_id = class_id;
                 req->method_id = method_id;
@@ -602,8 +602,8 @@ class TestAMQPCodeGeneratorGen(BaseTestCase):
             self.code_generator_single_class.gen_process_content_header_select(),
             """
             Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {
-                PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-                PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractBEInt<uint16_t>());
                 req->class_id = class_id;
                 if(weight != 0) {
                     return error::Internal("AMQP content header weight should be 0");

@@ -63,15 +63,15 @@ StatusOr<int64_t> PacketDecoder::ExtractVarintCore() {
 /*
  * Primitive Type Parsers
  */
-StatusOr<bool> PacketDecoder::ExtractBool() { return binary_decoder_.ExtractInt<bool>(); }
+StatusOr<bool> PacketDecoder::ExtractBool() { return binary_decoder_.ExtractBEInt<bool>(); }
 
-StatusOr<int8_t> PacketDecoder::ExtractInt8() { return binary_decoder_.ExtractInt<int8_t>(); }
+StatusOr<int8_t> PacketDecoder::ExtractInt8() { return binary_decoder_.ExtractBEInt<int8_t>(); }
 
-StatusOr<int16_t> PacketDecoder::ExtractInt16() { return binary_decoder_.ExtractInt<int16_t>(); }
+StatusOr<int16_t> PacketDecoder::ExtractInt16() { return binary_decoder_.ExtractBEInt<int16_t>(); }
 
-StatusOr<int32_t> PacketDecoder::ExtractInt32() { return binary_decoder_.ExtractInt<int32_t>(); }
+StatusOr<int32_t> PacketDecoder::ExtractInt32() { return binary_decoder_.ExtractBEInt<int32_t>(); }
 
-StatusOr<int64_t> PacketDecoder::ExtractInt64() { return binary_decoder_.ExtractInt<int64_t>(); }
+StatusOr<int64_t> PacketDecoder::ExtractInt64() { return binary_decoder_.ExtractBEInt<int64_t>(); }
 
 StatusOr<int32_t> PacketDecoder::ExtractUnsignedVarint() {
   constexpr uint8_t kVarintMaxLength = 35;

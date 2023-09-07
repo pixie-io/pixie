@@ -30,13 +30,13 @@ namespace amqp {
 
 StatusOr<std::string> ExtractShortString(BinaryDecoder* decoder) {
   // Short string defined as 2*OCTET(short-uint)
-  PX_ASSIGN_OR_RETURN(uint8_t len, decoder->ExtractInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN(uint8_t len, decoder->ExtractBEInt<uint8_t>());
   return decoder->ExtractString(len);
 }
 
 StatusOr<std::string> ExtractLongString(BinaryDecoder* decoder) {
   // Long string defined as 4*OCTET(short-uint)
-  PX_ASSIGN_OR_RETURN(uint32_t len, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(uint32_t len, decoder->ExtractBEInt<uint32_t>());
   return decoder->ExtractString(len);
 }
 

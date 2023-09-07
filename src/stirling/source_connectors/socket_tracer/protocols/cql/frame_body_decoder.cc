@@ -34,7 +34,7 @@ namespace cass {
 
 template <typename TIntType>
 StatusOr<TIntType> FrameBodyDecoder::ExtractIntCore() {
-  return binary_decoder_.ExtractInt<TIntType>();
+  return binary_decoder_.ExtractBEInt<TIntType>();
 }
 
 template <typename TFloatType>

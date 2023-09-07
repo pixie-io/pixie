@@ -68,13 +68,13 @@ class FieldType(Enum):
     def get_field_extract_function(field_type):
         extract_function_c_mapping = {
             FieldType.octet: "decoder->ExtractChar<uint8_t>()",
-            FieldType.short: "decoder->ExtractInt<uint16_t>()",
-            FieldType.long: "decoder->ExtractInt<uint32_t>()",
-            FieldType.longlong: "decoder->ExtractInt<uint64_t>()",
+            FieldType.short: "decoder->ExtractBEInt<uint16_t>()",
+            FieldType.long: "decoder->ExtractBEInt<uint32_t>()",
+            FieldType.longlong: "decoder->ExtractBEInt<uint64_t>()",
             FieldType.shortstr: "ExtractShortString(decoder)",
             FieldType.longstr: "ExtractLongString(decoder)",
             FieldType.table: "ExtractLongString(decoder)",
-            FieldType.timestamp: "decoder->ExtractInt<time_t>()",
+            FieldType.timestamp: "decoder->ExtractBEInt<time_t>()",
         }
         return extract_function_c_mapping[field_type]
 
@@ -304,8 +304,8 @@ class AMQPMethod:
         return f"""
             Status Extract{self.c_struct_name}(BinaryDecoder* decoder, Frame* frame) {{
                 {self.c_struct_name} r;
-                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+                PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+                PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
                 r.property_flags = property_flags;
                 {field_buffer_extractions}
                 frame->msg = ToString(r);
@@ -671,8 +671,8 @@ class CodeGenerator:
         amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
         return f"""
         Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {{
-            PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-            PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractInt<uint16_t>());
+            PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+            PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractBEInt<uint16_t>());
 
             req->class_id = class_id;
             req->method_id = method_id;
@@ -726,8 +726,8 @@ class CodeGenerator:
         amqp_extract_class_case_str = "\n".join(amqp_extract_class_case)
         return f"""
         Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {{
-            PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-            PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
+            PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+            PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractBEInt<uint16_t>());
             req->class_id = class_id;
 
             if(weight != 0) {{

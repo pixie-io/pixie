@@ -53,7 +53,7 @@ class BinaryDecoder {
   }
 
   template <typename TIntType>
-  StatusOr<TIntType> ExtractInt() {
+  StatusOr<TIntType> ExtractBEInt() {
     if (buf_.size() < sizeof(TIntType)) {
       return error::ResourceUnavailable("Insufficient number of bytes.");
     }

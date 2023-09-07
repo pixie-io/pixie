@@ -64,12 +64,12 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result)
   // DnsParser ensures there is a complete header.
   DCHECK_GT(buf->size(), sizeof(DNSHeader));
   BinaryDecoder decoder(*buf);
-  result->header.txid = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
-  result->header.flags = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_queries = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_answers = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_auth = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
-  result->header.num_addl = decoder.ExtractInt<uint16_t>().ValueOr(0xffff);
+  result->header.txid = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  result->header.flags = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  result->header.num_queries = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  result->header.num_answers = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  result->header.num_auth = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
+  result->header.num_addl = decoder.ExtractBEInt<uint16_t>().ValueOr(0xffff);
 
   // The ValueOr(0xffff) conditions should never trigger, since there are enough bytes.
   DCHECK_NE(result->header.flags, 0xffff);
