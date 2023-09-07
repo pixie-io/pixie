@@ -71,14 +71,7 @@ pl_cc_test(
         "testdata/config.gz",
     ] + glob([
         "testdata/test_header_packages/*",
-        "testdata/sample_host_ubuntu/**",
-        "testdata/sample_host_debian/**",
     ]),
-    tags = [
-        # Getting kernel version from VDSO fails because the system VDSO will be used with userspace qemu,
-        # so we need full qemu emulation to test that for ARM.
-        "requires_full_qemu_emulation",
-    ],
     deps = [
         ":cc_library",
         "//src/common/system:cc_library",

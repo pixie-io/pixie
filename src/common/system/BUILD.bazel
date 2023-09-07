@@ -36,6 +36,22 @@ pl_cc_library(
     deps = [
         "//src/common/clock:cc_library",
         "//src/common/fs:cc_library",
+        "//src/common/minitar:cc_library",
+        "//src/common/zlib:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "kernel_version_test",
+    srcs = ["kernel_version_test.cc"],
+    data = ["//src/common/system/testdata:kernel_version"],
+    tags = [
+        # Getting kernel version from VDSO fails because the system VDSO will be used with userspace qemu,
+        # so we need full qemu emulation to test that for ARM.
+        "requires_full_qemu_emulation",
+    ],
+    deps = [
+        ":cc_library",
     ],
 )
 

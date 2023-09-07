@@ -30,6 +30,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/perf/scoped_timer.h"
 #include "src/common/system/config.h"
+#include "src/common/system/kernel_version.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -107,7 +108,7 @@ Status BCCWrapperImpl::InitBPFProgram(std::string_view bpf_program, std::vector<
   }
 
   if (requires_linux_headers) {
-    auto kernel_version = utils::GetCachedKernelVersion();
+    auto kernel_version = system::GetCachedKernelVersion();
 
     // This function will setup linux headers for BPF code deployment. If another BCCWrapper has
     // already run this function, it will find the same headers as found or installed previously.
