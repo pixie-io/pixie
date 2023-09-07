@@ -555,10 +555,7 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   std::unique_ptr<U> underlying_;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
 // Creators fns for wrapped maps & arrays:
-
 template <typename BaseT, typename ImplT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
   return std::make_unique<ImplT>(bcc, name);
