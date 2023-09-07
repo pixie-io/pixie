@@ -362,10 +362,10 @@ int BCCWrapperImpl::CommonPerfBufferSetup(const PerfBufferSpec& perf_buffer_spec
 Status BCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {
   const int num_pages = CommonPerfBufferSetup(perf_buffer_spec);
 
-  const std::string name = std::string(perf_buffer_spec.name);
+  const std::string& name = perf_buffer_spec.name;
   void* cb_cookie = perf_buffer_spec.cb_cookie;
-  auto data_fn = perf_buffer_spec.probe_output_fn;
-  auto loss_fn = perf_buffer_spec.probe_loss_fn;
+  auto& data_fn = perf_buffer_spec.probe_output_fn;
+  auto& loss_fn = perf_buffer_spec.probe_loss_fn;
 
   PX_RETURN_IF_ERROR(BPF()->open_perf_buffer(name, data_fn, loss_fn, cb_cookie, num_pages));
 
