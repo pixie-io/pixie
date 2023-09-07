@@ -353,13 +353,12 @@ struct CompilerErrorMatcher {
       (*listener) << "Status is ok, no compiler error found.";
       return false;
     }
-    if (!status.has_context() && !status.msg().empty()) {
-      (*listener) << "Status does not have a context.";
+    if (status.msg().empty()) {
+      (*listener) << "Status does not have a message.";
       return false;
     }
-    if (!status.has_context() && status.msg().empty()) {
-      (*listener) << absl::Substitute("Status does not have a context, but has a message: '$0'",
-                                      status.msg());
+    if (!status.has_context()) {
+      (*listener) << "Status does not have a context.";
       return false;
     }
     if (!status.context()->Is<compilerpb::CompilerErrorGroup>()) {

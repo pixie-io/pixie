@@ -48,9 +48,9 @@ namespace planner {
  */
 template <typename... Args>
 Status CreateAstError(const pypa::AstPtr& ast, Args... args) {
-  compilerpb::CompilerErrorGroup context =
-      LineColErrorPb(ast->line, ast->column, absl::Substitute(args...));
-  return Status(statuspb::INVALID_ARGUMENT, "",
+  auto msg = absl::Substitute(args...);
+  compilerpb::CompilerErrorGroup context = LineColErrorPb(ast->line, ast->column, msg);
+  return Status(statuspb::INVALID_ARGUMENT, msg,
                 std::make_unique<compilerpb::CompilerErrorGroup>(context));
 }
 
@@ -116,9 +116,10 @@ Status AddOuterContextToError(Status status, const pypa::AstPtr& ast, Args... ar
   }
   compilerpb::CompilerErrorGroup error_group;
   CHECK(status.context()->UnpackTo(&error_group));
-  AddLineColError(&error_group, ast->line, ast->column, absl::Substitute(args...));
+  auto msg = absl::Substitute(args...);
+  AddLineColError(&error_group, ast->line, ast->column, msg);
 
-  return Status(statuspb::INVALID_ARGUMENT, "",
+  return Status(statuspb::INVALID_ARGUMENT, msg,
                 std::make_unique<compilerpb::CompilerErrorGroup>(error_group));
 }
 

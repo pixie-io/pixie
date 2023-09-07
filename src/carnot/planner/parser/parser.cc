@@ -52,12 +52,14 @@ class PypaErrorHandler {
    */
   Status ProcessErrors() {
     compilerpb::CompilerErrorGroup error_group;
+    std::string msg = "";
     for (const auto& err : errs_) {
       compilerpb::CompilerError* err_pb = error_group.add_errors();
       compilerpb::LineColError* lc_err_pb = err_pb->mutable_line_col_error();
       CreateLineColError(lc_err_pb, err);
+      absl::StrAppend(&msg, err.message);
     }
-    return Status(statuspb::INVALID_ARGUMENT, "",
+    return Status(statuspb::INVALID_ARGUMENT, msg,
                   std::make_unique<compilerpb::CompilerErrorGroup>(error_group));
   }
 
