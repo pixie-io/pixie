@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 
+#include "src/common/system/kernel_version.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
 
 namespace px {
@@ -43,9 +44,11 @@ class KelvinManager : public Manager {
   KelvinManager() = delete;
   KelvinManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
                 std::string_view addr, int grpc_server_port, std::string_view nats_url,
-                std::string_view mds_url)
+                std::string_view mds_url, px::system::KernelVersion kernel_version)
+      // TODO(@benkilimnik): Kernel version may not be needed in kelvin, only in PEMManager for
+      // script selection based on HostInfo. Could use dummy value or refactor Manager class.
       : Manager(agent_id, pod_name, host_ip, grpc_server_port, KelvinManager::Capabilities(),
-                KelvinManager::Parameters(), nats_url, mds_url) {
+                KelvinManager::Parameters(), nats_url, mds_url, kernel_version) {
     info()->address = std::string(addr);
   }
 

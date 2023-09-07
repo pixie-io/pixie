@@ -20,8 +20,10 @@
 #include <utility>
 #include <vector>
 
+#include "src/vizier/services/agent/shared/base/info.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
 #include "src/vizier/services/agent/shared/manager/registration.h"
+#include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace px {
 namespace vizier {
@@ -56,6 +58,16 @@ RegistrationHandler::RegistrationHandler(px::event::Dispatcher* dispatcher, Info
   });
 }
 
+// convert px::system::KernelVersion to px::vizier::services::shared::agent:KernelVersion
+::px::vizier::services::shared::agent::KernelVersion KernelToProto(
+    const system::KernelVersion& kv) {
+  ::px::vizier::services::shared::agent::KernelVersion kv_proto;
+  kv_proto.set_version(kv.version);
+  kv_proto.set_major_rev(kv.major_rev);
+  kv_proto.set_minor_rev(kv.minor_rev);
+  return kv_proto;
+}
+
 Status RegistrationHandler::DispatchRegistration() {
   // Send the registration request.
   messages::VizierMessage req;
@@ -79,6 +91,8 @@ Status RegistrationHandler::DispatchRegistration() {
   host_info->set_hostname(agent_info()->hostname);
   host_info->set_pod_name(agent_info()->pod_name);
   host_info->set_host_ip(agent_info()->host_ip);
+  auto kernel_version_proto = KernelToProto(agent_info()->kernel_version);
+  host_info->mutable_kernel()->CopyFrom(kernel_version_proto);
   *req_info->mutable_capabilities() = agent_info()->capabilities;
   *req_info->mutable_parameters() = agent_info()->parameters;
 
