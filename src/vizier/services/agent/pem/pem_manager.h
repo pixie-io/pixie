@@ -77,9 +77,7 @@ class PEMManager : public Manager {
                                .Help("Total amount of memory on the node (includes inuse and free "
                                      "memory). Corresponds to /proc/meminfo MemTotal.")
                                .Register(GetMetricsRegistry())
-                               .Add({})) {
-    info()->kernel_version = kernel_version;
-  }
+                               .Add({})) {}
 
   std::string k8s_update_selector() const override { return info()->host_ip; }
 
