@@ -27,6 +27,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/nats.h"
 #include "src/common/signal/signal.h"
+#include "src/common/system/kernel_version.h"
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
@@ -70,8 +71,6 @@ int main(int argc, char** argv) {
   TerminationHandler::InstallSignalHandlers();
 
   sole::uuid agent_id = sole::uuid4();
-  LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1",
-                                px::VersionInfo::VersionString(), agent_id.str());
   if (FLAGS_pod_ip.length() == 0) {
     LOG(FATAL) << "The POD_IP must be specified";
   }
@@ -88,8 +87,12 @@ int main(int argc, char** argv) {
   std::string mds_addr =
       absl::Substitute("$0.$1.svc:$2", FLAGS_mds_addr, FLAGS_namespace, FLAGS_mds_port);
 
+  px::system::KernelVersion kernel_version = px::system::GetCachedKernelVersion();
+  LOG(INFO) << absl::Substitute("Pixie Kelvin. Version: $0, id: $1, kernel: $2",
+                                px::VersionInfo::VersionString(), agent_id.str(),
+                                kernel_version.ToString());
   auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
-                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr)
+                                       FLAGS_rpc_port, FLAGS_nats_url, mds_addr, kernel_version)
                      .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());

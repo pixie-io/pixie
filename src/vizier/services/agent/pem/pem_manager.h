@@ -43,7 +43,9 @@ class PEMManager : public Manager {
  public:
   template <typename... Args>
   static StatusOr<std::unique_ptr<Manager>> Create(Args&&... args) {
-    return Create(false, std::forward<Args>(args)...);
+    auto m = std::unique_ptr<PEMManager>(new PEMManager(std::forward<Args>(args)...));
+    PX_RETURN_IF_ERROR(m->Init());
+    return std::unique_ptr<Manager>(std::move(m));
   }
 
   ~PEMManager() override = default;
@@ -62,7 +64,7 @@ class PEMManager : public Manager {
              px::system::KernelVersion kernel_version)
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
                 PEMManager::Parameters(), nats_url,
-                /*mds_url*/ ""),
+                /*mds_url*/ "", kernel_version),
         stirling_(std::move(stirling)),
         node_available_memory_(prometheus::BuildGauge()
                                    .Name("node_available_memory")
@@ -86,17 +88,6 @@ class PEMManager : public Manager {
   Status StopImpl(std::chrono::milliseconds) override;
 
  private:
-  // skip_init argument used for testing purposes
-  template <typename... Args>
-  static StatusOr<std::unique_ptr<Manager>> Create(bool skip_init = false, Args&&... args) {
-    auto m = std::unique_ptr<PEMManager>(new PEMManager(std::forward<Args>(args)...));
-    if (!skip_init) {
-      PX_RETURN_IF_ERROR(m->Init());
-    }
-    return std::unique_ptr<Manager>(std::move(m));
-  }
-  FRIEND_TEST(PEMManagerTest, Constructor);
-
   Status InitSchemas();
   Status InitClockConverters();
   void StartNodeMemoryCollector();
