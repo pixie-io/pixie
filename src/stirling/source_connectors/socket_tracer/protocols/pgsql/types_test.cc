@@ -45,11 +45,11 @@ TEST(TagToString, AllTagsHaveToString) {
   auto tag_values = magic_enum::enum_values<Tag>();
   for (auto tag : tag_values) {
     if (req_tags.contains(tag)) {
-      // make sure no DCHECK is hit.
+      // make sure no CTX_DCHECK is hit.
       ToString(tag, /* is_req */ true);
     }
     if (resp_tags.contains(tag)) {
-      // make sure no DCHECK is hit.
+      // make sure no CTX_DCHECK is hit.
       ToString(tag, /* is_req */ false);
     }
     if (!req_tags.contains(tag) && !resp_tags.contains(tag)) {

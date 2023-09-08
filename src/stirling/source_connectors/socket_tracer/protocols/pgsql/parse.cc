@@ -144,7 +144,7 @@ Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc) {
 
     row_desc->fields.push_back(std::move(field));
   }
-  DCHECK_EQ(decoder.BufSize(), 0U);
+  CTX_DCHECK_EQ(decoder.BufSize(), 0U);
   return Status::OK();
 }
 
@@ -206,7 +206,7 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
     if (param_fmt_codes.size() == 1) {
       return param_fmt_codes.front();
     }
-    DCHECK(i < param_fmt_codes.size());
+    CTX_DCHECK(i < param_fmt_codes.size());
     return param_fmt_codes[i];
   };
 
@@ -294,7 +294,7 @@ Status ParseErrResp(const RegularMessage& msg, ErrResp* err_resp) {
 }
 
 Status ParseDesc(const RegularMessage& msg, Desc* desc) {
-  DCHECK_EQ(msg.tag, Tag::kDesc);
+  CTX_DCHECK_EQ(msg.tag, Tag::kDesc);
 
   desc->timestamp_ns = msg.timestamp_ns;
 

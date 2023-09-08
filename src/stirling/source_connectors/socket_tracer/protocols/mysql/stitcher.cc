@@ -64,7 +64,7 @@ void SyncRespQueue(const Packet& req_packet, std::deque<Packet>* resp_packets) {
  */
 DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
                               const std::deque<Packet>& resp_packets) {
-  DCHECK(!req_packets.empty());
+  CTX_DCHECK(!req_packets.empty());
 
   int count = 0;
 
@@ -238,7 +238,7 @@ RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packet
       ++error_count;
     } else {
       ParseState result = s.ValueOrDie();
-      DCHECK(result == ParseState::kSuccess || result == ParseState::kNeedsMoreData);
+      CTX_DCHECK(result == ParseState::kSuccess || result == ParseState::kNeedsMoreData);
 
       if (result == ParseState::kNeedsMoreData) {
         bool is_last_req = req_packets->size() == 1;

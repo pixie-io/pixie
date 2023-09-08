@@ -57,7 +57,7 @@ StatusOr<ParseState> HandleNoResponse(const Packet& req_packet, DequeView<Packet
 }
 
 StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
-  DCHECK(!resp_packets.empty());
+  CTX_DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
   // Format of ERR packet:
@@ -95,7 +95,7 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
 }
 
 StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
-  DCHECK(!resp_packets.empty());
+  CTX_DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
   // Format of OK packet:
@@ -227,7 +227,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
   const Packet& last_packet = resp_packets.front();
 
-  DCHECK(isLastPacket(resp_packets.front()));
+  CTX_DCHECK(isLastPacket(resp_packets.front()));
   if (IsErrPacket(resp_packets.front())) {
     return HandleErrMessage(resp_packets, entry);
   }

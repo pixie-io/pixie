@@ -171,7 +171,7 @@ void ProcessResp(const Frame& resp_frame, Response* resp) {
 }
 
 StatusOr<Record> ProcessReqRespPair(const Frame& req_frame, const Frame& resp_frame) {
-  ECHECK_LT(req_frame.timestamp_ns, resp_frame.timestamp_ns);
+  CTX_ECHECK_LT(req_frame.timestamp_ns, resp_frame.timestamp_ns);
 
   Record r;
   ProcessReq(req_frame, &r.req);

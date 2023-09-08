@@ -147,7 +147,7 @@ Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp:
 
 Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                    QueryReqResp* req_resp) {
-  DCHECK_EQ(msg.tag, Tag::kQuery);
+  CTX_DCHECK_EQ(msg.tag, Tag::kQuery);
 
   req_resp->req.timestamp_ns = msg.timestamp_ns;
   req_resp->req.query = msg.payload;
@@ -226,7 +226,7 @@ constexpr char kParseCmplText[] = "PARSE COMPLETE";
 
 Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                    ParseReqResp* req_resp, State* state) {
-  DCHECK_EQ(msg.tag, Tag::kParse);
+  CTX_DCHECK_EQ(msg.tag, Tag::kParse);
   Parse parse;
   PX_RETURN_IF_ERROR(ParseParse(msg, &parse));
 
@@ -261,7 +261,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
 
 Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                   BindReqResp* req_resp, State* state) {
-  DCHECK_EQ(bind_msg.tag, Tag::kBind);
+  CTX_DCHECK_EQ(bind_msg.tag, Tag::kBind);
 
   BindRequest bind_req;
   PX_RETURN_IF_ERROR(ParseBindRequest(bind_msg, &bind_req));
@@ -370,7 +370,7 @@ Status FillPortalDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqR
 
 Status HandleDesc(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                   DescReqResp* req_resp) {
-  DCHECK_EQ(msg.tag, Tag::kDesc);
+  CTX_DCHECK_EQ(msg.tag, Tag::kDesc);
 
   PX_RETURN_IF_ERROR(ParseDesc(msg, &req_resp->req));
 
@@ -387,7 +387,7 @@ Status HandleDesc(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeq
 
 Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
                      const MsgDeqIter& resps_end, ExecReqResp* req_resp, State* state) {
-  DCHECK_EQ(msg.tag, Tag::kExecute);
+  CTX_DCHECK_EQ(msg.tag, Tag::kExecute);
 
   req_resp->req.timestamp_ns = msg.timestamp_ns;
   req_resp->req.query = state->bound_statement;
@@ -403,11 +403,11 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
   auto status = expr;                                     \
   if (status.ok()) {                                      \
     req.consumed = true;                                  \
-    DCHECK_NE(req.timestamp_ns, 0U);                      \
+    CTX_DCHECK_NE(req.timestamp_ns, 0U);                  \
     req.payload = req_resp.req.ToString();                \
     RegularMessage resp;                                  \
     resp.timestamp_ns = req_resp.resp.timestamp_ns;       \
-    DCHECK_NE(resp.timestamp_ns, 0U);                     \
+    CTX_DCHECK_NE(resp.timestamp_ns, 0U);                 \
     resp.payload = req_resp.resp.ToString();              \
     records.push_back({std::move(req), std::move(resp)}); \
   } else {                                                \

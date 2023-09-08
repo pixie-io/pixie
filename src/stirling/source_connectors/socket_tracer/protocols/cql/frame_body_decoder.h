@@ -299,8 +299,8 @@ class FrameBodyDecoder {
   explicit FrameBodyDecoder(std::string_view buf, uint8_t version = 3)
       : binary_decoder_(buf), version_(version) {
     // Actual enforcement happens in cql_parse, so we just CHECK here.
-    DCHECK_GE(version, kMinSupportedProtocolVersion);
-    DCHECK_LE(version, kMaxSupportedProtocolVersion);
+    CTX_DCHECK_GE(version, kMinSupportedProtocolVersion);
+    CTX_DCHECK_LE(version, kMaxSupportedProtocolVersion);
   }
 
   explicit FrameBodyDecoder(const Frame& frame) : FrameBodyDecoder(frame.msg, frame.hdr.version) {}

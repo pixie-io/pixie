@@ -32,7 +32,7 @@ namespace mysql {
 namespace testutils {
 
 std::string LengthEncodedInt(int num) {
-  DCHECK(num < pow(2, 64));
+  CTX_DCHECK(num < pow(2, 64));
   std::string s;
   if (num < 251) {
     char count_bytes[1];
@@ -248,7 +248,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
  * Generates a String Request packet of the specified type.
  */
 Packet GenStringRequest(const StringRequest& req, Command command) {
-  DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
+  CTX_DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
   Packet p;
   p.msg = absl::StrCat(CommandToString(command), req.msg);
   return p;
