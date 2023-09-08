@@ -71,7 +71,6 @@ using SymbolizerTypes = ::testing::Types<ElfSymbolizer, BCCSymbolizer>;
 TYPED_TEST_SUITE(SymbolizerTest, SymbolizerTypes);
 
 TYPED_TEST(SymbolizerTest, UserSymbols) {
-  CTX_ECHECK_EQ(0, 1);
   // We will use our self pid for symbolizing symbols from within this process.
   struct upid_t this_upid;
   this_upid.pid = static_cast<uint32_t>(getpid());
