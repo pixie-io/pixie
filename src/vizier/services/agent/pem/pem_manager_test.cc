@@ -18,8 +18,8 @@
 
 #include <gtest/gtest.h>
 
-#include "src/vizier/services/agent/pem/pem_manager.h"
 #include "src/common/testing/testing.h"
+#include "src/vizier/services/agent/pem/pem_manager.h"
 
 DECLARE_bool(disable_SSL);
 
@@ -28,31 +28,30 @@ namespace vizier {
 namespace agent {
 
 class PEMManagerTest : public ::testing::Test {
-    protected:
-        PEMManagerTest() {
-            FLAGS_disable_SSL = true;
-            agent_info_ = agent::Info{};
-            agent_info_.agent_id = sole::uuid4();
-            agent_info_.hostname = "hostname";
-            agent_info_.pod_name = "pod_name";
-            agent_info_.host_ip = "host_ip";
-            agent_info_.kernel_version =
-                system::ParseKernelVersionString("5.15.0-106-generic").ValueOrDie();
-        }
-    agent::Info agent_info_;
+ protected:
+  PEMManagerTest() {
+    FLAGS_disable_SSL = true;
+    agent_info_ = agent::Info{};
+    agent_info_.agent_id = sole::uuid4();
+    agent_info_.hostname = "hostname";
+    agent_info_.pod_name = "pod_name";
+    agent_info_.host_ip = "host_ip";
+    agent_info_.kernel_version =
+        system::ParseKernelVersionString("5.15.0-106-generic").ValueOrDie();
+  }
+  agent::Info agent_info_;
 };
 
-
 TEST_F(PEMManagerTest, Constructor) {
-    auto manager = PEMManager::Create(true, agent_info_.agent_id, agent_info_.pod_name, agent_info_.host_ip,
-                        "nats_url", agent_info_.kernel_version)
-        .ConsumeValueOrDie();
-    EXPECT_EQ(manager->info()->agent_id, agent_info_.agent_id);
-    EXPECT_EQ(manager->info()->pod_name, agent_info_.pod_name);
-    EXPECT_EQ(manager->info()->host_ip, agent_info_.host_ip);
-    EXPECT_EQ(manager->info()->kernel_version, agent_info_.kernel_version);
+  auto manager = PEMManager::Create(true, agent_info_.agent_id, agent_info_.pod_name,
+                                    agent_info_.host_ip, "nats_url", agent_info_.kernel_version)
+                     .ConsumeValueOrDie();
+  EXPECT_EQ(manager->info()->agent_id, agent_info_.agent_id);
+  EXPECT_EQ(manager->info()->pod_name, agent_info_.pod_name);
+  EXPECT_EQ(manager->info()->host_ip, agent_info_.host_ip);
+  EXPECT_EQ(manager->info()->kernel_version, agent_info_.kernel_version);
 }
 
-} // namespace agent
+}  // namespace agent
 }  // namespace vizier
 }  // namespace px
