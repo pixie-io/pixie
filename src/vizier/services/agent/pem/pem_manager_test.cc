@@ -29,8 +29,6 @@ namespace agent {
 
 class PEMManagerTest : public ::testing::Test {
  protected:
-  // void TearDown() override { dispatcher_->Exit(); }
-
   PEMManagerTest() {
     FLAGS_disable_SSL = true;
     agent_info_ = agent::Info{};
