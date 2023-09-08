@@ -146,6 +146,7 @@ class Manager : public BaseManager {
 
   // Kelvin and PEMs use different selectors to request k8s updates.
   virtual std::string k8s_update_selector() const = 0;
+  FRIEND_TEST(PEMManagerTest, Constructor);
 
  private:
   std::unique_ptr<ResultSinkStub> ResultSinkStubGenerator(const std::string& remote_addr,

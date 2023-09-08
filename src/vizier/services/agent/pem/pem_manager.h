@@ -43,9 +43,7 @@ class PEMManager : public Manager {
  public:
   template <typename... Args>
   static StatusOr<std::unique_ptr<Manager>> Create(Args&&... args) {
-    auto m = std::unique_ptr<PEMManager>(new PEMManager(std::forward<Args>(args)...));
-    PX_RETURN_IF_ERROR(m->Init());
-    return std::unique_ptr<Manager>(std::move(m));
+    return Create(false, std::forward<Args>(args)...);
   }
 
   ~PEMManager() override = default;
@@ -88,6 +86,17 @@ class PEMManager : public Manager {
   Status StopImpl(std::chrono::milliseconds) override;
 
  private:
+  // skip_init argument used for testing purposes
+  template <typename... Args>
+  static StatusOr<std::unique_ptr<Manager>> Create(bool skip_init = false, Args&&... args) {
+    auto m = std::unique_ptr<PEMManager>(new PEMManager(std::forward<Args>(args)...));
+    if (!skip_init) {
+      PX_RETURN_IF_ERROR(m->Init());
+    }
+    return std::unique_ptr<Manager>(std::move(m));
+  }
+  FRIEND_TEST(PEMManagerTest, Constructor);
+
   Status InitSchemas();
   Status InitClockConverters();
   void StartNodeMemoryCollector();

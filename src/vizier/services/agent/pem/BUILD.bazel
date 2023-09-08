@@ -65,6 +65,16 @@ pl_cc_binary(
     ],
 )
 
+pl_cc_test(
+    name = "pem_manager_test",
+    srcs = ["pem_manager_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/event:cc_library",
+        "//src/common/testing/event:cc_library",
+    ],
+)
+
 container_image(
     name = "pem_base_image",
     base = "//:pl_cc_base_image",

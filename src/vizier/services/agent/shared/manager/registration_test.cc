@@ -115,6 +115,8 @@ TEST_F(RegistrationHandlerTest, RegisterAgent) {
   EXPECT_EQ(agent_info_.pod_name, req.info().host_info().pod_name());
   EXPECT_EQ(agent_info_.host_ip, req.info().host_info().host_ip());
   EXPECT_EQ(agent_info_.kernel_version.version, req.info().host_info().kernel().version());
+  EXPECT_EQ(agent_info_.kernel_version.major_rev, req.info().host_info().kernel().major_rev());
+  EXPECT_EQ(agent_info_.kernel_version.minor_rev, req.info().host_info().kernel().minor_rev());
 
   auto registration_ack = std::make_unique<messages::VizierMessage>();
   registration_ack->mutable_register_agent_response()->set_asid(10);
