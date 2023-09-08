@@ -29,6 +29,8 @@ namespace agent {
 
 class PEMManagerTest : public ::testing::Test {
  protected:
+  // void TearDown() override { dispatcher_->Exit(); }
+
   PEMManagerTest() {
     FLAGS_disable_SSL = true;
     agent_info_ = agent::Info{};
@@ -50,6 +52,7 @@ TEST_F(PEMManagerTest, Constructor) {
   EXPECT_EQ(manager->info()->pod_name, agent_info_.pod_name);
   EXPECT_EQ(manager->info()->host_ip, agent_info_.host_ip);
   EXPECT_EQ(manager->info()->kernel_version, agent_info_.kernel_version);
+  manager->dispatcher_->Exit();
 }
 
 }  // namespace agent

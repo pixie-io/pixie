@@ -27,7 +27,6 @@
 #include "src/common/base/base.h"
 #include "src/common/event/nats.h"
 #include "src/common/signal/signal.h"
-#include "src/common/system/kernel_version.h"
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),

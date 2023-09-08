@@ -33,7 +33,6 @@
 #include "src/common/base/base.h"
 #include "src/common/metrics/metrics.h"
 #include "src/common/perf/perf.h"
-#include "src/common/system/kernel_version.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
 #include "src/vizier/services/agent/shared/manager/chan_cache.h"
