@@ -48,7 +48,7 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   BinaryDecoder decoder(*buf);
   PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(const char char_val, decoder.ExtractChar());
   msg->tag = static_cast<Tag>(char_val);
-  PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
+  PX_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractBEInt<int32_t>());
 
   constexpr int kLenFieldLen = 4;
   if (msg->len < kLenFieldLen) {
@@ -68,9 +68,9 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
 Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   BinaryDecoder decoder(*buf);
 
-  PX_ASSIGN_OR_RETURN(msg->len, decoder.ExtractInt<int32_t>());
-  PX_ASSIGN_OR_RETURN(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
-  PX_ASSIGN_OR_RETURN(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(msg->len, decoder.ExtractBEInt<int32_t>());
+  PX_ASSIGN_OR_RETURN(msg->proto_ver.major, decoder.ExtractBEInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(msg->proto_ver.minor, decoder.ExtractBEInt<int16_t>());
 
   const size_t kHeaderSize = 2 * sizeof(int32_t);
 
@@ -128,18 +128,18 @@ Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractBEInt<int16_t>());
 
   for (int i = 0; i < field_count; ++i) {
     RowDesc::Field field = {};
 
     PX_ASSIGN_OR_RETURN(field.name, decoder.ExtractStringUntil('\0'));
-    PX_ASSIGN_OR_RETURN(field.table_oid, decoder.ExtractInt<int32_t>());
-    PX_ASSIGN_OR_RETURN(field.attr_num, decoder.ExtractInt<int16_t>());
-    PX_ASSIGN_OR_RETURN(field.type_oid, decoder.ExtractInt<int32_t>());
-    PX_ASSIGN_OR_RETURN(field.type_size, decoder.ExtractInt<int16_t>());
-    PX_ASSIGN_OR_RETURN(field.type_modifier, decoder.ExtractInt<int32_t>());
-    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.table_oid, decoder.ExtractBEInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(field.attr_num, decoder.ExtractBEInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.type_oid, decoder.ExtractBEInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(field.type_size, decoder.ExtractBEInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(field.type_modifier, decoder.ExtractBEInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractBEInt<int16_t>());
     field.fmt_code = static_cast<FmtCode>(fmt_code);
 
     row_desc->fields.push_back(std::move(field));
@@ -153,11 +153,11 @@ Status ParseDataRow(const RegularMessage& msg, DataRow* data_row) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractBEInt<int16_t>());
 
   for (int i = 0; i < field_count; ++i) {
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
-    PX_ASSIGN_OR_RETURN(const auto value_len, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const auto value_len, decoder.ExtractBEInt<int32_t>());
     if (value_len == kNullValLen) {
       data_row->cols.push_back(std::nullopt);
       continue;
@@ -183,17 +183,17 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   PX_ASSIGN_OR_RETURN(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
   PX_ASSIGN_OR_RETURN(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
 
-  PX_ASSIGN_OR_RETURN(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_fmt_code_count, decoder.ExtractBEInt<int16_t>());
 
   std::vector<FmtCode> param_fmt_codes;
   param_fmt_codes.reserve(param_fmt_code_count);
 
   for (int i = 0; i < param_fmt_code_count; ++i) {
-    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractBEInt<int16_t>());
     param_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
-  PX_ASSIGN_OR_RETURN(int16_t param_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(int16_t param_count, decoder.ExtractBEInt<int16_t>());
 
   // The number of parameter format codes can be:
   // * 0: There is no parameter; or the format code is the default (TEXT) for all parameter.
@@ -219,7 +219,7 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   }
 
   for (int i = 0; i < param_count; ++i) {
-    PX_ASSIGN_OR_RETURN(int32_t param_value_len, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(int32_t param_value_len, decoder.ExtractBEInt<int32_t>());
 
     if (param_value_len == kNullValLen) {
       res->params.push_back({FmtCode::kText, std::nullopt});
@@ -231,10 +231,10 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
     res->params.push_back({code, std::string(param_value)});
   }
 
-  PX_ASSIGN_OR_RETURN(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t res_col_fmt_code_count, decoder.ExtractBEInt<int16_t>());
 
   for (int i = 0; i < res_col_fmt_code_count; ++i) {
-    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractBEInt<int16_t>());
     res->res_col_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
@@ -246,10 +246,10 @@ Status ParseParamDesc(const RegularMessage& msg, ParamDesc* param_desc) {
 
   BinaryDecoder decoder(msg.payload);
 
-  PX_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractBEInt<int16_t>());
 
   for (int i = 0; i < param_count; ++i) {
-    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractBEInt<int32_t>());
     param_desc->type_oids.push_back(type_oid);
   }
 
@@ -265,9 +265,9 @@ Status ParseParse(const RegularMessage& msg, Parse* parse) {
 
   PX_ASSIGN_OR_RETURN(parse->query, decoder.ExtractStringUntil<char>('\0'));
 
-  PX_ASSIGN_OR_RETURN(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
+  PX_ASSIGN_OR_RETURN(const int16_t param_type_count, decoder.ExtractBEInt<int16_t>());
   for (int i = 0; i < param_type_count; ++i) {
-    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractBEInt<int32_t>());
     parse->param_type_oids.push_back(type_oid);
   }
 

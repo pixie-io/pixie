@@ -83,8 +83,8 @@ StatusOr<std::string> ReadGoBuildVersion(ElfReader* elf_reader) {
   BinaryDecoder binary_decoder(buildInfoByteCode);
 
   PX_CHECK_OK(binary_decoder.ExtractStringUntil(kGoBuildInfoMagic));
-  PX_ASSIGN_OR_RETURN(uint8_t ptr_size, binary_decoder.ExtractInt<uint8_t>());
-  PX_ASSIGN_OR_RETURN(uint8_t endianness, binary_decoder.ExtractInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN(uint8_t ptr_size, binary_decoder.ExtractBEInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN(uint8_t endianness, binary_decoder.ExtractBEInt<uint8_t>());
 
   // If the endianness has its second bit set, then the go version immediately follows the 32 bit
   // header specified by the varint encoded string data

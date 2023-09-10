@@ -50,7 +50,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
 
   BinaryDecoder binary_decoder(*buf);
 
-  PX_ASSIGN_OR_RETURN_INVALID(int32_t payload_length, binary_decoder.ExtractInt<int32_t>());
+  PX_ASSIGN_OR_RETURN_INVALID(int32_t payload_length, binary_decoder.ExtractBEInt<int32_t>());
 
   if (payload_length + kafka::kMessageLengthBytes <= min_packet_length) {
     return ParseState::kInvalid;
@@ -61,13 +61,14 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
   APIKey request_api_key;
   int16_t request_api_version;
   if (type == message_type_t::kRequest) {
-    PX_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int, binary_decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN_INVALID(int16_t request_api_key_int,
+                                binary_decoder.ExtractBEInt<int16_t>());
     if (!IsValidAPIKey(request_api_key_int)) {
       return ParseState::kInvalid;
     }
     request_api_key = static_cast<APIKey>(request_api_key_int);
 
-    PX_ASSIGN_OR_RETURN_INVALID(request_api_version, binary_decoder.ExtractInt<int16_t>());
+    PX_ASSIGN_OR_RETURN_INVALID(request_api_version, binary_decoder.ExtractBEInt<int16_t>());
 
     if (!IsSupportedAPIVersion(request_api_key, request_api_version)) {
       return ParseState::kInvalid;
@@ -75,7 +76,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result
     // TODO(chengruizhe): Add length range checks for each api key x version.
   }
 
-  PX_ASSIGN_OR_RETURN_INVALID(int32_t correlation_id, binary_decoder.ExtractInt<int32_t>());
+  PX_ASSIGN_OR_RETURN_INVALID(int32_t correlation_id, binary_decoder.ExtractBEInt<int32_t>());
   if (correlation_id < 0) {
     return ParseState::kInvalid;
   }
@@ -115,7 +116,7 @@ size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start
     std::string_view cur_buf = buf.substr(i);
     BinaryDecoder binary_decoder(cur_buf);
 
-    PX_ASSIGN_OR_RETURN_NPOS(int32_t packet_length, binary_decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN_NPOS(int32_t packet_length, binary_decoder.ExtractBEInt<int32_t>());
 
     if (packet_length <= 0 || (size_t)packet_length + kMessageLengthBytes > buf.size() ||
         (size_t)packet_length + kMessageLengthBytes < min_length) {
@@ -124,18 +125,18 @@ size_t FindFrameBoundary(message_type_t type, std::string_view buf, size_t start
 
     // Check for valid api_key and api_version in requests.
     if (type == message_type_t::kRequest) {
-      PX_ASSIGN_OR_RETURN_NPOS(int16_t request_api_key, binary_decoder.ExtractInt<int16_t>());
+      PX_ASSIGN_OR_RETURN_NPOS(int16_t request_api_key, binary_decoder.ExtractBEInt<int16_t>());
       if (!IsValidAPIKey(request_api_key)) {
         continue;
       }
 
-      PX_ASSIGN_OR_RETURN_NPOS(int16_t request_api_version, binary_decoder.ExtractInt<int16_t>());
+      PX_ASSIGN_OR_RETURN_NPOS(int16_t request_api_version, binary_decoder.ExtractBEInt<int16_t>());
       if (!IsSupportedAPIVersion(static_cast<APIKey>(request_api_key), request_api_version)) {
         continue;
       }
     }
 
-    PX_ASSIGN_OR_RETURN_NPOS(int32_t correlation_id, binary_decoder.ExtractInt<int32_t>());
+    PX_ASSIGN_OR_RETURN_NPOS(int32_t correlation_id, binary_decoder.ExtractBEInt<int32_t>());
     if (correlation_id < 0) {
       continue;
     }

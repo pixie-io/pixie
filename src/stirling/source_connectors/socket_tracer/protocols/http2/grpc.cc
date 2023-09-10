@@ -81,7 +81,7 @@ Status GRPCPBWireToText(std::string_view message, bool is_gzipped, std::string* 
   Status status;
 
   while (!decoder.eof()) {
-    PX_ASSIGN_OR_RETURN(uint8_t compressed_flag, decoder.ExtractInt<uint8_t>());
+    PX_ASSIGN_OR_RETURN(uint8_t compressed_flag, decoder.ExtractBEInt<uint8_t>());
     // gRPC spec states that it's OK to *not* compress even if grpc-encoding header has specified
     // compression algorithm, which is indicated by is_gzipped.
     bool is_compressed = compressed_flag == 1;
@@ -90,7 +90,7 @@ Status GRPCPBWireToText(std::string_view message, bool is_gzipped, std::string* 
       continue;
     }
 
-    PX_ASSIGN_OR_RETURN(uint32_t len, decoder.ExtractInt<uint32_t>());
+    PX_ASSIGN_OR_RETURN(uint32_t len, decoder.ExtractBEInt<uint32_t>());
     // Only extract remaining data if the data is truncated. Protobuf parsing produces a partial
     // result if the data is incomplete, so potential truncation could be tolerated.
     PX_ASSIGN_OR_RETURN(std::string_view data, decoder.ExtractString<char>(std::min(

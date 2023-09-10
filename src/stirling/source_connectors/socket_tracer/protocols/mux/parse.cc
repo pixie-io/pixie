@@ -28,7 +28,7 @@ namespace protocols {
 namespace mux {
 
 ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
-  PX_ASSIGN_OR(frame->tag, decoder->ExtractInt<uint24_t>(), return ParseState::kInvalid);
+  PX_ASSIGN_OR(frame->tag, decoder->ExtractBEInt<uint24_t>(), return ParseState::kInvalid);
 
   if (frame->tag < 1 || frame->tag > ((1 << 23) - 1)) {
     return ParseState::kInvalid;
@@ -53,36 +53,40 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame) {
   }
 
   if (frame_type == Type::kRdispatch) {
-    PX_ASSIGN_OR(frame->reply_status, decoder->ExtractInt<uint8_t>(), return ParseState::kInvalid);
+    PX_ASSIGN_OR(frame->reply_status, decoder->ExtractBEInt<uint8_t>(),
+                 return ParseState::kInvalid);
   }
 
-  PX_ASSIGN_OR(int16_t num_ctx, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+  PX_ASSIGN_OR(int16_t num_ctx, decoder->ExtractBEInt<int16_t>(), return ParseState::kInvalid);
   absl::flat_hash_map<std::string, absl::flat_hash_map<std::string, std::string>> context;
 
   // Parse the key, value context pairs supplied in the Rdispatch/Tdispatch messages.
   // These entries pass distributed tracing context, request deadlines, client id context
   // and retries among others.
   for (int i = 0; i < num_ctx; i++) {
-    PX_ASSIGN_OR(size_t ctx_key_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+    PX_ASSIGN_OR(size_t ctx_key_len, decoder->ExtractBEInt<int16_t>(), return ParseState::kInvalid);
 
     PX_ASSIGN_OR(std::string_view ctx_key, decoder->ExtractString(ctx_key_len),
                  return ParseState::kInvalid);
 
-    PX_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractInt<int16_t>(), return ParseState::kInvalid);
+    PX_ASSIGN_OR(size_t ctx_value_len, decoder->ExtractBEInt<int16_t>(),
+                 return ParseState::kInvalid);
 
     absl::flat_hash_map<std::string, std::string> unpacked_value;
     if (ctx_key == "com.twitter.finagle.Deadline") {
-      PX_ASSIGN_OR(int64_t timestamp, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PX_ASSIGN_OR(int64_t deadline, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t timestamp, decoder->ExtractBEInt<int64_t>(),
+                   return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t deadline, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
 
       unpacked_value["timestamp"] = std::to_string(timestamp / 1000);
       unpacked_value["deadline"] = std::to_string(deadline / 1000);
 
     } else if (ctx_key == "com.twitter.finagle.tracing.TraceContext") {
-      PX_ASSIGN_OR(int64_t span_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PX_ASSIGN_OR(int64_t parent_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PX_ASSIGN_OR(int64_t trace_id, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
-      PX_ASSIGN_OR(int64_t flags, decoder->ExtractInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t span_id, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t parent_id, decoder->ExtractBEInt<int64_t>(),
+                   return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t trace_id, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
+      PX_ASSIGN_OR(int64_t flags, decoder->ExtractBEInt<int64_t>(), return ParseState::kInvalid);
 
       unpacked_value["span id"] = std::to_string(span_id);
       unpacked_value["parent id"] = std::to_string(parent_id);
@@ -113,12 +117,12 @@ template <>
 ParseState ParseFrame(message_type_t, std::string_view* buf, mux::Frame* frame, NoState*) {
   BinaryDecoder decoder(*buf);
 
-  PX_ASSIGN_OR(frame->length, decoder.ExtractInt<int32_t>(), return ParseState::kInvalid);
+  PX_ASSIGN_OR(frame->length, decoder.ExtractBEInt<int32_t>(), return ParseState::kInvalid);
   if (frame->length > buf->length()) {
     return ParseState::kNeedsMoreData;
   }
 
-  PX_ASSIGN_OR(frame->type, decoder.ExtractInt<int8_t>(), return ParseState::kInvalid);
+  PX_ASSIGN_OR(frame->type, decoder.ExtractBEInt<int8_t>(), return ParseState::kInvalid);
   if (!mux::IsMuxType(frame->type)) {
     return ParseState::kInvalid;
   }

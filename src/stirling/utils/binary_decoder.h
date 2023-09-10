@@ -53,11 +53,21 @@ class BinaryDecoder {
   }
 
   template <typename TIntType>
-  StatusOr<TIntType> ExtractInt() {
+  StatusOr<TIntType> ExtractBEInt() {
     if (buf_.size() < sizeof(TIntType)) {
       return error::ResourceUnavailable("Insufficient number of bytes.");
     }
     TIntType val = ::px::utils::BEndianBytesToInt<TIntType>(buf_);
+    buf_.remove_prefix(sizeof(TIntType));
+    return val;
+  }
+
+  template <typename TIntType>
+  StatusOr<TIntType> ExtractLEInt() {
+    if (buf_.size() < sizeof(TIntType)) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    TIntType val = ::px::utils::LEndianBytesToInt<TIntType>(buf_);
     buf_.remove_prefix(sizeof(TIntType));
     return val;
   }

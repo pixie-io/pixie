@@ -35,13 +35,13 @@ namespace amqp {
 
 StatusOr<std::string> ExtractShortString(BinaryDecoder* decoder) {
   // Short string defined as 2*OCTET(short-uint)
-  PX_ASSIGN_OR_RETURN(uint8_t len, decoder->ExtractInt<uint8_t>());
+  PX_ASSIGN_OR_RETURN(uint8_t len, decoder->ExtractBEInt<uint8_t>());
   return decoder->ExtractString(len);
 }
 
 StatusOr<std::string> ExtractLongString(BinaryDecoder* decoder) {
   // Long string defined as 4*OCTET(short-uint)
-  PX_ASSIGN_OR_RETURN(uint32_t len, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(uint32_t len, decoder->ExtractBEInt<uint32_t>());
   return decoder->ExtractString(len);
 }
 StatusOr<bool> ExtractNthBit(BinaryDecoder* decoder, int n) {
@@ -90,9 +90,9 @@ Status ExtractAMQPConnectionSecureOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPConnectionTune(BinaryDecoder* decoder, Frame* frame) {
   AMQPConnectionTune r;
-  PX_ASSIGN_OR_RETURN(r.channel_max, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(r.frame_max, decoder->ExtractInt<uint32_t>());
-  PX_ASSIGN_OR_RETURN(r.heartbeat, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.channel_max, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.frame_max, decoder->ExtractBEInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.heartbeat, decoder->ExtractBEInt<uint16_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -100,9 +100,9 @@ Status ExtractAMQPConnectionTune(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPConnectionTuneOk(BinaryDecoder* decoder, Frame* frame) {
   AMQPConnectionTuneOk r;
-  PX_ASSIGN_OR_RETURN(r.channel_max, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(r.frame_max, decoder->ExtractInt<uint32_t>());
-  PX_ASSIGN_OR_RETURN(r.heartbeat, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.channel_max, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.frame_max, decoder->ExtractBEInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.heartbeat, decoder->ExtractBEInt<uint16_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -129,10 +129,10 @@ Status ExtractAMQPConnectionOpenOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPConnectionClose(BinaryDecoder* decoder, Frame* frame) {
   AMQPConnectionClose r;
-  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.reply_text, ExtractShortString(decoder));
-  PX_ASSIGN_OR_RETURN(r.class_id, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(r.method_id, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.class_id, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.method_id, decoder->ExtractBEInt<uint16_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -148,8 +148,8 @@ Status ExtractAMQPConnectionCloseOk([[maybe_unused]] BinaryDecoder* decoder, Fra
 
 Status ExtractAMQPConnectionContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPConnectionContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   frame->msg = ToString(r);
@@ -193,10 +193,10 @@ Status ExtractAMQPChannelFlowOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPChannelClose(BinaryDecoder* decoder, Frame* frame) {
   AMQPChannelClose r;
-  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.reply_text, ExtractShortString(decoder));
-  PX_ASSIGN_OR_RETURN(r.class_id, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(r.method_id, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.class_id, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.method_id, decoder->ExtractBEInt<uint16_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -212,8 +212,8 @@ Status ExtractAMQPChannelCloseOk([[maybe_unused]] BinaryDecoder* decoder, Frame*
 
 Status ExtractAMQPChannelContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPChannelContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   frame->msg = ToString(r);
@@ -223,7 +223,7 @@ Status ExtractAMQPChannelContentHeader(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPExchangeDeclare(BinaryDecoder* decoder, Frame* frame) {
   AMQPExchangeDeclare r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.type, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.passive, ExtractNthBit(decoder, 0));
@@ -248,7 +248,7 @@ Status ExtractAMQPExchangeDeclareOk([[maybe_unused]] BinaryDecoder* decoder, Fra
 
 Status ExtractAMQPExchangeDelete(BinaryDecoder* decoder, Frame* frame) {
   AMQPExchangeDelete r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.if_unused, ExtractNthBit(decoder, 0));
   PX_ASSIGN_OR_RETURN(r.no_wait, ExtractNthBit(decoder, 1));
@@ -268,8 +268,8 @@ Status ExtractAMQPExchangeDeleteOk([[maybe_unused]] BinaryDecoder* decoder, Fram
 
 Status ExtractAMQPExchangeContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPExchangeContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   frame->msg = ToString(r);
@@ -279,7 +279,7 @@ Status ExtractAMQPExchangeContentHeader(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueueDeclare(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueDeclare r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.passive, ExtractNthBit(decoder, 0));
   PX_ASSIGN_OR_RETURN(r.durable, ExtractNthBit(decoder, 1));
@@ -296,8 +296,8 @@ Status ExtractAMQPQueueDeclare(BinaryDecoder* decoder, Frame* frame) {
 Status ExtractAMQPQueueDeclareOk(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueDeclareOk r;
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
-  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractInt<uint32_t>());
-  PX_ASSIGN_OR_RETURN(r.consumer_count, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractBEInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.consumer_count, decoder->ExtractBEInt<uint32_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -305,7 +305,7 @@ Status ExtractAMQPQueueDeclareOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueueBind(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueBind r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.routing_key, ExtractShortString(decoder));
@@ -327,7 +327,7 @@ Status ExtractAMQPQueueBindOk([[maybe_unused]] BinaryDecoder* decoder, Frame* fr
 
 Status ExtractAMQPQueueUnbind(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueUnbind r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.routing_key, ExtractShortString(decoder));
@@ -347,7 +347,7 @@ Status ExtractAMQPQueueUnbindOk([[maybe_unused]] BinaryDecoder* decoder, Frame* 
 
 Status ExtractAMQPQueuePurge(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueuePurge r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.no_wait, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
@@ -358,7 +358,7 @@ Status ExtractAMQPQueuePurge(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueuePurgeOk(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueuePurgeOk r;
-  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractBEInt<uint32_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -366,7 +366,7 @@ Status ExtractAMQPQueuePurgeOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueueDelete(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueDelete r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.if_unused, ExtractNthBit(decoder, 0));
   PX_ASSIGN_OR_RETURN(r.if_empty, ExtractNthBit(decoder, 1));
@@ -379,7 +379,7 @@ Status ExtractAMQPQueueDelete(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueueDeleteOk(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueDeleteOk r;
-  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractBEInt<uint32_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -387,8 +387,8 @@ Status ExtractAMQPQueueDeleteOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPQueueContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPQueueContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   frame->msg = ToString(r);
@@ -398,8 +398,8 @@ Status ExtractAMQPQueueContentHeader(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicQos(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicQos r;
-  PX_ASSIGN_OR_RETURN(r.prefetch_size, decoder->ExtractInt<uint32_t>());
-  PX_ASSIGN_OR_RETURN(r.prefetch_count, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.prefetch_size, decoder->ExtractBEInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.prefetch_count, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.global, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
   frame->msg = ToString(r);
@@ -417,7 +417,7 @@ Status ExtractAMQPBasicQosOk([[maybe_unused]] BinaryDecoder* decoder, Frame* fra
 
 Status ExtractAMQPBasicConsume(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicConsume r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.consumer_tag, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.no_local, ExtractNthBit(decoder, 0));
@@ -459,7 +459,7 @@ Status ExtractAMQPBasicCancelOk(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicPublish(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicPublish r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.routing_key, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.mandatory, ExtractNthBit(decoder, 0));
@@ -472,7 +472,7 @@ Status ExtractAMQPBasicPublish(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicReturn(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicReturn r;
-  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reply_code, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.reply_text, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.routing_key, ExtractShortString(decoder));
@@ -484,7 +484,7 @@ Status ExtractAMQPBasicReturn(BinaryDecoder* decoder, Frame* frame) {
 Status ExtractAMQPBasicDeliver(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicDeliver r;
   PX_ASSIGN_OR_RETURN(r.consumer_tag, ExtractShortString(decoder));
-  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractBEInt<uint64_t>());
   PX_ASSIGN_OR_RETURN(r.redelivered, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
@@ -496,7 +496,7 @@ Status ExtractAMQPBasicDeliver(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicGet(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicGet r;
-  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.reserved_1, decoder->ExtractBEInt<uint16_t>());
   PX_ASSIGN_OR_RETURN(r.queue, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.no_ack, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
@@ -507,12 +507,12 @@ Status ExtractAMQPBasicGet(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicGetOk(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicGetOk r;
-  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractBEInt<uint64_t>());
   PX_ASSIGN_OR_RETURN(r.redelivered, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
   PX_ASSIGN_OR_RETURN(r.exchange, ExtractShortString(decoder));
   PX_ASSIGN_OR_RETURN(r.routing_key, ExtractShortString(decoder));
-  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractInt<uint32_t>());
+  PX_ASSIGN_OR_RETURN(r.message_count, decoder->ExtractBEInt<uint32_t>());
   frame->msg = ToString(r);
   frame->synchronous = 1;
   return Status::OK();
@@ -528,7 +528,7 @@ Status ExtractAMQPBasicGetEmpty(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicAck(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicAck r;
-  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractBEInt<uint64_t>());
   PX_ASSIGN_OR_RETURN(r.multiple, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
   frame->msg = ToString(r);
@@ -538,7 +538,7 @@ Status ExtractAMQPBasicAck(BinaryDecoder* decoder, Frame* frame) {
 
 Status ExtractAMQPBasicReject(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicReject r;
-  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(r.delivery_tag, decoder->ExtractBEInt<uint64_t>());
   PX_ASSIGN_OR_RETURN(r.requeue, ExtractNthBit(decoder, 0));
   decoder->ExtractChar<uint8_t>();
   frame->msg = ToString(r);
@@ -574,8 +574,8 @@ Status ExtractAMQPBasicRecoverOk([[maybe_unused]] BinaryDecoder* decoder, Frame*
 
 Status ExtractAMQPBasicContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPBasicContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   if ((property_flags >> 15) & 1) {
@@ -615,7 +615,7 @@ Status ExtractAMQPBasicContentHeader(BinaryDecoder* decoder, Frame* frame) {
   }
 
   if ((property_flags >> 6) & 1) {
-    PX_ASSIGN_OR_RETURN(r.timestamp, decoder->ExtractInt<time_t>());
+    PX_ASSIGN_OR_RETURN(r.timestamp, decoder->ExtractBEInt<time_t>());
   }
 
   if ((property_flags >> 5) & 1) {
@@ -689,8 +689,8 @@ Status ExtractAMQPTxRollbackOk([[maybe_unused]] BinaryDecoder* decoder, Frame* f
 
 Status ExtractAMQPTxContentHeader(BinaryDecoder* decoder, Frame* frame) {
   AMQPTxContentHeader r;
-  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractInt<uint64_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(r.body_size, decoder->ExtractBEInt<uint64_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t property_flags, decoder->ExtractBEInt<uint16_t>());
   r.property_flags = property_flags;
 
   frame->msg = ToString(r);
@@ -699,8 +699,8 @@ Status ExtractAMQPTxContentHeader(BinaryDecoder* decoder, Frame* frame) {
 }
 
 Status ProcessContentHeader(BinaryDecoder* decoder, Frame* req) {
-  PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t weight, decoder->ExtractBEInt<uint16_t>());
   req->class_id = class_id;
 
   if (weight != 0) {
@@ -939,8 +939,8 @@ Status ProcessTx(BinaryDecoder* decoder, Frame* req, uint16_t method_id) {
 }
 
 Status ProcessFrameMethod(BinaryDecoder* decoder, Frame* req) {
-  PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractInt<uint16_t>());
-  PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t class_id, decoder->ExtractBEInt<uint16_t>());
+  PX_ASSIGN_OR_RETURN(uint16_t method_id, decoder->ExtractBEInt<uint16_t>());
 
   req->class_id = class_id;
   req->method_id = method_id;
