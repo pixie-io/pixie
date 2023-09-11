@@ -56,8 +56,8 @@ bazel run -c opt //src/utils/template_generator:template_generator -- \
 tmpl_path="${tmp_dir}/yamls.tar"
 upload_artifact_to_mirrors "vizier" "${release_tag}" "${tmpl_path}" "vizier_template_yamls.tar" AT_CONTAINER_SET_TEMPLATE_YAMLS
 
-# Update helm chart if it is a release.
-if [[ $VERSION != *"-"* ]]; then
+# Check to see if it's production build. If so we should also write it to the latest directory.
+if [[ ! $release_tag == *"-"* ]]; then
   # Update Vizier YAMLS in latest.
   upload_artifact_to_mirrors "vizier" "latest" "${yamls_tar}" "vizier_yamls.tar"
 
