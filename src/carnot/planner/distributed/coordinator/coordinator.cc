@@ -179,7 +179,7 @@ StatusOr<SchemaToAgentsMap> LoadSchemaMap(
 
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
   PX_ASSIGN_OR_RETURN(std::unique_ptr<Splitter> splitter,
-                      Splitter::Create(compiler_state_, /* support_partial_agg */ false));
+                      Splitter::Create(compiler_state_, /* support_partial_agg */ true));
   PX_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       splitter->SplitKelvinAndAgents(logical_plan));
   auto distributed_plan = std::make_unique<DistributedPlan>();

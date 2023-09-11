@@ -97,7 +97,8 @@ class AggOperatorMgr : public PartialOperatorMgr {
     if (!Match(op, BlockingAgg())) {
       return false;
     }
-    BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
+    BlockingAggIR* agg = dynamic_cast<BlockingAggIR*>(op);
+    ECHECK_NE(agg, nullptr);
     for (const auto& col_expr : agg->aggregate_expressions()) {
       if (!Match(col_expr.node, PartialUDA())) {
         return false;
