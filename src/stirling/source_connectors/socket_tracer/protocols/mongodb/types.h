@@ -19,7 +19,6 @@
 #pragma once
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
