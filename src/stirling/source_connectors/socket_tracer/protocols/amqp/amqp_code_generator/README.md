@@ -1,10 +1,5 @@
 # AMQP Protocol Parsing
 
-Install the requirements via pip install and run
-```bash
-    python3 amqp_decode_gen.py run
-```
-
 The function takes in the `amqp-0-9-1.stripped.xml` from the AMQP specification and generates header and c files for pixie.
 The stripped version of xml from https://www.amqp.org/specification/0-9-1/amqp-org-download
 
