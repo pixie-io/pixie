@@ -103,7 +103,6 @@ class AnyUDA : public udf::UDA {
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
     SetValue(DeserializeScalar<TArg>(data));
-    DCHECK(picked);
     return Status::OK();
   }
 
