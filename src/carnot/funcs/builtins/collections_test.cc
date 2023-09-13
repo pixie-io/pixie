@@ -24,15 +24,15 @@
 #include "src/carnot/funcs/builtins/collections.h"
 #include "src/carnot/udf/test_utils.h"
 
-namespace px {
-namespace carnot {
-namespace builtins {
-
 #ifndef NDEBUG
 #define EXPECT_DEATH_DBG(x, y) EXPECT_DEATH(x, y)
 #else
 #define EXPECT_DEATH_DBG(x, y)
 #endif
+
+namespace px {
+namespace carnot {
+namespace builtins {
 
 TEST(CollectionsTest, AnyUDA) {
   auto uda_tester = udf::UDATester<AnyUDA<types::Float64Value>>();
