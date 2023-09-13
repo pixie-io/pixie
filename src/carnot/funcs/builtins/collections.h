@@ -88,7 +88,7 @@ class AnyUDA : public udf::UDA {
   void Merge(FunctionContext*, const AnyUDA& other) { SetValue(other.val_); }
 
   TArg Finalize(FunctionContext*) {
-    DCHECK(picked);
+    DCHECK(picked) << "AnyUDA uninitialized.";
     return val_;
   }
 
@@ -97,7 +97,7 @@ class AnyUDA : public udf::UDA {
   }
 
   StringValue Serialize(FunctionContext*) {
-    DCHECK(picked);
+    DCHECK(picked) << "AnyUDA uninitialized.";
     return SerializeScalar(&val_);
   }
 

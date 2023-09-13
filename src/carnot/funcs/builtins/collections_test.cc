@@ -105,8 +105,8 @@ TEST(CollectionsTest, CanSerializeDeserialize_Float64) {
   }
 
   auto any_uda = AnyUDA<types::Float64Value>();
+  EXPECT_DEATH(any_uda.Finalize(nullptr), "AnyUDA uninitialized.");
   ASSERT_OK(any_uda.Deserialize(nullptr, uda_tester.Serialize()));
-
   EXPECT_EQ(uda_tester.Result(), any_uda.Finalize(nullptr));
 }
 
@@ -121,8 +121,8 @@ TEST(CollectionsTest, CanSerializeDeserialize_String) {
   }
 
   auto any_uda = AnyUDA<types::StringValue>();
+  EXPECT_DEATH(any_uda.Finalize(nullptr), "AnyUDA uninitialized.");
   ASSERT_OK(any_uda.Deserialize(nullptr, uda_tester.Serialize()));
-
   EXPECT_EQ(uda_tester.Result(), any_uda.Finalize(nullptr));
 }
 
@@ -137,8 +137,8 @@ TEST(CollectionsTest, CanSerializeDeserialize_UInt128) {
   }
 
   auto any_uda = AnyUDA<types::UInt128Value>();
+  EXPECT_DEATH(any_uda.Finalize(nullptr), "AnyUDA uninitialized.");
   ASSERT_OK(any_uda.Deserialize(nullptr, uda_tester.Serialize()));
-
   EXPECT_EQ(uda_tester.Result(), any_uda.Finalize(nullptr));
 }
 
@@ -153,8 +153,8 @@ TEST(CollectionsTest, CanSerializeDeserialize_Float) {
   }
 
   auto any_uda = AnyUDA<types::Float64Value>();
+  EXPECT_DEATH(any_uda.Finalize(nullptr), "AnyUDA uninitialized.");
   ASSERT_OK(any_uda.Deserialize(nullptr, uda_tester.Serialize()));
-
   EXPECT_EQ(uda_tester.Result(), any_uda.Finalize(nullptr));
 }
 
