@@ -30,7 +30,6 @@ namespace protocols {
 namespace mongodb {
 
 enum class Type : int32_t {
-  kOPMsg = 2013,
   kOPReply = 1,
   kOPUpdate = 2001,
   kOPInsert = 2002,
@@ -40,6 +39,7 @@ enum class Type : int32_t {
   kOPDelete = 2006,
   kOPKillCursors = 2007,
   kOPCompressed = 2012,
+  kOPMsg = 2013,
 };
 
 constexpr uint8_t kHeaderLength = 16;
