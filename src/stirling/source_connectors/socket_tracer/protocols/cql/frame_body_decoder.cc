@@ -251,8 +251,8 @@ StatusOr<Option> FrameBodyDecoder::ExtractOption() {
   }
 
   // TODO(oazizi): Process kUDT and kTuple.
-  DCHECK(col_spec.type != DataType::kUDT);
-  DCHECK(col_spec.type != DataType::kTuple);
+  CTX_DCHECK(col_spec.type != DataType::kUDT);
+  CTX_DCHECK(col_spec.type != DataType::kTuple);
 
   return col_spec;
 }

@@ -67,7 +67,7 @@ size_t FindFrameBoundary(std::string_view buf, size_t start_pos) {
 
 // Parse the message's type, channel
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* packet) {
-  DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
+  CTX_DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
   BinaryDecoder decoder(*buf);
   if (decoder.BufSize() < kMinFrameLength) {
     return ParseState::kNeedsMoreData;

@@ -149,7 +149,7 @@ struct Frame : public FrameBase {
 
   void InsertContext(std::string_view ctx_key,
                      absl::flat_hash_map<std::string, std::string> value) {
-    DCHECK(context_.find(ctx_key) == context_.end());
+    CTX_DCHECK(context_.find(ctx_key) == context_.end());
 
     context_size_ += ctx_key.size();
     for (const auto& [k, v] : value) {

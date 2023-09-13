@@ -144,7 +144,7 @@ Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t 
 }
 
 StatusOr<Record> ProcessReqRespPair(Packet* req_packet, Packet* resp_packet) {
-  ECHECK_LT(req_packet->timestamp_ns, resp_packet->timestamp_ns);
+  CTX_ECHECK_LT(req_packet->timestamp_ns, resp_packet->timestamp_ns);
 
   Record r;
   PX_RETURN_IF_ERROR(ProcessReq(req_packet, &r.req));

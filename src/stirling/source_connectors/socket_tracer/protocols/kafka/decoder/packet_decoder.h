@@ -294,7 +294,7 @@ class PacketDecoder {
   // by a length. This also makes parsing more robust, as it sets boundaries. MarkOffset and
   // JumpToOffset should be used in pairs.
   Status MarkOffset(int32_t len) {
-    DCHECK_GE(len, 0);
+    CTX_DCHECK_GE(len, 0);
     if ((size_t)len > binary_decoder_.Buf().size()) {
       return error::Internal("Not enough bytes in MarkOffset.");
     }
@@ -303,7 +303,7 @@ class PacketDecoder {
   }
 
   Status JumpToOffset() {
-    DCHECK(!marked_bufs_.empty());
+    CTX_DCHECK(!marked_bufs_.empty());
     binary_decoder_.SetBuf(marked_bufs_.top());
     marked_bufs_.pop();
     return Status::OK();

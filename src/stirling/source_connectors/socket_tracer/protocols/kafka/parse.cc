@@ -39,7 +39,7 @@ namespace kafka {
 
 // Kafka request/response format: https://kafka.apache.org/protocol.html#protocol_messages
 ParseState ParseFrame(message_type_t type, std::string_view* buf, Packet* result, State* state) {
-  DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
+  CTX_DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
 
   int min_packet_length =
       type == message_type_t::kRequest ? kafka::kMinReqPacketLength : kafka::kMinRespPacketLength;

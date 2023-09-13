@@ -85,7 +85,7 @@ enum class Tag : char {
   // TODO(yzhao): This list is not complete. More tags to be added.
 };
 
-// Make Tag printable, for example for DCHECK().
+// Make Tag printable, for example for CTX_DCHECK().
 inline std::ostream& operator<<(std::ostream& os, Tag tag) {
   os << static_cast<char>(tag) << ":" << magic_enum::enum_name(tag);
   return os;
@@ -112,7 +112,8 @@ inline std::string ToString(Tag tag, bool is_req) {
       TAG_CASE(Tag::kTerminate, "Terminate")
       TAG_CASE(Tag::kUnknown, "Unknown")
       default:
-        DCHECK(false) << "Request tag " << magic_enum::enum_name(tag) << " has no ToString case";
+        CTX_DCHECK(false) << "Request tag " << magic_enum::enum_name(tag)
+                          << " has no ToString case";
         return "Unknown";
     }
   } else {
@@ -137,7 +138,8 @@ inline std::string ToString(Tag tag, bool is_req) {
       TAG_CASE(Tag::kNoData, "No Data")
       TAG_CASE(Tag::kUnknown, "Unknown")
       default:
-        DCHECK(false) << "Response tag " << magic_enum::enum_name(tag) << " has no ToString case";
+        CTX_DCHECK(false) << "Response tag " << magic_enum::enum_name(tag)
+                          << " has no ToString case";
         return "Unknown";
     }
   }
@@ -418,7 +420,7 @@ struct ComboResp {
     if (std::holds_alternative<ErrResp>(msg)) {
       return std::get<ErrResp>(msg).ToString();
     }
-    DCHECK("Impossible!");
+    CTX_DCHECK("Impossible!");
     return {};
   }
 };

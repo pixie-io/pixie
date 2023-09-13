@@ -43,7 +43,7 @@ std::string BytesToString(std::basic_string_view<uint8_t> x) {
 Status ProcessStartupReq(Frame* req_frame, Request* req) {
   PX_ASSIGN_OR_RETURN(StartupReq r, ParseStartupReq(req_frame));
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = ToJSONString(r.options);
 
   return Status::OK();
@@ -54,7 +54,7 @@ Status ProcessAuthResponseReq(Frame* req_frame, Request* req) {
 
   std::string_view token_str = CreateStringView<char>(r.token);
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = token_str;
 
   return Status::OK();
@@ -64,7 +64,7 @@ Status ProcessOptionsReq(Frame* req_frame, Request* req) {
   PX_ASSIGN_OR_RETURN(OptionsReq r, ParseOptionsReq(req_frame));
 
   PX_UNUSED(r);
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
 
   return Status::OK();
 }
@@ -72,7 +72,7 @@ Status ProcessOptionsReq(Frame* req_frame, Request* req) {
 Status ProcessRegisterReq(Frame* req_frame, Request* req) {
   PX_ASSIGN_OR_RETURN(RegisterReq r, ParseRegisterReq(req_frame));
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = ToJSONString(r.event_types);
 
   return Status::OK();
@@ -89,7 +89,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
     hex_values.push_back(BytesToString(value_i.value));
   }
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = r.query;
 
   // For now, just tag the parameter values to the end.
@@ -104,7 +104,7 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
 Status ProcessPrepareReq(Frame* req_frame, Request* req) {
   PX_ASSIGN_OR_RETURN(PrepareReq r, ParsePrepareReq(req_frame));
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = r.query;
 
   return Status::OK();
@@ -121,7 +121,7 @@ Status ProcessExecuteReq(Frame* req_frame, Request* req) {
     hex_values.push_back(BytesToString(value_i.value));
   }
 
-  DCHECK(req->msg.empty());
+  CTX_DCHECK(req->msg.empty());
   req->msg = ToJSONString(hex_values);
 
   return Status::OK();
@@ -155,7 +155,7 @@ Status ProcessBatchReq(Frame* req_frame, Request* req) {
 Status ProcessErrorResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(ErrorResp r, ParseErrorResp(resp_frame));
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
   resp->msg = absl::Substitute("[$0] $1", r.error_code, r.error_msg);
 
   return Status::OK();
@@ -165,7 +165,7 @@ Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(ReadyResp r, ParseReadyResp(resp_frame));
 
   PX_UNUSED(r);
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
 
   return Status::OK();
 }
@@ -173,7 +173,7 @@ Status ProcessReadyResp(Frame* resp_frame, Response* resp) {
 Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(SupportedResp r, ParseSupportedResp(resp_frame));
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
   resp->msg = ToJSONString(r.options);
 
   return Status::OK();
@@ -182,7 +182,7 @@ Status ProcessSupportedResp(Frame* resp_frame, Response* resp) {
 Status ProcessAuthenticateResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(AuthenticateResp r, ParseAuthenticateResp(resp_frame));
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
   resp->msg = std::move(r.authenticator_name);
 
   return Status::OK();
@@ -193,7 +193,7 @@ Status ProcessAuthSuccessResp(Frame* resp_frame, Response* resp) {
 
   std::string token_hex = BytesToString(r.token);
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
   resp->msg = token_hex;
 
   return Status::OK();
@@ -204,7 +204,7 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
 
   std::string token_hex = BytesToString(r.token);
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
   resp->msg = token_hex;
 
   return Status::OK();
@@ -213,7 +213,7 @@ Status ProcessAuthChallengeResp(Frame* resp_frame, Response* resp) {
 Status ProcessResultResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(ResultResp r, ParseResultResp(resp_frame));
 
-  DCHECK(resp->msg.empty());
+  CTX_DCHECK(resp->msg.empty());
 
   switch (r.kind) {
     case ResultRespKind::kVoid: {
@@ -265,12 +265,12 @@ Status ProcessEventResp(Frame* resp_frame, Response* resp) {
   PX_ASSIGN_OR_RETURN(EventResp r, ParseEventResp(resp_frame));
 
   if (r.event_type == "TOPOLOGY_CHANGE" || r.event_type == "STATUS_CHANGE") {
-    DCHECK(resp->msg.empty());
+    CTX_DCHECK(resp->msg.empty());
     resp->msg = absl::StrCat(r.event_type, " ", r.change_type, " ", r.addr.AddrStr());
 
     return Status::OK();
   } else if (r.event_type == "SCHEMA_CHANGE") {
-    DCHECK(resp->msg.empty());
+    CTX_DCHECK(resp->msg.empty());
     resp->msg = absl::StrCat(r.event_type, " ", r.sc.change_type, " keyspace=", r.sc.keyspace,
                              " name=", r.sc.name);
     // TODO(oazizi): Add sc.arg_types to the response string.
@@ -334,7 +334,7 @@ Status ProcessResp(Frame* resp_frame, Response* resp) {
 }
 
 StatusOr<Record> ProcessReqRespPair(Frame* req_frame, Frame* resp_frame) {
-  ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
+  CTX_ECHECK_LT(req_frame->timestamp_ns, resp_frame->timestamp_ns);
 
   Record r;
   PX_RETURN_IF_ERROR(ProcessReq(req_frame, &r.req));
@@ -348,7 +348,7 @@ StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
 
   // For now, Event is the only supported solitary response.
   // If this ever changes, the code below needs to be adapted.
-  DCHECK(resp_frame->hdr.opcode == Opcode::kEvent);
+  CTX_DCHECK(resp_frame->hdr.opcode == Opcode::kEvent);
 
   // Make a fake request to go along with the response.
   // - Use REGISTER op, since that was what set up the events in the first place.
