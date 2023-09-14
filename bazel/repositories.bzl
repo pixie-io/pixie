@@ -92,7 +92,7 @@ def _local_repo_impl(name, **kwargs):
 def _git_repo(name, **kwargs):
     _git_repo_impl(name, **kwargs)
 
-def _local_repo(name, **kwargs):
+def _local_repo(name, **kwargs):  # buildifier: disable=unused-variable
     _local_repo_impl(name, **kwargs)
 
 # For bazel repos do not require customization.
@@ -167,6 +167,7 @@ def _cc_deps():
     _bazel_repo("com_github_opentelemetry_proto", build_file = "//bazel/external:opentelemetry.BUILD")
     _bazel_repo("com_github_uriparser_uriparser", build_file = "//bazel/external:uriparser.BUILD")
     _bazel_repo("com_github_libbpf_libbpf", build_file = "//bazel/external:libbpf.BUILD")
+    _bazel_repo("com_github_mongodb_mongo_c_driver", build_file = "//bazel/external:mongo_c_driver.BUILD")
 
     # Uncomment these to develop bcc and/or bpftrace locally. Should also comment out the corresponding _bazel_repo lines.
     # _local_repo("com_github_iovisor_bcc", build_file = "//bazel/external/local_dev:bcc.BUILD")
@@ -203,7 +204,7 @@ def _java_deps():
 
 def _list_pl_deps(name):
     modules = dict()
-    for repo_name, repo_config in REPOSITORY_LOCATIONS.items():
+    for _, repo_config in REPOSITORY_LOCATIONS.items():
         if "manual_license_name" in repo_config:
             modules["#manual-license-name:" + repo_config["manual_license_name"]] = True
             continue
@@ -214,7 +215,7 @@ def _list_pl_deps(name):
                 best_url = url
         modules[best_url] = True
 
-    for repo_name, repo_config in GIT_REPOSITORY_LOCATIONS.items():
+    for _, repo_config in GIT_REPOSITORY_LOCATIONS.items():
         remote = repo_config["remote"]
         if remote.endswith(".git"):
             remote = remote[:-len(".git")]
