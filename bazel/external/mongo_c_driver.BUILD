@@ -44,7 +44,10 @@ cmake(
     out_static_libs = [
         "libbson-static-1.0.a",
     ],
-    targets = ["bson_static", "bson_shared"],
+    targets = [
+        "bson_static",
+        "bson_shared",
+    ],
     visibility = ["//visibility:public"],
     working_directory = "",
 )
