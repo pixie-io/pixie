@@ -207,25 +207,42 @@ func (q *QueryExecutorImpl) Wait() error {
 	// There are a few common failure cases that may occur naturally during query execution. For example, ctxDeadlineExceeded,
 	// and invalid arguments. In this case, we do not want to unnecessarily log our error state.
 	if strings.Contains(err.Error(), "Distributed state does not have a Carnot instance") {
+		log.WithField("query_id", q.queryID).
+			WithError(err).
+			Error("Distributed state does not have a Carnot instance")
 		return err
 	}
 	if strings.Contains(err.Error(), "InvalidArgument") {
+		log.WithField("query_id", q.queryID).
+			WithError(err).
+			Error("InvalidArgument")
 		return err
 	}
 	if strings.Contains(err.Error(), "failed to initialize all result tables") {
+		log.WithField("query_id", q.queryID).
+			WithError(err).
+			Error("failed to initialize all result tables")
 		return err
 	}
 	if errors.Is(err, nats.ErrConnectionClosed) {
+		log.WithField("query_id", q.queryID).
+			WithError(err).
+			Error("NATS connection closed")
 		return err
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
+		log.WithField("query_id", q.queryID).
+			WithError(err).
+			Error("Context deadline exceeded")
 		return err
 	}
+
 	if errors.Is(err, context.Canceled) {
 		log.WithField("query_id", q.queryID).
 			Info("Query cancelled")
 		return err
 	}
+
 	log.WithField("query_id", q.queryID).
 		WithField("duration", time.Since(q.startTime)).
 		WithError(err).

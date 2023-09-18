@@ -111,8 +111,9 @@ StatusOr<std::vector<OTelAttribute>> ParseAttributes(DictObject* attributes) {
       return keyobj->CreateError("Attribute key must be a non-empty string");
     }
     if (!ExprObject::IsExprObject(values[idx])) {
-      return values[idx]->CreateError("Expected column or string for attribute value, got '$0'",
-                                      QLObjectTypeString(values[idx]->type()));
+      return values[idx]->CreateError(
+          "Expr is not an Object. Expected column or string for attribute value, got '$0'",
+          QLObjectTypeString(values[idx]->type()));
     }
     auto expr = static_cast<ExprObject*>(values[idx].get())->expr();
     if (Match(expr, ColumnNode())) {
