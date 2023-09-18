@@ -138,8 +138,8 @@ Status PerfProfileConnector::InitImpl() {
       {"sample_call_stack", static_cast<uint64_t>(stack_trace_sampling_period_.count())});
 
   const auto perf_buffer_specs = MakeArray<bpf_tools::PerfBufferSpec>(
-      {{std::string(kHistogramAName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size},
-       {std::string(kHistogramBName), HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size}});
+      {{kHistogramAName, HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size},
+       {kHistogramBName, HandleHistoEvent, HandleHistoLoss, this, perf_buffer_size}});
 
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(profiler_bcc_script, defines));
   PX_RETURN_IF_ERROR(bcc_->AttachSamplingProbes(probe_specs));
@@ -345,13 +345,14 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   // Read out the perf buffer that contains the histogram for this iteration.
   // TODO(jps): change PollPerfBuffer() to use std::chrono.
   constexpr int kPollTimeoutMS = 0;
-  bcc_->PollPerfBuffer(perfbuf_name, kPollTimeoutMS);
+  const auto poll_status = bcc_->PollPerfBuffer(perfbuf_name, kPollTimeoutMS);
+  LOG_IF(ERROR, !poll_status.ok()) << poll_status.msg();
 
   ++transfer_count_;
 
   // First, tell BPF to switch the maps it writes to.
-  const auto s = profiler_state_->SetValue(kTransferCountIdx, transfer_count_);
-  LOG_IF(ERROR, !s.ok()) << "Error writing transfer_count_";
+  const auto map_status = profiler_state_->SetValue(kTransferCountIdx, transfer_count_);
+  LOG_IF(ERROR, !map_status.ok()) << "Error writing transfer_count_: " << map_status.msg();
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(stack_traces.get(), ctx, data_table);

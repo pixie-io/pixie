@@ -341,20 +341,34 @@ void BCCWrapperImpl::DetachTracepoints() {
   tracepoints_.clear();
 }
 
-Status BCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer) {
-  const int kPageSizeBytes = system::Config::GetInstance().PageSizeBytes();
-  int num_pages = IntRoundUpDivide(perf_buffer.size_bytes, kPageSizeBytes);
+int BCCWrapperImpl::CommonPerfBufferSetup(const PerfBufferSpec& perf_buffer_spec) {
+  DCHECK(perf_buffer_spec.cb_cookie != nullptr) << "perf_buffer_spec.cb_cookie must be non-null.";
+  DCHECK(perf_buffer_spec.size_bytes > 0) << "perf_buffer_spec.cb_cookie must greater than zero.";
+  perf_buffer_specs_.push_back(perf_buffer_spec);
+
+  const int page_size_bytes = system::Config::GetInstance().PageSizeBytes();
+  const int required_num_pages = IntRoundUpDivide(perf_buffer_spec.size_bytes, page_size_bytes);
 
   // Perf buffers must be sized to a power of 2.
-  num_pages = IntRoundUpToPow2(num_pages);
+  const int num_pages = IntRoundUpToPow2(required_num_pages);
 
   VLOG(1) << absl::Substitute(
       "Opening perf buffer: [$0] [allocated_num_pages=$1 allocated_size_bytes=$2] (per cpu)",
-      perf_buffer.ToString(), num_pages, num_pages * kPageSizeBytes);
-  PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
-                                           perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
-                                           perf_buffer.cb_cookie, num_pages));
-  perf_buffers_.push_back(perf_buffer);
+      perf_buffer_spec.ToString(), num_pages, num_pages * page_size_bytes);
+
+  return num_pages;
+}
+
+Status BCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {
+  const int num_pages = CommonPerfBufferSetup(perf_buffer_spec);
+
+  const std::string& name = perf_buffer_spec.name;
+  void* cb_cookie = perf_buffer_spec.cb_cookie;
+  auto& data_fn = perf_buffer_spec.probe_output_fn;
+  auto& loss_fn = perf_buffer_spec.probe_loss_fn;
+
+  PX_RETURN_IF_ERROR(BPF()->open_perf_buffer(name, data_fn, loss_fn, cb_cookie, num_pages));
+
   ++num_open_perf_buffers_;
   return Status::OK();
 }
@@ -374,11 +388,11 @@ Status BCCWrapperImpl::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
 }
 
 void BCCWrapperImpl::ClosePerfBuffers() {
-  for (const PerfBufferSpec& p : perf_buffers_) {
+  for (const auto& p : perf_buffer_specs_) {
     auto res = ClosePerfBuffer(p);
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
-  perf_buffers_.clear();
+  perf_buffer_specs_.clear();
 }
 
 Status BCCWrapperImpl::AttachPerfEvent(const PerfEventSpec& perf_event) {
@@ -423,16 +437,19 @@ std::string BCCWrapperImpl::GetKProbeTargetName(const KProbeSpec& probe) {
   return target;
 }
 
-void BCCWrapperImpl::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) {
-  auto perf_buffer = bpf_.get_perf_buffer(std::string(perf_buffer_name));
-  if (perf_buffer != nullptr) {
-    perf_buffer->poll(timeout_ms);
+Status BCCWrapperImpl::PollPerfBuffer(const std::string& name, const int timeout_ms) {
+  auto perf_buffer = bpf_.get_perf_buffer(name);
+  if (perf_buffer == nullptr) {
+    return error::NotFound(absl::Substitute("Perf buffer \"$0\" not found.", name));
   }
+  perf_buffer->poll(timeout_ms);
+  return Status::OK();
 }
 
-void BCCWrapperImpl::PollPerfBuffers(int timeout_ms) {
-  for (const auto& spec : perf_buffers_) {
-    PollPerfBuffer(spec.name, timeout_ms);
+void BCCWrapperImpl::PollPerfBuffers(const int timeout_ms) {
+  for (const auto& spec : perf_buffer_specs_) {
+    const auto s = PollPerfBuffer(spec.name, timeout_ms);
+    LOG_IF(ERROR, !s.ok()) << s.msg();
   }
 }
 
@@ -448,7 +465,9 @@ std::unique_ptr<BCCWrapper> CreateBCC() { return std::make_unique<BCCWrapperImpl
 
 std::unique_ptr<WrappedBCCStackTable> WrappedBCCStackTable::Create(bpf_tools::BCCWrapper* bcc,
                                                                    const std::string& name) {
-  return std::make_unique<WrappedBCCStackTableImpl>(bcc, name);
+  using BaseT = WrappedBCCStackTable;
+  using ImplT = WrappedBCCStackTableImpl;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
 }
 
 }  // namespace bpf_tools
