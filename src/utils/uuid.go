@@ -19,8 +19,12 @@
 package utils
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
+	"sort"
+	"strings"
 
 	"github.com/gofrs/uuid"
 
@@ -88,4 +92,29 @@ func IsNilUUIDProto(pb *uuidpb.UUID) bool {
 // AreSameUUID tells you if the two protos refer to the same underlying UUID.
 func AreSameUUID(pb1, pb2 *uuidpb.UUID) bool {
 	return pb1.HighBits == pb2.HighBits && pb1.LowBits == pb2.LowBits
+}
+
+// HashUUIDs generates a unique hash for a list of UUIDs.
+func HashUUIDs(ids []uuid.UUID) string {
+	// Sort the UUIDs to ensure consistent ordering.
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i].String() < ids[j].String()
+	})
+
+	// Convert the sorted UUIDs to a single string.
+	concatenated := strings.Join(uuidsToStrings(ids), "")
+
+	// Compute the SHA-256 hash of the concatenated string.
+	hash := sha256.Sum256([]byte(concatenated))
+
+	return hex.EncodeToString(hash[:])
+}
+
+// uuidsToStrings converts a slice of UUIDs to a slice of their string representations.
+func uuidsToStrings(ids []uuid.UUID) []string {
+	strs := make([]string, len(ids))
+	for i, id := range ids {
+		strs[i] = id.String()
+	}
+	return strs
 }

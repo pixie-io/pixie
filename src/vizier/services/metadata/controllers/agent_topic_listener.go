@@ -394,6 +394,7 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messagespb.RegisterAgentReques
 		// This will be set if this is an agent trying to reregister.
 		ASID: m.ASID,
 	}
+	agentInfo.Info.AgentID = utils.ProtoFromUUID(agentID)
 
 	asid, err := ah.agtMgr.RegisterAgent(agentInfo)
 	if err != nil {
@@ -422,11 +423,10 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messagespb.RegisterAgentReques
 			return
 		}
 
-		agentIDs := []uuid.UUID{agentID}
-
+		agent := []*agentpb.Agent{agentInfo}
 		for _, tp := range tracepoints {
 			if tp.ExpectedState != statuspb.TERMINATED_STATE {
-				err = ah.tpMgr.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tp.ID), tp.Tracepoint)
+				err = ah.tpMgr.RegisterTracepoint(agent, utils.UUIDFromProtoOrNil(tp.ID), tp.Tracepoint)
 				if err != nil {
 					log.WithError(err).Error("Failed to send RegisterTracepoint request")
 				}
