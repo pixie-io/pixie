@@ -36,7 +36,7 @@ pl_cc_library(
     deps = [
         "//src/stirling/source_connectors/socket_tracer/protocols/common:cc_library",
         "//src/stirling/utils:cc_library",
-        "@com_github_mongodb_mongo_c_driver//:mongo_c_driver",
+        "@com_github_mongodb_mongo_c_driver//:libbson",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
