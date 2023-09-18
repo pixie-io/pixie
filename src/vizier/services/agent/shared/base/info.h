@@ -21,6 +21,7 @@
 
 #include <sole.hpp>
 
+#include "src/common/system/kernel_version.h"
 #include "src/vizier/services/shared/agentpb/agent.pb.h"
 
 namespace px {
@@ -42,6 +43,7 @@ struct Info {
   std::string address;
   std::string pod_name;
   std::string host_ip;
+  system::KernelVersion kernel_version;
   services::shared::agent::AgentCapabilities capabilities;
   services::shared::agent::AgentParameters parameters;
 };

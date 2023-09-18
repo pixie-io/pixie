@@ -24,6 +24,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/signal/signal.h"
+#include "src/common/system/kernel_version.h"
 #include "src/shared/version/version.h"
 
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
@@ -54,8 +55,6 @@ int main(int argc, char** argv) {
   TerminationHandler::InstallSignalHandlers();
 
   sole::uuid agent_id = sole::uuid4();
-  LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", px::VersionInfo::VersionString(),
-                                agent_id.str());
 
   if (FLAGS_clock_converter == "grpc") {
     px::system::Config::ResetInstance(
@@ -65,8 +64,13 @@ int main(int argc, char** argv) {
   if (FLAGS_host_ip.length() == 0) {
     LOG(FATAL) << "The HOST_IP must be specified";
   }
-  auto manager = PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url)
-                     .ConsumeValueOrDie();
+  px::system::KernelVersion kernel_version = px::system::GetCachedKernelVersion();
+  LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1, kernel version: $2",
+                                px::VersionInfo::VersionString(), agent_id.str(),
+                                kernel_version.ToString());
+  auto manager =
+      PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url, kernel_version)
+          .ConsumeValueOrDie();
 
   TerminationHandler::set_manager(manager.get());
 

@@ -26,6 +26,7 @@
 
 #include <prometheus/gauge.h>
 
+#include "src/common/system/kernel_version.h"
 #include "src/stirling/stirling.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 #include "src/vizier/services/agent/shared/manager/manager.h"
@@ -52,15 +53,18 @@ class PEMManager : public Manager {
  protected:
   PEMManager() = delete;
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
-             std::string_view nats_url)
+             std::string_view nats_url, px::system::KernelVersion kernel_version)
       : PEMManager(agent_id, pod_name, host_ip, nats_url,
-                   px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag())) {}
+                   px::stirling::Stirling::Create(px::stirling::CreateSourceRegistryFromFlag()),
+                   kernel_version) {}
 
+  // Constructor which creates the HostInfo for an agent (runs once per node).
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
-             std::string_view nats_url, std::unique_ptr<stirling::Stirling> stirling)
+             std::string_view nats_url, std::unique_ptr<stirling::Stirling> stirling,
+             px::system::KernelVersion kernel_version)
       : Manager(agent_id, pod_name, host_ip, /*grpc_server_port*/ 0, PEMManager::Capabilities(),
                 PEMManager::Parameters(), nats_url,
-                /*mds_url*/ ""),
+                /*mds_url*/ "", kernel_version),
         stirling_(std::move(stirling)),
         node_available_memory_(prometheus::BuildGauge()
                                    .Name("node_available_memory")

@@ -38,6 +38,11 @@ struct KernelVersion {
   std::string ToString() const {
     return absl::Substitute("$0.$1.$2", version, major_rev, minor_rev);
   }
+
+  bool operator==(const KernelVersion& other) const {
+    return (version == other.version) && (major_rev == other.major_rev) &&
+           (minor_rev == other.minor_rev);
+  }
 };
 
 enum class KernelVersionSource {

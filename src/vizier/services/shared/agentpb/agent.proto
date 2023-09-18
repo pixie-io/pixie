@@ -44,6 +44,12 @@ message AgentInfo {
   AgentParameters parameters = 5;
 }
 
+message KernelVersion {
+  uint32 version = 1;
+  uint32 major_rev = 2;
+  uint32 minor_rev = 3;
+}
+
 // HostInfo contains the details for the host (OS, kernel, CPU, etc).
 message HostInfo {
   // The Hostname as reported by pod. This will be the machine hostname for Daemonsets and assigned
@@ -54,6 +60,8 @@ message HostInfo {
   string pod_name = 2;
   // The IP of the host that pod is running on. This can used to avoid extra K8s lookups.
   string host_ip = 3 [ (gogoproto.customname) = "HostIP" ];
+  // Version of the kernel running on the host.
+  KernelVersion kernel = 4;
 }
 
 // Agent contains information about a specific agent instance.

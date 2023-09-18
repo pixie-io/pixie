@@ -37,10 +37,6 @@ std::string GetPathToTestDataFile(const std::string_view fname) {
 using ::px::testing::TempDir;
 using ::testing::EndsWith;
 
-bool operator==(const KernelVersion& a, const KernelVersion& b) {
-  return (a.version == b.version) && (a.major_rev == b.major_rev) && (a.minor_rev == b.minor_rev);
-}
-
 // A list of kernel version identification methods that use /proc only.
 // Used in a number of tests below.
 const std::vector<KernelVersionSource> kProcFSKernelVersionSources = {
