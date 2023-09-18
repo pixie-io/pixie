@@ -85,7 +85,11 @@ class AnyUDA : public udf::UDA {
     SetValue(val);
   }
 
-  void Merge(FunctionContext*, const AnyUDA& other) { SetValue(other.val_); }
+  void Merge(FunctionContext*, const AnyUDA& other) {
+    if (other.picked) {
+      SetValue(other.val_);
+    }
+  }
 
   TArg Finalize(FunctionContext*) {
     DCHECK(picked) << "AnyUDA uninitialized.";
