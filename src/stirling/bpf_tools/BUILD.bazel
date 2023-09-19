@@ -39,6 +39,7 @@ pl_cc_library(
         "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
         "//src/stirling/bpf_tools/bcc_bpf_intf:cc_library",
         "//src/stirling/bpf_tools/probe_specs:cc_library",
+        "//src/stirling/bpf_tools/rr:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//src/stirling/utils:cc_library",
         "@com_github_iovisor_bcc//:bcc",
