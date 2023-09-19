@@ -173,8 +173,6 @@ TEST_F(BasicRecorderTest, PerfBufferRRTest) {
   ASSERT_OK(replaying_bcc_->OpenReplayProtobuf(pb_file_name));
   replaying_bcc_->PollPerfBuffers();
   EXPECT_EQ(test::test_idx, test::gold_data.size());
-
-  // TODO(jps): add the expectations.
 }
 
 }  // namespace stirling
