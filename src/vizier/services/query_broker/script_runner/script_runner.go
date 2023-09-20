@@ -282,6 +282,7 @@ func (r *runner) runScript(scriptPeriod time.Duration) {
 	})
 	if err != nil {
 		log.WithError(err).Error("Failed to execute cronscript")
+		return
 	}
 	for {
 		resp, err := execScriptClient.Recv()
