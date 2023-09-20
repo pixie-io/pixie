@@ -80,12 +80,15 @@ void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec)
   while (playback_event_idx_ < n_events) {
     const auto event = events_proto_.event(playback_event_idx_);
     if (!event.has_perf_buffer_event()) {
+      // Return control to calling context. Replay will continue with a different eBPF data
+      // type, e.g. map or array.
       break;
     }
     const auto perf_buffer_event = event.perf_buffer_event();
     const auto data = perf_buffer_event.data();
     const auto name = perf_buffer_event.name();
     if (name != perf_buffer_spec.name) {
+      // Return control to calling context. Replay will continue with a different perf buffer.
       break;
     }
     const void* const_data = static_cast<const void*>(data.data());
