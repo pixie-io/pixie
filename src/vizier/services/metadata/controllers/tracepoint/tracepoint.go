@@ -391,7 +391,7 @@ func (m *Manager) filterByMaxKernel(agents []*agentpb.Agent, versionStr string) 
 func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.UUID, tracepointDeployment *logicalpb.TracepointDeployment) error {
 	// Map where key is the hash of agent IDs and value is the list of programs for those agents.
 	agentsHashToPrograms := make(map[string][]*logicalpb.TracepointDeployment_TracepointProgram)
-	// Map where key is the hash of agent IDs and value is the list of agents.
+	// Map where key is the hash of agent IDs and value is a struct containing the list of agents and their IDs.
 	agentsHashToAgents := make(map[string]struct {
 		Agents   []*agentpb.Agent
 		AgentIDs []uuid.UUID
