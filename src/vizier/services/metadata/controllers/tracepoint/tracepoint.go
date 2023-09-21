@@ -446,11 +446,8 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 		}
 
 		agentIDs := validAgentsForProgram.AgentIDs
-		for i, agt := range validAgentsForProgram.Agents {
-			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
-		}
-
 		err = m.agtMgr.MessageAgents(agentIDs, msg)
+
 		if err != nil {
 			return err
 		}
