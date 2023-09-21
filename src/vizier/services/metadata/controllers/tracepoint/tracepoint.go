@@ -445,8 +445,7 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 			return err
 		}
 
-		agentIDs := validAgentsForProgram.AgentIDs
-		err = m.agtMgr.MessageAgents(agentIDs, msg)
+		err = m.agtMgr.MessageAgents(validAgentsForProgram.AgentIDs, msg)
 
 		if err != nil {
 			return err
