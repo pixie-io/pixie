@@ -334,8 +334,10 @@ func parseKernelVersion(versionStr string) (uint32, uint32, uint32, error) {
 		_, err = fmt.Sscanf(versionStr, "%d", &version)
 	case 2:
 		_, err = fmt.Sscanf(versionStr, "%d.%d", &version, &major)
-	default:
+	case 3:
 		_, err = fmt.Sscanf(versionStr, "%d.%d.%d", &version, &major, &minor)
+	default:
+		err = fmt.Errorf("Invalid kernel version string: %s", versionStr)
 	}
 	return version, major, minor, err
 }
@@ -390,7 +392,10 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 	// Map where key is the hash of agent IDs and value is the list of programs for those agents.
 	agentsHashToPrograms := make(map[string][]*logicalpb.TracepointDeployment_TracepointProgram)
 	// Map where key is the hash of agent IDs and value is the list of agents.
-	agentsHashToAgents := make(map[string][]*agentpb.Agent)
+	agentsHashToAgents := make(map[string]struct {
+		Agents   []*agentpb.Agent
+		AgentIDs []uuid.UUID
+	})
 
 	for _, prgm := range tracepointDeployment.Programs {
 		validAgents := agents // Start with all agents as potential targets.
@@ -404,10 +409,13 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 		for i, agt := range validAgents {
 			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
 		}
-		hash := utils.HashUUIDs(agentIDs) // You need to implement this function.
+		hash := utils.HashUUIDs(agentIDs)
 
 		agentsHashToPrograms[hash] = append(agentsHashToPrograms[hash], prgm)
-		agentsHashToAgents[hash] = validAgents
+		agentsHashToAgents[hash] = struct {
+			Agents   []*agentpb.Agent
+			AgentIDs []uuid.UUID
+		}{Agents: validAgents, AgentIDs: agentIDs}
 	}
 
 	for hash, validAgentsForProgram := range agentsHashToAgents {
@@ -437,8 +445,8 @@ func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.
 			return err
 		}
 
-		agentIDs := make([]uuid.UUID, len(validAgentsForProgram))
-		for i, agt := range validAgentsForProgram {
+		agentIDs := validAgentsForProgram.AgentIDs
+		for i, agt := range validAgentsForProgram.Agents {
 			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
 		}
 
