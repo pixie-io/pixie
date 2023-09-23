@@ -31,6 +31,7 @@
 #include "src/common/perf/scoped_timer.h"
 #include "src/common/system/config.h"
 #include "src/common/system/kernel_version.h"
+#include "src/stirling/bpf_tools/rr/rr.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -367,7 +368,7 @@ Status BCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {
   auto& data_fn = perf_buffer_spec.probe_output_fn;
   auto& loss_fn = perf_buffer_spec.probe_loss_fn;
 
-  PX_RETURN_IF_ERROR(BPF()->open_perf_buffer(name, data_fn, loss_fn, cb_cookie, num_pages));
+  PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(name, data_fn, loss_fn, cb_cookie, num_pages));
 
   ++num_open_perf_buffers_;
   return Status::OK();
@@ -459,6 +460,23 @@ void BCCWrapperImpl::Close() {
   DetachKProbes();
   DetachUProbes();
   DetachTracepoints();
+}
+
+Status RecordingBCCWrapperImpl::OpenPerfBuffer(const PerfBufferSpec& perf_buffer_spec) {
+  PerfBufferSpec pbs(perf_buffer_spec);
+  pbs.recorder = recorder_.get();
+
+  const int num_pages = CommonPerfBufferSetup(pbs);
+
+  const std::string name = std::string(pbs.name);
+  void* cb_cookie = &perf_buffer_specs_[num_open_perf_buffers_];
+  auto data_fn = &RecordPerfBufferEvent;
+  auto loss_fn = &RecordPerfBufferLoss;
+
+  PX_RETURN_IF_ERROR(bpf_.open_perf_buffer(name, data_fn, loss_fn, cb_cookie, num_pages));
+  ++num_open_perf_buffers_;
+
+  return Status::OK();
 }
 
 std::unique_ptr<BCCWrapper> CreateBCC() { return std::make_unique<BCCWrapperImpl>(); }

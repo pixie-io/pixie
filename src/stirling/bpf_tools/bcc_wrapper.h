@@ -46,6 +46,7 @@
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
 #include "src/stirling/bpf_tools/probe_specs/probe_specs.h"
+#include "src/stirling/bpf_tools/rr/rr.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/obj_tools/elf_reader.h"
 
@@ -89,7 +90,11 @@ class BCCWrapper {
     return task_struct_offsets_opt_;
   }
 
-  virtual ebpf::BPF* BPF() = 0;
+  virtual StatusOr<ebpf::BPF*> BPF() = 0;
+  virtual StatusOr<BPFRecorder*> GetBPFRecorder() const = 0;
+  virtual StatusOr<BPFReplayer*> GetBPFReplayer() const = 0;
+  virtual bool IsRecording() const = 0;
+  virtual bool IsReplaying() const = 0;
 
   /**
    * Compiles the BPF code.
@@ -271,7 +276,11 @@ class BCCWrapperImpl : public BCCWrapper {
     Close();
   }
 
-  ebpf::BPF* BPF() override { return &bpf_; }
+  StatusOr<ebpf::BPF*> BPF() override { return &bpf_; }
+  StatusOr<BPFRecorder*> GetBPFRecorder() const override { return error::Internal("Wrong impl."); }
+  StatusOr<BPFReplayer*> GetBPFReplayer() const override { return error::Internal("Wrong impl."); }
+  bool IsRecording() const override { return false; }
+  bool IsReplaying() const override { return false; }
 
   Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
                         bool requires_linux_headers = true,
@@ -340,11 +349,111 @@ class BCCWrapperImpl : public BCCWrapper {
   //   DEBUG_SOURCE = 0x8,
   //   DEBUG_BPF_REGISTER_STATE = 0x10,
   //   DEBUG_BTF = 0x20,
+ protected:
   ebpf::BPF bpf_;
+};
+
+class RecordingBCCWrapperImpl : public BCCWrapperImpl {
+ public:
+  bool IsRecording() const override { return true; }
+  bool IsReplaying() const override { return false; }
+  StatusOr<BPFRecorder*> GetBPFRecorder() const override { return recorder_.get(); }
+  StatusOr<BPFReplayer*> GetBPFReplayer() const override { return error::Internal("Wrong impl."); }
+
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer) override;
+
+  RecordingBCCWrapperImpl() { recorder_ = std::make_unique<BPFRecorder>(); }
+
+  void WriteProto(const std::string& pb_file_path) { recorder_->WriteProto(pb_file_path); }
+
+ private:
+  std::unique_ptr<BPFRecorder> recorder_;
+};
+
+class ReplayingBCCWrapperImpl : public BCCWrapper {
+ public:
+  bool IsRecording() const override { return false; }
+  bool IsReplaying() const override { return true; }
+  StatusOr<BPFRecorder*> GetBPFRecorder() const override { return error::Internal("Wrong impl."); }
+  StatusOr<BPFReplayer*> GetBPFReplayer() const override { return replayer_.get(); }
+
+  virtual ~ReplayingBCCWrapperImpl() {}
+
+  ReplayingBCCWrapperImpl() { replayer_ = std::make_unique<BPFReplayer>(); }
+
+  StatusOr<ebpf::BPF*> BPF() override { return error::Internal("Wrong impl."); }
+
+  Status InitBPFProgram(std::string_view, std::vector<std::string> cflags = {},
+                        bool requires_linux_headers = true,
+                        bool always_infer_task_struct_offsets = false) override {
+    PX_UNUSED(cflags);
+    PX_UNUSED(requires_linux_headers);
+    PX_UNUSED(always_infer_task_struct_offsets);
+    return Status::OK();
+  }
+  Status AttachKProbe(const KProbeSpec&) override { return Status::OK(); }
+  Status AttachUProbe(const UProbeSpec&) override { return Status::OK(); }
+  Status AttachTracepoint(const TracepointSpec&) override { return Status::OK(); }
+  Status AttachSamplingProbe(const SamplingProbeSpec&) override { return Status::OK(); }
+  Status AttachPerfEvent(const PerfEventSpec&) override { return Status::OK(); }
+  Status AttachKProbes(const ArrayView<KProbeSpec>&) override { return Status::OK(); }
+  Status AttachTracepoints(const ArrayView<TracepointSpec>&) override { return Status::OK(); }
+  Status AttachUProbes(const ArrayView<UProbeSpec>&) override { return Status::OK(); }
+  Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>&) override { return Status::OK(); }
+  Status AttachXDP(const std::string&, const std::string&) override { return Status::OK(); }
+  Status AttachPerfEvents(const ArrayView<PerfEventSpec>&) override { return Status::OK(); }
+  Status PopulateBPFPerfArray(const std::string&, const uint32_t, const uint64_t) override {
+    return Status::OK();
+  }
+
+  Status OpenPerfBuffer(const PerfBufferSpec& pbs) override {
+    perf_buffer_specs_.push_back(std::make_unique<PerfBufferSpec>(pbs));
+    return Status::OK();
+  }
+
+  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffer_specs) override {
+    for (const auto& pbs : perf_buffer_specs) {
+      PX_RETURN_IF_ERROR(OpenPerfBuffer(pbs));
+    }
+    return Status::OK();
+  }
+
+  Status PollPerfBuffer(const std::string& name, const int timeout_ms = 0) override {
+    PX_UNUSED(timeout_ms);
+    for (const auto& pbs : perf_buffer_specs_) {
+      if (pbs->name == name) {
+        replayer_->ReplayPerfBufferEvents(*pbs);
+        return Status::OK();
+      }
+    }
+    return error::NotFound(absl::Substitute("Perf buffer \"$0\" not found.", name));
+  }
+
+  void PollPerfBuffers(const int timeout_ms = 0) override {
+    PX_UNUSED(timeout_ms);
+    for (const auto& pbs : perf_buffer_specs_) {
+      replayer_->ReplayPerfBufferEvents(*pbs);
+    }
+  };
+
+  void Close() override{};
+
+  Status ClosePerfBuffer(const PerfBufferSpec&) override { return Status::OK(); }
+
+  Status OpenReplayProtobuf(const std::string& file_path) {
+    return replayer_->OpenReplayProtobuf(file_path);
+  }
+
+ private:
+  std::unique_ptr<BPFReplayer> replayer_;
+  std::vector<std::unique_ptr<PerfBufferSpec>> perf_buffer_specs_;
 };
 
 std::unique_ptr<BCCWrapper> CreateBCC();
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Array Table.
 template <typename T>
 class WrappedBCCArrayTable {
  public:
@@ -378,7 +487,8 @@ class WrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
   }
 
   WrappedBCCArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF()->get_array_table<T>(name_));
+    ebpf::BPF* bpf = bcc->BPF().ConsumeValueOrDie();
+    underlying_ = std::make_unique<U>(bpf->get_array_table<T>(name_));
   }
 
  protected:
@@ -389,6 +499,9 @@ class WrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
   std::unique_ptr<U> underlying_;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Map / BPF Hash Table
 template <typename K, typename V, bool kUserSpaceManaged = false>
 class WrappedBCCMap {
  public:
@@ -472,7 +585,8 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
   }
 
   WrappedBCCMapImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF()->get_hash_table<K, V>(name_));
+    ebpf::BPF* bpf = bcc->BPF().ConsumeValueOrDie();
+    underlying_ = std::make_unique<U>(bpf->get_hash_table<K, V>(name_));
   }
 
  protected:
@@ -484,6 +598,9 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
   absl::flat_hash_set<K> shadow_keys_;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Per CPU Array Table
 template <typename T>
 class WrappedBCCPerCPUArrayTable {
  public:
@@ -511,7 +628,8 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
 
   WrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
       : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF()->get_percpu_array_table<T>(name_));
+    ebpf::BPF* bpf = bcc->BPF().ConsumeValueOrDie();
+    underlying_ = std::make_unique<U>(bpf->get_percpu_array_table<T>(name_));
   }
 
  private:
@@ -519,6 +637,9 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
   std::unique_ptr<U> underlying_;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Stack Table
 class WrappedBCCStackTable {
  public:
   static std::unique_ptr<WrappedBCCStackTable> Create(bpf_tools::BCCWrapper* bcc,
@@ -545,7 +666,8 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   void ClearStackID(const int stack_id) override { underlying_->clear_stack_id(stack_id); }
 
   WrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name) : name_(name) {
-    underlying_ = std::make_unique<U>(bcc->BPF()->get_stack_table(name_));
+    ebpf::BPF* bpf = bcc->BPF().ConsumeValueOrDie();
+    underlying_ = std::make_unique<U>(bpf->get_stack_table(name_));
   }
 
  protected:
@@ -555,7 +677,16 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
   std::unique_ptr<U> underlying_;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Creators fns for wrapped maps & arrays:
+// template <typename BaseT, typename ImplT>
+// std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
+//   // The decision logic for "normal" vs. "recording" vs. "replaying" impl. will be inserted
+//   // here in a future PR.
+//   return std::make_unique<ImplT>(bcc, name);
+// }
+
 template <typename BaseT, typename ImplT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
   return std::make_unique<ImplT>(bcc, name);
