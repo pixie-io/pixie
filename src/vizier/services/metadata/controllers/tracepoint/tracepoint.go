@@ -21,6 +21,7 @@ package tracepoint
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
 var (
@@ -295,26 +297,162 @@ func (m *Manager) UpdateAgentTracepointStatus(tracepointID *uuidpb.UUID, agentID
 	return m.ts.UpdateTracepointState(tracepointState)
 }
 
+func (m *Manager) FilterAgentsBySelector(agents []*agentpb.Agent, selector *logicalpb.TracepointSelector) []*agentpb.Agent {
+	// Each selector successively filters the list of agents.
+	var filteredAgents []*agentpb.Agent
+	switch selector.SelectorType {
+	case logicalpb.MIN_KERNEL:
+		filteredAgents = m.filterByMinKernel(agents, selector.Value)
+	case logicalpb.MAX_KERNEL:
+		filteredAgents = m.filterByMaxKernel(agents, selector.Value)
+	case logicalpb.HOST_NAME:
+		filteredAgents = m.filterByHostName(agents, selector.Value)
+	// Other selector types can be added here in the future.
+	default:
+		// If NO_CONDITION or unknown condition, return all agents
+		filteredAgents = agents
+	}
+	return filteredAgents
+}
+
+func (m *Manager) filterByHostName(agents []*agentpb.Agent, hostname string) []*agentpb.Agent {
+	filteredAgents := make([]*agentpb.Agent, 0)
+	for _, agent := range agents {
+		if agent.Info.HostInfo.Hostname == hostname {
+			filteredAgents = append(filteredAgents, agent)
+		}
+	}
+	return filteredAgents
+}
+
+func parseKernelVersion(versionStr string) (uint32, uint32, uint32, error) {
+	var version, major, minor uint32
+	parts := strings.Split(versionStr, ".")
+	var err error
+	switch len(parts) {
+	case 1:
+		_, err = fmt.Sscanf(versionStr, "%d", &version)
+	case 2:
+		_, err = fmt.Sscanf(versionStr, "%d.%d", &version, &major)
+	case 3:
+		_, err = fmt.Sscanf(versionStr, "%d.%d.%d", &version, &major, &minor)
+	default:
+		err = fmt.Errorf("Invalid kernel version string: %s", versionStr)
+	}
+	return version, major, minor, err
+}
+
+func (m *Manager) filterByMinKernel(agents []*agentpb.Agent, versionStr string) []*agentpb.Agent {
+	version, major, minor, err := parseKernelVersion(versionStr)
+	if err != nil {
+		log.Warnf("Error parsing version string: %s, Error: %v", versionStr, err)
+		return nil
+	}
+
+	filteredAgents := make([]*agentpb.Agent, 0)
+	for _, agent := range agents {
+		kv := agent.Info.HostInfo.Kernel
+		if kv == nil {
+			continue
+		}
+		if kv.Version > version || (kv.Version == version && kv.MajorRev > major) || (kv.Version == version && kv.MajorRev == major && kv.MinorRev >= minor) {
+			filteredAgents = append(filteredAgents, agent)
+		}
+	}
+	return filteredAgents
+}
+
+func (m *Manager) filterByMaxKernel(agents []*agentpb.Agent, versionStr string) []*agentpb.Agent {
+	version, major, minor, err := parseKernelVersion(versionStr)
+	if err != nil {
+		log.Warnf("Error parsing version string: %s, Error: %v", versionStr, err)
+		return nil
+	}
+
+	filteredAgents := make([]*agentpb.Agent, 0)
+	for _, agent := range agents {
+		kv := agent.Info.HostInfo.Kernel
+		if kv == nil {
+			continue
+		}
+		if kv.Version < version || (kv.Version == version && kv.MajorRev < major) || (kv.Version == version && kv.MajorRev == major && kv.MinorRev <= minor) {
+			filteredAgents = append(filteredAgents, agent)
+		}
+	}
+	return filteredAgents
+}
+
 // RegisterTracepoint sends requests to the given agents to register the specified tracepoint.
-func (m *Manager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointID uuid.UUID, tracepointDeployment *logicalpb.TracepointDeployment) error {
-	tracepointReq := messagespb.VizierMessage{
-		Msg: &messagespb.VizierMessage_TracepointMessage{
-			TracepointMessage: &messagespb.TracepointMessage{
-				Msg: &messagespb.TracepointMessage_RegisterTracepointRequest{
-					RegisterTracepointRequest: &messagespb.RegisterTracepointRequest{
-						TracepointDeployment: tracepointDeployment,
-						ID:                   utils.ProtoFromUUID(tracepointID),
+// For each tracepoint program in this deployment, we look at the selectors and pick a list of agents
+// that match those selectors. For that list of agents, we send out a tracepoint request with
+// a new tracepointDeployment. If multiple programs may have the same list of allowed agents,
+// we collapse them into one tracepoint deployment and send those in one request.
+// Note: stirling current only supports one tracepoint per tracepoint deployment.
+func (m *Manager) RegisterTracepoint(agents []*agentpb.Agent, tracepointID uuid.UUID, tracepointDeployment *logicalpb.TracepointDeployment) error {
+	// Map where key is the hash of agent IDs and value is the list of programs for those agents.
+	agentsHashToPrograms := make(map[string][]*logicalpb.TracepointDeployment_TracepointProgram)
+	// Map where key is the hash of agent IDs and value is a struct containing the list of agents and their IDs.
+	agentsHashToAgents := make(map[string]struct {
+		Agents   []*agentpb.Agent
+		AgentIDs []uuid.UUID
+	})
+
+	for _, prgm := range tracepointDeployment.Programs {
+		validAgents := agents // Start with all agents as potential targets.
+
+		for _, selector := range prgm.Selectors {
+			validAgents = m.FilterAgentsBySelector(validAgents, selector)
+		}
+
+		// Generate a hash for the list of valid agents.
+		agentIDs := make([]uuid.UUID, len(validAgents))
+		for i, agt := range validAgents {
+			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
+		}
+		hash := utils.HashUUIDs(agentIDs)
+
+		agentsHashToPrograms[hash] = append(agentsHashToPrograms[hash], prgm)
+		agentsHashToAgents[hash] = struct {
+			Agents   []*agentpb.Agent
+			AgentIDs []uuid.UUID
+		}{Agents: validAgents, AgentIDs: agentIDs}
+	}
+
+	for hash, validAgentsForProgram := range agentsHashToAgents {
+		// Build a new TracepointDeployment with the group of programs.
+		newDeployment := &logicalpb.TracepointDeployment{
+			Name:           tracepointDeployment.Name,
+			TTL:            tracepointDeployment.TTL,
+			DeploymentSpec: tracepointDeployment.DeploymentSpec,
+			Programs:       agentsHashToPrograms[hash],
+		}
+
+		// Send a RegisterTracepointRequest to each agent that supports this program.
+		tracepointReq := messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_TracepointMessage{
+				TracepointMessage: &messagespb.TracepointMessage{
+					Msg: &messagespb.TracepointMessage_RegisterTracepointRequest{
+						RegisterTracepointRequest: &messagespb.RegisterTracepointRequest{
+							TracepointDeployment: newDeployment,
+							ID:                   utils.ProtoFromUUID(tracepointID),
+						},
 					},
 				},
 			},
-		},
-	}
-	msg, err := tracepointReq.Marshal()
-	if err != nil {
-		return err
+		}
+		msg, err := tracepointReq.Marshal()
+		if err != nil {
+			return err
+		}
+
+		err = m.agtMgr.MessageAgents(validAgentsForProgram.AgentIDs, msg)
+
+		if err != nil {
+			return err
+		}
 	}
 
-	return m.agtMgr.MessageAgents(agentIDs, msg)
+	return nil
 }
 
 // GetTracepointInfo gets the status for the tracepoint with the given ID.

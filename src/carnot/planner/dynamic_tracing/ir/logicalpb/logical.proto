@@ -166,6 +166,20 @@ message DeploymentSpec {
   }
 }
 
+enum SelectorType {
+  NO_CONDITION = 0;  // default if none specified
+  MAX_KERNEL = 1;
+  MIN_KERNEL = 2;
+  HOST_NAME = 3;
+  // Other selectors here in the future (e.g. OS version)
+}
+
+// One selector can enforce one thing
+message TracepointSelector {
+  SelectorType selector_type = 1;
+  string value = 2;
+}
+
 // A logical program, either an application tracepoint, or a bpftrace.
 message TracepointDeployment {
   // The name of this deployment. Used to identify this operation.
@@ -185,6 +199,9 @@ message TracepointDeployment {
     TracepointSpec spec = 2;
     // This applies to bpftrace. Note that only one bpftrace program is allowed.
     BPFTrace bpftrace = 3 [ (gogoproto.customname) = "BPFTrace" ];
+    // The selectors to enforce on this deployment. Program will be deployed only to agents that
+    // match.
+    repeated TracepointSelector selectors = 4;
   }
   repeated TracepointProgram programs = 4;
 }

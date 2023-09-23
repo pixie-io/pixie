@@ -438,13 +438,8 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		if err != nil {
 			return nil, err
 		}
-		agentIDs := make([]uuid.UUID, len(agents))
-		for i, agt := range agents {
-			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
-		}
 
-		// Register tracepoint on all agents.
-		err = s.tpMgr.RegisterTracepoint(agentIDs, *tracepointID, tp.TracepointDeployment)
+		err = s.tpMgr.RegisterTracepoint(agents, *tracepointID, tp.TracepointDeployment)
 		if err != nil {
 			return nil, err
 		}
