@@ -40,7 +40,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame) 
   // Get the length of the packet. This length contains the size of the field containing the
   // message's length itself.
   PX_ASSIGN_OR(frame->length, decoder.ExtractLEInt<int32_t>(), return ParseState::kInvalid);
-  if (static_cast<int32_t>(decoder.BufSize()) < (frame->length - mongodb::kMessageLengthSize)) {
+  if (decoder.BufSize() < size_t(frame->length - mongodb::kMessageLengthSize)) {
     return ParseState::kNeedsMoreData;
   }
 

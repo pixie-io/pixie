@@ -46,6 +46,12 @@ constexpr uint8_t kHeaderLength = 16;
 constexpr uint8_t kMessageLengthSize = 4;
 constexpr uint8_t kSectionLengthSize = 4;
 
+constexpr uint32_t checksum_bitmask = 1;
+constexpr uint32_t more_to_come_bitmask = 1 << 1;
+constexpr uint32_t exhaust_allowed_bitmask = 1 << 16;
+// Bits 2-15 must not be set. This bitmask left right shifts twice to remove bit 0 and 1.
+constexpr uint32_t required_unset_bitmask = 0xFFFFFFFF >> 2;
+
 struct Section {
   uint8_t kind = 0;
   int32_t length = 0;

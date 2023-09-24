@@ -35,18 +35,19 @@ namespace mongodb {
 ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
   PX_ASSIGN_OR(uint32_t flag_bits, decoder->ExtractLEInt<uint32_t>(), return ParseState::kInvalid);
 
-  // Find relavent flag bit information and ensure remaining bits are not set.
+  // Find relevant flag bit information and ensure remaining bits are not set.
   // Bits 0-15 are required and bits 16-31 are optional.
-  for (int i = 0; i <= 16; i++) {
-    if (i == 0 && (flag_bits >> i) & 1) {
-      frame->checksum_present = true;
-    } else if (i == 1 && (flag_bits >> i) & 1) {
-      frame->more_to_come = true;
-    } else if (i == 16 && (flag_bits >> i) & 1) {
-      frame->exhaust_allowed = true;
-    } else if (flag_bits >> i) {
-      return ParseState::kInvalid;
-    }
+  if (flag_bits & checksum_bitmask) {
+    frame->checksum_present = true;
+  }
+  if (flag_bits & more_to_come_bitmask) {
+    frame->more_to_come = true;
+  }
+  if (flag_bits & exhaust_allowed_bitmask) {
+    frame->exhaust_allowed = true;
+  }
+  if (flag_bits & required_unset_bitmask) {
+    return ParseState::kInvalid;
   }
 
   // Determine the number of checksum bytes in the buffer.
