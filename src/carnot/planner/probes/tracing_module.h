@@ -207,6 +207,7 @@ class TraceModule : public QLObject {
     program (str): The BPFtrace program string.
     min_kernel (str, optional): The minimum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
     max_kernel (str, optional): The maximum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
+    host_name (str, optional): Restrict the tracepoint to a specific host.
     (Additional selectors may be added in the future.)
 
   Returns:
