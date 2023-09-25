@@ -55,6 +55,7 @@ enum class QLObjectType {
   // General module type.
   kModule,
   kTraceModule,
+  kTraceProgram,
   kDict,
   kTracingVariable,
   kProbe,

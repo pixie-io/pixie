@@ -373,6 +373,85 @@ TEST_F(LogicalPlannerTest, PlanWithExecFuncs) {
   EXPECT_OK(plan->ToProto());
 }
 
+constexpr char kBPFTraceProgramMaxKernel[] = R"bpftrace(
+kprobe:tcp_drop
+{
+  ...
+}
+)bpftrace";
+
+constexpr char kBPFTraceProgramMinKernel[] = R"bpftrace(
+tracepoint:skb:kfree_skb
+{
+  ...
+}
+)bpftrace";
+
+constexpr char kTwoTraceProgramsPxl[] = R"pxl(
+import pxtrace
+import px
+
+before_518_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  max_kernel='5.18',
+)
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$1""",
+  min_kernel='5.19',
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          [before_518_trace_program, after_519_trace_program],
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+constexpr char kBPFTwoTraceProgramsPb[] = R"proto(
+name: "tcp_drop_tracer"
+ttl {
+  seconds: 600
+}
+programs {
+  table_name: "tcp_drop_table"
+  bpftrace {
+    program: "\nkprobe:tcp_drop\n{\n  ...\n}\n"
+  }
+  selectors {
+    selector_type: MAX_KERNEL
+    value: "5.18"
+  }
+}
+programs {
+  table_name: "tcp_drop_table"
+  bpftrace {
+    program: "\ntracepoint:skb:kfree_skb\n{\n  ...\n}\n"
+  }
+  selectors {
+    selector_type: MIN_KERNEL
+    value: "5.19"
+  }
+}
+)proto";
+
+TEST_F(LogicalPlannerTest, CompileTwoTracePrograms) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  plannerpb::CompileMutationsRequest req;
+  req.set_query_str(
+      absl::Substitute(kTwoTraceProgramsPxl, kBPFTraceProgramMaxKernel, kBPFTraceProgramMinKernel));
+  *req.mutable_logical_planner_state() =
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto trace_ir_or_s = planner->CompileTrace(req);
+  ASSERT_OK(trace_ir_or_s);
+  auto trace_ir = trace_ir_or_s.ConsumeValueOrDie();
+  plannerpb::CompileMutationsResponse resp;
+  ASSERT_OK(trace_ir->ToProto(&resp));
+  ASSERT_EQ(resp.mutations_size(), 1);
+  EXPECT_THAT(resp.mutations()[0].trace(), EqualsProto(kBPFTwoTraceProgramsPb));
+}
+
 constexpr char kSingleProbePxl[] = R"pxl(
 import pxtrace
 import px
@@ -391,7 +470,7 @@ pxtrace.UpsertTracepoint('http_return',
                          "5m")
 )pxl";
 
-constexpr char kSingleProbeProgramPb[] = R"pxl(
+constexpr char kSingleProbeProgramPb[] = R"proto(
 name: "http_return"
 ttl {
   seconds: 300
@@ -435,7 +514,7 @@ programs {
     }
   }
 }
-)pxl";
+)proto";
 
 TEST_F(LogicalPlannerTest, CompileTrace) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();

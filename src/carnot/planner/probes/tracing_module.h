@@ -81,6 +81,30 @@ class ProbeObject : public QLObject {
   std::shared_ptr<TracepointIR> probe_;
 };
 
+class TraceProgramObject : public QLObject {
+ public:
+  static constexpr TypeDescriptor TracePointProgramType = {
+      /* name */ "TraceProgram",
+      /* type */ QLObjectType::kTraceProgram,
+  };
+
+  static bool IsTraceProgram(const QLObjectPtr& ptr) {
+    return ptr->type() == TracePointProgramType.type();
+  }
+  const std::string& program() const { return program_; }
+  const std::vector<TracepointSelector>& selectors() const { return selectors_; }
+
+  TraceProgramObject(const pypa::AstPtr& ast, ASTVisitor* visitor, const std::string& program,
+                     const std::vector<TracepointSelector>& selectors)
+      : QLObject(TracePointProgramType, ast, visitor),
+        program_(std::move(program)),
+        selectors_(selectors) {}
+
+ private:
+  std::string program_;
+  std::vector<TracepointSelector> selectors_;
+};
+
 class TraceModule : public QLObject {
  public:
   static constexpr TypeDescriptor TraceModuleType = {
@@ -171,6 +195,23 @@ class TraceModule : public QLObject {
       to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
       which it will be removed.
+  )doc";
+
+  inline static constexpr char kTraceProgramID[] = "TraceProgram";
+  inline static constexpr char kTraceProgramDocstring[] = R"doc(
+  Creates a trace program.
+
+  :topic: pixie_state_management
+
+  Args:
+    program (str): The BPFtrace program string.
+    min_kernel (str, optional): The minimum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
+    max_kernel (str, optional): The maximum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
+    (Additional selectors may be added in the future.)
+
+  Returns:
+    TraceProgram: A pointer to the TraceProgram that can be passed as a probe_fn
+    to UpsertTracepoint.
   )doc";
 
   inline static constexpr char kDeleteTracepointID[] = "DeleteTracepoint";

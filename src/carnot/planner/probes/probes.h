@@ -36,6 +36,8 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+using TracepointSelector = carnot::planner::dynamic_tracing::ir::logical::TracepointSelector;
+
 class ProbeOutput {
  public:
   ProbeOutput() = delete;
@@ -192,9 +194,11 @@ class TracepointDeployment {
    *
    * @param bpftrace_program the program in string format.
    * @param output_name the output table to write program results.
+   * @param selectors the selectors to use for the program.
    * @return Status
    */
-  Status AddBPFTrace(const std::string& bpftrace_program, const std::string& output_name);
+  Status AddBPFTrace(const std::string& bpftrace_str, const std::string& output_name,
+                     const std::vector<TracepointSelector>& selectors);
 
   std::string name() const { return name_; }
 
