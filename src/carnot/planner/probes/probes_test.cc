@@ -706,10 +706,7 @@ TEST_F(ProbeCompilerTest, parse_single_bpftrace_program_object) {
   ASSERT_EQ(pb.mutations_size(), 1);
 
   std::string literal_bpf_trace_min = kBPFTraceProgramMinKernel;
-  literal_bpf_trace_min =
-      std::regex_replace(literal_bpf_trace_min, std::regex(R"(\\\n)"), R"(\\\\n)");
   literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\n"), "\\n");
-  literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\""), "\\\"");
 
   EXPECT_THAT(pb.mutations()[0].trace(),
               testing::proto::EqualsProto(
@@ -775,16 +772,10 @@ TEST_F(ProbeCompilerTest, parse_multiple_bpftrace_program_objects) {
   ASSERT_EQ(pb.mutations_size(), 1);
 
   std::string literal_bpf_trace_min = kBPFTraceProgramMinKernel;
-  literal_bpf_trace_min =
-      std::regex_replace(literal_bpf_trace_min, std::regex(R"(\\\n)"), R"(\\\\n)");
   literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\n"), "\\n");
-  literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\""), "\\\"");
 
   std::string literal_bpf_trace_max = kBPFTraceProgramMaxKernel;
-  literal_bpf_trace_max =
-      std::regex_replace(literal_bpf_trace_max, std::regex(R"(\\\n)"), R"(\\\\n)");
   literal_bpf_trace_max = std::regex_replace(literal_bpf_trace_max, std::regex("\n"), "\\n");
-  literal_bpf_trace_max = std::regex_replace(literal_bpf_trace_max, std::regex("\""), "\\\"");
 
   EXPECT_THAT(pb.mutations()[0].trace(),
               testing::proto::EqualsProto(absl::Substitute(
