@@ -71,7 +71,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame) 
 
   ParseState parse_state = mongodb::ProcessPayload(&decoder, frame);
   if (parse_state == ParseState::kSuccess) {
-    buf->remove_prefix(frame->length);
+    *buf = decoder.Buf();
   }
 
   return parse_state;
