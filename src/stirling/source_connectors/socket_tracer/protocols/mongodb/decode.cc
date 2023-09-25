@@ -61,7 +61,8 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
     int32_t remaining_section_length = 0;
 
     if (section.kind == 0) {
-      // Check the length but don't extract it since the later logic requires the buffer to retain it.
+      // Check the length but don't extract it since the later logic requires the buffer to retain
+      // it.
       section.length = utils::LEndianBytesToInt<int32_t, 4>(decoder->Buf());
       if (section.length < kSectionLengthSize) {
         return ParseState::kInvalid;
@@ -91,7 +92,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
     // Extract the document(s) from the section and convert it from type BSON to a JSON string.
     auto parse_until = decoder->BufSize() - remaining_section_length;
     while (decoder->BufSize() > parse_until) {
-      // We can't extract the length bytes since bson_new_from_data() expects those bytes in 
+      // We can't extract the length bytes since bson_new_from_data() expects those bytes in
       // the data as well as the expected length in another parameter.
       auto document_length = utils::LEndianBytesToInt<int32_t, 4>(decoder->Buf());
       if (document_length > kMaxBSONObjSize) {
