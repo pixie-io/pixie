@@ -96,6 +96,25 @@ constexpr uint8_t mongoDBInvalidFlagBits[] = {
     0xf0, 0x3f, 0x00,
 };
 
+constexpr uint8_t mongoDBValidFlagBitsSet[] = {
+    // message length (49 bytes)
+    0x31, 0x00, 0x00, 0x00,
+    // request id (917)
+    0x95, 0x03, 0x00, 0x00,
+    // response to (444)
+    0xbc, 0x01, 0x00, 0x00,
+    // op code (2013)
+    0xdd, 0x07, 0x00, 0x00,
+    // flag bits (checksum, more to come, exhaust allowed set)
+    0x03, 0x00, 0x01, 0x00,
+    // section 1 (1 kind byte, 24 section body bytes)
+    0x00, 0x18, 0x00, 0x00, 0x00, 0x10, 0x6e, 0x00, 0x01, 0x00, 0x00,
+    0x00, 0x01, 0x6f, 0x6b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xf0, 0x3f, 0x00,
+    // checksum bytes
+    0x00, 0x00, 0x00, 0x00,
+};
+
 constexpr uint8_t mongoDBMissingChecksum[] = {
     // message length (161 bytes)
     0x9d, 0x00, 0x00, 0x00,
@@ -341,6 +360,18 @@ TEST_F(MongoDBParserTest, ParseFrameInvalidFlagBits) {
   ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
 
   EXPECT_EQ(state, ParseState::kInvalid);
+}
+
+TEST_F(MongoDBParserTest, ParseFrameValidFlagBitsSet) {
+  auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidFlagBitsSet));
+
+  mongodb::Frame frame;
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+
+  EXPECT_TRUE(frame.checksum_present);
+  EXPECT_TRUE(frame.more_to_come);
+  EXPECT_TRUE(frame.exhaust_allowed);
+  EXPECT_EQ(state, ParseState::kSuccess);
 }
 
 TEST_F(MongoDBParserTest, ParseFrameInvalidChecksum) {

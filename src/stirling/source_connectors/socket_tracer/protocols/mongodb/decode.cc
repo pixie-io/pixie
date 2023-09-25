@@ -46,7 +46,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
   if (flag_bits & exhaust_allowed_bitmask) {
     frame->exhaust_allowed = true;
   }
-  if (flag_bits & required_unset_bitmask) {
+  if ((flag_bits >> 2) & required_unset_bitmask) {
     return ParseState::kInvalid;
   }
 
@@ -91,7 +91,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
     auto parse_until = decoder->BufSize() - remaining_section_length;
     while (decoder->BufSize() > parse_until) {
       auto document_length = utils::LEndianBytesToInt<int32_t, 4>(decoder->Buf());
-      if (document_length > kMaxBSONOBjSize) {
+      if (document_length > kMaxBSONObjSize) {
         return ParseState::kInvalid;
       }
 

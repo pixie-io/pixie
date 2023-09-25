@@ -49,8 +49,8 @@ constexpr uint8_t kSectionLengthSize = 4;
 constexpr uint32_t checksum_bitmask = 1;
 constexpr uint32_t more_to_come_bitmask = 1 << 1;
 constexpr uint32_t exhaust_allowed_bitmask = 1 << 16;
-// Bits 2-15 must not be set. This bitmask left right shifts twice to remove bit 0 and 1.
-constexpr uint32_t required_unset_bitmask = 0xFFFFFFFF >> 2;
+// Bits 2-15 must not be set, this bitmask right shifts twice to remove bits 0 and 1.
+constexpr uint32_t required_unset_bitmask = 0xFFFF >> 2;
 
 struct Section {
   uint8_t kind = 0;
@@ -66,7 +66,7 @@ constexpr std::string_view find = "find";
 constexpr std::string_view cursor = "cursor";
 constexpr std::string_view ok = "ok";
 
-constexpr int32_t kMaxBSONOBjSize = 16000000;
+constexpr int32_t kMaxBSONObjSize = 16000000;
 
 /**
  * MongoDB's Wire Protocol documentation can be found here:
@@ -102,6 +102,9 @@ constexpr int32_t kMaxBSONOBjSize = 16000000;
  * -----------------------------------------------------------------------
  * | int32 document payload length |              document               |
  * -----------------------------------------------------------------------
+ *
+ * Information about the identifiers can be found here:
+ * https://github.com/mongodb/specifications/blob/e09b41df206f9efaa36ba4c332c47d04ddb7d6d1/source/message/OP_MSG.rst#command-arguments-as-payload
  *
  * There can be 0 or more documents in a section of kind 1 without a separator between them.
  */
