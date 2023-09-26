@@ -131,6 +131,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<VizierNameUDF>("vizier_name");
   registry->RegisterOrDie<VizierNamespaceUDF>("vizier_namespace");
   registry->RegisterOrDie<GetClusterCIDRRangeUDF>("get_cidrs");
+  registry->RegisterOrDie<NamespaceNameToNamespaceIDUDF>("namespace_name_to_namespace_id");
 
   /*****************************************
    * Aggregate UDFs.

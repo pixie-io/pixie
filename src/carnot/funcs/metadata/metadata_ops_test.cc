@@ -67,11 +67,13 @@ class MetadataOpsTest : public ::testing::Test {
     updates_->enqueue(px::metadatapb::testutils::CreateRunningServiceIPUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningReplicaSetUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateRunningDeploymentUpdatePB());
+    updates_->enqueue(px::metadatapb::testutils::CreateRunningNamespaceUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingContainerUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingPodUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingServiceUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingReplicaSetUpdatePB());
     updates_->enqueue(px::metadatapb::testutils::CreateTerminatingDeploymentUpdatePB());
+    updates_->enqueue(px::metadatapb::testutils::CreateTerminatingNamespaceUpdatePB());
 
     auto s = px::md::ApplyK8sUpdates(10, metadata_state_.get(), &md_filter_, updates_.get());
 
@@ -1345,6 +1347,19 @@ TEST_F(MetadataOpsTest, get_cidrs) {
   auto udf_tester = px::carnot::udf::UDFTester<GetClusterCIDRRangeUDF>(std::move(function_ctx));
   udf_tester.Init().ForInput().Expect(
       absl::Substitute(R"(["$0","$1","$2"])", "10.0.0.1/32", pod_cidr_str, service_cidr_str));
+}
+
+TEST_F(MetadataOpsTest, namespace_name_to_namespace_id_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+  auto udf_tester =
+      px::carnot::udf::UDFTester<NamespaceNameToNamespaceIDUDF>(std::move(function_ctx));
+  udf_tester.ForInput("namespace1").Expect("namespace_uid");
+  udf_tester.ForInput("terminating_namespace1").Expect("terminating_namespace_uid");
+  udf_tester.ForInput("badformat").Expect("");
+  updates_->enqueue(px::metadatapb::testutils::CreateTerminatedNamespaceUpdatePB());
+  // keep information about the namespace after termination
+  EXPECT_OK(px::md::ApplyK8sUpdates(11, metadata_state_.get(), &md_filter_, updates_.get()));
+  udf_tester.ForInput("terminating_namespace1").Expect("terminating_namespace_uid");
 }
 
 }  // namespace metadata
