@@ -648,6 +648,219 @@ TEST_F(ProbeCompilerTest, parse_bpftrace) {
               testing::proto::EqualsProto(absl::Substitute(kBPFTraceProgramPb, literal_bpf_trace)));
 }
 
+constexpr char kBPFTraceProgramMaxKernel[] = R"bpftrace(
+kprobe:tcp_drop
+{
+  ...
+}
+)bpftrace";
+
+constexpr char kBPFTraceProgramMinKernel[] = R"bpftrace(
+tracepoint:skb:kfree_skb
+{
+  ...
+}
+)bpftrace";
+
+// Test that we can compile/parse a single TraceProgram object with a valid selector
+constexpr char kBPFSingleTraceProgramObjectPxl[] = R"pxl(
+import pxtrace
+import px
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  min_kernel='5.19',
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          after_519_trace_program,
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+constexpr char kBPFSingleTraceProgramObjectPb[] = R"proto(
+name: "tcp_drop_tracer"
+ttl {
+  seconds: 600
+}
+programs {
+  table_name: "tcp_drop_table"
+  bpftrace {
+    program: "$0"
+  }
+  selectors {
+    selector_type: MIN_KERNEL
+    value: "5.19"
+  }
+}
+)proto";
+
+TEST_F(ProbeCompilerTest, parse_single_bpftrace_program_object) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir,
+                       CompileProbeScript(absl::Substitute(kBPFSingleTraceProgramObjectPxl,
+                                                           kBPFTraceProgramMinKernel)));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+
+  std::string literal_bpf_trace_min = kBPFTraceProgramMinKernel;
+  literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\n"), "\\n");
+
+  EXPECT_THAT(pb.mutations()[0].trace(),
+              testing::proto::EqualsProto(
+                  absl::Substitute(kBPFSingleTraceProgramObjectPb, literal_bpf_trace_min)));
+}
+
+// Test that we can compile a list of TraceProgram objects with valid selectors
+constexpr char kBPFTraceProgramObjectsPxl[] = R"pxl(
+import pxtrace
+import px
+
+before_518_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  max_kernel='5.18',
+)
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$1""",
+  min_kernel='5.19',
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          [before_518_trace_program, after_519_trace_program],
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+constexpr char kBPFTraceProgramObjectsPb[] = R"proto(
+name: "tcp_drop_tracer"
+ttl {
+  seconds: 600
+}
+programs {
+  table_name: "tcp_drop_table"
+  bpftrace {
+    program: "$0"
+  }
+  selectors {
+    selector_type: MAX_KERNEL
+    value: "5.18"
+  }
+}
+programs {
+  table_name: "tcp_drop_table"
+  bpftrace {
+    program: "$1"
+  }
+  selectors {
+    selector_type: MIN_KERNEL
+    value: "5.19"
+  }
+}
+)proto";
+
+TEST_F(ProbeCompilerTest, parse_multiple_bpftrace_program_objects) {
+  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(absl::Substitute(
+                                          kBPFTraceProgramObjectsPxl, kBPFTraceProgramMinKernel,
+                                          kBPFTraceProgramMaxKernel)));
+  plannerpb::CompileMutationsResponse pb;
+  EXPECT_OK(probe_ir->ToProto(&pb));
+  ASSERT_EQ(pb.mutations_size(), 1);
+
+  std::string literal_bpf_trace_min = kBPFTraceProgramMinKernel;
+  literal_bpf_trace_min = std::regex_replace(literal_bpf_trace_min, std::regex("\n"), "\\n");
+
+  std::string literal_bpf_trace_max = kBPFTraceProgramMaxKernel;
+  literal_bpf_trace_max = std::regex_replace(literal_bpf_trace_max, std::regex("\n"), "\\n");
+
+  EXPECT_THAT(pb.mutations()[0].trace(),
+              testing::proto::EqualsProto(absl::Substitute(
+                  kBPFTraceProgramObjectsPb, literal_bpf_trace_min, literal_bpf_trace_max)));
+}
+
+// Test that passing an unsupported selector type to TraceProgram throws a compiler error
+constexpr char kBPFUnsupportedTraceProgramObjectSelectorPxl[] = R"pxl(
+import pxtrace
+import px
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  min_kernel='5.19',
+  my_unsupported_selector='12345',
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          after_519_trace_program,
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+TEST_F(ProbeCompilerTest, parse_unsupported_selector_in_trace_program_object) {
+  auto probe_ir_or_s = CompileProbeScript(kBPFUnsupportedTraceProgramObjectSelectorPxl);
+  ASSERT_NOT_OK(probe_ir_or_s);
+  EXPECT_THAT(
+      probe_ir_or_s.status(),
+      HasCompilerError("Unsupported selector argument provided \'my_unsupported_selector\'"));
+}
+
+// Test that an invalid selector value throws a compiler error (currently needs to be a string)
+constexpr char kBPFInvalidTraceProgramObjectSelectorPxl[] = R"pxl(
+import pxtrace
+import px
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  min_kernel='5.19',
+  max_kernel=None,
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          after_519_trace_program,
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+TEST_F(ProbeCompilerTest, parse_invalid_trace_program_object) {
+  auto probe_ir_or_s = CompileProbeScript(kBPFInvalidTraceProgramObjectSelectorPxl);
+  ASSERT_NOT_OK(probe_ir_or_s);
+  EXPECT_THAT(probe_ir_or_s.status(),
+              HasCompilerError("Expected \'String\' in arg \'max_kernel\', got \'none\'"));
+}
+
+// Test that an empty selector value throws a compiler error
+constexpr char kBPFEmptyTraceProgramObjectSelectorPxl[] = R"pxl(
+import pxtrace
+import px
+
+after_519_trace_program = pxtrace.TraceProgram(
+  program="""$0""",
+  min_kernel='5.19',
+  max_kernel='',
+)
+
+table_name = 'tcp_drop_table'
+pxtrace.UpsertTracepoint('tcp_drop_tracer',
+                          table_name,
+                          after_519_trace_program,
+                          pxtrace.kprobe(),
+                          '10m')
+)pxl";
+
+TEST_F(ProbeCompilerTest, parse_empty_trace_program_object) {
+  auto probe_ir_or_s = CompileProbeScript(kBPFEmptyTraceProgramObjectSelectorPxl);
+  ASSERT_NOT_OK(probe_ir_or_s);
+  EXPECT_THAT(probe_ir_or_s.status(),
+              HasCompilerError("Empty selector value provided for \'max_kernel\'"));
+}
+
 constexpr char kConfigChangePxl[] = R"pxl(
 import pxconfig
 import px
