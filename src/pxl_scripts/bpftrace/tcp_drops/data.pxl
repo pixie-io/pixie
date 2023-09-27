@@ -20,6 +20,8 @@ import pxtrace
 import px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpdrop.bt
+# Due to backported changes (i.e. the kprobe:tcp_drop was removed in older versions of the kernel),
+# the old bpftrace script may not work on some older kernels <5.19.
 pre_519_program = pxtrace.TraceProgram("""
 // tcpdrop.bt   Trace TCP kernel-dropped packets/segments.
 //              For Linux, uses bpftrace and eBPF.
