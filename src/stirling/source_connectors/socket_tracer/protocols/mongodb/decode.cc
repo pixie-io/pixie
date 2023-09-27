@@ -37,30 +37,25 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
 
   // Find relevant flag bit information and ensure remaining bits are not set.
   // Bits 0-15 are required and bits 16-31 are optional.
-  if (flag_bits & checksum_bitmask) {
-    frame->checksum_present = true;
-  }
-  if (flag_bits & more_to_come_bitmask) {
-    frame->more_to_come = true;
-  }
-  if (flag_bits & exhaust_allowed_bitmask) {
-    frame->exhaust_allowed = true;
-  }
-  if ((flag_bits >> 2) & required_unset_bitmask) {
+  frame->checksum_present = (flag_bits & kChecksumBitmask) == kChecksumBitmask;
+  frame->more_to_come = (flag_bits & kMoreToComeBitmask) == kMoreToComeBitmask;
+  frame->exhaust_allowed = (flag_bits & kExhaustAllowedBitmask) == kExhaustAllowedBitmask;
+  if ((flag_bits >> 2) & kRequiredUnsetBitmask) {
     return ParseState::kInvalid;
   }
 
   // Determine the number of checksum bytes in the buffer.
-  uint8_t checksum_bytes = (frame->checksum_present) ? 4 : 0;
+  const size_t checksum_bytes = (frame->checksum_present) ? 4 : 0;
 
   // Get the section(s) data from the buffer.
-  while (decoder->BufSize() > checksum_bytes) {
+  auto all_sections_length = frame->length - kHeaderAndFlagSize - checksum_bytes;
+  while (all_sections_length > 0) {
     mongodb::Section section;
     PX_ASSIGN_OR(section.kind, decoder->ExtractLEInt<uint8_t>(), return ParseState::kInvalid);
-    // Length of the section still remaining in the buffer.
+    // Length of the current section still remaining in the buffer.
     int32_t remaining_section_length = 0;
 
-    if (section.kind == 0) {
+    if (static_cast<SectionKind>(section.kind) == SectionKind::kSectionKindZero) {
       // Check the length but don't extract it since the later logic requires the buffer to retain
       // it.
       section.length = utils::LEndianBytesToInt<int32_t, 4>(decoder->Buf());
@@ -69,7 +64,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
       }
       remaining_section_length = section.length;
 
-    } else if (section.kind == 1) {
+    } else if (static_cast<SectionKind>(section.kind) == SectionKind::kSectionKindOne) {
       PX_ASSIGN_OR(section.length, decoder->ExtractLEInt<uint32_t>(), return ParseState::kInvalid);
       if (section.length < kSectionLengthSize) {
         return ParseState::kInvalid;
@@ -83,15 +78,15 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
           seq_identifier != "deletes") {
         return ParseState::kInvalid;
       }
-      remaining_section_length = section.length - kSectionLengthSize - seq_identifier.length() - 1;
+      remaining_section_length =
+          section.length - kSectionLengthSize - seq_identifier.length() - kSectionKindSize;
 
     } else {
       return ParseState::kInvalid;
     }
 
     // Extract the document(s) from the section and convert it from type BSON to a JSON string.
-    auto parse_until = decoder->BufSize() - remaining_section_length;
-    while (decoder->BufSize() > parse_until) {
+    while (remaining_section_length > 0) {
       // We can't extract the length bytes since bson_new_from_data() expects those bytes in
       // the data as well as the expected length in another parameter.
       auto document_length = utils::LEndianBytesToInt<int32_t, 4>(decoder->Buf());
@@ -105,6 +100,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
       // Check if section_body contains an empty document.
       if (section_body.length() == kSectionLengthSize) {
         section.documents.push_back("");
+        remaining_section_length -= document_length;
         continue;
       }
 
@@ -120,7 +116,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
       }
 
       // Find the type of command argument from the kind 0 section.
-      if (section.kind == 0) {
+      if (static_cast<SectionKind>(section.kind) == SectionKind::kSectionKindZero) {
         rapidjson::Document doc;
         doc.Parse(json);
 
@@ -148,8 +144,10 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
       }
 
       section.documents.push_back(json);
+      remaining_section_length -= document_length;
     }
     frame->sections.push_back(section);
+    all_sections_length -= (section.length + kSectionKindSize);
   }
 
   // Get the checksum data, if necessary.

@@ -313,6 +313,36 @@ constexpr uint8_t mongoDBValidResponseTwoSections[] = {
     0xf0, 0x3f, 0x00,
 };
 
+constexpr uint8_t mongoDBValidRequestAndInvalidRequest[] = {
+    // valid frame
+    // message length (45 bytes)
+    0x2d, 0x00, 0x00, 0x00,
+    // request id (917)
+    0x95, 0x03, 0x00, 0x00,
+    // response to (444)
+    0xbc, 0x01, 0x00, 0x00,
+    // op code (2013)
+    0xdd, 0x07, 0x00, 0x00,
+    // flag bits
+    0x00, 0x00, 0x00, 0x00,
+    // section 1
+    0x00, 0x18, 0x00, 0x00, 0x00, 0x10, 0x6e, 0x00, 0x01, 0x00, 0x00,
+    0x00, 0x01, 0x6f, 0x6b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0xf0, 0x3f, 0x00,
+
+    // invalid frame
+    // message length (18 bytes)
+    0x12, 0x00, 0x00, 0x00,
+    // request id (444)
+    0xbc, 0x01, 0x00, 0x00,
+    // response to (0)
+    0x00, 0x00, 0x00, 0x00,
+    // flag bits
+    0xFF, 0xFF, 0xFF, 0xFF,
+    // section data
+    0x00, 0x00
+};
+
 // clang-format on
 
 class MongoDBParserTest : public ::testing::Test {};
@@ -484,6 +514,26 @@ TEST_F(MongoDBParserTest, ParseFrameValidResponseTwoSections) {
   EXPECT_EQ(frame.sections[0].length, 24);
   EXPECT_EQ(frame.op_msg_type, "ok: {$numberDouble: 1.0}");
   EXPECT_EQ(state, ParseState::kSuccess);
+}
+
+TEST_F(MongoDBParserTest, ParseValidFrameAndInvalidFrame) {
+  auto frame_view =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestAndInvalidRequest));
+
+  mongodb::Frame valid_frame;
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &valid_frame);
+  EXPECT_EQ(valid_frame.length, 45);
+  EXPECT_EQ(valid_frame.request_id, 917);
+  EXPECT_EQ(valid_frame.response_to, 444);
+  EXPECT_EQ(valid_frame.op_code, static_cast<int32_t>(mongodb::Type::kOPMsg));
+  EXPECT_EQ(valid_frame.sections[0].kind, 0);
+  EXPECT_EQ(valid_frame.sections[0].length, 24);
+  EXPECT_EQ(valid_frame.op_msg_type, "ok: {$numberDouble: 1.0}");
+  EXPECT_EQ(state, ParseState::kSuccess);
+
+  mongodb::Frame invalid_frame;
+  state = ParseFrame(message_type_t::kRequest, &frame_view, &invalid_frame);
+  EXPECT_EQ(state, ParseState::kInvalid);
 }
 
 namespace mongodb {}  // namespace mongodb
