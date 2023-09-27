@@ -362,6 +362,30 @@ conditions: {
 }
 )";
 
+/*
+ * Templates for namespace updates.
+ */
+const char* kRunningNamespaceUpdatePbTxt = R"(
+uid: "namespace_uid"
+name: "namespace1"
+start_timestamp_ns: 101
+stop_timestamp_ns: 0
+)";
+
+const char* kTerminatingNamespaceUpdatePbTxt = R"(
+uid: "terminating_namespace_uid"
+name: "terminating_namespace1"
+start_timestamp_ns: 123
+stop_timestamp_ns: 0
+)";
+
+const char* kTerminatedNamespaceUpdatePbTxt = R"(
+uid: "terminating_namespace_uid"
+name: "terminating_namespace1"
+start_timestamp_ns: 123
+stop_timestamp_ns: 150
+)";
+
 std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
@@ -525,6 +549,33 @@ std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedDep
   auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "deployment_update", kTerminatedDeploymentUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningNamespaceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "namespace_update", kRunningNamespaceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingNamespaceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "namespace_update", kTerminatingNamespaceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedNamespaceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "namespace_update", kTerminatedNamespaceUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;

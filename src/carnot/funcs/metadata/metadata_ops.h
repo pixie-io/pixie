@@ -3262,6 +3262,24 @@ class GetClusterCIDRRangeUDF : public udf::ScalarUDF {
   std::string cidrs_str_;
 };
 
+class NamespaceNameToNamespaceIDUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, StringValue namespace_name) {
+    auto md = GetMetadataState(ctx);
+    auto namespace_id =
+        md->k8s_metadata_state().NamespaceIDByName(std::make_pair(namespace_name, namespace_name));
+    return namespace_id;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes UID of the given namespace name.")
+        .Details("Get the Kubernetes UID of the given namespace name.")
+        .Example("df.kube_system_namespace_uid = px.namespace_name_to_namespace_id('kube-system')")
+        .Arg("arg1", "The name of the namespace to get the UID of.")
+        .Returns("The Kubernetes UID of the given namespace name");
+  }
+};
+
 void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace metadata
