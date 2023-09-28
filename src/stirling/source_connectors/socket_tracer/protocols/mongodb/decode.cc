@@ -40,7 +40,7 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
   frame->checksum_present = (flag_bits & kChecksumBitmask) == kChecksumBitmask;
   frame->more_to_come = (flag_bits & kMoreToComeBitmask) == kMoreToComeBitmask;
   frame->exhaust_allowed = (flag_bits & kExhaustAllowedBitmask) == kExhaustAllowedBitmask;
-  if ((flag_bits >> 2) & kRequiredUnsetBitmask) {
+  if (flag_bits & kRequiredUnsetBitmask) {
     return ParseState::kInvalid;
   }
 

@@ -50,8 +50,8 @@ constexpr uint8_t kHeaderAndFlagSize = 20;
 constexpr uint32_t kChecksumBitmask = 1;
 constexpr uint32_t kMoreToComeBitmask = 1 << 1;
 constexpr uint32_t kExhaustAllowedBitmask = 1 << 16;
-// Bits 2-15 must not be set, this bitmask right shifts twice to remove bits 0 and 1.
-constexpr uint32_t kRequiredUnsetBitmask = 0xFFFF >> 2;
+// Bits 2-15 must not be set, this bitmask sets the least significant 16 bits except bits 0, 1.
+constexpr uint32_t kRequiredUnsetBitmask = 0xFFFC;
 
 struct Section {
   uint8_t kind = 0;
