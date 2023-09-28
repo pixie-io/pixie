@@ -45,10 +45,10 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 }  // namespace cass
 
 template <>
-inline RecordsWithErrorCount<cass::Record> StitchFrames(std::deque<cass::Frame>* req_frames,
-                                                        std::deque<cass::Frame>* resp_frames,
-                                                        NoState* /* state */) {
-  return cass::StitchFrames(req_frames, resp_frames);
+inline RecordsWithErrorCount<cass::Record> StitchFrames(
+    std::map<cass::stream_id, std::deque<cass::Frame>>* req_messages,
+    std::map<cass::stream_id, std::deque<cass::Frame>>* res_messages, NoState* /* state */) {
+  return cass::StitchFrames(&((*req_messages)[0]), &((*res_messages)[0]));
 }
 
 }  // namespace protocols

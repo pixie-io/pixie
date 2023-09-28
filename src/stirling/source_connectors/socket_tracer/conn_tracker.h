@@ -271,9 +271,23 @@ class ConnTracker : NotCopyMoveable {
     CONN_TRACE(2) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
                                       resp_frames.size());
 
-    protocols::RecordsWithErrorCount<TRecordType> result =
-        protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
-                                                                     state_ptr);
+    protocols::RecordsWithErrorCount<TRecordType> result;
+
+    // If this protocol doesn't support streams, we call StitchFrames with just the deque.
+    // If it does, we populate a map of stream ID to deque.
+    if constexpr (TProtocolTraits::stream_support ==
+                  protocols::BaseProtocolTraits<TRecordType>::UseStream) {
+      using TKey = typename TProtocolTraits::key_type;
+      std::map<TKey, std::deque<TFrameType>> requests;
+      std::map<TKey, std::deque<TFrameType>> responses;
+      requests[0] = std::move(req_frames);
+      responses[0] = std::move(resp_frames);
+      result = protocols::StitchFrames<TRecordType, TKey, TFrameType, TStateType>(
+          &requests, &responses, state_ptr);
+    } else {
+      result = protocols::StitchFrames<TRecordType, TFrameType, TStateType>(
+          &req_frames, &resp_frames, state_ptr);
+    }
 
     CONN_TRACE(2) << absl::Substitute("records=$0", result.records.size());
 

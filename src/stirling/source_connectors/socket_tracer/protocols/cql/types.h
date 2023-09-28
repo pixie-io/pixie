@@ -89,11 +89,12 @@ inline bool IsRespOpcode(Opcode opcode) {
   return resp_opcode.has_value();
 }
 
+using stream_id = uint16_t;
 struct FrameHeader {
   // Top bit is direction.
   uint8_t version;
   uint8_t flags;
-  uint16_t stream;
+  stream_id stream;
   Opcode opcode;
   int32_t length;
 };
@@ -171,6 +172,8 @@ struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = stream_id;
+  static constexpr StreamSupport stream_support = BaseProtocolTraits<Record>::UseStream;
 };
 
 }  // namespace cass

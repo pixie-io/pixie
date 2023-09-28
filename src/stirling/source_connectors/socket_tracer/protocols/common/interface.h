@@ -19,6 +19,7 @@
 #pragma once
 
 #include <deque>
+#include <map>
 #include <variant>
 #include <vector>
 
@@ -112,6 +113,18 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, TFrameType* fr
                       TStateType* state = nullptr);
 
 /**
+ * Returns the stream ID of the given frame.
+ *
+ * @tparam TFrameType Type of frame to parse.
+ * @param frame The frame to get the stream ID from.
+ * @return The stream ID of the given frame.
+ */
+template <typename TKey, typename TFrameType>
+TKey GetStreamID(TFrameType*) {
+  return 0;
+}
+
+/**
  * StitchFrames is the entry point of stitcher for all protocols. It loops through the responses,
  * matches them with the corresponding requests, and returns stitched request & response pairs.
  *
@@ -122,6 +135,17 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, TFrameType* fr
 template <typename TRecordType, typename TFrameType, typename TStateType>
 RecordsWithErrorCount<TRecordType> StitchFrames(std::deque<TFrameType>* requests,
                                                 std::deque<TFrameType>* responses,
+                                                TStateType* state);
+
+/**
+ * For protocols that support streams, we use a map of stream ID to frames.
+ * @param requests: map of stream ID to deque of request frames.
+ * @param responses: map of stream ID to deque of response frames.
+ * @return A vector of entries to be appended to table store.
+ */
+template <typename TRecordType, typename TKey, typename TFrameType, typename TStateType>
+RecordsWithErrorCount<TRecordType> StitchFrames(std::map<TKey, std::deque<TFrameType>>* requests,
+                                                std::map<TKey, std::deque<TFrameType>>* responses,
                                                 TStateType* state);
 
 /**
@@ -136,6 +160,10 @@ struct BaseProtocolTraits {
     record->req.timestamp_ns = func(record->req.timestamp_ns);
     record->resp.timestamp_ns = func(record->resp.timestamp_ns);
   }
+  enum StreamSupport { NoStream, UseStream };
+  // Protocol does not support streams by default. Override this in the derived ProtocolTraits to
+  // parse frames into map of stream ID to frames instead of a single deque for all streams.
+  static constexpr StreamSupport stream_support = NoStream;
 };
 
 }  // namespace protocols

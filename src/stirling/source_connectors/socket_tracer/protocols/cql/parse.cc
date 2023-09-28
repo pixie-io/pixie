@@ -96,6 +96,11 @@ size_t FindFrameBoundary<cass::Frame>(message_type_t /*type*/, std::string_view 
   return std::string::npos;
 }
 
+template <>
+cass::stream_id GetStreamID(cass::Frame* frame) {
+  return frame->hdr.stream;
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
