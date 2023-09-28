@@ -193,6 +193,7 @@ def pl_cc_binary(
         srcs = [],
         data = [],
         args = [],
+        features = [],
         testonly = 0,
         visibility = None,
         repository = "",
@@ -220,7 +221,7 @@ def pl_cc_binary(
         tags = tags,
         deps = deps + _default_external_deps() + _default_internal_deps(),
         defines = pl_defines() + defines,
-        features = pl_default_features(),
+        features = pl_default_features() + features,
     )
 
 def _default_empty_list(name, kwargs):

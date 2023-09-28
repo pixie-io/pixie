@@ -14,11 +14,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 
 package(default_visibility = ["//src/vizier:__subpackages__"])
+
+string_flag(
+    name = "full_static",
+    build_setting_default = "False",
+    values = [
+        "True",
+        "False",
+    ],
+)
+
+config_setting(
+    name = "full_static_is_set",
+    flag_values = {
+        ":full_static": "True",
+    },
+)
 
 pl_cc_library(
     name = "cc_library",
@@ -57,6 +74,10 @@ pl_cc_library(
 pl_cc_binary(
     name = "standalone_pem",
     srcs = ["standalone_pem_main.cc"],
+    features = select({
+        ":full_static_is_set": ["fully_static_link"],
+        "//conditions:default": [],
+    }),
     stamp = -1,
     tags = ["manual"],
     deps = [
