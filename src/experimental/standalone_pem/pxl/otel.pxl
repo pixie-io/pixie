@@ -44,10 +44,8 @@ df.upidStr = px.upid_to_string(df.upid)
 px.export(
     df, px.otel.Data(
         endpoint=px.otel.Endpoint(
-            url='otlp.nr-data.net:443',
-            headers={
-                'api-key': '',
-            }
+            url='',
+            headers={}
         ),
         resource={
             'service.name': df.upidStr,
