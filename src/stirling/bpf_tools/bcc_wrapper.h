@@ -843,9 +843,9 @@ std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Cr
     BCCWrapper* bcc, const std::string& name) {
   using BaseT = WrappedBCCPerCPUArrayTable<T>;
   using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
-  using RecordingT = RecordingWrappedBCCPerCPUArrayTableImpl<T>;
-  using ReplayingT = ReplayingWrappedBCCPerCPUArrayTableImpl<T>;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT, RecordingT, ReplayingT>(bcc, name);
+
+  // TODO(jps): Impl. rr for per cpu array.
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, ImplT, ImplT>(bcc, name);
 }
 
 }  // namespace bpf_tools
