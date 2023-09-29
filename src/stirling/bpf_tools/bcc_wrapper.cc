@@ -485,7 +485,9 @@ std::unique_ptr<WrappedBCCStackTable> WrappedBCCStackTable::Create(bpf_tools::BC
                                                                    const std::string& name) {
   using BaseT = WrappedBCCStackTable;
   using ImplT = WrappedBCCStackTableImpl;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+  using RecordingT = RecordingWrappedBCCStackTableImpl;
+  using ReplayingT = ReplayingWrappedBCCStackTableImpl;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, RecordingT, ReplayingT>(bcc, name);
 }
 
 }  // namespace bpf_tools
