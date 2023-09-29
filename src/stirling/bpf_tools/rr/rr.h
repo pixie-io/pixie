@@ -38,6 +38,10 @@ class BPFRecorder : public NotCopyMoveable {
                                  void const* const value);
   void RecordBPFMapGetTableOfflineEvent(const std::string& name, const uint32_t size);
   void RecordBPFMapCapacityEvent(const std::string& name, const int32_t n);
+  void RecordBPFStackTableGetStackAddrEvent(const std::string& name, const int32_t stack_id,
+                                            const std::vector<uintptr_t>& addrs);
+  void RecordBPFStackTableGetAddrSymbolEvent(const std::string& name, const uint64_t addr,
+                                             const uint32_t pid, const std::string symbol);
   void RecordPerfBufferEvent(PerfBufferSpec* pb_spec, void const* const data, const int data_size);
   void WriteProto(const std::string& proto_buf_file_path);
 
@@ -57,6 +61,11 @@ class BPFReplayer : public NotCopyMoveable {
                                  const uint32_t val_size, void* value);
   StatusOr<int32_t> ReplayBPFMapCapacityEvent(const std::string& name);
   StatusOr<int32_t> ReplayBPFMapGetTableOfflineEvent(const std::string& name);
+  StatusOr<std::vector<uintptr_t>> ReplayBPFStackTableGetStackAddrEvent(const std::string& name,
+                                                                        const int32_t stack_id);
+  StatusOr<std::string> ReplayBPFStackTableGetAddrSymbolEvent(const std::string& name,
+                                                              const uint64_t addr,
+                                                              const uint32_t pid);
   Status OpenReplayProtobuf(const std::string& replay_events_pb_file_path);
   bool PlabackComplete() const { return playback_event_idx_ >= events_proto_.event_size(); }
 
