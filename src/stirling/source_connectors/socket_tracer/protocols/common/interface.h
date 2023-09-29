@@ -139,7 +139,7 @@ RecordsWithErrorCount<TRecordType> StitchFrames(std::deque<TFrameType>* requests
 
 /**
  * For protocols that support streams, we use a map of stream ID to frames.
- * 
+ *
  * @param requests: map of stream ID to deque of request frames.
  * @param responses: map of stream ID to deque of response frames.
  * @return A vector of entries to be appended to table store.
