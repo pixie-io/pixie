@@ -40,7 +40,7 @@ constexpr DataElement kTime = {
 constexpr std::string_view kUPIDColName = "upid";
 constexpr DataElement kUPID = {
     kUPIDColName,
-    "An opaque numeric ID that globally identify a running process inside the cluster.",
+    "An opaque numeric ID that globally identifies a running process inside the cluster.",
     types::DataType::UINT128,
     types::SemanticType::ST_UPID,
     types::PatternType::GENERAL};
@@ -48,7 +48,7 @@ constexpr DataElement kUPID = {
 constexpr std::string_view kCGIDColName = "cgid";
 constexpr DataElement kCGID = {
     kCGIDColName,
-    "An opaque numeric ID that globally identify a running process inside the cluster.",
+    "The cgroup id that the process was in when this probe was triggered.",
     types::DataType::INT64,
     types::SemanticType::ST_NONE,
     types::PatternType::GENERAL};

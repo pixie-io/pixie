@@ -26,6 +26,8 @@
 
 #include <fstream>
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/config.h"
+#include "src/common/system/proc_pid_path.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
 DEFINE_bool(force_cgroup2_mode, true, "Flag to force assume cgroup2 fs for testing purposes");
@@ -78,7 +80,7 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
 }
 
 StatusOr<uint64_t> FindCgroupIDFromPID(pid_t pid) {
-  std::string cgroup_name = absl::StrCat("/proc/", pid, "/cgroup");
+  auto cgroup_name = px::system::ProcPidPath(pid, "cgroup");
   std::ifstream proc_cgroup(cgroup_name);
 
   // get rid of the id at the front
@@ -94,7 +96,9 @@ StatusOr<uint64_t> FindCgroupIDFromPID(pid_t pid) {
     return error::NotFound(failure_string);
   }
 
-  std::string cgroup_path_name = absl::StrCat("/sys/fs/cgroup/", line.substr(2, line.size()));
+  std::string cgroup_path_name =
+      absl::StrCat(px::system::Config::GetInstance().sysfs_path().string(), "/cgroup/",
+                   line.substr(2, line.size()));
 
   // lstat what we are pointing to
   struct stat stat_buf;
