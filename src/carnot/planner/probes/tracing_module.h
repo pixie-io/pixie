@@ -190,7 +190,7 @@ class TraceModule : public QLObject {
     name (str): The name of the tracepoint. Should be unique with the probe_fn.
     table_name (str): The table name to write the results. The table is created
       if it does not exist. The table schema must match if the table does exist.
-    probe_fn (px.ProbeFn): The tracepoint function.
+    probe_fn (Union[px.ProbeFn, str, pxtrace.TraceProgram, List[pxtrace.TraceProgram]]): The tracepoint function, BPFTrace program or pxtrace.TraceProgram to deploy.
     target (Union[px.UPID,px.SharedObject,pxtrace.PodProcess,pxtrace.LabelSelector]): The process or shared object
       to trace as specified by unique Vizier PID.
     ttl (px.Duration): The length of time that a tracepoint will stay alive, after
@@ -199,16 +199,15 @@ class TraceModule : public QLObject {
 
   inline static constexpr char kTraceProgramID[] = "TraceProgram";
   inline static constexpr char kTraceProgramDocstring[] = R"doc(
-  Creates a trace program.
+  Creates a trace program. Selectors for supported hosts can be specified using key-value arguments.
 
   :topic: pixie_state_management
 
   Args:
     program (str): The BPFtrace program string.
-    min_kernel (str, optional): The minimum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
-    max_kernel (str, optional): The maximum kernel version that the tracepoint is supported on. Format is <version>.<major>.<minor>.
+    min_kernel (str, optional): The minimum kernel version that the tracepoint is supported on. Format is `<version>.<major>.<minor>`.
+    max_kernel (str, optional): The maximum kernel version that the tracepoint is supported on. Format is `<version>.<major>.<minor>`.
     host_name (str, optional): Restrict the tracepoint to a specific host.
-    (Additional selectors may be added in the future.)
 
   Returns:
     TraceProgram: A pointer to the TraceProgram that can be passed as a probe_fn

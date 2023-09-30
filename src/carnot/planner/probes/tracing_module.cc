@@ -168,6 +168,7 @@ Status TraceModule::Init() {
                                                    std::placeholders::_2, std::placeholders::_3),
                                          ast_visitor()));
   // add method to the pxtrace module, pxtrace.TraceProgram
+  PX_RETURN_IF_ERROR(program_fn->SetDocString(kTraceProgramDocstring));
   AddMethod(kTraceProgramID, program_fn);
 
   PX_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> shared_object_fn,
