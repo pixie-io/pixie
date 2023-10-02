@@ -82,31 +82,26 @@ class AnyUDA : public udf::UDA {
   void Update(FunctionContext*, TArg val) {
     // TODO(zasgar): We should find a way to short-circuit the agg since we only care
     // about one value.
-    SetValue(val);
-  }
-
-  void Merge(FunctionContext*, const AnyUDA& other) {
-    if (other.picked) {
-      SetValue(other.val_);
+    if (!picked) {
+      val_ = val;
+      picked = true;
     }
   }
 
-  TArg Finalize(FunctionContext*) {
-    DCHECK(picked) << "AnyUDA uninitialized.";
-    return val_;
+  void Merge(FunctionContext*, const AnyUDA&) {
+    // Does nothing.
   }
+
+  TArg Finalize(FunctionContext*) { return val_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::InheritTypeFromArgs<AnyUDA>::CreateGeneric()};
   }
 
-  StringValue Serialize(FunctionContext*) {
-    DCHECK(picked) << "AnyUDA uninitialized.";
-    return SerializeScalar(&val_);
-  }
+  StringValue Serialize(FunctionContext*) { return SerializeScalar(&val_); }
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
-    SetValue(DeserializeScalar<TArg>(data));
+    val_ = DeserializeScalar<TArg>(data);
     return Status::OK();
   }
 
@@ -124,14 +119,6 @@ class AnyUDA : public udf::UDA {
  protected:
   TArg val_;
   bool picked = false;
-
- private:
-  void SetValue(TArg val) {
-    if (!picked) {
-      val_ = val;
-      picked = true;
-    }
-  }
 };
 
 }  // namespace builtins
