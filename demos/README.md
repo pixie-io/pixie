@@ -82,7 +82,7 @@ file describes the demo scenarios.
     kustomize build . > k8ssandra-control-plane.yaml
     ```
 
-5. Concatenate the yaml files in the order specified below and copy it into `pixie/demos/kafka`.
+5. Concatenate the yaml files in the order specified below and copy it into `pixie/demos/k8ssandra`.
 
     ```shell
     cat crd.yaml k8ssandra-control-plane.yaml petclinic.yaml > demos/k8ssandra/k8ssandra.yaml
