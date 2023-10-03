@@ -24,6 +24,52 @@ namespace px {
 namespace stirling {
 namespace bpf_tools {
 
+void BPFRecorder::RecordBPFArrayTableGetValueEvent(const std::string& name, const int32_t idx,
+                                                   const uint32_t data_size,
+                                                   void const* const data) {
+  auto event = events_proto_.add_event()->mutable_array_table_get_value_event();
+  auto event_name = event->mutable_name();
+  auto event_data = event->mutable_data();
+
+  const std::string data_as_string(reinterpret_cast<const char*>(data), data_size);
+
+  event->set_idx(idx);
+  *event_name = name;
+  *event_data = data_as_string;
+}
+
+void BPFRecorder::RecordBPFMapGetValueEvent(const std::string& name, const uint32_t key_size,
+                                            void const* const key, const uint32_t val_size,
+                                            void const* const val) {
+  auto event = events_proto_.add_event()->mutable_map_get_value_event();
+  auto event_name = event->mutable_name();
+  auto event_key = event->mutable_key();
+  auto event_val = event->mutable_value();
+
+  const std::string key_as_string(reinterpret_cast<const char*>(key), key_size);
+  const std::string val_as_string(reinterpret_cast<const char*>(val), val_size);
+
+  *event_name = name;
+  *event_key = key_as_string;
+  *event_val = val_as_string;
+}
+
+void BPFRecorder::RecordBPFMapGetTableOfflineEvent(const std::string& name, const uint32_t size) {
+  auto event = events_proto_.add_event()->mutable_map_get_table_offline_event();
+  auto event_name = event->mutable_name();
+
+  event->set_size(size);
+  *event_name = name;
+}
+
+void BPFRecorder::RecordBPFMapCapacityEvent(const std::string& name, const int32_t n) {
+  auto event = events_proto_.add_event()->mutable_map_capacity_event();
+  auto event_name = event->mutable_name();
+
+  event->set_capacity(n);
+  *event_name = name;
+}
+
 void BPFRecorder::WriteProto(const std::string& proto_buf_file_path) {
   if (!recording_written_) {
     LOG(INFO) << "Writing BPF events pb to file: " << proto_buf_file_path;
@@ -97,6 +143,147 @@ void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec)
     f(perf_buffer_spec.cb_cookie, data_ptr, data.size());
     ++playback_event_idx_;
   }
+}
+
+Status BPFReplayer::ReplayArrayGetValue(const std::string& name, const int32_t idx,
+                                        const uint32_t data_size, void* value) {
+  if (PlabackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_array_table_get_value_event()) {
+    return error::Internal("Array table event not available.");
+  }
+
+  const auto event = event_wrapper.array_table_get_value_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF array name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  if (idx != event.idx()) {
+    const char* const msg = "Mismatched array index. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.idx(), idx));
+  }
+  if (data_size != event.data().size()) {
+    const char* const msg = "Mismatched data size. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.data().size(), data_size));
+  }
+
+  memcpy(value, event.data().data(), data_size);
+  ++playback_event_idx_;
+
+  return Status::OK();
+}
+
+Status BPFReplayer::ReplayMapGetValue(const std::string& name, const uint32_t key_size,
+                                      void const* const key, const uint32_t val_size, void* value) {
+  if (PlabackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_map_get_value_event()) {
+    return error::Internal("Map event not available.");
+  }
+
+  const auto event = event_wrapper.map_get_value_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF map name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  if (key_size != event.key().size()) {
+    const char* const msg = "Mismatched key size. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.key().size(), key_size));
+  }
+  if (val_size != event.value().size()) {
+    const char* const msg = "Mismatched value size. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.value().size(), val_size));
+  }
+  if (0 != memcmp(key, event.key().data(), key_size)) {
+    return error::Internal("Mismatched key.");
+  }
+
+  memcpy(value, event.value().data(), val_size);
+  ++playback_event_idx_;
+
+  return Status::OK();
+}
+
+Status BPFReplayer::ReplayMapGetKeyAndValue(const std::string& name, const uint32_t key_size,
+                                            void* key, const uint32_t val_size, void* val) {
+  if (PlabackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_map_get_value_event()) {
+    return error::Internal("Map event not available.");
+  }
+
+  const auto event = event_wrapper.map_get_value_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF map name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  if (key_size != event.key().size()) {
+    const char* const msg = "Mismatched key size. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.key().size(), key_size));
+  }
+  if (val_size != event.value().size()) {
+    const char* const msg = "Mismatched value size. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.value().size(), val_size));
+  }
+  memcpy(key, event.key().data(), key_size);
+  memcpy(val, event.value().data(), val_size);
+  ++playback_event_idx_;
+
+  return Status::OK();
+}
+
+StatusOr<int32_t> BPFReplayer::ReplayBPFMapCapacityEvent(const std::string& name) {
+  if (PlabackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_map_capacity_event()) {
+    return error::Internal("Map event not available.");
+  }
+
+  const auto event = event_wrapper.map_capacity_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF map name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  ++playback_event_idx_;
+
+  return event.capacity();
+}
+
+StatusOr<int32_t> BPFReplayer::ReplayBPFMapGetTableOfflineEvent(const std::string& name) {
+  if (PlabackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_map_get_table_offline_event()) {
+    return error::Internal("Map event not available.");
+  }
+
+  const auto event = event_wrapper.map_get_table_offline_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF map name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  ++playback_event_idx_;
+
+  return event.size();
 }
 
 Status BPFReplayer::OpenReplayProtobuf(const std::string& replay_events_pb_file_path) {

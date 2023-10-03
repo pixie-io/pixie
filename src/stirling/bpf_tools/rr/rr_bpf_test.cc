@@ -173,6 +173,118 @@ TEST_F(BasicRecorderTest, PerfBufferRRTest) {
   ASSERT_OK(replaying_bcc_->OpenReplayProtobuf(pb_file_name));
   replaying_bcc_->PollPerfBuffers();
   EXPECT_EQ(test::test_idx, test::gold_data.size());
+
+  // TODO(jps): add the expectations.
+}
+
+TEST_F(BasicRecorderTest, BPFArrayRRTest) {
+  auto recording_bpf_array = WrappedBCCArrayTable<int>::Create(recording_bcc_.get(), "results");
+
+  constexpr uint32_t kLoopIters = 16;
+
+  for (uint32_t i = 0; i < kLoopIters; ++i) {
+    // Invoking Foo() or Bar() triggers our eBPF uprobe, which will capture the function argument.
+    PX_UNUSED(::test::Foo(2 * i + 0));
+    PX_UNUSED(::test::Bar(2 * i + 1));
+  }
+  for (uint32_t i = 0; i < 2 * kLoopIters; ++i) {
+    ASSERT_OK_AND_ASSIGN(const int r, recording_bpf_array->GetValue(i));
+    EXPECT_EQ(r, i);
+  }
+
+  constexpr int k100 = 0;
+  constexpr int k200 = 100;
+  ASSERT_OK(recording_bpf_array->SetValue(k100, 100));
+  ASSERT_OK(recording_bpf_array->SetValue(k200, 200));
+
+  {
+    ASSERT_OK_AND_ASSIGN(const int r100, recording_bpf_array->GetValue(k100));
+    ASSERT_OK_AND_ASSIGN(const int r200, recording_bpf_array->GetValue(k200));
+    EXPECT_EQ(r100, 100);
+    EXPECT_EQ(r200, 200);
+  }
+
+  const std::string pb_file_name = "bpf_array_replay_test.pb";
+
+  // Write out the protobuf file and close the recording BCC wrapper.
+  recording_bcc_->WriteProto(pb_file_name);
+  recording_bcc_->Close();
+
+  // Open the protobuf file in the replaying BCC wrapper.
+  ASSERT_OK(replaying_bcc_->OpenReplayProtobuf(pb_file_name));
+
+  // Get a pointer to the replay mode BPF map.
+  auto replaying_bpf_array = WrappedBCCArrayTable<int>::Create(replaying_bcc_.get(), "results");
+
+  // Test the first N map get value results.
+  // These key/val pairs were set by triggering the BPF program.
+  for (uint32_t i = 0; i < 2 * kLoopIters; ++i) {
+    ASSERT_OK_AND_ASSIGN(const int r, replaying_bpf_array->GetValue(i));
+    EXPECT_EQ(r, i);
+  }
+
+  // Test the the last two map get value results where we set the value from user space.
+  {
+    ASSERT_OK_AND_ASSIGN(const int r100, replaying_bpf_array->GetValue(k100));
+    ASSERT_OK_AND_ASSIGN(const int r200, replaying_bpf_array->GetValue(k200));
+    EXPECT_EQ(r100, 100);
+    EXPECT_EQ(r200, 200);
+  }
+}
+
+TEST_F(BasicRecorderTest, BPFMapRRTest) {
+  auto recording_bpf_map = WrappedBCCMap<int, int>::Create(recording_bcc_.get(), "map");
+
+  constexpr uint32_t kLoopIters = 16;
+
+  for (uint32_t i = 0; i < kLoopIters; ++i) {
+    // Invoking Foo() or Bar() triggers our eBPF uprobe, which will capture the function argument.
+    PX_UNUSED(::test::Foo(2 * i + 0));
+    PX_UNUSED(::test::Bar(2 * i + 1));
+  }
+  for (uint32_t i = 0; i < 2 * kLoopIters; ++i) {
+    ASSERT_OK_AND_ASSIGN(const int r, recording_bpf_map->GetValue(i));
+    EXPECT_EQ(r, i);
+  }
+
+  constexpr int k100 = 0;
+  constexpr int k200 = 100;
+  ASSERT_OK(recording_bpf_map->SetValue(k100, 100));
+  ASSERT_OK(recording_bpf_map->SetValue(k200, 200));
+
+  {
+    ASSERT_OK_AND_ASSIGN(const int r100, recording_bpf_map->GetValue(k100));
+    ASSERT_OK_AND_ASSIGN(const int r200, recording_bpf_map->GetValue(k200));
+    EXPECT_EQ(r100, 100);
+    EXPECT_EQ(r200, 200);
+  }
+
+  const std::string pb_file_name = "bpf_map_replay_test.pb";
+
+  // Write out the protobuf file and close the recording BCC wrapper.
+  recording_bcc_->WriteProto(pb_file_name);
+  recording_bcc_->Close();
+
+  // Open the protobuf file in the replaying BCC wrapper.
+  ASSERT_OK(replaying_bcc_->OpenReplayProtobuf(pb_file_name));
+
+  // Get a pointer to the replay mode BPF map.
+  auto replaying_bpf_map = WrappedBCCMap<int, int>::Create(replaying_bcc_.get(), "map");
+
+  // Test the first N map get value results.
+  // These key/val pairs were set by triggering the BPF program.
+  for (uint32_t i = 0; i < 2 * kLoopIters; ++i) {
+    ASSERT_OK_AND_ASSIGN(const int r, replaying_bpf_map->GetValue(i));
+    EXPECT_EQ(r, i);
+  }
+
+  // Test the the last two map get value results where we set the value from user space.
+  {
+    ASSERT_OK_AND_ASSIGN(const int r100, recording_bpf_map->GetValue(k100));
+    ASSERT_OK_AND_ASSIGN(const int r200, recording_bpf_map->GetValue(k200));
+    EXPECT_EQ(r100, 100);
+    EXPECT_EQ(r200, 200);
+  }
 }
 
 }  // namespace stirling

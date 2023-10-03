@@ -499,6 +499,44 @@ class WrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
   std::unique_ptr<U> underlying_;
 };
 
+template <typename T>
+class RecordingWrappedBCCArrayTableImpl : public WrappedBCCArrayTableImpl<T> {
+ public:
+  using Super = WrappedBCCArrayTableImpl<T>;
+
+  StatusOr<T> GetValue(const uint32_t idx) override {
+    PX_ASSIGN_OR_RETURN(const T value, Super::GetValue(idx));
+    recorder_.RecordBPFArrayTableGetValueEvent(this->name_, idx, sizeof(value), &value);
+    return value;
+  }
+
+  RecordingWrappedBCCArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : WrappedBCCArrayTableImpl<T>(bcc, name),
+        recorder_(*bcc->GetBPFRecorder().ConsumeValueOrDie()) {}
+
+ private:
+  BPFRecorder& recorder_;
+};
+
+template <typename T>
+class ReplayingWrappedBCCArrayTableImpl : public WrappedBCCArrayTable<T> {
+ public:
+  StatusOr<T> GetValue(const uint32_t idx) override {
+    T value;
+    PX_RETURN_IF_ERROR(replayer_.ReplayArrayGetValue(this->name_, idx, sizeof(T), &value));
+    return value;
+  }
+
+  Status SetValue(const uint32_t, const T&) override { return Status::OK(); }
+
+  ReplayingWrappedBCCArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : replayer_(*bcc->GetBPFReplayer().ConsumeValueOrDie()), name_(name) {}
+
+ private:
+  BPFReplayer& replayer_;
+  const std::string name_;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Map / BPF Hash Table
@@ -598,6 +636,88 @@ class WrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
   absl::flat_hash_set<K> shadow_keys_;
 };
 
+template <typename K, typename V, bool kUserSpaceManaged = false>
+class RecordingWrappedBCCMapImpl : public WrappedBCCMapImpl<K, V, kUserSpaceManaged> {
+ public:
+  using Super = WrappedBCCMapImpl<K, V, kUserSpaceManaged>;
+
+  StatusOr<V> GetValue(const K& key) const override {
+    PX_ASSIGN_OR_RETURN(const V value, Super::GetValue(key));
+    recorder_.RecordBPFMapGetValueEvent(this->name_, sizeof(key), &key, sizeof(value), &value);
+    return value;
+  }
+
+  size_t capacity() const override {
+    const size_t n = Super::capacity();
+    recorder_.RecordBPFMapCapacityEvent(this->name_, n);
+    return n;
+  }
+
+  std::vector<std::pair<K, V>> GetTableOffline(const bool clear_table = false) override {
+    const auto r = Super::GetTableOffline(clear_table);
+
+    // Synthesize a "get table offline" recording by:
+    // 1. Recording how many key/value pairs were returned.
+    // 2. Recording each key/value pair individually.
+    recorder_.RecordBPFMapGetTableOfflineEvent(this->name_, r.size());
+    for (const auto& [key, value] : r) {
+      recorder_.RecordBPFMapGetValueEvent(this->name_, sizeof(key), &key, sizeof(value), &value);
+    }
+    return r;
+  }
+
+  RecordingWrappedBCCMapImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : WrappedBCCMapImpl<K, V, kUserSpaceManaged>(bcc, name),
+        recorder_(*bcc->GetBPFRecorder().ConsumeValueOrDie()) {}
+
+ private:
+  BPFRecorder& recorder_;
+};
+
+template <typename K, typename V, bool kUserSpaceManaged = false>
+class ReplayingWrappedBCCMapImpl : public WrappedBCCMap<K, V, kUserSpaceManaged> {
+ public:
+  StatusOr<V> GetValue(const K& k) const override {
+    V v;
+    PX_RETURN_IF_ERROR(replayer_.ReplayMapGetValue(this->name_, sizeof(K), &k, sizeof(V), &v));
+    return v;
+  }
+
+  Status SetValue(const K&, const V&) override { return Status::OK(); }
+  Status RemoveValue(const K&) override { return Status::OK(); }
+
+  std::vector<std::pair<K, V>> GetTableOffline(const bool) override {
+    std::vector<std::pair<K, V>> r;
+    auto status_or_size = replayer_.ReplayBPFMapGetTableOfflineEvent(name_);
+    if (!status_or_size.ok()) {
+      return r;
+    }
+    const int n = status_or_size.ConsumeValueOrDie();
+    PX_UNUSED(n);
+    for (int i = 0; i < n; ++i) {
+      K k;
+      V v;
+      auto s = replayer_.ReplayMapGetKeyAndValue(this->name_, sizeof(K), &k, sizeof(V), &v);
+      if (!s.ok()) {
+        return r;
+      }
+      r.push_back({k, v});
+    }
+    return r;
+  }
+
+  size_t capacity() const override {
+    return replayer_.ReplayBPFMapCapacityEvent(name_).ConsumeValueOr(0);
+  }
+
+  ReplayingWrappedBCCMapImpl(BCCWrapper* bcc, const std::string& name)
+      : name_(name), replayer_(*bcc->GetBPFReplayer().ConsumeValueOrDie()) {}
+
+ private:
+  const std::string name_;
+  BPFReplayer& replayer_;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Per CPU Array Table
@@ -687,8 +807,14 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
 //   return std::make_unique<ImplT>(bcc, name);
 // }
 
-template <typename BaseT, typename ImplT>
+template <typename BaseT, typename ImplT, typename RecordingT, typename ReplayingT>
 std::unique_ptr<BaseT> CreateBCCWrappedMapOrArray(BCCWrapper* bcc, const std::string& name) {
+  if (bcc->IsRecording()) {
+    return std::make_unique<RecordingT>(bcc, name);
+  }
+  if (bcc->IsReplaying()) {
+    return std::make_unique<ReplayingT>(bcc, name);
+  }
   return std::make_unique<ImplT>(bcc, name);
 }
 
@@ -697,7 +823,9 @@ std::unique_ptr<WrappedBCCArrayTable<T>> WrappedBCCArrayTable<T>::Create(BCCWrap
                                                                          const std::string& name) {
   using BaseT = WrappedBCCArrayTable<T>;
   using ImplT = WrappedBCCArrayTableImpl<T>;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+  using RecordingT = RecordingWrappedBCCArrayTableImpl<T>;
+  using ReplayingT = ReplayingWrappedBCCArrayTableImpl<T>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, RecordingT, ReplayingT>(bcc, name);
 }
 
 template <typename K, typename V, bool U>
@@ -705,7 +833,9 @@ std::unique_ptr<WrappedBCCMap<K, V, U>> WrappedBCCMap<K, V, U>::Create(BCCWrappe
                                                                        const std::string& name) {
   using BaseT = WrappedBCCMap<K, V, U>;
   using ImplT = WrappedBCCMapImpl<K, V, U>;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+  using RecordingT = RecordingWrappedBCCMapImpl<K, V, U>;
+  using ReplayingT = ReplayingWrappedBCCMapImpl<K, V, U>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, RecordingT, ReplayingT>(bcc, name);
 }
 
 template <typename T>
@@ -713,7 +843,9 @@ std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Cr
     BCCWrapper* bcc, const std::string& name) {
   using BaseT = WrappedBCCPerCPUArrayTable<T>;
   using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+
+  // TODO(jps): Impl. rr for per cpu array.
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, ImplT, ImplT>(bcc, name);
 }
 
 }  // namespace bpf_tools

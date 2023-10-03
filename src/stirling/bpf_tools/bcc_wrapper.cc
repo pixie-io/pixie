@@ -485,7 +485,9 @@ std::unique_ptr<WrappedBCCStackTable> WrappedBCCStackTable::Create(bpf_tools::BC
                                                                    const std::string& name) {
   using BaseT = WrappedBCCStackTable;
   using ImplT = WrappedBCCStackTableImpl;
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT>(bcc, name);
+
+  // TODO(jps): Impl. rr for stack table.
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, ImplT, ImplT>(bcc, name);
 }
 
 }  // namespace bpf_tools

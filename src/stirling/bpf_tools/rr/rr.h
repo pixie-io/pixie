@@ -31,6 +31,13 @@ namespace bpf_tools {
 
 class BPFRecorder : public NotCopyMoveable {
  public:
+  void RecordBPFArrayTableGetValueEvent(const std::string& name, const int32_t idx,
+                                        const uint32_t data_size, void const* const data);
+  void RecordBPFMapGetValueEvent(const std::string& name, const uint32_t key_size,
+                                 void const* const key, const uint32_t data_size,
+                                 void const* const value);
+  void RecordBPFMapGetTableOfflineEvent(const std::string& name, const uint32_t size);
+  void RecordBPFMapCapacityEvent(const std::string& name, const int32_t n);
   void RecordPerfBufferEvent(PerfBufferSpec* pb_spec, void const* const data, const int data_size);
   void WriteProto(const std::string& proto_buf_file_path);
 
@@ -42,6 +49,14 @@ class BPFRecorder : public NotCopyMoveable {
 class BPFReplayer : public NotCopyMoveable {
  public:
   void ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec);
+  Status ReplayArrayGetValue(const std::string& name, const int32_t idx, const uint32_t data_size,
+                             void* data);
+  Status ReplayMapGetValue(const std::string& name, const uint32_t key_size, void const* const key,
+                           const uint32_t val_size, void* value);
+  Status ReplayMapGetKeyAndValue(const std::string& name, const uint32_t key_size, void* key,
+                                 const uint32_t val_size, void* value);
+  StatusOr<int32_t> ReplayBPFMapCapacityEvent(const std::string& name);
+  StatusOr<int32_t> ReplayBPFMapGetTableOfflineEvent(const std::string& name);
   Status OpenReplayProtobuf(const std::string& replay_events_pb_file_path);
   bool PlabackComplete() const { return playback_event_idx_ >= events_proto_.event_size(); }
 
