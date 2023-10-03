@@ -32,6 +32,7 @@ namespace stirling {
 static constexpr DataElement kMuxElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -56,6 +57,7 @@ static constexpr auto kMuxTable =
 DEFINE_PRINT_TABLE(Mux)
 
 static constexpr int kMuxUPIDIdx = kMuxTable.ColIndex("upid");
+static constexpr int kMuxCGIDIdx = kMuxTable.ColIndex("cgid");
 static constexpr int kMuxReqTypeIdx = kMuxTable.ColIndex("req_type");
 
 }  // namespace stirling

@@ -136,6 +136,8 @@ static __inline void init_conn_id(uint32_t tgid, int32_t fd, struct conn_id_t* c
   conn_id->upid.start_time_ticks = get_tgid_start_time();
   conn_id->fd = fd;
   conn_id->tsid = bpf_ktime_get_ns();
+  // Until we have proper cgids tracing
+  conn_id->cgid = bpf_get_current_cgroup_id();
 }
 
 static __inline void init_conn_info(uint32_t tgid, int32_t fd, struct conn_info_t* conn_info) {

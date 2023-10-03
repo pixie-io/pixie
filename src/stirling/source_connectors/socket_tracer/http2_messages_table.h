@@ -27,6 +27,7 @@ namespace stirling {
 constexpr DataElement kHTTP2MessagesElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -58,6 +59,7 @@ DEFINE_PRINT_TABLE(HTTP2Messages)
 
 constexpr int kHTTP2MessagesTimeIdx = kHTTP2MessagesTable.ColIndex("time_");
 constexpr int kHTTP2MessagesUPIDIdx = kHTTP2MessagesTable.ColIndex("upid");
+constexpr int kHTTP2MessagesCGIDIdx = kHTTP2MessagesTable.ColIndex("cgid");
 constexpr int kHTTP2MessagesRemoteAddrIdx = kHTTP2MessagesTable.ColIndex("remote_addr");
 constexpr int kHTTP2MessagesRemotePortIdx = kHTTP2MessagesTable.ColIndex("remote_port");
 constexpr int kHTTP2MessagesTraceRoleIdx = kHTTP2MessagesTable.ColIndex("trace_role");

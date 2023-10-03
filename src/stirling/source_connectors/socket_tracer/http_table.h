@@ -41,6 +41,7 @@ static const std::map<int64_t, std::string_view> kHTTPContentTypeDecoder =
 constexpr DataElement kHTTPElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -110,6 +111,7 @@ DEFINE_PRINT_TABLE(HTTP)
 
 constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");
 constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");
+constexpr int kHTTPCGIDIdx = kHTTPTable.ColIndex("cgid");
 constexpr int kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr int kHTTPTraceRoleIdx = kHTTPTable.ColIndex("trace_role");

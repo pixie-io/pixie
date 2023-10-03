@@ -29,6 +29,7 @@ namespace stirling {
 constexpr DataElement kConnStatsElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -68,6 +69,7 @@ namespace conn_stats_idx {
 
 constexpr int kTime = kConnStatsTable.ColIndex("time_");
 constexpr int kUPID = kConnStatsTable.ColIndex("upid");
+constexpr int kCGID = kConnStatsTable.ColIndex("cgid");
 constexpr int kRemoteAddr = kConnStatsTable.ColIndex("remote_addr");
 constexpr int kRemotePort = kConnStatsTable.ColIndex("remote_port");
 constexpr int kAddrFamily = kConnStatsTable.ColIndex("addr_family");

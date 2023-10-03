@@ -79,6 +79,8 @@ struct conn_id_t {
   int32_t fd;
   // Unique id of the conn_id (timestamp).
   uint64_t tsid;
+  // cgid of the connection
+  uint64_t cgid;
 };
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.

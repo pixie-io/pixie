@@ -76,6 +76,7 @@ absl::flat_hash_map<ConnStats::AggKey, ConnStats::Stats>& ConnStats::UpdateStats
     stats.conn_close += conn_close;
     stats.bytes_recv += bytes_recv;
     stats.bytes_sent += bytes_sent;
+    stats.cgid_curr = tracker->conn_id().cgid;
 
     stats.last_update = update_counter_;
   }

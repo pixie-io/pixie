@@ -32,6 +32,7 @@ namespace stirling {
 static constexpr DataElement kRedisElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
+        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -59,6 +60,7 @@ static constexpr auto kRedisTable =
 DEFINE_PRINT_TABLE(Redis)
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
+constexpr int kRedisCGIDIdx = kRedisTable.ColIndex("cgid");
 constexpr int kRedisCmdIdx = kRedisTable.ColIndex("req_cmd");
 constexpr int kRedisReqIdx = kRedisTable.ColIndex("req_args");
 constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
