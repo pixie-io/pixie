@@ -45,11 +45,25 @@ enum class Type : int32_t {
 constexpr uint8_t kHeaderLength = 16;
 constexpr uint8_t kMessageLengthSize = 4;
 constexpr uint8_t kSectionLengthSize = 4;
+constexpr uint8_t kHeaderAndFlagSize = 20;
+
+constexpr uint32_t kChecksumBitmask = 1;
+constexpr uint32_t kMoreToComeBitmask = 1 << 1;
+constexpr uint32_t kExhaustAllowedBitmask = 1 << 16;
+// Bits 2-15 must not be set, this bitmask sets the least significant 16 bits except bits 0, 1.
+constexpr uint32_t kRequiredUnsetBitmask = 0xFFFC;
 
 struct Section {
   uint8_t kind = 0;
   int32_t length = 0;
   std::vector<std::string> documents;
+};
+
+constexpr uint8_t kSectionKindSize = 1;
+
+enum class SectionKind : uint8_t {
+  kSectionKindZero = 0,
+  kSectionKindOne = 1,
 };
 
 // Types of OP_MSG requests/responses
@@ -60,7 +74,7 @@ constexpr std::string_view find = "find";
 constexpr std::string_view cursor = "cursor";
 constexpr std::string_view ok = "ok";
 
-constexpr int32_t kMaxBSONOBjSize = 16000000;
+constexpr int32_t kMaxBSONObjSize = 16000000;
 
 /**
  * MongoDB's Wire Protocol documentation can be found here:
@@ -96,6 +110,9 @@ constexpr int32_t kMaxBSONOBjSize = 16000000;
  * -----------------------------------------------------------------------
  * | int32 document payload length |              document               |
  * -----------------------------------------------------------------------
+ *
+ * Information about the identifiers can be found here:
+ * https://github.com/mongodb/specifications/blob/e09b41df206f9efaa36ba4c332c47d04ddb7d6d1/source/message/OP_MSG.rst#command-arguments-as-payload
  *
  * There can be 0 or more documents in a section of kind 1 without a separator between them.
  */
