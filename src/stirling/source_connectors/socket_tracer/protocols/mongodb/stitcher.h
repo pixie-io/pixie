@@ -39,12 +39,11 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 // Uncomment this when the upstream stitching interface is done
 // template <>
 // inline RecordsWithErrorCount<mongodb::Record> StitchFrames(
-//     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* reqs,                                                   
+//     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* reqs,
 //     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* resps,
 //     NoState* /*state*/) {
 //   return mongodb::StitchFrames(reqs, resps);
 // }
-
 
 }  // namespace protocols
 }  // namespace stirling

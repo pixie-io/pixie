@@ -33,8 +33,8 @@ using ::testing::SizeIs;
 
 class MongoDBStitchFramesTest : public ::testing::Test {};
 
-Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id,
-                         int32_t response_to, bool more_to_come, std::string doc = "") {
+Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id, int32_t response_to, bool more_to_come,
+                         std::string doc = "") {
   mongodb::Frame frame;
   frame.timestamp_ns = ts_ns;
   frame.request_id = request_id;

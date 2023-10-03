@@ -37,8 +37,8 @@ namespace mongodb {
 RecordsWithErrorCount<mongodb::Record> StitchFrames(
     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* reqs,
     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* resps) {
-  // The reqs map's key will be the requestID and value will be the deque containing the request frame.
-  // The resps map's key will be the responseTo and value will be the deque containing the response frame. 
+  // The reqs key will be the requestID, value will be the deque containing the request frame.
+  // The resps key will be the responseTo, value will be the deque containing the response frame.
   std::vector<mongodb::Record> records;
   int error_count = 0;
 
@@ -85,7 +85,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
         error_count++;
         break;
       }
-      
+
       // Insert the next response's sections to the head response frame.
       head_resp_frame.sections.insert(std::end(head_resp_frame.sections),
                                       std::begin(next_resp.sections), std::end(next_resp.sections));
@@ -108,7 +108,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     error_count++;
   }
 
-  // TODO (kpattaswamy) Cleanup stale requests.
+  // TODO(kpattaswamy) Cleanup stale requests.
   auto itr = reqs->begin();
   while (itr != reqs->end()) {
     auto& req = itr->second[0];
