@@ -153,7 +153,7 @@ struct Record {
   }
 };
 
-using stream_id = uint32_t;
+using stream_id = int32_t;
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
