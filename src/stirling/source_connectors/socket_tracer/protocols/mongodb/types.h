@@ -153,10 +153,12 @@ struct Record {
   }
 };
 
+using stream_id = uint32_t;
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = stream_id;
 };
 
 }  // namespace mongodb
