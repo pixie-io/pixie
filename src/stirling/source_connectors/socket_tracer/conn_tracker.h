@@ -291,12 +291,12 @@ class ConnTracker : NotCopyMoveable {
       resp_frames.clear();
       for (auto& [_, frames] : requests) {
         for (auto& frame : frames) {
-          req_frames.push_back(frame);
+          req_frames.push_back(std::move(frame));
         }
       }
       for (auto& [_, frames] : responses) {
         for (auto& frame : frames) {
-          resp_frames.push_back(frame);
+          resp_frames.push_back(std::move(frame));
         }
       }
     } else {
