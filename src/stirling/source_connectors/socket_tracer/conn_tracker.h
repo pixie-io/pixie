@@ -294,6 +294,11 @@ class ConnTracker : NotCopyMoveable {
           req_frames.push_back(frame);
         }
       }
+      for (auto& [_, frames] : responses) {
+        for (auto& frame : frames) {
+          resp_frames.push_back(frame);
+        }
+      }
     } else {
       result = protocols::StitchFrames<TRecordType, TFrameType, TStateType>(
           &req_frames, &resp_frames, state_ptr);
