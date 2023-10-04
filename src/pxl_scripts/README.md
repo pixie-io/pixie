@@ -11,6 +11,7 @@ To update this README, run `make update_readme` in this directory.
 - bpftrace/[md_flush](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/md_flush): Traces flushes at the md driver level, and prints details.
 - bpftrace/[nap_time](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/nap_time): Tracing application sleeps via the nanosleep(2) syscall.
 - bpftrace/[oom_kill](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/oom_kill): Traces the Linux out-of-memory (OOM) killer and shows basic details on one line per OOM kill.
+- bpftrace/[socket_size](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/socket_size): Shows info and size stats for socket I/O requests.
 - bpftrace/[sync_snoop](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/sync_snoop): Tracing file system sync events.
 - bpftrace/[tcp_drops](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/tcp_drops): Shows TCP drop counts in the cluster.
 - bpftrace/[tcp_retransmits](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/bpftrace/tcp_retransmits): Shows TCP retransmission counts in the cluster.
@@ -75,8 +76,6 @@ To update this README, run `make update_readme` in this directory.
 - px/[sql_queries](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/sql_queries): This live view calculates the latency, error rate, and throughput of each distinct normalized SQL Query. Only supports Postgres or MySQL.
 - px/[sql_query](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/sql_query): This live view calculates the latency, error rate, and throughput of each distinct parameter set for a given normalized SQL query. Only supports PostgresSQL or MySQL.
 - px/[stirling_errors](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/stirling_errors): Shows errors in different Stirling components and deployment statuses of eBPF probes.
-- px/[tcp_drops](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tcp_drops): Shows TCP drop counts in the cluster.
-- px/[tcp_retransmits](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tcp_retransmits): Shows TCP retransmission counts in the cluster.
 - px/[tracepoint_status](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/tracepoint_status): Returns information about tracepoints running on the cluster.
 - px/[upids](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/px/upids): Shows a list of UPIDs running in a given namespace.
 - pxbeta/[pii_cluster_egress](https://github.com/pixie-io/pixie/tree/main/src/pxl_scripts/pxbeta/pii_cluster_egress): This view displays a summary of traffic containing PII from the cluster to external endpoints.
