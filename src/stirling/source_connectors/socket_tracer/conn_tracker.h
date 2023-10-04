@@ -288,12 +288,12 @@ class ConnTracker : NotCopyMoveable {
       // TODO(@benkilimnik): Update req and resp frame deques to match maps for now. Populate maps
       // during parsing in a future PR.
       req_frames.clear();
-      resp_frames.clear();
       for (auto& [_, frames] : requests) {
         for (auto& frame : frames) {
           req_frames.push_back(std::move(frame));
         }
       }
+      resp_frames.clear();
       for (auto& [_, frames] : responses) {
         for (auto& frame : frames) {
           resp_frames.push_back(std::move(frame));
