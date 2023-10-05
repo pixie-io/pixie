@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <any>
 #include <deque>
 #include <list>
@@ -278,8 +279,8 @@ class ConnTracker : NotCopyMoveable {
     if constexpr (TProtocolTraits::stream_support ==
                   protocols::BaseProtocolTraits<TRecordType>::UseStream) {
       using TKey = typename TProtocolTraits::key_type;
-      std::map<TKey, std::deque<TFrameType>> requests;
-      std::map<TKey, std::deque<TFrameType>> responses;
+      absl::flat_hash_map<TKey, std::deque<TFrameType>> requests;
+      absl::flat_hash_map<TKey, std::deque<TFrameType>> responses;
       // TODO(@benkilimnik): Hard code the stream for now. Populate the map in a future PR.
       requests[0] = std::move(req_frames);
       responses[0] = std::move(resp_frames);

@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <deque>
-#include <map>
 #include <variant>
 #include <vector>
 
@@ -145,9 +145,9 @@ RecordsWithErrorCount<TRecordType> StitchFrames(std::deque<TFrameType>* requests
  * @return A vector of entries to be appended to table store.
  */
 template <typename TRecordType, typename TKey, typename TFrameType, typename TStateType>
-RecordsWithErrorCount<TRecordType> StitchFrames(std::map<TKey, std::deque<TFrameType>>* requests,
-                                                std::map<TKey, std::deque<TFrameType>>* responses,
-                                                TStateType* state);
+RecordsWithErrorCount<TRecordType> StitchFrames(
+    absl::flat_hash_map<TKey, std::deque<TFrameType>>* requests,
+    absl::flat_hash_map<TKey, std::deque<TFrameType>>* responses, TStateType* state);
 
 /**
  * The BaseProtocolTraits all ProtocolTraits should inherit from. It provides a default

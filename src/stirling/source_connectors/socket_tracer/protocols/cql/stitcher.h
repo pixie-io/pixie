@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <deque>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -46,8 +46,9 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 
 template <>
 inline RecordsWithErrorCount<cass::Record> StitchFrames(
-    std::map<cass::stream_id, std::deque<cass::Frame>>* req_messages,
-    std::map<cass::stream_id, std::deque<cass::Frame>>* res_messages, NoState* /* state */) {
+    absl::flat_hash_map<cass::stream_id_t, std::deque<cass::Frame>>* req_messages,
+    absl::flat_hash_map<cass::stream_id_t, std::deque<cass::Frame>>* res_messages,
+    NoState* /* state */) {
   return cass::StitchFrames(&((*req_messages)[0]), &((*res_messages)[0]));
 }
 

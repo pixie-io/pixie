@@ -97,7 +97,7 @@ size_t FindFrameBoundary<cass::Frame>(message_type_t /*type*/, std::string_view 
 }
 
 template <>
-cass::stream_id GetStreamID(cass::Frame* frame) {
+cass::stream_id_t GetStreamID(cass::Frame* frame) {
   return frame->hdr.stream;
 }
 
