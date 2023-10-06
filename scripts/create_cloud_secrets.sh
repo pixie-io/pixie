@@ -43,6 +43,10 @@ kubectl create secret generic -n "${namespace}" \
   cloud-session-secrets \
   --from-literal=session-key="$(< /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 24 | head -n 1)"
 
+kubectl create secret generic -n "${namespace}" \
+  pl-elastic-es-elastic-user \
+  --from-literal=elastic=elastic
+
 SERVICE_TLS_CERTS="$(mktemp -d)"
 pushd "${SERVICE_TLS_CERTS}" || exit 1
 
@@ -104,5 +108,15 @@ mkcert \
 
 kubectl create secret tls -n "${namespace}" \
   cloud-proxy-tls-certs \
+  --cert="${PROXY_CERT_FILE}" \
+  --key="${PROXY_KEY_FILE}"
+
+kubectl create secret tls -n "${namespace}" \
+  pl-elastic-es-http-certs-public \
+  --cert="${PROXY_CERT_FILE}" \
+  --key="${PROXY_KEY_FILE}"
+
+kubectl create secret tls -n "${namespace}" \
+  pl-elastic-es-http-certs-internal \
   --cert="${PROXY_CERT_FILE}" \
   --key="${PROXY_KEY_FILE}"
