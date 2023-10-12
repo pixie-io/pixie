@@ -20,6 +20,7 @@
 
 #include <gflags/gflags.h>
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -95,7 +96,21 @@ class DataStreamBuffer {
    * @param pos The logical position of the data.
    * @return The timestamp or error if the position does not contain valid data.
    */
-  StatusOr<uint64_t> GetTimestamp(size_t pos) const { return impl_->GetTimestamp(pos); }
+  StatusOr<uint64_t> GetTimestamp(size_t pos) {
+    StatusOr<uint64_t> timestamp_ns_status = impl_->GetTimestamp(pos);
+    if (!timestamp_ns_status.ok()) {
+      return timestamp_ns_status;
+    }
+    uint64_t current_timestamp_ns = timestamp_ns_status.ValueOr(0);
+    uint64_t prev_timestamp_ns = GetPrevTimestamp().ValueOr(0);
+    if (current_timestamp_ns < prev_timestamp_ns) {
+      LOG(WARNING)
+          << "Detected out-of-order or equal timestamp. Adjusting to be monotonically increasing.";
+      return GetPrevTimestamp();
+    }
+    SetPrevTimestamp(timestamp_ns_status);
+    return timestamp_ns_status;
+  }
 
   /**
    * Remove n bytes from the head of the buffer.
@@ -147,7 +162,10 @@ class DataStreamBuffer {
   void ShrinkToFit() { impl_->ShrinkToFit(); }
 
  private:
+  StatusOr<uint64_t> GetPrevTimestamp() const { return prev_timestamp_ns_; }
+  void SetPrevTimestamp(const StatusOr<uint64_t>& timestamp) { prev_timestamp_ns_ = timestamp; }
   std::unique_ptr<DataStreamBufferImpl> impl_;
+  StatusOr<uint64_t> prev_timestamp_ns_;
 };
 
 }  // namespace protocols
