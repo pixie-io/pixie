@@ -137,6 +137,7 @@ struct Frame : public FrameBase {
   uint32_t checksum = 0;
 
   bool consumed = false;
+  bool discarded = false;
   size_t ByteSize() const override { return sizeof(Frame); }
 
   std::string ToString() const override {
