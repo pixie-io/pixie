@@ -251,7 +251,11 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
       }
 
       // We found a mapped_lib_path that matches to the desired lib_name.
-      const auto container_lib_path = ProcPidRootPath(pid, mapped_lib_path);
+      std::vector<std::string> ns_pids;
+      PX_RETURN_IF_ERROR(proc_parser->ReadNSPid(pid, &ns_pids));
+      const std::string& ns_pid_string = ns_pids.back();
+      const uint32_t ns_pid = std::stol(ns_pid_string);
+      const auto container_lib_path = ProcPidRootPath(ns_pid, mapped_lib_path);
 
       // Assign the resolved path into the output vector at the appropriate index.
       // Update found status,
@@ -415,6 +419,9 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
       spec.probe_fn =
           ProbeFuncForSocketAccessMethod(spec.probe_fn, ssl_library_match.socket_fd_access);
 
+      if (spec.probe_fn == "probe_ret_SSL_new_syscall_fd_access") {
+        spec.probe_fn = "probe_ret_SSL_new";
+      }
       PX_RETURN_IF_ERROR(LogAndAttachUProbe(spec));
     }
   }
