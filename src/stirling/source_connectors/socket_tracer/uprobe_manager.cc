@@ -222,7 +222,7 @@ StatusOr<std::vector<std::filesystem::path>> FindHostPathForPIDLibs(
   // This would relieve the caller of the burden of tracking which entry
   // in the vector belonged to which library it wanted to find.
 
-  PX_ASSIGN_OR_RETURN(absl::flat_hash_set<std::string> mapped_lib_paths,
+  PX_ASSIGN_OR_RETURN(const absl::flat_hash_set<std::string> mapped_lib_paths,
                       proc_parser->GetMapPaths(pid));
 
   // container_libs: final function output.
@@ -371,8 +371,8 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
     PX_ASSIGN_OR_RETURN(const std::vector<std::filesystem::path> container_lib_paths,
                         FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(), search_type));
 
-    std::filesystem::path container_libssl = container_lib_paths[0];
-    std::filesystem::path container_libcrypto = container_lib_paths[1];
+    const std::filesystem::path container_libssl = container_lib_paths[0];
+    const std::filesystem::path container_libcrypto = container_lib_paths[1];
 
     if ((container_libssl.empty() || container_libcrypto.empty())) {
       // Looks like this process doesn't have dynamic OpenSSL library installed, because it did not
@@ -380,10 +380,6 @@ StatusOr<int> UProbeManager::AttachOpenSSLUProbesOnDynamicLib(uint32_t pid) {
       // Move on to the next possible SSL library. This is not an error.
       continue;
     }
-
-    // Convert to host path, in case we're running inside a container ourselves.
-    container_libssl = ProcPidRootPath(pid, container_libssl);
-    container_libcrypto = ProcPidRootPath(pid, container_libcrypto);
 
     if (!fs::Exists(container_libssl)) {
       return error::Internal("libssl not found [path = $0]", container_libssl.string());
@@ -723,15 +719,13 @@ StatusOr<int> UProbeManager::AttachGrpcCUProbesOnDynamicPythonLib(uint32_t pid) 
                       FindHostPathForPIDLibs(lib_names, pid, proc_parser_.get(),
                                              HostPathForPIDPathSearchType::kSearchTypeContains));
 
-  std::filesystem::path container_libgrpcc = container_lib_paths[0];
+  const std::filesystem::path container_libgrpcc = container_lib_paths[0];
 
   if (container_libgrpcc.empty()) {
     // Looks like this process doesn't have dynamic grpc-c library mapped.
     return 0;
   }
 
-  // Convert to host path, in case we're running inside a container ourselves.
-  container_libgrpcc = ProcPidRootPath(pid, container_libgrpcc);
   if (!fs::Exists(container_libgrpcc)) {
     return error::Internal("grpc-c library not found [path=$0 pid=$1]", container_libgrpcc.string(),
                            pid);
