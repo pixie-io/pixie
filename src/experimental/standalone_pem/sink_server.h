@@ -173,7 +173,6 @@ class StandaloneResultSinkServer final : public carnotpb::ResultSinkService::Ser
     auto timing_info = rb->execution_and_timing_info();
     auto stats = resp->mutable_data()->mutable_execution_stats();
     stats->set_bytes_processed(timing_info.execution_stats().bytes_processed());
-    stats->set_bytes_processed(314);
     stats->set_records_processed(timing_info.execution_stats().records_processed());
     auto timing = stats->mutable_timing();
     timing->set_execution_time_ns(timing_info.execution_stats().timing().execution_time_ns());
