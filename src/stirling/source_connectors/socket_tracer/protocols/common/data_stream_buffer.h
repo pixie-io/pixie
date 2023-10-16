@@ -104,7 +104,7 @@ class DataStreamBuffer {
     if (current_timestamp_ns < prev_timestamp_ns) {
       LOG(WARNING) << "Detected non-monotonically increasing timestamp " << current_timestamp_ns
                    << ". Adjusting to previous timestamp + 1: " << prev_timestamp_ns + 1;
-      return prev_timestamp_ns + 1;
+      current_timestamp_ns = prev_timestamp_ns + 1;
     }
     SetPrevTimestamp(current_timestamp_ns);
     return current_timestamp_ns;
