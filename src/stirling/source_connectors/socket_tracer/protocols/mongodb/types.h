@@ -20,7 +20,6 @@
 
 #include <string>
 #include <utility>
-
 #include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -134,10 +133,10 @@ struct Frame : public FrameBase {
   bool exhaust_allowed = false;
   std::vector<Section> sections;
   std::string op_msg_type;
+  std::string frame_body;
   uint32_t checksum = 0;
 
   bool consumed = false;
-  bool discarded = false;
   size_t ByteSize() const override { return sizeof(Frame); }
 
   std::string ToString() const override {

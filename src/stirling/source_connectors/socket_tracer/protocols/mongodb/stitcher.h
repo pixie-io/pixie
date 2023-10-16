@@ -18,10 +18,9 @@
 
 #pragma once
 
-#include <deque>
-// #include <map>
 #include <absl/container/flat_hash_map.h>
-
+#include <deque>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -33,6 +32,8 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
+void FlattenSections(mongodb::Frame* frame);
+
 RecordsWithErrorCount<mongodb::Record> StitchFrames(
     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* reqs,
     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps, State* state);
@@ -41,10 +42,10 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 // Uncomment this when the upstream stitching interface is done
 // template <>
 // inline RecordsWithErrorCount<mongodb::Record> StitchFrames(
-//     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* reqs,
-//     std::map<mongodb::stream_id, std::deque<mongodb::Frame>>* resps,
-//     NoState* /*state*/) {
-//   return mongodb::StitchFrames(reqs, resps);
+//     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* reqs,
+//     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps,
+//     State* state) {
+//   return mongodb::StitchFrames(reqs, resps, state);
 // }
 
 }  // namespace protocols

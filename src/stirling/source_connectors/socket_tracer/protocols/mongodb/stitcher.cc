@@ -35,21 +35,31 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
+void FlattenSections(mongodb::Frame* frame) {
+  for (const auto& section : frame->sections) {
+    for (const auto& doc : section.documents) {
+      frame->frame_body.append(doc).append(" ");
+    }
+  }
+  frame->sections.clear();
+}
+
 RecordsWithErrorCount<mongodb::Record> StitchFrames(
     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* reqs,
     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps, State* state) {
-
   std::vector<mongodb::Record> records;
   int error_count = 0;
 
-  for (const auto& [idx, stream_id] : Enumerate(state->transaction_stream_order)) {
+  for (auto stream_id_it = state->stream_order.begin(); stream_id_it != state->stream_order.end();
+       stream_id_it++) {
+    auto& stream_id_pair = *stream_id_it;
+    auto stream_id = stream_id_pair.first;
+
     // Find the stream ID's response deque.
     auto resp_it = resps->find(stream_id);
     if (resp_it == resps->end()) {
-      VLOG(1) << absl::Substitute(
-          "Did not find a response deque with the stream ID: $0",
-          stream_id);
-      error_count++;
+      VLOG(1) << absl::Substitute("Did not find a response deque with the stream ID: $0",
+                                  stream_id);
       continue;
     }
 
@@ -59,9 +69,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     // Find the stream ID's response deque.
     auto req_it = reqs->find(stream_id);
     if (req_it == reqs->end()) {
-      VLOG(1) << absl::Substitute(
-          "Did not find a request with the stream ID = $0",
-          stream_id);
+      VLOG(1) << absl::Substitute("Did not find a request with the stream ID = $0", stream_id);
       error_count++;
       continue;
     }
@@ -72,7 +80,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     // Track the latest response timestamp to compare against request frame's timestamp later.
     uint64_t latest_resp_ts = 0;
 
-    // Loop over each frame in the response deque and match the oldest response frame with the oldest request that occured just before the response.
+    // Loop over each frame in the response deque and match the oldest response frame with the
+    // oldest request that occured just before the response.
     for (const auto& [idx, resp_frame] : Enumerate(resp_deque)) {
       if (resp_frame.consumed) {
         continue;
@@ -82,13 +91,14 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 
       auto curr_resp = resp_frame;
 
-      // Find and insert all of the moreToCome frame(s)' section data to the head response frame.
+      // Find and insert all of the moreToCome frame(s) section data to the head response frame.
       while (curr_resp.more_to_come) {
         // Find the next response's deque.
         auto next_resp_deque_it = resps->find(curr_resp.request_id);
         if (next_resp_deque_it == resps->end()) {
           VLOG(1) << absl::Substitute(
-              "Did not find a response deque with extending the prior more to come response. responseTo: $0",
+              "Did not find a response deque with extending the prior more to come response. "
+              "responseTo: $0",
               curr_resp.request_id);
           error_count++;
           break;
@@ -97,21 +107,22 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
         // Response deque containg the next more to come response frame.
         auto& next_resp_deque = next_resp_deque_it->second;
 
-        // Find the next response frame from the deque with a timestamp just greater than the current response frame's timestamp.
-        auto next_resp_it =
-        std::upper_bound(next_resp_deque.begin(), next_resp_deque.end(), latest_resp_ts,
-                        [](const uint64_t ts, const mongodb::Frame& frame) {
-                          return ts < frame.timestamp_ns;
-                        });
+        // Find the next response frame from the deque with a timestamp just greater than the
+        // current response frame's timestamp.
+        auto next_resp_it = std::upper_bound(
+            next_resp_deque.begin(), next_resp_deque.end(), latest_resp_ts,
+            [](const uint64_t ts, const mongodb::Frame& frame) { return ts < frame.timestamp_ns; });
         if (next_resp_it->timestamp_ns < latest_resp_ts) {
-          VLOG(1) << absl::Substitute("Did not find a response extending the prior more to come response. RequestID: $0", curr_resp.request_id);
+          VLOG(1) << absl::Substitute(
+              "Did not find a response extending the prior more to come response. RequestID: $0",
+              curr_resp.request_id);
           error_count++;
-          continue;
+          break;
         }
 
         mongodb::Frame& next_resp = *next_resp_it;
         resp_frame.sections.insert(std::end(resp_frame.sections), std::begin(next_resp.sections),
-                                  std::end(next_resp.sections));
+                                   std::end(next_resp.sections));
         next_resp.consumed = true;
         latest_resp_ts = next_resp.timestamp_ns;
         curr_resp = next_resp;
@@ -119,15 +130,17 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       }
 
       // Find the corresponding request frame for the head response frame.
-      auto req_frame_it =
-          std::upper_bound(req_deque.begin(), req_deque.end(), latest_resp_ts,
-                          [](const uint64_t ts, const mongodb::Frame& frame) {
-                            return ts < frame.timestamp_ns;
-                          }) -
-          1;
+      auto req_frame_it = std::upper_bound(req_deque.begin(), req_deque.end(), latest_resp_ts,
+                                           [](const uint64_t ts, const mongodb::Frame& frame) {
+                                             return ts < frame.timestamp_ns;
+                                           }) -
+                          1;
       if (req_frame_it == req_deque.begin() &&
           req_frame_it->timestamp_ns > resp_frame.timestamp_ns) {
-        VLOG(1) << absl::Substitute("Did not find a request frame that is earlier than the response. Response's responseTo: $0", resp_frame.response_to);
+        VLOG(1) << absl::Substitute(
+            "Did not find a request frame that is earlier than the response. Response's "
+            "responseTo: $0",
+            resp_frame.response_to);
         error_count++;
         continue;
       }
@@ -135,27 +148,24 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       mongodb::Frame& req_frame = *req_frame_it;
       req_frame.consumed = true;
       resp_frame.consumed = true;
+      FlattenSections(&req_frame);
+      FlattenSections(&resp_frame);
       records.push_back({std::move(req_frame), std::move(resp_frame)});
       resp_deque.erase(resp_deque.begin() + idx);
+      break;
     }
 
-    size_t delete_idx = req_deque.size();
-    bool found_unconsumed = false;
-    for (const auto& [idx, frame] : Enumerate(req_deque)) {
-      if (frame.consumed) {
-        continue;
-      }
-
-      if (frame.discarded || frame.timestamp_ns < latest_resp_ts) {
+    auto erase_until_iter = req_deque.begin();
+    while (erase_until_iter != req_deque.end() &&
+           (erase_until_iter->consumed || erase_until_iter->timestamp_ns < latest_resp_ts)) {
+      if (!erase_until_iter->consumed) {
         error_count++;
-        frame.discarded = true;
-      } else if (!found_unconsumed) {
-        delete_idx = idx;
-        found_unconsumed = true;
-        break;
       }
+      ++erase_until_iter;
     }
-    req_deque.erase(req_deque.begin(), req_deque.begin() + delete_idx);
+
+    req_deque.erase(req_deque.begin(), erase_until_iter);
+    stream_id_pair.second = true;
   }
 
   for (auto it = resps->begin(); it != resps->end(); it++) {
@@ -165,7 +175,16 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       resp_deque.clear();
     }
   }
-  state->transaction_stream_order.clear();
+
+  // Cleanup the state.
+  auto it = state->stream_order.begin();
+  while (it != state->stream_order.end()) {
+    if (it->second) {
+      it = state->stream_order.erase(it);
+    } else {
+      it++;
+    }
+  }
 
   return {records, error_count};
 }
