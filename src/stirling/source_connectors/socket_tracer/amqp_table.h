@@ -31,7 +31,6 @@ namespace stirling {
 static constexpr DataElement kAMQPElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
-        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -85,7 +84,6 @@ DEFINE_PRINT_TABLE(AMQP)
 
 constexpr int kAMQPTimeIdx = kAMQPTable.ColIndex("time_");
 constexpr int kAMQPUUIDIdx = kAMQPTable.ColIndex("upid");
-constexpr int kAMQPCGIDIdx = kAMQPTable.ColIndex("cgid");
 constexpr int kAMQPFrameTypeIdx = kAMQPTable.ColIndex("frame_type");
 constexpr int kAMQPChannelIdx = kAMQPTable.ColIndex("channel");
 constexpr int kAMQPLatencyIdx = kAMQPTable.ColIndex("latency");

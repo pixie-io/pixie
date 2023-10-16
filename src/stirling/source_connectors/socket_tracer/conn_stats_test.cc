@@ -89,7 +89,6 @@ TEST_F(ConnStatsTest, Basic) {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 111110,
-      .cgid = UINT64_MAX,
   };
 
   // The basic conn_stats_event template.
@@ -166,7 +165,6 @@ TEST_F(ConnStatsTest, ServerSide) {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 10000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn0_stats_event;
@@ -195,7 +193,6 @@ TEST_F(ConnStatsTest, ServerSide) {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 4,
       .tsid = 20000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn1_stats_event;
@@ -224,7 +221,6 @@ TEST_F(ConnStatsTest, ServerSide) {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 5,
       .tsid = 30000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn2_stats_event;
@@ -261,7 +257,6 @@ TEST_F(ConnStatsTest, ClientSide) {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 10000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn0_stats_event;
@@ -290,7 +285,6 @@ TEST_F(ConnStatsTest, ClientSide) {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 4,
       .tsid = 20000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn1_stats_event;
@@ -319,7 +313,6 @@ TEST_F(ConnStatsTest, ClientSide) {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 5,
       .tsid = 30000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn2_stats_event;
@@ -351,7 +344,6 @@ TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 10000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn_stats_event;
@@ -379,7 +371,6 @@ TEST_F(ConnStatsTest, DisabledConnTracker) {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 10000,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn_stats_event;

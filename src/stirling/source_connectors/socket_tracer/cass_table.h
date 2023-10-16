@@ -37,7 +37,6 @@ static const std::map<int64_t, std::string_view> kCQLRespOpDecoder =
 static constexpr DataElement kCQLElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
-        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -72,7 +71,6 @@ DEFINE_PRINT_TABLE(CQL)
 
 static constexpr int kCQLTraceRoleIdx = kCQLTable.ColIndex("trace_role");
 static constexpr int kCQLUPIDIdx = kCQLTable.ColIndex("upid");
-static constexpr int kCQLCGIDIdx = kCQLTable.ColIndex("cgid");
 static constexpr int kCQLReqOp = kCQLTable.ColIndex("req_op");
 static constexpr int kCQLReqBody = kCQLTable.ColIndex("req_body");
 static constexpr int kCQLRespOp = kCQLTable.ColIndex("resp_op");

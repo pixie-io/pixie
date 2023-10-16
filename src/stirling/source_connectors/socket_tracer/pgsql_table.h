@@ -29,7 +29,6 @@ namespace stirling {
 static constexpr DataElement kPGSQLElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
-        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -57,7 +56,6 @@ static constexpr auto kPGSQLTable = DataTableSchema(
 DEFINE_PRINT_TABLE(PGSQL)
 
 constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
-constexpr int kPGSQLCGIDIdx = kPGSQLTable.ColIndex("cgid");
 constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");
 constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
 constexpr int kPGSQLReqCmdIdx = kPGSQLTable.ColIndex("req_cmd");
