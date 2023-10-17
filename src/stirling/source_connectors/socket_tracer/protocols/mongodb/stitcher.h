@@ -45,7 +45,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 //     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* reqs,
 //     absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps,
 //     State* state) {
-//   return mongodb::StitchFrames(reqs, resps, state);
+//   return mongodb::StitchFrames(reqs, resps, &state->global);
 // }
 
 }  // namespace protocols

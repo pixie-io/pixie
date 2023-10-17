@@ -36,6 +36,7 @@ namespace protocols {
 namespace mongodb {
 
 void FlattenSections(mongodb::Frame* frame) {
+  // Flatten the vector of sections containing vector of documents into a single string.
   for (const auto& section : frame->sections) {
     for (const auto& doc : section.documents) {
       frame->frame_body.append(doc).append(" ");
@@ -66,10 +67,10 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     // Response deque for the stream ID.
     auto& resp_deque = resp_it->second;
 
-    // Find the stream ID's response deque.
+    // Find the stream ID's request deque.
     auto req_it = reqs->find(stream_id);
     if (req_it == reqs->end()) {
-      VLOG(1) << absl::Substitute("Did not find a request with the stream ID = $0", stream_id);
+      VLOG(1) << absl::Substitute("Did not find a request deque with the stream ID: $0", stream_id);
       error_count++;
       continue;
     }
@@ -80,8 +81,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     // Track the latest response timestamp to compare against request frame's timestamp later.
     uint64_t latest_resp_ts = 0;
 
-    // Loop over each frame in the response deque and match the oldest response frame with the
-    // oldest request that occured just before the response.
+    // Loop until the first frame in the response deque finds a match with the oldest request that
+    // occured just before the response.
     for (const auto& [idx, resp_frame] : Enumerate(resp_deque)) {
       if (resp_frame.consumed) {
         continue;
@@ -97,8 +98,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
         auto next_resp_deque_it = resps->find(curr_resp.request_id);
         if (next_resp_deque_it == resps->end()) {
           VLOG(1) << absl::Substitute(
-              "Did not find a response deque with extending the prior more to come response. "
-              "responseTo: $0",
+              "Did not find a response deque extending the prior more to come response. "
+              "requestID: $0",
               curr_resp.request_id);
           error_count++;
           break;
@@ -141,8 +142,9 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
             "Did not find a request frame that is earlier than the response. Response's "
             "responseTo: $0",
             resp_frame.response_to);
+        resp_deque.erase(resp_deque.begin() + idx);
         error_count++;
-        continue;
+        break;
       }
 
       mongodb::Frame& req_frame = *req_frame_it;
@@ -168,6 +170,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     stream_id_pair.second = true;
   }
 
+  // Clear the response deques.
   for (auto it = resps->begin(); it != resps->end(); it++) {
     auto& resp_deque = it->second;
     if (resp_deque.size() > 0) {
@@ -176,7 +179,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     }
   }
 
-  // Cleanup the state.
+  // Clear the state.
   auto it = state->stream_order.begin();
   while (it != state->stream_order.end()) {
     if (it->second) {

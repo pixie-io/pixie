@@ -51,6 +51,7 @@ Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id, int32_t response_to
   return frame;
 }
 
+// Uncomment following two functions once upstream testing functions are merged.
 bool areAllDequesEmpty(
     const absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>& frame_map) {
   for (const auto& pair : frame_map) {
