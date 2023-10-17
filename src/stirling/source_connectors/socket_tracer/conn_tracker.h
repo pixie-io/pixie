@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <any>
 #include <deque>
 #include <list>
@@ -271,9 +272,39 @@ class ConnTracker : NotCopyMoveable {
     CONN_TRACE(2) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
                                       resp_frames.size());
 
-    protocols::RecordsWithErrorCount<TRecordType> result =
-        protocols::StitchFrames<TRecordType, TFrameType, TStateType>(&req_frames, &resp_frames,
-                                                                     state_ptr);
+    protocols::RecordsWithErrorCount<TRecordType> result;
+
+    // If this protocol doesn't support streams, we call StitchFrames with just the deque.
+    // If it does, we use a map of stream ID to deque.
+    // TODO(@benkilimnik): Eventually, we should migrate all of the protocols to use the map.
+    if constexpr (TProtocolTraits::stream_support ==
+                  protocols::BaseProtocolTraits<TRecordType>::UseStream) {
+      using TKey = typename TProtocolTraits::key_type;
+      absl::flat_hash_map<TKey, std::deque<TFrameType>> requests;
+      absl::flat_hash_map<TKey, std::deque<TFrameType>> responses;
+      // TODO(@benkilimnik): Hard code the stream for now. Populate the map in a future PR.
+      requests[0] = std::move(req_frames);
+      responses[0] = std::move(resp_frames);
+      result = protocols::StitchFrames<TRecordType, TKey, TFrameType, TStateType>(
+          &requests, &responses, state_ptr);
+      // TODO(@benkilimnik): Update req and resp frame deques to match maps for now. Populate maps
+      // during parsing in a future PR.
+      req_frames.clear();
+      for (auto& [_, frames] : requests) {
+        for (auto& frame : frames) {
+          req_frames.push_back(std::move(frame));
+        }
+      }
+      resp_frames.clear();
+      for (auto& [_, frames] : responses) {
+        for (auto& frame : frames) {
+          resp_frames.push_back(std::move(frame));
+        }
+      }
+    } else {
+      result = protocols::StitchFrames<TRecordType, TFrameType, TStateType>(
+          &req_frames, &resp_frames, state_ptr);
+    }
 
     CONN_TRACE(2) << absl::Substitute("records=$0", result.records.size());
 
