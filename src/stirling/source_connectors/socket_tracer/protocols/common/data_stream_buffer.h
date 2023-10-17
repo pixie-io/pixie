@@ -98,15 +98,16 @@ class DataStreamBuffer {
    */
   StatusOr<uint64_t> GetTimestamp(size_t pos) {
     StatusOr<uint64_t> timestamp_ns_status = impl_->GetTimestamp(pos);
-    if (!timestamp_ns_status.ok()) return timestamp_ns_status;
-    uint64_t current_timestamp_ns = timestamp_ns_status.ConsumeValueOrDie();
-    uint64_t prev_timestamp_ns = GetPrevTimestamp();
-    if (current_timestamp_ns < prev_timestamp_ns) {
-      LOG(WARNING) << "Detected non-monotonically increasing timestamp " << current_timestamp_ns
-                   << ". Adjusting to previous timestamp + 1: " << prev_timestamp_ns + 1;
-      current_timestamp_ns = prev_timestamp_ns + 1;
+    if (!timestamp_ns_status.ok()) {
+      return timestamp_ns_status;
     }
-    SetPrevTimestamp(current_timestamp_ns);
+    uint64_t current_timestamp_ns = timestamp_ns_status.ConsumeValueOrDie();
+    if (current_timestamp_ns < prev_timestamp_ns_) {
+      LOG(WARNING) << "Detected non-monotonically increasing timestamp " << current_timestamp_ns
+                   << ". Adjusting to previous timestamp + 1: " << prev_timestamp_ns_ + 1;
+      current_timestamp_ns = prev_timestamp_ns_ + 1;
+    }
+    prev_timestamp_ns_ = current_timestamp_ns;
     return current_timestamp_ns;
   }
 
@@ -160,17 +161,6 @@ class DataStreamBuffer {
   void ShrinkToFit() { impl_->ShrinkToFit(); }
 
  private:
-  /**
-   * Set the previous timestamp.
-   * @param timestamp The timestamp to set.
-   */
-  void SetPrevTimestamp(const uint64_t& timestamp) { prev_timestamp_ns_ = timestamp; }
-
-  /**
-   * Get the previous timestamp.
-   * @return The previous timestamp.
-   */
-  uint64_t GetPrevTimestamp() const { return prev_timestamp_ns_; }
   std::unique_ptr<DataStreamBufferImpl> impl_;
   uint64_t prev_timestamp_ns_ = 0;
 };
