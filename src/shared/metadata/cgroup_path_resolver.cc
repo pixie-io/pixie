@@ -24,10 +24,7 @@
 
 #include <absl/strings/str_replace.h>
 
-#include <fstream>
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/system/config.h"
-#include "src/common/system/proc_pid_path.h"
 #include "src/shared/metadata/cgroup_path_resolver.h"
 
 DEFINE_bool(force_cgroup2_mode, true, "Flag to force assume cgroup2 fs for testing purposes");
@@ -77,35 +74,6 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path) {
   }
 
   return error::NotFound("Could not find self as a template.");
-}
-
-StatusOr<uint64_t> FindCgroupIDFromPID(pid_t pid) {
-  auto cgroup_name = px::system::ProcPidPath(pid, "cgroup");
-  std::ifstream proc_cgroup(cgroup_name);
-
-  // get rid of the id at the front
-  uint64_t blank;
-  proc_cgroup >> blank;
-  std::string line;
-  std::getline(proc_cgroup, line);
-
-  if (proc_cgroup.fail() || proc_cgroup.bad()) {
-    std::string failure_string =
-        absl::StrCat("procfs cgroup file getline failed with", "fail: ", proc_cgroup.fail(),
-                     "bad : ", proc_cgroup.bad(), "eof: ", proc_cgroup.eof());
-    return error::NotFound(failure_string);
-  }
-
-  std::string cgroup_path_name =
-      absl::StrCat(px::system::Config::GetInstance().sysfs_path().string(), "/cgroup/",
-                   line.substr(2, line.size()));
-
-  // lstat what we are pointing to
-  struct stat stat_buf;
-  if (stat(cgroup_path_name.c_str(), &stat_buf)) {
-    return error::NotFound(absl::StrCat(cgroup_path_name, " sysfs cgroup stat failed."));
-  }
-  return stat_buf.st_ino;
 }
 
 StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view path) {

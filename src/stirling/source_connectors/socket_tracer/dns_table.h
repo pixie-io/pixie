@@ -32,7 +32,6 @@ namespace stirling {
 static constexpr DataElement kDNSElements[] = {
         canonical_data_elements::kTime,
         canonical_data_elements::kUPID,
-        canonical_data_elements::kCGID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
@@ -64,7 +63,6 @@ static constexpr auto kDNSTable =
 DEFINE_PRINT_TABLE(DNS)
 
 static constexpr int kDNSUPIDIdx = kDNSTable.ColIndex("upid");
-static constexpr int kDNSCGIDIdx = kDNSTable.ColIndex("cgid");
 static constexpr int kDNSReqHdrIdx = kDNSTable.ColIndex("req_header");
 static constexpr int kDNSReqBodyIdx = kDNSTable.ColIndex("req_body");
 static constexpr int kDNSRespHdrIdx = kDNSTable.ColIndex("resp_header");

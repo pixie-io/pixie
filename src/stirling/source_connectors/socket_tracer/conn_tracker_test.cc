@@ -769,7 +769,6 @@ TEST_F(ConnTrackerTest, ConnStats) {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 3,
       .tsid = 111110,
-      .cgid = UINT64_MAX,
   };
 
   struct conn_stats_event_t conn_stats_event;

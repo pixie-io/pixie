@@ -31,7 +31,6 @@ message ConnID {
   uint64 start_time_ns = 2;
   uint32 fd = 3;
   uint32 generation = 4;
-  uint64 cgid = 5;
 }
 
 message SocketDataEvent {
