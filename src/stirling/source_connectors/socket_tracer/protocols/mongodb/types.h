@@ -19,6 +19,8 @@
 #pragma once
 
 #include <string>
+#include <utility>
+
 #include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -153,11 +155,29 @@ struct Record {
   }
 };
 
+using stream_id_t = int32_t;
+using order_consumed_t = bool;
+struct State {
+  std::vector<std::pair<mongodb::stream_id_t, order_consumed_t>> stream_order;
+};
+
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
+  using key_type = stream_id_t;
 };
+
+// struct ProtocolTraits : public BaseProtocolTraits<Record> {
+//   using frame_type = Frame;
+//   using record_type = Record;
+//   using state_type = NoState;
+// };
 
 }  // namespace mongodb
 }  // namespace protocols

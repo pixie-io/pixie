@@ -20,12 +20,14 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/common/testing/testing.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
+namespace mongodb {
 
 // clang-format off
 
@@ -351,7 +353,9 @@ TEST_F(MongoDBParserTest, ParseFrameWhenNeedsMoreHeaderData) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBNeedMoreHeaderData));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kNeedsMoreData);
 }
@@ -360,7 +364,9 @@ TEST_F(MongoDBParserTest, ParseFrameWhenNeedsMoreData) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBNeedMoreData));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kNeedsMoreData);
 }
@@ -369,7 +375,9 @@ TEST_F(MongoDBParserTest, ParseFrameWhenNotValidType) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBInvalidType));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kInvalid);
 }
@@ -378,7 +386,9 @@ TEST_F(MongoDBParserTest, ParseFrameWhenUnsupportedType) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBUnsupportedType));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kIgnored);
 }
@@ -387,7 +397,9 @@ TEST_F(MongoDBParserTest, ParseFrameInvalidFlagBits) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBInvalidFlagBits));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kInvalid);
 }
@@ -396,7 +408,9 @@ TEST_F(MongoDBParserTest, ParseFrameValidFlagBitsSet) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidFlagBitsSet));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_TRUE(frame.checksum_present);
   EXPECT_TRUE(frame.more_to_come);
@@ -408,7 +422,9 @@ TEST_F(MongoDBParserTest, ParseFrameInvalidChecksum) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBMissingChecksum));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_TRUE(frame.checksum_present);
   EXPECT_EQ(state, ParseState::kInvalid);
@@ -418,7 +434,9 @@ TEST_F(MongoDBParserTest, ParseFrameInvalidKindByte) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBInvalidKindByte));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kInvalid);
 }
@@ -428,7 +446,9 @@ TEST_F(MongoDBParserTest, ParseFrameInvalidSeqIdentifier) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBInvalidSeqIdentifier));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kInvalid);
 }
@@ -437,7 +457,9 @@ TEST_F(MongoDBParserTest, ParseFrameEmptyDocument) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBEmptyDocument));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(frame.sections[0].kind, 0);
   EXPECT_EQ(frame.sections[0].length, 4);
@@ -452,7 +474,9 @@ TEST_F(MongoDBParserTest, ParseFrameValidRequest) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequest));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(frame.length, 178);
   EXPECT_EQ(frame.request_id, 444);
@@ -468,7 +492,9 @@ TEST_F(MongoDBParserTest, ParseFrameValidResponse) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidResponse));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(frame.length, 45);
   EXPECT_EQ(frame.request_id, 917);
@@ -485,7 +511,9 @@ TEST_F(MongoDBParserTest, ParseFrameValidRequestTwoSections) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestTwoSections));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(frame.length, 157);
   EXPECT_EQ(frame.request_id, 1144108930);
@@ -504,7 +532,9 @@ TEST_F(MongoDBParserTest, ParseFrameValidResponseTwoSections) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidResponseTwoSections));
 
   mongodb::Frame frame;
-  ParseState state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kResponse, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(frame.length, 45);
   EXPECT_EQ(frame.request_id, 444);
@@ -521,7 +551,10 @@ TEST_F(MongoDBParserTest, ParseValidFrameAndInvalidFrame) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestAndInvalidRequest));
 
   mongodb::Frame valid_frame;
-  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &valid_frame);
+  StateWrapper state_order{};
+
+  ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &valid_frame, &state_order);
+
   EXPECT_EQ(valid_frame.length, 45);
   EXPECT_EQ(valid_frame.request_id, 917);
   EXPECT_EQ(valid_frame.response_to, 444);
@@ -532,11 +565,45 @@ TEST_F(MongoDBParserTest, ParseValidFrameAndInvalidFrame) {
   EXPECT_EQ(state, ParseState::kSuccess);
 
   mongodb::Frame invalid_frame;
-  state = ParseFrame(message_type_t::kRequest, &frame_view, &invalid_frame);
+  state = ParseFrame(message_type_t::kRequest, &frame_view, &invalid_frame, &state_order);
   EXPECT_EQ(state, ParseState::kInvalid);
 }
 
-namespace mongodb {}  // namespace mongodb
+TEST_F(MongoDBParserTest, ValidateStateOrderFromFrames) {
+  // Setup three different request frames.
+  auto frame_view_1 = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidFlagBitsSet));
+  auto frame_view_2 = CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequest));
+  auto frame_view_3 =
+      CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestTwoSections));
+
+  // Initialize what the state's stream order should look like after the first insertion.
+  std::vector<std::pair<mongodb::stream_id_t, mongodb::order_consumed_t>> stream_order{
+      std::pair(917, false)};
+
+  StateWrapper state_order{};
+
+  mongodb::Frame frame_1;
+  ParseState state_1 = ParseFrame(message_type_t::kRequest, &frame_view_1, &frame_1, &state_order);
+  EXPECT_EQ(frame_1.request_id, 917);
+  EXPECT_EQ(state_order.global.stream_order, stream_order);
+  EXPECT_EQ(state_1, ParseState::kSuccess);
+
+  stream_order.push_back(std::pair(444, false));
+  mongodb::Frame frame_2;
+  ParseState state_2 = ParseFrame(message_type_t::kRequest, &frame_view_2, &frame_2, &state_order);
+  EXPECT_EQ(frame_2.request_id, 444);
+  EXPECT_EQ(state_order.global.stream_order, stream_order);
+  EXPECT_EQ(state_2, ParseState::kSuccess);
+
+  stream_order.push_back(std::pair(1144108930, false));
+  mongodb::Frame frame_3;
+  ParseState state_3 = ParseFrame(message_type_t::kRequest, &frame_view_3, &frame_3, &state_order);
+  EXPECT_EQ(frame_3.request_id, 1144108930);
+  EXPECT_EQ(state_order.global.stream_order, stream_order);
+  EXPECT_EQ(state_3, ParseState::kSuccess);
+}
+
+}  // namespace mongodb
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
