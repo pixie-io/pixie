@@ -170,10 +170,10 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-using OpenSSLServerImplementations = Types<NginxOpenSSL_3_0_8_ContainerWrapper>;
-// Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-//       NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
-//       Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
+using OpenSSLServerImplementations =
+    Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+          NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
+          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
