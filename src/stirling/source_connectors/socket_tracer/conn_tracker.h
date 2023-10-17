@@ -280,11 +280,19 @@ class ConnTracker : NotCopyMoveable {
     if constexpr (TProtocolTraits::stream_support ==
                   protocols::BaseProtocolTraits<TRecordType>::UseStream) {
       using TKey = typename TProtocolTraits::key_type;
+      // TODO(@benkilimnik): For now, we populate the map using the parsed req and resp deques.
+      // In a future PR, we should parse the map earlier in the event parser.
       absl::flat_hash_map<TKey, std::deque<TFrameType>> requests;
       absl::flat_hash_map<TKey, std::deque<TFrameType>> responses;
-      // TODO(@benkilimnik): Hard code the stream for now. Populate the map in a future PR.
-      requests[0] = std::move(req_frames);
-      responses[0] = std::move(resp_frames);
+      for (auto& frame : req_frames) {
+        // GetStreamID returns 0 by default if not specialized in protocol.
+        auto key = protocols::GetStreamID<TKey, TFrameType>(&frame);
+        requests[key].push_back(std::move(frame));
+      }
+      for (auto& frame : resp_frames) {
+        auto key = protocols::GetStreamID<TKey, TFrameType>(&frame);
+        responses[key].push_back(std::move(frame));
+      }
       result = protocols::StitchFrames<TRecordType, TKey, TFrameType, TStateType>(
           &requests, &responses, state_ptr);
       // TODO(@benkilimnik): Update req and resp frame deques to match maps for now. Populate maps
