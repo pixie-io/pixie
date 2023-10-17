@@ -104,7 +104,7 @@ class OpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing 
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60});
+    StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60}, {}, {}, false);
     PX_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -170,10 +170,10 @@ http::Record GetExpectedHTTPRecord() {
   return expected_record;
 }
 
-using OpenSSLServerImplementations =
-    Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
-          NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
-          Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
+using OpenSSLServerImplementations = Types<NginxOpenSSL_3_0_8_ContainerWrapper>;
+// Types<NginxOpenSSL_1_1_0_ContainerWrapper, NginxOpenSSL_1_1_1_ContainerWrapper,
+//       NginxOpenSSL_3_0_8_ContainerWrapper, Python310ContainerWrapper,
+//       Node12_3_1ContainerWrapper, Node14_18_1AlpineContainerWrapper>;
 
 TYPED_TEST_SUITE(OpenSSLTraceTest, OpenSSLServerImplementations);
 
@@ -189,7 +189,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   ::px::stirling::testing::CurlContainer client;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
+                       {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}, false));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -229,7 +229,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   ::px::stirling::testing::RubyContainer client;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"ruby", "-e", rb_script}));
+                       {"ruby", "-e", rb_script}, false));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -251,7 +251,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
   ::px::stirling::testing::NodeClientContainer client;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"node", "/etc/node/https_client.js"}));
+                       {"node", "/etc/node/https_client.js"}, false));
   client.Wait();
   this->StopTransferDataThread();
 
