@@ -70,7 +70,8 @@ type Client struct {
 	vizier   vizierpb.VizierServiceClient
 }
 
-// NewClient creates a new Pixie API Client. The defaults result a connection to Pixie's Community Cloud (work.withpixie.ai). If the default cloud address is overriden with ClientOptions, `PX_DISABLE_TLS` may need to be set if your cloud backend does not support TLS.
+// NewClient creates a new Pixie API Client. The defaults result in a connection to Pixie's Community Cloud (work.withpixie.ai).
+// If the default cloud address is overridden with ClientOptions, `PX_DISABLE_TLS` may need to be set if your cloud backend does not support TLS.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	c := &Client{
 		cloudAddr:     defaultCloudAddr,

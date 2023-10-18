@@ -74,7 +74,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	client, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(apiKey))
+	client, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(apiKey), pxapi.WithCloudAddr("cloud.cluster.local"))
 	if err != nil {
 		panic(err)
 	}
