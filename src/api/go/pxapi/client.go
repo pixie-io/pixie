@@ -90,12 +90,14 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 func (c *Client) init(ctx context.Context) error {
 	isInternal := strings.Contains(c.cloudAddr, "cluster.local")
+	tlsDisabled := os.Getenv("PX_DISABLE_TLS") == "1"
 
-	if tlsDisabled := os.Getenv("PX_DISABLE_TLS"); tlsDisabled != "1" && isInternal {
+	if !tlsDisabled && isInternal {
 		log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
 	}
 
-	tlsConfig := &tls.Config{InsecureSkipVerify: isInternal}
+	insecureSkipVerify := tlsDisabled && isInternal
+	tlsConfig := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
 	creds := credentials.NewTLS(tlsConfig)
 
 	conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(creds))
