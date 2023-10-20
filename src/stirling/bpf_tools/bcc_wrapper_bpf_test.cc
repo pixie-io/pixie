@@ -24,10 +24,10 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/metadata/cgroup_path_resolver.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
-#include "src/shared/metadata/cgroup_path_resolver.h"
 
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant, but it must not be optimized away.
@@ -44,7 +44,6 @@ namespace bpf_tools {
 
 using ::px::testing::BazelRunfilePath;
 using ::px::testing::TempDir;
-
 
 constexpr char kBCCProgram[] = R"BCC(
   int foo(struct pt_regs* ctx) {
@@ -204,16 +203,14 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   uint64_t expected_cgroup_id = UINT64_MAX;
   KernelVersionOrder cgroup_order = CompareKernelVersion(KernelVersion{4, 18, 0}, GetKernelVersion);
   bool cgroup_id_enabled = (KernelVersionOrder::kOlder == cgroup_order) ? false : true;
-  if(cgroup_id_enabled) {
+  if (cgroup_id_enabled) {
     expected_cgroup_id = px::md::FindCgroupIDFromPID(getpid()).ValueOrDie();
   }
-
 
   // Trigger our uprobe.
   BCCWrapperTestProbeTrigger();
 
-  auto cgroup_id_ouput =
-      WrappedBCCArrayTable<uint64_t>::Create(&bcc_wrapper, "cgroup_id_output");
+  auto cgroup_id_ouput = WrappedBCCArrayTable<uint64_t>::Create(&bcc_wrapper, "cgroup_id_output");
   ASSERT_OK_AND_ASSIGN(const uint64_t cgroup_id, cgroup_id_output->GetValue(0));
 
   EXPECT_EQ(cgroup_id, expected_cgroup_id);

@@ -153,7 +153,8 @@ Status BCCWrapperImpl::InitBPFProgram(std::string_view bpf_program, std::vector<
       }
     }
 
-    KernelVersionOrder cgroup_order= CompareKernelVersion(KernelVersion{4, 18, 0}, GetKernelVersion);
+    KernelVersionOrder cgroup_order =
+        CompareKernelVersion(KernelVersion{4, 18, 0}, GetKernelVersion);
     uint8_t cgroup_id_enabled = (KernelVersionOrder::kOlder == cgroup_order) ? 0 : 1;
 
     cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));

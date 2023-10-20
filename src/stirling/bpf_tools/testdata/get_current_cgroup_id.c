@@ -1,4 +1,3 @@
-
 #include "src/stirling/bpf_tools/bcc_bpf/task_struct_utils.h"
 
 BPF_ARRAY(cgroup_id_output, uint64_t, 1);
@@ -12,4 +11,3 @@ int probe_bpf_get_current_cgroup_id(struct pt_regs* ctx) {
   cgroup_id_ouptut.update(&kZero, &cgroup_id);
   return 0;
 }
-
