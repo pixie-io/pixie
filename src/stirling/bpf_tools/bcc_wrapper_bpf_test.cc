@@ -27,6 +27,7 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/address_converter.h"
 #include "src/stirling/obj_tools/testdata/cc/test_exe_fixture.h"
+#include "src/shared/metadata/cgroup_path_resolver.h"
 
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant, but it must not be optimized away.
@@ -43,6 +44,7 @@ namespace bpf_tools {
 
 using ::px::testing::BazelRunfilePath;
 using ::px::testing::TempDir;
+
 
 constexpr char kBCCProgram[] = R"BCC(
   int foo(struct pt_regs* ctx) {
@@ -167,6 +169,54 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   ASSERT_OK_AND_ASSIGN(const uint64_t proc_pid_start_time, tgid_start_times->GetValue(0));
 
   EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
+}
+
+TEST(BCCWrapperTest, GetTGIDStartTime) {
+  // Force the TaskStructResolver to run,
+  // since we're trying to check that it correctly gets the task_struct offsets.
+  std::vector<std::string> cflags = {};
+  bool requires_linux_headers = true;
+  bool always_infer_task_struct_offsets = true;
+
+  BCCWrapperImpl bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script, cflags,
+                                       requires_linux_headers, always_infer_task_struct_offsets));
+
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, obj_tools::ElfReader::Create(self_path.string()));
+  const int64_t self_pid = getpid();
+  ASSERT_OK_AND_ASSIGN(auto converter,
+                       obj_tools::ElfAddressConverter::Create(elf_reader.get(), self_pid));
+
+  // Use address instead of symbol to specify this probe,
+  // so that even if debug symbols are stripped, the uprobe can still attach.
+  uint64_t symbol_addr =
+      converter->VirtualAddrToBinaryAddr(reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger));
+
+  UProbeSpec uprobe{.binary_path = self_path,
+                    .symbol = {},  // Keep GCC happy.
+                    .address = symbol_addr,
+                    .attach_type = BPFProbeAttachType::kEntry,
+                    .probe_fn = "probe_bpf_get_current_cgroup_id"};
+  ASSERT_OK(bcc_wrapper.AttachUProbe(uprobe));
+
+  uint64_t expected_cgroup_id = UINT64_MAX;
+  KernelVersionOrder cgroup_order = CompareKernelVersion(KernelVersion{4, 18, 0}, GetKernelVersion);
+  bool cgroup_id_enabled = (KernelVersionOrder::kOlder == cgroup_order) ? false : true;
+  if(cgroup_id_enabled) {
+    expected_cgroup_id = px::md::FindCgroupIDFromPID(getpid()).ValueOrDie();
+  }
+
+
+  // Trigger our uprobe.
+  BCCWrapperTestProbeTrigger();
+
+  auto cgroup_id_ouput =
+      WrappedBCCArrayTable<uint64_t>::Create(&bcc_wrapper, "cgroup_id_output");
+  ASSERT_OK_AND_ASSIGN(const uint64_t cgroup_id, cgroup_id_output->GetValue(0));
+
+  EXPECT_EQ(cgroup_id, expected_cgroup_id);
 }
 
 TEST(BCCWrapperTest, TestMapClearingAPIs) {
