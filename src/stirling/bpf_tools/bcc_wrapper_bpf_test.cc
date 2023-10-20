@@ -37,6 +37,7 @@ NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }
 }
 
 OBJ_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
+OBJ_STRVIEW(get_current_cgroup_id_bcc_script, get_current_cgroup_id);
 
 namespace px {
 namespace stirling {
@@ -170,15 +171,13 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
 }
 
-TEST(BCCWrapperTest, GetTGIDStartTime) {
-  // Force the TaskStructResolver to run,
-  // since we're trying to check that it correctly gets the task_struct offsets.
+TEST(BCCWrapperTest, GetCurrentCgroupId) {
   std::vector<std::string> cflags = {};
   bool requires_linux_headers = true;
   bool always_infer_task_struct_offsets = true;
 
   BCCWrapperImpl bcc_wrapper;
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script, cflags,
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_current_cgroup_id_bcc_script, cflags,
                                        requires_linux_headers, always_infer_task_struct_offsets));
 
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
