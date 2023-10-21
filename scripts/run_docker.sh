@@ -71,7 +71,7 @@ fi
 
 # Check if build buddy cache exists. If so, add the appropriate arguments.
 build_buddy_args=()
-if grep -q "^build.*remote_cache.*grpc.*9998" /etc/bazelrc; then
+if grep -sq "^build.*remote_cache.*grpc.*9998" /etc/bazelrc; then
   build_buddy_args=(
     "--add-host=$(hostname -f):127.0.0.1"
     "--volume=/etc/bazelrc:/etc/bazelrc")
