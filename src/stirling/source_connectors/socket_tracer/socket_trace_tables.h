@@ -31,3 +31,5 @@
 #include "src/stirling/source_connectors/socket_tracer/nats_table.h"
 #include "src/stirling/source_connectors/socket_tracer/pgsql_table.h"
 #include "src/stirling/source_connectors/socket_tracer/redis_table.h"
+#include "src/stirling/source_connectors/socket_tracer/mqtt_table.h"
+
