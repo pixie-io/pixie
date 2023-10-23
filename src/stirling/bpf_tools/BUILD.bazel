@@ -64,13 +64,18 @@ pl_cc_test(
 
 pl_cc_bpf_test(
     name = "bcc_wrapper_bpf_test",
-    srcs = ["bcc_wrapper_bpf_test.cc"],
+    srcs = [
+        "bcc_wrapper_bpf_test.cc",
+        "//src/shared/metadata:cgroup_path_resolver.cc",
+    ],
     tags = [
         "cpu:16",
         "requires_bpf",
     ],
     deps = [
         ":cc_library",
+        "//src/shared/metadata:cgroup_path_resolver_test",
+        "//src/stirling/bpf_tools/testdata:get_current_cgroup_id",
         "//src/stirling/bpf_tools/testdata:get_tgid_start_time",
         "//src/stirling/obj_tools/testdata/cc:test_exe_fixture",
     ],
