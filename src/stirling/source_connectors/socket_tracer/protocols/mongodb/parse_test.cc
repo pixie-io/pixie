@@ -577,8 +577,8 @@ TEST_F(MongoDBParserTest, ValidateStateOrderFromFrames) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestTwoSections));
 
   // Initialize what the state's stream order should look like after the first insertion.
-  std::vector<std::pair<mongodb::stream_id_t, mongodb::order_consumed_t>> stream_order{
-      std::pair(917, false)};
+  std::vector<std::pair<mongodb::stream_id_t, mongodb::stream_id_consumed_t>> stream_order{
+      {917, false}};
 
   StateWrapper state_order{};
 
@@ -588,14 +588,14 @@ TEST_F(MongoDBParserTest, ValidateStateOrderFromFrames) {
   EXPECT_EQ(state_order.global.stream_order, stream_order);
   EXPECT_EQ(state_1, ParseState::kSuccess);
 
-  stream_order.push_back(std::pair(444, false));
+  stream_order.push_back({444, false});
   mongodb::Frame frame_2;
   ParseState state_2 = ParseFrame(message_type_t::kRequest, &frame_view_2, &frame_2, &state_order);
   EXPECT_EQ(frame_2.request_id, 444);
   EXPECT_EQ(state_order.global.stream_order, stream_order);
   EXPECT_EQ(state_2, ParseState::kSuccess);
 
-  stream_order.push_back(std::pair(1144108930, false));
+  stream_order.push_back({1144108930, false});
   mongodb::Frame frame_3;
   ParseState state_3 = ParseFrame(message_type_t::kRequest, &frame_view_3, &frame_3, &state_order);
   EXPECT_EQ(frame_3.request_id, 1144108930);
