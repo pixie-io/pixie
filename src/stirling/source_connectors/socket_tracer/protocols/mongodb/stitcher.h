@@ -32,6 +32,10 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
+void FindMoreToComeResponses(
+    absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps, int* error_count,
+    mongodb::Frame* resp_frame, uint64_t* latest_resp_ts);
+
 void FlattenSections(mongodb::Frame* frame);
 
 RecordsWithErrorCount<mongodb::Record> StitchFrames(

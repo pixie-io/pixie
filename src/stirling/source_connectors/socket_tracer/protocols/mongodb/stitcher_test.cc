@@ -52,7 +52,7 @@ Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id, int32_t response_to
 }
 
 // Uncomment following two functions once upstream testing functions are merged.
-bool areAllDequesEmpty(
+bool AreAllDequesEmpty(
     const absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>& frame_map) {
   for (const auto& pair : frame_map) {
     if (!pair.second.empty()) {
@@ -62,7 +62,7 @@ bool areAllDequesEmpty(
   return true;
 }
 
-size_t totalDequeSize(
+size_t TotalDequeSize(
     const absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>& frame_map) {
   size_t total_size = 0;
   for (const auto& pair : frame_map) {
@@ -97,13 +97,13 @@ TEST_F(MongoDBStitchFramesTest, VerifyStitchingWithReusedStreams) {
 
   // Add the order in which the transactions's streamID's were found.
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(3, false));
-  state.stream_order.push_back(std::pair(5, false));
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(3, false));
-  state.stream_order.push_back(std::pair(5, false));
-  state.stream_order.push_back(std::pair(5, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({3, false});
+  state.stream_order.push_back({5, false});
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({3, false});
+  state.stream_order.push_back({5, false});
+  state.stream_order.push_back({5, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
   EXPECT_EQ(result.error_count, 1);
@@ -113,8 +113,8 @@ TEST_F(MongoDBStitchFramesTest, VerifyStitchingWithReusedStreams) {
   EXPECT_EQ(result.records[5].req.timestamp_ns, 10);
   EXPECT_EQ(result.records[5].resp.timestamp_ns, 11);
 
-  EXPECT_EQ(totalDequeSize(reqs), 1);
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_EQ(TotalDequeSize(reqs), 1);
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 
@@ -144,20 +144,20 @@ TEST_F(MongoDBStitchFramesTest, VerifyOnetoOneStitching) {
 
   // Add the order in which the transactions's streamID's were found.
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(3, false));
-  state.stream_order.push_back(std::pair(5, false));
-  state.stream_order.push_back(std::pair(7, false));
-  state.stream_order.push_back(std::pair(9, false));
-  state.stream_order.push_back(std::pair(11, false));
-  state.stream_order.push_back(std::pair(13, false));
-  state.stream_order.push_back(std::pair(15, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({3, false});
+  state.stream_order.push_back({5, false});
+  state.stream_order.push_back({7, false});
+  state.stream_order.push_back({9, false});
+  state.stream_order.push_back({11, false});
+  state.stream_order.push_back({13, false});
+  state.stream_order.push_back({15, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_THAT(result.records, SizeIs(8));
-  EXPECT_TRUE(areAllDequesEmpty(reqs));
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 
@@ -195,14 +195,14 @@ TEST_F(MongoDBStitchFramesTest, VerifyOnetoNStitching) {
 
   // Add the order in which the transactions's streamID's were found.
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(3, false));
-  state.stream_order.push_back(std::pair(5, false));
-  state.stream_order.push_back(std::pair(9, false));
-  state.stream_order.push_back(std::pair(11, false));
-  state.stream_order.push_back(std::pair(13, false));
-  state.stream_order.push_back(std::pair(15, false));
-  state.stream_order.push_back(std::pair(17, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({3, false});
+  state.stream_order.push_back({5, false});
+  state.stream_order.push_back({9, false});
+  state.stream_order.push_back({11, false});
+  state.stream_order.push_back({13, false});
+  state.stream_order.push_back({15, false});
+  state.stream_order.push_back({17, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
@@ -211,8 +211,8 @@ TEST_F(MongoDBStitchFramesTest, VerifyOnetoNStitching) {
   EXPECT_EQ(result.records[2].resp.frame_body, "response frame body ");
   EXPECT_THAT(result.records, SizeIs(8));
 
-  EXPECT_TRUE(areAllDequesEmpty(reqs));
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 
@@ -230,7 +230,7 @@ TEST_F(MongoDBStitchFramesTest, UnmatchedResponsesAreHandled) {
 
   // Add the order in which the streamID's were found.
   State state = {};
-  state.stream_order.push_back(std::pair(2, false));
+  state.stream_order.push_back({2, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
@@ -239,8 +239,8 @@ TEST_F(MongoDBStitchFramesTest, UnmatchedResponsesAreHandled) {
   EXPECT_EQ(result.records[0].req.request_id, 2);
   EXPECT_EQ(result.records[0].resp.response_to, 2);
 
-  EXPECT_TRUE(areAllDequesEmpty(reqs));
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 
@@ -258,9 +258,9 @@ TEST_F(MongoDBStitchFramesTest, UnmatchedRequestsAreNotCleanedUp) {
   resps[4].push_back(CreateMongoDBFrame(4, 5, 4, false));
 
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(2, false));
-  state.stream_order.push_back(std::pair(4, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({2, false});
+  state.stream_order.push_back({4, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
@@ -269,8 +269,8 @@ TEST_F(MongoDBStitchFramesTest, UnmatchedRequestsAreNotCleanedUp) {
   EXPECT_EQ(result.records[0].req.request_id, 2);
   EXPECT_EQ(result.records[1].req.request_id, 4);
 
-  EXPECT_EQ(totalDequeSize(reqs), 1);
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_EQ(TotalDequeSize(reqs), 1);
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(1));
 }
 
@@ -289,16 +289,16 @@ TEST_F(MongoDBStitchFramesTest, MissingHeadFrameInNResponses) {
   resps[6].push_back(CreateMongoDBFrame(6, 7, 6, false));
 
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(6, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({6, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
   EXPECT_EQ(result.error_count, 2);
   EXPECT_EQ(result.records.size(), 1);
 
-  EXPECT_EQ(totalDequeSize(reqs), 1);
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_EQ(TotalDequeSize(reqs), 1);
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(1));
 }
 
@@ -318,8 +318,8 @@ TEST_F(MongoDBStitchFramesTest, MissingFrameInNResponses) {
   resps[6].push_back(CreateMongoDBFrame(6, 7, 6, false));
 
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(6, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({6, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
@@ -327,8 +327,8 @@ TEST_F(MongoDBStitchFramesTest, MissingFrameInNResponses) {
   EXPECT_EQ(result.records.size(), 2);
   EXPECT_EQ(result.records[0].resp.frame_body, "frame 1 frame 2 ");
 
-  EXPECT_TRUE(areAllDequesEmpty(reqs));
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 
@@ -348,8 +348,8 @@ TEST_F(MongoDBStitchFramesTest, MissingTailFrameInNResponses) {
   resps[6].push_back(CreateMongoDBFrame(6, 7, 6, false));
 
   State state = {};
-  state.stream_order.push_back(std::pair(1, false));
-  state.stream_order.push_back(std::pair(6, false));
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({6, false});
 
   RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
 
@@ -357,8 +357,8 @@ TEST_F(MongoDBStitchFramesTest, MissingTailFrameInNResponses) {
   EXPECT_EQ(result.records.size(), 2);
   EXPECT_EQ(result.records[0].resp.frame_body, "frame 1 frame 2 frame 3 ");
 
-  EXPECT_TRUE(areAllDequesEmpty(reqs));
-  EXPECT_TRUE(areAllDequesEmpty(resps));
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));
 }
 

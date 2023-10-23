@@ -35,6 +35,56 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
+void FindMoreToComeResponses(
+    absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>* resps, int* error_count,
+    mongodb::Frame* resp_frame, uint64_t* latest_resp_ts) {
+  // In a more to come message, the response frame's responseTo will be the requestID of the prior
+  // response frame.
+
+  // Find and insert all of the more to come frame(s) section data to the head response frame.
+  auto curr_resp = resp_frame;
+
+  while (curr_resp->more_to_come) {
+    // Find the next response's deque.
+    auto next_resp_deque_it = resps->find(curr_resp->request_id);
+    if (next_resp_deque_it == resps->end()) {
+      VLOG(1) << absl::Substitute(
+          "Did not find a response deque extending the prior more to come response. "
+          "requestID: $0",
+          curr_resp->request_id);
+      (*error_count)++;
+      break;
+    }
+
+    // Response deque containing the next more to come response frame.
+    auto& next_resp_deque = next_resp_deque_it->second;
+
+    // Find the next response frame from the deque with a timestamp just greater than the
+    // current response frame's timestamp.
+    auto next_resp_it = std::upper_bound(
+        next_resp_deque.begin(), next_resp_deque.end(), *latest_resp_ts,
+        [](const uint64_t ts, const mongodb::Frame& frame) { return ts < frame.timestamp_ns; });
+    if (next_resp_it->timestamp_ns < *latest_resp_ts) {
+      VLOG(1) << absl::Substitute(
+          "Did not find a response extending the prior more to come response. RequestID: $0",
+          curr_resp->request_id);
+      (*error_count)++;
+      break;
+    }
+
+    // Insert the next response's section data to the head of the more to come response.
+    mongodb::Frame& next_resp = *next_resp_it;
+    resp_frame->sections.insert(std::end(resp_frame->sections), std::begin(next_resp.sections),
+                                std::end(next_resp.sections));
+    next_resp.consumed = true;
+    *latest_resp_ts = next_resp.timestamp_ns;
+    curr_resp = &next_resp;
+  }
+
+  // TODO(kpattaswamy): In the case of "missing" more to come middle/tail frames, determine whether
+  // they are truly missing or have not been parsed yet.
+}
+
 void FlattenSections(mongodb::Frame* frame) {
   // Flatten the vector of sections containing vector of documents into a single string.
   for (const auto& section : frame->sections) {
@@ -69,11 +119,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 
     // Find the stream ID's request deque.
     auto req_it = reqs->find(stream_id);
-    if (req_it == reqs->end()) {
-      VLOG(1) << absl::Substitute("Did not find a request deque with the stream ID: $0", stream_id);
-      error_count++;
-      continue;
-    }
+    // The request deque should exist in the reqs map since the state contained the stream ID.
+    CTX_DCHECK(req_it != reqs->end());
 
     // Request deque for the stream ID.
     auto& req_deque = req_it->second;
@@ -81,54 +128,13 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     // Track the latest response timestamp to compare against request frame's timestamp later.
     uint64_t latest_resp_ts = 0;
 
-    // Loop until the first frame in the response deque finds a match with the oldest request that
-    // occured just before the response.
+    // Stitch the first frame in the response deque with the corresponding request frame.
     for (const auto& [idx, resp_frame] : Enumerate(resp_deque)) {
       if (resp_frame.consumed) {
         continue;
       }
 
       latest_resp_ts = resp_frame.timestamp_ns;
-
-      auto curr_resp = resp_frame;
-
-      // Find and insert all of the moreToCome frame(s) section data to the head response frame.
-      while (curr_resp.more_to_come) {
-        // Find the next response's deque.
-        auto next_resp_deque_it = resps->find(curr_resp.request_id);
-        if (next_resp_deque_it == resps->end()) {
-          VLOG(1) << absl::Substitute(
-              "Did not find a response deque extending the prior more to come response. "
-              "requestID: $0",
-              curr_resp.request_id);
-          error_count++;
-          break;
-        }
-
-        // Response deque containg the next more to come response frame.
-        auto& next_resp_deque = next_resp_deque_it->second;
-
-        // Find the next response frame from the deque with a timestamp just greater than the
-        // current response frame's timestamp.
-        auto next_resp_it = std::upper_bound(
-            next_resp_deque.begin(), next_resp_deque.end(), latest_resp_ts,
-            [](const uint64_t ts, const mongodb::Frame& frame) { return ts < frame.timestamp_ns; });
-        if (next_resp_it->timestamp_ns < latest_resp_ts) {
-          VLOG(1) << absl::Substitute(
-              "Did not find a response extending the prior more to come response. RequestID: $0",
-              curr_resp.request_id);
-          error_count++;
-          break;
-        }
-
-        mongodb::Frame& next_resp = *next_resp_it;
-        resp_frame.sections.insert(std::end(resp_frame.sections), std::begin(next_resp.sections),
-                                   std::end(next_resp.sections));
-        next_resp.consumed = true;
-        latest_resp_ts = next_resp.timestamp_ns;
-        curr_resp = next_resp;
-        next_resp_deque.erase(next_resp_it);
-      }
 
       // Find the corresponding request frame for the head response frame.
       auto req_frame_it = std::upper_bound(req_deque.begin(), req_deque.end(), latest_resp_ts,
@@ -148,6 +154,10 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       }
 
       mongodb::Frame& req_frame = *req_frame_it;
+
+      FindMoreToComeResponses(resps, &error_count, &resp_frame, &latest_resp_ts);
+
+      // Stitch the request/response and add it to the records.
       req_frame.consumed = true;
       resp_frame.consumed = true;
       FlattenSections(&req_frame);
@@ -173,10 +183,12 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
   // Clear the response deques.
   for (auto it = resps->begin(); it != resps->end(); it++) {
     auto& resp_deque = it->second;
-    if (resp_deque.size() > 0) {
-      error_count += resp_deque.size();
-      resp_deque.clear();
+    for (auto& resp : resp_deque) {
+      if (!resp.consumed) {
+        error_count++;
+      }
     }
+    resp_deque.clear();
   }
 
   // Clear the state.
