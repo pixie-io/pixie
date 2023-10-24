@@ -53,7 +53,7 @@ void FindMoreToComeResponses(
           "requestID: $0",
           curr_resp->request_id);
       (*error_count)++;
-      break;
+      return;
     }
 
     // Response deque containing the next more to come response frame.
@@ -69,7 +69,7 @@ void FindMoreToComeResponses(
           "Did not find a response extending the prior more to come response. RequestID: $0",
           curr_resp->request_id);
       (*error_count)++;
-      break;
+      return;
     }
 
     // Insert the next response's section data to the head of the more to come response.
@@ -137,13 +137,15 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       latest_resp_ts = resp_frame.timestamp_ns;
 
       // Find the corresponding request frame for the head response frame.
-      auto req_frame_it = std::upper_bound(req_deque.begin(), req_deque.end(), latest_resp_ts,
-                                           [](const uint64_t ts, const mongodb::Frame& frame) {
-                                             return ts < frame.timestamp_ns;
-                                           }) -
-                          1;
-      if (req_frame_it == req_deque.begin() &&
-          req_frame_it->timestamp_ns > resp_frame.timestamp_ns) {
+      auto req_frame_it = std::upper_bound(
+          req_deque.begin(), req_deque.end(), latest_resp_ts,
+          [](const uint64_t ts, const mongodb::Frame& frame) { return ts < frame.timestamp_ns; });
+
+      if (req_frame_it != req_deque.begin()) {
+        --req_frame_it;
+      }
+
+      if (req_frame_it->timestamp_ns > latest_resp_ts) {
         VLOG(1) << absl::Substitute(
             "Did not find a request frame that is earlier than the response. Response's "
             "responseTo: $0",
