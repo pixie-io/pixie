@@ -415,17 +415,17 @@ RecordsWithErrorCount<Record> StitchFrames(
       // Find the first request timestamp that is strictly greater than the response timestamp.
       // Then decrement the iterator to get the request timestamp that is just before the response
       // timestamp.
-      auto stream_it =
-          std::upper_bound(
-              req_deque_begin_iter, req_deque.end(), resp_frame.timestamp_ns,
-              [](const uint64_t ts, const cass::Frame& frame) { return ts < frame.timestamp_ns; }) -
-          1;
+      auto stream_it = std::upper_bound(
+          req_deque_begin_iter, req_deque.end(), resp_frame.timestamp_ns,
+          [](const uint64_t ts, const cass::Frame& frame) { return ts < frame.timestamp_ns; });
+      if (stream_it != req_deque.begin()) {
+        --stream_it;
+      }
       req_deque_begin_iter = stream_it;
-
       // Responses should always have a more recent timestamp than the first request. If this
       // condition is triggered we should not attempt to match this frame. Since responses are
       // cleared during StitchFrames this will get cleaned up during the current iteration.
-      if (stream_it == req_deque.begin() && stream_it->timestamp_ns > resp_frame.timestamp_ns) {
+      if (stream_it->timestamp_ns > resp_frame.timestamp_ns) {
         VLOG(1) << "Warning: Unable to find request that is earlier than response: "
                 << resp_frame.ToString();
         continue;
