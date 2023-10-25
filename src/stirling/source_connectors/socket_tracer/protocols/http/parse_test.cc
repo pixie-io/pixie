@@ -19,8 +19,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <absl/container/flat_hash_map.h>
 #include <algorithm>
-#include <map>
 #include <random>
 #include <utility>
 #include <vector>
