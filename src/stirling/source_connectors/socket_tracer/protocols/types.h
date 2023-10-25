@@ -19,7 +19,6 @@
 #pragma once
 
 #include <deque>
-#include <map>
 #include <variant>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
