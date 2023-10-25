@@ -5782,9 +5782,9 @@ __metadata:
   linkType: hard
 
 "crypto-js@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "crypto-js@npm:4.0.0"
-  checksum: f769e9331f037d79873061656a26d21cae7a04dde0a64f37b9a6af45989ef0cd1461e64e0e72e6b842b3c865473489f55dfd05653609b90306baf3ea79d7c250
+  version: 4.2.0
+  resolution: "crypto-js@npm:4.2.0"
+  checksum: f051666dbc077c8324777f44fbd3aaea2986f198fe85092535130d17026c7c2ccf2d23ee5b29b36f7a4a07312db2fae23c9094b644cc35f7858b1b4fcaf27774
   languageName: node
   linkType: hard
 
