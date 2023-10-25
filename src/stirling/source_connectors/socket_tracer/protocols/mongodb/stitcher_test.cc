@@ -24,6 +24,7 @@
 #include <utility>
 
 #include "src/common/testing/testing.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
 
 namespace px {
 namespace stirling {
@@ -49,26 +50,6 @@ Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id, int32_t response_to
   frame.sections.push_back(section);
 
   return frame;
-}
-
-// Uncomment following two functions once upstream testing functions are merged.
-bool AreAllDequesEmpty(
-    const absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>& frame_map) {
-  for (const auto& pair : frame_map) {
-    if (!pair.second.empty()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-size_t TotalDequeSize(
-    const absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>& frame_map) {
-  size_t total_size = 0;
-  for (const auto& pair : frame_map) {
-    total_size += pair.second.size();
-  }
-  return total_size;
 }
 
 TEST_F(MongoDBStitchFramesTest, VerifyStitchingWithReusedStreams) {
