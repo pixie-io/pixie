@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <algorithm>
 #include <deque>
 #include <map>
@@ -66,23 +67,24 @@ class DataStream : NotCopyMoveable {
    * @param type whether to parse as requests, responses or mixed traffic.
    * @return deque of parsed messages.
    */
-  template <typename TFrameType, typename TStateType>
+  template <typename TKey, typename TFrameType, typename TStateType>
   void ProcessBytesToFrames(message_type_t type, TStateType* state);
 
   /**
    * Initialize the frames to the requested frame type.
    */
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   void InitFrames() {
-    DCHECK(std::holds_alternative<std::monostate>(frames_) ||
-           std::holds_alternative<std::deque<TFrameType>>(frames_))
-        << absl::Substitute(
-               "Must hold the default std::monostate, or the same type as requested. "
-               "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
-               frames_.index(), typeid(TFrameType).name());
+    bool check_condition =
+        std::holds_alternative<std::monostate>(frames_) ||
+        std::holds_alternative<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(frames_);
+    DCHECK(check_condition) << absl::Substitute(
+        "Must hold the default std::monostate, or the same type as requested. "
+        "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
+        frames_.index(), typeid(TFrameType).name());
     if (std::holds_alternative<std::monostate>(frames_)) {
       // Reset the type to the expected type.
-      frames_ = std::deque<TFrameType>();
+      frames_ = absl::flat_hash_map<TKey, std::deque<TFrameType>>();
       LOG_IF(ERROR, frames_.valueless_by_exception())
           << absl::Substitute("valueless_by_exception() triggered by initializing to type: $0",
                               typeid(TFrameType).name());
@@ -94,33 +96,36 @@ class DataStream : NotCopyMoveable {
    * @tparam TFrameType The parsed frame type within the deque.
    * @return deque of frames.
    */
-  template <typename TFrameType>
-  std::deque<TFrameType>& Frames() {
+  template <typename TKey, typename TFrameType>
+  absl::flat_hash_map<TKey, std::deque<TFrameType>>& Frames() {
     // As a safety net, make sure the frames have been initialized.
-    InitFrames<TFrameType>();
+    InitFrames<TKey, TFrameType>();
 
     LOG_IF(ERROR, frames_.valueless_by_exception()) << absl::Substitute(
         "valueless_by_exception() triggered by type: $0", typeid(TFrameType).name());
-    return std::get<std::deque<TFrameType>>(frames_);
+    return std::get<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(frames_);
   }
 
-  template <typename TFrameType>
-  const std::deque<TFrameType>& Frames() const {
-    DCHECK(std::holds_alternative<std::deque<TFrameType>>(frames_)) << absl::Substitute(
-        "Must hold the same type as requested. "
-        "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
-        frames_.index(), typeid(TFrameType).name());
-    return std::get<std::deque<TFrameType>>(frames_);
+  template <typename TKey, typename TFrameType>
+  const absl::flat_hash_map<TKey, std::deque<TFrameType>>& Frames() const {
+    DCHECK((std::holds_alternative<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(frames_)))
+        << absl::Substitute(
+               "Must hold the same type as requested. "
+               "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
+               frames_.index(), typeid(TFrameType).name());
+    return std::get<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(frames_);
   }
 
   /**
    * Approximate size of the parsed frames in the DataStream.
    */
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   size_t FramesSize() const {
     size_t size = 0;
-    for (const auto& msg : Frames<TFrameType>()) {
-      size += msg.ByteSize();
+    for (const auto& [_, frames] : Frames<TKey, TFrameType>()) {
+      for (const auto& frame : frames) {
+        size += frame.ByteSize();
+      }
     }
     return size;
   }
@@ -134,10 +139,22 @@ class DataStream : NotCopyMoveable {
    * Checks if the DataStream is empty of both raw events and parsed messages.
    * @return true if empty of all data.
    */
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   bool Empty() const {
-    return data_buffer_.empty() && (std::holds_alternative<std::monostate>(frames_) ||
-                                    std::get<std::deque<TFrameType>>(frames_).empty());
+    bool data_buffer_empty = data_buffer_.empty();
+    bool monostate = std::holds_alternative<std::monostate>(frames_);
+    if (data_buffer_empty || monostate) {
+      return true;
+    }
+    bool all_deques_empty = true;
+    for (const auto& [_, frames] :
+         std::get<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(frames_)) {
+      if (!frames.empty()) {
+        all_deques_empty = false;
+        break;
+      }
+    }
+    return all_deques_empty;
   }
 
   /**
@@ -215,16 +232,18 @@ class DataStream : NotCopyMoveable {
   /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   void CleanupFrames(size_t size_limit_bytes,
                      std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
-    size_t size = FramesSize<TFrameType>();
+    size_t size = FramesSize<TKey, TFrameType>();
     if (size > size_limit_bytes) {
       VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,
                                   size_limit_bytes);
-      Frames<TFrameType>().clear();
+      for (auto& [_, frame_deque] : Frames<TKey, TFrameType>()) {
+        frame_deque.clear();
+      }
     }
-    EraseExpiredFrames(expiry_timestamp, &Frames<TFrameType>());
+    EraseExpiredFrames(expiry_timestamp, &Frames<TKey, TFrameType>());
   }
 
   /**
@@ -254,22 +273,24 @@ class DataStream : NotCopyMoveable {
   protocols::DataStreamBuffer& data_buffer() { return data_buffer_; }
 
  private:
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   static void EraseExpiredFrames(
       std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp,
-      std::deque<TFrameType>* frames) {
-    auto iter = frames->begin();
-    for (; iter != frames->end(); ++iter) {
-      auto frame_timestamp = std::chrono::time_point<std::chrono::steady_clock>(
-          std::chrono::nanoseconds(iter->timestamp_ns));
-      // As messages are put into the list with monotonically increasing creation time stamp,
-      // we can just stop at the first frame that is younger than the expiration duration.
-      // TODO(yzhao): Benchmark with binary search and pick the faster one.
-      if (expiry_timestamp < frame_timestamp) {
-        break;
+      absl::flat_hash_map<TKey, std::deque<TFrameType>>* frames) {
+    for (auto& [key, deque] : *frames) {
+      auto iter = deque.begin();
+      for (; iter != deque.end(); ++iter) {
+        auto frame_timestamp = std::chrono::time_point<std::chrono::steady_clock>(
+            std::chrono::nanoseconds(iter->timestamp_ns));
+        // As messages are put into the list with monotonically increasing creation time stamp,
+        // we can just stop at the first frame that is younger than the expiration duration.
+        // TODO(yzhao): Benchmark with binary search and pick the faster one.
+        if (expiry_timestamp < frame_timestamp) {
+          break;
+        }
       }
+      deque.erase(deque.begin(), iter);
     }
-    frames->erase(frames->begin(), iter);
   }
 
   // Raw data events from BPF.
@@ -320,19 +341,24 @@ class DataStream : NotCopyMoveable {
   // Keep track of the protocol for this DataStream so that data loss can be reported per protocol.
   traffic_protocol_t protocol_ = traffic_protocol_t::kProtocolUnknown;
 
-  template <typename TFrameType>
+  template <typename TKey, typename TFrameType>
   friend std::string DebugString(const DataStream& d, std::string_view prefix);
 };
 
 // Note: can't make DebugString a class member because of GCC restrictions.
 
-template <typename TFrameType>
+template <typename TKey, typename TFrameType>
 inline std::string DebugString(const DataStream& d, std::string_view prefix) {
   std::string info;
   info += absl::Substitute("$0raw event bytes=$1\n", prefix, d.data_buffer_.size());
   int frames_size;
-  if (std::holds_alternative<std::deque<TFrameType>>(d.frames_)) {
-    frames_size = std::get<std::deque<TFrameType>>(d.frames_).size();
+  if (std::holds_alternative<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(d.frames_)) {
+    const auto& frames_map = std::get<absl::flat_hash_map<TKey, std::deque<TFrameType>>>(d.frames_);
+    // Loop through the map to sum the sizes of all the deques
+    frames_size = 0;
+    for (const auto& [key, frame_deque] : frames_map) {
+      frames_size += frame_deque.size();
+    }
   } else if (std::holds_alternative<std::monostate>(d.frames_)) {
     frames_size = 0;
   } else {

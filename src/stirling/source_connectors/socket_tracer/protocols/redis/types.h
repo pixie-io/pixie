@@ -60,11 +60,13 @@ struct Record {
   }
 };
 
+using stream_id_t = uint16_t;
 // Required by event parser interface.
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Message;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = stream_id_t;
 };
 
 }  // namespace redis

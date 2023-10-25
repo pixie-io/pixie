@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <map>
 #include <random>
 #include <utility>
 #include <vector>
@@ -791,13 +792,13 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
     AddEvent(events[1]);
     AddEvent(events[2]);
 
-    std::deque<Message> parsed_messages;
+    absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
     ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                      /* resync */ false, &state);
     data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
-    ASSERT_THAT(parsed_messages,
+    ASSERT_THAT(parsed_messages[0],
                 ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
   }
 }
@@ -828,14 +829,15 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
     AddEvent(events[1]);
     AddEvent(events[2]);
 
-    std::deque<Message> parsed_messages;
+    absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
     ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                      /* resync */ false, &state);
     data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
-    ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
-                                             HTTPResp2ExpectedMessage()));
+    ASSERT_THAT(parsed_messages[0],
+                ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
+                            HTTPResp2ExpectedMessage()));
   }
 }
 
@@ -860,12 +862,13 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   AddEvent(events[1]);
   // Don't append last split, yet.
 
-  std::deque<Message> parsed_messages;
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
   ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   ASSERT_EQ(ParseState::kNeedsMoreData, result.state);
-  ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
+  ASSERT_THAT(parsed_messages[0],
+              ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
 
   data_buffer_.RemovePrefix(result.end_position);
 
@@ -876,8 +879,9 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
                        /* resync */ false, &state);
 
   ASSERT_EQ(ParseState::kSuccess, result.state);
-  ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
-                                           HTTPResp2ExpectedMessage()));
+  ASSERT_THAT(parsed_messages[0],
+              ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
+                          HTTPResp2ExpectedMessage()));
 }
 
 // Like ParseHTTPResponsesWithLeftover, but repeats test many times,
@@ -907,7 +911,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     AddEvent(events[0]);
     AddEvent(events[1]);
 
-    std::deque<Message> parsed_messages;
+    absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
     ParseResult result1 = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                       /* resync */ false, &state);
 
@@ -919,7 +923,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
                                       /* resync */ false, &state);
 
     ASSERT_EQ(ParseState::kSuccess, result2.state);
-    ASSERT_THAT(parsed_messages,
+    ASSERT_THAT(parsed_messages[0],
                 ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
                             HTTPResp2ExpectedMessage(), HTTPResp1ExpectedMessage()));
   }
@@ -1051,7 +1055,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
         CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
     AddEvents(events);
 
-    std::deque<Message> parsed_messages;
+    absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
     ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
 
@@ -1061,7 +1065,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
     data_buffer_.Reset();
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
-    ASSERT_THAT(parsed_messages,
+    ASSERT_THAT(parsed_messages[0],
                 ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
   }
 }
@@ -1075,7 +1079,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
         CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
     AddEvents(events);
 
-    std::deque<Message> parsed_messages;
+    absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
     ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                      /* resync */ true, &state);
 
@@ -1085,7 +1089,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
     data_buffer_.Reset();
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
-    EXPECT_THAT(parsed_messages,
+    EXPECT_THAT(parsed_messages[0],
                 ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
   }
 }
@@ -1101,12 +1105,12 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
       CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
   AddEvents(events);
 
-  std::deque<Message> parsed_messages;
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
   ParseResult result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages,
+  EXPECT_THAT(parsed_messages[0],
               ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
 }
 
@@ -1118,12 +1122,13 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
       CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
   AddEvents(events);
 
-  std::deque<Message> parsed_messages;
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
   ParseResult result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                                    /* resync */ false, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
+  EXPECT_THAT(parsed_messages[0],
+              ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }
 
 // The two tests below introduce a large, but incompletely traced request that
@@ -1144,7 +1149,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
       CreateEvents<std::string_view>({kStuckInducingReq, kHTTPPostReq0, kHTTPGetReq1});
   AddEvents(events);
 
-  std::deque<Message> parsed_messages;
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
   ParseResult result;
 
   result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages,
@@ -1157,7 +1162,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
   result = ParseFrames(message_type_t::kRequest, &data_buffer_, &parsed_messages, /* resync */ true,
                        &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages,
+  EXPECT_THAT(parsed_messages[0],
               ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
 }
 
@@ -1174,7 +1179,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
       CreateEvents<std::string_view>({kStuckInducingResp, kHTTPResp1, kHTTPResp2});
   AddEvents(events);
 
-  std::deque<Message> parsed_messages;
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
   ParseResult result;
 
   result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
@@ -1187,7 +1192,8 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
   result = ParseFrames(message_type_t::kResponse, &data_buffer_, &parsed_messages,
                        /* resync */ true, &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
+  EXPECT_THAT(parsed_messages[0],
+              ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }
 
 }  // namespace http

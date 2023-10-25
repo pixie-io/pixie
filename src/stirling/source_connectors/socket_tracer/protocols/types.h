@@ -19,6 +19,7 @@
 #pragma once
 
 #include <deque>
+#include <map>
 #include <variant>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
@@ -39,17 +40,18 @@ namespace protocols {
 
 // clang-format off
 // PROTOCOL_LIST: Requires update on new protocols.
+// Note: stream_id is set to 0 for protocols that use a single stream / have no notion of streams.
 using FrameDequeVariant = std::variant<std::monostate,
-                                       std::deque<cass::Frame>,
-                                       std::deque<http::Message>,
-                                       std::deque<mux::Frame>,
-                                       std::deque<mysql::Packet>,
-                                       std::deque<pgsql::RegularMessage>,
-                                       std::deque<dns::Frame>,
-                                       std::deque<redis::Message>,
-                                       std::deque<kafka::Packet>,
-                                       std::deque<nats::Message>,
-                                       std::deque<amqp::Frame>>;
+                                       absl::flat_hash_map<cass::stream_id_t, std::deque<cass::Frame>>,
+                                       absl::flat_hash_map<http::stream_id_t, std::deque<http::Message>>,
+                                       absl::flat_hash_map<mux::stream_id_t, std::deque<mux::Frame>>,
+                                       absl::flat_hash_map<mysql::connection_id_t, std::deque<mysql::Packet>>,
+                                       absl::flat_hash_map<pgsql::connection_id_t, std::deque<pgsql::RegularMessage>>,
+                                       absl::flat_hash_map<dns::stream_id_t, std::deque<dns::Frame>>,
+                                       absl::flat_hash_map<redis::stream_id_t, std::deque<redis::Message>>,
+                                       absl::flat_hash_map<kafka::correlation_id_t, std::deque<kafka::Packet>>,
+                                       absl::flat_hash_map<nats::stream_id_t, std::deque<nats::Message>>,
+                                       absl::flat_hash_map<amqp::channel_id, std::deque<amqp::Frame>>>;
 // clang-format off
 
 }  // namespace protocols
