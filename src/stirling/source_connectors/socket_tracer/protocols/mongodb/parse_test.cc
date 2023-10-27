@@ -577,8 +577,7 @@ TEST_F(MongoDBParserTest, ValidateStateOrderFromFrames) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(mongoDBValidRequestTwoSections));
 
   // Initialize what the state's stream order should look like after the first insertion.
-  std::vector<std::pair<mongodb::stream_id_t, mongodb::stream_id_consumed_t>> stream_order{
-      {917, false}};
+  std::vector<std::pair<mongodb::stream_id_t, bool>> stream_order{{917, false}};
 
   StateWrapper state_order{};
 

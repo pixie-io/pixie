@@ -156,9 +156,8 @@ struct Record {
 };
 
 using stream_id_t = int32_t;
-using stream_id_consumed_t = bool;
 struct State {
-  std::vector<std::pair<mongodb::stream_id_t, stream_id_consumed_t>> stream_order;
+  std::vector<std::pair<mongodb::stream_id_t, bool>> stream_order;
 };
 
 struct StateWrapper {
