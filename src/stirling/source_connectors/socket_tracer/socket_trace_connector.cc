@@ -721,6 +721,9 @@ void SocketTraceConnector::CheckTracerState() {
   }
 }
 
+using stream_id_t = protocols::http::stream_id_t;
+using message_t = protocols::http::Message;
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   set_iteration_time(now_fn_());
 
@@ -787,10 +790,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
       // std::monostate.
-      ECHECK((conn_tracker->send_data()
-                  .Empty<protocols::http::stream_id_t, protocols::http::Message>()));
-      ECHECK((conn_tracker->recv_data()
-                  .Empty<protocols::http::stream_id_t, protocols::http::Message>()));
+      DCHECK((conn_tracker->send_data().Empty<stream_id_t, message_t>()));
+      DCHECK((conn_tracker->recv_data().Empty<stream_id_t, message_t>()));
     }
 
     conn_tracker->IterationPostTick();
