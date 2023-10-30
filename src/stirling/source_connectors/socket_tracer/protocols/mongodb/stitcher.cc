@@ -101,9 +101,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
   std::vector<mongodb::Record> records;
   int error_count = 0;
 
-  for (auto stream_id_it = state->stream_order.begin(); stream_id_it != state->stream_order.end();
-       stream_id_it++) {
-    auto& stream_id_pair = *stream_id_it;
+  for (auto& stream_id_pair : state->stream_order) {
     auto stream_id = stream_id_pair.first;
 
     // Find the stream ID's response deque.
@@ -129,7 +127,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
     uint64_t latest_resp_ts = 0;
 
     // Stitch the first frame in the response deque with the corresponding request frame.
-    for (const auto& [idx, resp_frame] : Enumerate(resp_deque)) {
+    for (auto& resp_frame : resp_deque) {
       if (resp_frame.consumed) {
         continue;
       }
@@ -150,7 +148,7 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
             "Did not find a request frame that is earlier than the response. Response's "
             "responseTo: $0",
             resp_frame.response_to);
-        resp_deque.erase(resp_deque.begin() + idx);
+        resp_frame.consumed = true;
         error_count++;
         break;
       }
@@ -165,7 +163,6 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       FlattenSections(&req_frame);
       FlattenSections(&resp_frame);
       records.push_back({std::move(req_frame), std::move(resp_frame)});
-      resp_deque.erase(resp_deque.begin() + idx);
       break;
     }
 
