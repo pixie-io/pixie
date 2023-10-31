@@ -86,7 +86,8 @@ def gen_tshark_cmd():
     -e tcp.srcport \
     -e udp.srcport \
     -e tcp.dstport \
-    -e udp.dstport"
+    -e udp.dstport \
+    -d tcp.port==27017,mongo"
 
     for protocol, spec in ProtocolParsingSpecs.items():
         field_name = spec["length_field"]
