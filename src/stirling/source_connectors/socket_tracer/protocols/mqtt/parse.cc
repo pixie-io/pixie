@@ -26,7 +26,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/types.h"
 
 #define PX_ASSIGN_OR_RETURN_ERROR(expr, val_or) \
-  PX_ASSIGN_OR(expr, val_or, return error::InvalidArgument("Malformed Packet"))
+  PX_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
 
 namespace px {
 namespace stirling {
@@ -158,12 +158,11 @@ static inline std::tuple<unsigned long, size_t> VariableLengthEncodingDecoder(Bi
     return std::make_tuple(decoded_value, num_bytes);
 }
 
-Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properties_length) {
+ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properties_length) {
     uint8_t property_code;
     while (properties_length > 0) {
         // Extracting the property code
-        property_code = decoder->ExtractBEInt<uint8_t>().ValueOr(0xff);
-        CTX_DCHECK_NE(property_code, 0xff);
+        PX_ASSIGN_OR_RETURN_ERROR(property_code, decoder->ExtractBEInt<uint8_t>());
         properties_length -= 1;
 
         switch (property_code) {
@@ -174,7 +173,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
                 } else if (payload_format_indicator == 0x01) {
                     result->properties["payload_format"] = "utf-8";
                 } else {
-                    return error::InvalidArgument("Invalid payload format indicator");
+                    return ParseState::kInvalid;
                 }
                 properties_length -= 1;
                 break;
@@ -188,7 +187,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::ContentType): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view content_type = decoder->ExtractString(property_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view content_type, decoder->ExtractString(property_length));
                 result->properties["content_type"] = std::string(content_type);
                 properties_length -= property_length;
                 break;
@@ -196,7 +195,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::ResponseTopic): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view response_topic = decoder->ExtractString(properties_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view response_topic, decoder->ExtractString(properties_length));
                 result->properties["response_topic"] = std::string(response_topic);
                 properties_length -= property_length;
                 break;
@@ -204,7 +203,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::CorrelationData): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view correlation_data = decoder->ExtractString((size_t)property_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view correlation_data, decoder->ExtractString((size_t)property_length));
                 result->properties["correlation_data"] = std::string(correlation_data);
                 properties_length -= property_length;
                 break;
@@ -226,7 +225,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::AssignedClientIdentifier): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view assigned_client_identifier = decoder->ExtractString(property_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view assigned_client_identifier, decoder->ExtractString(property_length));
                 result->properties["assigned_client_identifier"] = std::string(assigned_client_identifier);
                 properties_length -= property_length;
                 break;
@@ -240,7 +239,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::AuthenticationMethod): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view auth_method = decoder->ExtractString(property_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view auth_method, decoder->ExtractString(property_length));
                 result->properties["auth_method"] = std::string(auth_method);
                 properties_length -= property_length;
                 break;
@@ -248,7 +247,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::AuthenticationData): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view auth_data = decoder->ExtractString((size_t)property_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view auth_data, decoder->ExtractString((size_t)property_length));
                 result->properties["auth_data"] = std::string(auth_data);
                 properties_length -= property_length;
                 break;
@@ -274,7 +273,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::ResponseInformation): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view response_information = decoder->ExtractString(properties_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view response_information, decoder->ExtractString(properties_length));
                 result->properties["response_information"] = std::string(response_information);
                 properties_length -= property_length;
                 break;
@@ -282,7 +281,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::ServerReference): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view server_reference = decoder->ExtractString(properties_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view server_reference, decoder->ExtractString(property_length));
                 result->properties["server_reference"] = std::string(server_reference);
                 properties_length -= property_length;
                 break;
@@ -290,7 +289,7 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::ReasonString): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view reason_string = decoder->ExtractString(properties_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view reason_string, decoder->ExtractString(property_length));
                 result->properties["reason_string"] = std::string(reason_string);
                 properties_length -= property_length;
                 break;
@@ -328,11 +327,11 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
             case static_cast<uint8_t>(PropertyCode::UserProperty): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t key_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view key = decoder->ExtractString((size_t)key_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view key, decoder->ExtractString((size_t)key_length));
                 properties_length -= key_length;
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t value_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                std::string_view value = decoder->ExtractString((size_t)value_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view value, decoder->ExtractString((size_t)value_length));
                 properties_length -= value_length;
                 // For multiple user properties present, append to string if user property already present
                 if (result->properties.find("user-properties") == result->properties.end()) {
@@ -367,17 +366,17 @@ Status ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properti
                 break;
             }
             default:
-                return error::InvalidArgument("Invalid property"); // Return a default value or handle it as needed
+                return ParseState::kInvalid;
         }
     }
-    return Status::OK();
+    return ParseState::kSuccess;
 }
 
-Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlPacketType& control_packet_type) {
+ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlPacketType& control_packet_type) {
     switch (control_packet_type) {
         case MqttControlPacketType::CONNECT: {
             PX_ASSIGN_OR_RETURN_ERROR(uint8_t protocol_name_length, decoder->ExtractBEInt<uint16_t>());
-            std::string_view protocol_name = decoder->ExtractString((size_t)protocol_name_length).ValueOrDie();
+            PX_ASSIGN_OR_RETURN_ERROR(std::string_view protocol_name,decoder->ExtractString((size_t)protocol_name_length));
             CTX_DCHECK(protocol_name == "MQTT");
             PX_ASSIGN_OR_RETURN_ERROR(uint8_t protocol_version, decoder->ExtractBEInt<uint8_t>());
             CTX_DCHECK(protocol_version == 5);
@@ -408,7 +407,7 @@ Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlP
         }
         case MqttControlPacketType::PUBLISH: {
             PX_ASSIGN_OR_RETURN_ERROR(uint16_t topic_length, decoder->ExtractBEInt<uint16_t>());
-            std::string_view topic_name = decoder->ExtractString(topic_length).ValueOrDie();
+            PX_ASSIGN_OR_RETURN_ERROR(std::string_view topic_name, decoder->ExtractString(topic_length));
             result->payload["topic_name"] = std::string(topic_name);
 
             // Storing variable header length for use in payload length calculation
@@ -416,7 +415,7 @@ Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlP
 
             // Check if packet qos is not 0, only then load packet id
             if(result->header_fields.find("qos") == result->header_fields.end()) {
-                return error::InvalidArgument("Invalid publish header");
+                return ParseState::kInvalid;
             }
             if (result->header_fields["qos"] != 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(result->header_fields["packet_identifier"], decoder->ExtractBEInt<uint16_t>());
@@ -434,7 +433,7 @@ Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlP
         case MqttControlPacketType::PUBCOMP: {
             PX_ASSIGN_OR_RETURN_ERROR(result->header_fields["packet_identifier"], decoder->ExtractBEInt<uint16_t>());
             if(result->header_fields.find("remaining_length") == result->header_fields.end()) {
-                return error::InvalidArgument("Invalid mqtt packet");
+                return ParseState::kInvalid;
             }
             if (result->header_fields["remaining_length"] >= 3) {
                 PX_ASSIGN_OR_RETURN_ERROR(result->header_fields["reason_code"], decoder->ExtractBEInt<uint8_t>());
@@ -446,7 +445,7 @@ Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlP
                 return ParseProperties(result, decoder, properties_length);
             }
 
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::SUBSCRIBE:
         case MqttControlPacketType::SUBACK:
@@ -468,71 +467,68 @@ Status ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlP
                 std::tie(properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
                 return ParseProperties(result, decoder, properties_length);
             }
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         default:
-            return Status::OK();
+            return ParseState::kSuccess;
     }
 }
 
-Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketType& control_packet_type) {
+ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketType& control_packet_type) {
     switch (control_packet_type) {
         case MqttControlPacketType::CONNECT: {
             PX_ASSIGN_OR_RETURN_ERROR(uint16_t client_id_length, decoder->ExtractBEInt<uint16_t>());
-            std::string_view client_id = decoder->ExtractString(client_id_length).ValueOrDie();
+            PX_ASSIGN_OR_RETURN_ERROR(std::string_view client_id, decoder->ExtractString(client_id_length));
             result->payload["client_id"] =  std::string(client_id);
 
             if (result->header_fields["will_flag"]) {
                 size_t will_properties_length, will_topic_length, will_payload_length;
 
                 std::tie(will_properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
-                if (!ParseProperties(result, decoder, will_properties_length).ok()) {
-                    return error::InvalidArgument("Error parsing will properties");
+                if (ParseProperties(result, decoder, will_properties_length) == ParseState::kInvalid) {
+                    return ParseState::kInvalid;
                 }
 
                 PX_ASSIGN_OR_RETURN_ERROR(will_topic_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view will_topic = decoder->ExtractString(will_topic_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view will_topic, decoder->ExtractString(will_topic_length));
                 result->payload["will_topic"] = std::string(will_topic);
 
                 PX_ASSIGN_OR_RETURN_ERROR(will_payload_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view will_payload = decoder->ExtractString(will_payload_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view will_payload, decoder->ExtractString(will_payload_length));
                 result->payload["will_payload"] = std::string(will_payload);
             }
 
             if (result->header_fields["username_flag"]) {
                 PX_ASSIGN_OR_RETURN_ERROR(size_t username_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view username = decoder->ExtractString(username_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view username, decoder->ExtractString(username_length));
                 result->payload["username"] = std::string(username);
             }
 
             if (result->header_fields["password_flag"]) {
                 PX_ASSIGN_OR_RETURN_ERROR(size_t password_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view password = decoder->ExtractString(password_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view password, decoder->ExtractString(password_length));
                 result->payload["password"] = std::string(password);
             }
 
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::CONNACK:
-            return Status::OK();
+            return ParseState::kSuccess;
         case MqttControlPacketType::PUBLISH: {
             if ((result->header_fields.find("remaining_length") == result->header_fields.end()) ||
                 (result->header_fields.find("variable_header_length") == result->header_fields.end())) {
-                    return error::InvalidArgument("Invalid packet header");
+                    return ParseState::kInvalid;
             }
             size_t payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
-            std::string_view payload = decoder->ExtractString(payload_length).ValueOrDie();
+            PX_ASSIGN_OR_RETURN_ERROR(std::string_view payload, decoder->ExtractString(payload_length));
             result->payload["publish_message"] = std::string(payload);
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::PUBACK:
-            return Status::OK();
         case MqttControlPacketType::PUBREC:
-            return Status::OK();
         case MqttControlPacketType::PUBREL:
-            return Status::OK();
         case MqttControlPacketType::PUBCOMP:
-            return Status::OK();
+            return ParseState::kSuccess;
         case MqttControlPacketType::SUBSCRIBE: {
             size_t payload_length;
             uint16_t topic_filter_length;
@@ -540,7 +536,7 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
 
             if ((result->header_fields.find("remaining_length") == result->header_fields.end()) ||
                 (result->header_fields.find("variable_header_length") == result->header_fields.end())) {
-                return error::InvalidArgument("Invalid packet header");
+                return ParseState::kInvalid;
             }
 
             result->payload["topic_filter"] = "";
@@ -548,7 +544,7 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
             payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
             while (payload_length > 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(topic_filter_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view topic_filter = decoder->ExtractString(topic_filter_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view topic_filter, decoder->ExtractString(topic_filter_length));
                 if (result->payload["topic_filter"].empty()) {
                     result->payload["topic_filter"] += std::string(topic_filter);
                 } else {
@@ -561,7 +557,7 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
                                                             ", retain_handling : " + std::to_string((subscription_options >> 4) & 0x3) + "}";
                 payload_length -= (3 + topic_filter_length);
             }
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::UNSUBSCRIBE: {
             size_t payload_length;
@@ -569,14 +565,14 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
 
             if ((result->header_fields.find("remaining_length") == result->header_fields.end()) ||
                 (result->header_fields.find("variable_header_length") == result->header_fields.end())) {
-                return error::InvalidArgument("Invalid packet header");
+                return ParseState::kInvalid;
             }
 
             result->payload["topic_filter"] = "";
             payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
             while (payload_length > 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(topic_filter_length, decoder->ExtractBEInt<uint16_t>());
-                std::string_view topic_filter = decoder->ExtractString(topic_filter_length).ValueOrDie();
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view topic_filter, decoder->ExtractString(topic_filter_length));
                 if (result->payload["topic_filter"].empty()) {
                     result->payload["topic_filter"] += std::string(topic_filter);
                 } else {
@@ -584,7 +580,7 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
                 }
                 payload_length -= (2 + topic_filter_length);
             }
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::SUBACK:
         case MqttControlPacketType::UNSUBACK: {
@@ -593,7 +589,7 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
 
             if ((result->header_fields.find("remaining_length") == result->header_fields.end()) ||
                 (result->header_fields.find("variable_header_length") == result->header_fields.end())) {
-                return error::InvalidArgument("Invalid packet header");
+                return ParseState::kInvalid;
             }
 
             result->payload["reason_code"] = "";
@@ -607,16 +603,14 @@ Status ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPacketTy
                 }
                 payload_length -= 1;
             }
-            return Status::OK();
+            return ParseState::kSuccess;
         }
         case MqttControlPacketType::PINGREQ:
-            return Status::OK();
         case MqttControlPacketType::PINGRESP:
-            return Status::OK();
         case MqttControlPacketType::DISCONNECT:
-            return Status::OK();
+            return ParseState::kSuccess;
         default:
-            return error::InvalidArgument("Invalid Control Packet Type");;
+            return ParseState::kInvalid;;
     }
 }
 
@@ -624,15 +618,14 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf,
                   Message* result) {
     CTX_DCHECK(type == message_type_t::kRequest || type == message_type_t::kResponse);
     if (buf->size() < 2) {
-        return ParseState::kInvalid;
+        return ParseState::kNeedsMoreData;
     }
 
     BinaryDecoder decoder(*buf);
 
     // Parsing the fixed header
     // Control Packet Type extracted from first four bits of the first byte
-    uint8_t control_packet_code_flags = decoder.ExtractBEInt<uint8_t>().ValueOr(0xff);
-    CTX_DCHECK_NE(control_packet_code_flags, 0xff);
+    PX_ASSIGN_OR_RETURN_ERROR(uint8_t control_packet_code_flags, decoder.ExtractBEInt<uint8_t>());
     uint8_t control_packet_code = control_packet_code_flags >> 4;
     uint8_t control_packet_flags = control_packet_code_flags & 0x0F;
 
@@ -654,16 +647,15 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf,
     }
     result->header_fields["remaining_length"] = remaining_length;
 
-    if (!ParseVariableHeader(result, &decoder, control_packet_type).ok()) {
+    if (ParseVariableHeader(result, &decoder, control_packet_type) == ParseState::kInvalid) {
         return ParseState::kInvalid;
     }
 
-    if (!ParsePayload(result, &decoder, control_packet_type).ok()) {
+    if (ParsePayload(result, &decoder, control_packet_type) == ParseState::kInvalid) {
         return ParseState::kInvalid;
     }
 
     *buf = decoder.Buf();
-    buf->remove_prefix(buf->size());
     return ParseState::kSuccess;
 }
 
