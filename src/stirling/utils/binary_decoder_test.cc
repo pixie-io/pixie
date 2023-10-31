@@ -92,6 +92,43 @@ TEST(BinaryDecoderTest, ExtractUVarInt) {
   }
 }
 
+TEST(BinaryDecoderTest, ExtractUVarIntLimit) {
+    std::vector<std::tuple<std::vector<uint8_t>, uint64_t, uint64_t>> uVarIntsWithLimits = {
+        {{0x80, 0x01, 0x00}, 2, 128},
+        {{0xff, 0x7f, 0x00}, 2, 16383},
+        {{0xff, 0xff, 0x7f, 0xff}, 3, 2097151},
+        {{0xC0, 0xC0, 0x04}, 3, 73792},
+        {{0x80, 0x80, 0x80, 0x01, 0x00}, 4, 2097152},
+        {{0xff, 0xff, 0xff, 0x7f}, 4, 268435455},
+        {{0xff, 0xff, 0xff, 0x7f, 0xff}, 4, 268435455},
+    };
+
+    for (auto& p : uVarIntsWithLimits) {
+        auto data = std::get<0>(p);
+        auto limit = std::get<1>(p);
+        auto expected_val = std::get<2>(p);
+        std::string_view s(reinterpret_cast<char*>(data.data()), data.size());
+        BinaryDecoder bin_decoder(s);
+        ASSERT_OK_AND_EQ(bin_decoder.ExtractUVarInt(limit, false), expected_val);
+    }
+
+    std::vector<std::tuple<std::vector<uint8_t>, uint64_t>> uVarIntsWithLimitsOverflow = {
+            {{0x80}, 1},
+            {{0x80, 0x80, 0x80, 0x02}, 3},
+            {{0x80, 0x80, 0x80, 0x80, 0x80}, 4},
+            {{0x80, 0x80, 0x80, 0x80, 0x02}, 4},
+            {{0x81, 0x82, 0x83, 0x84, 0x05}, 4}
+    };
+
+    for (auto& p : uVarIntsWithLimitsOverflow) {
+        auto data = std::get<0>(p);
+        auto limit = std::get<1>(p);
+        std::string_view s(reinterpret_cast<char*>(data.data()), data.size());
+        BinaryDecoder bin_decoder(s);
+        ASSERT_NOT_OK(bin_decoder.ExtractUVarInt(limit, false));
+    }
+}
+
 TEST(BinaryDecoderTest, ExtractUVarIntOverflow) {
   std::vector<std::vector<uint8_t>> uVarInts = {
       {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02},
