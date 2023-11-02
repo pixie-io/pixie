@@ -22,9 +22,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
-	"os"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -63,15 +60,15 @@ type Client struct {
 
 	cloudAddr string
 
-	useEncryption bool
+	useEncryption          bool
+	disableTLSVerification bool
 
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
 	vizier   vizierpb.VizierServiceClient
 }
 
-// NewClient creates a new Pixie API Client. The defaults result in a connection to Pixie's Community Cloud (work.withpixie.ai).
-// If the default cloud address is overridden with ClientOptions, `PX_DISABLE_TLS` may need to be set if your cloud backend does not support TLS.
+// NewClient creates a new Pixie API Client.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	c := &Client{
 		cloudAddr:     defaultCloudAddr,
@@ -89,15 +86,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 }
 
 func (c *Client) init(ctx context.Context) error {
-	isInternal := strings.Contains(c.cloudAddr, "cluster.local")
-	tlsDisabled := os.Getenv("PX_DISABLE_TLS") == "1"
-
-	if !tlsDisabled && isInternal {
-		log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
-	}
-
-	insecureSkipVerify := tlsDisabled && isInternal
-	tlsConfig := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
+	tlsConfig := &tls.Config{InsecureSkipVerify: c.disableTLSVerification}
 	creds := credentials.NewTLS(tlsConfig)
 
 	conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(creds))

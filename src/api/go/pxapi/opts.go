@@ -18,6 +18,12 @@
 
 package pxapi
 
+import (
+	"log"
+	"os"
+	"strings"
+)
+
 // ClientOption configures options on the client.
 type ClientOption func(client *Client)
 
@@ -25,6 +31,21 @@ type ClientOption func(client *Client)
 func WithCloudAddr(cloudAddr string) ClientOption {
 	return func(c *Client) {
 		c.cloudAddr = cloudAddr
+	}
+}
+
+// Allows disabling TLS verification if the `PX_DISABLE_TLS` env var is set and the cloud address is a cluster domain (cluster.local).
+func WithDisableTLSVerification(cloudAddr string) ClientOption {
+	return func(c *Client) {
+		isInternal := strings.Contains(cloudAddr, "cluster.local")
+		tlsDisabled := os.Getenv("PX_DISABLE_TLS") == "1"
+		insecureSkipVerify := tlsDisabled && isInternal
+
+		if !tlsDisabled && isInternal {
+			log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
+		} else {
+			c.disableTLSVerification = insecureSkipVerify
+		}
 	}
 }
 

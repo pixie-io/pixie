@@ -58,7 +58,10 @@ filegroup(
 
 pl_go_test(
     name = "pxapi_test",
-    srcs = ["results_test.go"],
+    srcs = [
+        "opts_test.go",
+        "results_test.go",
+    ],
     embed = [":pxapi"],
     deps = [
         "//src/api/go/pxapi/errdefs",
