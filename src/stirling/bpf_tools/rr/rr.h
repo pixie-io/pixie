@@ -67,7 +67,7 @@ class BPFReplayer : public NotCopyMoveable {
                                                               const uint64_t addr,
                                                               const uint32_t pid);
   Status OpenReplayProtobuf(const std::string& replay_events_pb_file_path);
-  bool PlabackComplete() const { return playback_event_idx_ >= events_proto_.event_size(); }
+  bool PlaybackComplete() const { return playback_event_idx_ >= events_proto_.event_size(); }
 
   ::px::stirling::rr::BPFEvents& events_proto() { return events_proto_; }
 

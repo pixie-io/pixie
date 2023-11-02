@@ -140,7 +140,7 @@ void RecordPerfBufferLoss(void* cb_cookie, uint64_t lost) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Replay.
 void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     LOG_FIRST_N(INFO, 1) << "BPFReplayer::ReplayPerfBufferEvents(), plaback complete.";
     return;
   }
@@ -171,7 +171,7 @@ void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec)
 
 Status BPFReplayer::ReplayArrayGetValue(const std::string& name, const int32_t idx,
                                         const uint32_t data_size, void* value) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -203,7 +203,7 @@ Status BPFReplayer::ReplayArrayGetValue(const std::string& name, const int32_t i
 
 Status BPFReplayer::ReplayMapGetValue(const std::string& name, const uint32_t key_size,
                                       void const* const key, const uint32_t val_size, void* value) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -238,7 +238,7 @@ Status BPFReplayer::ReplayMapGetValue(const std::string& name, const uint32_t ke
 
 Status BPFReplayer::ReplayMapGetKeyAndValue(const std::string& name, const uint32_t key_size,
                                             void* key, const uint32_t val_size, void* val) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -269,7 +269,7 @@ Status BPFReplayer::ReplayMapGetKeyAndValue(const std::string& name, const uint3
 }
 
 StatusOr<int32_t> BPFReplayer::ReplayBPFMapCapacityEvent(const std::string& name) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -290,7 +290,7 @@ StatusOr<int32_t> BPFReplayer::ReplayBPFMapCapacityEvent(const std::string& name
 }
 
 StatusOr<int32_t> BPFReplayer::ReplayBPFMapGetTableOfflineEvent(const std::string& name) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -312,7 +312,7 @@ StatusOr<int32_t> BPFReplayer::ReplayBPFMapGetTableOfflineEvent(const std::strin
 
 StatusOr<std::vector<uintptr_t>> BPFReplayer::ReplayBPFStackTableGetStackAddrEvent(
     const std::string& name, const int32_t stack_id) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -345,7 +345,7 @@ StatusOr<std::vector<uintptr_t>> BPFReplayer::ReplayBPFStackTableGetStackAddrEve
 StatusOr<std::string> BPFReplayer::ReplayBPFStackTableGetAddrSymbolEvent(const std::string& name,
                                                                          const uint64_t addr,
                                                                          const uint32_t pid) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
