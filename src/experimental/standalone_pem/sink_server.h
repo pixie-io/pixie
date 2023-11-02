@@ -171,12 +171,12 @@ class StandaloneResultSinkServer final : public carnotpb::ResultSinkService::Ser
   void HandleExecutionAndTimingInfo(::px::api::vizierpb::ExecuteScriptResponse* resp,
                                     carnotpb::TransferResultChunkRequest* rb) {
     auto timing_info = rb->execution_and_timing_info();
-    auto stats = resp->mutable_data()->execution_stats();
-    stats.set_bytes_processed(timing_info.execution_stats().bytes_processed());
-    stats.set_records_processed(timing_info.execution_stats().records_processed());
-    auto timing = stats.timing();
-    timing.set_execution_time_ns(timing_info.execution_stats().timing().execution_time_ns());
-    timing.set_compilation_time_ns(timing_info.execution_stats().timing().compilation_time_ns());
+    auto stats = resp->mutable_data()->mutable_execution_stats();
+    stats->set_bytes_processed(timing_info.execution_stats().bytes_processed());
+    stats->set_records_processed(timing_info.execution_stats().records_processed());
+    auto timing = stats->mutable_timing();
+    timing->set_execution_time_ns(timing_info.execution_stats().timing().execution_time_ns());
+    timing->set_compilation_time_ns(timing_info.execution_stats().timing().compilation_time_ns());
   }
 
   absl::flat_hash_map<sole::uuid, ::grpc::ServerWriter<::px::api::vizierpb::ExecuteScriptResponse>*>
