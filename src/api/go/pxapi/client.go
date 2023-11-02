@@ -22,7 +22,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -61,7 +60,8 @@ type Client struct {
 
 	cloudAddr string
 
-	useEncryption bool
+	useEncryption          bool
+	disableTLSVerification bool
 
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
@@ -86,9 +86,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 }
 
 func (c *Client) init(ctx context.Context) error {
-	isInternal := strings.Contains(c.cloudAddr, "cluster.local")
-
-	tlsConfig := &tls.Config{InsecureSkipVerify: isInternal}
+	tlsConfig := &tls.Config{InsecureSkipVerify: c.disableTLSVerification}
 	creds := credentials.NewTLS(tlsConfig)
 
 	conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(creds))
