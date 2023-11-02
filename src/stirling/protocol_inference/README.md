@@ -62,9 +62,16 @@ which is defined uniquely by `src_addr`, `dst_addr`, `src_port`, and `dst_port`.
 a series of packets in a connection. The goal is to evaluate if a connection is eventually correctly
 classified over a period over time.
 
+#### bidirectional-connection-level dataset
+
+One row in the bidirectional-connection-level dataset contains a series of packets over time in a bidrectional connection.
+Packets on both directions of a connection are merged by their `src_addr`, `dst_addr`, `src_port`, and `dst_port` and grouped to
+make the direction agnostic. This enables protocol inference on a series of packets in a bidirectional connection. The goal is
+to evaluate if at least one side of a connection can be classified to infer the protocol of the entire bidirectional connection.
+
 ## Protocol Inference Eval
 
-There should be two tsv files `packet_dataset.tsv` and `conn_dataset.tsv` in the dataset folder.
+There should be three tsv files `packet_dataset.tsv`, `conn_dataset.tsv` and `bi_dir_conn_dataset.tsv` in the dataset folder.
 Right now, available models are {ruleset_basic, ruleset_basic_conn}.
 ```shell script
 bazel run src/stirling/protocol_inference:eval -- --dataset <packet_dataset.tsv> --num_workers 8
