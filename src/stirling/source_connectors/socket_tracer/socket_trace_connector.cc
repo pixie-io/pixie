@@ -721,6 +721,9 @@ void SocketTraceConnector::CheckTracerState() {
   }
 }
 
+using stream_id_t = protocols::http::stream_id_t;
+using message_t = protocols::http::Message;
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
   set_iteration_time(now_fn_());
 
@@ -786,9 +789,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx) {
     } else {
       // If there's no transfer function, then the tracker should not be holding any data.
       // http::ProtocolTraits is used as a placeholder; the frames deque is expected to be
-      // std::monotstate.
-      ECHECK(conn_tracker->send_data().Empty<protocols::http::Message>());
-      ECHECK(conn_tracker->recv_data().Empty<protocols::http::Message>());
+      // std::monostate.
+      DCHECK((conn_tracker->send_data().Empty<stream_id_t, message_t>()));
+      DCHECK((conn_tracker->recv_data().Empty<stream_id_t, message_t>()));
     }
 
     conn_tracker->IterationPostTick();
@@ -1629,12 +1632,13 @@ template <typename TProtocolTraits>
 void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tracker,
                                           DataTable* data_table) {
   using TFrameType = typename TProtocolTraits::frame_type;
+  using TKey = typename TProtocolTraits::key_type;
 
   VLOG(3) << absl::StrCat("Connection\n", DebugString<TProtocolTraits>(*tracker, ""));
 
   // Make sure the tracker's frames containers have been properly initialized.
   // This is a nop if the containers are already of the right type.
-  tracker->InitFrames<TFrameType>();
+  tracker->InitFrames<TKey, TFrameType>();
 
   if (data_table != nullptr && tracker->state() == ConnTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by

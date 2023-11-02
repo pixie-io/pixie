@@ -856,8 +856,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
 
   // Events should have been flushed.
   ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker, source_->GetConnTracker(real_pid, real_fd));
-  EXPECT_TRUE(tracker->recv_data().Empty<http::Message>());
-  EXPECT_TRUE(tracker->send_data().Empty<http::Message>());
+  EXPECT_TRUE((tracker->recv_data().Empty<http::stream_id_t, http::Message>()));
+  EXPECT_TRUE((tracker->send_data().Empty<http::stream_id_t, http::Message>()));
 }
 
 TEST_F(SocketTraceConnectorTest, TrackedUPIDTransfersData) {

@@ -215,11 +215,13 @@ struct Stream {
 };
 
 using Record = Stream;
+using stream_id_t = uint16_t;
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Stream;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = stream_id_t;
 
   static void ConvertTimestamps(record_type* record, ConvertTimestampsFuncType func) {
     record->send.timestamp_ns = func(record->send.timestamp_ns);

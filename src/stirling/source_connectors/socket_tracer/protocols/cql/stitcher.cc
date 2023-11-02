@@ -18,6 +18,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/stitcher.h"
 
+#include <algorithm>
 #include <deque>
 #include <string>
 #include <utility>

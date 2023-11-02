@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -196,11 +197,13 @@ struct Record {
   }
 };
 
+using stream_id_t = uint16_t;
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   // TODO(ddelnano): mux does have state but assume no state for now
   using state_type = NoState;
+  using key_type = stream_id_t;
 };
 
 }  // namespace mux
