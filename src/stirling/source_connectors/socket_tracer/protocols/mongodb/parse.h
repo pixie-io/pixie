@@ -28,12 +28,13 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
-ParseState ParseFrame(BinaryDecoder* decoder, Frame* frame);
+ParseState ParseFrame(BinaryDecoder* decoder, Frame* frame, State* state);
 
 }  // namespace mongodb
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame, NoState*);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame,
+                      mongodb::StateWrapper* state);
 
 template <>
 size_t FindFrameBoundary<mongodb::Frame>(message_type_t type, std::string_view buf,

@@ -19,6 +19,8 @@
 #pragma once
 
 #include <string>
+#include <utility>
+
 #include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
@@ -153,10 +155,29 @@ struct Record {
   }
 };
 
+// The stream_order state tracks which stream_id to stitch first.
+// In more detail, the MongoDB wire protocol can link responses together in a more_to_come scenario
+// where each response points to a new response via the streamID. To stitch correctly, we record the
+// first streamID on the request side in each such sequence during frame parsing and store that in
+// the stream_order vector. The second item in the pair is a boolean flag that is initially false,
+// but set to true during the stitching process to indicate that the transaction has been processsed
+// and can be removed from the vector.
+using stream_id_t = int32_t;
+struct State {
+  std::vector<std::pair<mongodb::stream_id_t, bool>> stream_order;
+};
+
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
+
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
+  using key_type = stream_id_t;
 };
 
 }  // namespace mongodb
