@@ -146,6 +146,12 @@ TEST_P(DataStreamBufferTest, Timestamp) {
   EXPECT_OK_AND_EQ(stream_buffer.GetTimestamp(4), 4);
   EXPECT_OK_AND_EQ(stream_buffer.GetTimestamp(7), 4);
   EXPECT_NOT_OK(stream_buffer.GetTimestamp(8));
+
+  // Test automatic adjustment of non-monotonic timestamp
+  stream_buffer.Add(8, "89", 3);  // timestamp is 3, which is less than previous timestamp 4
+  EXPECT_EQ(stream_buffer.Head(), "123456789");
+  EXPECT_OK_AND_EQ(stream_buffer.GetTimestamp(8),
+                   5);  // timestamp is adjusted to previous timestamp + 1
 }
 
 TEST_P(DataStreamBufferTest, TimestampWithGap) {
