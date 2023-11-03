@@ -96,20 +96,7 @@ class DataStreamBuffer {
    * @param pos The logical position of the data.
    * @return The timestamp or error if the position does not contain valid data.
    */
-  StatusOr<uint64_t> GetTimestamp(size_t pos) {
-    StatusOr<uint64_t> timestamp_ns_status = impl_->GetTimestamp(pos);
-    if (!timestamp_ns_status.ok()) {
-      return timestamp_ns_status;
-    }
-    uint64_t current_timestamp_ns = timestamp_ns_status.ConsumeValueOrDie();
-    if (current_timestamp_ns < prev_timestamp_ns_) {
-      LOG(WARNING) << "Detected non-monotonically increasing timestamp " << current_timestamp_ns
-                   << ". Adjusting to previous timestamp + 1: " << prev_timestamp_ns_ + 1;
-      current_timestamp_ns = prev_timestamp_ns_ + 1;
-    }
-    prev_timestamp_ns_ = current_timestamp_ns;
-    return current_timestamp_ns;
-  }
+  StatusOr<uint64_t> GetTimestamp(size_t pos) { return impl_->GetTimestamp(pos); }
 
   /**
    * Remove n bytes from the head of the buffer.
@@ -162,7 +149,6 @@ class DataStreamBuffer {
 
  private:
   std::unique_ptr<DataStreamBufferImpl> impl_;
-  uint64_t prev_timestamp_ns_ = 0;
 };
 
 }  // namespace protocols

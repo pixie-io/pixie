@@ -151,9 +151,17 @@ void LazyContiguousDataStreamBufferImpl::MergeContiguousEventsIntoHead() {
   }
 
   it = events_.begin();
+  // end_it stopped at the first non-contiguous event (at the end of current head)
   while (it != end_it) {
     size_t event_size = it->second.data.size();
     memcpy(new_buffer->Data() + offset, it->second.data.data(), event_size);
+    // Ensure that the event timestamps are monotonically increasing for a given contiguous head
+    if (prev_timestamp_ > 0 && it->second.timestamp < prev_timestamp_) {
+      LOG(WARNING) << "Detected non-monotonically increasing timestamp " << it->second.timestamp
+                   << ". Adjusting to previous timestamp + 1: " << (prev_timestamp_ + 1);
+      it->second.timestamp = prev_timestamp_ + 1;
+    }
+    prev_timestamp_ = it->second.timestamp;
     head_pos_to_ts_.emplace(it->first, it->second.timestamp);
     offset += event_size;
     events_size_ -= event_size;
