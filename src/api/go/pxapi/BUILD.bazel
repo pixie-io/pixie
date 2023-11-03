@@ -40,7 +40,6 @@ go_library(
         "@org_golang_google_grpc//credentials",
         "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",
-        "@org_golang_google_grpc//credentials/insecure",
     ],
 )
 
