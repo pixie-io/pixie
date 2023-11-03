@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
-        "google.golang.org/grpc/credentials/insecure"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
 	"px.dev/pixie/src/api/go/pxapi/utils"
@@ -81,7 +80,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		opt(c)
 	}
 
-	if (strings.Contains(c.directAddr, "0.0.0.0") == true) {
+	if (c.directAddr != "") {
 		if err := c.initDirectClient(ctx); err != nil {
 			return nil, err
 		}
@@ -97,16 +96,16 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 
 // initDirectClient is for establishing gRPC connection to standalonePEM
 func (c *Client) initDirectClient(ctx context.Context) error {
-        conn, err := grpc.Dial(c.directAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-        if err != nil {
-                return err
-        }
+	conn, err := grpc.Dial(c.directAddr, grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
 
-        c.grpcConn = conn
-        c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
+	c.grpcConn = conn
+	c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
 
-        c.vizier = vizierpb.NewVizierServiceClient(conn)
-        return nil
+	c.vizier = vizierpb.NewVizierServiceClient(conn)
+	return nil
 }
 
 func (c *Client) init(ctx context.Context) error {
