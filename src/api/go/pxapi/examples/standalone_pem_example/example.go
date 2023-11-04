@@ -1,3 +1,21 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package main
 
 import (
@@ -5,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+
 	"px.dev/pixie/src/api/go/pxapi"
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
 	"px.dev/pixie/src/api/go/pxapi/types"
@@ -12,7 +31,7 @@ import (
 
 // Define PxL script with one table output.
 var (
-pxl = `
+	pxl = `
 import px
 df = px.DataFrame('tcp_stats_events', start_time='-1m')
 df = df[['tx', 'rx', 'local_addr', 'remote_addr']]
@@ -61,8 +80,9 @@ func main() {
 
 // Satisfies the TableRecordHandler interface.
 type tablePrinter struct{}
+
 func (t *tablePrinter) HandleInit(ctx context.Context, metadata types.TableMetadata) error {
-		return nil
+	return nil
 }
 func (t *tablePrinter) HandleRecord(ctx context.Context, r *types.Record) error {
 	for _, d := range r.Data {

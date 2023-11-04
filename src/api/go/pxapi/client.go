@@ -58,7 +58,7 @@ type Client struct {
 	apiKey     string
 	bearerAuth string
 
-	cloudAddr string
+	cloudAddr  string
 	directAddr string
 
 	useEncryption          bool
@@ -80,7 +80,7 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 		opt(c)
 	}
 
-	if (c.directAddr != "") {
+	if c.directAddr != "" {
 		if err := c.initDirectClient(ctx); err != nil {
 			return nil, err
 		}
@@ -92,7 +92,6 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	}
 	return c, nil
 }
-
 
 // initDirectClient is for establishing gRPC connection to standalonePEM
 func (c *Client) initDirectClient(ctx context.Context) error {
