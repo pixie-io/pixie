@@ -64,9 +64,10 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame, 
     return ParseState::kInvalid;
   }
 
-  // Parser will ignore Op Codes that have been deprecated/removed from version 5.0 onwards.
-  if (!(frame_type == Type::kOPMsg || frame_type == Type::kOPCompressed ||
-        frame_type == Type::kReserved)) {
+  // Parser will ignore Op Codes that have been deprecated/removed from version 5.0 onwards as well
+  // as kOPCompressed and kReserved which are not supported by the parser yet.
+  if (frame_type != Type::kOPMsg) {
+    buf->remove_prefix(frame->length);
     return ParseState::kIgnored;
   }
 

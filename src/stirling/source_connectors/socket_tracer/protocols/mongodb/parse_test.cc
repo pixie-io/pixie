@@ -391,6 +391,7 @@ TEST_F(MongoDBParserTest, ParseFrameWhenUnsupportedType) {
   ParseState state = ParseFrame(message_type_t::kRequest, &frame_view, &frame, &state_order);
 
   EXPECT_EQ(state, ParseState::kIgnored);
+  EXPECT_EQ(frame_view.length(), 0);
 }
 
 TEST_F(MongoDBParserTest, ParseFrameInvalidFlagBits) {
