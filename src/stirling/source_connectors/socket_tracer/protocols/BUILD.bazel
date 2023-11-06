@@ -40,6 +40,7 @@ pl_cc_library(
         "//src/stirling/source_connectors/socket_tracer/protocols/http:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/kafka:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/protocols/mongodb:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/mux:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/nats:cc_library",

@@ -28,6 +28,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
@@ -51,7 +52,8 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        absl::flat_hash_map<redis::stream_id_t, std::deque<redis::Message>>,
                                        absl::flat_hash_map<kafka::correlation_id_t, std::deque<kafka::Packet>>,
                                        absl::flat_hash_map<nats::stream_id_t, std::deque<nats::Message>>,
-                                       absl::flat_hash_map<amqp::channel_id, std::deque<amqp::Frame>>>;
+                                       absl::flat_hash_map<amqp::channel_id, std::deque<amqp::Frame>>,
+                                       absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>>;
 // clang-format off
 
 }  // namespace protocols

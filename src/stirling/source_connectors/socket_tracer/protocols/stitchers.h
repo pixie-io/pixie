@@ -25,6 +25,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/stitcher.h"  // IWYU pragma: export
+#include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/stitcher.h"  // IWYU pragma: export
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/stitcher.h"  // IWYU pragma: export

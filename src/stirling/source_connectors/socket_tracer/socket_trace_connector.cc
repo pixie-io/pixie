@@ -112,7 +112,10 @@ DEFINE_int32(stirling_enable_mux_tracing,
 DEFINE_int32(stirling_enable_amqp_tracing,
              gflags::Int32FromEnv("PX_STIRLING_ENABLE_AMQP_TRACING", px::stirling::TraceMode::On),
              "If true, stirling will trace and process AMQP messages.");
-
+DEFINE_int32(stirling_enable_mongodb_tracing,
+             gflags::Int32FromEnv("PX_STIRLING_ENABLE_MONGODB_TRACING",
+                                  px::stirling::TraceMode::Off),
+             "If true, stirling will trace and process MongoDB messages");
 DEFINE_bool(stirling_disable_golang_tls_tracing,
             gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
             "If true, stirling will not trace TLS traffic for Go applications. This implies "
@@ -262,11 +265,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   kMuxTableNum,
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(mux)}},
-      // TODO(chengruizhe): Update Mongo after implementing protocol parsers.
-      {kProtocolMongo, TransferSpec{/* trace_mode */ px::stirling::TraceMode::Off,
-                                    /* table_num */ static_cast<uint32_t>(-1),
-                                    /* trace_roles */ {},
-                                    /* transfer_fn */ nullptr}},
+      {kProtocolMongo, TransferSpec{FLAGS_stirling_enable_mongodb_tracing,
+                                    kMongoDBTableNum,
+                                    {kRoleClient, kRoleServer},
+                                    TRANSFER_STREAM_PROTOCOL(mongodb)}},
       {kProtocolAMQP, TransferSpec{FLAGS_stirling_enable_amqp_tracing,
                                    kAMQPTableNum,
                                    {kRoleClient, kRoleServer},
@@ -442,7 +444,7 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_REDIS_TRACING=", protocol_transfer_specs_[kProtocolRedis].enabled),
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
-      absl::StrCat("-DENABLE_MONGO_TRACING=", "true"),
+      absl::StrCat("-DENABLE_MONGO_TRACING=", protocol_transfer_specs_[kProtocolMongo].enabled),
   };
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(socket_trace_bcc_script, defines));
 
@@ -1562,6 +1564,30 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("client_id")>(std::move(record.req.client_id), FLAGS_max_body_bytes);
   r.Append<r.ColIndex("req_body")>(std::move(record.req.msg), kMaxKafkaBodyBytes);
   r.Append<r.ColIndex("resp")>(std::move(record.resp.msg), kMaxKafkaBodyBytes);
+  r.Append<r.ColIndex("latency")>(
+      CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(PXInfoString(conn_tracker, record));
+#endif
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::mongodb::Record record, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  endpoint_role_t role = conn_tracker.role();
+  DataTable::RecordBuilder<&kMongoDBTable> r(data_table, record.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(role);
+  r.Append<r.ColIndex("req_cmd")>(std::move(record.req.op_msg_type));
+  r.Append<r.ColIndex("req_body")>(std::move(record.req.frame_body));
+  r.Append<r.ColIndex("resp_status")>(std::move(record.resp.op_msg_type));
+  r.Append<r.ColIndex("resp_body")>(std::move(record.resp.frame_body));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(record.req.timestamp_ns, record.resp.timestamp_ns));
 #ifndef NDEBUG
