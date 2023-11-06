@@ -22,7 +22,7 @@
 BPF_ARRAY(cgroup_id_output, uint64_t, 1);
 
 int probe_bpf_get_current_cgroup_id(struct pt_regs* ctx) {
-  uint64_t cgroup_id = bpf_get_current_cgroup_id();
+  uint64_t cgroup_id = pl_bpf_get_current_cgroup_id();
   int kZero = 0;
   cgroup_id_ouptut.update(&kZero, &cgroup_id);
   return 0;
