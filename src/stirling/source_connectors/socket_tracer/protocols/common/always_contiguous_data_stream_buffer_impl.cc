@@ -277,9 +277,10 @@ void AlwaysContiguousDataStreamBufferImpl::EnforceTimestampMonotonicity(size_t p
   prev_timestamp_ = 0;
   for (; it != timestamps_.end() && it->first < chunk_end; ++it) {
     if (prev_timestamp_ > 0 && it->second < prev_timestamp_) {
-      LOG(WARNING) << "For chunk pos " << it->first << ", "
-                   << "detected non-monotonically increasing timestamp " << it->second
-                   << ". Adjusting to previous timestamp + 1: " << prev_timestamp_ + 1;
+      LOG(WARNING) << absl::Substitute(
+          "For chunk pos $0, detected non-monotonically increasing timestamp $1. Adjusting to "
+          "previous timestamp + 1: $2",
+          it->first, it->second, prev_timestamp_ + 1);
       it->second = prev_timestamp_ + 1;
     }
     prev_timestamp_ = it->second;
