@@ -22,7 +22,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+
+	//"os"
 
 	"px.dev/pixie/src/api/go/pxapi"
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
@@ -33,25 +34,32 @@ import (
 var (
 	pxl = `
 import px
-df = px.DataFrame('tcp_stats_events', start_time='-1m')
-df = df[['tx', 'rx', 'local_addr', 'remote_addr']]
-px.display(df.stream(), 'tcp_stats')
-`
+
+# Look at the http_events.
+df = px.DataFrame(table='http_events')
+
+# Grab the command line from the metadata.
+df.cmdline = px.upid_to_cmdline(df.upid)
+
+# Limit to the first 10.
+df = df.head(10)
+
+px.display(df)`
 )
 
 func main() {
-	hostID, ok := os.LookupEnv("PX_HOST_ID")
-	if !ok {
-		panic("please set PX_HOST_ID")
-	}
-
 	// Create a Pixie client with local standalonePEM listening address
 	ctx := context.Background()
-	client, err := pxapi.NewClient(ctx, pxapi.WithDirectAddr("0.0.0.0:12345"))
+	client, err := pxapi.NewClient(
+		ctx,
+		pxapi.WithDirectAddr("127.0.0.1:12345"),
+		pxapi.WithDirectCredsInsecure(),
+	)
 	if err != nil {
 		panic(err)
 	}
 	// Create a connection to the host.
+	hostID := "localhost"
 	vz, err := client.NewVizierClient(ctx, hostID)
 	if err != nil {
 		panic(err)

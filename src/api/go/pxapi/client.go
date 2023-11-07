@@ -25,6 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
@@ -57,34 +58,29 @@ type TableMuxer interface {
 type Client struct {
 	apiKey     string
 	bearerAuth string
-
-	cloudAddr  string
-	directAddr string
+	vzAddr     string
 
 	useEncryption          bool
 	disableTLSVerification bool
+	insecureDirect         bool
 
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
 	vizier   vizierpb.VizierServiceClient
+	//creds    credentials.TransportCredentials
 }
 
 // NewClient creates a new Pixie API Client.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	c := &Client{
-		cloudAddr:     defaultCloudAddr,
-		useEncryption: true,
+		vzAddr:                 defaultCloudAddr,
+		useEncryption:          true,
+		insecureDirect:         false,
+		disableTLSVerification: false,
 	}
 
 	for _, opt := range opts {
 		opt(c)
-	}
-
-	if c.directAddr != "" {
-		if err := c.initDirectClient(ctx); err != nil {
-			return nil, err
-		}
-		return c, nil
 	}
 
 	if err := c.init(ctx); err != nil {
@@ -93,25 +89,15 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	return c, nil
 }
 
-// initDirectClient is for establishing gRPC connection to standalonePEM
-func (c *Client) initDirectClient(ctx context.Context) error {
-	conn, err := grpc.Dial(c.directAddr, grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-
-	c.grpcConn = conn
-	c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
-
-	c.vizier = vizierpb.NewVizierServiceClient(conn)
-	return nil
-}
-
 func (c *Client) init(ctx context.Context) error {
 	tlsConfig := &tls.Config{InsecureSkipVerify: c.disableTLSVerification}
 	creds := credentials.NewTLS(tlsConfig)
 
-	conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(creds))
+	if c.insecureDirect {
+		creds = insecure.NewCredentials()
+	}
+
+	conn, err := grpc.Dial(c.vzAddr, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}
