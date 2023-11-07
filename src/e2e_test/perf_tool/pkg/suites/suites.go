@@ -32,6 +32,7 @@ type ExperimentSuite func() map[string]*pb.ExperimentSpec
 var ExperimentSuiteRegistry = map[string]ExperimentSuite{
 	"nightly":   nightlyExperimentSuite,
 	"http-grid": httpGridSuite,
+	"manual":   manualExperimentSuite,
 }
 
 func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
@@ -45,11 +46,23 @@ func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
 		"sock-shop":                           SockShopExperiment(defaultMetricPeriod, preDur, dur),
 		"online-boutique":                     OnlineBoutiqueExperiment(defaultMetricPeriod, preDur, dur),
 		"kafka":                               KafkaExperiment(defaultMetricPeriod, preDur, dur),
-		"px-k8ssandra":                        K8ssandraExperiment(defaultMetricPeriod, preDur, dur),
 		"app-overhead/http-loadtest/100/3000": HTTPLoadApplicationOverheadExperiment(httpNumConns, 3000, defaultMetricPeriod),
 	}
 	for _, e := range exps {
 		addTags(e, "suite/nightly")
+	}
+	return exps
+}
+
+func manualExperimentSuite() map[string]*pb.ExperimentSpec {
+	defaultMetricPeriod := 30 * time.Second
+	preDur := 5 * time.Minute
+	dur := 40 * time.Minute
+	exps := map[string]*pb.ExperimentSpec{
+		"px-k8ssandra":                        K8ssandraExperiment(defaultMetricPeriod, preDur, dur),
+	}
+	for _, e := range exps {
+		addTags(e, "suite/manual")
 	}
 	return exps
 }
