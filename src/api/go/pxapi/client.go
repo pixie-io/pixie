@@ -67,7 +67,6 @@ type Client struct {
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
 	vizier   vizierpb.VizierServiceClient
-	//creds    credentials.TransportCredentials
 }
 
 // NewClient creates a new Pixie API Client.
