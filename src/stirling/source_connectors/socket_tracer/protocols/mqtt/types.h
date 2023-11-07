@@ -26,12 +26,17 @@ namespace stirling {
 namespace protocols {
 namespace mqtt {
 
+// The protocol specification : https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.pdf
+// This supports MQTTv5
+
 struct Message: public FrameBase {
     message_type_t type = message_type_t::kUnknown;
 
     std::string control_packet_type = "UNKNOWN";
 
-    //TODO: Find the best way to store the payload
+    bool dup;
+    bool retain;
+
     std::map<std::string, uint32_t> header_fields;
     std::map<std::string, std::string> properties, payload;
 
@@ -78,9 +83,9 @@ struct Message: public FrameBase {
         payload_str += "}";
 
         return absl::Substitute(
-          "Message: {type: $0, control_packet_type: $1, header_fields: $2, "
-          "payload: $3, properties: $4}",
-          magic_enum::enum_name(type), control_packet_type,
+          "Message: {type: $0, control_packet_type: $1, dup: $2, retain: $3, header_fields: $4, "
+          "payload: $5, properties: $6}",
+          magic_enum::enum_name(type), control_packet_type, dup, retain,
           header_fields_str, payload_str, properties_str);
     }
 };
@@ -100,16 +105,6 @@ struct Record{
   std::string ToString() const {
     return absl::Substitute("[req=$0 resp=$1]", req.ToString(), resp.ToString());
   }
-};
-
-struct State {
-  bool conn_closed = false;
-};
-
-struct StateWrapper {
-  State global;
-  std::monostate send;
-  std::monostate recv;
 };
 
 struct ProtocolTraits : public BaseProtocolTraits<Record> {

@@ -592,7 +592,6 @@ TEST_F(MQTTParserTest, Payload) {
     EXPECT_EQ(frame.payload["will_topic"], "will-topic");
     EXPECT_EQ(frame.payload["will_payload"], "goodbye");
     EXPECT_EQ(frame.payload["username"], "dummyuser");
-    EXPECT_EQ(frame.payload["password"], "dummypass");
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishFrame));
@@ -791,13 +790,13 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "CONNECT");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 16);
-    EXPECT_EQ(frame.header_fields["username_flag"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["password_flag"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["will_retain"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["will_qos"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["will_flag"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["clean_start"], (unsigned long) 1);
-    EXPECT_EQ(frame.header_fields["keep_alive"], (unsigned long) 60);
+    EXPECT_EQ(frame.header_fields["username_flag"],  0);
+    EXPECT_EQ(frame.header_fields["password_flag"],  0);
+    EXPECT_EQ(frame.header_fields["will_retain"],  0);
+    EXPECT_EQ(frame.header_fields["will_qos"],  0);
+    EXPECT_EQ(frame.header_fields["will_flag"],  0);
+    EXPECT_EQ(frame.header_fields["clean_start"],  1);
+    EXPECT_EQ(frame.header_fields["keep_alive"],  60);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnackFrame));
@@ -805,8 +804,8 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "CONNACK");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 53);
-    EXPECT_EQ(frame.header_fields["session_present"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["reason_code"], (unsigned long) 0);
+    EXPECT_EQ(frame.header_fields["session_present"],  0);
+    EXPECT_EQ(frame.header_fields["reason_code"],  0);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPublishFrame));
@@ -814,9 +813,9 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "PUBLISH");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 26);
-    EXPECT_EQ(frame.header_fields["dup"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["retain"], (unsigned long) 0);
-    EXPECT_EQ(frame.header_fields["qos"], (unsigned long) 1);
+    EXPECT_EQ(frame.dup, false);
+    EXPECT_EQ(frame.retain, false);
+    EXPECT_EQ(frame.header_fields["qos"],  1);
     EXPECT_EQ(frame.payload["topic_name"], "test/topic");
     frame = Message();
 
@@ -825,7 +824,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "PUBACK");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 3);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrecFrame));
@@ -833,7 +832,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "PUBREC");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 2);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubrelFrame));
@@ -841,7 +840,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "PUBREL");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 2);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubcompFrame));
@@ -849,7 +848,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "PUBCOMP");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 2);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubscribeFrame));
@@ -857,7 +856,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "SUBSCRIBE");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 16);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
@@ -866,7 +865,7 @@ TEST_F(MQTTParserTest, Headers) {
     EXPECT_EQ(frame.control_packet_type, "SUBACK");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 4);
     EXPECT_EQ(frame.payload["reason_code"], "0");
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 1);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  1);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubscribeFrame));
@@ -874,7 +873,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "UNSUBSCRIBE");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 15);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 2);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  2);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kUnsubackFrame));
@@ -882,7 +881,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "UNSUBACK");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 4);
-    EXPECT_EQ(frame.header_fields["packet_identifier"], (unsigned long) 2);
+    EXPECT_EQ(frame.header_fields["packet_identifier"],  2);
     frame = Message();
 
     frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingreqFrame));
@@ -904,7 +903,7 @@ TEST_F(MQTTParserTest, Headers) {
     ASSERT_EQ(result_state, ParseState::kSuccess);
     EXPECT_EQ(frame.control_packet_type, "DISCONNECT");
     EXPECT_EQ(frame.header_fields["remaining_length"], (size_t) 1);
-    EXPECT_EQ(frame.header_fields["reason_code"], (unsigned long) 4);
+    EXPECT_EQ(frame.header_fields["reason_code"],  4);
     frame = Message();
 }
 

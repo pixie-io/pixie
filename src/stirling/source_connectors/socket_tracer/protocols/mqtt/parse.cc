@@ -138,24 +138,19 @@ static inline MqttControlPacketType GetControlPacketType(uint8_t control_packet_
     }
 }
 
-static inline std::tuple<unsigned long, size_t> VariableLengthEncodingDecoder(BinaryDecoder* decoder) {
-    unsigned long multiplier = 1;
-    unsigned long decoded_value = 0;
-    size_t num_bytes = 0;
-    uint8_t encoded_byte;
-    do {
-        // encoded byte cannot be 0 as there is minimum variable header size greater than 0
-        encoded_byte = decoder->ExtractBEInt<uint8_t>().ValueOrDie();
-        decoded_value += (encoded_byte & 127) * multiplier;
-        // size of the remaining length cannot be above 4 bytes
-        if (multiplier > (size_t)128 * 128 * 128) {
-            return std::make_tuple(0, num_bytes);
-        }
-        multiplier *= 128;
-        num_bytes += 1;
-    } while ((encoded_byte & 128) != 0);
+static inline StatusOr<size_t> VariableEncodingNumBytes(unsigned long integer) {
+    if (integer >= 268435456) {
+        return error::ResourceUnavailable("Maximum number of bytes exceeded for variable encoding.");
+    }
 
-    return std::make_tuple(decoded_value, num_bytes);
+    if (integer < 128) {
+        return 1;
+    } else if (integer < 16384) {
+        return 2;
+    } else if (integer < 2097152) {
+        return 3;
+    }
+    return 4;
 }
 
 ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properties_length) {
@@ -203,7 +198,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
             case static_cast<uint8_t>(PropertyCode::CorrelationData): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                PX_ASSIGN_OR_RETURN_ERROR(std::string_view correlation_data, decoder->ExtractString((size_t)property_length));
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view correlation_data, decoder->ExtractString(property_length));
                 result->properties["correlation_data"] = std::string(correlation_data);
                 properties_length -= property_length;
                 break;
@@ -211,7 +206,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
             case static_cast<uint8_t>(PropertyCode::SubscriptionIdentifier): {
                 unsigned long subscription_id;
                 size_t num_bytes;
-                std::tie(subscription_id, num_bytes) = VariableLengthEncodingDecoder(decoder);
+
+                PX_ASSIGN_OR_RETURN_ERROR(subscription_id, decoder->ExtractUVarInt());
+                StatusOr<size_t> num_bytes_status = VariableEncodingNumBytes(subscription_id);
+                if (!num_bytes_status.ok()) {
+                    return ParseState::kInvalid;
+                }
+                num_bytes = num_bytes_status.ValueOrDie();
+
                 result->properties["subscription_id"] = std::to_string(subscription_id);
                 properties_length -= num_bytes;
                 break;
@@ -247,7 +249,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
             case static_cast<uint8_t>(PropertyCode::AuthenticationData): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                PX_ASSIGN_OR_RETURN_ERROR(std::string_view auth_data, decoder->ExtractString((size_t)property_length));
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view auth_data, decoder->ExtractString(property_length));
                 result->properties["auth_data"] = std::string(auth_data);
                 properties_length -= property_length;
                 break;
@@ -327,11 +329,11 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
             case static_cast<uint8_t>(PropertyCode::UserProperty): {
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t key_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                PX_ASSIGN_OR_RETURN_ERROR(std::string_view key, decoder->ExtractString((size_t)key_length));
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view key, decoder->ExtractString(key_length));
                 properties_length -= key_length;
                 PX_ASSIGN_OR_RETURN_ERROR(uint16_t value_length, decoder->ExtractBEInt<uint16_t>());
                 properties_length -= 2;
-                PX_ASSIGN_OR_RETURN_ERROR(std::string_view value, decoder->ExtractString((size_t)value_length));
+                PX_ASSIGN_OR_RETURN_ERROR(std::string_view value, decoder->ExtractString(value_length));
                 properties_length -= value_length;
                 // For multiple user properties present, append to string if user property already present
                 if (result->properties.find("user-properties") == result->properties.end()) {
@@ -375,8 +377,8 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
 ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttControlPacketType& control_packet_type) {
     switch (control_packet_type) {
         case MqttControlPacketType::CONNECT: {
-            PX_ASSIGN_OR_RETURN_ERROR(uint8_t protocol_name_length, decoder->ExtractBEInt<uint16_t>());
-            PX_ASSIGN_OR_RETURN_ERROR(std::string_view protocol_name,decoder->ExtractString((size_t)protocol_name_length));
+            PX_ASSIGN_OR_RETURN_ERROR(uint16_t protocol_name_length, decoder->ExtractBEInt<uint16_t>());
+            PX_ASSIGN_OR_RETURN_ERROR(std::string_view protocol_name, decoder->ExtractString(protocol_name_length));
             CTX_DCHECK(protocol_name == "MQTT");
             PX_ASSIGN_OR_RETURN_ERROR(uint8_t protocol_version, decoder->ExtractBEInt<uint8_t>());
             CTX_DCHECK(protocol_version == 5);
@@ -392,7 +394,12 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
             PX_ASSIGN_OR_RETURN_ERROR(result->header_fields["keep_alive"], decoder->ExtractBEInt<uint16_t>());
 
             size_t properties_length;
-            std::tie(properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
+
+            PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+            if (!VariableEncodingNumBytes(properties_length).ok()) {
+                return ParseState::kInvalid;
+            }
+
             return ParseProperties(result, decoder, properties_length);
         }
         case MqttControlPacketType::CONNACK: {
@@ -402,7 +409,12 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
             result->header_fields["session_present"] = connack_flags;
 
             size_t properties_length;
-            std::tie(properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
+
+            PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+            if (!VariableEncodingNumBytes(properties_length).ok()) {
+                return ParseState::kInvalid;
+            }
+
             return ParseProperties(result, decoder, properties_length);
         }
         case MqttControlPacketType::PUBLISH: {
@@ -422,7 +434,14 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
                 result->header_fields["variable_header_length"] += 2;
             }
             size_t properties_length, num_bytes;
-            std::tie(properties_length, num_bytes) = VariableLengthEncodingDecoder(decoder);
+
+            PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+            StatusOr<size_t> num_bytes_status = VariableEncodingNumBytes(properties_length);
+            if (!num_bytes_status.ok()) {
+                return ParseState::kInvalid;
+            }
+            num_bytes = num_bytes_status.ValueOrDie();
+
             result->header_fields["variable_header_length"] += (uint32_t)(num_bytes + properties_length);
 
             return ParseProperties(result, decoder, properties_length);
@@ -441,7 +460,10 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
 
             if (result->header_fields["remaining_length"] >= 4) {
                 size_t properties_length;
-                std::tie(properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
+                PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+                if (!VariableEncodingNumBytes(properties_length).ok()) {
+                    return ParseState::kInvalid;
+                }
                 return ParseProperties(result, decoder, properties_length);
             }
 
@@ -455,7 +477,14 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
             // Storing variable header length for use in payload length calculation
             result->header_fields["variable_header_length"] = 2;
             size_t properties_length, num_bytes;
-            std::tie(properties_length, num_bytes) = VariableLengthEncodingDecoder(decoder);
+
+            PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+            StatusOr<size_t> num_bytes_status = VariableEncodingNumBytes(properties_length);
+            if (!num_bytes_status.ok()) {
+                return ParseState::kInvalid;
+            }
+            num_bytes = num_bytes_status.ValueOrDie();
+
             result->header_fields["variable_header_length"] += num_bytes + properties_length;
             return ParseProperties(result, decoder, properties_length);
         }
@@ -464,7 +493,12 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder, MqttCont
 
             if (result->header_fields["remaining_length"] > 1) {
                 size_t properties_length;
-                std::tie(properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
+
+                PX_ASSIGN_OR_RETURN_ERROR(properties_length, decoder->ExtractUVarInt());
+                if (!VariableEncodingNumBytes(properties_length).ok()) {
+                    return ParseState::kInvalid;
+                }
+
                 return ParseProperties(result, decoder, properties_length);
             }
             return ParseState::kSuccess;
@@ -484,7 +518,11 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
             if (result->header_fields["will_flag"]) {
                 size_t will_properties_length, will_topic_length, will_payload_length;
 
-                std::tie(will_properties_length, std::ignore) = VariableLengthEncodingDecoder(decoder);
+                PX_ASSIGN_OR_RETURN_ERROR(will_properties_length, decoder->ExtractUVarInt());
+                if (!VariableEncodingNumBytes(will_properties_length).ok()) {
+                    return ParseState::kInvalid;
+                }
+
                 if (ParseProperties(result, decoder, will_properties_length) == ParseState::kInvalid) {
                     return ParseState::kInvalid;
                 }
@@ -506,8 +544,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
 
             if (result->header_fields["password_flag"]) {
                 PX_ASSIGN_OR_RETURN_ERROR(size_t password_length, decoder->ExtractBEInt<uint16_t>());
-                PX_ASSIGN_OR_RETURN_ERROR(std::string_view password, decoder->ExtractString(password_length));
-                result->payload["password"] = std::string(password);
+                PX_ASSIGN_OR_RETURN_ERROR(std::ignore, decoder->ExtractString(password_length));
             }
 
             return ParseState::kSuccess;
@@ -519,7 +556,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
                 (result->header_fields.find("variable_header_length") == result->header_fields.end())) {
                     return ParseState::kInvalid;
             }
-            size_t payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
+            size_t payload_length = result->header_fields["remaining_length"] - result->header_fields["variable_header_length"];
             PX_ASSIGN_OR_RETURN_ERROR(std::string_view payload, decoder->ExtractString(payload_length));
             result->payload["publish_message"] = std::string(payload);
             return ParseState::kSuccess;
@@ -541,7 +578,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
 
             result->payload["topic_filter"] = "";
             result->payload["subscription_options"] = "";
-            payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
+            payload_length = result->header_fields["remaining_length"] - result->header_fields["variable_header_length"];
             while (payload_length > 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(topic_filter_length, decoder->ExtractBEInt<uint16_t>());
                 PX_ASSIGN_OR_RETURN_ERROR(std::string_view topic_filter, decoder->ExtractString(topic_filter_length));
@@ -569,7 +606,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
             }
 
             result->payload["topic_filter"] = "";
-            payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
+            payload_length = result->header_fields["remaining_length"] - result->header_fields["variable_header_length"];
             while (payload_length > 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(topic_filter_length, decoder->ExtractBEInt<uint16_t>());
                 PX_ASSIGN_OR_RETURN_ERROR(std::string_view topic_filter, decoder->ExtractString(topic_filter_length));
@@ -593,7 +630,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
             }
 
             result->payload["reason_code"] = "";
-            payload_length = (size_t)(result->header_fields["remaining_length"] - result->header_fields["variable_header_length"]);
+            payload_length = result->header_fields["remaining_length"] - result->header_fields["variable_header_length"];
             while (payload_length > 0) {
                 PX_ASSIGN_OR_RETURN_ERROR(reason_code, decoder->ExtractBEInt<uint8_t>());
                 if (result->payload["reason_code"].empty()) {
@@ -610,7 +647,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder, MqttControlPack
         case MqttControlPacketType::DISCONNECT:
             return ParseState::kSuccess;
         default:
-            return ParseState::kInvalid;;
+            return ParseState::kInvalid;
     }
 }
 
@@ -634,25 +671,35 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf,
 
     // Saving the flags if control packet type is PUBLISH
     if (control_packet_type == MqttControlPacketType::PUBLISH) {
-        result->header_fields["dup"] = (control_packet_flags >> 3) != 0;
-        result->header_fields["retain"] = (control_packet_flags & 0x1) != 0;
+        result->dup = (control_packet_flags >> 3) != 0;
+        result->retain = (control_packet_flags & 0x1) != 0;
         result->header_fields["qos"] = (control_packet_flags >> 1) & 0x3;
     }
 
     // Decoding the variable encoding of remaining length field
-    size_t remaining_length;
-    std::tie(remaining_length, std::ignore) = VariableLengthEncodingDecoder(&decoder);
+    PX_ASSIGN_OR_RETURN_ERROR(size_t remaining_length, decoder.ExtractUVarInt());
+    if (!VariableEncodingNumBytes(remaining_length).ok()) {
+        return ParseState::kInvalid;
+    }
+    if (decoder.BufSize() < remaining_length) {
+        return ParseState::kNeedsMoreData;
+    }
+
+
     if (remaining_length < 0) {
         return ParseState::kInvalid;
     }
     result->header_fields["remaining_length"] = remaining_length;
 
-    if (ParseVariableHeader(result, &decoder, control_packet_type) == ParseState::kInvalid) {
-        return ParseState::kInvalid;
+    ParseState parse_variable_header_state = ParseVariableHeader(result, &decoder, control_packet_type);
+    ParseState parse_payload_state = ParsePayload(result, &decoder, control_packet_type);
+
+    if ((parse_variable_header_state == ParseState::kInvalid) || (parse_variable_header_state == ParseState::kNeedsMoreData)) {
+        return parse_variable_header_state;
     }
 
-    if (ParsePayload(result, &decoder, control_packet_type) == ParseState::kInvalid) {
-        return ParseState::kInvalid;
+    if ((parse_payload_state == ParseState::kInvalid) || (parse_payload_state == ParseState::kNeedsMoreData)) {
+        return parse_payload_state;
     }
 
     *buf = decoder.Buf();

@@ -51,7 +51,6 @@ enum traffic_protocol_t {
   kProtocolKafka = 10,
   kProtocolMux = 11,
   kProtocolAMQP = 12,
-  kProtocolMQTT = 13,
 // We use magic enum to iterate through protocols in C++ land,
 // and don't want the C-enum-size trick to show up there.
 #ifndef __cplusplus
