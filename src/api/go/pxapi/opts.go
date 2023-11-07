@@ -45,10 +45,6 @@ func WithDisableTLSVerification(cloudAddr string) ClientOption {
 			log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
 		}
 		c.disableTLSVerification = insecureSkipVerify
-		// else {
-		// 	tlsConfig := &tls.Config{InsecureSkipVerify: insecureSkipVerify}
-		// 	c.creds = credentials.NewTLS(tlsConfig)
-		// }
 	}
 }
 
