@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"io"
 
-	//"os"
-
 	"px.dev/pixie/src/api/go/pxapi"
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
 	"px.dev/pixie/src/api/go/pxapi/types"
