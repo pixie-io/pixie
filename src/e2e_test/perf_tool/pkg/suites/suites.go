@@ -32,7 +32,7 @@ type ExperimentSuite func() map[string]*pb.ExperimentSpec
 var ExperimentSuiteRegistry = map[string]ExperimentSuite{
 	"nightly":   nightlyExperimentSuite,
 	"http-grid": httpGridSuite,
-	"manual":   manualExperimentSuite,
+	"manual":    manualExperimentSuite,
 }
 
 func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
@@ -59,7 +59,7 @@ func manualExperimentSuite() map[string]*pb.ExperimentSpec {
 	preDur := 5 * time.Minute
 	dur := 40 * time.Minute
 	exps := map[string]*pb.ExperimentSpec{
-		"px-k8ssandra":                        K8ssandraExperiment(defaultMetricPeriod, preDur, dur),
+		"px-k8ssandra": K8ssandraExperiment(defaultMetricPeriod, preDur, dur),
 	}
 	for _, e := range exps {
 		addTags(e, "suite/manual")
