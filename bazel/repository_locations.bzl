@@ -202,9 +202,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-io/ELFIO/archive/98d87a350f2384ce22b5dc72c79312a6854d88d4.tar.gz"],
     ),
     com_github_simdutf_simdutf = dict(
-        urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v3.2.8.tar.gz"],
-        strip_prefix = "simdutf-3.2.8",
-        sha256 = "3651e290e97af000cef506ceffbbf05f412fd6100e1859baf0267d42941e1e44",
+        urls = ["https://github.com/simdutf/simdutf/archive/refs/tags/v4.0.3.zip"],
+        strip_prefix = "simdutf-4.0.3",
+        sha256 = "a7f468fdb4355259ed81d4e97434abcea85098986592c4f6012b9d208b8734fe",
     ),
     com_github_tencent_rapidjson = dict(
         sha256 = "4a34a0c21794f067afca6c9809971f0bd77a1d1834c4dc53bdd09e4ab4d05ce4",
