@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/container/flat_hash_map.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -250,147 +251,176 @@ class DNSParserTest : public ::testing::Test {};
 TEST_F(DNSParserTest, BasicReq) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].header.txid, 0xc6fa);
-  EXPECT_EQ(frames[0].header.flags, 0x0100);
-  EXPECT_EQ(frames[0].header.num_queries, 1);
-  EXPECT_EQ(frames[0].header.num_answers, 0);
-  EXPECT_EQ(frames[0].header.num_auth, 0);
-  EXPECT_EQ(frames[0].header.num_addl, 1);
 
-  ASSERT_EQ(frames[0].records().size(), 1);
-  EXPECT_EQ(frames[0].records()[0].name, "intellij-experiments.appspot.com");
-  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "0.0.0.0");
+  stream_id_t only_key =
+      frames.begin()->first;  // Grab the first (and only) key. DNS has no notion of streams.
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& first_frame = frames[only_key][0];
+
+  EXPECT_EQ(first_frame.header.txid, 0xc6fa);
+  EXPECT_EQ(first_frame.header.flags, 0x0100);
+  EXPECT_EQ(first_frame.header.num_queries, 1);
+  EXPECT_EQ(first_frame.header.num_answers, 0);
+  EXPECT_EQ(first_frame.header.num_auth, 0);
+  EXPECT_EQ(first_frame.header.num_addl, 1);
+
+  ASSERT_EQ(first_frame.records().size(), 1);
+  EXPECT_EQ(first_frame.records()[0].name, "intellij-experiments.appspot.com");
+  EXPECT_EQ(first_frame.records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[0].addr.AddrStr(), "0.0.0.0");
 }
 
 TEST_F(DNSParserTest, BasicResp) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].header.txid, 0xc6fa);
-  EXPECT_EQ(frames[0].header.flags, 0x8180);
-  EXPECT_EQ(frames[0].header.num_queries, 1);
-  EXPECT_EQ(frames[0].header.num_answers, 1);
-  EXPECT_EQ(frames[0].header.num_auth, 0);
-  EXPECT_EQ(frames[0].header.num_addl, 1);
 
-  ASSERT_EQ(frames[0].records().size(), 1);
-  EXPECT_EQ(frames[0].records()[0].name, "intellij-experiments.appspot.com");
-  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "216.58.194.180");
+  stream_id_t only_key =
+      frames.begin()->first;  // Grab the first (and only) key. DNS has no notion of streams.
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& first_frame = frames[only_key][0];
+
+  EXPECT_EQ(first_frame.header.txid, 0xc6fa);
+  EXPECT_EQ(first_frame.header.flags, 0x8180);
+  EXPECT_EQ(first_frame.header.num_queries, 1);
+  EXPECT_EQ(first_frame.header.num_answers, 1);
+  EXPECT_EQ(first_frame.header.num_auth, 0);
+  EXPECT_EQ(first_frame.header.num_addl, 1);
+
+  ASSERT_EQ(first_frame.records().size(), 1);
+  EXPECT_EQ(first_frame.records()[0].name, "intellij-experiments.appspot.com");
+  EXPECT_EQ(first_frame.records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[0].addr.AddrStr(), "216.58.194.180");
 }
 
 TEST_F(DNSParserTest, BasicReq2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kReqFrame2));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].header.txid, 0xfeae);
-  EXPECT_EQ(frames[0].header.flags, 0x0100);
-  EXPECT_EQ(frames[0].header.num_queries, 1);
-  EXPECT_EQ(frames[0].header.num_answers, 0);
-  EXPECT_EQ(frames[0].header.num_auth, 0);
-  EXPECT_EQ(frames[0].header.num_addl, 0);
 
-  ASSERT_EQ(frames[0].records().size(), 1);
-  EXPECT_EQ(frames[0].records()[0].name, "www.yahoo.com");
-  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[0].addr.AddrStr(), "0.0.0.0");
+  stream_id_t only_key =
+      frames.begin()->first;  // Grab the first (and only) key. DNS has no notion of streams.
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& first_frame = frames[only_key][0];
+
+  EXPECT_EQ(first_frame.header.txid, 0xfeae);
+  EXPECT_EQ(first_frame.header.flags, 0x0100);
+  EXPECT_EQ(first_frame.header.num_queries, 1);
+  EXPECT_EQ(first_frame.header.num_answers, 0);
+  EXPECT_EQ(first_frame.header.num_auth, 0);
+  EXPECT_EQ(first_frame.header.num_addl, 0);
+
+  ASSERT_EQ(first_frame.records().size(), 1);
+  EXPECT_EQ(first_frame.records()[0].name, "www.yahoo.com");
+  EXPECT_EQ(first_frame.records()[0].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[0].addr.AddrStr(), "0.0.0.0");
 }
 
 TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame2));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].header.txid, 0xfeae);
-  EXPECT_EQ(frames[0].header.flags, 0x8180);
-  EXPECT_EQ(frames[0].header.num_queries, 1);
-  EXPECT_EQ(frames[0].header.num_answers, 5);
-  EXPECT_EQ(frames[0].header.num_auth, 0);
-  EXPECT_EQ(frames[0].header.num_addl, 0);
+  stream_id_t only_key =
+      frames.begin()->first;  // Grab the first (and only) key. DNS has no notion of streams.
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& first_frame = frames[only_key][0];
 
-  ASSERT_EQ(frames[0].records().size(), 5);
+  EXPECT_EQ(first_frame.header.txid, 0xfeae);
+  EXPECT_EQ(first_frame.header.flags, 0x8180);
+  EXPECT_EQ(first_frame.header.num_queries, 1);
+  EXPECT_EQ(first_frame.header.num_answers, 5);
+  EXPECT_EQ(first_frame.header.num_auth, 0);
+  EXPECT_EQ(first_frame.header.num_addl, 0);
 
-  EXPECT_EQ(frames[0].records()[0].name, "www.yahoo.com");
-  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kUnspecified);
-  EXPECT_EQ(frames[0].records()[0].cname, "new-fp-shed.wg1.b.yahoo.com");
+  ASSERT_EQ(first_frame.records().size(), 5);
 
-  EXPECT_EQ(frames[0].records()[1].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records()[1].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[1].addr.AddrStr(), "98.137.11.164");
-  EXPECT_EQ(frames[0].records()[1].cname, "");
+  EXPECT_EQ(first_frame.records()[0].name, "www.yahoo.com");
+  EXPECT_EQ(first_frame.records()[0].addr.family, InetAddrFamily::kUnspecified);
+  EXPECT_EQ(first_frame.records()[0].cname, "new-fp-shed.wg1.b.yahoo.com");
 
-  EXPECT_EQ(frames[0].records()[2].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records()[2].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[2].addr.AddrStr(), "74.6.231.20");
-  EXPECT_EQ(frames[0].records()[2].cname, "");
+  EXPECT_EQ(first_frame.records()[1].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(first_frame.records()[1].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[1].addr.AddrStr(), "98.137.11.164");
+  EXPECT_EQ(first_frame.records()[1].cname, "");
 
-  EXPECT_EQ(frames[0].records()[3].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records()[3].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[3].addr.AddrStr(), "74.6.231.21");
-  EXPECT_EQ(frames[0].records()[3].cname, "");
+  EXPECT_EQ(first_frame.records()[2].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(first_frame.records()[2].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[2].addr.AddrStr(), "74.6.231.20");
+  EXPECT_EQ(first_frame.records()[2].cname, "");
 
-  EXPECT_EQ(frames[0].records()[4].name, "new-fp-shed.wg1.b.yahoo.com");
-  EXPECT_EQ(frames[0].records()[4].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[4].addr.AddrStr(), "98.137.11.163");
-  EXPECT_EQ(frames[0].records()[4].cname, "");
+  EXPECT_EQ(first_frame.records()[3].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(first_frame.records()[3].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[3].addr.AddrStr(), "74.6.231.21");
+  EXPECT_EQ(first_frame.records()[3].cname, "");
+
+  EXPECT_EQ(first_frame.records()[4].name, "new-fp-shed.wg1.b.yahoo.com");
+  EXPECT_EQ(first_frame.records()[4].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[4].addr.AddrStr(), "98.137.11.163");
+  EXPECT_EQ(first_frame.records()[4].cname, "");
 }
 
 TEST_F(DNSParserTest, CNameAndMultipleResponses2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame3));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].header.txid, 0x938f);
-  EXPECT_EQ(frames[0].header.flags, 0x8180);
-  EXPECT_EQ(frames[0].header.num_queries, 1);
-  EXPECT_EQ(frames[0].header.num_answers, 5);
-  EXPECT_EQ(frames[0].header.num_auth, 0);
-  EXPECT_EQ(frames[0].header.num_addl, 1);
-  ASSERT_EQ(frames[0].records().size(), 5);
 
-  EXPECT_EQ(frames[0].records()[0].name, "www.reddit.com");
-  EXPECT_EQ(frames[0].records()[0].addr.family, InetAddrFamily::kUnspecified);
-  EXPECT_EQ(frames[0].records()[0].cname, "reddit.map.fastly.net");
+  stream_id_t only_key =
+      frames.begin()->first;  // Grab the first (and only) key. DNS has no notion of streams.
+  ASSERT_EQ(frames[only_key].size(), 1);
+  Frame& first_frame = frames[only_key][0];
 
-  EXPECT_EQ(frames[0].records()[1].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records()[1].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[1].addr.AddrStr(), "151.101.1.140");
-  EXPECT_EQ(frames[0].records()[1].cname, "");
+  EXPECT_EQ(first_frame.header.txid, 0x938f);
+  EXPECT_EQ(first_frame.header.flags, 0x8180);
+  EXPECT_EQ(first_frame.header.num_queries, 1);
+  EXPECT_EQ(first_frame.header.num_answers, 5);
+  EXPECT_EQ(first_frame.header.num_auth, 0);
+  EXPECT_EQ(first_frame.header.num_addl, 1);
+  ASSERT_EQ(first_frame.records().size(), 5);
 
-  EXPECT_EQ(frames[0].records()[2].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records()[2].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[2].addr.AddrStr(), "151.101.65.140");
-  EXPECT_EQ(frames[0].records()[2].cname, "");
+  EXPECT_EQ(first_frame.records()[0].name, "www.reddit.com");
+  EXPECT_EQ(first_frame.records()[0].addr.family, InetAddrFamily::kUnspecified);
+  EXPECT_EQ(first_frame.records()[0].cname, "reddit.map.fastly.net");
 
-  EXPECT_EQ(frames[0].records()[3].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records()[3].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[3].addr.AddrStr(), "151.101.129.140");
-  EXPECT_EQ(frames[0].records()[3].cname, "");
+  EXPECT_EQ(first_frame.records()[1].name, "reddit.map.fastly.net");
+  EXPECT_EQ(first_frame.records()[1].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[1].addr.AddrStr(), "151.101.1.140");
+  EXPECT_EQ(first_frame.records()[1].cname, "");
 
-  EXPECT_EQ(frames[0].records()[4].name, "reddit.map.fastly.net");
-  EXPECT_EQ(frames[0].records()[4].addr.family, InetAddrFamily::kIPv4);
-  EXPECT_EQ(frames[0].records()[4].addr.AddrStr(), "151.101.193.140");
-  EXPECT_EQ(frames[0].records()[4].cname, "");
+  EXPECT_EQ(first_frame.records()[2].name, "reddit.map.fastly.net");
+  EXPECT_EQ(first_frame.records()[2].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[2].addr.AddrStr(), "151.101.65.140");
+  EXPECT_EQ(first_frame.records()[2].cname, "");
+
+  EXPECT_EQ(first_frame.records()[3].name, "reddit.map.fastly.net");
+  EXPECT_EQ(first_frame.records()[3].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[3].addr.AddrStr(), "151.101.129.140");
+  EXPECT_EQ(first_frame.records()[3].cname, "");
+
+  EXPECT_EQ(first_frame.records()[4].name, "reddit.map.fastly.net");
+  EXPECT_EQ(first_frame.records()[4].addr.family, InetAddrFamily::kIPv4);
+  EXPECT_EQ(first_frame.records()[4].addr.AddrStr(), "151.101.193.140");
+  EXPECT_EQ(first_frame.records()[4].cname, "");
 }
 
 TEST_F(DNSParserTest, IncompleteHeader) {
@@ -398,8 +428,9 @@ TEST_F(DNSParserTest, IncompleteHeader) {
                                            0x00, 0x00, 0x00, 0x00, 0x00};
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kIncompleteHeader));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
 }
@@ -411,8 +442,9 @@ TEST_F(DNSParserTest, PartialRecords) {
     auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
     frame_view.remove_suffix(10);
 
-    std::deque<Frame> frames;
-    ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+    absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+    ParseResult<stream_id_t> parse_result =
+        ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   }
@@ -421,8 +453,9 @@ TEST_F(DNSParserTest, PartialRecords) {
     auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
     frame_view.remove_suffix(20);
 
-    std::deque<Frame> frames;
-    ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+    absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+    ParseResult<stream_id_t> parse_result =
+        ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   }
