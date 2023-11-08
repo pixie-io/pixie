@@ -32,7 +32,7 @@ type ExperimentSuite func() map[string]*pb.ExperimentSpec
 var ExperimentSuiteRegistry = map[string]ExperimentSuite{
 	"nightly":   nightlyExperimentSuite,
 	"http-grid": httpGridSuite,
-	"manual":    k8ssandraExperimentSuite,
+	"k8ssandra":    k8ssandraExperimentSuite,
 }
 
 func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
