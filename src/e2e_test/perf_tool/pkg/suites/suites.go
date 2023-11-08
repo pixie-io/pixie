@@ -32,7 +32,7 @@ type ExperimentSuite func() map[string]*pb.ExperimentSpec
 var ExperimentSuiteRegistry = map[string]ExperimentSuite{
 	"nightly":   nightlyExperimentSuite,
 	"http-grid": httpGridSuite,
-	"manual":    manualExperimentSuite,
+	"manual":    k8ssandraExperimentSuite,
 }
 
 func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
@@ -54,7 +54,13 @@ func nightlyExperimentSuite() map[string]*pb.ExperimentSpec {
 	return exps
 }
 
-func manualExperimentSuite() map[string]*pb.ExperimentSpec {
+// Added separate experiment suite for k8ssandra because the perf tool does not currently install the cert-manager
+// automatically, which is required for px-k8ssandra.
+// To run this experiment, we have to spin up a cluster, install the cert-manager, and
+// run the perf tool with --use-local-cluster.
+// Tags are added to properly display results in the perf dashboard.
+// TODO(@benkilimnik): move to nightly once cert-manager is installed automatically or perf tool workflow changes.
+func k8ssandraExperimentSuite() map[string]*pb.ExperimentSpec {
 	defaultMetricPeriod := 30 * time.Second
 	preDur := 5 * time.Minute
 	dur := 40 * time.Minute
@@ -62,7 +68,7 @@ func manualExperimentSuite() map[string]*pb.ExperimentSpec {
 		"px-k8ssandra": K8ssandraExperiment(defaultMetricPeriod, preDur, dur),
 	}
 	for _, e := range exps {
-		addTags(e, "suite/manual")
+		addTags(e, "suite/k8ssandra")
 	}
 	return exps
 }
