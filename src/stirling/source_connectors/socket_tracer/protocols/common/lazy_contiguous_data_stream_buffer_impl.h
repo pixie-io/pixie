@@ -128,6 +128,7 @@ class LazyContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   size_t head_position_ = 0;
   std::unique_ptr<FixedSizeContiguousBuffer> head_;
   std::map<size_t, uint64_t> head_pos_to_ts_;
+  uint64_t prev_timestamp_ = 0;
 
   std::map<size_t, Event> events_;
   size_t events_size_ = 0;
