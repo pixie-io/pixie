@@ -49,7 +49,7 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        std::deque<redis::Message>,
                                        std::deque<kafka::Packet>,
                                        std::deque<nats::Message>,
-                                       std::deque<amqp::Frame>;
+                                       std::deque<amqp::Frame>>;
 // clang-format off
 
 }  // namespace protocols

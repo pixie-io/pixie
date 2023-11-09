@@ -1566,7 +1566,6 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 #endif
 }
 
-
 void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   DCHECK(!path.empty());
 
