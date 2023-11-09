@@ -97,6 +97,15 @@ size_t FindFrameBoundary<mongodb::Frame>(message_type_t, std::string_view, size_
   return std::string::npos;
 }
 
+template <>
+mongodb::stream_id_t GetStreamID(mongodb::Frame* frame) {
+  if (frame->response_to == 0) {
+    return frame->request_id;
+  }
+
+  return frame->response_to;
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

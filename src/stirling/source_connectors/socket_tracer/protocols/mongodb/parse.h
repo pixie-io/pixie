@@ -40,6 +40,9 @@ template <>
 size_t FindFrameBoundary<mongodb::Frame>(message_type_t type, std::string_view buf,
                                          size_t start_pos, NoState*);
 
+template <>
+mongodb::stream_id_t GetStreamID(mongodb::Frame* frame);
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
