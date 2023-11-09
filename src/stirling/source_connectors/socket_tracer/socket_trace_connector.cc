@@ -265,7 +265,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   kMuxTableNum,
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(mux)}},
-      {kProtocolMongo, TransferSpec{px::stirling::TraceMode::Off,
+      {kProtocolMongo, TransferSpec{px::stirling::TraceMode::On,
                                     kMongoDBTableNum,
                                     {kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(mongodb)}},

@@ -297,3 +297,12 @@ maven_install(
 load("@px_deps//:defs.bzl", px_deps_pinned_maven_install = "pinned_maven_install")
 
 px_deps_pinned_maven_install()
+
+pip_parse(
+    name = "mongodb_bpf_test_requirements",
+    requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/mongodb:requirements.bazel.txt",
+)
+
+load("@mongodb_bpf_test_requirements//:requirements.bzl", mongodb_bpf_test_install_deps = "install_deps")
+
+mongodb_bpf_test_install_deps()

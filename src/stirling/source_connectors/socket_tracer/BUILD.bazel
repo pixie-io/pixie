@@ -579,3 +579,18 @@ pl_cc_bpf_test(
         "//src/stirling/source_connectors/socket_tracer/testing/container_images:rabbitmq_producer_container",
     ],
 )
+
+pl_cc_bpf_test(
+    name = "mongodb_trace_bpf_test",
+    timeout = "moderate",
+    srcs = ["mongodb_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:mongodb_client_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:mongodb_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)

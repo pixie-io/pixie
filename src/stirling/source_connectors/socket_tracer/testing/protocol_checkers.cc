@@ -27,6 +27,7 @@ namespace testing {
 
 namespace http = protocols::http;
 namespace mux = protocols::mux;
+namespace mongodb = protocols::mongodb;
 
 //-----------------------------------------------------------------------------
 // HTTP Checkers
@@ -65,6 +66,22 @@ std::vector<protocols::mux::Record> ToRecordVector(const types::ColumnWrapperRec
 }
 
 template <>
+std::vector<mongodb::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& rb,
+                                            const std::vector<size_t>& indices) {
+  std::vector<mongodb::Record> result;
+
+  for (const auto& idx : indices) {
+    mongodb::Record r;
+    r.req.op_msg_type = std::string(rb[kMongoDBReqCmdIdx]->Get<types::StringValue>(idx));
+    r.req.frame_body = std::string(rb[kMongoDBReqBodyIdx]->Get<types::StringValue>(idx));
+    r.resp.op_msg_type = std::string(rb[kMongoDBRespStatusIdx]->Get<types::StringValue>(idx));
+    r.resp.frame_body = std::string(rb[kMongoDBRespBodyIdx]->Get<types::StringValue>(idx));
+    result.push_back(r);
+  }
+  return result;
+}
+
+template <>
 std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                            int32_t pid) {
   std::vector<size_t> target_record_indices =
@@ -78,6 +95,14 @@ std::vector<mux::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch&
   std::vector<size_t> target_record_indices =
       FindRecordIdxMatchesPID(record_batch, kMuxUPIDIdx, pid);
   return ToRecordVector<mux::Record>(record_batch, target_record_indices);
+}
+
+template <>
+std::vector<mongodb::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
+                                              int32_t pid) {
+  std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPID(record_batch, kMongoDBUPIDIdx, pid);
+  return ToRecordVector<mongodb::Record>(record_batch, target_record_indices);
 }
 
 }  // namespace testing

@@ -145,3 +145,8 @@ container_image(
     name = "productcatalogservice_v0_2_0",
     base = "@productcatalogservice_v0_2_0//image",
 )
+
+container_image(
+    name = "mongodb_image",
+    base = "@mongo_7_0//image",
+)
