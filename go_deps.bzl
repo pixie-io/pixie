@@ -1139,6 +1139,14 @@ def pl_go_dependencies():
         version = "v0.2.0",
     )
     go_repository(
+        name = "com_github_go_gl_glfw",
+        build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
+        importpath = "github.com/go-gl/glfw",
+        sum = "h1:QbL/5oDUmRBzO9/Z7Seo6zf912W/a6Sr4Eu0G/3Jho0=",
+        version = "v0.0.0-20190409004039-e6da0acd62b1",
+    )
+
+    go_repository(
         name = "com_github_go_gl_glfw_v3_3_glfw",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/go-gl/glfw/v3.3/glfw",
@@ -3819,8 +3827,8 @@ def pl_go_dependencies():
         name = "com_github_yuin_goldmark",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/yuin/goldmark",
-        sum = "h1:ruQGxdhGHe7FWOJPT0mKs5+pD2Xs1Bm/kdGlHO04FmM=",
-        version = "v1.2.1",
+        sum = "h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=",
+        version = "v1.4.13",
     )
     go_repository(
         name = "com_github_zenazn_goji",
@@ -3891,8 +3899,8 @@ def pl_go_dependencies():
         name = "com_shuralyov_dmitri_gpu_mtl",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "dmitri.shuralyov.com/gpu/mtl",
-        sum = "h1:+PdD6GLKejR9DizMAKT5DpSAkKswvZrurk1/eEt9+pw=",
-        version = "v0.0.0-20201218220906-28db891af037",
+        sum = "h1:VpgP7xuJadIUuKccphEpTJnWhS2jkQyMt6Y7pJCD7fY=",
+        version = "v0.0.0-20190408044501-666a987793e9",
     )
     go_repository(
         name = "ht_sr_git_sbinet_gg",
@@ -4491,120 +4499,108 @@ def pl_go_dependencies():
         name = "org_golang_x_crypto",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/crypto",
-        replace = "github.com/golang/crypto",
-        sum = "h1:8llN7yzwGxwu9113L6qZhy5GAsXqM0CwzpGy7Jg4d8A=",
-        version = "v0.0.0-20210322153248-0c34fe9e7dc2",
+        sum = "h1:frVn1TEaCEaZcn3Tmd7Y2b5KKPaZ+I32Q2OA3kYp5TA=",
+        version = "v0.15.0",
     )
     go_repository(
         name = "org_golang_x_exp",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/exp",
-        replace = "github.com/golang/exp",
-        sum = "h1:Y1U71lBbDwoAU53t+H+zyzEHffhVdtwbhunE3d+c248=",
-        version = "v0.0.0-20210220032938-85be41e4509f",
+        sum = "h1:SChBja7BCQewoTAU7IgvucQKMIXrEpFxNMs0spT3/5s=",
+        version = "v0.0.0-20230307190834-24139beb5833",
     )
     go_repository(
         name = "org_golang_x_image",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/image",
-        replace = "github.com/golang/image",
-        sum = "h1:2RD9fgAaBaM2OmMeoOZhrVFJncb2ZvYbaQBc93IRHKg=",
-        version = "v0.0.0-20210220032944-ac19c3e999fb",
+        sum = "h1:TcHcE0vrmgzNH1v3ppjcMGbhG5+9fMuvOmUYwNEF4q4=",
+        version = "v0.0.0-20220302094943-723b81ca9867",
     )
     go_repository(
         name = "org_golang_x_lint",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/lint",
-        replace = "github.com/golang/lint",
-        sum = "h1:yoAjkFah23+tVFVuPMY+qVhs1qr4MxUlH0TAh80VbOw=",
-        version = "v0.0.0-20201208152925-83fdc39ff7b5",
+        sum = "h1:VLliZ0d+/avPrXXH+OakdXhpJuEoBZuwh1m2j7U6Iug=",
+        version = "v0.0.0-20210508222113-6edffad5e616",
     )
     go_repository(
         name = "org_golang_x_mobile",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/mobile",
-        replace = "github.com/golang/mobile",
-        sum = "h1:aCGaFYtce0DYTWxDA9R7t3PWnA41u4L9vVB5g5/WWgM=",
-        version = "v0.0.0-20210220033013-bdb1ca9a1e08",
+        sum = "h1:4+4C/Iv2U4fMZBiMCc98MG1In4gJY5YRhtpDNeDeHWs=",
+        version = "v0.0.0-20190719004257-d2bd2a29d028",
     )
     go_repository(
         name = "org_golang_x_mod",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/mod",
-        replace = "github.com/golang/mod",
-        sum = "h1:lH77g1z4f17x8y6SttLVCeJEBqNXOmSodud0ja0tP60=",
-        version = "v0.4.2",
+        sum = "h1:KENHtAZL2y3NLMYZeHY9DW8HW8V+kQyJsY/V9JlKvCs=",
+        version = "v0.9.0",
     )
     go_repository(
         name = "org_golang_x_net",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/net",
-        sum = "h1:Zrh2ngAOFYneWTAIAPethzeaQLuHwhuBkuV6ZiRnUaQ=",
-        version = "v0.8.0",
+        sum = "h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=",
+        version = "v0.17.0",
     )
     go_repository(
         name = "org_golang_x_oauth2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/oauth2",
-        replace = "github.com/golang/oauth2",
-        sum = "h1:97HRwvCO2J4GwWidxSLTMnbt0OFtQznRG4RBXOcvEvI=",
-        version = "v0.0.0-20210819190943-2bc19b11175f",
+        sum = "h1:Lh8GPgSKBfWSwFvtuWOfeI3aAAnbXTSutYxJiOJFgIw=",
+        version = "v0.6.0",
     )
     go_repository(
         name = "org_golang_x_sync",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/sync",
-        replace = "github.com/golang/sync",
-        sum = "h1:SaEy0CSD5VHxfkVDQp+KnOeeiSEG4LrHDCKqu9MskrQ=",
-        version = "v0.0.0-20210220032951-036812b2e83c",
+        sum = "h1:wsuoTGHzEhffawBOhz5CYhcrV4IdKZbEyZjBMuTp12o=",
+        version = "v0.1.0",
     )
     go_repository(
         name = "org_golang_x_sys",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/sys",
-        replace = "github.com/golang/sys",
-        sum = "h1:qM7Fl9K0feCy8KNBLmQcP/dMCH7q9nRiUTiC7rA4fDE=",
-        version = "v0.0.0-20220224120231-95c6836cb0e7",
+        replace = "golang.org/x/sys",
+        sum = "h1:XeJjHH1KiLpKGb6lvMiksZ9l0fVUh+AmGcm0nOMEBOY=",
+        version = "v0.0.0-20220908164124-27713097b956",
     )
     go_repository(
         name = "org_golang_x_term",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/term",
-        replace = "github.com/golang/term",
-        sum = "h1:AEFFcyWgxjpY3klscrGrnEQr2oLH2UU1As3ZyIzwgWo=",
-        version = "v0.0.0-20210615171337-6886f2dfbf5b",
+        sum = "h1:LGK9IlZ8T9jvdy6cTdfKUCltatMFOehAQo9SRC46UQ8=",
+        version = "v0.14.0",
     )
     go_repository(
         name = "org_golang_x_text",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/text",
-        replace = "github.com/golang/text",
-        sum = "h1:ohhPA4cGdIMkmMvhC+HU6qBl8zeOoM8M8o8N6mbcL3U=",
-        version = "v0.3.5",
+        replace = "golang.org/x/text",
+        sum = "h1:ablQoSUd0tRdKxZewP80B+BaqeKJuVhuRxj/dkrun3k=",
+        version = "v0.13.0",
     )
     go_repository(
         name = "org_golang_x_time",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/time",
-        replace = "github.com/golang/time",
-        sum = "h1:xgei/lBA0MICqy4kX0+HHp9N3aFDmulXmfDG4mvhA+c=",
-        version = "v0.0.0-20210220033141-f8bda1e9f3ba",
+        sum = "h1:rg5rLMjNzMS1RkNLzCG38eapWhnYLFYXDXj2gOlr8j4=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "org_golang_x_tools",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/tools",
-        replace = "github.com/golang/tools",
-        sum = "h1:5KUMmBvKS2Hhl2vb1USRzLZbaiQ+cPEftIk2+QH7mAI=",
-        version = "v0.1.0",
+        sum = "h1:W4OVu8VVOaIO0yzWMNdepAulS7YfoS3Zabrm8DOXXU4=",
+        version = "v0.7.0",
     )
     go_repository(
         name = "org_golang_x_xerrors",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "golang.org/x/xerrors",
-        replace = "github.com/golang/xerrors",
-        sum = "h1:jhmkoTjuPVg+HX0++Mq184QYuCgK29clNAbkZwI8/0Y=",
-        version = "v0.0.0-20200804184101-5ec99f83aff1",
+        sum = "h1:H2TDz8ibqkAF6YGhCdN3jS9O0/s90v0rJh3X/OLHEUk=",
+        version = "v0.0.0-20220907171357-04be3eba64a2",
     )
     go_repository(
         name = "org_gonum_v1_gonum",

@@ -76,11 +76,11 @@ require (
 	go.etcd.io/etcd/server/v3 v3.5.8
 	go.uber.org/zap v1.24.0
 	golang.org/x/mod v0.9.0
-	golang.org/x/net v0.8.0
+	golang.org/x/net v0.17.0
 	golang.org/x/oauth2 v0.6.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.7.0
-	golang.org/x/term v0.6.0
+	golang.org/x/sys v0.14.0
+	golang.org/x/term v0.14.0
 	golang.org/x/time v0.3.0
 	gonum.org/v1/gonum v0.11.0
 	google.golang.org/api v0.111.0
@@ -266,10 +266,10 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.10.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20230307190834-24139beb5833 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
@@ -310,20 +310,9 @@ replace (
 	github.com/golang/mock => github.com/golang/mock v1.5.0
 	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
-	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	golang.org/x/exp => github.com/golang/exp v0.0.0-20210220032938-85be41e4509f
-	golang.org/x/image => github.com/golang/image v0.0.0-20210220032944-ac19c3e999fb
-	golang.org/x/lint => github.com/golang/lint v0.0.0-20201208152925-83fdc39ff7b5
-	golang.org/x/mobile => github.com/golang/mobile v0.0.0-20210220033013-bdb1ca9a1e08
-	golang.org/x/mod => github.com/golang/mod v0.4.2
-	golang.org/x/oauth2 => github.com/golang/oauth2 v0.0.0-20210819190943-2bc19b11175f
-	golang.org/x/sync => github.com/golang/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys => github.com/golang/sys v0.0.0-20220224120231-95c6836cb0e7
-	golang.org/x/term => github.com/golang/term v0.0.0-20210615171337-6886f2dfbf5b
-	golang.org/x/text => github.com/golang/text v0.3.5
-	golang.org/x/time => github.com/golang/time v0.0.0-20210220033141-f8bda1e9f3ba
-	golang.org/x/tools => github.com/golang/tools v0.1.0
-	golang.org/x/xerrors => github.com/golang/xerrors v0.0.0-20200804184101-5ec99f83aff1
+	// Unpin x/sys and x/text after we remove builds/tests that use go1.16
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20220908164124-27713097b956
+	golang.org/x/text => golang.org/x/text v0.13.0
 	google.golang.org/api => google.golang.org/api v0.43.0
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc => google.golang.org/grpc v1.43.0
