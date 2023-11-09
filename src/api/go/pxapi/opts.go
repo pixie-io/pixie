@@ -30,7 +30,7 @@ type ClientOption func(client *Client)
 // WithCloudAddr is the option to specify cloud address to use.
 func WithCloudAddr(cloudAddr string) ClientOption {
 	return func(c *Client) {
-		c.cloudAddr = cloudAddr
+		c.vzAddr = cloudAddr
 	}
 }
 
@@ -43,9 +43,15 @@ func WithDisableTLSVerification(cloudAddr string) ClientOption {
 
 		if !tlsDisabled && isInternal {
 			log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
-		} else {
-			c.disableTLSVerification = insecureSkipVerify
 		}
+		c.disableTLSVerification = insecureSkipVerify
+	}
+}
+
+// WithDirectAddr is the option to specify direct address to use for data from standalone pem.
+func WithDirectAddr(directAddr string) ClientOption {
+	return func(c *Client) {
+		c.vzAddr = directAddr
 	}
 }
 
@@ -67,5 +73,12 @@ func WithAPIKey(auth string) ClientOption {
 func WithE2EEncryption(enabled bool) ClientOption {
 	return func(c *Client) {
 		c.useEncryption = enabled
+	}
+}
+
+// WithDirectCredsInsecure is the option to setup insecure credentials for direct connections.
+func WithDirectCredsInsecure() ClientOption {
+	return func(c *Client) {
+		c.insecureDirect = true
 	}
 }
