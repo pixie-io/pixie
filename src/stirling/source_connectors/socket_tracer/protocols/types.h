@@ -32,7 +32,6 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/types.h"
 
 namespace px {
 namespace stirling {
@@ -50,8 +49,7 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        std::deque<redis::Message>,
                                        std::deque<kafka::Packet>,
                                        std::deque<nats::Message>,
-                                       std::deque<amqp::Frame>,
-                                       std::deque<mqtt::Message>>;
+                                       std::deque<amqp::Frame>;
 // clang-format off
 
 }  // namespace protocols
