@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/container/flat_hash_map.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -82,8 +83,9 @@ TEST_F(MySQLParserTest, ParseRaw) {
                                        testutils::GenRawPacket(1, "\x03SELECT bar"));
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
 
   Packet expected_message0;
   expected_message0.msg = "\x03SELECT foo";
@@ -94,7 +96,7 @@ TEST_F(MySQLParserTest, ParseRaw) {
   expected_message1.sequence_id = 1;
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message0, expected_message1));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message0, expected_message1));
 }
 
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
@@ -116,11 +118,12 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
   const std::string buf = absl::StrCat(msg1, msg2);
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1, expected_message2));
 }
 
 TEST_F(MySQLParserTest, ParseComStmtExecute) {
@@ -135,11 +138,12 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   expected_message1.msg = absl::StrCat(CommandToString(Command::kStmtExecute), body);
   expected_message1.sequence_id = 0;
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1));
 }
 
 TEST_F(MySQLParserTest, ParseComStmtClose) {
@@ -147,11 +151,12 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
   std::string msg = testutils::GenRawPacket(expected_packet);
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, msg, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_packet));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_packet));
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {
@@ -169,11 +174,12 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   const std::string buf = absl::StrCat(msg1, msg2);
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1, expected_message2));
 }
 
 TEST_F(MySQLParserTest, ParseResponse) {
@@ -197,9 +203,9 @@ TEST_F(MySQLParserTest, ParseResponse) {
       Command::kStmtPrepare};
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kResponse, kMySQLStmtPrepareMessage.response,
-                                       &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result = ParseFramesLoop(
+      message_type_t::kResponse, kMySQLStmtPrepareMessage.response, &parsed_messages, &state);
   EXPECT_EQ(ParseState::kSuccess, result.state);
 
   Packet expected_header;
@@ -217,32 +223,37 @@ TEST_F(MySQLParserTest, ParseResponse) {
   expected_eof.msg = ConstStringView("\xfe\x00\x00\x02\x00");
   expected_eof.sequence_id = 3;
 
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_header, expected_col_def, expected_eof));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_header, expected_col_def, expected_eof));
 }
 
 TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
-  std::deque<Packet> prepare_resp_packets =
+  connection_id_t conn_id = 0;
+  std::deque<Packet> prepare_resp_packets_deque =
       testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
-  std::deque<Packet> execute_resp_packets =
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> prepare_resp_packets;
+  prepare_resp_packets[conn_id] = prepare_resp_packets_deque;
+  std::deque<Packet> execute_resp_packets_deque =
       testutils::GenResultset(testdata::kStmtExecuteResultset);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> execute_resp_packets;
+  execute_resp_packets[conn_id] = execute_resp_packets_deque;
 
   // Splitting packets from 2 responses into 3 different raw packet chunks.
   std::vector<std::string> packets1;
   for (size_t i = 0; i < 3; ++i) {
-    packets1.push_back(testutils::GenRawPacket(prepare_resp_packets[i]));
+    packets1.push_back(testutils::GenRawPacket(prepare_resp_packets[conn_id][i]));
   }
 
   std::vector<std::string> packets2;
-  for (size_t i = 3; i < prepare_resp_packets.size(); ++i) {
-    packets2.push_back(testutils::GenRawPacket(prepare_resp_packets[i]));
+  for (size_t i = 3; i < prepare_resp_packets[conn_id].size(); ++i) {
+    packets2.push_back(testutils::GenRawPacket(prepare_resp_packets[conn_id][i]));
   }
   for (size_t i = 0; i < 2; ++i) {
-    packets2.push_back(testutils::GenRawPacket(execute_resp_packets[i]));
+    packets2.push_back(testutils::GenRawPacket(execute_resp_packets[conn_id][i]));
   }
 
   std::vector<std::string> packets3;
-  for (size_t i = 2; i < execute_resp_packets.size(); ++i) {
-    packets3.push_back(testutils::GenRawPacket(execute_resp_packets[i]));
+  for (size_t i = 2; i < execute_resp_packets[conn_id].size(); ++i) {
+    packets3.push_back(testutils::GenRawPacket(execute_resp_packets[conn_id][i]));
   }
 
   std::string chunk1 = absl::StrJoin(packets1, "");
@@ -252,19 +263,20 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   const std::string buf = absl::StrCat(chunk1, chunk2, chunk3);
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages, &state);
 
-  std::deque<Packet> expected_packets;
-  for (Packet p : prepare_resp_packets) {
-    expected_packets.push_back(p);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> expected_packets;
+  for (const Packet& p : prepare_resp_packets[conn_id]) {
+    expected_packets[conn_id].push_back(p);
   }
-  for (Packet p : execute_resp_packets) {
-    expected_packets.push_back(p);
+  for (const Packet& p : execute_resp_packets[conn_id]) {
+    expected_packets[conn_id].push_back(p);
   }
 
-  EXPECT_EQ(expected_packets.size(), parsed_messages.size());
-  EXPECT_THAT(parsed_messages, ElementsAreArray(expected_packets));
+  EXPECT_EQ(expected_packets[conn_id].size(), parsed_messages[conn_id].size());
+  EXPECT_THAT(parsed_messages[conn_id], ::testing::ElementsAreArray(expected_packets[conn_id]));
 }
 
 TEST_F(MySQLParserTest, ParseIncompleteRequest) {
@@ -274,30 +286,33 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
   msg1[0] = '\x24';
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages[0], ElementsAre());
 }
 
 TEST_F(MySQLParserTest, ParseInvalidInput) {
   std::string msg1 = "hello world";
   StateWrapper state{};
 
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
   EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages[0], ElementsAre());
 }
 
 TEST_F(MySQLParserTest, Empty) {
   StateWrapper state{};
-  std::deque<Packet> parsed_messages;
-  ParseResult result = ParseFramesLoop(message_type_t::kResponse, "", &parsed_messages, &state);
+  absl::flat_hash_map<connection_id_t, std::deque<Packet>> parsed_messages;
+  ParseResult<connection_id_t> result =
+      ParseFramesLoop(message_type_t::kResponse, "", &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages[0], ElementsAre());
 }
 
 //=============================================================================

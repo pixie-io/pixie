@@ -103,7 +103,7 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
   bool keep_processing = has_new_events_ || attempt_sync || conn_closed();
 
-  protocols::ParseResult parse_result;
+  protocols::ParseResult<TKey> parse_result;
   parse_result.state = ParseState::kNeedsMoreData;
   parse_result.end_position = 0;
 
@@ -134,7 +134,9 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
       keep_processing = false;
     }
 
-    stat_valid_frames_ += parse_result.frame_positions.size();
+    for (const auto& [stream, positions] : parse_result.frame_positions) {
+      stat_valid_frames_ += positions.size();
+    }
     stat_invalid_frames_ += parse_result.invalid_frames;
     stat_raw_data_gaps_ += keep_processing;
 

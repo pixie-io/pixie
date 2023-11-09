@@ -19,6 +19,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <absl/container/flat_hash_map.h>
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/parse.h"
 
 namespace px {
@@ -63,29 +65,33 @@ class CQLParserTest : public ::testing::Test {};
 TEST_F(CQLParserTest, Basic) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
-  ASSERT_EQ(frames.size(), 1);
-  EXPECT_EQ(frames[0].hdr.version & 0x80, 0);
-  EXPECT_EQ(frames[0].hdr.version & 0x7f, 4);
-  EXPECT_EQ(frames[0].hdr.flags, 0);
-  EXPECT_EQ(frames[0].hdr.stream, 6);
-  EXPECT_EQ(frames[0].hdr.opcode, Opcode::kQuery);
-  EXPECT_EQ(frames[0].hdr.length, 60);
-  EXPECT_THAT(frames[0].msg, testing::HasSubstr("SELECT * FROM system.schema_keyspaces ;"));
+  ASSERT_EQ(TotalDequeSize(frames), 1);
+  std::deque<Frame> expected_stream = frames[6];
+  EXPECT_EQ(expected_stream[0].hdr.version & 0x80, 0);
+  EXPECT_EQ(expected_stream[0].hdr.version & 0x7f, 4);
+  EXPECT_EQ(expected_stream[0].hdr.flags, 0);
+  EXPECT_EQ(expected_stream[0].hdr.stream, 6);
+  EXPECT_EQ(expected_stream[0].hdr.opcode, Opcode::kQuery);
+  EXPECT_EQ(expected_stream[0].hdr.length, 60);
+  EXPECT_THAT(expected_stream[0].msg,
+              testing::HasSubstr("SELECT * FROM system.schema_keyspaces ;"));
 }
 
 TEST_F(CQLParserTest, NeedsMoreData) {
   std::string_view frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
   frame_view.remove_suffix(10);
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kNeedsMoreData);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 TEST_F(CQLParserTest, BadOpcode) {
@@ -95,11 +101,12 @@ TEST_F(CQLParserTest, BadOpcode) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadOpcodeFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 TEST_F(CQLParserTest, LengthTooLarge) {
@@ -110,11 +117,12 @@ TEST_F(CQLParserTest, LengthTooLarge) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 TEST_F(CQLParserTest, LengthNegative) {
@@ -125,11 +133,12 @@ TEST_F(CQLParserTest, LengthNegative) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 TEST_F(CQLParserTest, VersionTooOld) {
@@ -140,11 +149,12 @@ TEST_F(CQLParserTest, VersionTooOld) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 TEST_F(CQLParserTest, VersionTooNew) {
@@ -155,11 +165,12 @@ TEST_F(CQLParserTest, VersionTooNew) {
   std::string_view frame_view =
       CreateStringView<char>(CharArrayStringView<uint8_t>(kBadLengthFrame));
 
-  std::deque<Frame> frames;
-  ParseResult parse_result = ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
+  absl::flat_hash_map<stream_id_t, std::deque<Frame>> frames;
+  ParseResult<stream_id_t> parse_result =
+      ParseFramesLoop(message_type_t::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
-  ASSERT_EQ(frames.size(), 0);
+  ASSERT_EQ(TotalDequeSize(frames), 0);
 }
 
 }  // namespace cass

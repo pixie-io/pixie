@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/container/flat_hash_map.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -78,12 +79,13 @@ TEST(KafkaParserTest, ParseMultipleRequests) {
 
   const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
 
-  std::deque<Packet> parsed_messages;
+  absl::flat_hash_map<correlation_id_t, std::deque<Packet>> parsed_messages;
   StateWrapper state;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
+  ParseResult<correlation_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, buf, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1, expected_message2));
   EXPECT_TRUE(state.global.seen_correlation_ids.contains(expected_message1.correlation_id));
   EXPECT_TRUE(state.global.seen_correlation_ids.contains(expected_message2.correlation_id));
 }
@@ -104,10 +106,11 @@ TEST(KafkaParserTest, ParseMultipleResponses) {
 
   const std::string buf = absl::StrCat(produce_frame_view, metadata_frame_view);
 
-  std::deque<Packet> parsed_messages;
+  absl::flat_hash_map<correlation_id_t, std::deque<Packet>> parsed_messages;
   StateWrapper state{.global = {{1, 4}}, .send = {}, .recv = {}};
-  ParseResult result = ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages, &state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+  ParseResult<correlation_id_t> result =
+      ParseFramesLoop(message_type_t::kResponse, buf, &parsed_messages, &state);
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1, expected_message2));
 }
 
 TEST(KafkaParserTest, ParseIncompleteRequest) {
@@ -115,22 +118,23 @@ TEST(KafkaParserTest, ParseIncompleteRequest) {
       CreateStringView<char>(CharArrayStringView<uint8_t>(testdata::kProduceRequest));
   auto truncated_produce_frame = produce_frame_view.substr(0, produce_frame_view.size() - 1);
 
-  std::deque<Packet> parsed_messages;
+  absl::flat_hash_map<correlation_id_t, std::deque<Packet>> parsed_messages;
   StateWrapper state;
-  ParseResult result =
+  ParseResult<correlation_id_t> result =
       ParseFramesLoop(message_type_t::kRequest, truncated_produce_frame, &parsed_messages, &state);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages[0], ElementsAre());
   EXPECT_TRUE(state.global.seen_correlation_ids.empty());
 }
 
 TEST(KafkaParserTest, ParseInvalidInput) {
   std::string msg1("\x00\x00\x18\x00\x03SELECT name FROM users;", 28);
 
-  std::deque<Packet> parsed_messages;
+  absl::flat_hash_map<correlation_id_t, std::deque<Packet>> parsed_messages;
   StateWrapper state;
-  ParseResult result = ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
+  ParseResult<correlation_id_t> result =
+      ParseFramesLoop(message_type_t::kRequest, msg1, &parsed_messages, &state);
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
   EXPECT_TRUE(state.global.seen_correlation_ids.empty());
