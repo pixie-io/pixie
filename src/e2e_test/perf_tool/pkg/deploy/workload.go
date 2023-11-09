@@ -145,6 +145,8 @@ func (w *workloadImpl) WaitForHealthCheck(ctx context.Context, clusterCtx *clust
 
 // Close stops the workload.
 func (w *workloadImpl) Close() error {
+	// TODO(@benkilimnik): Run demo delete for demos that use CRDs (e.g. px-k8ssandra)
+	// current approach can lead to orphaned resources or lingering finalizers that might complicate subsequent tests or deployments.
 	for ns := range w.namespacesToDelete {
 		log.WithField("workload", w.name).WithField("namespace", ns).Trace("deleting workload namespace")
 		od := k8s.ObjectDeleter{
