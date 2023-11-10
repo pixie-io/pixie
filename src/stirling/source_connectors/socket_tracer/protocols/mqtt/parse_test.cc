@@ -758,7 +758,7 @@ TEST_F(MQTTParserTest, Headers) {
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPubackFrame));
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
-  ASSERT_EQ(result_state, ParseState::kNeedsMoreData);
+  ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 4);
   EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)3);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);

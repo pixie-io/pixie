@@ -35,6 +35,7 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//src/common/json:cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/common:cc_library",
         "//src/stirling/utils:cc_library",
     ],
