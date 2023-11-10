@@ -30,7 +30,7 @@ namespace stirling {
 namespace protocols {
 
 /**
- * Parses a single HTTP message from the input string.
+ * Parses a single MQTT message from the input string.
  */
 
 template <>
