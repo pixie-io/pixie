@@ -33,6 +33,8 @@ poison_patterns=(
   '^ci\/'
   '^docker.properties'
   '^docker\.properties'
+  '^go.mod'
+  '^go.sum'
   '^Jenkinsfile'
 )
 
