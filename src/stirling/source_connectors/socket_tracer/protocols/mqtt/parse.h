@@ -33,12 +33,13 @@ namespace protocols {
  * Parses a single HTTP message from the input string.
  */
 
-template<>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mqtt::Message* frame, NoState* state);
+template <>
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mqtt::Message* frame,
+                      NoState* state);
 
-template<>
+template <>
 size_t FindFrameBoundary<mqtt::Message>(message_type_t type, std::string_view buf, size_t start_pos,
-                         NoState* state);
+                                        NoState* state);
 
 }  // namespace protocols
 }  // namespace stirling
