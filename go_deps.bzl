@@ -2323,8 +2323,8 @@ def pl_go_dependencies():
         name = "com_github_klauspost_compress",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/klauspost/compress",
-        sum = "h1:iULayQNOReoYUe+1qtKOqw9CwJv3aNQu8ivo7lw1HU4=",
-        version = "v1.16.0",
+        sum = "h1:RlWWUY/Dr4fL8qk9YG7DTZ7PDgME2V4csBXA8L/ixi4=",
+        version = "v1.17.2",
     )
     go_repository(
         name = "com_github_klauspost_cpuid",
@@ -2844,29 +2844,29 @@ def pl_go_dependencies():
         name = "com_github_nats_io_jwt_v2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/nats-io/jwt/v2",
-        sum = "h1:z2mA1a7tIf5ShggOFlR1oBPgd6hGqcDYsISxZByUzdI=",
-        version = "v2.3.0",
+        sum = "h1:DhGH+nKt+wIkDxM6qnVSKjokq5t59AZV5HRcFW0zJwU=",
+        version = "v2.5.2",
     )
     go_repository(
         name = "com_github_nats_io_nats_go",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/nats-io/nats.go",
-        sum = "h1:1jp5BThsdGlN91hW0k3YEfJbfACjiOYtUiLXG0RL4IE=",
-        version = "v1.17.0",
+        sum = "h1:/WFBHEc/dOKBF6qf1TZhrdEfTmOZ5JzdJ+Y3m6Y/p7E=",
+        version = "v1.31.0",
     )
     go_repository(
         name = "com_github_nats_io_nats_server_v2",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/nats-io/nats-server/v2",
-        sum = "h1:DLWu+7/VgGOoChcDKytnUZPAmudpv7o/MhKmNrnH1RE=",
-        version = "v2.9.0",
+        sum = "h1:uB9xcwon3tPXWAdmTJqqqC6cie3yuPWHJjjTBgaPNus=",
+        version = "v2.10.4",
     )
     go_repository(
         name = "com_github_nats_io_nkeys",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "github.com/nats-io/nkeys",
-        sum = "h1:cgM5tL53EvYRU+2YLXIK0G2mJtK12Ft9oeooSZMA2G8=",
-        version = "v0.3.0",
+        sum = "h1:IzVe95ru2CT6ta874rt9saQRkWfe2nFj1NtvYSLqMzY=",
+        version = "v0.4.6",
     )
     go_repository(
         name = "com_github_nats_io_nuid",
@@ -4634,8 +4634,8 @@ def pl_go_dependencies():
         name = "org_uber_go_automaxprocs",
         build_directives = ["gazelle:map_kind go_binary pl_go_binary @px//bazel:pl_build_system.bzl", "gazelle:map_kind go_test pl_go_test @px//bazel:pl_build_system.bzl"],
         importpath = "go.uber.org/automaxprocs",
-        sum = "h1:e1YG66Lrk73dn4qhg8WFSvhF0JuFQF0ERIp4rpuV8Qk=",
-        version = "v1.5.1",
+        sum = "h1:kWazyxZUrS3Gs4qUpbwo5kEIMGe/DAvi5Z4tl2NW4j8=",
+        version = "v1.5.3",
     )
     go_repository(
         name = "org_uber_go_goleak",
