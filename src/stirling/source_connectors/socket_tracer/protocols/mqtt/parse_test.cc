@@ -434,14 +434,6 @@ TEST_F(MQTTParserTest, Properties) {
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.properties["maximum_packet_size"], "1048576");
   frame = Message();
-
-  // TODO: Server Keep Alive in CONNACK
-  // TODO: Response Information in CONNACK
-  // TODO: Max QOS in CONNACK
-  // TODO: Retain Available in CONNACK
-  // TODO: Wildcard Subscription Available in CONNACK
-  // TODO: Subscription Identifier Available in CONNACK
-  // TODO: Shared Subscription Available in CONNACK
 }
 
 TEST_F(MQTTParserTest, Payload) {
@@ -721,12 +713,22 @@ TEST_F(MQTTParserTest, Headers) {
                                 0x01,
                                 // reason code
                                 0x04};
+  uint8_t kAuthFrame_success[] = {// header flags
+                                  0xf0,
+                                  // message length
+                                  0x00};
+  uint8_t kAuthFrame_cont_auth[] = {// header flags
+                                    0xf0,
+                                    // message length
+                                    0x01,
+                                    // reason code
+                                    0x18};
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kConnectFrame));
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 1);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)16);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 16);
   EXPECT_EQ(frame.header_fields["username_flag"], 0);
   EXPECT_EQ(frame.header_fields["password_flag"], 0);
   EXPECT_EQ(frame.header_fields["will_retain"], 0);
@@ -740,7 +742,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 2);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)53);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 53);
   EXPECT_EQ(frame.header_fields["session_present"], 0);
   EXPECT_EQ(frame.header_fields["reason_code"], 0);
   frame = Message();
@@ -749,7 +751,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 3);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)26);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 26);
   EXPECT_EQ(frame.dup, false);
   EXPECT_EQ(frame.retain, false);
   EXPECT_EQ(frame.header_fields["qos"], 1);
@@ -760,7 +762,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 4);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)3);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 3);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
 
@@ -768,7 +770,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 5);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)2);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 2);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
 
@@ -776,7 +778,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 6);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)2);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 2);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
 
@@ -784,7 +786,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 7);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)2);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 2);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
 
@@ -792,7 +794,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 8);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)16);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 16);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
 
@@ -800,7 +802,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 9);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)4);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 4);
   EXPECT_EQ(frame.payload["reason_code"], "0");
   EXPECT_EQ(frame.header_fields["packet_identifier"], 1);
   frame = Message();
@@ -809,7 +811,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 10);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)15);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 15);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 2);
   frame = Message();
 
@@ -817,7 +819,7 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 11);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)4);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 4);
   EXPECT_EQ(frame.header_fields["packet_identifier"], 2);
   frame = Message();
 
@@ -825,26 +827,40 @@ TEST_F(MQTTParserTest, Headers) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 12);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)0);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 0);
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kPingrespFrame));
   result_state = ParseFrame(message_type_t::kResponse, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 13);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)0);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 0);
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kDisconnectFrame));
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.control_packet_type, 14);
-  EXPECT_EQ(frame.header_fields["remaining_length"], (size_t)1);
+  EXPECT_EQ(frame.header_fields["remaining_length"], 1);
   EXPECT_EQ(frame.header_fields["reason_code"], 4);
   frame = Message();
+
+  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kAuthFrame_success));
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  ASSERT_EQ(result_state, ParseState::kSuccess);
+  EXPECT_EQ(frame.control_packet_type, 15);
+  EXPECT_EQ(frame.header_fields["reason_code"], 0);
+  frame = Message();
+
+  frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kAuthFrame_cont_auth));
+  result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
+  ASSERT_EQ(result_state, ParseState::kSuccess);
+  EXPECT_EQ(frame.control_packet_type, 15);
+  EXPECT_EQ(frame.header_fields["reason_code"], 0x18);
 }
 
 }  // namespace mqtt
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
+

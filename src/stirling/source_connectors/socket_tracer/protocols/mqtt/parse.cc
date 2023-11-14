@@ -21,6 +21,7 @@
 #include <string_view>
 
 #include "src/common/base/base.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/parse.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 #include "src/stirling/utils/parse_state.h"
@@ -50,7 +51,7 @@ enum class MqttControlPacketType : uint8_t {
   PINGREQ = 12,
   PINGRESP = 13,
   DISCONNECT = 14,
-  INVALID = 0xff,
+  AUTH = 15
 };
 
 enum class PropertyCode : uint8_t {
@@ -80,46 +81,8 @@ enum class PropertyCode : uint8_t {
   MaximumPacketSize = 0x27,
   WildcardSubscriptionAvailable = 0x28,
   SubscriptionIdentifiersAvailable = 0x29,
-  SharedSubscriptionAvailable = 0x2A,
-  Invalid = 0xFF
+  SharedSubscriptionAvailable = 0x2A
 };
-
-static inline MqttControlPacketType GetControlPacketType(uint8_t control_packet_type_code) {
-  if (control_packet_type_code == static_cast<uint8_t>(MqttControlPacketType::PUBLISH)) {
-    return MqttControlPacketType::PUBLISH;
-  }
-
-  switch (control_packet_type_code) {
-    case static_cast<uint8_t>(MqttControlPacketType::CONNECT):
-      return MqttControlPacketType::CONNECT;
-    case static_cast<uint8_t>(MqttControlPacketType::CONNACK):
-      return MqttControlPacketType::CONNACK;
-    case static_cast<uint8_t>(MqttControlPacketType::PUBACK):
-      return MqttControlPacketType::PUBACK;
-    case static_cast<uint8_t>(MqttControlPacketType::PUBREC):
-      return MqttControlPacketType::PUBREC;
-    case static_cast<uint8_t>(MqttControlPacketType::PUBREL):
-      return MqttControlPacketType::PUBREL;
-    case static_cast<uint8_t>(MqttControlPacketType::PUBCOMP):
-      return MqttControlPacketType::PUBCOMP;
-    case static_cast<uint8_t>(MqttControlPacketType::SUBSCRIBE):
-      return MqttControlPacketType::SUBSCRIBE;
-    case static_cast<uint8_t>(MqttControlPacketType::SUBACK):
-      return MqttControlPacketType::SUBACK;
-    case static_cast<uint8_t>(MqttControlPacketType::UNSUBSCRIBE):
-      return MqttControlPacketType::UNSUBSCRIBE;
-    case static_cast<uint8_t>(MqttControlPacketType::UNSUBACK):
-      return MqttControlPacketType::UNSUBACK;
-    case static_cast<uint8_t>(MqttControlPacketType::PINGREQ):
-      return MqttControlPacketType::PINGREQ;
-    case static_cast<uint8_t>(MqttControlPacketType::PINGRESP):
-      return MqttControlPacketType::PINGRESP;
-    case static_cast<uint8_t>(MqttControlPacketType::DISCONNECT):
-      return MqttControlPacketType::DISCONNECT;
-    default:
-      return MqttControlPacketType::INVALID;
-  }
-}
 
 static inline StatusOr<size_t> VariableEncodingNumBytes(unsigned long integer) {
   if (integer >= 268435456) {
@@ -143,8 +106,13 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
     PX_ASSIGN_OR_RETURN_INVALID(property_code, decoder->ExtractBEInt<uint8_t>());
     properties_length -= 1;
 
-    switch (property_code) {
-      case static_cast<uint8_t>(PropertyCode::PayloadFormatIndicator): {
+    auto property = magic_enum::enum_cast<PropertyCode>(property_code);
+    if (!property.has_value()) {
+      return ParseState::kInvalid;
+    }
+
+    switch (property.value()) {
+      case PropertyCode::PayloadFormatIndicator: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t payload_format_indicator,
                                     decoder->ExtractBEInt<uint8_t>());
         if (payload_format_indicator == 0x00) {
@@ -157,14 +125,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::MessageExpiryInterval): {
+      case PropertyCode::MessageExpiryInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t message_expiry_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["message_expiry_interval"] = std::to_string(message_expiry_interval);
         properties_length -= 4;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ContentType): {
+      case PropertyCode::ContentType: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view content_type,
@@ -173,7 +141,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ResponseTopic): {
+      case PropertyCode::ResponseTopic: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view response_topic,
@@ -182,7 +150,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::CorrelationData): {
+      case PropertyCode::CorrelationData: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view correlation_data,
@@ -191,7 +159,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::SubscriptionIdentifier): {
+      case PropertyCode::SubscriptionIdentifier: {
         unsigned long subscription_id;
         size_t num_bytes;
 
@@ -206,14 +174,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= num_bytes;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::SessionExpiryInterval): {
+      case PropertyCode::SessionExpiryInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t session_expiry_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["session_expiry_interval"] = std::to_string(session_expiry_interval);
         properties_length -= 4;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::AssignedClientIdentifier): {
+      case PropertyCode::AssignedClientIdentifier: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view assigned_client_identifier,
@@ -222,13 +190,13 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ServerKeepAlive): {
+      case PropertyCode::ServerKeepAlive: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t server_keep_alive, decoder->ExtractBEInt<uint16_t>());
         result->properties["server_keep_alive"] = std::to_string(server_keep_alive);
         properties_length -= 2;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::AuthenticationMethod): {
+      case PropertyCode::AuthenticationMethod: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view auth_method,
@@ -237,7 +205,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::AuthenticationData): {
+      case PropertyCode::AuthenticationData: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view auth_data,
@@ -246,7 +214,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::RequestProblemInformation): {
+      case PropertyCode::RequestProblemInformation: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t request_problem_information,
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["request_problem_information"] =
@@ -254,14 +222,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::WillDelayInterval): {
+      case PropertyCode::WillDelayInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t will_delay_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["will_delay_interval"] = std::to_string(will_delay_interval);
         properties_length -= 4;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::RequestResponseInformation): {
+      case PropertyCode::RequestResponseInformation: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t request_response_information,
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["request_response_information"] =
@@ -269,7 +237,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ResponseInformation): {
+      case PropertyCode::ResponseInformation: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view response_information,
@@ -278,7 +246,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ServerReference): {
+      case PropertyCode::ServerReference: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view server_reference,
@@ -287,7 +255,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ReasonString): {
+      case PropertyCode::ReasonString: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view reason_string,
@@ -296,38 +264,38 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= property_length;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::ReceiveMaximum): {
+      case PropertyCode::ReceiveMaximum: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t receive_maximum, decoder->ExtractBEInt<uint16_t>());
         result->properties["receive_maximum"] = std::to_string(receive_maximum);
         properties_length -= 2;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::TopicAliasMaximum): {
+      case PropertyCode::TopicAliasMaximum: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias_maximum,
                                     decoder->ExtractBEInt<uint16_t>());
         result->properties["topic_alias_maximum"] = std::to_string(topic_alias_maximum);
         properties_length -= 2;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::TopicAlias): {
+      case PropertyCode::TopicAlias: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias, decoder->ExtractBEInt<uint16_t>());
         result->properties["topic_alias"] = std::to_string(topic_alias);
         properties_length -= 2;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::MaximumQos): {
+      case PropertyCode::MaximumQos: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias, decoder->ExtractBEInt<uint16_t>());
         result->properties["topic_alias"] = std::to_string(topic_alias);
         properties_length -= 2;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::RetainAvailable): {
+      case PropertyCode::RetainAvailable: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t retain_available, decoder->ExtractBEInt<uint8_t>());
         result->properties["retain_available"] = std::to_string(retain_available);
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::UserProperty): {
+      case PropertyCode::UserProperty: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t key_length, decoder->ExtractBEInt<uint16_t>());
         properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view key, decoder->ExtractString(key_length));
@@ -346,14 +314,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         }
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::MaximumPacketSize): {
+      case PropertyCode::MaximumPacketSize: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t maximum_packet_size,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["maximum_packet_size"] = std::to_string(maximum_packet_size);
         properties_length -= 4;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::WildcardSubscriptionAvailable): {
+      case PropertyCode::WildcardSubscriptionAvailable: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t wildcard_subscription_available,
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["retain_available"] =
@@ -361,7 +329,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::SubscriptionIdentifiersAvailable): {
+      case PropertyCode::SubscriptionIdentifiersAvailable: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t subscription_id_available,
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["subscription_id_available"] =
@@ -369,7 +337,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         properties_length -= 1;
         break;
       }
-      case static_cast<uint8_t>(PropertyCode::SharedSubscriptionAvailable): {
+      case PropertyCode::SharedSubscriptionAvailable: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t shared_subscription_available,
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["subscription_id_available"] =
@@ -385,7 +353,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
 }
 
 ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
-                               MqttControlPacketType& control_packet_type) {
+                               const MqttControlPacketType& control_packet_type) {
   switch (control_packet_type) {
     case MqttControlPacketType::CONNECT: {
       PX_ASSIGN_OR_RETURN_INVALID(uint16_t protocol_name_length, decoder->ExtractBEInt<uint16_t>());
@@ -523,13 +491,30 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
       }
       return ParseState::kSuccess;
     }
+    case MqttControlPacketType::AUTH: {
+      size_t properties_length;
+
+      if (result->header_fields["remaining_length"] == 0) {
+        result->header_fields["reason_code"] = 0x00;
+        return ParseState::kSuccess;
+      }
+      PX_ASSIGN_OR_RETURN_INVALID(result->header_fields["reason_code"],
+                                  decoder->ExtractBEInt<uint8_t>());
+
+      PX_ASSIGN_OR_RETURN_INVALID(properties_length, decoder->ExtractUVarInt());
+      if (!VariableEncodingNumBytes(properties_length).ok()) {
+        return ParseState::kInvalid;
+      }
+
+      return ParseProperties(result, decoder, properties_length);
+    }
     default:
       return ParseState::kSuccess;
   }
 }
 
 ParseState ParsePayload(Message* result, BinaryDecoder* decoder,
-                        MqttControlPacketType& control_packet_type) {
+                        const MqttControlPacketType& control_packet_type) {
   switch (control_packet_type) {
     case MqttControlPacketType::CONNECT: {
       PX_ASSIGN_OR_RETURN_INVALID(uint16_t client_id_length, decoder->ExtractBEInt<uint16_t>());
@@ -677,6 +662,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder,
     case MqttControlPacketType::PINGREQ:
     case MqttControlPacketType::PINGRESP:
     case MqttControlPacketType::DISCONNECT:
+    case MqttControlPacketType::AUTH:
       return ParseState::kSuccess;
     default:
       return ParseState::kInvalid;
@@ -698,7 +684,13 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Message* resul
   uint8_t control_packet_code = control_packet_code_flags >> 4;
   uint8_t control_packet_flags = control_packet_code_flags & 0x0F;
 
-  MqttControlPacketType control_packet_type = GetControlPacketType(control_packet_code);
+  auto control_packet_type_enum_cast =
+      magic_enum::enum_cast<MqttControlPacketType>(control_packet_code);
+  if (!control_packet_type_enum_cast.has_value()) {
+    return ParseState::kInvalid;
+  }
+  const MqttControlPacketType control_packet_type = control_packet_type_enum_cast.value();
+
   result->control_packet_type = control_packet_code;
 
   // Saving the flags if control packet type is PUBLISH
