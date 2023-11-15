@@ -550,8 +550,9 @@ TEST_F(MQTTParserTest, Payload) {
   result_state = ParseFrame(message_type_t::kRequest, &frame_view, &frame);
   ASSERT_EQ(result_state, ParseState::kSuccess);
   EXPECT_EQ(frame.payload["topic_filter"], "test/topic");
-  EXPECT_EQ(frame.payload["subscription_options"],
-            "{maximum_qos : 0, no_local : 0, retain_as_published : 0, retain_handling : 0}");
+  std::map<std::string, uint8_t> subscription_opts(
+      {{"maximum_qos", 0}, {"no_local", 0}, {"retain_as_published", 0}, {"retain_handling", 0}});
+  EXPECT_EQ(frame.payload["subscription_options"], ToJSONString(subscription_opts));
   frame = Message();
 
   frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kSubackFrame));
@@ -863,4 +864,3 @@ TEST_F(MQTTParserTest, Headers) {
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
-
