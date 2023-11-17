@@ -54,7 +54,15 @@ using ::testing::Eq;
 using ::testing::Field;
 using ::testing::HasSubstr;
 
-void Init() { FLAGS_stirling_enable_mongodb_tracing = true; }
+void Init() {
+  // Enable mongodb tracing.
+  FLAGS_stirling_enable_mongodb_tracing = true;
+
+  // Turn off CQL and NATS tracing to give some BPF instructions back for MongoDB.
+  // This is required for older kernels with only 4096 BPF instructions.
+  FLAGS_stirling_enable_cass_tracing = false;
+  FLAGS_stirling_enable_nats_tracing = false;
+}
 
 class MongoDBTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
