@@ -114,7 +114,7 @@ DEFINE_int32(stirling_enable_amqp_tracing,
              "If true, stirling will trace and process AMQP messages.");
 DEFINE_int32(stirling_enable_mongodb_tracing,
              gflags::Int32FromEnv("PX_STIRLING_ENABLE_MONGODB_TRACING",
-                                  px::stirling::TraceMode::On),
+                                  px::stirling::TraceMode::OnForNewerKernel),
              "If true, stirling will trace and process MongoDB messages");
 DEFINE_bool(stirling_disable_golang_tls_tracing,
             gflags::BoolFromEnv("PX_STIRLING_DISABLE_GOLANG_TLS_TRACING", false),
@@ -265,7 +265,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                   kMuxTableNum,
                                   {kRoleClient, kRoleServer},
                                   TRANSFER_STREAM_PROTOCOL(mux)}},
-      {kProtocolMongo, TransferSpec{px::stirling::TraceMode::On,
+      {kProtocolMongo, TransferSpec{FLAGS_stirling_enable_mongodb_tracing,
                                     kMongoDBTableNum,
                                     {kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(mongodb)}},
