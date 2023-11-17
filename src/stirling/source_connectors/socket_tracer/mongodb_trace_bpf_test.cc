@@ -32,8 +32,8 @@
 #include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/mongodb_table.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/types.h"
-#include "src/stirling/source_connectors/socket_tracer/testing/container_images/mongodb_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/mongodb_client_container.h"
+#include "src/stirling/source_connectors/socket_tracer/testing/container_images/mongodb_container.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
@@ -51,19 +51,17 @@ using ::px::stirling::testing::SocketTraceBPFTestFixture;
 
 using ::testing::AllOf;
 using ::testing::Eq;
-using ::testing::HasSubstr;
 using ::testing::Field;
+using ::testing::HasSubstr;
 
-void Init() {
-  FLAGS_stirling_enable_mongodb_tracing = true;
-}
+void Init() { FLAGS_stirling_enable_mongodb_tracing = true; }
 
 class MongoDBTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing */ true> {
  protected:
-   MongoDBTraceTest() {
+  MongoDBTraceTest() {
     Init();
     PX_CHECK_OK(mongodb_server_.Run(std::chrono::seconds{120}));
-   }
+  }
 
   void RunMongoDBClient() {
     mongodb_client_.Run(
@@ -90,7 +88,8 @@ auto EqMongoDBRecord(const protocols::mongodb::Record& r) {
                Field(&protocols::mongodb::Record::resp, ContainsMongoDBMsgBody(r.resp)));
 }
 
-mongodb::Record RecordOpMsg(std::string req_cmd, std::string resp_status, std::string req_body, std::string resp_body ) {
+mongodb::Record RecordOpMsg(std::string req_cmd, std::string resp_status, std::string req_body,
+                            std::string resp_body) {
   mongodb::Record r = {};
   r.req.op_msg_type = req_cmd;
   r.req.frame_body = req_body;
@@ -116,11 +115,11 @@ TEST_F(MongoDBTraceTest, Capture) {
   std::vector<mongodb::Record> server_records =
       GetTargetRecords<mongodb::Record>(record_batch, mongodb_server_.process_pid());
 
-  mongodb::Record opMsgInsert = RecordOpMsg("insert", "ok: {$numberDouble: 1.0}", "cake", "ok");
-  mongodb::Record opMsgFind1 = RecordOpMsg("find", "cursor", "find", "cake");
-  mongodb::Record opMsgUpdate = RecordOpMsg("update", "ok: {$numberDouble: 1.0}", "ice cream", "ok");
-  mongodb::Record opMsgFind2 = RecordOpMsg("find", "cursor", "find", "ice cream");
-  mongodb::Record opMsgDelete = RecordOpMsg("delete", "ok: {$numberDouble: 1.0}", "ice cream", "ok");
+  mongodb::Record opMsgInsert = RecordOpMsg("insert", "ok: {$numberDouble: 1.0}", "foo", "ok");
+  mongodb::Record opMsgFind1 = RecordOpMsg("find", "cursor", "find", "foo");
+  mongodb::Record opMsgUpdate = RecordOpMsg("update", "ok: {$numberDouble: 1.0}", "bar", "ok");
+  mongodb::Record opMsgFind2 = RecordOpMsg("find", "cursor", "find", "bar");
+  mongodb::Record opMsgDelete = RecordOpMsg("delete", "ok: {$numberDouble: 1.0}", "bar", "ok");
 
   EXPECT_THAT(server_records, Contains(EqMongoDBRecord(opMsgInsert)));
   EXPECT_THAT(server_records, Contains(EqMongoDBRecord(opMsgFind1)));
