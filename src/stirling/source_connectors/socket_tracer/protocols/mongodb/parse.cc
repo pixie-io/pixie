@@ -92,7 +92,8 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame
 }
 
 template <>
-size_t FindFrameBoundary<mongodb::Frame>(message_type_t, std::string_view, size_t, NoState*) {
+size_t FindFrameBoundary<mongodb::Frame>(message_type_t, std::string_view, size_t,
+                                         mongodb::StateWrapper*) {
   // Not implemented.
   return std::string::npos;
 }

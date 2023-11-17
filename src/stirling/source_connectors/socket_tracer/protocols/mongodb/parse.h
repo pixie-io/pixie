@@ -38,7 +38,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame
 
 template <>
 size_t FindFrameBoundary<mongodb::Frame>(message_type_t type, std::string_view buf,
-                                         size_t start_pos, NoState*);
+                                         size_t start_pos, mongodb::StateWrapper* state);
 
 template <>
 mongodb::stream_id_t GetStreamID(mongodb::Frame* frame);
