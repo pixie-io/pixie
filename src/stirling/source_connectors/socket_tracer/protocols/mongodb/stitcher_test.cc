@@ -37,12 +37,13 @@ using ::testing::SizeIs;
 class MongoDBStitchFramesTest : public ::testing::Test {};
 
 Frame CreateMongoDBFrame(uint64_t ts_ns, int32_t request_id, int32_t response_to, bool more_to_come,
-                         std::string doc = "") {
+                         std::string doc = "", bool is_handshake = false) {
   mongodb::Frame frame;
   frame.timestamp_ns = ts_ns;
   frame.request_id = request_id;
   frame.response_to = response_to;
   frame.more_to_come = more_to_come;
+  frame.is_handshake = is_handshake;
 
   mongodb::Section section;
   section.documents.push_back(doc);
@@ -338,6 +339,39 @@ TEST_F(MongoDBStitchFramesTest, MissingTailFrameInNResponses) {
   EXPECT_EQ(result.records.size(), 2);
   EXPECT_EQ(result.records[0].resp.frame_body, "frame 1 frame 2 frame 3 ");
 
+  EXPECT_TRUE(AreAllDequesEmpty(reqs));
+  EXPECT_TRUE(AreAllDequesEmpty(resps));
+  EXPECT_THAT(state.stream_order, SizeIs(0));
+}
+
+TEST_F(MongoDBStitchFramesTest, VerifyHandshakingMessages) {
+  absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>> reqs;
+  absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>> resps;
+
+  // Add requests to map.
+  reqs[1].push_back(CreateMongoDBFrame(0, 1, 0, false));
+  reqs[3].push_back(CreateMongoDBFrame(2, 3, 0, false));
+  reqs[5].push_back(CreateMongoDBFrame(4, 5, 0, false, "", true));  // Request handshake frame.
+  reqs[7].push_back(CreateMongoDBFrame(6, 7, 0, false));
+
+  // Add responses to map.
+  resps[1].push_back(CreateMongoDBFrame(1, 2, 1, false));
+  resps[3].push_back(CreateMongoDBFrame(3, 4, 3, false));
+  resps[5].push_back(CreateMongoDBFrame(5, 6, 5, false, "", true));  // Response handshake frame.
+  resps[7].push_back(CreateMongoDBFrame(7, 8, 7, false));
+
+  // Add the order in which the transactions's streamID's were found.
+  State state = {};
+  state.stream_order.push_back({1, false});
+  state.stream_order.push_back({3, false});
+  state.stream_order.push_back({5, false});
+  state.stream_order.push_back({7, false});
+
+  RecordsWithErrorCount<mongodb::Record> result = mongodb::StitchFrames(&reqs, &resps, &state);
+  EXPECT_EQ(result.error_count, 0);
+  // There should be 3 records in vector since the stitcher ignores handshaking frames but will
+  // still consume them successfully.
+  EXPECT_THAT(result.records, SizeIs(3));
   EXPECT_TRUE(AreAllDequesEmpty(reqs));
   EXPECT_TRUE(AreAllDequesEmpty(resps));
   EXPECT_THAT(state.stream_order, SizeIs(0));

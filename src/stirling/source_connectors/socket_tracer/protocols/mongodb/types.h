@@ -75,6 +75,11 @@ constexpr std::string_view find = "find";
 constexpr std::string_view cursor = "cursor";
 constexpr std::string_view ok = "ok";
 
+// Types of top level keys for handshaking messages
+constexpr std::string_view kHello = "hello";
+constexpr std::string_view kIsMaster = "isMaster";
+constexpr std::string_view kIsMasterAlternate = "ismaster";
+
 constexpr int32_t kMaxBSONObjSize = 16000000;
 
 /**
@@ -116,6 +121,9 @@ constexpr int32_t kMaxBSONObjSize = 16000000;
  * https://github.com/mongodb/specifications/blob/e09b41df206f9efaa36ba4c332c47d04ddb7d6d1/source/message/OP_MSG.rst#command-arguments-as-payload
  *
  * There can be 0 or more documents in a section of kind 1 without a separator between them.
+ *
+ * Information about MongoDB handshaking messages can be found here:
+ * https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
  */
 
 struct Frame : public FrameBase {
@@ -135,6 +143,7 @@ struct Frame : public FrameBase {
   std::string op_msg_type;
   std::string frame_body;
   uint32_t checksum = 0;
+  bool is_handshake = false;
 
   bool consumed = false;
   size_t ByteSize() const override { return sizeof(Frame); }

@@ -126,6 +126,13 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
         if ((op_msg_type == insert || op_msg_type == delete_ || op_msg_type == update ||
              op_msg_type == find || op_msg_type == cursor)) {
           frame->op_msg_type = op_msg_type;
+
+        } else if (op_msg_type == kHello || op_msg_type == kIsMaster ||
+                   op_msg_type == kIsMasterAlternate) {
+          // The frame is a handshaking message.
+          frame->op_msg_type = op_msg_type;
+          frame->is_handshake = true;
+
         } else {
           // The frame is a response message, find the "ok" key and its value.
           auto itr = doc.FindMember("ok");

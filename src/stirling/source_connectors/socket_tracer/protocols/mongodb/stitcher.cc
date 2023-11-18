@@ -162,6 +162,12 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       resp_frame.consumed = true;
       FlattenSections(&req_frame);
       FlattenSections(&resp_frame);
+
+      // Ignore stitching the request/response if either one is a handshaking frame.
+      if (req_frame.is_handshake || resp_frame.is_handshake) {
+        break;
+      }
+
       records.push_back({std::move(req_frame), std::move(resp_frame)});
       break;
     }
