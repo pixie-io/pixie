@@ -18,6 +18,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <map>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/mqtt/parse.h"
 #include "src/stirling/utils/binary_decoder.h"

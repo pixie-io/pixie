@@ -17,7 +17,7 @@
  */
 
 #include <iomanip>
-#include <memory>
+#include <map>
 #include <string_view>
 
 #include "src/common/base/base.h"
@@ -90,7 +90,7 @@ constexpr int kMaxVarInt16 = 16384;
 constexpr int kMaxVarInt24 = 2097152;
 constexpr int kMaxVarInt32 = 268435456;
 
-static inline StatusOr<size_t> VariableEncodingNumBytes(unsigned long integer) {
+static inline StatusOr<size_t> VariableEncodingNumBytes(uint64_t integer) {
   if (integer >= kMaxVarInt32) {
     return error::ResourceUnavailable("Maximum number of bytes exceeded for variable encoding.");
   }
@@ -105,12 +105,12 @@ static inline StatusOr<size_t> VariableEncodingNumBytes(unsigned long integer) {
   return 4;
 }
 
-ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& properties_length) {
+ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t* properties_length) {
   uint8_t property_code;
-  while (properties_length > 0) {
+  while (*properties_length > 0) {
     // Extracting the property code
     PX_ASSIGN_OR_RETURN_INVALID(property_code, decoder->ExtractBEInt<uint8_t>());
-    properties_length -= 1;
+    *properties_length -= 1;
 
     auto property = magic_enum::enum_cast<PropertyCode>(property_code);
     if (!property.has_value()) {
@@ -128,47 +128,47 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         } else {
           return ParseState::kInvalid;
         }
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::MessageExpiryInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t message_expiry_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["message_expiry_interval"] = std::to_string(message_expiry_interval);
-        properties_length -= 4;
+        *properties_length -= 4;
         break;
       }
       case PropertyCode::ContentType: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view content_type,
                                     decoder->ExtractString(property_length));
         result->properties["content_type"] = std::string(content_type);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::ResponseTopic: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view response_topic,
-                                    decoder->ExtractString(properties_length));
+                                    decoder->ExtractString(property_length));
         result->properties["response_topic"] = std::string(response_topic);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::CorrelationData: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view correlation_data,
                                     decoder->ExtractString(property_length));
         result->properties["correlation_data"] =
             BytesToString<bytes_format::HexAsciiMix>(correlation_data);
-        ;
-        properties_length -= property_length;
+
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::SubscriptionIdentifier: {
-        PX_ASSIGN_OR_RETURN_INVALID(unsigned long subscription_id, decoder->ExtractUVarInt());
+        PX_ASSIGN_OR_RETURN_INVALID(uint64_t subscription_id, decoder->ExtractUVarInt());
         StatusOr<size_t> num_bytes_status = VariableEncodingNumBytes(subscription_id);
         if (!num_bytes_status.ok()) {
           return ParseState::kInvalid;
@@ -176,47 +176,47 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         size_t num_bytes = num_bytes_status.ValueOrDie();
 
         result->properties["subscription_id"] = std::to_string(subscription_id);
-        properties_length -= num_bytes;
+        *properties_length -= num_bytes;
         break;
       }
       case PropertyCode::SessionExpiryInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t session_expiry_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["session_expiry_interval"] = std::to_string(session_expiry_interval);
-        properties_length -= 4;
+        *properties_length -= 4;
         break;
       }
       case PropertyCode::AssignedClientIdentifier: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view assigned_client_identifier,
                                     decoder->ExtractString(property_length));
         result->properties["assigned_client_identifier"] = std::string(assigned_client_identifier);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::ServerKeepAlive: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t server_keep_alive, decoder->ExtractBEInt<uint16_t>());
         result->properties["server_keep_alive"] = std::to_string(server_keep_alive);
-        properties_length -= 2;
+        *properties_length -= 2;
         break;
       }
       case PropertyCode::AuthenticationMethod: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view auth_method,
                                     decoder->ExtractString(property_length));
         result->properties["auth_method"] = std::string(auth_method);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::AuthenticationData: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view auth_data,
                                     decoder->ExtractString(property_length));
         result->properties["auth_data"] = BytesToString<bytes_format::HexAsciiMix>(auth_data);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::RequestProblemInformation: {
@@ -224,14 +224,14 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["request_problem_information"] =
             std::to_string(request_problem_information);
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::WillDelayInterval: {
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t will_delay_interval,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["will_delay_interval"] = std::to_string(will_delay_interval);
-        properties_length -= 4;
+        *properties_length -= 4;
         break;
       }
       case PropertyCode::RequestResponseInformation: {
@@ -239,76 +239,76 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["request_response_information"] =
             std::to_string(request_response_information);
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::ResponseInformation: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view response_information,
-                                    decoder->ExtractString(properties_length));
+                                    decoder->ExtractString(property_length));
         result->properties["response_information"] = std::string(response_information);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::ServerReference: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view server_reference,
                                     decoder->ExtractString(property_length));
         result->properties["server_reference"] = std::string(server_reference);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::ReasonString: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t property_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view reason_string,
                                     decoder->ExtractString(property_length));
         result->properties["reason_string"] = std::string(reason_string);
-        properties_length -= property_length;
+        *properties_length -= property_length;
         break;
       }
       case PropertyCode::ReceiveMaximum: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t receive_maximum, decoder->ExtractBEInt<uint16_t>());
         result->properties["receive_maximum"] = std::to_string(receive_maximum);
-        properties_length -= 2;
+        *properties_length -= 2;
         break;
       }
       case PropertyCode::TopicAliasMaximum: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias_maximum,
                                     decoder->ExtractBEInt<uint16_t>());
         result->properties["topic_alias_maximum"] = std::to_string(topic_alias_maximum);
-        properties_length -= 2;
+        *properties_length -= 2;
         break;
       }
       case PropertyCode::TopicAlias: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias, decoder->ExtractBEInt<uint16_t>());
         result->properties["topic_alias"] = std::to_string(topic_alias);
-        properties_length -= 2;
+        *properties_length -= 2;
         break;
       }
       case PropertyCode::MaximumQos: {
-        PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_alias, decoder->ExtractBEInt<uint8_t>());
-        result->properties["maximum_qos"] = std::to_string(topic_alias);
-        properties_length -= 1;
+        PX_ASSIGN_OR_RETURN_INVALID(uint16_t maximum_qos, decoder->ExtractBEInt<uint8_t>());
+        result->properties["maximum_qos"] = std::to_string(maximum_qos);
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::RetainAvailable: {
         PX_ASSIGN_OR_RETURN_INVALID(uint8_t retain_available, decoder->ExtractBEInt<uint8_t>());
         result->properties["retain_available"] = (retain_available == 1) ? "true" : "false";
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::UserProperty: {
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t key_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view key, decoder->ExtractString(key_length));
-        properties_length -= key_length;
+        *properties_length -= key_length;
         PX_ASSIGN_OR_RETURN_INVALID(uint16_t value_length, decoder->ExtractBEInt<uint16_t>());
-        properties_length -= 2;
+        *properties_length -= 2;
         PX_ASSIGN_OR_RETURN_INVALID(std::string_view value, decoder->ExtractString(value_length));
-        properties_length -= value_length;
+        *properties_length -= value_length;
         // For multiple user properties present, append to string if user property already present
         if (result->properties.find("user-properties") == result->properties.end()) {
           result->properties["user-properties"] =
@@ -323,7 +323,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
         PX_ASSIGN_OR_RETURN_INVALID(uint32_t maximum_packet_size,
                                     decoder->ExtractBEInt<uint32_t>());
         result->properties["maximum_packet_size"] = std::to_string(maximum_packet_size);
-        properties_length -= 4;
+        *properties_length -= 4;
         break;
       }
       case PropertyCode::WildcardSubscriptionAvailable: {
@@ -331,7 +331,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["wildcard_subscription_available"] =
             (wildcard_subscription_available == 1) ? "true" : "false";
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::SubscriptionIdentifiersAvailable: {
@@ -339,7 +339,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["subscription_id_available"] =
             (subscription_id_available == 1) ? "true" : "false";
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       case PropertyCode::SharedSubscriptionAvailable: {
@@ -347,7 +347,7 @@ ParseState ParseProperties(Message* result, BinaryDecoder* decoder, size_t& prop
                                     decoder->ExtractBEInt<uint8_t>());
         result->properties["shared_subscription_available"] =
             (shared_subscription_available == 1) ? "true" : "false";
-        properties_length -= 1;
+        *properties_length -= 1;
         break;
       }
       default:
@@ -384,7 +384,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
         return ParseState::kInvalid;
       }
 
-      return ParseProperties(result, decoder, properties_length);
+      return ParseProperties(result, decoder, &properties_length);
     }
     case MqttControlPacketType::CONNACK: {
       PX_ASSIGN_OR_RETURN_INVALID(uint8_t connack_flags, decoder->ExtractBEInt<uint8_t>());
@@ -398,7 +398,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
         return ParseState::kInvalid;
       }
 
-      return ParseProperties(result, decoder, properties_length);
+      return ParseProperties(result, decoder, &properties_length);
     }
     case MqttControlPacketType::PUBLISH: {
       PX_ASSIGN_OR_RETURN_INVALID(uint16_t topic_length, decoder->ExtractBEInt<uint16_t>());
@@ -428,7 +428,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
 
       result->header_fields["variable_header_length"] += (uint32_t)(num_bytes + properties_length);
 
-      return ParseProperties(result, decoder, properties_length);
+      return ParseProperties(result, decoder, &properties_length);
     }
     case MqttControlPacketType::PUBACK:
     case MqttControlPacketType::PUBREC:
@@ -449,7 +449,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
         if (!VariableEncodingNumBytes(properties_length).ok()) {
           return ParseState::kInvalid;
         }
-        return ParseProperties(result, decoder, properties_length);
+        return ParseProperties(result, decoder, &properties_length);
       }
 
       return ParseState::kSuccess;
@@ -470,7 +470,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
       size_t num_bytes = num_bytes_status.ValueOrDie();
 
       result->header_fields["variable_header_length"] += num_bytes + properties_length;
-      return ParseProperties(result, decoder, properties_length);
+      return ParseProperties(result, decoder, &properties_length);
     }
     case MqttControlPacketType::DISCONNECT: {
       PX_ASSIGN_OR_RETURN_INVALID(result->header_fields["reason_code"],
@@ -482,7 +482,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
           return ParseState::kInvalid;
         }
 
-        return ParseProperties(result, decoder, properties_length);
+        return ParseProperties(result, decoder, &properties_length);
       }
       return ParseState::kSuccess;
     }
@@ -499,7 +499,7 @@ ParseState ParseVariableHeader(Message* result, BinaryDecoder* decoder,
         return ParseState::kInvalid;
       }
 
-      return ParseProperties(result, decoder, properties_length);
+      return ParseProperties(result, decoder, &properties_length);
     }
     default:
       return ParseState::kSuccess;
@@ -521,7 +521,7 @@ ParseState ParsePayload(Message* result, BinaryDecoder* decoder,
           return ParseState::kInvalid;
         }
 
-        if (ParseProperties(result, decoder, will_properties_length) == ParseState::kInvalid) {
+        if (ParseProperties(result, decoder, &will_properties_length) == ParseState::kInvalid) {
           return ParseState::kInvalid;
         }
 
