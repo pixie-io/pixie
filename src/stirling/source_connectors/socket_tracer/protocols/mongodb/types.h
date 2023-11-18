@@ -68,12 +68,12 @@ enum class SectionKind : uint8_t {
 };
 
 // Types of OP_MSG requests/responses
-constexpr std::string_view insert = "insert";
-constexpr std::string_view delete_ = "delete";
-constexpr std::string_view update = "update";
-constexpr std::string_view find = "find";
-constexpr std::string_view cursor = "cursor";
-constexpr std::string_view ok = "ok";
+constexpr std::string_view kInsert = "insert";
+constexpr std::string_view kDelete = "delete";
+constexpr std::string_view kUpdate = "update";
+constexpr std::string_view kFind = "find";
+constexpr std::string_view kCursor = "cursor";
+constexpr std::string_view kOk = "ok";
 
 // Types of top level keys for handshaking messages
 constexpr std::string_view kHello = "hello";

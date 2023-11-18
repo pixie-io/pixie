@@ -123,8 +123,8 @@ ParseState ProcessOpMsg(BinaryDecoder* decoder, Frame* frame) {
         // The type of all request commands and the response to all find command requests
         // will always be the first key.
         auto op_msg_type = doc.MemberBegin()->name.GetString();
-        if ((op_msg_type == insert || op_msg_type == delete_ || op_msg_type == update ||
-             op_msg_type == find || op_msg_type == cursor)) {
+        if ((op_msg_type == kInsert || op_msg_type == kDelete || op_msg_type == kUpdate ||
+             op_msg_type == kFind || op_msg_type == kCursor)) {
           frame->op_msg_type = op_msg_type;
 
         } else if (op_msg_type == kHello || op_msg_type == kIsMaster ||
