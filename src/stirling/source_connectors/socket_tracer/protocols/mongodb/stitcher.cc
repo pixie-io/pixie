@@ -165,6 +165,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
 
       // Ignore stitching the request/response if either one is a handshaking frame.
       if (req_frame.is_handshake || resp_frame.is_handshake) {
+        req_frame.consumed = true;
+        resp_frame.consumed = true;
         break;
       }
 

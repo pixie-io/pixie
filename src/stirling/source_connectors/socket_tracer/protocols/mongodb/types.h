@@ -123,7 +123,7 @@ constexpr int32_t kMaxBSONObjSize = 16000000;
  * There can be 0 or more documents in a section of kind 1 without a separator between them.
  *
  * Information about MongoDB handshaking messages can be found here:
- * https://github.com/mongodb/specifications/blob/master/source/mongodb-handshake/handshake.rst
+ * https://github.com/mongodb/specifications/blob/022fbf64fb36c80b9295ba93acec150c94362767/source/mongodb-handshake/handshake.rst
  */
 
 struct Frame : public FrameBase {
