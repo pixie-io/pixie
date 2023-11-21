@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <deque>
 #include <variant>
 
@@ -27,6 +28,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/common/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mux/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
@@ -39,17 +41,19 @@ namespace protocols {
 
 // clang-format off
 // PROTOCOL_LIST: Requires update on new protocols.
+// Note: stream_id is set to 0 for protocols that use a single stream / have no notion of streams.
 using FrameDequeVariant = std::variant<std::monostate,
-                                       std::deque<cass::Frame>,
-                                       std::deque<http::Message>,
-                                       std::deque<mux::Frame>,
-                                       std::deque<mysql::Packet>,
-                                       std::deque<pgsql::RegularMessage>,
-                                       std::deque<dns::Frame>,
-                                       std::deque<redis::Message>,
-                                       std::deque<kafka::Packet>,
-                                       std::deque<nats::Message>,
-                                       std::deque<amqp::Frame>>;
+                                       absl::flat_hash_map<cass::stream_id_t, std::deque<cass::Frame>>,
+                                       absl::flat_hash_map<http::stream_id_t, std::deque<http::Message>>,
+                                       absl::flat_hash_map<mux::stream_id_t, std::deque<mux::Frame>>,
+                                       absl::flat_hash_map<mysql::connection_id_t, std::deque<mysql::Packet>>,
+                                       absl::flat_hash_map<pgsql::connection_id_t, std::deque<pgsql::RegularMessage>>,
+                                       absl::flat_hash_map<dns::stream_id_t, std::deque<dns::Frame>>,
+                                       absl::flat_hash_map<redis::stream_id_t, std::deque<redis::Message>>,
+                                       absl::flat_hash_map<kafka::correlation_id_t, std::deque<kafka::Packet>>,
+                                       absl::flat_hash_map<nats::stream_id_t, std::deque<nats::Message>>,
+                                       absl::flat_hash_map<amqp::channel_id, std::deque<amqp::Frame>>,
+                                       absl::flat_hash_map<mongodb::stream_id_t, std::deque<mongodb::Frame>>>;
 // clang-format off
 
 }  // namespace protocols

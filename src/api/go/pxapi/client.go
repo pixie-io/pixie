@@ -22,10 +22,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
@@ -54,14 +54,15 @@ type TableMuxer interface {
 	AcceptTable(ctx context.Context, metadata types.TableMetadata) (TableRecordHandler, error)
 }
 
-// Client is the base client to use pixie cloud + vizier.
+// Client is the base client to use either pixie cloud + vizier or standalone pem + vizier.
 type Client struct {
 	apiKey     string
 	bearerAuth string
+	vzAddr     string
 
-	cloudAddr string
-
-	useEncryption bool
+	useEncryption          bool
+	disableTLSVerification bool
+	insecureDirect         bool
 
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
@@ -71,8 +72,10 @@ type Client struct {
 // NewClient creates a new Pixie API Client.
 func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 	c := &Client{
-		cloudAddr:     defaultCloudAddr,
-		useEncryption: true,
+		vzAddr:                 defaultCloudAddr,
+		useEncryption:          true,
+		insecureDirect:         false,
+		disableTLSVerification: false,
 	}
 
 	for _, opt := range opts {
@@ -86,12 +89,14 @@ func NewClient(ctx context.Context, opts ...ClientOption) (*Client, error) {
 }
 
 func (c *Client) init(ctx context.Context) error {
-	isInternal := strings.Contains(c.cloudAddr, "cluster.local")
-
-	tlsConfig := &tls.Config{InsecureSkipVerify: isInternal}
+	tlsConfig := &tls.Config{InsecureSkipVerify: c.disableTLSVerification}
 	creds := credentials.NewTLS(tlsConfig)
 
-	conn, err := grpc.Dial(c.cloudAddr, grpc.WithTransportCredentials(creds))
+	if c.insecureDirect {
+		creds = insecure.NewCredentials()
+	}
+
+	conn, err := grpc.Dial(c.vzAddr, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		return err
 	}

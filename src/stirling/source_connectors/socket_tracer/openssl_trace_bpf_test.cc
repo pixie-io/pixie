@@ -104,7 +104,8 @@ class OpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing 
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60});
+    constexpr bool kHostPid = false;
+    StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60}, {}, {}, kHostPid);
     PX_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -187,9 +188,10 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::CurlContainer client;
+  constexpr bool kHostPid = false;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}));
+                       {"--insecure", "-s", "-S", "https://127.0.0.1:443/index.html"}, kHostPid));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -227,9 +229,10 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::RubyContainer client;
+  constexpr bool kHostPid = false;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"ruby", "-e", rb_script}));
+                       {"ruby", "-e", rb_script}, kHostPid));
   client.Wait();
   this->StopTransferDataThread();
 
@@ -249,9 +252,10 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_node_client) {
   // Make an SSL request with the client.
   // Run the client in the network of the server, so they can connect to each other.
   ::px::stirling::testing::NodeClientContainer client;
+  constexpr bool kHostPid = false;
   ASSERT_OK(client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                       {"node", "/etc/node/https_client.js"}));
+                       {"node", "/etc/node/https_client.js"}, kHostPid));
   client.Wait();
   this->StopTransferDataThread();
 

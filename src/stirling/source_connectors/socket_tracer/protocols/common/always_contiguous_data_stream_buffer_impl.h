@@ -78,7 +78,10 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   size_t EndPosition();
 
   // Get a string_view for the chunk at pos.
-  std::string_view Get(size_t pos) const;
+  std::string_view Get(size_t pos);
+
+  // Ensure that timestamps are monotonically increasing for a given chunk.
+  void EnforceTimestampMonotonicity(size_t chunk_start, size_t chunk_end);
 
   const size_t capacity_;
   const size_t max_gap_size_;
@@ -101,6 +104,7 @@ class AlwaysContiguousDataStreamBufferImpl : public DataStreamBufferImpl {
   // Unlike chunks_, which will fuse when adjacent, timestamps never fuse.
   // Also, we don't track gaps in the buffer with timestamps; must use chunks_ for that.
   std::map<size_t, uint64_t> timestamps_;
+  size_t prev_timestamp_ = 0;
 };
 
 }  // namespace protocols

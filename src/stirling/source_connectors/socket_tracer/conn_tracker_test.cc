@@ -375,7 +375,7 @@ TEST_F(ConnTrackerTest, MemUsage) {
   auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPResp0);
 
   ConnTracker tracker;
-  tracker.InitFrames<http::Message>();
+  tracker.InitFrames<http::stream_id_t, http::Message>();
 
   // Initial memory use is not 0, because the DataStreamBuffer has a small initial capacity.
   size_t mem_usage = tracker.MemUsage<http::ProtocolTraits>();
@@ -442,7 +442,7 @@ TEST_F(ConnTrackerTest, BufferClearedAfterExpiration) {
   tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
                                         frame_expiry_timestamp, buffer_expiry_timestamp);
-  EXPECT_EQ(tracker.req_data()->Frames<http::Message>().size(), 1);
+  EXPECT_EQ((tracker.req_data()->Frames<http::stream_id_t, http::Message>()[0].size()), 1);
 }
 
 TEST_F(ConnTrackerTest, BufferTruncatedBeyondSizeLimit) {
@@ -460,7 +460,7 @@ TEST_F(ConnTrackerTest, BufferTruncatedBeyondSizeLimit) {
   tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
                                         frame_expiry_timestamp, buffer_expiry_timestamp);
   EXPECT_EQ(tracker.req_data()->data_buffer().size(), buffer_size_limit_bytes);
-  EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
+  EXPECT_THAT((tracker.req_frames<http::stream_id_t, http::Message>()[0]), IsEmpty());
 }
 
 TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
@@ -480,13 +480,13 @@ TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
   tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
                                         frame_expiry_timestamp, buffer_expiry_timestamp);
-  EXPECT_THAT(tracker.req_frames<http::Message>(), SizeIs(1));
+  EXPECT_THAT((tracker.req_frames<http::stream_id_t, http::Message>()[0]), SizeIs(1));
 
   frame_expiry_timestamp = now();
   tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.Cleanup<http::ProtocolTraits>(frame_size_limit_bytes, buffer_size_limit_bytes,
                                         frame_expiry_timestamp, buffer_expiry_timestamp);
-  EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
+  EXPECT_THAT((tracker.req_frames<http::stream_id_t, http::Message>()[0]), IsEmpty());
 }
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.

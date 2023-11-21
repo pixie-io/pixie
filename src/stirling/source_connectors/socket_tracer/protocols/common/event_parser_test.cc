@@ -39,6 +39,7 @@ using ::testing::Pair;
 
 // This test parser is a simple comma-separated value splitter.
 
+using stream_id_t = uint16_t;
 struct TestFrame : public FrameBase {
   std::string msg;
 
@@ -69,7 +70,7 @@ class EventParserTest : public DataStreamBufferTestWrapper, public ::testing::Te
 
 // Use test protocol to test basics of EventParser.
 TEST_F(EventParserTest, BasicProtocolParsing) {
-  std::deque<TestFrame> word_frames;
+  absl::flat_hash_map<stream_id_t, std::deque<TestFrame>> word_frames;
 
   // clang-format off
   std::vector<std::string> event_messages = {
@@ -84,17 +85,20 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
   std::vector<SocketDataEvent> events = CreateEvents(event_messages);
 
   AddEvents(events);
-  ParseResult res = ParseFrames(message_type_t::kRequest, &data_buffer_, &word_frames);
+  ParseResult<stream_id_t> res = ParseFrames(message_type_t::kRequest, &data_buffer_, &word_frames);
 
   EXPECT_EQ(ParseState::kSuccess, res.state);
-  EXPECT_THAT(res.frame_positions,
+  stream_id_t stream_id = 0;
+  EXPECT_THAT(res.frame_positions[stream_id],
               ElementsAre(StartEndPos{0, 7}, StartEndPos{8, 14}, StartEndPos{15, 22},
                           StartEndPos{23, 29}, StartEndPos{30, 35}, StartEndPos{36, 43}));
   EXPECT_EQ(res.end_position, 44);
 
   std::vector<uint64_t> timestamps;
-  for (const auto& frame : word_frames) {
-    timestamps.push_back(frame.timestamp_ns);
+  for (const auto& stream : word_frames) {
+    for (const auto& frame : stream.second) {
+      timestamps.push_back(frame.timestamp_ns);
+    }
   }
   EXPECT_THAT(timestamps, ElementsAre(0, 1, 1, 2, 3, 4));
 }

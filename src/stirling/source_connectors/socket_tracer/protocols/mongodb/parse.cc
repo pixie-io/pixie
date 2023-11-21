@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include <string>
+#include <utility>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/decode.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mongodb/parse.h"
@@ -27,7 +28,7 @@ namespace stirling {
 namespace protocols {
 namespace mongodb {
 
-ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame) {
+ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame, State* state) {
   if (type != message_type_t::kRequest && type != message_type_t::kResponse) {
     return ParseState::kInvalid;
   }
@@ -63,15 +64,20 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame) 
     return ParseState::kInvalid;
   }
 
-  // Parser will ignore Op Codes that have been deprecated/removed from version 5.0 onwards.
-  if (!(frame_type == Type::kOPMsg || frame_type == Type::kOPCompressed ||
-        frame_type == Type::kReserved)) {
+  // Parser will ignore Op Codes that have been deprecated/removed from version 5.0 onwards as well
+  // as kOPCompressed and kReserved which are not supported by the parser yet.
+  if (frame_type != Type::kOPMsg) {
+    buf->remove_prefix(frame->length);
     return ParseState::kIgnored;
   }
 
   ParseState parse_state = mongodb::ProcessPayload(&decoder, frame);
   if (parse_state == ParseState::kSuccess) {
     *buf = decoder.Buf();
+
+    if (type == message_type_t::kRequest) {
+      state->stream_order.push_back(std::pair(frame->request_id, false));
+    }
   }
 
   return parse_state;
@@ -80,14 +86,25 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* frame) 
 }  // namespace mongodb
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame, NoState*) {
-  return mongodb::ParseFrame(type, buf, frame);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mongodb::Frame* frame,
+                      mongodb::StateWrapper* state) {
+  return mongodb::ParseFrame(type, buf, frame, &state->global);
 }
 
 template <>
-size_t FindFrameBoundary<mongodb::Frame>(message_type_t, std::string_view, size_t, NoState*) {
+size_t FindFrameBoundary<mongodb::Frame>(message_type_t, std::string_view, size_t,
+                                         mongodb::StateWrapper*) {
   // Not implemented.
   return std::string::npos;
+}
+
+template <>
+mongodb::stream_id_t GetStreamID(mongodb::Frame* frame) {
+  if (frame->response_to == 0) {
+    return frame->request_id;
+  }
+
+  return frame->response_to;
 }
 
 }  // namespace protocols

@@ -263,14 +263,42 @@ std::map<size_t, size_t>::const_iterator AlwaysContiguousDataStreamBufferImpl::G
   return iter;
 }
 
-std::string_view AlwaysContiguousDataStreamBufferImpl::Get(size_t pos) const {
+void AlwaysContiguousDataStreamBufferImpl::EnforceTimestampMonotonicity(size_t pos,
+                                                                        size_t chunk_end) {
+  // Get timestamp for chunk which is <= pos.
+  auto it = timestamps_.upper_bound(pos);
+  if (it == timestamps_.begin()) {
+    return;
+  }
+  --it;
+
+  // Loop from chunk_start up to but not including chunk_end.
+  // The next element after chunk_end should not be part of the contiguous block.
+  prev_timestamp_ = 0;
+  for (; it != timestamps_.end() && it->first < chunk_end; ++it) {
+    if (prev_timestamp_ > 0 && it->second < prev_timestamp_) {
+      LOG(WARNING) << absl::Substitute(
+          "For chunk pos $0, detected non-monotonically increasing timestamp $1. Adjusting to "
+          "previous timestamp + 1: $2",
+          it->first, it->second, prev_timestamp_ + 1);
+      it->second = prev_timestamp_ + 1;
+    }
+    prev_timestamp_ = it->second;
+  }
+}
+
+std::string_view AlwaysContiguousDataStreamBufferImpl::Get(size_t pos) {
   auto iter = GetChunkForPos(pos);
   if (iter == chunks_.cend()) {
     return {};
   }
 
-  size_t chunk_pos = iter->first;
-  size_t chunk_size = iter->second;
+  size_t chunk_pos = iter->first;    // start of contiguous head
+  size_t chunk_size = iter->second;  // size of contiguous (already merged in Add)
+
+  // since we only call Get() in Head() and the event parser fully processes a contiguous head,
+  // we need only enforce timestamp monotonicity once per head.
+  EnforceTimestampMonotonicity(chunk_pos, chunk_pos + chunk_size);
 
   ssize_t bytes_available = chunk_size - (pos - chunk_pos);
   DCHECK_GT(bytes_available, 0);

@@ -25,7 +25,18 @@ cd "$(git rev-parse --show-toplevel)" || exit
 bazel_cquery=("bazel" "cquery" "--keep_going" "--noshow_progress")
 
 # A list of patterns that will trigger a full build.
-poison_patterns=('^Jenkinsfile' '^bazel\/' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel'  '^docker.properties')
+poison_patterns=(
+  '^\.bazelrc'
+  '^\.github\/workflows\/build_and_test\.yaml'
+  '^bazel\/'
+  '^BUILD.bazel'
+  '^ci\/'
+  '^docker.properties'
+  '^docker\.properties'
+  '^go.mod'
+  '^go.sum'
+  '^Jenkinsfile'
+)
 
 # A list of patterns that will guard BPF targets.
 # We won't run BPF targets unless there are changes to these patterns.
@@ -38,7 +49,6 @@ run_bpf_targets=false
 
 commit_range=$(git merge-base origin/main HEAD)
 
-ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 go_xcompile_excludes="except //src/pixie_cli:px_darwin_amd64 except //src/pixie_cli:px_darwin_arm64"
 buildables_excludes="except(kind(test, //...)) except(kind(container_image, //...))"
@@ -54,7 +64,7 @@ function usage() {
     echo " -a all_targets=${all_targets}" >&2
 }
 
-while getopts "abhc:" option; do
+while getopts "abh" option; do
   case "${option}" in
     a )
        all_targets=true
@@ -83,7 +93,7 @@ done
 #     BPF
 #     BPF ASAN/TSAN
 #
-# This list needs to be kept in sync between the Jenkinsfile, .bazelrc and this file.
+# This list needs to be kept in sync between the ci/github/matrix.yaml, and this file.
 # Query for the associated buildables & tests and write them to a file:
 #     bazel_{buildables, tests}_clang_opt
 #     bazel_{buildables, tests}_clang_dbg

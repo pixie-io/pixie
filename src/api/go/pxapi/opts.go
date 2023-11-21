@@ -18,13 +18,40 @@
 
 package pxapi
 
+import (
+	"log"
+	"os"
+	"strings"
+)
+
 // ClientOption configures options on the client.
 type ClientOption func(client *Client)
 
 // WithCloudAddr is the option to specify cloud address to use.
 func WithCloudAddr(cloudAddr string) ClientOption {
 	return func(c *Client) {
-		c.cloudAddr = cloudAddr
+		c.vzAddr = cloudAddr
+	}
+}
+
+// Allows disabling TLS verification if the `PX_DISABLE_TLS` env var is set and the cloud address is a cluster domain (cluster.local).
+func WithDisableTLSVerification(cloudAddr string) ClientOption {
+	return func(c *Client) {
+		isInternal := strings.Contains(cloudAddr, "cluster.local")
+		tlsDisabled := os.Getenv("PX_DISABLE_TLS") == "1"
+		insecureSkipVerify := tlsDisabled && isInternal
+
+		if !tlsDisabled && isInternal {
+			log.Fatalf("The `PX_DISABLE_TLS` environment variable must be set to \"1\" when making cloud connections that do not support TLS.\n")
+		}
+		c.disableTLSVerification = insecureSkipVerify
+	}
+}
+
+// WithDirectAddr is the option to specify direct address to use for data from standalone pem.
+func WithDirectAddr(directAddr string) ClientOption {
+	return func(c *Client) {
+		c.vzAddr = directAddr
 	}
 }
 
@@ -46,5 +73,12 @@ func WithAPIKey(auth string) ClientOption {
 func WithE2EEncryption(enabled bool) ClientOption {
 	return func(c *Client) {
 		c.useEncryption = enabled
+	}
+}
+
+// WithDirectCredsInsecure is the option to setup insecure credentials for direct connections.
+func WithDirectCredsInsecure() ClientOption {
+	return func(c *Client) {
+		c.insecureDirect = true
 	}
 }

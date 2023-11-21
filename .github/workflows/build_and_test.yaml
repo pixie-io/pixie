@@ -123,6 +123,10 @@ jobs:
   build-and-test:
     needs: [authorize, env-protect-setup, get-dev-image, generate-matrix]
     runs-on: ubuntu-latest-16-cores
+    permissions:
+      contents: read
+      actions: read
+      checks: write
     container:
       image: ${{ needs.get-dev-image.outputs.image-with-tag }}
       options: --privileged
@@ -161,6 +165,15 @@ jobs:
         ./scripts/bazel_ignore_codes.sh test ${{ matrix.args }} --target_pattern_file=target_files/${{ matrix.tests }} \
           2> >(tee bazel_stderr)
       # yamllint enable rule:indentation
+    - name: Parse junit reports
+      uses: dorny/test-reporter@afe6793191b75b608954023a46831a3fe10048d4  # v1.7.0
+      if: always()
+      with:
+        name: testlogs-${{ matrix.name }} tests
+        path: 'bazel-testlogs/**/*.xml'
+        reporter: java-junit
+        list-suites: all
+        list-tests: failed
     - name: Buildbuddy URL
       if: always()
       run: |

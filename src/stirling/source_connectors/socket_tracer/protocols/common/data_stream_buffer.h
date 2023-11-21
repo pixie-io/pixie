@@ -92,10 +92,11 @@ class DataStreamBuffer {
 
   /**
    * Get timestamp recorded for the data at the specified position.
+   * If less than previous timestamp, timestamp will be adjusted to be monotonically increasing.
    * @param pos The logical position of the data.
    * @return The timestamp or error if the position does not contain valid data.
    */
-  StatusOr<uint64_t> GetTimestamp(size_t pos) const { return impl_->GetTimestamp(pos); }
+  StatusOr<uint64_t> GetTimestamp(size_t pos) { return impl_->GetTimestamp(pos); }
 
   /**
    * Remove n bytes from the head of the buffer.

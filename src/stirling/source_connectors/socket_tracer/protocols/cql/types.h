@@ -177,6 +177,10 @@ struct ProtocolTraits : public BaseProtocolTraits<Record> {
 };
 
 }  // namespace cass
+
+template <>
+cass::stream_id_t GetStreamID(cass::Frame* frame);
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

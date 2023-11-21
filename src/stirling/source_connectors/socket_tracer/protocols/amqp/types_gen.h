@@ -207,10 +207,12 @@ struct Record {
   }
 };
 
+using channel_id = uint16_t;
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = channel_id;
 };
 
 }  // namespace amqp

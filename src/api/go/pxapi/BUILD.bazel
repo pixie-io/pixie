@@ -38,6 +38,7 @@ go_library(
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//credentials",
+        "@org_golang_google_grpc//credentials/insecure",
         "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",
     ],
@@ -58,7 +59,10 @@ filegroup(
 
 pl_go_test(
     name = "pxapi_test",
-    srcs = ["results_test.go"],
+    srcs = [
+        "opts_test.go",
+        "results_test.go",
+    ],
     embed = [":pxapi"],
     deps = [
         "//src/api/go/pxapi/errdefs",
