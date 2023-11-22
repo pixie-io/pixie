@@ -369,7 +369,7 @@ void PerfProfileConnector::CheckProfilerState(const uint64_t num_stack_traces) {
       profiler_state_->GetValue(kErrorStatusIdx).ValueOr(kPerfProfilerStatusOk);
 
   // The overflow error is expected during pem startup, i.e. while other source connectors are
-  // being brough up. During pem startup, the profiler transfer data method is starved and so
+  // being brought up. During pem startup, the profiler transfer data method is starved and so
   // we do expect a few overflow count errors.
   constexpr int64_t max_overflow_error_count = 10;
   constexpr int64_t max_map_read_error_count = 0;
