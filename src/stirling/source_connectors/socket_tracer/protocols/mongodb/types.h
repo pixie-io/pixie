@@ -191,6 +191,9 @@ struct ProtocolTraits : public BaseProtocolTraits<Record> {
 };
 
 }  // namespace mongodb
+
+template <>
+mongodb::stream_id_t GetStreamID(mongodb::Frame* frame);
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
