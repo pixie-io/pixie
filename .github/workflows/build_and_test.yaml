@@ -170,10 +170,11 @@ jobs:
       if: always()
       with:
         name: testlogs-${{ matrix.name }} tests
-        path: 'bazel-testlogs/**/*.xml'
+        path: 'bazel-testlogs/**/test.xml'
         reporter: java-junit
         list-suites: all
         list-tests: failed
+        fail-on-empty: false
     - name: Buildbuddy URL
       if: always()
       run: |
