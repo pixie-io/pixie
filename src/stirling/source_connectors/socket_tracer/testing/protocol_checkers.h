@@ -93,6 +93,21 @@ inline auto EqHTTPRecord(const protocols::http::Record& x) {
                Field(&protocols::http::Record::resp, EqHTTPResp(x.resp)));
 }
 
+inline auto EqHTTPRecordWithBodyRegex(const protocols::http::Record& x,
+                                      const std::string& body_regex) {
+  using ::testing::Field;
+  using ::testing::MatchesRegex;
+
+  auto EqHTTPRespWithRegex = [&x, &body_regex]() {
+    return AllOf(Field(&protocols::http::Message::resp_status, x.resp.resp_status),
+                 Field(&protocols::http::Message::resp_message, x.resp.resp_message),
+                 Field(&protocols::http::Message::body, MatchesRegex(body_regex)));
+  };
+
+  return AllOf(Field(&protocols::http::Record::req, EqHTTPReq(x.req)),
+               Field(&protocols::http::Record::resp, EqHTTPRespWithRegex()));
+}
+
 inline auto EqMux(const protocols::mux::Frame& x) {
   using ::testing::Field;
 
