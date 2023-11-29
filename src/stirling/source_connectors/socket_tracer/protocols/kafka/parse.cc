@@ -162,7 +162,8 @@ template <>
 ParseState ParseFrame<kafka::Packet, kafka::StateWrapper>(message_type_t type,
                                                           std::string_view* buf,
                                                           kafka::Packet* packet,
-                                                          kafka::StateWrapper* state) {
+                                                          kafka::StateWrapper* state,
+                                                          bool /*lazy_parsing_enabled*/) {
   return kafka::ParseFrame(type, buf, packet, &state->global);
 }
 

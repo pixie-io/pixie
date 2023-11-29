@@ -85,7 +85,7 @@ ParseState ParseFrame(message_type_t type, std::string_view* buf, Frame* result)
 
 template <>
 ParseState ParseFrame(message_type_t type, std::string_view* buf, cass::Frame* result,
-                      NoState* /*state*/) {
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/) {
   return cass::ParseFrame(type, buf, result);
 }
 

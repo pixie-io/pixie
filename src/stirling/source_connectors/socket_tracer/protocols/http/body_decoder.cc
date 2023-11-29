@@ -52,7 +52,7 @@ constexpr int kDelimiterLen = 2;
  *         ParseState::kNeedsMoreData if the message is incomplete.
  *         ParseState::kSuccess if the chunk length was extracted and chunk header is well-formed.
  */
-ParseState ExtractChunkLength(std::string_view* data, size_t* out) {
+ParseState ExtractChunkLength(std::string_view* data, size_t* out, bool lazy_parsing_enabled) {
   size_t chunk_len = 0;
 
   // Maximum number of hex characters we allow in a chunked length encoding.
@@ -64,7 +64,13 @@ ParseState ExtractChunkLength(std::string_view* data, size_t* out) {
 
   size_t delimiter_pos = data->substr(0, kSearchWindow).find("\r\n");
   if (delimiter_pos == data->npos) {
-    return data->length() > kSearchWindow ? ParseState::kInvalid : ParseState::kNeedsMoreData;
+    if (data->length() > kSearchWindow) {
+      return ParseState::kInvalid;
+    }
+    if (lazy_parsing_enabled) {
+      return ParseState::kMetadataComplete;
+    }
+    return ParseState::kNeedsMoreData;
   }
 
   std::string_view chunk_len_str = data->substr(0, delimiter_pos);
@@ -97,10 +103,14 @@ ParseState ExtractChunkLength(std::string_view* data, size_t* out) {
  *         ParseState::kNeedsMoreData if the message is incomplete.
  *         ParseState::kSuccess if the chunk data was extracted and chunk data was well-formed.
  */
-ParseState ExtractChunkData(std::string_view* data, size_t chunk_len, std::string_view* out) {
+ParseState ExtractChunkData(std::string_view* data, size_t chunk_len, std::string_view* out,
+                            bool lazy_parsing_enabled) {
   std::string_view chunk_data;
 
   if (data->length() < chunk_len + kDelimiterLen) {
+    if (lazy_parsing_enabled) {
+      return ParseState::kMetadataComplete;
+    }
     return ParseState::kNeedsMoreData;
   }
 
@@ -126,7 +136,7 @@ ParseState ExtractChunkData(std::string_view* data, size_t chunk_len, std::strin
 // have both the result fail and the input buffer be modified.
 // Reference: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
 ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_bytes,
-                              std::string* result, size_t* body_size) {
+                              std::string* result, size_t* body_size, bool lazy_parsing_enabled) {
   std::vector<std::string_view> chunks;
   size_t total_bytes = 0;
 
@@ -137,7 +147,7 @@ ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_byte
   while (true) {
     // Extract the chunk length.
     size_t chunk_len = 0;
-    s = ExtractChunkLength(&data, &chunk_len);
+    s = ExtractChunkLength(&data, &chunk_len, lazy_parsing_enabled);
     if (s != ParseState::kSuccess) {
       return s;
     }
@@ -149,7 +159,7 @@ ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_byte
 
     // Extract the chunk data.
     std::string_view chunk_data;
-    s = ExtractChunkData(&data, chunk_len, &chunk_data);
+    s = ExtractChunkData(&data, chunk_len, &chunk_data, lazy_parsing_enabled);
     if (s != ParseState::kSuccess) {
       return s;
     }
@@ -164,6 +174,12 @@ ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_byte
     }
 
     total_bytes += chunk_data.size();
+
+    if (lazy_parsing_enabled) {
+      // Populate result frame incrementally for lazy execution
+      *result = absl::StrJoin(chunks, "");
+      *body_size = total_bytes;
+    }
   }
 
   // Two scenarios to wrap up:
@@ -179,7 +195,13 @@ ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_byte
 
     size_t pos = data.substr(0, kSearchWindow).find("\r\n\r\n");
     if (pos == data.npos) {
-      return data.length() > kSearchWindow ? ParseState::kInvalid : ParseState::kNeedsMoreData;
+      if (data.length() > kSearchWindow) {
+        return ParseState::kInvalid;
+      }
+      if (lazy_parsing_enabled) {
+        return ParseState::kMetadataComplete;
+      }
+      return ParseState::kNeedsMoreData;
     }
 
     data.remove_prefix(pos + 4);
@@ -199,7 +221,7 @@ ParseState CustomParseChunked(std::string_view* buf, size_t body_size_limit_byte
 // the final result is kNeedsMoreData.
 // See our Custom implementation for an alternative that doesn't have that cost.
 ParseState PicoParseChunked(std::string_view* data, size_t body_size_limit_bytes,
-                            std::string* result, size_t* body_size) {
+                            std::string* result, size_t* body_size, bool lazy_parsing_enabled) {
   // Make a copy of the data because phr_decode_chunked mutates the input,
   // and if the original parse fails due to a lack of data, we need the original
   // state to be preserved.
@@ -216,6 +238,9 @@ ParseState PicoParseChunked(std::string_view* data, size_t body_size_limit_bytes
     return ParseState::kInvalid;
   } else if (retval == -2) {
     // Incomplete message.
+    if (lazy_parsing_enabled) {
+      return ParseState::kMetadataComplete;
+    }
     return ParseState::kNeedsMoreData;
   } else if (retval >= 0) {
     // Found a complete message.
@@ -239,14 +264,16 @@ ParseState PicoParseChunked(std::string_view* data, size_t body_size_limit_bytes
 // Parse an HTTP message body in the chunked transfer-encoding.
 // Reference: https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
 ParseState ParseChunked(std::string_view* data, size_t body_size_limit_bytes, std::string* result,
-                        size_t* body_size) {
-  return (FLAGS_use_pico_chunked_decoder)
-             ? PicoParseChunked(data, body_size_limit_bytes, result, body_size)
-             : CustomParseChunked(data, body_size_limit_bytes, result, body_size);
+                        size_t* body_size, bool lazy_parsing_enabled) {
+  return (FLAGS_use_pico_chunked_decoder) ? PicoParseChunked(data, body_size_limit_bytes, result,
+                                                             body_size, lazy_parsing_enabled)
+                                          : CustomParseChunked(data, body_size_limit_bytes, result,
+                                                               body_size, lazy_parsing_enabled);
 }
 
 ParseState ParseContent(std::string_view content_len_str, std::string_view* data,
-                        size_t body_size_limit_bytes, std::string* result, size_t* body_size) {
+                        size_t body_size_limit_bytes, std::string* result, size_t* body_size,
+                        bool lazy_parsing_enabled) {
   size_t len;
   if (!absl::SimpleAtoi(content_len_str, &len)) {
     LOG(ERROR) << absl::Substitute("Unable to parse Content-Length: $0", content_len_str);
@@ -254,6 +281,9 @@ ParseState ParseContent(std::string_view content_len_str, std::string_view* data
   }
 
   if (data->size() < len) {
+    if (lazy_parsing_enabled) {
+      return ParseState::kMetadataComplete;
+    }
     return ParseState::kNeedsMoreData;
   }
 
