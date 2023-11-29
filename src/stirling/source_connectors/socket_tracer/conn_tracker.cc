@@ -522,8 +522,9 @@ bool ConnTracker::SetProtocol(traffic_protocol_t protocol, std::string_view reas
   CONN_TRACE(2) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
                                     magic_enum::enum_name(old_protocol),
                                     magic_enum::enum_name(protocol), reason);
-  send_data_.set_protocol(protocol);
-  recv_data_.set_protocol(protocol);
+  bool lazy_parsing_enabled = LazyParsingEnabled(protocol);
+  send_data_.set_protocol(protocol, lazy_parsing_enabled);
+  recv_data_.set_protocol(protocol, lazy_parsing_enabled);
   return true;
 }
 
