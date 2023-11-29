@@ -17,7 +17,6 @@
  */
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
-
 #include "src/common/testing/testing.h"
 
 namespace px {
@@ -276,6 +275,161 @@ TEST_P(DataStreamBufferTest, LargeGap) {
     // should be added to the buffer.
     stream_buffer.Add(100 - kAllowBeforeGapSize, "allow", 19);
     EXPECT_EQ(stream_buffer.Head(), "allow");
+  }
+}
+
+// TODO(benkilimnik): When we replace the filler implementation with another solution like lazy
+// parsing for all protocols, this test will no longer be needed
+// Test metadata transfer for merging new chunks into left chunk
+TEST_P(DataStreamBufferTest, GapMetadataLeftMerge) {
+  if (FLAGS_stirling_data_stream_buffer_always_contiguous_buffer) {
+    const size_t kMaxGapSize = 16;
+    const size_t kAllowBeforeGapSize = 16;
+    DataStreamBuffer stream_buffer(128, kMaxGapSize, kAllowBeforeGapSize);
+
+    // Add incomplete event
+    stream_buffer.Add(0, "0123", 0, chunk_t::kExceededLoopLimit, 2);  // gap size = 2
+
+    ChunkInfo chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 4);
+    IncompleteChunkInfo incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededLoopLimit);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 0);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 4);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, false);
+
+    // Add filler event
+    stream_buffer.Add(
+        4, "45", 1, chunk_t::kFiller,
+        0);  // plugs the gap with filler bytes, but we retain gap_size for our metrics
+
+    // TODO(benkilimnik): Fix metadata capture for lazy contiguous buffer, then remove test flag
+    // stream_buffer.Head(); // merge for lazy contiguous buffer
+
+    chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 6);
+    incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededLoopLimit);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 0);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 4);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, true);
+
+    // Add another incomplete event
+    stream_buffer.Add(6, "67", 2, chunk_t::kExceededChunkLimitAndMaxMsgSize, 4);  // gap size = 4
+
+    // Add incomplete filler event (message was too large to fill)
+    stream_buffer.Add(8, "89", 3, chunk_t::kIncompleteFiller,
+                      2);  // fills just 2, remaining gap_size = 2
+
+    chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 10);
+    incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk,
+              chunk_t::kIncompleteFiller);  // overwrites kExceededChunkLimitAndMaxMsgSize
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 8);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 10);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, false);
+
+    EXPECT_EQ(stream_buffer.Head(), "0123456789");
+  }
+}
+
+// Test metadata transfer for merging new chunks into right chunk
+TEST_P(DataStreamBufferTest, GapMetadataRightMerge) {
+  if (FLAGS_stirling_data_stream_buffer_always_contiguous_buffer) {
+    const size_t kMaxGapSize = 16;
+    const size_t kAllowBeforeGapSize = 16;
+    DataStreamBuffer stream_buffer(128, kMaxGapSize, kAllowBeforeGapSize);
+
+    // Add incomplete event
+    stream_buffer.Add(2, "23", 0, chunk_t::kSendFileExceededMaxFillerSize, 2);  // gap_size = 2
+
+    // Add event before previously added event (to test merging into complete event on the left)
+    stream_buffer.Add(0, "01", 1, chunk_t::kFullyFormed, 0);
+
+    EXPECT_EQ(stream_buffer.Head(), "0123");
+    ChunkInfo chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 4);
+    IncompleteChunkInfo incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kSendFileExceededMaxFillerSize);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 4);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, false);
+  }
+}
+
+// Test metadata transfer for new chunk that bridges two previously separate chunks
+TEST_P(DataStreamBufferTest, GapMetadataMiddleMerge) {
+  if (FLAGS_stirling_data_stream_buffer_always_contiguous_buffer) {
+    const size_t kMaxGapSize = 16;
+    const size_t kAllowBeforeGapSize = 16;
+    DataStreamBuffer stream_buffer(128, kMaxGapSize, kAllowBeforeGapSize);
+
+    // Add incomplete event + filler on the left
+    stream_buffer.Add(0, "01", 7, chunk_t::kExceededLoopLimit, 2);  // gap size = 2
+    stream_buffer.Add(2, "23", 8, chunk_t::kFiller, 0);             // fills the gap
+
+    // Add incomplete event on the right
+    stream_buffer.Add(6, "67", 9, chunk_t::kExceededChunkLimitAndMaxMsgSize, 2);  // gap size = 2
+
+    // Add event that bridges the two incomplete events
+    stream_buffer.Add(4, "45", 10, chunk_t::kFullyFormed, 0);
+
+    EXPECT_EQ(stream_buffer.Head(), "01234567");
+    ChunkInfo chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 8);
+    IncompleteChunkInfo incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededChunkLimitAndMaxMsgSize);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 6);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 8);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, false);
+
+    incomplete_chunk_info = chunk_info.OldestIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededLoopLimit);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 0);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, true);
+  }
+}
+
+TEST_P(DataStreamBufferTest, GapMetadataMiddleMergeFiller) {
+  if (FLAGS_stirling_data_stream_buffer_always_contiguous_buffer) {
+    const size_t kMaxGapSize = 16;
+    const size_t kAllowBeforeGapSize = 16;
+    DataStreamBuffer stream_buffer(128, kMaxGapSize, kAllowBeforeGapSize);
+
+    // Add incomplete event on the left
+    stream_buffer.Add(0, "0123", 7, chunk_t::kExceededLoopLimit, 2);  // gap size = 2
+
+    // Add incomplete event on the right
+    stream_buffer.Add(6, "67", 9, chunk_t::kExceededChunkLimitAndMaxMsgSize, 2);  // gap size = 2
+
+    // Add event that bridges the two incomplete events, which happens to be filler for the
+    // incomplete left event
+    stream_buffer.Add(4, "45", 10, chunk_t::kFiller, 0);
+
+    EXPECT_EQ(stream_buffer.Head(), "01234567");
+    ChunkInfo chunk_info = stream_buffer.GetChunkInfoForHead();
+    EXPECT_EQ(chunk_info.size, 8);
+    IncompleteChunkInfo incomplete_chunk_info = chunk_info.MostRecentIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededChunkLimitAndMaxMsgSize);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 6);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 8);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, false);
+
+    incomplete_chunk_info = chunk_info.OldestIncompleteChunkInfo();
+    EXPECT_EQ(incomplete_chunk_info.incomplete_chunk, chunk_t::kExceededLoopLimit);
+    EXPECT_EQ(incomplete_chunk_info.incomplete_event_start, 0);
+    EXPECT_EQ(incomplete_chunk_info.gap_start, 4);
+    EXPECT_EQ(incomplete_chunk_info.gap_size, 2);
+    EXPECT_EQ(incomplete_chunk_info.gap_filled, true);
   }
 }
 
