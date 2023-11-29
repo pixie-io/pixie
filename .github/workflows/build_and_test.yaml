@@ -146,6 +146,9 @@ jobs:
       with:
         dev: ${{ github.event_name == 'push' && 'false' || 'true' }}
         BB_API_KEY: ${{ secrets.BB_IO_API_KEY }}
+    - name: Clear stale test.xml
+      shell: bash
+      run: rm -rf "$(bazel info ${{ matrix.args }} bazel-testlogs --noshow_progress 2>/dev/null)"
     - name: Build ${{ matrix.name }}
       shell: bash
       # yamllint disable rule:indentation
