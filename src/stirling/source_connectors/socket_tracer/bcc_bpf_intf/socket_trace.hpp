@@ -35,12 +35,22 @@
 // The file name is kept identical to its BPF counterpart as well.
 
 inline std::string ToString(const socket_data_event_t::attr_t& attr) {
-  return absl::Substitute(
+  // Since absl::Substitute can handle up to 10 arguments after the format string,
+  // we concatenate the incomplete_chunk string separately.
+  std::string base_str = absl::Substitute(
       "[ts=$0 conn_id=$1 protocol=$2 role=$3 dir=$4 ssl=$5 source_fn=$6 pos=$7 size=$8 "
-      "buf_size=$9]",
+      "buf_size=$9",
       attr.timestamp_ns, ToString(attr.conn_id), magic_enum::enum_name(attr.protocol),
       magic_enum::enum_name(attr.role), magic_enum::enum_name(attr.direction), attr.ssl,
       magic_enum::enum_name(attr.source_fn), attr.pos, attr.msg_size, attr.msg_buf_size);
+
+  // Second part: Continue with the next set of attributes.
+  std::string second_part = absl::Substitute(
+      " bytes_missed=$0 incomplete_chunk=$1]",
+      attr.bytes_missed, magic_enum::enum_name(attr.incomplete_chunk));
+
+  // Concatenate both parts and return.
+  return absl::StrCat(base_str, " ", second_part);
 }
 
 inline std::string ToString(const close_event_t& event) {
@@ -104,6 +114,8 @@ struct SocketDataEvent {
       header_event_ptr->attr.pos = attr.pos - kHeaderBufSize;
       header_event_ptr->attr.msg_buf_size = kHeaderBufSize;
       header_event_ptr->attr.msg_size = kHeaderBufSize;
+      header_event_ptr->attr.incomplete_chunk = kHeaderEvent;
+      header_event_ptr->attr.bytes_missed = 0;
 
       // Take the length_header from the original, fix byte ordering, and place
       // into length_header of the header_event.
@@ -124,7 +136,7 @@ struct SocketDataEvent {
   // For events that which couldn't transfer all its data, we have two options:
   //  1) A missing event.
   //  2) A filler event.
-  // A desired filler event is indicated by a msg_size > msg_buf_size when creating the BPF event.
+  // A desired filler event is indicated by a bytes_missed > 0 when creating the BPF event.
   //
   // A filler event is used in particular for sendfile data.
   // We need a better long-term solution for this,
@@ -134,28 +146,51 @@ struct SocketDataEvent {
 
     DCHECK_GE(attr.msg_size, attr.msg_buf_size);
 
-    if (attr.msg_size > attr.msg_buf_size) {
-      VLOG(1) << "Adding filler to event";
+    // Note that msg_size - msg_buf_size != bytes_missed in the case where we exceed LOOP_LIMIT
+    // in perf_submit_iovecs, because one call to perf_submit_buf takes only the size of the current
+    // iovec into account, ommitting the rest of the iovecs which could not be submitted.
+    // As a result, we need to use bytes_missed to determine the size of the filler event.
+
+    // For kernels < 5.1, we cannot track the bytes missed in socket_trace.c properly and thus
+    // preserve the previous behavior of encoding the bytes missed via the msg_size.
+    // If our loop and chunk limits are at most 42 and 4, then we know that we can
+    // stay below the verifier instruction limit for kernels < 5.1.
+    if (LOOP_LIMIT <= 42 && CHUNK_LIMIT <= 4) {
+      if (attr.msg_size > attr.msg_buf_size) {
+          DCHECK_EQ(attr.bytes_missed, 0);
+          attr.bytes_missed = attr.msg_size - attr.msg_buf_size;
+      }
+    }
+    if (attr.bytes_missed > 0) {
+      VLOG(1) << absl::Substitute("Adding filler event for incomplete_chunk: $0, bytes_missed: $1", magic_enum::enum_name(attr.incomplete_chunk), attr.bytes_missed);
 
       // Limit the size so we don't have huge allocations.
       constexpr uint32_t kMaxFilledSizeBytes = 1 * 1024 * 1024;
       static char kZeros[kMaxFilledSizeBytes] = {0};
 
-      size_t filler_size = attr.msg_size - attr.msg_buf_size;
+      filler_event_ptr = std::make_unique<SocketDataEvent>();
+      filler_event_ptr->attr = attr;
+      size_t filler_size = attr.bytes_missed;
       if (filler_size > kMaxFilledSizeBytes) {
         VLOG(1) << absl::Substitute("Truncating filler event: $0->$1", filler_size,
                                     kMaxFilledSizeBytes);
         filler_size = kMaxFilledSizeBytes;
+        // incomplete even after filler (bytes_missed > 1MB)
+        filler_event_ptr->attr.incomplete_chunk = kIncompleteFiller;
+        filler_event_ptr->attr.bytes_missed -= kMaxFilledSizeBytes;
+      } else {
+        // We encode the filler size in bytes_missed for filler events which completely plug a gap (chunk_t kFiller) in our metrics.
+        // (In reality, bytes missed is 0 since filler plugs the gap.)
+        // In all other circumstances bytes_missed represents the size of the gap
+        filler_event_ptr->attr.incomplete_chunk = kFiller;
       }
-
-      filler_event_ptr = std::make_unique<SocketDataEvent>();
-      filler_event_ptr->attr = attr;
       filler_event_ptr->attr.pos = attr.pos + attr.msg_buf_size;
       filler_event_ptr->attr.msg_buf_size = filler_size;
       filler_event_ptr->attr.msg_size = filler_size;
       filler_event_ptr->msg = std::string_view(kZeros, filler_size);
 
       // We've created the filler event, so adjust the original event accordingly.
+      DCHECK(filler_size <= attr.bytes_missed);
       attr.msg_size = attr.msg_buf_size;
     }
 
