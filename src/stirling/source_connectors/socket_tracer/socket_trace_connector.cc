@@ -31,6 +31,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/delimited_message_util.h>
 #include <magic_enum.hpp>
+#include "src/common/system/kernel_version.h"
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
@@ -431,6 +432,20 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 }
 
 Status SocketTraceConnector::InitBPF() {
+  // set BPF loop limit and chunk limit based on kernel version
+  auto kernel = system::GetCachedKernelVersion();
+  int loop_limit = 42;
+  int chunk_limit = 4;
+  if (kernel.version >= 5 || (kernel.version == 5 && kernel.major_rev >= 1)) {
+    // Kernels >= 5.1 have higher BPF instruction limits (1 million for verifier).
+    // This enables a 21x increase to our loop and chunk limits
+    loop_limit = 882;
+    chunk_limit = 84;
+    LOG(INFO) << absl::Substitute(
+        "Kernel version greater than V5.1 detected ($0), raised loop limit to $1 and chunk limit "
+        "to $2",
+        kernel.ToString(), loop_limit, chunk_limit);
+  }
   // PROTOCOL_LIST: Requires update on new protocols.
   std::vector<std::string> defines = {
       absl::StrCat("-DENABLE_TLS_DEBUG_SOURCES=", FLAGS_stirling_debug_tls_sources),
@@ -445,6 +460,8 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", protocol_transfer_specs_[kProtocolMongo].enabled),
+      absl::StrCat("-DBPF_LOOP_LIMIT=", loop_limit),
+      absl::StrCat("-DBPF_CHUNK_LIMIT=", chunk_limit),
   };
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(socket_trace_bcc_script, defines));
 

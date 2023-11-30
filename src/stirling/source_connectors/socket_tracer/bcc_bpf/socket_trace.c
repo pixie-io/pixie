@@ -35,7 +35,7 @@
 #include "src/stirling/upid/upid.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
-#define LOOP_LIMIT 42
+#define LOOP_LIMIT BPF_LOOP_LIMIT
 #define PROTOCOL_VEC_LIMIT 3
 
 const int32_t kInvalidFD = -1;
