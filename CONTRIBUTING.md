@@ -133,3 +133,17 @@ Use your real name (sorry, no pseudonyms or anonymous contributions.)
 ##### Commit Signature Verification
 
 All commit signatures must be verified to ensure that commits are coming from a trusted source. To do so, please follow Github's [Signing commits guide](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
+
+##### Setup pinentry-tty to handle headless environments
+
+When signing commits, gpg will need your passphrase to unlock the keyring. It usually uses a GUI pinentry program to do so. However on headless environments, this gets messy, so we highly recommend switching gpg to use a tty based pinentry to ease these problems.
+
+```
+echo "pinentry-program $(which pinentry-tty)" >> ~/.gnupg/gpg-agent.conf
+echo "export GPG_TTY=\$(tty)" >> ~/.zshrc
+echo "export GPG_TTY=\$(tty)" >> ~/.bashrc
+export GPG_TTY=$(tty)
+gpg-connect-agent reloadagent /bye
+```
+
+Here we tell `gpg` to use `pinentry-tty` when prompting for a passphrase, and export the current TTY to tell `gpg` which TTY to prompt on.
