@@ -142,6 +142,26 @@ pl_cc_test_library(
 )
 
 pl_cc_test_library(
+    name = "mongodb_client_container",
+    srcs = [],
+    hdrs = ["mongodb_client_container.h"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/mongodb:client_image.tar",
+    ],
+    deps = ["//src/common/testing/test_utils:cc_library"],
+)
+
+pl_cc_test_library(
+    name = "mongodb_container",
+    srcs = [],
+    hdrs = ["mongodb_container.h"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:mongodb_image.tar",
+    ],
+    deps = ["//src/common/testing/test_utils:cc_library"],
+)
+
+pl_cc_test_library(
     name = "mysql_container",
     srcs = [],
     hdrs = ["mysql_container.h"],

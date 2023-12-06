@@ -312,7 +312,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   struct protocol_message_t inferred_protocol = infer_protocol(buf, count, conn_info);
 
   // Could not infer the traffic.
-  if (inferred_protocol.protocol == kProtocolUnknown || conn_info->protocol == kProtocolMongo) {
+  if (inferred_protocol.protocol == kProtocolUnknown) {
     return;
   }
 
