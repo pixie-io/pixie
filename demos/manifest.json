@@ -49,5 +49,14 @@
 	"dependencies": {
             "cert-manager": true
         }
+    },
+    "px-mongo": {
+        "description": "Microservice demo that generates traffic between the Mern-K8s demo app and MongoDB.",
+        "instructions": [
+            "Load testing has been automatically launched for px-mongo",
+            "",
+            " Use the px/mongodb_data and px/http_data scripts to view the backend API and MongoDB traffic",
+            " flowing through the demo app."
+        ]
     }
 }

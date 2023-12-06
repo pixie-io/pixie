@@ -52,12 +52,20 @@ pkg_tar(
     strip_prefix = "k8ssandra",
 )
 
+pkg_tar(
+    name = "px-mongo",
+    srcs = glob(["mongodb/*"]),
+    extension = "tar.gz",
+    strip_prefix = "mongodb",
+)
+
 ARCHIVES = [
     ":px-finagle",
     ":px-kafka",
     ":px-sock-shop",
     ":px-online-boutique",
     ":px-k8ssandra",
+    ":px-mongo",
 ]
 
 demo_upload(
