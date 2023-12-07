@@ -491,8 +491,7 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   std::string large_response =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: application/json; msg2\r\n"
-      // "Content-Length: 131072\r\n"
-      "Content-Length: 3512768\r\n"  // 21x it
+      "Content-Length: 3512768\r\n"
       "\r\n";
   large_response += std::string(3512768, '+');
 
