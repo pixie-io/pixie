@@ -497,7 +497,7 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_dir
 
     // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
     // limit.
-    if (LOOP_LIMIT > 42 || CHUNK_LIMIT > 4) {
+    if (kernelNewerThan5dot1) {
       if (event->attr.incomplete_chunk != kExceededLoopLimit) {
         event->attr.bytes_missed = event->attr.msg_size - event->attr.msg_buf_size;
       }
@@ -524,7 +524,7 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx,
         (bytes_remaining > MAX_MSG_SIZE && (i != CHUNK_LIMIT - 1)) ? MAX_MSG_SIZE : bytes_remaining;
     // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
     // limit.
-    if (LOOP_LIMIT > 42 || CHUNK_LIMIT > 4) {
+    if (kernelNewerThan5dot1) {
       // Check if we have reached the chunk limit, but there are bytes left to capture beyond our
       // max msg size.
       const bool chunks_not_fully_captured = i == CHUNK_LIMIT - 1 && current_size > MAX_MSG_SIZE;
@@ -565,7 +565,7 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
 
     // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
     // limit.
-    if (LOOP_LIMIT > 42 || CHUNK_LIMIT > 4) {
+    if (kernelNewerThan5dot1) {
       // We have reached the loop limit, but there are iovecs left to capture.
       const bool iovec_not_fully_captured = i == LOOP_LIMIT - 1 && i < iovlen;
       // This iov exceeds the MAX_MSG_SIZE, and will be truncated in perf_submit_buf.
@@ -945,7 +945,7 @@ static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
     event->attr.pos = conn_info->wr_bytes;
     // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
     // limit.
-    if (LOOP_LIMIT > 42 || CHUNK_LIMIT > 4) {
+    if (kernelNewerThan5dot1) {
       // technically we drop all the data and just send the gap event, filling the gap with \0 bytes
       // up to 1MB
       if (bytes_count > MAX_FILLER_SIZE) {

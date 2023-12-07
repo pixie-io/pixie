@@ -131,6 +131,10 @@ struct close_event_t {
 #define CHUNK_LIMIT 4
 #define LOOP_LIMIT 42
 
+// Used to determine whether to track additional metadata for gaps from bpf.
+// Due to instruction limits we only track this for <5.1 kernels.
+const bool kernelNewerThan5dot1 = LOOP_LIMIT > 42 || CHUNK_LIMIT > 4;
+
 // Unique ID to all syscalls and a few other notable functions.
 // This applies to events sent to user-space.
 enum source_function_t {
