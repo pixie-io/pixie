@@ -28,6 +28,7 @@
 
 #include "src/common/fs/temp_file.h"
 #include "src/common/system/clock.h"
+#include "src/common/system/kernel_version.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/common/system/udp_socket.h"
 #include "src/common/system/unix_socket.h"
@@ -490,9 +491,10 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   std::string large_response =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: application/json; msg2\r\n"
-      "Content-Length: 131072\r\n"
+      // "Content-Length: 131072\r\n"
+      "Content-Length: 3512768\r\n"  // 21x it
       "\r\n";
-  large_response += std::string(131072, '+');
+  large_response += std::string(3512768, '+');
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {large_response}},
@@ -507,19 +509,29 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
                        GetMutableConnTracker(system.ClientPID(), system.ClientFD()));
   EXPECT_EQ(client_tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   std::string client_recv_data(client_tracker->recv_data().data_buffer().Head());
-  EXPECT_THAT(client_recv_data.size(), 131153);
+  EXPECT_THAT(client_recv_data.size(), 3512850);
   EXPECT_THAT(client_recv_data, HasSubstr("+++++"));
   EXPECT_EQ(client_recv_data.substr(client_recv_data.size() - 5, 5), "+++++");
 
-  // The server's send syscall transmits all 131153 bytes in one shot.
+  // The server's send syscall transmits all 3512850 bytes in one shot.
   // This is over the limit that we can transmit through BPF, and so we expect
-  // filler bytes on this side of the connection. Note that the client doesn't have the
+  // filler bytes on this side of the connection (up to 1MB). Note that the client doesn't have the
   // same behavior, because the recv syscall provides the data in chunks.
   ASSERT_OK_AND_ASSIGN(auto* server_tracker,
                        GetMutableConnTracker(system.ServerPID(), system.ServerFD()));
   EXPECT_EQ(server_tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   std::string server_send_data(server_tracker->send_data().data_buffer().Head());
-  EXPECT_THAT(server_send_data.size(), 131153);
+  auto kernel = system::GetCachedKernelVersion();
+  bool kernelGreaterThan5_1 = kernel.version >= 5 || (kernel.version == 5 && kernel.major_rev >= 1);
+  if (kernelGreaterThan5_1) {
+    // CHUNK_LIMIT * MAX_MSG_SIZE bytes + up to 1MB filler.
+    // Currently 84*30720 + 932,370 filler bytes = 3,512,850
+    EXPECT_THAT(server_send_data.size(), 3512850);
+  } else {
+    // CHUNK_LIMIT * MAX_MSG_SIZE bytes + up to 1MB filler.
+    // Currently 4*30720 + 1024*1024 = 1,171,456, leaving gap of 2,341,394 bytes
+    EXPECT_THAT(server_send_data.size(), 1171456);
+  }
   EXPECT_THAT(server_send_data, HasSubstr("+++++"));
   // We expect filling with \0 bytes.
   EXPECT_EQ(server_send_data.substr(server_send_data.size() - 5, 5), ConstStringView("\0\0\0\0\0"));
