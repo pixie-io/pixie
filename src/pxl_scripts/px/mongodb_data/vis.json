@@ -1,0 +1,69 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "source_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'source' column.",
+      "defaultValue": ""
+    },
+    {
+      "name": "destination_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'destination' column.",
+      "defaultValue": ""
+    },
+    {
+      "name": "max_num_records",
+      "type": "PX_INT64",
+      "description": "Max number of records to show.",
+      "defaultValue": "1000"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "mongodb_data",
+      "func": {
+        "name": "mongodb_data",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "source_filter",
+            "variable": "source_filter"
+          },
+          {
+            "name": "destination_filter",
+            "variable": "destination_filter"
+          },
+          {
+            "name": "num_head",
+            "variable": "max_num_records"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "mongodb_data",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}
