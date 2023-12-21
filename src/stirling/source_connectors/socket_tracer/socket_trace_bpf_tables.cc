@@ -114,7 +114,7 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
 
     ReleaseResources(conn_info.conn_id);
     VLOG(1) << absl::Substitute("Found conn_info_map leak: pid=$0 fd=$1 af=$2", pid, fd,
-                                conn_info.addr.sa.sa_family);
+                                conn_info.raddr.sa.sa_family);
   }
 }
 

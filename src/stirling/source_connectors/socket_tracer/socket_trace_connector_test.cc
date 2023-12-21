@@ -736,7 +736,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupCollecting) {
   // Create an event with family PX_AF_UNKNOWN so that tracker goes into collecting state.
   struct socket_control_event_t conn0 = event_gen_.InitConn();
-  conn0.open.addr.sa.sa_family = PX_AF_UNKNOWN;
+  conn0.open.raddr.sa.sa_family = PX_AF_UNKNOWN;
 
   std::unique_ptr<SocketDataEvent> conn0_req_event =
       event_gen_.InitSendEvent<kProtocolHTTP>(kReq0.substr(0, 10));
