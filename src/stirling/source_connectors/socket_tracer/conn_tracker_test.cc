@@ -512,8 +512,8 @@ TEST_F(ConnTrackerTest, DisabledForIntraClusterRemoteEndpoint) {
 // Tests that tracker state is kDisabled if the remote address is localhost.
 TEST_F(ConnTrackerTest, DisabledForLocalhostRemoteEndpoint) {
   struct socket_control_event_t conn = event_gen_.InitConn();
-  conn.open.addr.in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
-  conn.open.addr.in6.sin6_family = AF_INET6;
+  conn.open.raddr.in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
+  conn.open.raddr.in6.sin6_family = AF_INET6;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
@@ -545,7 +545,7 @@ TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
 TEST_F(ConnTrackerTest, DisabledForUnixDomainSockets) {
   struct socket_control_event_t conn = event_gen_.InitConn();
-  conn.open.addr.in6.sin6_family = AF_UNIX;
+  conn.open.raddr.in6.sin6_family = AF_UNIX;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
@@ -561,7 +561,7 @@ TEST_F(ConnTrackerTest, DisabledForUnixDomainSockets) {
 TEST_F(ConnTrackerTest, DisabledForOtherSockAddrFamily) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   // Any non-IP family works for testing purposes.
-  conn.open.addr.in6.sin6_family = AF_NETLINK;
+  conn.open.raddr.in6.sin6_family = AF_NETLINK;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
@@ -775,9 +775,9 @@ TEST_F(ConnTrackerTest, ConnStats) {
   conn_stats_event.timestamp_ns = 0;
   conn_stats_event.conn_id = kConnID0;
   conn_stats_event.role = kRoleClient;
-  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_family = AF_INET;
-  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_port = htons(80);
-  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_addr.s_addr =
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.raddr)->sin_family = AF_INET;
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.raddr)->sin_port = htons(80);
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.raddr)->sin_addr.s_addr =
       0x01010101;  // 1.1.1.1
   conn_stats_event.conn_events = 0;
   conn_stats_event.rd_bytes = 0;

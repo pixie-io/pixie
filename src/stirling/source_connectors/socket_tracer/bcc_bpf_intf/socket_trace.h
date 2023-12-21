@@ -47,8 +47,10 @@ struct conn_info_t {
   // Connection identifier (PID, FD, etc.).
   struct conn_id_t conn_id;
 
+  // IP address of the local endpoint.
+  union sockaddr_t laddr;
   // IP address of the remote endpoint.
-  union sockaddr_t addr;
+  union sockaddr_t raddr;
 
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
   enum traffic_protocol_t protocol;
@@ -92,7 +94,8 @@ struct conn_info_t {
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
 // See conn_info_t for descriptions of the members.
 struct conn_event_t {
-  union sockaddr_t addr;
+  union sockaddr_t laddr;
+  union sockaddr_t raddr;
   enum endpoint_role_t role;
 };
 
@@ -222,8 +225,10 @@ struct conn_stats_event_t {
 
   struct conn_id_t conn_id;
 
+  // IP address of the local endpoint.
+  union sockaddr_t laddr;
   // IP address of the remote endpoint.
-  union sockaddr_t addr;
+  union sockaddr_t raddr;
 
   // The server-client role.
   enum endpoint_role_t role;

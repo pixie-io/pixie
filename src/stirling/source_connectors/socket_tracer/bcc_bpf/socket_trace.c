@@ -142,7 +142,8 @@ static __inline void init_conn_info(uint32_t tgid, int32_t fd, struct conn_info_
   init_conn_id(tgid, fd, &conn_info->conn_id);
   // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
   conn_info->role = kRoleUnknown;
-  conn_info->addr.sa.sa_family = PX_AF_UNKNOWN;
+  conn_info->laddr.sa.sa_family = PX_AF_UNKNOWN;
+  conn_info->raddr.sa.sa_family = PX_AF_UNKNOWN;
 }
 
 // Be careful calling this function. The automatic creation of BPF map entries can result in a
@@ -227,7 +228,8 @@ static __inline struct conn_stats_event_t* fill_conn_stats_event(
   }
 
   event->conn_id = conn_info->conn_id;
-  event->addr = conn_info->addr;
+  event->laddr = conn_info->laddr;
+  event->raddr = conn_info->raddr;
   event->role = conn_info->role;
   event->wr_bytes = conn_info->wr_bytes;
   event->rd_bytes = conn_info->rd_bytes;
@@ -251,7 +253,7 @@ static __inline bool should_trace_conn(struct conn_info_t* conn_info) {
   // we only send connections on INET or UNKNOWN to user-space.
   // Also, it's very important to send the UNKNOWN cases to user-space,
   // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().
-  return should_trace_sockaddr_family(conn_info->addr.sa.sa_family);
+  return should_trace_sockaddr_family(conn_info->raddr.sa.sa_family);
 }
 
 // If this returns false, we still will trace summary stats.
@@ -351,19 +353,26 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
 
   struct sock_common* sk_common = &sk->__sk_common;
   uint16_t family = -1;
-  uint16_t port = -1;
+  uint16_t lport = -1;
+  uint16_t rport = -1;
 
   BPF_PROBE_READ_KERNEL_VAR(family, &sk_common->skc_family);
-  BPF_PROBE_READ_KERNEL_VAR(port, &sk_common->skc_dport);
+  BPF_PROBE_READ_KERNEL_VAR(lport, &sk_common->skc_num);
+  BPF_PROBE_READ_KERNEL_VAR(rport, &sk_common->skc_dport);
 
-  conn_info->addr.sa.sa_family = family;
+  conn_info->laddr.sa.sa_family = family;
+  conn_info->raddr.sa.sa_family = family;
 
   if (family == AF_INET) {
-    conn_info->addr.in4.sin_port = port;
-    BPF_PROBE_READ_KERNEL_VAR(conn_info->addr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
+    conn_info->laddr.in4.sin_port = lport;
+    conn_info->raddr.in4.sin_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->laddr.in4.sin_addr.s_addr, &sk_common->skc_rcv_saddr);
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->raddr.in4.sin_addr.s_addr, &sk_common->skc_daddr);
   } else if (family == AF_INET6) {
-    conn_info->addr.in6.sin6_port = port;
-    BPF_PROBE_READ_KERNEL_VAR(conn_info->addr.in6.sin6_addr, &sk_common->skc_v6_daddr);
+    conn_info->laddr.in6.sin6_port = lport;
+    conn_info->raddr.in6.sin6_port = rport;
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->laddr.in6.sin6_addr, &sk_common->skc_v6_rcv_saddr);
+    BPF_PROBE_READ_KERNEL_VAR(conn_info->raddr.in6.sin6_addr, &sk_common->skc_v6_daddr);
   }
 }
 
@@ -372,10 +381,10 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t
                                      enum endpoint_role_t role, enum source_function_t source_fn) {
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
-  if (addr != NULL) {
-    conn_info.addr = *((union sockaddr_t*)addr);
-  } else if (socket != NULL) {
+  if (socket != NULL) {
     read_sockaddr_kernel(&conn_info, socket);
+  } else if (addr != NULL) {
+    conn_info.raddr = *((union sockaddr_t*)addr);
   }
   conn_info.role = role;
 
@@ -385,7 +394,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t
   // While we keep all sa_family types in conn_info_map,
   // we only send connections with supported protocols to user-space.
   // We use the same filter function to avoid sending data of unwanted connections as well.
-  if (!should_trace_sockaddr_family(conn_info.addr.sa.sa_family)) {
+  if (!should_trace_sockaddr_family(conn_info.raddr.sa.sa_family)) {
     return;
   }
 
@@ -394,7 +403,8 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t
   control_event.timestamp_ns = bpf_ktime_get_ns();
   control_event.conn_id = conn_info.conn_id;
   control_event.source_fn = source_fn;
-  control_event.open.addr = conn_info.addr;
+  control_event.open.raddr = conn_info.raddr;
+  control_event.open.laddr = conn_info.laddr;
   control_event.open.role = conn_info.role;
 
   socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
@@ -923,7 +933,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
-  if (should_trace_sockaddr_family(conn_info->addr.sa.sa_family) || conn_info->wr_bytes != 0 ||
+  if (should_trace_sockaddr_family(conn_info->raddr.sa.sa_family) || conn_info->wr_bytes != 0 ||
       conn_info->rd_bytes != 0) {
     submit_close_event(ctx, conn_info, kSyscallClose);
 

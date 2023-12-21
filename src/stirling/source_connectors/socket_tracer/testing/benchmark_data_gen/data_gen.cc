@@ -40,7 +40,8 @@ socket_control_event_t OpenConnEvent(uint64_t ts, int32_t fd, endpoint_role_t ro
   conn_event.conn_id.fd = fd;
   conn_event.conn_id.tsid = tsid;
   conn_event.conn_id.upid.start_time_ticks = kUPIDStartTimeTicks;
-  conn_event.open.addr.sa.sa_family = AF_INET;
+  conn_event.open.raddr.sa.sa_family = AF_INET;
+  conn_event.open.laddr.sa.sa_family = AF_INET;
   conn_event.open.role = role;
   return conn_event;
 }
