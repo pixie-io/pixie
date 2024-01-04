@@ -181,6 +181,11 @@ Status BCCWrapperImpl::AttachKProbe(const KProbeSpec& probe) {
       bpf_.attach_kprobe(GetKProbeTargetName(probe), std::string(probe.probe_fn), 0 /* offset */,
                          static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive);
 
+  if (!status.ok() && probe.fallback_probe != nullptr) {
+    VLOG(1) << "kprobe attach failed... attempting fallback.";
+    return BCCWrapperImpl::AttachKProbe(*probe.fallback_probe);
+  }
+
   // Don't return error if the probe is optional.
   if (!probe.is_optional) {
     PX_RETURN_IF_ERROR(status);
