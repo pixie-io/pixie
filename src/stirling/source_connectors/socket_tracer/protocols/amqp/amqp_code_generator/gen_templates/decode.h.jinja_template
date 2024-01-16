@@ -39,7 +39,7 @@ std::string ToString(T obj) {
   obj.ToJSON(&json_object_builder);
   return json_object_builder.GetString();
 }
-// TODO combine with kafka ToString function
+// TODO(vsrivatsa) combine with kafka ToString function
 Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 

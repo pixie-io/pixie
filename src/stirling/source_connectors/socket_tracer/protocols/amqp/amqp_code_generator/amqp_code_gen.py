@@ -125,7 +125,7 @@ class Field:
         The field name is used as json key to be close to the key used in spec
         """
         if self.field_type == FieldType.table:
-            return f"// TODO: support KV for {self.field_name} field table type"
+            return f"// TODO(vsrivatsa): support KV for {self.field_name} field table type"
         return f'builder->WriteKV("{self.c_field_name}", {self.c_field_name});'
 
     def gen_buffer_extract(self):
