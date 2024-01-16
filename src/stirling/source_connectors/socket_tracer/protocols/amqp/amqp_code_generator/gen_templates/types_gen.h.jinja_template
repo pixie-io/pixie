@@ -52,7 +52,7 @@ enum class AMQPFrameTypes : uint8_t {
   kFrameBody = 3,
   kFrameHeartbeat = 8,
 };
-const char kFrameEnd = 0xCE;
+const uint8_t kFrameEnd = 0xCE;
 const uint8_t kMinFrameLength = 8;
 
 // Represents a generic AMQP message.
@@ -83,6 +83,11 @@ struct Frame : public FrameBase {
   uint16_t method_id = 0;
 
   size_t ByteSize() const override { return sizeof(Frame) + msg.size(); }
+
+  std::string ToString() const override {
+    return absl::Substitute("frame_type=[$0] channel=[$1] payload_size=[$2] msg=[$3]", frame_type,
+                            channel, payload_size, msg);
+  }
 };
 
 struct Record {
@@ -96,14 +101,16 @@ struct Record {
   std::string px_info = "";
 
   std::string ToString() const {
-    return absl::Substitute("req=[$0] resp=[$1]", req->ToString(), resp->ToString());
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
   }
 };
 
+using channel_id = uint16_t;
 struct ProtocolTraits : public BaseProtocolTraits<Record> {
   using frame_type = Frame;
   using record_type = Record;
   using state_type = NoState;
+  using key_type = channel_id;
 };
 
 }  // namespace amqp

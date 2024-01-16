@@ -694,7 +694,7 @@ class CodeGenerator:
             AMQPFrameTypes amqp_frame_type = static_cast<AMQPFrameTypes>(req->frame_type);
             switch (amqp_frame_type) {
                 case AMQPFrameTypes::kFrameHeader:
-                    return ProcessContentHeader(&decoder, req);
+                    return ProcessContentHeader(decoder, req);
                 case AMQPFrameTypes::kFrameBody: {
                     req->msg = "";
                     auto status = decoder->ExtractBufIgnore(req->payload_size);
@@ -707,7 +707,7 @@ class CodeGenerator:
                     req->msg = "";
                     break; // Heartbeat frames have no body or length
                 case AMQPFrameTypes::kFrameMethod:
-                    return ProcessFrameMethod(&decoder, req);
+                    return ProcessFrameMethod(decoder, req);
                 default:
                     VLOG(1) << absl::Substitute("Unparsed frame $0", req->frame_type);
             }
