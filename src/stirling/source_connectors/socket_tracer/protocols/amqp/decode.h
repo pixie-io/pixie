@@ -19,10 +19,10 @@
 #pragma once
 
 #include <string>
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -41,7 +41,7 @@ struct AMQPConnectionStart {
   void ToJSON(utils::JSONObjectBuilder* builder) const {
     builder->WriteKV("version_major", version_major);
     builder->WriteKV("version_minor", version_minor);
-    // TODO(vsrivatsa): support KV for server_properties field table type
+    // TODO: support KV for server-properties field table type
     builder->WriteKV("mechanisms", mechanisms);
     builder->WriteKV("locales", locales);
   }
@@ -55,7 +55,7 @@ struct AMQPConnectionStartOk {
   bool synchronous = 1;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
-    // TODO(vsrivatsa): support KV for client_properties field table type
+    // TODO: support KV for client-properties field table type
     builder->WriteKV("mechanism", mechanism);
     builder->WriteKV("response", response);
     builder->WriteKV("locale", locale);
@@ -241,7 +241,7 @@ struct AMQPExchangeDeclare {
     builder->WriteKV("reserved_2", reserved_2);
     builder->WriteKV("reserved_3", reserved_3);
     builder->WriteKV("no_wait", no_wait);
-    // TODO(vsrivatsa): support KV for arguments field table type
+    // TODO: support KV for arguments field table type
   }
 };
 
@@ -302,7 +302,7 @@ struct AMQPQueueDeclare {
     builder->WriteKV("exclusive", exclusive);
     builder->WriteKV("auto_delete", auto_delete);
     builder->WriteKV("no_wait", no_wait);
-    // TODO(vsrivatsa): support KV for arguments field table type
+    // TODO: support KV for arguments field table type
   }
 };
 
@@ -334,7 +334,7 @@ struct AMQPQueueBind {
     builder->WriteKV("exchange", exchange);
     builder->WriteKV("routing_key", routing_key);
     builder->WriteKV("no_wait", no_wait);
-    // TODO(vsrivatsa): support KV for arguments field table type
+    // TODO: support KV for arguments field table type
   }
 };
 
@@ -357,7 +357,7 @@ struct AMQPQueueUnbind {
     builder->WriteKV("queue", queue);
     builder->WriteKV("exchange", exchange);
     builder->WriteKV("routing_key", routing_key);
-    // TODO(vsrivatsa): support KV for arguments field table type
+    // TODO: support KV for arguments field table type
   }
 };
 
@@ -464,7 +464,7 @@ struct AMQPBasicConsume {
     builder->WriteKV("no_ack", no_ack);
     builder->WriteKV("exclusive", exclusive);
     builder->WriteKV("no_wait", no_wait);
-    // TODO(vsrivatsa): support KV for arguments field table type
+    // TODO: support KV for arguments field table type
   }
 };
 
@@ -651,7 +651,7 @@ struct AMQPBasicContentHeader {
     builder->WriteKV("property_flags", property_flags);
     builder->WriteKV("content_type", content_type);
     builder->WriteKV("content_encoding", content_encoding);
-    // TODO(vsrivatsa): support KV for headers field table type
+    // TODO: support KV for headers field table type
     builder->WriteKV("delivery_mode", delivery_mode);
     builder->WriteKV("priority", priority);
     builder->WriteKV("correlation_id", correlation_id);
@@ -719,6 +719,7 @@ std::string ToString(T obj) {
   obj.ToJSON(&json_object_builder);
   return json_object_builder.GetString();
 }
+// TODO combine with kafka ToString function
 Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 }  // namespace amqp
