@@ -7,10 +7,9 @@ Bazel cmds:
 ```
   wget "https://www.rabbitmq.com/resources/specs/amqp0-9-1.xml"
   bazel run //src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:amqp_code_gen_main -- run
-  cp generated_files/decode.cc ../
-  cp generated_files/decode.h ../
-  cp generated_files/types_gen.h ../
+  cp generated_files/{decode.h,decode.cc,types_gen.h} ../
   cp generated_files/amqp.h src/carnot/funcs/protocols/amqp.h
+  arc lint
 ```
 
 
