@@ -210,11 +210,6 @@ Status FindLinuxHeadersDirectory(const std::filesystem::path& lib_modules_dir) {
 }
 
 StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::filesystem::path p) {
-  // The rest of this won't work if "p" does not exist. Go ahead and error out early if needed.
-  if (!fs::Exists(p)) {
-    return error::NotFound(absl::Substitute("Did not find host headers at path: $0.", p.string()));
-  }
-
   // Check if "p" is a symlink.
   std::error_code ec;
   const bool is_symlink = std::filesystem::is_symlink(p, ec);
