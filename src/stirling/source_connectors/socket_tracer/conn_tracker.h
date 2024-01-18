@@ -68,6 +68,7 @@ struct SocketOpen {
   uint64_t timestamp_ns = 0;
   // TODO(yzhao): Consider using std::optional to indicate the address has not been initialized.
   SockAddr remote_addr;
+  SockAddr local_addr;
 };
 
 struct SocketClose {
@@ -577,6 +578,7 @@ class ConnTracker : NotCopyMoveable {
   void SetConnID(struct conn_id_t conn_id);
 
   void SetRemoteAddr(const union sockaddr_t addr, std::string_view reason);
+  void SetLocalAddr(const union sockaddr_t addr, std::string_view reason);
 
   // Returns false if the protocol change is disallowed.
   bool SetProtocol(traffic_protocol_t protocol, std::string_view reason);
