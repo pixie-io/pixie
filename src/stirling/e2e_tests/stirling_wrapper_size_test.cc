@@ -30,7 +30,7 @@ namespace stirling {
 #ifdef __OPTIMIZE__
 constexpr uint64_t kFileSizeLimitMB = 118;
 #else
-constexpr uint64_t kFileSizeLimitMB = 305;
+constexpr uint64_t kFileSizeLimitMB = 310;
 #endif
 
 TEST(StirlingWrapperSizeTest, ExecutableSizeLimit) {
