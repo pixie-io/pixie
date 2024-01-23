@@ -227,7 +227,10 @@ class DataStream : NotCopyMoveable {
     }
   }
 
-  void set_protocol(traffic_protocol_t protocol) { protocol_ = protocol; }
+  void set_protocol(traffic_protocol_t protocol, bool lazy_parsing_enabled = false) {
+    protocol_ = protocol;
+    lazy_parsing_enabled_ = lazy_parsing_enabled;
+  }
 
   /**
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
@@ -340,6 +343,7 @@ class DataStream : NotCopyMoveable {
   size_t last_processed_pos_ = 0;
   // Keep track of the protocol for this DataStream so that data loss can be reported per protocol.
   traffic_protocol_t protocol_ = traffic_protocol_t::kProtocolUnknown;
+  bool lazy_parsing_enabled_ = false;
 
   template <typename TKey, typename TFrameType>
   friend std::string DebugString(const DataStream& d, std::string_view prefix);

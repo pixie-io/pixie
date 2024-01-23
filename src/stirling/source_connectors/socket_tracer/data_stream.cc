@@ -19,6 +19,7 @@
 #include <gflags/gflags.h>
 #include <utility>
 
+#include "protocols/common/data_stream_buffer.h"
 #include "src/stirling/source_connectors/socket_tracer/data_stream.h"
 #include "src/stirling/source_connectors/socket_tracer/metrics.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
@@ -47,12 +48,13 @@ namespace px {
 namespace stirling {
 
 void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
+  // Note that msg.size() includes filler \0 bytes under certain circumstances. See socket_trace.hpp
+  // for details.
   LOG_IF(WARNING, event->attr.msg_size > event->msg.size() && !event->msg.empty())
       << absl::Substitute("Message truncated, original size: $0, transferred size: $1",
                           event->attr.msg_size, event->msg.size());
-
-  data_buffer_.Add(event->attr.pos, event->msg, event->attr.timestamp_ns);
-
+  data_buffer_.Add(event->attr.pos, event->msg, event->attr.timestamp_ns,
+                   event->attr.incomplete_chunk, event->attr.bytes_missed);
   has_new_events_ = true;
 }
 
@@ -111,22 +113,34 @@ void DataStream::ProcessBytesToFrames(message_type_t type, TStateType* state) {
 
   while (keep_processing && !data_buffer_.empty()) {
     size_t contiguous_bytes = data_buffer_.Head().size();
+    auto chunk_info = data_buffer_.GetChunkInfoForHead();
 
-    // Now parse the raw data.
-    parse_result =
-        protocols::ParseFrames(type, &data_buffer_, &typed_messages, IsSyncRequired(), state);
-    if (contiguous_bytes != data_buffer_.size()) {
-      // We weren't able to submit all bytes, which means we ran into a missing event.
-      // We don't expect missing events to arrive in the future, so just cut our losses.
-      // Drop all events up to this point, and then try to resume.
+    // Now parse the raw data. We parse one contiguous head per call.
+    parse_result = protocols::ParseFrames(type, &data_buffer_, &typed_messages, IsSyncRequired(),
+                                          state, lazy_parsing_enabled_);
+
+    if (contiguous_bytes != data_buffer_.size() ||
+        (lazy_parsing_enabled_ && parse_result.state == ParseState::kMetadataComplete &&
+         chunk_info.HasIncompleteChunks())) {
+      // We weren't able to submit all bytes in the data stream buffer, which means we ran into a
+      // missing event (i.e. an unfilled gap that made the buffer non-contiguous. One call to
+      // ParseFrames only processes the first contiguous head). We don't expect missing events to
+      // arrive in the future, so just cut our losses. Drop all events up to this point, and then
+      // try to resume parsing for the next contiguous section.
+
+      // A special case in which we also want to drop the contiguous head is if lazy
+      // parsing is enabled, the head is incomplete (i.e. has a gap), and we parsed a partial frame.
+      // In that case we parsed as far as possible leading up to the gap and discard the rest of the
+      // bytes.
       data_buffer_.RemovePrefix(contiguous_bytes);
       data_buffer_.Trim();
 
       keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
-      // We had a contiguous stream, with no missing events.
-      // Erase bytes that have been fully processed.
-      // If anything was processed at all, reset stuck count.
+      // We had a contiguous stream (head), with no missing events. Erase bytes that have been fully
+      // processed from the buffer. If anything was processed at all, reset stuck count. If
+      // end_position = 0, we either need to wait for more data or encountered an invalid frame, in
+      // which case we discard the head.
       if (parse_result.end_position != 0) {
         data_buffer_.RemovePrefix(parse_result.end_position);
       }

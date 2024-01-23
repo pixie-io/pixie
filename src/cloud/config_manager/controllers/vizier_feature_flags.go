@@ -52,6 +52,11 @@ var availableFeatureFlags = []*featureFlag{
 		VizierFlagName:  "PX_DEBUG_TLS_SOURCES",
 		DefaultValue:    false,
 	},
+	{
+		FeatureFlagName: "lazy-parsing",
+		VizierFlagName:  "PX_LAZY_PARSING",
+		DefaultValue:    false,
+	},
 }
 
 // NewVizierFeatureFlagClient creates a LaunchDarkly feature flag client if the SDK key is provided,

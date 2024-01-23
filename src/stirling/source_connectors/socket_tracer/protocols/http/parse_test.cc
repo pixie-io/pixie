@@ -338,6 +338,35 @@ TEST_F(HTTPParserTest, PartialBody) {
   EXPECT_THAT(parsed_messages[0], IsEmpty());
 }
 
+TEST_F(HTTPParserTest, PartialBodyLazyEnabled) {
+  StateWrapper state{};
+  // Headers are complete but body is not 40 bytes, indicating a partial body.
+  std::string msg =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 40\r\n"
+      "\r\n"
+      "Foo";
+
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
+  ChunkInfo chunk_info = ChunkInfo();
+  chunk_info.AddIncompleteChunkInfo(IncompleteChunkInfo(chunk_t::kUnknownGapReason, 0, 1, 1));
+  ParseResult<stream_id_t> result =
+      ParseFramesLoop(message_type_t::kResponse, msg, &parsed_messages, &state, chunk_info,
+                      true);  // lazy parsing enabled
+
+  EXPECT_EQ(ParseState::kMetadataComplete, result.state);
+  // We parse a partial frame up until the gap
+  EXPECT_EQ(39, result.end_position);
+
+  Message expected_message1 = EmptyHTTPResp();
+  expected_message1.type = message_type_t::kResponse;
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Length", "40"}};
+  expected_message1.body = "-";
+
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1));
+}
+
 TEST_F(HTTPParserTest, Status101) {
   StateWrapper state{};
   std::string switch_protocol_msg =
@@ -673,6 +702,32 @@ TEST_F(HTTPParserTest, ParseHeadResponseWithNoConnClose) {
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages[0], ElementsAre());
+}
+
+TEST_F(HTTPParserTest, ParseHeadResponseWithNoConnCloseLazyParsing) {
+  StateWrapper state{};
+  std::string head_resp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 5\r\n"
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "\r\n";
+
+  absl::flat_hash_map<stream_id_t, std::deque<Message>> parsed_messages;
+  ChunkInfo chunk_info = ChunkInfo();
+  chunk_info.AddIncompleteChunkInfo(IncompleteChunkInfo(chunk_t::kUnknownGapReason, 0, 1, 1));
+  ParseResult<stream_id_t> result =
+      ParseFramesLoop(message_type_t::kResponse, absl::StrCat(head_resp), &parsed_messages, &state,
+                      chunk_info, true);  // lazy parsing enabled
+
+  Message expected_message1 = EmptyHTTPResp();
+  expected_message1.type = message_type_t::kResponse;
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Length", "5"},
+                               {"Content-Type", "text/plain; charset=utf-8"}};
+  expected_message1.body = "-";
+
+  EXPECT_EQ(ParseState::kMetadataComplete, result.state);
+  EXPECT_THAT(parsed_messages[0], ElementsAre(expected_message1));
 }
 
 // Test a HEAD response followed by a connection close.

@@ -32,6 +32,7 @@
 #include <google/protobuf/util/delimited_message_util.h>
 #include <magic_enum.hpp>
 
+#include "bcc_bpf_intf/socket_trace.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/common/json/json.h"
@@ -42,6 +43,7 @@
 #include "src/stirling/bpf_tools/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
+#include "src/stirling/source_connectors/socket_tracer/common.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
@@ -174,6 +176,16 @@ DEFINE_bool(
 DEFINE_bool(
     stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
     "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
+
+DEFINE_bool(stirling_enable_lazy_parsing, gflags::BoolFromEnv("PX_ENABLE_LAZY_PARSING", false),
+            "If true, stirling will stop filling incomplete events from bpf with dummy data to "
+            "minimize gaps in the data stream buffer "
+            "and instead parse as far as possible up until the gap. This reduces our memory "
+            "footprint by removing filler allocations, "
+            "but requires that the underlying protocol parsers are modified to handle incomplete "
+            "events containing partial frames. "
+            "Protocols that support lazy parsing are provided in kLazyParsingProtocols. If a "
+            "protocol is not present, it is not supported.");
 
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -855,12 +867,21 @@ void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int data
   // we create a filler event instead. This is important to Kafka, for example,
   // where the sendfile data is in the payload and the protocol parser can still succeed
   // as long as it is properly accounted for.
-  std::unique_ptr<SocketDataEvent> filler_event_ptr = data_event_ptr->ExtractFillerEvent();
+  std::unique_ptr<SocketDataEvent> filler_event_ptr;
+  // if lazy parsing is enabled and this protocol supports it, then we skip creating a filler event
+  // for gaps.
+  if (!LazyParsingEnabled(data_event_ptr->attr.protocol)) {
+    filler_event_ptr = data_event_ptr->ExtractFillerEvent();
+  }
 
   if (header_event_ptr) {
     connector->AcceptDataEvent(std::move(header_event_ptr));
   }
-  if (data_event_ptr && !data_event_ptr->msg.empty()) {
+  // In the sendfile case, metadata will have been transferred previously.
+  // We still want to keep track of the empty sendfile event, so we know
+  // to parse a head containing sendfile events lazily.
+  if ((data_event_ptr && !data_event_ptr->msg.empty()) ||
+      data_event_ptr->attr.incomplete_chunk == kSendFile) {
     connector->AcceptDataEvent(std::move(data_event_ptr));
   }
   if (filler_event_ptr) {

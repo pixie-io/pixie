@@ -79,7 +79,8 @@ struct ParseResult {
   ParseState state = ParseState::kInvalid;
   // Number of invalid frames that were discarded.
   int invalid_frames;
-  // Total number of bytes parsed into valid frames.
+  // Total number of bytes parsed into valid frames (excluding partial frame bytes when lazy parsing
+  // is turned off).
   size_t frame_bytes;
 };
 
@@ -101,8 +102,10 @@ struct ParseResult {
 template <typename TKey, typename TFrameType, typename TStateType = NoState>
 ParseResult<TKey> ParseFrames(message_type_t type, DataStreamBuffer* data_stream_buffer,
                               absl::flat_hash_map<TKey, std::deque<TFrameType>>* frames,
-                              bool resync = false, TStateType* state = nullptr) {
+                              bool resync = false, TStateType* state = nullptr,
+                              bool lazy_parsing_enabled = false) {
   std::string_view buf = data_stream_buffer->Head();
+  ChunkInfo chunk_info = data_stream_buffer->GetChunkInfoForHead();
 
   size_t start_pos = 0;
   if (resync) {
@@ -129,7 +132,8 @@ ParseResult<TKey> ParseFrames(message_type_t type, DataStreamBuffer* data_stream
   }
 
   // Parse and append new frames to the map of stream ID to deque of frames
-  ParseResult<TKey> result = ParseFramesLoop(type, buf, frames, state);
+  ParseResult<TKey> result =
+      ParseFramesLoop(type, buf, frames, state, chunk_info, lazy_parsing_enabled);
 
   // Compute the number of newly parsed frames for each stream
   size_t total_new_frames = 0;
@@ -179,22 +183,46 @@ ParseResult<TKey> ParseFrames(message_type_t type, DataStreamBuffer* data_stream
 template <typename TKey, typename TFrameType, typename TStateType = NoState>
 ParseResult<TKey> ParseFramesLoop(message_type_t type, std::string_view buf,
                                   absl::flat_hash_map<TKey, std::deque<TFrameType>>* frames,
-                                  TStateType* state = nullptr) {
+                                  TStateType* state = nullptr, ChunkInfo chunk_info = ChunkInfo(),
+                                  bool lazy_parsing_enabled = false) {
   absl::flat_hash_map<TKey, std::vector<StartEndPos>> frame_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
   size_t frame_bytes = 0;
   int invalid_count = 0;
+  size_t partial_frame_count = 0;
+  VLOG(1) << absl::Substitute("Lazy parsing enabled: $0", lazy_parsing_enabled);
+  // Turn lazy parsing off if we have a contiguous head with no gaps to avoid masking other errors.
+  if (!chunk_info.HasIncompleteChunks() && lazy_parsing_enabled) {
+    VLOG(1) << "Turning off lazy parsing because we have a contiguous head with no gaps.";
+    lazy_parsing_enabled = false;
+  }
 
   while (!buf.empty() && s != ParseState::kEOS) {
     TFrameType frame;
 
-    s = ParseFrame(type, &buf, &frame, state);
+    s = ParseFrame(type, &buf, &frame, state, lazy_parsing_enabled);
+
+    VLOG(2) << absl::Substitute("ParseFrame returned: $0", magic_enum::enum_name(s));
 
     bool stop = false;
     bool push = false;
     switch (s) {
+      case ParseState::kMetadataComplete:
+        // Metadata (header) complete, but payload is incomplete.
+        if (lazy_parsing_enabled) {
+          // If lazy parsing is enabled, we do not plug gaps with filler bytes. As a result a
+          // contiguous head will contain at most one gap from bpf. Hence an incomplete_event before
+          // a gap should contain at most one partial frame cut off by the gap.
+          DCHECK_EQ(partial_frame_count, 0);
+          partial_frame_count++;
+          // We have enough data for stitching, so push the incomplete frame.
+          push = true;
+        }
+        // Otherwise, we need to wait for more data.
+        stop = false;
+        break;
       case ParseState::kNeedsMoreData:
         // Can't process any more frames.
         stop = true;
@@ -203,6 +231,7 @@ ParseResult<TKey> ParseFramesLoop(message_type_t type, std::string_view buf,
         // An invalid frame may occur when first parsing a connection, or after a lost event.
         // Attempt to look for next valid frame boundary.
         size_t pos = FindFrameBoundary<TFrameType, TStateType>(type, buf, 1, state);
+        // If we found a valid frame boundary, remove the invalid bytes.
         if (pos != std::string::npos) {
           DCHECK_NE(pos, 0U);
           buf.remove_prefix(pos);
@@ -242,7 +271,19 @@ ParseResult<TKey> ParseFramesLoop(message_type_t type, std::string_view buf,
       TKey key = GetStreamID<TKey, TFrameType>(&frame);
       frame_positions[key].push_back({start_position, end_position});
       (*frames)[key].push_back(std::move(frame));
+      // Doesn't include partial frames unless lazy parsing is enabled because we
+      // don't push partial frames if lazy parsing is disabled to avoid masking other errors
       frame_bytes += (end_position - start_position) + 1;
+    }
+
+    if (s == ParseState::kMetadataComplete && lazy_parsing_enabled) {
+      // We have parsed as far as possible up to the gap for this incomplete
+      // chunk. There is no more data that we can parse in this contiguous head, so we move head
+      // pos to the end of the head (up to the gap) and stop parsing.
+      // Note: we want to preserve metrics for how many bytes we couldn't parse before the gap,
+      // hence we only clear the head after we've recorded the frame positions.
+      buf.remove_prefix(buf.size());
+      DCHECK(buf.empty());
     }
   }
   return ParseResult<TKey>{std::move(frame_positions), bytes_processed, s, invalid_count,
