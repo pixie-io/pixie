@@ -36,6 +36,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
+#include "src/stirling/source_connectors/socket_tracer/common.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
@@ -519,10 +520,20 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
                        GetMutableConnTracker(system.ServerPID(), system.ServerFD()));
   EXPECT_EQ(server_tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   std::string server_send_data(server_tracker->send_data().data_buffer().Head());
-  EXPECT_THAT(server_send_data.size(), 131153);
+  if (LazyParsingEnabled(traffic_protocol_t::kProtocolHTTP)) {
+    // TODO(@benkilimnik): This will need updating if we raise our chunk limit.
+    // with lazy parsing, we do not pad with filler and thus save ourselves from allocating 8273
+    // null bytes. Gap reason is kExceededChunkLimitAndMaxMsgSize.
+    EXPECT_THAT(server_send_data.size(), 122880);
+  } else {
+    EXPECT_THAT(server_send_data.size(), 131153);
+  }
   EXPECT_THAT(server_send_data, HasSubstr("+++++"));
-  // We expect filling with \0 bytes.
-  EXPECT_EQ(server_send_data.substr(server_send_data.size() - 5, 5), ConstStringView("\0\0\0\0\0"));
+  if (!LazyParsingEnabled(traffic_protocol_t::kProtocolHTTP)) {
+    // We expect filling with \0 bytes if lazy parsing is disabled.
+    EXPECT_EQ(server_send_data.substr(server_send_data.size() - 5, 5),
+              ConstStringView("\0\0\0\0\0"));
+  }
 }
 
 constexpr std::string_view kHTTPRespMsgHeader =
@@ -594,7 +605,11 @@ TEST_F(SocketTraceBPFTest, SendFile) {
       records[kHTTPRespBodyIdx]->Get<types::StringValue>(1)};
 
   const std::string kHTTPRespMsgContentAsFiller(kHTTPRespMsgContent.size(), 0);
-  EXPECT_THAT(responses, Contains(kHTTPRespMsgContentAsFiller));
+  // With lazy parsing, we do not pad with filler and thus save ourselves from allocating null
+  // bytes. Gap reason is kSendFile.
+  if (!LazyParsingEnabled(traffic_protocol_t::kProtocolHTTP)) {
+    EXPECT_THAT(responses, Contains(kHTTPRespMsgContentAsFiller));
+  }
   EXPECT_THAT(responses, Contains(kHTTPRespMsgContent));
 }
 

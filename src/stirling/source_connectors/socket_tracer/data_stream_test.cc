@@ -494,6 +494,105 @@ TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunkAndSSLEnabled) {
       0, SocketTracerMetrics::GetProtocolMetrics(kProtocolHTTP, kSSLNone).data_loss_bytes.Value());
 }
 
+// Note that our data loss metric gets skewed under certain circumstances for HTTP when
+// lazy implementation is used. When lazy parsing is turned on, but we did not detect an incomplete
+// chunk in the contiguous head, the event parser doesn't push a partial frame to avoid masking
+// other errors. But the HTTP parser still removes data from the buffer for partial frames, so even
+// though the event parser doesn't push partial frames, the offset into the datastream buffer is
+// still updated. This causes the data loss metric calculation for num_bytes_advanced
+// (data_buffer_.position() - last_processed_pos_) to change. In practice, however, we only
+// enable lazy parsing when we detect an incomplete chunk in a contiguous head, so this should
+// be a non-issue.
+TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunkAndLazyParsingEnabled) {
+  // This test simulates a case where the buffer itself should normally only contain 16 bytes
+  // but for a big response we make an exception and temporarily increase its size
+  // to 1024 bytes. After the response is parsed, the buffer size should be reduced back to 16
+  // bytes. And any existing data will be trimmed down to 16 bytes.
+  int spike_capacity_bytes = 1024;
+  int retention_capacity_bytes = 16;
+  auto buffer_expiry_timestamp = now() - std::chrono::seconds(10000);
+  DataStream stream(spike_capacity_bytes);
+  stream.set_protocol(kProtocolHTTP, true);  // Turn lazy parsing on
+
+  std::unique_ptr<SocketDataEvent> resp0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  // For the partial response resp2, we would normally not be able to parse any of the
+  // 92 bytes because it is incomplete. Hence these bytes should be sitting in the databuffer until
+  // cleanup With lazy parsing however, we are able to parse the metadata of the response, or 87
+  // bytes, with just 5 bytes leftover in the databuffer (representing the incomplete Content
+  // "pixie"). So when we reduce spike capacity back to 16 bytes, we have just 5 bytes of data left
+  // instead of 16 (of the full 92 bytes) for non-lazy parsing.
+  std::unique_ptr<SocketDataEvent> resp2 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPIncompleteResp);
+  // Even with lazy parsing turned on, partial frame won't get pushed unless there's a gap, so we
+  // add an incomplete chunk info for kHTTPIncompleteResp so that event parsing will push
+  // partial frame with lazy parsing turned on for HTTP
+  resp2->attr.bytes_missed =
+      95;  // gap size is 95 bytes (content length 100, but content contains just 5 bytes "pixie")
+  resp2->attr.incomplete_chunk = chunk_t::kUnknownGapReason;
+
+  stream.AddData(std::move(resp0));
+  stream.AddData(std::move(resp1));
+  stream.AddData(std::move(resp2));
+
+  protocols::http::StateWrapper state{};
+  stream.ProcessBytesToFrames<http::stream_id_t, http::Message>(message_type_t::kResponse, &state);
+  stream.CleanupEvents(retention_capacity_bytes, buffer_expiry_timestamp);
+  auto frames = stream.Frames<http::stream_id_t, http::Message>();
+  EXPECT_THAT(frames[0], SizeIs(3));  // Captured 2 complete frames and 1 partial frame
+  EXPECT_EQ(stream.data_buffer().size(),
+            0);  // Flushed out bytes after partial frame, which are cut off by the gap
+
+  // Run ProcessBytesToFrames again to propagate data loss stats.
+  stream.ProcessBytesToFrames<http::stream_id_t, http::Message>(message_type_t::kResponse, &state);
+  // We lost just the 5 bytes of the incomplete payload of the HTTP Resp kHTTPIncompleteResp
+  // ("pixie")
+  EXPECT_EQ(
+      5, SocketTracerMetrics::GetProtocolMetrics(kProtocolHTTP, kSSLNone).data_loss_bytes.Value());
+  EXPECT_EQ(0, SocketTracerMetrics::GetProtocolMetrics(kProtocolHTTP, kSSLUnspecified)
+                   .data_loss_bytes.Value());
+}
+
+TEST_F(DataStreamTest, SpikeCapacityWithLargeDataChunkAndSSLEnabledAndLazyParsingEnabled) {
+  int spike_capacity_bytes = 1024;
+  int retention_capacity_bytes = 16;
+  auto buffer_expiry_timestamp = now() - std::chrono::seconds(10000);
+  DataStream stream(spike_capacity_bytes);
+  stream.set_ssl_source(kSSLUnspecified);
+  stream.set_protocol(kProtocolHTTP, true);  // Turn lazy parsing on
+
+  std::unique_ptr<SocketDataEvent> resp0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp1 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp2 =
+      event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPIncompleteResp);
+  // Add an incomplete chunk info for kHTTPIncompleteResp so that event parsing will push
+  // partial frame with lazy parsing turned on for HTTP
+  resp2->attr.bytes_missed =
+      95;  // gap size is 95 bytes (content length 100, but content contains just 5 bytes "pixie")
+  resp2->attr.incomplete_chunk = chunk_t::kUnknownGapReason;
+
+  stream.AddData(std::move(resp0));
+  stream.AddData(std::move(resp1));
+  stream.AddData(std::move(resp2));
+
+  protocols::http::StateWrapper state{};
+  stream.ProcessBytesToFrames<http::stream_id_t, http::Message>(message_type_t::kResponse, &state);
+  stream.CleanupEvents(retention_capacity_bytes, buffer_expiry_timestamp);
+  auto frames = stream.Frames<http::stream_id_t, http::Message>();
+  EXPECT_THAT(frames[0], SizeIs(3));  // Captured 2 complete frames and 1 partial frame
+  EXPECT_EQ(stream.data_buffer().size(),
+            0);  // Flushed out bytes after partial frame, which are cut off by the gap
+
+  // Run ProcessBytesToFrames again to propagate data loss stats.
+  stream.ProcessBytesToFrames<http::stream_id_t, http::Message>(message_type_t::kResponse, &state);
+  // We lost just the 5 bytes of the incomplete payload of the HTTP Resp kHTTPIncompleteResp
+  // ("pixie")
+  EXPECT_EQ(5, SocketTracerMetrics::GetProtocolMetrics(kProtocolHTTP, kSSLUnspecified)
+                   .data_loss_bytes.Value());
+  EXPECT_EQ(
+      0, SocketTracerMetrics::GetProtocolMetrics(kProtocolHTTP, kSSLNone).data_loss_bytes.Value());
+}
+
 TEST_F(DataStreamTest, ResyncCausesDuplicateEventBug) {
   // Test to catch regression on a bug. The bug occured when a resync occurs in ParseFrames, leading
   // to an invalid state where the data stream buffer still had data that had already been
