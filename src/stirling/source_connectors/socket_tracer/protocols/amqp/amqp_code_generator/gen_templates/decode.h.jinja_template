@@ -33,7 +33,13 @@ namespace amqp {
 
 {{ struct_declr }}
 
-// TODO combine with kafka ToString function
+template <typename T>
+std::string ToString(T obj) {
+  utils::JSONObjectBuilder json_object_builder;
+  obj.ToJSON(&json_object_builder);
+  return json_object_builder.GetString();
+}
+// TODO(vsrivatsa) combine with kafka ToString function
 Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 

@@ -19,10 +19,10 @@
 #pragma once
 
 #include <string>
-#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/amqp/types_gen.h"
 #include "src/stirling/utils/binary_decoder.h"
 
 namespace px {
@@ -41,7 +41,7 @@ struct AMQPConnectionStart {
   void ToJSON(utils::JSONObjectBuilder* builder) const {
     builder->WriteKV("version_major", version_major);
     builder->WriteKV("version_minor", version_minor);
-    // TODO(vsrivatsa): support KV for server_properties field table type
+    // TODO(vsrivatsa): support KV for server-properties field table type
     builder->WriteKV("mechanisms", mechanisms);
     builder->WriteKV("locales", locales);
   }
@@ -55,7 +55,7 @@ struct AMQPConnectionStartOk {
   bool synchronous = 1;
 
   void ToJSON(utils::JSONObjectBuilder* builder) const {
-    // TODO(vsrivatsa): support KV for client_properties field table type
+    // TODO(vsrivatsa): support KV for client-properties field table type
     builder->WriteKV("mechanism", mechanism);
     builder->WriteKV("response", response);
     builder->WriteKV("locale", locale);
@@ -719,6 +719,7 @@ std::string ToString(T obj) {
   obj.ToJSON(&json_object_builder);
   return json_object_builder.GetString();
 }
+// TODO(vsrivatsa) combine with kafka ToString function
 Status ProcessPayload(Frame* req, BinaryDecoder* decoder);
 
 }  // namespace amqp
