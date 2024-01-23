@@ -209,6 +209,10 @@ The known adopters and users of Pixie are listed [here](ADOPTERS.md).
 We publish a list of all the components Pixie depends on and the corresponding
 versions and licenses [here](https://storage.googleapis.com/pixie-dev-public/oss-licenses/latest.json).
 
+## Acknowledgements
+
+The Pixie project would like to thank [Equinix Metal](https://www.equinix.com/) via the [CNCF Community Infrastructure Lab](https://github.com/cncf/cluster) for graciously providing compute resources to run all the CI/CD for the project.
+
 ## About Pixie
 
 Pixie was contributed by [New Relic, Inc.](https://newrelic.com/) to the [Cloud Native Computing Foundation](https://www.cncf.io/) as a Sandbox project in June 2021.
