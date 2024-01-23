@@ -757,6 +757,22 @@ class WrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
   std::unique_ptr<U> underlying_;
 };
 
+template <typename T>
+class RecordingWrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTableImpl<T> {
+ public:
+  using Super = WrappedBCCPerCPUArrayTableImpl<T>;
+  RecordingWrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : Super(bcc, name) {}
+};
+
+template <typename T>
+class ReplayingWrappedBCCPerCPUArrayTableImpl : public WrappedBCCPerCPUArrayTable<T> {
+ public:
+  Status SetValues(const int, const T&) override { return Status::OK(); }
+
+  ReplayingWrappedBCCPerCPUArrayTableImpl(bpf_tools::BCCWrapper*, const std::string&) {}
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Stack Table
@@ -795,6 +811,49 @@ class WrappedBCCStackTableImpl : public WrappedBCCStackTable {
 
  private:
   std::unique_ptr<U> underlying_;
+};
+
+class RecordingWrappedBCCStackTableImpl : public WrappedBCCStackTableImpl {
+ public:
+  using Super = WrappedBCCStackTableImpl;
+
+  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool clear_stack_id) override {
+    const auto stack_addrs = Super::GetStackAddr(stack_id, clear_stack_id);
+    recorder_.RecordBPFStackTableGetStackAddrEvent(this->name_, stack_id, stack_addrs);
+    return stack_addrs;
+  }
+
+  std::string GetAddrSymbol(const uintptr_t addr, const int pid) override {
+    const auto symbol = Super::GetAddrSymbol(addr, pid);
+    recorder_.RecordBPFStackTableGetAddrSymbolEvent(this->name_, addr, pid, symbol);
+    return symbol;
+  }
+
+  RecordingWrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : Super(bcc, name), recorder_(*bcc->GetBPFRecorder().ConsumeValueOrDie()) {}
+
+ private:
+  BPFRecorder& recorder_;
+};
+
+class ReplayingWrappedBCCStackTableImpl : public WrappedBCCStackTable {
+ public:
+  std::vector<uintptr_t> GetStackAddr(const int stack_id, const bool) override {
+    return replayer_.ReplayBPFStackTableGetStackAddrEvent(name_, stack_id).ConsumeValueOr({0});
+  }
+
+  std::string GetAddrSymbol(const uintptr_t addr, const int pid) override {
+    return replayer_.ReplayBPFStackTableGetAddrSymbolEvent(name_, addr, pid).ConsumeValueOr("");
+  }
+
+  void ClearStackID(const int) override {}
+
+  ReplayingWrappedBCCStackTableImpl(bpf_tools::BCCWrapper* bcc, const std::string& name)
+      : name_(name), replayer_(*bcc->GetBPFReplayer().ConsumeValueOrDie()) {}
+
+ private:
+  const std::string name_;
+  BPFReplayer& replayer_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -843,9 +902,9 @@ std::unique_ptr<WrappedBCCPerCPUArrayTable<T>> WrappedBCCPerCPUArrayTable<T>::Cr
     BCCWrapper* bcc, const std::string& name) {
   using BaseT = WrappedBCCPerCPUArrayTable<T>;
   using ImplT = WrappedBCCPerCPUArrayTableImpl<T>;
-
-  // TODO(jps): Impl. rr for per cpu array.
-  return CreateBCCWrappedMapOrArray<BaseT, ImplT, ImplT, ImplT>(bcc, name);
+  using RecordingT = RecordingWrappedBCCPerCPUArrayTableImpl<T>;
+  using ReplayingT = ReplayingWrappedBCCPerCPUArrayTableImpl<T>;
+  return CreateBCCWrappedMapOrArray<BaseT, ImplT, RecordingT, ReplayingT>(bcc, name);
 }
 
 }  // namespace bpf_tools

@@ -70,6 +70,30 @@ void BPFRecorder::RecordBPFMapCapacityEvent(const std::string& name, const int32
   *event_name = name;
 }
 
+void BPFRecorder::RecordBPFStackTableGetStackAddrEvent(const std::string& name,
+                                                       const int32_t stack_id,
+                                                       const std::vector<uintptr_t>& addrs) {
+  auto event = events_proto_.add_event()->mutable_get_stack_addr_event();
+  event->set_stack_id(stack_id);
+  for (const auto& a : addrs) {
+    event->add_addr(a);
+  }
+  auto event_name = event->mutable_name();
+  *event_name = name;
+}
+
+void BPFRecorder::RecordBPFStackTableGetAddrSymbolEvent(const std::string& name,
+                                                        const uint64_t addr, const uint32_t pid,
+                                                        const std::string symbol) {
+  auto event = events_proto_.add_event()->mutable_get_addr_symbol_event();
+  auto event_name = event->mutable_name();
+  auto event_symbol = event->mutable_symbol();
+  event->set_addr(addr);
+  event->set_pid(pid);
+  *event_name = name;
+  *event_symbol = symbol;
+}
+
 void BPFRecorder::WriteProto(const std::string& proto_buf_file_path) {
   if (!recording_written_) {
     LOG(INFO) << "Writing BPF events pb to file: " << proto_buf_file_path;
@@ -116,7 +140,7 @@ void RecordPerfBufferLoss(void* cb_cookie, uint64_t lost) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Replay.
 void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     LOG_FIRST_N(INFO, 1) << "BPFReplayer::ReplayPerfBufferEvents(), plaback complete.";
     return;
   }
@@ -147,7 +171,7 @@ void BPFReplayer::ReplayPerfBufferEvents(const PerfBufferSpec& perf_buffer_spec)
 
 Status BPFReplayer::ReplayArrayGetValue(const std::string& name, const int32_t idx,
                                         const uint32_t data_size, void* value) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -179,7 +203,7 @@ Status BPFReplayer::ReplayArrayGetValue(const std::string& name, const int32_t i
 
 Status BPFReplayer::ReplayMapGetValue(const std::string& name, const uint32_t key_size,
                                       void const* const key, const uint32_t val_size, void* value) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -214,7 +238,7 @@ Status BPFReplayer::ReplayMapGetValue(const std::string& name, const uint32_t ke
 
 Status BPFReplayer::ReplayMapGetKeyAndValue(const std::string& name, const uint32_t key_size,
                                             void* key, const uint32_t val_size, void* val) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -245,7 +269,7 @@ Status BPFReplayer::ReplayMapGetKeyAndValue(const std::string& name, const uint3
 }
 
 StatusOr<int32_t> BPFReplayer::ReplayBPFMapCapacityEvent(const std::string& name) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -266,7 +290,7 @@ StatusOr<int32_t> BPFReplayer::ReplayBPFMapCapacityEvent(const std::string& name
 }
 
 StatusOr<int32_t> BPFReplayer::ReplayBPFMapGetTableOfflineEvent(const std::string& name) {
-  if (PlabackComplete()) {
+  if (PlaybackComplete()) {
     return error::Internal("Playback complete.");
   }
 
@@ -284,6 +308,69 @@ StatusOr<int32_t> BPFReplayer::ReplayBPFMapGetTableOfflineEvent(const std::strin
   ++playback_event_idx_;
 
   return event.size();
+}
+
+StatusOr<std::vector<uintptr_t>> BPFReplayer::ReplayBPFStackTableGetStackAddrEvent(
+    const std::string& name, const int32_t stack_id) {
+  if (PlaybackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_get_stack_addr_event()) {
+    return error::Internal("Map event not available.");
+  }
+
+  const auto event = event_wrapper.get_stack_addr_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched eBPF stack table name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  if (stack_id != event.stack_id()) {
+    const char* const msg = "Mismatched stack id. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.stack_id(), stack_id));
+  }
+  ++playback_event_idx_;
+
+  std::vector<uintptr_t> addrs;
+
+  for (int i = 0; i < event.addr_size(); ++i) {
+    const uint64_t addr = event.addr(i);
+    addrs.push_back(addr);
+  }
+  return addrs;
+}
+
+StatusOr<std::string> BPFReplayer::ReplayBPFStackTableGetAddrSymbolEvent(const std::string& name,
+                                                                         const uint64_t addr,
+                                                                         const uint32_t pid) {
+  if (PlaybackComplete()) {
+    return error::Internal("Playback complete.");
+  }
+
+  const auto event_wrapper = events_proto_.event(playback_event_idx_);
+  if (!event_wrapper.has_get_addr_symbol_event()) {
+    return error::Internal("Stack table get addr symbol event not available.");
+  }
+
+  const auto event = event_wrapper.get_addr_symbol_event();
+
+  if (name != event.name()) {
+    const char* const msg = "Mismatched stack table name. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.name(), name));
+  }
+  if (addr != event.addr()) {
+    const char* const msg = "Mismatched addr. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.addr(), addr));
+  }
+  if (pid != event.pid()) {
+    const char* const msg = "Mismatched pid. Expected: $0, requested: $1.";
+    return error::Internal(absl::Substitute(msg, event.pid(), pid));
+  }
+  ++playback_event_idx_;
+
+  return event.symbol();
 }
 
 Status BPFReplayer::OpenReplayProtobuf(const std::string& replay_events_pb_file_path) {
