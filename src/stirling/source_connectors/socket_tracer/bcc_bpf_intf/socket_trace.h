@@ -128,7 +128,7 @@ struct close_event_t {
 // This defines how many chunks a perf_submit can support.
 // This applies to messages that are over MAX_MSG_SIZE,
 // and effectively makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
-#define CHUNK_LIMIT 4
+#define CHUNK_LIMIT BPF_CHUNK_LIMIT
 
 // Unique ID to all syscalls and a few other notable functions.
 // This applies to events sent to user-space.

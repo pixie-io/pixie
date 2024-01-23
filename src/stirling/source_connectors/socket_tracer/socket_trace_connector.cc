@@ -31,6 +31,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/delimited_message_util.h>
 #include <magic_enum.hpp>
+#include "src/common/system/kernel_version.h"
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
@@ -174,6 +175,15 @@ DEFINE_bool(
 DEFINE_bool(
     stirling_debug_tls_sources, gflags::BoolFromEnv("PX_DEBUG_TLS_SOURCES", false),
     "If true, stirling will add additional prometheus metrics regarding the traced tls sources");
+
+DEFINE_uint32(stirling_bpf_loop_limit, 42,
+              "The maximum number of iovecs to capture for syscalls. "
+              "Set conservatively for older kernels by default to keep the instruction count below "
+              "BPF's limit for version 4 kernels (4096 per probe).");
+
+DEFINE_uint32(stirling_bpf_chunk_limit, 4,
+              "The maximum number of chunks a perf_submit can support. "
+              "This applies to messages that are over MAX_MSG_SIZE.");
 
 OBJ_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -431,6 +441,18 @@ auto SocketTraceConnector::InitPerfBufferSpecs() {
 }
 
 Status SocketTraceConnector::InitBPF() {
+  // set BPF loop limit and chunk limit based on kernel version
+  auto kernel = system::GetCachedKernelVersion();
+  if (kernel.version >= 5 || (kernel.version == 5 && kernel.major_rev >= 1)) {
+    // Kernels >= 5.1 have higher BPF instruction limits (1 million for verifier).
+    // This enables a 21x increase to our loop and chunk limits
+    FLAGS_stirling_bpf_loop_limit = 882;
+    FLAGS_stirling_bpf_chunk_limit = 84;
+    LOG(INFO) << absl::Substitute(
+        "Kernel version greater than V5.1 detected ($0), raised loop limit to $1 and chunk limit "
+        "to $2",
+        kernel.ToString(), FLAGS_stirling_bpf_loop_limit, FLAGS_stirling_bpf_chunk_limit);
+  }
   // PROTOCOL_LIST: Requires update on new protocols.
   std::vector<std::string> defines = {
       absl::StrCat("-DENABLE_TLS_DEBUG_SOURCES=", FLAGS_stirling_debug_tls_sources),
@@ -445,6 +467,8 @@ Status SocketTraceConnector::InitBPF() {
       absl::StrCat("-DENABLE_NATS_TRACING=", protocol_transfer_specs_[kProtocolNATS].enabled),
       absl::StrCat("-DENABLE_AMQP_TRACING=", protocol_transfer_specs_[kProtocolAMQP].enabled),
       absl::StrCat("-DENABLE_MONGO_TRACING=", protocol_transfer_specs_[kProtocolMongo].enabled),
+      absl::StrCat("-DBPF_LOOP_LIMIT=", FLAGS_stirling_bpf_loop_limit),
+      absl::StrCat("-DBPF_CHUNK_LIMIT=", FLAGS_stirling_bpf_chunk_limit),
   };
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(socket_trace_bcc_script, defines));
 
