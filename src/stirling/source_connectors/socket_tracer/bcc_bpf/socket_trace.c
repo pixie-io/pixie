@@ -35,8 +35,8 @@
 #include "src/stirling/upid/upid.h"
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
-#define LOOP_LIMIT 42
 #define PROTOCOL_VEC_LIMIT 3
+#define MAX_FILLER_SIZE (1 * 1024 * 1024)  // 1MiB, taken from socket_trace.hpp
 
 const int32_t kInvalidFD = -1;
 
@@ -476,6 +476,11 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_dir
   } else if (buf_size_minus_1 < 0x7fffffff) {
     // If-statement condition above is only required to prevent clang from optimizing
     // away the `if (amount_copied > 0)` below.
+
+    // Here we truncate an iovec to MAX_MSG_SIZE (30KiB), then in user space we add a filler
+    // event if msg_size (size of this iovec) > msg_buf_size.
+    // If (msg_size - msg_buf_size) > our max filler size of 1MiB, then we push an event with a gap
+    // to the datastream buffer.
     bpf_probe_read(&event->msg, MAX_MSG_SIZE, buf);
     amount_copied = MAX_MSG_SIZE;
   }
@@ -483,6 +488,23 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum traffic_dir
   // If-statement is redundant, but is required to keep the 4.14 verifier happy.
   if (amount_copied > 0) {
     event->attr.msg_buf_size = amount_copied;
+    // bytes_missed should be 0 if we didn't truncate amount_copied to MAX_MSG_SIZE above.
+    // Note that perf_submit_buf won't correctly set bytes_missed for perf_submit_iovecs
+    // when bytes_remaining > iov_size and we've reached the loop limit
+    // bc it takes only the size of the current iovec into account
+    // and not the bytes remaining across all iovecs which we drop due to the loop limit.
+    // In those cases we rely on the value set in perf_submit_iovecs.
+
+    // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
+    // limit.
+    if (kernelNewerThan5dot1) {
+      if (event->attr.incomplete_chunk != kExceededLoopLimit) {
+        event->attr.bytes_missed = event->attr.msg_size - event->attr.msg_buf_size;
+      }
+      if (event->attr.bytes_missed > 0 && event->attr.incomplete_chunk == kFullyFormed) {
+        event->attr.incomplete_chunk = kUnknownGapReason;
+      }
+    }
     socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + amount_copied);
   }
 }
@@ -493,12 +515,23 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx,
                                          struct socket_data_event_t* event) {
   int bytes_sent = 0;
   unsigned int i;
-
+  event->attr.incomplete_chunk = kFullyFormed;
+  event->attr.bytes_missed = 0;
 #pragma unroll
   for (i = 0; i < CHUNK_LIMIT; ++i) {
     const int bytes_remaining = buf_size - bytes_sent;
     const size_t current_size =
         (bytes_remaining > MAX_MSG_SIZE && (i != CHUNK_LIMIT - 1)) ? MAX_MSG_SIZE : bytes_remaining;
+    // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
+    // limit.
+    if (kernelNewerThan5dot1) {
+      // Check if we have reached the chunk limit, but there are bytes left to capture beyond our
+      // max msg size.
+      const bool chunks_not_fully_captured = i == CHUNK_LIMIT - 1 && current_size > MAX_MSG_SIZE;
+      if (chunks_not_fully_captured) {
+        event->attr.incomplete_chunk = kExceededChunkLimitAndMaxMsgSize;
+      }
+    }
     perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, conn_info, event);
     bytes_sent += current_size;
 
@@ -516,15 +549,41 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
   // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
   // size of the written or read data. Therefore, when loop through the buffers, both the number of
   // buffers and the total size need to be checked. More details can be found on their man pages.
+  event->attr.incomplete_chunk = kFullyFormed;
+  event->attr.bytes_missed = 0;
   int bytes_sent = 0;
+  unsigned int i;
 #pragma unroll
-  for (int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
+  for (i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
     struct iovec iov_cpy;
     BPF_PROBE_READ_VAR(iov_cpy, &iov[i]);
-
+    // total bytes we have left to copy across all iovecs
     const int bytes_remaining = total_size - bytes_sent;
+    // bytes contained in this iovec (either bytes we have left or the size of the iovec, whichever
+    // is smaller) This can be >MAX_MSG_SIZE and thus truncated in perf_submit_buf
     const size_t iov_size = min_size_t(iov_cpy.iov_len, bytes_remaining);
 
+    // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
+    // limit.
+    if (kernelNewerThan5dot1) {
+      // We have reached the loop limit, but there are iovecs left to capture.
+      const bool iovec_not_fully_captured = i == LOOP_LIMIT - 1 && i < iovlen;
+      // This iov exceeds the MAX_MSG_SIZE, and will be truncated in perf_submit_buf.
+      const bool iov_size_exceeds_max_msg_size = iov_size > MAX_MSG_SIZE;
+
+      if (iovec_not_fully_captured && iov_size_exceeds_max_msg_size) {
+        event->attr.incomplete_chunk = kExceededLoopLimitAndMaxMsgSize;
+      } else if (iovec_not_fully_captured) {
+        event->attr.incomplete_chunk = kExceededLoopLimit;
+        // perf_submit_buf won't correctly set bytes_missed for perf_submit_iovecs
+        // if bytes_remaining > iov_size and we've reached the loop limit
+        // because it takes only the size of the current iovec into account
+        // see min(iov_len, bytes_remaining) above.
+        event->attr.bytes_missed = bytes_remaining - iov_size;
+      } else if (iov_size_exceeds_max_msg_size) {
+        event->attr.incomplete_chunk = kIovSizeExceededMaxMsgSize;
+      }
+    }
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     //                     We don't have the BPF instruction count to do so right now.
     perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
@@ -533,9 +592,6 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx,
     // Move the position for the next event.
     event->attr.pos += iov_size;
   }
-
-  // TODO(oazizi): If there is data left after the loop limit, we should still report the remainder
-  //               with a data-less event.
 }
 
 /***********************************************************
@@ -887,6 +943,22 @@ static __inline void process_syscall_sendfile(struct pt_regs* ctx, uint64_t id,
     }
 
     event->attr.pos = conn_info->wr_bytes;
+    // For older kernels < 5.1, we can't record gap metadata without exceeding the instruction
+    // limit.
+    if (kernelNewerThan5dot1) {
+      // technically we drop all the data and just send the gap event, filling the gap with \0 bytes
+      // up to 1MB
+      if (bytes_count > MAX_FILLER_SIZE) {
+        // if we exceed the max filler size (1MB), we'll create a gap in the data stream buffer
+        event->attr.incomplete_chunk = kSendFileExceededMaxFillerSize;
+      } else {
+        // If we don't exceed max filler size for this sendfile, we record a complete
+        // kSendFile to keep track of in our metrics. If filler is enabled (lazy parsing off)
+        // we will allocate a filler event in user space to fill the gap left by an empty sendfile.
+        event->attr.incomplete_chunk = kSendFile;
+      }
+      event->attr.bytes_missed = bytes_count;
+    }
     event->attr.msg_size = bytes_count;
     event->attr.msg_buf_size = 0;
     socket_data_events.perf_submit(ctx, event, sizeof(event->attr));

@@ -129,6 +129,11 @@ struct close_event_t {
 // This applies to messages that are over MAX_MSG_SIZE,
 // and effectively makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
 #define CHUNK_LIMIT 4
+#define LOOP_LIMIT 42
+
+// Used to determine whether to track additional metadata for gaps from bpf.
+// Due to instruction limits we only track this for <5.1 kernels.
+const bool kernelNewerThan5dot1 = LOOP_LIMIT > 42 || CHUNK_LIMIT > 4;
 
 // Unique ID to all syscalls and a few other notable functions.
 // This applies to events sent to user-space.
@@ -160,6 +165,29 @@ enum source_function_t {
   // For SSL libraries.
   kSSLWrite,
   kSSLRead,
+};
+
+// Keeps track of the reasons for missed data from bpf, resulting in
+// a gap in the data stream buffer (which we sometimes fill with null bytes).
+enum chunk_t {
+  kFullyFormed = 0,
+  // perf_submit_iovecs
+  kExceededLoopLimit = 1,
+  kIovSizeExceededMaxMsgSize = 2,
+  kExceededLoopLimitAndMaxMsgSize = 3,
+  // perf_submit_wrapper
+  kExceededChunkLimitAndMaxMsgSize = 4,
+  // process_syscall_sendfile
+  kSendFile = 5,
+  kSendFileExceededMaxFillerSize = 6,
+  // filler event (populated in socket_trace.hpp) with size bytes_missed
+  // TODO(@benkilimnik): eventually we should remove the filler event
+  // and use lazy parsing across the board.
+  kFiller = 7,
+  // gap we tried to fill was larger than max filler size (kMaxFilledSizeBytes, currently 1MB)
+  kIncompleteFiller = 8,
+  kHeaderEvent = 9,  // no gap
+  kUnknownGapReason = 10,
 };
 
 struct socket_data_event_t {
@@ -195,14 +223,23 @@ struct socket_data_event_t {
     // Note that write/send have separate sequences than read/recv.
     uint64_t pos;
 
-    // The size of the original message. We use this to truncate msg field to minimize the amount
-    // of data being transferred.
+    // The size of the original message (or chunk of a message if iovlen > 1
+    // since each perf_submit passes one iovec as an event). We use
+    // this to truncate the msg field to minimize the amount of data being transferred.
     uint32_t msg_size;
 
     // The amount of data actually being sent to user space. This may be less than msg_size if
     // data had to be truncated, or if the data was stripped because we only want to send metadata
     // (e.g. if the connection data tracking has been disabled).
     uint32_t msg_buf_size;
+
+    // Bytes we could not capture (gap size in the data stream buffer)
+    // Currently keeps track of cases where we exceed CHUNK_LIMIT or LOOP_LIMIT, or truncate in such
+    // a way that we create a gap. Should be 0 if incomplete_chunk enum is kFullyFormed.
+    uint32_t bytes_missed;
+
+    // Reason for incomplete chunk, if present.
+    enum chunk_t incomplete_chunk;
 
     // Whether to prepend length header to the buffer for messages first inferred as Kafka. MySQL
     // may also use this in this future.
