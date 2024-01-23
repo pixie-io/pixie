@@ -796,7 +796,7 @@ void ConnTracker::IterationPreTick(
   }
 
   // If remote_addr is missing, it means the connect/accept was not traced.
-  // Attempt to infer the connection information, to populate remote_addr.
+  // Attempt to infer the connection information, to populate remote_addr and local_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
 
