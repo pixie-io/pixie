@@ -810,18 +810,21 @@ class CodeGeneratorWriter:
         xml_file="amqp0-9-1.stripped.xml",
         generation_dir="generated_files",
         gen_template_dir="gen_templates",
+        clang_format_file="",
     ):
         bzl_base_path = "px/src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator/"
         r = runfiles.Create()
         xml_file = r.Rlocation(bzl_base_path + xml_file)
-        full_base_path = os.path.dirname(xml_file)
+        runfiles_base_path = os.path.dirname(xml_file)
+        full_base_path = os.getcwd()
 
+        self.clang_format_file = clang_format_file
         self.generation_dir = os.path.join(full_base_path, generation_dir)
-        self.template_dir = Path(os.path.join(full_base_path, gen_template_dir))
+        self.template_dir = Path(os.path.join(runfiles_base_path, gen_template_dir))
         os.makedirs(self.generation_dir, exist_ok=True)
         #  In order to prevent long strings like licenses, Jinja2 is used to render the files.
         #  Jinja2 is a template rendering engine(https://pypi.org/project/Jinja2/)
-        self.env = Environment(loader=FileSystemLoader(self.template_dir))
+        self.env = Environment(loader=FileSystemLoader(self.template_dir), keep_trailing_newline=True)
         self.generator = CodeGenerator(xml_file)
         self.types_gen_header_path = Path(self.generation_dir) / Path("types_gen.h")
         self.struct_gen_header_path = Path(self.generation_dir) / Path("decode.h")
@@ -928,13 +931,13 @@ class CodeGeneratorWriter:
         """
         Runs clang-format to format outputted c code
         """
-        if input("Use clang-format to format code[y/n]") != "y":
-            return
+        # if input("Use clang-format to format code[y/n]") != "y":
+        #     return
 
         p = subprocess.Popen(
             [
                 "clang-format",
-                "-style=Google",
+                f"-style=file:{self.clang_format_file}",
                 "-i",
                 str(self.struct_gen_header_path),
                 str(self.decode_gen_path),
