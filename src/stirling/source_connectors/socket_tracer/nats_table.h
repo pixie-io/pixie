@@ -31,6 +31,8 @@ constexpr DataElement kNATSElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        canonical_data_elements::kLocalAddr,
+        canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
         {"cmd", "The name of the command.",
          types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
@@ -55,6 +57,8 @@ constexpr int kTime = kNATSTable.ColIndex("time_");
 constexpr int kUPID = kNATSTable.ColIndex("upid");
 constexpr int kRemoteAddr = kNATSTable.ColIndex("remote_addr");
 constexpr int kRemotePort = kNATSTable.ColIndex("remote_port");
+constexpr int kLocalAddr = kNATSTable.ColIndex("local_addr");
+constexpr int kLocalPort = kNATSTable.ColIndex("local_port");
 constexpr int kRemoteRole = kNATSTable.ColIndex("trace_role");
 constexpr int kCMD = kNATSTable.ColIndex("cmd");
 constexpr int kOptions = kNATSTable.ColIndex("body");

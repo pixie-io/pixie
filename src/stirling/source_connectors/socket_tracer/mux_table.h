@@ -34,6 +34,8 @@ static constexpr DataElement kMuxElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        canonical_data_elements::kLocalAddr,
+        canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
         {"req_type", "Mux message request type",
          types::DataType::INT64,
