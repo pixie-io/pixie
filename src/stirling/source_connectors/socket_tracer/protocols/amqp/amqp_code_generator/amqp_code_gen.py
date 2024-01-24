@@ -931,9 +931,6 @@ class CodeGeneratorWriter:
         """
         Runs clang-format to format outputted c code
         """
-        # if input("Use clang-format to format code[y/n]") != "y":
-        #     return
-
         p = subprocess.Popen(
             [
                 "clang-format",
