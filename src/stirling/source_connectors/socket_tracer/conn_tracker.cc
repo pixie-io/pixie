@@ -102,7 +102,8 @@ void ConnTracker::AddConnOpenEvent(const socket_control_event_t& event) {
   }
   open_info_.timestamp_ns = event.timestamp_ns;
 
-  SetRemoteAddr(event.open.addr, "Inferred from conn_open.");
+  SetRemoteAddr(event.open.raddr, "Inferred from conn_open.");
+  SetLocalAddr(event.open.laddr, "Inferred from conn_open.");
 
   SetRole(event.open.role, "Inferred from conn_open.");
 
@@ -192,7 +193,8 @@ void UpdateProtocolMetrics(traffic_protocol_t protocol, const conn_stats_event_t
 
 void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
   SetRole(event.role, "inferred from conn_stats event");
-  SetRemoteAddr(event.addr, "conn_stats event");
+  SetRemoteAddr(event.raddr, "conn_stats event");
+  SetLocalAddr(event.laddr, "conn_stats event");
   UpdateTimestamps(event.timestamp_ns);
 
   CONN_TRACE(1) << absl::Substitute("ConnStats timestamp=$0 wr=$1 rd=$2 close=$3",
@@ -473,6 +475,17 @@ void ConnTracker::SetRemoteAddr(const union sockaddr_t addr, std::string_view re
     }
     CONN_TRACE(1) << absl::Substitute("RemoteAddr updated $0, reason=[$1]",
                                       open_info_.remote_addr.AddrStr(), reason);
+  }
+}
+
+void ConnTracker::SetLocalAddr(const union sockaddr_t addr, std::string_view reason) {
+  if (open_info_.local_addr.family == SockAddrFamily::kUnspecified) {
+    PopulateSockAddr(&addr.sa, &open_info_.local_addr);
+    if (addr.sa.sa_family == PX_AF_UNKNOWN) {
+      open_info_.local_addr.family = SockAddrFamily::kUnspecified;
+    }
+    CONN_TRACE(1) << absl::Substitute("LocalAddr updated $0, reason=[$1]",
+                                      open_info_.local_addr.AddrStr(), reason);
   }
 }
 
@@ -782,8 +795,8 @@ void ConnTracker::IterationPreTick(
     return;
   }
 
-  // If remote_addr is missing, it means the connect/accept was not traced.
-  // Attempt to infer the connection information, to populate remote_addr.
+  // If remote_addr is missing, it means the connect/accept syscall was not traced.
+  // Attempt to infer the connection information, to populate remote_addr and local_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
 
@@ -888,19 +901,26 @@ double ConnTracker::StitchFailureRate() const {
 
 namespace {
 
-Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr* addr) {
+Status ParseSocketInfoAddr(const system::SocketInfo& socket_info, SockAddr* remote_addr,
+                           SockAddr* local_addr) {
   switch (socket_info.family) {
     case AF_INET:
       PopulateInetAddr(std::get<struct in_addr>(socket_info.remote_addr), socket_info.remote_port,
-                       addr);
+                       remote_addr);
+      PopulateInetAddr(std::get<struct in_addr>(socket_info.local_addr), socket_info.local_port,
+                       local_addr);
       break;
     case AF_INET6:
       PopulateInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr), socket_info.remote_port,
-                        addr);
+                        remote_addr);
+      PopulateInet6Addr(std::get<struct in6_addr>(socket_info.local_addr), socket_info.local_port,
+                        local_addr);
       break;
     case AF_UNIX:
       PopulateUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
-                       socket_info.remote_port, addr);
+                       socket_info.remote_port, remote_addr);
+      PopulateUnixAddr(std::get<struct un_path_t>(socket_info.local_addr).path,
+                       socket_info.local_port, local_addr);
       break;
     default:
       return error::Internal("Unknown socket_info family: $0", socket_info.family);
@@ -1004,11 +1024,11 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // Success! Now copy the inferred socket information into the ConnTracker.
 
-  Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
+  Status s = ParseSocketInfoAddr(socket_info, &open_info_.remote_addr, &open_info_.local_addr);
   if (!s.ok()) {
     conn_resolver_.reset();
     conn_resolution_failed_ = true;
-    LOG(ERROR) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
+    LOG(ERROR) << absl::Substitute("Remote and local address (type=$0) parsing failed. Message: $1",
                                    socket_info.family, s.msg());
     return;
   }

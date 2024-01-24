@@ -54,7 +54,7 @@ class EventGenerator {
     conn_event.conn_id.fd = fd_;
     conn_event.conn_id.tsid = ++tsid_;
     conn_event.conn_id.upid.start_time_ticks = pid_start_time_ticks_;
-    conn_event.open.addr.sa.sa_family = AF_INET;
+    conn_event.open.raddr.sa.sa_family = AF_INET;
     conn_event.open.role = role;
     return conn_event;
   }
@@ -204,19 +204,19 @@ static constexpr std::string_view kHTTP2EndStreamDataFrame =
 void SetIPv4RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
                        uint16_t port = 123) {
   // Set an address that falls in the intra-cluster address range.
-  conn->open.addr.in4.sin_family = AF_INET;
-  conn->open.addr.in4.sin_port = htons(port);
+  conn->open.raddr.in4.sin_family = AF_INET;
+  conn->open.raddr.in4.sin_port = htons(port);
   // Note that address is outside of the CIDR block specified below.
-  PX_CHECK_OK(ParseIPv4Addr(addr_str, &conn->open.addr.in4.sin_addr));
+  PX_CHECK_OK(ParseIPv4Addr(addr_str, &conn->open.raddr.in4.sin_addr));
 }
 
 void SetIPv6RemoteAddr(struct socket_control_event_t* conn, std::string_view addr_str,
                        uint16_t port = 123) {
   // Set an address that falls in the intra-cluster address range.
-  conn->open.addr.in6.sin6_family = AF_INET6;
-  conn->open.addr.in6.sin6_port = htons(port);
+  conn->open.raddr.in6.sin6_family = AF_INET6;
+  conn->open.raddr.in6.sin6_port = htons(port);
   // Note that address is outside of the CIDR block specified below.
-  PX_CHECK_OK(ParseIPv6Addr(addr_str, &conn->open.addr.in6.sin6_addr));
+  PX_CHECK_OK(ParseIPv6Addr(addr_str, &conn->open.raddr.in6.sin6_addr));
 }
 
 }  // namespace testing

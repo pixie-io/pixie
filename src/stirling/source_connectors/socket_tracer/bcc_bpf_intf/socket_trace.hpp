@@ -49,7 +49,7 @@ inline std::string ToString(const close_event_t& event) {
 
 inline std::string ToString(const conn_event_t& event) {
   return absl::Substitute("[addr=$0]",
-                          ::px::ToString(reinterpret_cast<const struct sockaddr*>(&event.addr)));
+                          ::px::ToString(reinterpret_cast<const struct sockaddr*>(&event.raddr)));
 }
 
 inline std::string ToString(const socket_control_event_t& event) {
