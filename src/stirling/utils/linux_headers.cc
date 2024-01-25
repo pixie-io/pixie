@@ -214,7 +214,8 @@ StatusOr<std::filesystem::path> ResolvePossibleSymlinkToHostPath(const std::file
   std::error_code ec;
   const bool is_symlink = std::filesystem::is_symlink(p, ec);
   if (ec) {
-    return error::Internal(ec.message());
+    return error::NotFound(absl::Substitute("Did not find the host headers at path: $0, $1.",
+                                            p.string(), ec.message()));
   }
 
   if (!is_symlink) {
