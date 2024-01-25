@@ -338,6 +338,11 @@ class ConnTracker : NotCopyMoveable {
   const SockAddr& remote_endpoint() const { return open_info_.remote_addr; }
 
   /**
+   * Get local IP endpoint of the connection.
+   */
+  const SockAddr& local_endpoint() const { return open_info_.local_addr; }
+
+  /**
    * Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
    */
   const SocketOpen& conn() const { return open_info_; }
@@ -801,6 +806,8 @@ std::string DebugString(const ConnTracker& c, std::string_view prefix) {
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port());
+  info += absl::Substitute("$0local_addr=$1:$2\n", prefix, c.local_endpoint().AddrStr(),
+                           c.local_endpoint().port());
   info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
   if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
     info += c.http2_client_streams_.DebugString(absl::StrCat(prefix, "  "));

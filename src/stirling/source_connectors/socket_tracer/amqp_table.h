@@ -33,6 +33,8 @@ static constexpr DataElement kAMQPElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        canonical_data_elements::kLocalAddr,
+        canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
         {
         "frame_type", "AMQP request command",
