@@ -95,6 +95,7 @@ class Python310ContainerWrapper : public ::px::stirling::testing::Python310Conta
 struct TraceRecords {
   std::vector<http::Record> http_records;
   std::vector<std::string> remote_address;
+  std::vector<std::string> local_address;
 };
 
 template <typename TServerContainer>
@@ -126,7 +127,9 @@ class OpenSSLTraceTest : public SocketTraceBPFTestFixture</* TClientSideTracing 
         ToRecordVector<http::Record>(record_batch, server_record_indices);
     std::vector<std::string> remote_addresses =
         testing::GetRemoteAddrs(record_batch, server_record_indices);
-    return {std::move(http_records), std::move(remote_addresses)};
+    std::vector<std::string> local_address =
+        testing::GetLocalAddrs(record_batch, server_record_indices);
+    return {std::move(http_records), std::move(remote_addresses), std::move(local_address)};
   }
 
   TServerContainer server_;
@@ -200,6 +203,8 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   EXPECT_THAT(records.http_records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   EXPECT_THAT(records.remote_address, UnorderedElementsAre(StrEq("127.0.0.1")));
+  // Due to loopback, the local address is the same as the remote address.
+  EXPECT_THAT(records.local_address, UnorderedElementsAre(StrEq("127.0.0.1")));
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {

@@ -117,6 +117,15 @@ inline std::vector<std::string> GetRemoteAddrs(const types::ColumnWrapperRecordB
   return addrs;
 }
 
+inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBatch& rb,
+                                              const std::vector<size_t>& indices) {
+  std::vector<std::string> addrs;
+  for (size_t idx : indices) {
+    addrs.push_back(rb[kHTTPLocalAddrIdx]->Get<types::StringValue>(idx));
+  }
+  return addrs;
+}
+
 inline std::vector<int64_t> GetRemotePorts(const types::ColumnWrapperRecordBatch& rb,
                                            const std::vector<size_t>& indices) {
   std::vector<int64_t> addrs;
