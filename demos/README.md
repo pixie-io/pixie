@@ -92,7 +92,7 @@ file describes the demo scenarios.
 
 ## Updating the `px-mongo` demo
 
-1. Clone `https://github.com/kpattaswamy/mern-k8s`
+1. Clone `https://github.com/pixie-io/mern-k8s`
 
 2. (optional) Build the container images & update the individual yaml files.
 
