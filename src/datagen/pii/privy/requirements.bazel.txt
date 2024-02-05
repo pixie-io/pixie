@@ -2033,9 +2033,9 @@ stanza==1.5.0 \
     # via
     #   privy-presidio-utils
     #   spacy-stanza
-starlette==0.28.0 \
-    --hash=sha256:7bf3da5e997e796cc202cef2bd3f96a7d9b1e1943203c2fe2b42e020bc658482 \
-    --hash=sha256:e58b9fc402c579950260fbb6d57173395c4e62804c40d3ede7e9ef1074f0c579
+starlette==0.36.2 \
+    --hash=sha256:4134757b950f027c8f16028ec81787751bb44145df17c8b0fa84087b9851b42d \
+    --hash=sha256:e53e086e620ba715f0c187daca92927b722484d148e70921f0de075936119536
     # via
     #   schemathesis
     #   starlette-testclient
