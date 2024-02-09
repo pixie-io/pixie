@@ -247,8 +247,7 @@ class ConnTracker : NotCopyMoveable {
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void InferConnInfo(system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_mgr,
-                     bool remote_present = true);
+  void InferConnInfo(system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_mgr);
 
   /**
    * Processes the connection tracker, parsing raw events into frames,

@@ -39,6 +39,7 @@ bool FDResolver::Setup() {
   Status s = proc_parser_->ReadProcPIDFDLink(pid_, fd_, &fd_link_);
   if (!s.ok()) {
     VLOG(2) << absl::Substitute("Can't set-up connection inference [msg=$0].", s.msg());
+    LOG(ERROR) << absl::Substitute("Can't set-up connection inference [msg=$0].", s.msg());
     active_ = false;
     return false;
   }

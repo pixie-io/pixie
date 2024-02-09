@@ -797,12 +797,13 @@ void ConnTracker::IterationPreTick(
 
   // If remote_addr is missing, it means the connect/accept syscall was not traced.
   // Attempt to infer the connection information, to populate remote_addr and local_addr.
-  // if ((open_info_.remote_addr.family == SockAddrFamily::kUnspecified ||
-  //      (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
-  //       open_info_.local_addr.family == SockAddrFamily::kUnspecified)) &&
-  //     socket_info_mgr != nullptr) {
-  if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
-    // LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
+  if ((open_info_.remote_addr.family == SockAddrFamily::kUnspecified ||
+       (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
+        open_info_.local_addr.family == SockAddrFamily::kUnspecified)) &&
+      socket_info_mgr != nullptr) {
+    // if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr !=
+    // nullptr) {
+    //   LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
     InferConnInfo(proc_parser, socket_info_mgr);
 
     // TODO(oazizi): If connection resolves to SockAddr type "Other",
@@ -814,7 +815,7 @@ void ConnTracker::IterationPreTick(
       open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
                  << "Remote address: " << open_info_.remote_addr.AddrStr();
-    InferConnInfo(proc_parser, socket_info_mgr, true);
+    // InferConnInfo(proc_parser, socket_info_mgr, true);
     // InferLocalIPAddr();
   }
 
@@ -958,7 +959,7 @@ endpoint_role_t TranslateRole(system::ClientServerRole role) {
 }  // namespace
 
 void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                system::SocketInfoManager* socket_info_mgr, bool remote_present) {
+                                system::SocketInfoManager* socket_info_mgr) {
   DCHECK(proc_parser != nullptr);
   DCHECK(socket_info_mgr != nullptr);
 
@@ -975,10 +976,6 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   if (conn_resolver_ == nullptr) {
-    if (remote_present) {
-      LOG(ERROR) << "conn_resolver_ is null, but remote_present.";
-      return;
-    }
     conn_resolver_ = std::make_unique<FDResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
     bool success = conn_resolver_->Setup();
     if (!success) {
@@ -1010,6 +1007,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   std::optional<std::string_view> fd_link_opt =
       conn_resolver_->InferFDLink(last_activity_timestamp_);
   if (!fd_link_opt.has_value()) {
+    LOG(ERROR) << "FD link info not available yet. Need more time determine the fd link and "
+                  "resolve the connection.";
     if (!idle_iteration_) {
       // Only trace if there has been new activity.
       CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "

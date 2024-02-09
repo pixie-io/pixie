@@ -62,6 +62,11 @@ constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");
 constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
 constexpr int kPGSQLReqCmdIdx = kPGSQLTable.ColIndex("req_cmd");
 constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency");
+constexpr int kPGSQLLocalAddrIdx = kPGSQLTable.ColIndex("local_addr");
+constexpr int kPGSQLLocalPortIdx = kPGSQLTable.ColIndex("local_port");
+constexpr int kPGSQLRemoteAddrIdx = kPGSQLTable.ColIndex("remote_addr");
+constexpr int kPGSQLRemotePortIdx = kPGSQLTable.ColIndex("remote_port");
+constexpr int kPGSQLTraceRole = kPGSQLTable.ColIndex("trace_role");
 
 }  // namespace stirling
 }  // namespace px
