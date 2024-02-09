@@ -797,12 +797,25 @@ void ConnTracker::IterationPreTick(
 
   // If remote_addr is missing, it means the connect/accept syscall was not traced.
   // Attempt to infer the connection information, to populate remote_addr and local_addr.
+  // if ((open_info_.remote_addr.family == SockAddrFamily::kUnspecified ||
+  //      (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
+  //       open_info_.local_addr.family == SockAddrFamily::kUnspecified)) &&
+  //     socket_info_mgr != nullptr) {
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
+    // LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
     InferConnInfo(proc_parser, socket_info_mgr);
 
     // TODO(oazizi): If connection resolves to SockAddr type "Other",
     //               we should mark the state in BPF to Other too, so BPF stops tracing.
     //               We should also mark the ConnTracker for death.
+  }
+
+  if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
+      open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
+        LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
+                     << "Remote address: " << open_info_.remote_addr.AddrStr();
+    InferConnInfo(proc_parser, socket_info_mgr, true);
+    // InferLocalIPAddr();
   }
 
   UpdateState(cluster_cidrs);
@@ -945,27 +958,37 @@ endpoint_role_t TranslateRole(system::ClientServerRole role) {
 }  // namespace
 
 void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                system::SocketInfoManager* socket_info_mgr) {
+                                system::SocketInfoManager* socket_info_mgr, bool remote_present) {
   DCHECK(proc_parser != nullptr);
   DCHECK(socket_info_mgr != nullptr);
+
+  LOG(WARNING) << "Entering InferConnInfo.";
 
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
     // so don't waste any time...a connection only gets one chance.
     CONN_TRACE(2) << "Skipping connection inference (previous inference attempt failed, and won't "
                      "try again).";
+    LOG(ERROR) << "Skipping connection inference (previous inference attempt failed, and won't "
+                    "try again).";
     return;
   }
 
   if (conn_resolver_ == nullptr) {
+    if (remote_present) {
+      LOG(ERROR) << "conn_resolver_ is null, but remote_present.";
+      return;
+    }
     conn_resolver_ = std::make_unique<FDResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
     bool success = conn_resolver_->Setup();
     if (!success) {
       conn_resolver_.reset();
       conn_resolution_failed_ = true;
       CONN_TRACE(2) << "Can't infer remote endpoint. Setup failed.";
+      LOG(ERROR) << "Can't infer remote endpoint. Setup failed.";
     } else {
       CONN_TRACE(2) << "FDResolver has been created.";
+      LOG(WARNING) << "FDResolver has been created.";
     }
     // Return after Setup(), since we won't be able to infer until some time has elapsed.
     // This is because file descriptors can be re-used, and if we sample the FD just once,
@@ -980,6 +1003,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     conn_resolver_.reset();
     conn_resolution_failed_ = true;
     CONN_TRACE(2) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
+    LOG(ERROR) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
     return;
   }
 
@@ -990,6 +1014,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
       // Only trace if there has been new activity.
       CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
                        "resolve the connection.";
+      LOG(ERROR) << "FD link info not available yet. Need more time determine the fd link and "
+                      "resolve the connection.";
     }
     return;
   }
@@ -1005,6 +1031,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   // Here we disable such non-socket connections.
   if (!socket_inode_num_status.ok()) {
     Disable("Resolved the connection to a non-socket type.");
+    LOG(ERROR) << absl::Substitute("Resolved the connection to a non-socket type. Message: $0",
+                                     socket_inode_num_status.msg());
     conn_resolver_.reset();
     return;
   }
@@ -1018,6 +1046,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     conn_resolution_failed_ = true;
     CONN_TRACE(2) << absl::Substitute("Could not map inode to a connection. Message = $0",
                                       socket_info_status.msg());
+    LOG(ERROR) << absl::Substitute("Could not map inode to a connection. Message = $0",
+                                     socket_info_status.msg());
     return;
   }
   const system::SocketInfo& socket_info = *socket_info_status.ValueOrDie();
@@ -1032,6 +1062,10 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
                                    socket_info.family, s.msg());
     return;
   }
+  LOG(WARNING) << absl::Substitute("Remote and local address (type=$0) parsing succeeded.",
+                                   socket_info.family);
+  LOG(WARNING) << absl::Substitute("Remote address: $0, Local address: $1",
+                                   open_info_.remote_addr.AddrStr(), open_info_.local_addr.AddrStr());
 
   endpoint_role_t inferred_role = TranslateRole(socket_info.role);
   SetRole(inferred_role, "inferred from socket info");
