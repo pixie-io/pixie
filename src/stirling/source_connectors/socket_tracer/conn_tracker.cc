@@ -803,7 +803,17 @@ void ConnTracker::IterationPreTick(
       socket_info_mgr != nullptr) {
     // if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr !=
     // nullptr) {
-    //   LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
+    LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
+    // print the role (kClient or kServer) and the protocol (kProtocolHTTP, kProtocolMySQL, etc.)
+    LOG(WARNING) << "Role: " << magic_enum::enum_name(role_) << " Protocol: "
+                 << magic_enum::enum_name(protocol_);
+    if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
+        open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
+      LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
+                  << "Remote address: " << open_info_.remote_addr.AddrStr();
+      // InferConnInfo(proc_parser, socket_info_mgr, true);
+      // InferLocalIPAddr();
+    }
     InferConnInfo(proc_parser, socket_info_mgr);
 
     // TODO(oazizi): If connection resolves to SockAddr type "Other",
@@ -811,13 +821,6 @@ void ConnTracker::IterationPreTick(
     //               We should also mark the ConnTracker for death.
   }
 
-  if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
-      open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
-    LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
-                 << "Remote address: " << open_info_.remote_addr.AddrStr();
-    // InferConnInfo(proc_parser, socket_info_mgr, true);
-    // InferLocalIPAddr();
-  }
 
   UpdateState(cluster_cidrs);
 }
