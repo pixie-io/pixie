@@ -812,8 +812,8 @@ void ConnTracker::IterationPreTick(
 
   if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
       open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
-        LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
-                     << "Remote address: " << open_info_.remote_addr.AddrStr();
+    LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
+                 << "Remote address: " << open_info_.remote_addr.AddrStr();
     InferConnInfo(proc_parser, socket_info_mgr, true);
     // InferLocalIPAddr();
   }
@@ -970,7 +970,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     CONN_TRACE(2) << "Skipping connection inference (previous inference attempt failed, and won't "
                      "try again).";
     LOG(ERROR) << "Skipping connection inference (previous inference attempt failed, and won't "
-                    "try again).";
+                  "try again).";
     return;
   }
 
@@ -1015,7 +1015,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
       CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
                        "resolve the connection.";
       LOG(ERROR) << "FD link info not available yet. Need more time determine the fd link and "
-                      "resolve the connection.";
+                    "resolve the connection.";
     }
     return;
   }
@@ -1032,7 +1032,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (!socket_inode_num_status.ok()) {
     Disable("Resolved the connection to a non-socket type.");
     LOG(ERROR) << absl::Substitute("Resolved the connection to a non-socket type. Message: $0",
-                                     socket_inode_num_status.msg());
+                                   socket_inode_num_status.msg());
     conn_resolver_.reset();
     return;
   }
@@ -1047,7 +1047,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     CONN_TRACE(2) << absl::Substitute("Could not map inode to a connection. Message = $0",
                                       socket_info_status.msg());
     LOG(ERROR) << absl::Substitute("Could not map inode to a connection. Message = $0",
-                                     socket_info_status.msg());
+                                   socket_info_status.msg());
     return;
   }
   const system::SocketInfo& socket_info = *socket_info_status.ValueOrDie();
@@ -1065,7 +1065,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   LOG(WARNING) << absl::Substitute("Remote and local address (type=$0) parsing succeeded.",
                                    socket_info.family);
   LOG(WARNING) << absl::Substitute("Remote address: $0, Local address: $1",
-                                   open_info_.remote_addr.AddrStr(), open_info_.local_addr.AddrStr());
+                                   open_info_.remote_addr.AddrStr(),
+                                   open_info_.local_addr.AddrStr());
 
   endpoint_role_t inferred_role = TranslateRole(socket_info.role);
   SetRole(inferred_role, "inferred from socket info");
