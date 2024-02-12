@@ -25,7 +25,6 @@
 #include <string_view>
 #include <utility>
 
-#include "pgsql_table.h"
 #include "src/common/exec/exec.h"
 #include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/container_images/golang_sqlx_container.h"
@@ -89,11 +88,6 @@ std::vector<ReqRespCmd> RecordBatchToReqRespCmds(
   return res;
 }
 
-std::ostream& operator<<(std::ostream& os, const px::types::FixedSizedValueType<long>& value) {
-  os << value.val;
-  return os;
-}
-
 // TODO(yzhao): We want to test Stirling's behavior when intercept the middle of the traffic.
 // One way is to let SubProcess able to accept STDIN after launching. This test does not have that
 // capability because it's running a query from start to finish, which always establish new
@@ -120,14 +114,6 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   ASSERT_NOT_EMPTY_AND_GET_RECORDS(const types::ColumnWrapperRecordBatch& record_batch, tablets);
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
   ASSERT_THAT(indices, SizeIs(1));
-
-  LOG(WARNING) << AccessRecordBatch<types::StringValue>(record_batch, kPGSQLLocalAddrIdx,
-                                                        indices[0]);
-  LOG(WARNING) << AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRemoteAddrIdx,
-                                                        indices[0]);
-  LOG(WARNING) << AccessRecordBatch<types::Int64Value>(record_batch, kPGSQLRemotePortIdx,
-                                                       indices[0]);
-  LOG(WARNING) << AccessRecordBatch<types::Int64Value>(record_batch, kPGSQLTraceRole, indices[0]);
 
   EXPECT_THAT(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0]),
               HasSubstr("create table foo (field0 serial primary key);"
