@@ -32,6 +32,7 @@
 #include <absl/strings/numbers.h>
 #include <magic_enum.hpp>
 
+#include "conn_tracker.h"
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/proc_pid_path.h"
 #include "src/common/system/socket_info.h"
@@ -722,6 +723,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       break;
     case endpoint_role_t::kRoleClient: {
       if (cluster_cidrs.empty()) {
+        LOG(WARNING) << "No cluster CIDRs provided. Disabling client-side tracing.";
         CONN_TRACE(2) << "State not updated: MDS has not provided cluster CIDRs yet.";
         break;
       }
@@ -743,6 +745,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
              open_info_.remote_addr.family == SockAddrFamily::kIPv6);
 
       if (IsRemoteAddrInCluster(cluster_cidrs)) {
+        LOG(WARNING) << "Remote address is in cluster CIDRs. Disabling client-side tracing.";
         Disable("No client-side tracing: Remote endpoint is inside the cluster.");
         break;
       }
@@ -797,30 +800,26 @@ void ConnTracker::IterationPreTick(
 
   // If remote_addr is missing, it means the connect/accept syscall was not traced.
   // Attempt to infer the connection information, to populate remote_addr and local_addr.
-  if ((open_info_.remote_addr.family == SockAddrFamily::kUnspecified ||
-       (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
-        open_info_.local_addr.family == SockAddrFamily::kUnspecified)) &&
-      socket_info_mgr != nullptr) {
-    // if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr !=
-    // nullptr) {
-    LOG(WARNING) << "Remote address is unspecified. Attempting to infer from socket info.";
-    // print the role (kClient or kServer) and the protocol (kProtocolHTTP, kProtocolMySQL, etc.)
-    LOG(WARNING) << "Role: " << magic_enum::enum_name(role_) << " Protocol: "
-                 << magic_enum::enum_name(protocol_);
-    if (open_info_.remote_addr.family != SockAddrFamily::kUnspecified &&
-        open_info_.local_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
-      LOG(WARNING) << "Local address is unspecified, but remote address is specified. "
-                  << "Remote address: " << open_info_.remote_addr.AddrStr();
-      // InferConnInfo(proc_parser, socket_info_mgr, true);
-      // InferLocalIPAddr();
+  const bool raddr_found = open_info_.remote_addr.family != SockAddrFamily::kUnspecified;
+  const bool laddr_found = open_info_.local_addr.family != SockAddrFamily::kUnspecified;
+  const bool info_mgr_ok = socket_info_mgr != nullptr;
+
+  // only do if protocol is PGSQL
+  // if (protocol_ == kProtocolPGSQL) {
+    LOG(WARNING) << "Role: " << magic_enum::enum_name(role_)
+                 << " Protocol: " << magic_enum::enum_name(protocol_);
+    if (!raddr_found && info_mgr_ok) {
+      LOG(WARNING) << "NO Remote address. Attempting to infer from socket info.";
+      InferConnInfo(proc_parser, socket_info_mgr);
+    } else if (!laddr_found && info_mgr_ok) {
+      LOG(WARNING) << "NO Local address. "
+                   << "Remote address: " << open_info_.remote_addr.AddrStr();
+      InferConnInfo(proc_parser, socket_info_mgr, true);
     }
-    InferConnInfo(proc_parser, socket_info_mgr);
-
-    // TODO(oazizi): If connection resolves to SockAddr type "Other",
-    //               we should mark the state in BPF to Other too, so BPF stops tracing.
-    //               We should also mark the ConnTracker for death.
-  }
-
+  // }
+  // TODO(oazizi): If connection resolves to SockAddr type "Other",
+  //               we should mark the state in BPF to Other too, so BPF stops tracing.
+  //               We should also mark the ConnTracker for death.
 
   UpdateState(cluster_cidrs);
 }
@@ -918,26 +917,40 @@ double ConnTracker::StitchFailureRate() const {
 
 namespace {
 
-Status ParseSocketInfoAddr(const system::SocketInfo& socket_info, SockAddr* remote_addr,
-                           SockAddr* local_addr) {
+Status ParseSocketInfoLocalAddr(const system::SocketInfo& socket_info, SockAddr* local_addr) {
   switch (socket_info.family) {
     case AF_INET:
-      PopulateInetAddr(std::get<struct in_addr>(socket_info.remote_addr), socket_info.remote_port,
-                       remote_addr);
       PopulateInetAddr(std::get<struct in_addr>(socket_info.local_addr), socket_info.local_port,
                        local_addr);
       break;
     case AF_INET6:
-      PopulateInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr), socket_info.remote_port,
-                        remote_addr);
       PopulateInet6Addr(std::get<struct in6_addr>(socket_info.local_addr), socket_info.local_port,
                         local_addr);
       break;
     case AF_UNIX:
-      PopulateUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
-                       socket_info.remote_port, remote_addr);
       PopulateUnixAddr(std::get<struct un_path_t>(socket_info.local_addr).path,
                        socket_info.local_port, local_addr);
+      break;
+    default:
+      return error::Internal("Unknown socket_info family: $0", socket_info.family);
+  }
+
+  return Status::OK();
+}
+
+Status ParseSocketInfoRemoteAddr(const system::SocketInfo& socket_info, SockAddr* remote_addr) {
+  switch (socket_info.family) {
+    case AF_INET:
+      PopulateInetAddr(std::get<struct in_addr>(socket_info.remote_addr), socket_info.remote_port,
+                       remote_addr);
+      break;
+    case AF_INET6:
+      PopulateInet6Addr(std::get<struct in6_addr>(socket_info.remote_addr), socket_info.remote_port,
+                        remote_addr);
+      break;
+    case AF_UNIX:
+      PopulateUnixAddr(std::get<struct un_path_t>(socket_info.remote_addr).path,
+                       socket_info.remote_port, remote_addr);
       break;
     default:
       return error::Internal("Unknown socket_info family: $0", socket_info.family);
@@ -962,7 +975,8 @@ endpoint_role_t TranslateRole(system::ClientServerRole role) {
 }  // namespace
 
 void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                system::SocketInfoManager* socket_info_mgr) {
+                                system::SocketInfoManager* socket_info_mgr,
+                                bool parse_local_addr_only) {
   DCHECK(proc_parser != nullptr);
   DCHECK(socket_info_mgr != nullptr);
 
@@ -983,7 +997,9 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     bool success = conn_resolver_->Setup();
     if (!success) {
       conn_resolver_.reset();
-      conn_resolution_failed_ = true;
+      if (!parse_local_addr_only) {
+        conn_resolution_failed_ = true;
+      }
       CONN_TRACE(2) << "Can't infer remote endpoint. Setup failed.";
       LOG(ERROR) << "Can't infer remote endpoint. Setup failed.";
     } else {
@@ -1056,19 +1072,22 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // Success! Now copy the inferred socket information into the ConnTracker.
 
-  Status s = ParseSocketInfoAddr(socket_info, &open_info_.remote_addr, &open_info_.local_addr);
+  Status s = ParseSocketInfoLocalAddr(socket_info, &open_info_.local_addr);
   if (!s.ok()) {
-    conn_resolver_.reset();
-    conn_resolution_failed_ = true;
-    LOG(ERROR) << absl::Substitute("Remote and local address (type=$0) parsing failed. Message: $1",
+    LOG(ERROR) << absl::Substitute("LOCAL address (type=$0) parsing failed. Message: $1",
                                    socket_info.family, s.msg());
-    return;
   }
-  LOG(WARNING) << absl::Substitute("Remote and local address (type=$0) parsing succeeded.",
-                                   socket_info.family);
-  LOG(WARNING) << absl::Substitute("Remote address: $0, Local address: $1",
-                                   open_info_.remote_addr.AddrStr(),
-                                   open_info_.local_addr.AddrStr());
+  if (!parse_local_addr_only) {
+    Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
+    if (!s.ok()) {
+      // reset only if remote address is not found
+      conn_resolver_.reset();
+      conn_resolution_failed_ = true;
+      LOG(ERROR) << absl::Substitute("REMOTE address (type=$0) parsing failed. Message: $1",
+                                     socket_info.family, s.msg());
+      return;
+    }
+  }
 
   endpoint_role_t inferred_role = TranslateRole(socket_info.role);
   SetRole(inferred_role, "inferred from socket info");
