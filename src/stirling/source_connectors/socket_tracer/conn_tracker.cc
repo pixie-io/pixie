@@ -801,11 +801,11 @@ void ConnTracker::IterationPreTick(
   const bool laddr_found = open_info_.local_addr.family != SockAddrFamily::kUnspecified;
   const bool info_mgr_ok = socket_info_mgr != nullptr;
 
-  // TODO(oazizi): If connection resolves to SockAddr type "Other",
-  //               we should mark the state in BPF to Other too, so BPF stops tracing.
-  //               We should also mark the ConnTracker for death.
   if (!raddr_found && info_mgr_ok) {
     InferConnInfo(proc_parser, socket_info_mgr);
+    // TODO(oazizi): If connection resolves to SockAddr type "Other",
+    //               we should mark the state in BPF to Other too, so BPF stops tracing.
+    //               We should also mark the ConnTracker for death.
   } else if (!laddr_found && info_mgr_ok) {
     InferConnInfo(proc_parser, socket_info_mgr, true);
   }
