@@ -722,7 +722,6 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       break;
     case endpoint_role_t::kRoleClient: {
       if (cluster_cidrs.empty()) {
-        LOG(WARNING) << "No cluster CIDRs provided. Disabling client-side tracing.";
         CONN_TRACE(2) << "State not updated: MDS has not provided cluster CIDRs yet.";
         break;
       }
@@ -744,7 +743,6 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
              open_info_.remote_addr.family == SockAddrFamily::kIPv6);
 
       if (IsRemoteAddrInCluster(cluster_cidrs)) {
-        LOG(WARNING) << "Remote address is in cluster CIDRs. Disabling client-side tracing.";
         Disable("No client-side tracing: Remote endpoint is inside the cluster.");
         break;
       }
@@ -803,14 +801,14 @@ void ConnTracker::IterationPreTick(
   const bool laddr_found = open_info_.local_addr.family != SockAddrFamily::kUnspecified;
   const bool info_mgr_ok = socket_info_mgr != nullptr;
 
+  // TODO(oazizi): If connection resolves to SockAddr type "Other",
+  //               we should mark the state in BPF to Other too, so BPF stops tracing.
+  //               We should also mark the ConnTracker for death.
   if (!raddr_found && info_mgr_ok) {
     InferConnInfo(proc_parser, socket_info_mgr);
   } else if (!laddr_found && info_mgr_ok) {
     InferConnInfo(proc_parser, socket_info_mgr, true);
   }
-  // TODO(oazizi): If connection resolves to SockAddr type "Other",
-  //               we should mark the state in BPF to Other too, so BPF stops tracing.
-  //               We should also mark the ConnTracker for death.
 
   UpdateState(cluster_cidrs);
 }
