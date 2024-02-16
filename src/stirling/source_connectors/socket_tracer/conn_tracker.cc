@@ -801,13 +801,11 @@ void ConnTracker::IterationPreTick(
   const bool laddr_found = open_info_.local_addr.family != SockAddrFamily::kUnspecified;
   const bool info_mgr_ok = socket_info_mgr != nullptr;
 
-  if (!raddr_found && info_mgr_ok) {
+  if ((!raddr_found || !laddr_found) && info_mgr_ok) {
     InferConnInfo(proc_parser, socket_info_mgr);
     // TODO(oazizi): If connection resolves to SockAddr type "Other",
     //               we should mark the state in BPF to Other too, so BPF stops tracing.
     //               We should also mark the ConnTracker for death.
-  } else if (!laddr_found && info_mgr_ok) {
-    InferConnInfo(proc_parser, socket_info_mgr, true);
   }
 
   UpdateState(cluster_cidrs);
@@ -964,10 +962,12 @@ endpoint_role_t TranslateRole(system::ClientServerRole role) {
 }  // namespace
 
 void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                system::SocketInfoManager* socket_info_mgr,
-                                bool parse_local_addr_only) {
+                                system::SocketInfoManager* socket_info_mgr) {
   DCHECK(proc_parser != nullptr);
   DCHECK(socket_info_mgr != nullptr);
+
+  const bool raddr_found = open_info_.remote_addr.family != SockAddrFamily::kUnspecified;
+  const bool laddr_found = open_info_.local_addr.family != SockAddrFamily::kUnspecified;
 
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
@@ -982,7 +982,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     bool success = conn_resolver_->Setup();
     if (!success) {
       conn_resolver_.reset();
-      if (!parse_local_addr_only) {
+      if (!raddr_found) {
         conn_resolution_failed_ = true;
       }
       CONN_TRACE(2) << "Can't infer remote endpoint. Setup failed.";
@@ -1046,15 +1046,16 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // Success! Now copy the inferred socket information into the ConnTracker.
 
-  Status s = ParseSocketInfoLocalAddr(socket_info, &open_info_.local_addr);
-  if (!s.ok()) {
-    CONN_TRACE(2) << absl::Substitute("Local address (type=$0) parsing failed. Message: $1",
-                                      socket_info.family, s.msg());
+  if (!laddr_found) {
+    Status s = ParseSocketInfoLocalAddr(socket_info, &open_info_.local_addr);
+    if (!s.ok()) {
+      CONN_TRACE(2) << absl::Substitute("Local address (type=$0) parsing failed. Message: $1",
+                                        socket_info.family, s.msg());
+    }
   }
-  if (!parse_local_addr_only) {
+  if (!raddr_found) {
     Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
     if (!s.ok()) {
-      // reset only if remote address is not found
       conn_resolver_.reset();
       conn_resolution_failed_ = true;
       CONN_TRACE(2) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
