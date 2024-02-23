@@ -475,6 +475,27 @@ pl_cc_bpf_test(
 )
 
 pl_cc_bpf_test(
+    name = "nodejs_trace_bpf_test",
+    timeout = "long",
+    srcs = ["nodejs_trace_bpf_test.cc"],
+    flaky = True,
+    shard_count = 2,
+    tags = [
+        "cpu:16",
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:acorn_node14_container",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:curl_container",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_bpf_test(
     name = "boringssl_trace_bpf_test",
     timeout = "long",
     srcs = ["boringssl_trace_bpf_test.cc"],
