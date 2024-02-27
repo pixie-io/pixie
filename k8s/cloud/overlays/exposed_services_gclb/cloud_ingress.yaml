@@ -10,7 +10,7 @@ spec:
   rules:
   - http:
       paths:
-      # GCP does not support multiple wildcards so unfortunately we need this for each
+      # GCP does not support multiple wildcards, so unfortunately we need this for each
       # GRPC API service.
       - path: /pl.cloudapi.ArtifactTracker/
         pathType: Prefix

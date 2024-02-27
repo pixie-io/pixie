@@ -136,7 +136,7 @@ All commit signatures must be verified to ensure that commits are coming from a 
 
 ##### Setup pinentry-tty to handle headless environments
 
-When signing commits, gpg will need your passphrase to unlock the keyring. It usually uses a GUI pinentry program to do so. However on headless environments, this gets messy, so we highly recommend switching gpg to use a tty based pinentry to ease these problems.
+When signing commits, gpg will need your passphrase to unlock the keyring. It usually uses a GUI pinentry program to do so. However, on headless environments, this gets messy, so we highly recommend switching gpg to use a tty based pinentry to ease these problems.
 
 ```
 echo "pinentry-program $(which pinentry-tty)" >> ~/.gnupg/gpg-agent.conf
