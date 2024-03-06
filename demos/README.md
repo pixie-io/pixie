@@ -99,7 +99,7 @@ file describes the demo scenarios.
 3. Build a single yaml file for the demo:
 
     ```shell
-    kustomize . > mongodb.yaml
+    kustomize build . > mongodb.yaml
     ```
 
 4. Copy the yaml file to `pixie/demos/mongodb`.

@@ -58,7 +58,7 @@
             " Use the px/mongodb_data and px/http_data scripts to view the backend API and MongoDB traffic",
             " flowing through the demo app.",
             "",
-            " Note: The Vizier version must be later than v0.14.7."
+            " Note: The Vizier version must be v0.14.8 or later."
         ]
     }
 }
