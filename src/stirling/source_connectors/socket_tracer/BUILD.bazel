@@ -32,6 +32,7 @@ pl_cc_library(
         "//src/common/exec:cc_library",
         "//src/common/grpcutils:cc_library",
         "//src/common/metrics:cc_library",
+        "//src/common/system:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
         "//src/stirling/obj_tools:cc_library",

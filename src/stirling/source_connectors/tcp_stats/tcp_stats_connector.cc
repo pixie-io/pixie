@@ -24,6 +24,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/inet_utils.h"
+#include "src/common/system/kernel_version.h"
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/tcp_stats/tcp_stats.h"
 
@@ -37,14 +38,17 @@ namespace stirling {
 constexpr uint32_t kPerfBufferPerCPUSizeBytes = 50 * 1024 * 1024;
 
 using ProbeType = bpf_tools::BPFProbeAttachType;
+
 const auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
     {{"tcp_sendmsg", ProbeType::kEntry, "probe_entry_tcp_sendmsg", /*is_syscall*/ false},
      {"tcp_sendmsg", ProbeType::kReturn, "probe_ret_tcp_sendmsg", /*is_syscall*/ false},
-     {"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
-     {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false},
      {"tcp_cleanup_rbuf", ProbeType::kEntry, "probe_entry_tcp_cleanup_rbuf", /*is_syscall*/ false},
      {"tcp_retransmit_skb", ProbeType::kEntry, "probe_entry_tcp_retransmit_skb",
       /*is_syscall*/ false}});
+
+const auto kSendPageProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
+    {{"tcp_sendpage", ProbeType::kEntry, "probe_entry_tcp_sendpage", /*is_syscall*/ false},
+     {"tcp_sendpage", ProbeType::kReturn, "probe_ret_tcp_sendpage", /*is_syscall*/ false}});
 
 void HandleTcpEvent(void* cb_cookie, void* data, int /*data_size*/) {
   auto* connector = reinterpret_cast<TCPStatsConnector*>(cb_cookie);
@@ -66,10 +70,15 @@ Status TCPStatsConnector::InitImpl() {
        bpf_tools::PerfBufferSizeCategory::kData},
   });
 
+  const auto kernel = system::GetCachedKernelVersion();
+
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(tcpstats_bcc_script));
   PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kProbeSpecs));
+  if (kernel.version < 6 || (kernel.version == 6 && kernel.major_rev < 5)) {
+    PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kSendPageProbeSpecs));
+  }
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
   return Status::OK();
