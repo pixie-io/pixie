@@ -70,14 +70,17 @@ Status TCPStatsConnector::InitImpl() {
        bpf_tools::PerfBufferSizeCategory::kData},
   });
 
-  const auto kernel = system::GetCachedKernelVersion();
-
   sampling_freq_mgr_.set_period(kSamplingPeriod);
   push_freq_mgr_.set_period(kPushPeriod);
   PX_RETURN_IF_ERROR(bcc_->InitBPFProgram(tcpstats_bcc_script));
   PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kProbeSpecs));
-  if (kernel.version < 6 || (kernel.version == 6 && kernel.major_rev < 5)) {
-    PX_RETURN_IF_ERROR(bcc_->AttachKProbes(kSendPageProbeSpecs));
+  const auto sendpage_attach_status = bcc_->AttachKProbes(kSendPageProbeSpecs);
+  if (!sendpage_attach_status.ok()) {
+    const auto kernel_version = system::GetCachedKernelVersion();
+    LOG(INFO) << absl::Substitute(
+        "Could not attach tcp_sendpage probes: $0, detected kernel version: $1. Note: tcp_sendpage "
+        "was removed in Kernel 6.5.",
+        sendpage_attach_status.msg(), kernel_version.ToString());
   }
   PX_RETURN_IF_ERROR(bcc_->OpenPerfBuffers(perf_buffer_specs));
   LOG(INFO) << absl::Substitute("Successfully deployed $0 kprobes.", kProbeSpecs.size());
