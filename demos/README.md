@@ -90,6 +90,20 @@ file describes the demo scenarios.
 
 6. Replace all occurrences of the k8ssandra-operator namespace. At the time of this writing, the areas to search and replace include the namespace field for a given resource in addition to the cert-manager annotations (cert-manager.io/inject-ca-from). Note: there may be kustomize variables used for the cert-manager.io/inject-ca-from annotation, so ensure all usages reference the px-k8ssandra namespace.
 
+## Updating the `px-mongo` demo
+
+1. Clone `https://github.com/pixie-io/mern-k8s`
+
+2. (optional) Build the container images & update the individual yaml files.
+
+3. Build a single yaml file for the demo:
+
+    ```shell
+    kustomize build . > mongodb.yaml
+    ```
+
+4. Copy the yaml file to `pixie/demos/mongodb`.
+
 ## Updating the `px-finagle` demo
 
 1. Clone `https://github.com/pixie-io/finagle-helloworld`
