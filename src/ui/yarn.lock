@@ -2798,7 +2798,7 @@ __metadata:
     jest: ^27.3.1
     jest-junit: ^13.0.0
     jest-raw-loader: ^1.0.1
-    jose: ^4.9.3
+    jose: ^4.15.5
     launchdarkly-react-client-sdk: ^2.20.0
     license-checker: ^25.0.1
     mini-css-extract-plugin: ^1.3.1
@@ -10234,10 +10234,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^4.9.3":
-  version: 4.9.3
-  resolution: "jose@npm:4.9.3"
-  checksum: 95865830768dcf82774d19e92dc854c5bc9dc5d9c9626a65a2974272e3aca5d2f56678611943f85802431d2d6d6f8bff9548b7cdb7578e6fe61529bd9c82e1d3
+"jose@npm:^4.15.5":
+  version: 4.15.5
+  resolution: "jose@npm:4.15.5"
+  checksum: 7dde76447c7707bd4b448f914b216f3858e701aa83f00447434252461af5b9e159dcbffb88badea3f9616739526763581267c9560622f0a058df8d68c86d7f79
   languageName: node
   linkType: hard
 
