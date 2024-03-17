@@ -20,6 +20,7 @@
 
 #include <string>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/utils/parse_state.h"
 
 // Choose either the pico or custom implementation of the chunked HTTP body decoder.
@@ -41,7 +42,7 @@ namespace http {
  *         ParseState::kSuccess if the chunk length was extracted and chunk header is well-formed.
  */
 ParseState ParseChunked(std::string_view* buf, size_t body_size_limit_bytes, std::string* result,
-                        size_t* body_size);
+                        size_t* body_size, bool lazy_parsing_enabled = false);
 
 /**
  * Parse an HTTP body based on Content-Length.
@@ -55,7 +56,8 @@ ParseState ParseChunked(std::string_view* buf, size_t body_size_limit_bytes, std
  *         ParseState::kSuccess if the entire body is present and well-formed.
  */
 ParseState ParseContent(std::string_view content_len_str, std::string_view* data,
-                        size_t body_size_limit_bytes, std::string* result, size_t* body_size);
+                        size_t body_size_limit_bytes, std::string* result, size_t* body_size,
+                        bool lazy_parsing_enabled = false);
 
 }  // namespace http
 }  // namespace protocols

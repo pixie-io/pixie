@@ -48,7 +48,7 @@ struct TestFrame : public FrameBase {
 
 template <>
 ParseState ParseFrame(message_type_t /* type */, std::string_view* buf, TestFrame* frame,
-                      NoState* /*state*/) {
+                      NoState* /*state*/, bool /*lazy_parsing_enabled*/) {
   size_t pos = buf->find(",");
   if (pos == buf->npos) {
     return ParseState::kNeedsMoreData;

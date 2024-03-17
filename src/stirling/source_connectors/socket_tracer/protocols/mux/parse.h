@@ -33,7 +33,8 @@ ParseState ParseFullFrame(BinaryDecoder* decoder, Frame* frame);
 }
 
 template <>
-ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState*);
+ParseState ParseFrame(message_type_t type, std::string_view* buf, mux::Frame* frame, NoState*,
+                      bool lazy_parsing_enabled);
 
 template <>
 size_t FindFrameBoundary<mux::Frame>(message_type_t type, std::string_view buf, size_t start_pos,
