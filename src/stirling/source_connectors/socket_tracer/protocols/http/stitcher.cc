@@ -68,6 +68,11 @@ void PreProcessMessage(Message* message) {
     }
   }
 
+  if (message->type == message_type_t::kRequest &&
+      content_type_iter->second == "application/x-www-form-urlencoded") {
+    message->body = HTTPUrlDecode(message->body);
+  }
+
   auto content_encoding_iter = message->headers.find(kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->headers.end() && content_encoding_iter->second == "gzip") {

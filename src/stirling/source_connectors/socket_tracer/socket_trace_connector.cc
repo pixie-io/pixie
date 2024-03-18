@@ -1255,6 +1255,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Currently decompresses gzip content, but could handle other transformations too.
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   protocols::http::PreProcessMessage(&resp_message);
+  protocols::http::PreProcessMessage(&req_message);
 
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);

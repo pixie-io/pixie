@@ -203,6 +203,7 @@ pl_cc_bpf_test(
         ":cc_library",
         "//src/common/exec:cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
+        "//src/stirling/source_connectors/socket_tracer/testing/container_images:curl_container",
         "//src/stirling/testing:cc_library",
         "//src/stirling/testing/demo_apps/go_http:go_http_fixture",
     ],
