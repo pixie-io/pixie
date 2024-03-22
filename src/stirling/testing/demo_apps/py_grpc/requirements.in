@@ -2,4 +2,4 @@
 # C tracing feature. Changing these versions might cause Pixie not able to trace the produced docker
 # containers.
 protobuf==3.20.3
-grpcio==1.19.0
+grpcio==1.53.0
