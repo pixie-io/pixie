@@ -32,7 +32,7 @@ using ::testing::Contains;
 using ::testing::Pair;
 using ::testing::StrEq;
 
-TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
+TEST(PreProcessRespRecordTest, GzipCompressedContentIsDecompressed) {
   Message message;
   message.type = message_type_t::kResponse;
   message.headers.insert({kContentEncoding, "gzip"});
@@ -43,7 +43,7 @@ TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
                                       0xc0, 0xfa, 0x0f, 0x00, 0x00, 0x00};
   message.body.assign(reinterpret_cast<const char*>(compressed_bytes), sizeof(compressed_bytes));
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_EQ("This is a test\n", message.body);
 }
 
@@ -70,17 +70,17 @@ std::string HTTPUrlEncode(std::string_view input) {
   return encoded;
 }
 
-TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
+TEST(PreProcessRespRecordTest, ContentHeaderIsNotAdded) {
   Message message;
   message.type = message_type_t::kResponse;
   message.body = "test";
   message.headers.insert({kContentType, "text"});
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_EQ("<removed: non-text content-type>", message.body);
   EXPECT_THAT(message.headers, Contains(Pair(kContentType, "text")));
 }
 
-TEST(PreProcessRecordTest, FormUrlEncodedDataIsDecoded) {
+TEST(PreProcessReqRecordTest, FormUrlEncodedDataIsDecoded) {
   std::map<std::string, std::vector<std::string>> payload = {
       {"commands", {"nested1", "nested2"}},
       {"params", {"name", "email"}},
@@ -90,18 +90,18 @@ TEST(PreProcessRecordTest, FormUrlEncodedDataIsDecoded) {
   message.type = message_type_t::kRequest;
   message.body = HTTPUrlEncode(json_str);
   message.headers.insert({kContentType, "application/x-www-form-urlencoded"});
-  PreProcessMessage(&message);
+  PreProcessReqMessage(&message);
   EXPECT_EQ(json_str, message.body);
   EXPECT_THAT(message.headers, Contains(Pair(kContentType, "application/x-www-form-urlencoded")));
 }
 
 // Tests that when body-size is 0, the message body won't be rewritten.
-TEST(PreProcessRecordTest, ZeroSizedBodyNotRewritten) {
+TEST(PreProcessRespRecordTest, ZeroSizedBodyNotRewritten) {
   Message message;
   message.type = message_type_t::kResponse;
   message.body_size = 0;
   EXPECT_THAT(message.body, StrEq("-"));
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_THAT(message.body, StrEq("-"));
 }
 
