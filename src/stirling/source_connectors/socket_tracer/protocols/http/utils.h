@@ -59,6 +59,8 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  */
 bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter);
 
+std::string HTTPUrlDecode(std::string_view input);
+
 /**
  * Detects the content-type of an HTTP message. Currently only checks for JSON.
  */
