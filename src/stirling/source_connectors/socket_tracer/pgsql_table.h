@@ -34,6 +34,7 @@ static constexpr DataElement kPGSQLElements[] = {
         canonical_data_elements::kLocalAddr,
         canonical_data_elements::kLocalPort,
         canonical_data_elements::kTraceRole,
+        canonical_data_elements::kEncrypted,
         {"req_cmd", "PostgreSQL request command code",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
