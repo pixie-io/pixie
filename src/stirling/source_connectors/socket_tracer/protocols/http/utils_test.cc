@@ -76,6 +76,29 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
   }
 }
 
+TEST(HTTPUrlDecode, Decode) {
+  std::string input =
+      "action=%7B%0A++%22commands%22%3A+%5B%0A++++%7B%0A++++++%22server%22%3A+%22api.use-case.svc."
+      "cluster.local%3A5011%22%2C%0A++++++%22action%22%3A+%22req2%22%2C%0A++++++%22telemetry";
+  std::string expected = R"(action={
+  "commands": [
+    {
+      "server": "api.use-case.svc.cluster.local:5011",
+      "action": "req2",
+      "telemetry)";
+  EXPECT_EQ(HTTPUrlDecode(input), expected);
+}
+
+TEST(HTTPUrlDecode, DecodeTruncatedInput) {
+  // Use input that has its first % encoded hex digit removed
+  std::string truncated_first_digit = "action=%";
+  EXPECT_EQ(HTTPUrlDecode(truncated_first_digit), truncated_first_digit);
+
+  // Use input that has its second % encoded hex digit removed
+  std::string truncated_second_digit = "action=%7";
+  EXPECT_EQ(HTTPUrlDecode(truncated_second_digit), truncated_second_digit);
+}
+
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling

@@ -19,6 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/common/json/json.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/stitcher.h"
 
 namespace px {
@@ -26,11 +27,12 @@ namespace stirling {
 namespace protocols {
 namespace http {
 
+using ::px::utils::ToJSONString;
 using ::testing::Contains;
 using ::testing::Pair;
 using ::testing::StrEq;
 
-TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
+TEST(PreProcessRespRecordTest, GzipCompressedContentIsDecompressed) {
   Message message;
   message.type = message_type_t::kResponse;
   message.headers.insert({kContentEncoding, "gzip"});
@@ -41,27 +43,65 @@ TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
                                       0xc0, 0xfa, 0x0f, 0x00, 0x00, 0x00};
   message.body.assign(reinterpret_cast<const char*>(compressed_bytes), sizeof(compressed_bytes));
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_EQ("This is a test\n", message.body);
 }
 
-TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
+// Determines if the character should be percent encoded accoridng to the URL
+// encoding spec https://en.wikipedia.org/wiki/Percent-encoding
+bool IsUnreservedChar(unsigned char c) {
+  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A) ||
+         c == '-' || c == '_' || c == '.' || c == '~';
+}
+
+constexpr unsigned char hex[] = "0123456789ABCDEF";
+
+std::string HTTPUrlEncode(std::string_view input) {
+  std::string encoded = "";
+  for (auto c : input) {
+    if (IsUnreservedChar(c)) {
+      encoded.push_back(c);
+    } else {
+      encoded.push_back('%');
+      encoded.push_back(hex[c >> 4]);
+      encoded.push_back(hex[c & 0xf]);
+    }
+  }
+  return encoded;
+}
+
+TEST(PreProcessRespRecordTest, ContentHeaderIsNotAdded) {
   Message message;
   message.type = message_type_t::kResponse;
   message.body = "test";
   message.headers.insert({kContentType, "text"});
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_EQ("<removed: non-text content-type>", message.body);
   EXPECT_THAT(message.headers, Contains(Pair(kContentType, "text")));
 }
 
+TEST(PreProcessReqRecordTest, FormUrlEncodedDataIsDecoded) {
+  std::map<std::string, std::vector<std::string>> payload = {
+      {"commands", {"nested1", "nested2"}},
+      {"params", {"name", "email"}},
+  };
+  auto json_str = ToJSONString(payload);
+  Message message;
+  message.type = message_type_t::kRequest;
+  message.body = HTTPUrlEncode(json_str);
+  message.headers.insert({kContentType, "application/x-www-form-urlencoded"});
+  PreProcessReqMessage(&message);
+  EXPECT_EQ(json_str, message.body);
+  EXPECT_THAT(message.headers, Contains(Pair(kContentType, "application/x-www-form-urlencoded")));
+}
+
 // Tests that when body-size is 0, the message body won't be rewritten.
-TEST(PreProcessRecordTest, ZeroSizedBodyNotRewritten) {
+TEST(PreProcessRespRecordTest, ZeroSizedBodyNotRewritten) {
   Message message;
   message.type = message_type_t::kResponse;
   message.body_size = 0;
   EXPECT_THAT(message.body, StrEq("-"));
-  PreProcessMessage(&message);
+  PreProcessRespMessage(&message);
   EXPECT_THAT(message.body, StrEq("-"));
 }
 
