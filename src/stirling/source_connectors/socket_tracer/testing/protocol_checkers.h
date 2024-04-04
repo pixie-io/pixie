@@ -126,6 +126,15 @@ inline std::vector<std::string> GetLocalAddrs(const types::ColumnWrapperRecordBa
   return addrs;
 }
 
+inline std::vector<bool> GetEncrypted(const types::ColumnWrapperRecordBatch& rb,
+                                      const int encrypted_idx, const std::vector<size_t>& indices) {
+  std::vector<bool> encrypted;
+  for (size_t idx : indices) {
+    encrypted.push_back(rb[encrypted_idx]->Get<types::BoolValue>(idx).val);
+  }
+  return encrypted;
+}
+
 inline std::vector<int64_t> GetRemotePorts(const types::ColumnWrapperRecordBatch& rb,
                                            const std::vector<size_t>& indices) {
   std::vector<int64_t> addrs;
