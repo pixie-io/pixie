@@ -23,7 +23,7 @@ The Governance Board and its Members play a special role in certain situations. 
 
 ### Board Membership
 
-All community and end-user community member positions are appointed for 12-months and are expected to rotate under the consensus and discretion of the board members.
+All community and end-user community member positions are appointed for 12-months and are expected to rotate under the consensus and discretion of the board members. The project members of the governance board are decided by a vote from the maintainers every 12 months.
 
 To become eligible for a Community Member board position, an individual should meet some of the following criteria:
 -   Be a Project Contributor who has produced contributions that are substantial in quality and quantity.
