@@ -126,5 +126,4 @@ Changes to the governance documents are submitted via a GitHub pull request to T
 
 ## Credits
 
-Sections of this document have been borrowed from [Volcano](https://github.com/volcano-sh/volcano/blob/master/GOVERNANCE.md) and [CoreDNS](https://github.com/coredns/coredns/blob/master/GOVERNANCE.md).
-
+Sections of this document have been borrowed from [Volcano](https://github.com/volcano-sh/volcano/blob/master/GOVERNANCE.md) and [CoreDNS](https://github.com/coredns/coredns/blob/master/GOVERNANCE.md)
