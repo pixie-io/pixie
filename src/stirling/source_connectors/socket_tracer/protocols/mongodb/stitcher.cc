@@ -183,7 +183,8 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       ++erase_until_iter;
     }
 
-    // Determine whether to clear the StreamID from the map or only the frames that have been consumed.
+    // Determine whether to clear the StreamID from the map or only the frames that have been
+    // consumed.
     if (erase_until_iter == req_deque.end()) {
       reqs->erase(stream_id);
     } else {
