@@ -183,7 +183,13 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
       ++erase_until_iter;
     }
 
-    req_deque.erase(req_deque.begin(), erase_until_iter);
+    // Determine whether to clear the StreamID from the map or only the frames that have been
+    // consumed.
+    if (erase_until_iter == req_deque.end()) {
+      reqs->erase(stream_id);
+    } else {
+      req_deque.erase(req_deque.begin(), erase_until_iter);
+    }
     stream_id_pair.second = true;
   }
 
@@ -195,8 +201,10 @@ RecordsWithErrorCount<mongodb::Record> StitchFrames(
         error_count++;
       }
     }
-    resp_deque.clear();
   }
+
+  // Clear the response map.
+  resps->clear();
 
   // Clear the state.
   auto it = state->stream_order.begin();
