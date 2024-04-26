@@ -124,7 +124,6 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
     iter++;
   }
   agg_stats->clear();
-
 }
 }  // namespace stirling
 }  // namespace px
