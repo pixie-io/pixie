@@ -76,17 +76,14 @@ class SignalAction : public NotCopyable {
    * Makes sure that it is a multiple of the system page size.
    */
   size_t DetermineAltStackSize() const {
-    auto min_stack_size = static_cast<size_t>(MINSIGSTKSZ);
+    // The size of altstack_ should be at least 4 * page size or size MINSIGSTKSZ if it is
+    // greater. This size needs to be a multiple of the system page size.
+    const size_t page_size = px::system::Config::GetInstance().PageSizeBytes();
+    const size_t min_altstack_size = 4 * page_size;
+    const size_t sig_page_count = IntRoundUpDivide(static_cast<size_t>(MINSIGSTKSZ), page_size);
+    const size_t sig_stack_size = sig_page_count * page_size;
 
-    if (guard_size_ * 4 > min_stack_size) {
-      return guard_size_ * 4;
-    }
-
-    if (min_stack_size % guard_size_ != 0) {
-      min_stack_size += guard_size_ - (min_stack_size % guard_size_);
-    }
-
-    return min_stack_size;
+    return std::max(min_altstack_size, sig_stack_size);
   }
   /**
    * Signal handlers will be installed for these signals which have a fatal outcome.
