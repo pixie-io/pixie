@@ -16,7 +16,7 @@
 
 git '/opt/px_dev/tools/arcanist' do
   repository 'https://github.com/phacility/arcanist.git'
-  revision 'stable'
+  revision 'master'
   action :sync
 end
 
