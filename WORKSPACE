@@ -80,6 +80,10 @@ load("//bazel:pl_workspace.bzl", "pl_container_images", "pl_model_files", "pl_wo
 
 pl_workspace_setup()
 
+load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+
+py_repositories()
+
 # The pip_deps rule cannot be loaded until we load all the basic packages in the Pixie
 # workspace. Also, bazel requires that loads are done at the top level (not in a function), so
 # we need to pull it out over here.
@@ -136,10 +140,9 @@ tf_workspace0()
 
 pl_model_files()
 
-load("@rules_python//python:repositories.bzl", "python_register_toolchains")
-
 python_register_toolchains(
     name = "python3_10",
+    ignore_root_user_error = True,
     # Available versions are listed in @rules_python//python:versions.bzl.
     # We recommend using the same version your team is already standardized on.
     python_version = "3.10",
@@ -160,6 +163,7 @@ vizier_api_install_deps()
 
 pip_parse(
     name = "pxapi_python_doc_deps",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/api/python/doc:requirements.bazel.txt",
 )
 
@@ -250,6 +254,7 @@ go_download_sdk(
 
 pip_parse(
     name = "amqp_gen_reqs",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/protocols/amqp/amqp_code_generator:requirements.bazel.txt",
 )
 
@@ -259,6 +264,7 @@ amp_gen_install_deps()
 
 pip_parse(
     name = "protocol_inference",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/protocol_inference:requirements.bazel.txt",
 )
 
@@ -275,6 +281,7 @@ py_image_repos()
 
 pip_parse(
     name = "amqp_bpf_test_requirements",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/amqp:requirements.bazel.txt",
 )
 
@@ -300,6 +307,7 @@ px_deps_pinned_maven_install()
 
 pip_parse(
     name = "mongodb_bpf_test_requirements",
+    python_interpreter_target = interpreter,
     requirements_lock = "//src/stirling/source_connectors/socket_tracer/testing/containers/mongodb:requirements.bazel.txt",
 )
 

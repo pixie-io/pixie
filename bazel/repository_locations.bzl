@@ -457,9 +457,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.8.0.tar.gz"],
     ),
     rules_python = dict(
-        sha256 = "cdf6b84084aad8f10bf20b46b77cb48d83c319ebe6458a18e9d2cebf57807cdd",
-        strip_prefix = "rules_python-0.8.1",
-        urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.1.tar.gz"],
+        sha256 = "9d04041ac92a0985e344235f5d946f71ac543f1b1565f2cdbc9a2aaee8adf55b",
+        strip_prefix = "rules_python-0.26.0",
+        urls = ["https://github.com/bazelbuild/rules_python/archive/refs/tags/0.26.0.tar.gz"],
     ),
     rules_jvm_external = dict(
         urls = ["https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/5.2.tar.gz"],
