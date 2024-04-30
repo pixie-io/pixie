@@ -142,6 +142,9 @@ pl_model_files()
 
 python_register_toolchains(
     name = "python3_10",
+    # Allow the root user to build the code base since this is a current requirement for
+    # building in a containerized environment. See https://github.com/bazelbuild/rules_python/pull/713
+    # for more details.
     ignore_root_user_error = True,
     # Available versions are listed in @rules_python//python:versions.bzl.
     # We recommend using the same version your team is already standardized on.
