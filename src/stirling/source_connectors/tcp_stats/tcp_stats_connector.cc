@@ -99,6 +99,7 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
 
   DataTable* data_table = data_tables_[0];
   auto* agg_stats = tcp_stats_.UpdateStats(events_);
+  events_.clear();
   uint64_t time = AdjustedSteadyClockNowNS();
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
@@ -120,10 +121,9 @@ void TCPStatsConnector::TransferDataImpl(ConnectorContext* ctx) {
     r.Append<tcp_stats::kTCPBytesSentIdx>(stats.bytes_sent);
     r.Append<tcp_stats::kTCPRetransmitsIdx>(stats.retransmissions);
 
-    agg_stats->erase(iter++);
+    iter++;
   }
-
-  events_.clear();
+  agg_stats->clear();
 }
 }  // namespace stirling
 }  // namespace px

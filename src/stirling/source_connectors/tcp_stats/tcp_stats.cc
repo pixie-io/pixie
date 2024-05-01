@@ -41,7 +41,7 @@ TCPStats::AggKey BuildAggKey(const upid_t& upid, const SockAddr& local_endpoint,
 }  // namespace
 
 absl::flat_hash_map<TCPStats::AggKey, TCPStats::Stats>* TCPStats::UpdateStats(
-    const std::vector<tcp_event_t> events) {
+    const std::vector<tcp_event_t>& events) {
   for (auto& event : events) {
     SockAddr laddr, raddr;
     auto la = event.local_addr;
