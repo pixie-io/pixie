@@ -35,7 +35,7 @@ class SignalAction : public NotCopyable {
  public:
   SignalAction()
       : guard_size_(px::system::Config::GetInstance().PageSizeBytes()),
-        altstack_size_(std::max(guard_size_ * 4, static_cast<size_t>(MINSIGSTKSZ))) {
+        altstack_size_(DetermineAltStackSize()) {
     MapAndProtectStackMemory();
     InstallSigHandlers();
   }
@@ -71,6 +71,18 @@ class SignalAction : public NotCopyable {
    * Additionally, two guard pages will be allocated to bookend the usable area.
    */
   const size_t altstack_size_;
+  /**
+   * Determine the number of bytes to allocate to altstack_size_.
+   */
+  size_t DetermineAltStackSize() const {
+    // The size of altstack_size_ should be at least 4 * guard size or size MINSIGSTKSZ if it is
+    // greater. This size needs to be a multiple of the system page size.
+    const size_t min_altstack_size = 4 * guard_size_;
+    const size_t sig_page_count = IntRoundUpDivide(static_cast<size_t>(MINSIGSTKSZ), guard_size_);
+    const size_t sig_stack_size = sig_page_count * guard_size_;
+
+    return std::max(min_altstack_size, sig_stack_size);
+  }
   /**
    * Signal handlers will be installed for these signals which have a fatal outcome.
    */
