@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -72,6 +73,11 @@ const (
 // defaultClassAnnotationKey is the key in the annotation map which indicates
 // a storage class is default.
 var defaultClassAnnotationKeys = []string{"storageclass.kubernetes.io/is-default-class", "storageclass.beta.kubernetes.io/is-default-class"}
+
+// The k8s API kinds that should be excluded from a Vizier's nodeSelector setting.
+// Resources such as DaemonSets should run on all nodes of the cluster, so applying
+// the nodeSelector uniformly across all pods leads to unexpected behavior.
+var nodeSelectorExcludedKinds = []string{"DaemonSet"}
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -986,6 +992,8 @@ func convertTolerations(tolerations []v1.Toleration) []*vizierconfigpb.Toleratio
 }
 
 func updatePodSpec(nodeSelector map[string]string, tolerations []v1.Toleration, securityCtx *v1alpha1.PodSecurityContext, res map[string]interface{}) {
+	kind, kOk := res["kind"].(string)
+
 	podSpec := make(map[string]interface{})
 	md, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec")
 	if ok && err == nil {
@@ -994,18 +1002,21 @@ func updatePodSpec(nodeSelector map[string]string, tolerations []v1.Toleration, 
 		}
 	}
 
-	castedNodeSelector := make(map[string]interface{})
-	ns, ok := podSpec["nodeSelector"].(map[string]interface{})
-	if ok {
-		castedNodeSelector = ns
-	}
-	for k, v := range nodeSelector {
-		if _, ok := castedNodeSelector[k]; ok {
-			continue
+	if kOk && !slices.Contains(nodeSelectorExcludedKinds, kind) {
+		castedNodeSelector := make(map[string]interface{})
+		ns, ok := podSpec["nodeSelector"].(map[string]interface{})
+		if ok {
+			castedNodeSelector = ns
 		}
-		castedNodeSelector[k] = v
+		for k, v := range nodeSelector {
+			if _, ok := castedNodeSelector[k]; ok {
+				continue
+			}
+			castedNodeSelector[k] = v
+		}
+		podSpec["nodeSelector"] = castedNodeSelector
 	}
-	podSpec["nodeSelector"] = castedNodeSelector
+
 	podSpec["tolerations"] = tolerations
 
 	// Add securityContext only if enabled.
