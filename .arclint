@@ -204,7 +204,8 @@
       "type": "spelling",
       "exclude": [
         "(.*\\.crt$)",
-        "(.*\\.key$)"
+        "(.*\\.key$)",
+        "(^k8s\/operator\/helm\/crds\/olm_crd.yaml$)"
       ]
     },
     "text": {
