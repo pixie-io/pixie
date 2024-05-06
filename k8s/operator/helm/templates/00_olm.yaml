@@ -66,7 +66,7 @@ spec:
           - $(OPERATOR_NAMESPACE)
           - --writeStatusName
           - ""
-          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:1b6002156f568d722c29138575733591037c24b4bfabc67946f268ce4752c3e6
           ports:
             - containerPort: 8080
             - containerPort: 8081
@@ -141,10 +141,10 @@ spec:
           - {{ .Values.olmNamespace }}
           - --configmapServerImage={{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}configmap-operator-registry:latest
           - --util-image
-          -  {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+          -  {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:1b6002156f568d722c29138575733591037c24b4bfabc67946f268ce4752c3e6
           - --opmImage
           -  {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}opm@sha256:d999588bd4e9509ec9e75e49adfb6582d256e9421e454c7fb5e9fe57e7b1aada
-          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:f9ea8cef95ac9b31021401d4863711a5eec904536b449724e0f00357548a31e7
+          image: {{ if .Values.registry }}{{ .Values.registry }}/quay.io-operator-framework-{{ else }}quay.io/operator-framework/{{ end }}olm@sha256:1b6002156f568d722c29138575733591037c24b4bfabc67946f268ce4752c3e6
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
