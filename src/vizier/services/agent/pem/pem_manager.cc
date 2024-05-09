@@ -92,12 +92,12 @@ Status PEMManager::InitSchemas() {
   stirling_->GetPublishProto(&publish_pb);
   auto relation_info_vec = ConvertPublishPBToRelationInfo(publish_pb);
 
-  int64_t memory_limit = FLAGS_table_store_data_limit * 1024 * 1024;
-  int64_t num_tables = relation_info_vec.size();
-  int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
-  int64_t stirling_error_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
-  int64_t probe_status_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
-  int64_t proc_exit_events_table_size = FLAGS_table_store_proc_exit_events_limit_bytes;
+  const int64_t memory_limit = FLAGS_table_store_data_limit * 1024 * 1024;
+  const int64_t num_tables = relation_info_vec.size();
+  const int64_t http_table_size = (FLAGS_table_store_http_events_percent * memory_limit) / 100;
+  const int64_t stirling_error_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
+  const int64_t probe_status_table_size = FLAGS_table_store_stirling_error_limit_bytes / 2;
+  const int64_t proc_exit_events_table_size = FLAGS_table_store_proc_exit_events_limit_bytes;
 
   // Determine which of the four default tables are present
   bool has_http_events = false, has_stirling_error = false, has_probe_status = false,
@@ -120,13 +120,13 @@ Status PEMManager::InitSchemas() {
   if (has_probe_status) used_memory += probe_status_table_size;
   if (has_proc_exit_events) used_memory += proc_exit_events_table_size;
 
-  int64_t remaining_memory = memory_limit - used_memory;
+  const int64_t remaining_memory = memory_limit - used_memory;
   if (remaining_memory < 0) {
     return error::Internal("Table store data limit is too low to store the tables.");
   }
-  int64_t other_table_count =
+  const int64_t other_table_count =
       num_tables - (has_http_events + has_stirling_error + has_probe_status + has_proc_exit_events);
-  int64_t other_table_size = (other_table_count > 0) ? remaining_memory / other_table_count : 0;
+  const int64_t other_table_size = (other_table_count > 0) ? remaining_memory / other_table_count : 0;
 
   // Create tables with allocated sizes
   for (const auto& relation_info : relation_info_vec) {
