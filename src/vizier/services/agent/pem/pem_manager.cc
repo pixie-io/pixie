@@ -126,7 +126,8 @@ Status PEMManager::InitSchemas() {
   }
   const int64_t other_table_count =
       num_tables - (has_http_events + has_stirling_error + has_probe_status + has_proc_exit_events);
-  const int64_t other_table_size = (other_table_count > 0) ? remaining_memory / other_table_count : 0;
+  const int64_t other_table_size =
+      (other_table_count > 0) ? remaining_memory / other_table_count : 0;
 
   // Create tables with allocated sizes
   for (const auto& relation_info : relation_info_vec) {
