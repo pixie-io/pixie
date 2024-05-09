@@ -187,6 +187,9 @@ Status StandalonePEMManager::InitSchemas() {
   if (has_proc_exit_events) used_memory += proc_exit_events_table_size;
 
   int64_t remaining_memory = memory_limit - used_memory;
+  if (remaining_memory < 0) {
+    return error::Internal("Table store data limit is too low to store the tables.");
+  }
   int64_t other_table_count =
       num_tables - (has_http_events + has_stirling_error + has_probe_status + has_proc_exit_events);
   int64_t other_table_size = (other_table_count > 0) ? remaining_memory / other_table_count : 0;
