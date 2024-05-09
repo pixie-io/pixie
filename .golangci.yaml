@@ -13,6 +13,13 @@ output:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  # TODO(ddelnano): Remove once typecheck is upgraded in next golangci-lint upgrade
+  # This error originates from the stdlib due to generics usage
+  exclude-rules:
+  - path: .*slices\/sort.go
+    linters:
+    - typecheck
+    text: "^(undefined: (min|max))"
 
 linters:
   enable:
