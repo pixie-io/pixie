@@ -169,22 +169,31 @@ Status StandalonePEMManager::InitSchemas() {
   bool has_http_events = false, has_stirling_error = false, has_probe_status = false,
        has_proc_exit_events = false;
   for (const auto& relation_info : relation_info_vec) {
-    if (relation_info.name == "http_events")
+    if (relation_info.name == "http_events") {
       has_http_events = true;
-    else if (relation_info.name == "stirling_error")
+    } else if (relation_info.name == "stirling_error") {
       has_stirling_error = true;
-    else if (relation_info.name == "probe_status")
+    } else if (relation_info.name == "probe_status") {
       has_probe_status = true;
-    else if (relation_info.name == "proc_exit_events")
+    } else if (relation_info.name == "proc_exit_events") {
       has_proc_exit_events = true;
+    }
   }
 
   // Calculate memory used by specific tables
   int64_t used_memory = 0;
-  if (has_http_events) used_memory += http_table_size;
-  if (has_stirling_error) used_memory += stirling_error_table_size;
-  if (has_probe_status) used_memory += probe_status_table_size;
-  if (has_proc_exit_events) used_memory += proc_exit_events_table_size;
+  if (has_http_events) {
+    used_memory += http_table_size;
+  }
+  if (has_stirling_error) {
+    used_memory += stirling_error_table_size;
+  }
+  if (has_probe_status) {
+    used_memory += probe_status_table_size;
+  }
+  if (has_proc_exit_events) {
+    used_memory += proc_exit_events_table_size;
+  }
 
   const int64_t remaining_memory = memory_limit - used_memory;
   if (remaining_memory < 0) {
