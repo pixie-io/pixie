@@ -29,13 +29,11 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
-        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
         "//src/operator/apis/px.dev/v1alpha1",
         "//src/shared/goversion",
         "//src/shared/services",
         "//src/shared/status",
-        "//src/utils",
         "//src/utils/shared/certs",
         "//src/utils/shared/k8s",
         "@com_github_blang_semver//:semver",
